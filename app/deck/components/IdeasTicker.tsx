@@ -19,43 +19,28 @@ export function IdeasTicker({ isC }: TickerProps) {
   const doubled = [...ideas, ...ideas];
 
   return (
-    <div
-      className="overflow-hidden shrink-0 relative"
-      style={{
-        borderBottom: "1px solid #1e2258",
-        padding: "6px 0",
-      }}
-    >
-      {/* Left fade */}
-      <div
-        className="absolute left-0 top-0 bottom-0 w-6 z-[2]"
-        style={{ background: "linear-gradient(90deg, #08081a, transparent)" }}
-      />
-      {/* Right fade */}
-      <div
-        className="absolute right-0 top-0 bottom-0 w-6 z-[2]"
-        style={{ background: "linear-gradient(90deg, transparent, #08081a)" }}
-      />
+    <div className="overflow-hidden shrink-0 relative border-b border-white/[0.06] py-1.5">
+      {/* Fades */}
+      <div className="absolute left-0 top-0 bottom-0 w-8 z-[2] bg-gradient-to-r from-onork-bg to-transparent" />
+      <div className="absolute right-0 top-0 bottom-0 w-8 z-[2] bg-gradient-to-l from-onork-bg to-transparent" />
 
-      <div className="flex items-center gap-1 pl-3 mb-0.5">
-        <span className="text-[8px] font-extrabold tracking-[0.12em] uppercase text-onork-p3">
-          IDEAS
+      <div className="flex items-center gap-1.5 pl-3 mb-0.5">
+        <span className="text-[10px] font-semibold tracking-wider uppercase text-onork-p3">
+          Ideas
         </span>
       </div>
 
       <div
-        className="flex whitespace-nowrap"
-        style={{ animation: `scroll ${ideas.length * 5}s linear infinite` }}
+        className="flex whitespace-nowrap animate-scroll"
+        style={{ animationDuration: `${ideas.length * 5}s` }}
       >
         {doubled.map((x, i) => (
           <span
             key={i}
-            className="inline-flex items-center shrink-0 text-[11px] text-onork-text-dim"
-            style={{ padding: "2px 14px" }}
+            className="inline-flex items-center shrink-0 text-xs text-onork-text-dim px-4 py-0.5"
           >
-            <span className="text-onork-p3 mr-2 text-[7px]">&#x25CF;</span>
+            <span className="w-1 h-1 rounded-full bg-onork-p3 mr-2.5 shrink-0" />
             {x}
-            <span className="mx-4 text-onork-text-muted">&middot;</span>
           </span>
         ))}
       </div>

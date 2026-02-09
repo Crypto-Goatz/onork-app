@@ -11,7 +11,8 @@ export function Ico({ name, sz = 26 }: IcoProps) {
   return (
     <span
       dangerouslySetInnerHTML={{ __html: SERVICE_LOGOS[name] || SERVICE_LOGOS.onork }}
-      style={{ width: sz, height: sz, display: "inline-flex", flexShrink: 0 }}
+      className="inline-flex shrink-0 transition-transform duration-200 hover:scale-110"
+      style={{ width: sz, height: sz }}
     />
   );
 }

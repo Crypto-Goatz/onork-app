@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Delete } from "lucide-react";
 import { LOGO_SVG } from "@/components/ServiceIcon";
 
 const PIN_CODE = "412724";
@@ -40,82 +41,64 @@ export default function PinPage() {
   };
 
   return (
-    <div
-      className="h-dvh flex flex-col items-center justify-center"
-      style={{
-        background: "radial-gradient(ellipse at 50% 30%, #7c3aed44, transparent 70%), #08081a",
-      }}
-    >
-      <div className="animate-slide-up text-center">
+    <div className="h-dvh flex flex-col items-center justify-center bg-onork-bg relative overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_30%,_#7c3aed33,_transparent_70%)]" />
+
+      <div className="relative animate-slide-up text-center">
+        {/* Logo */}
         <span
           dangerouslySetInnerHTML={{ __html: LOGO_SVG }}
-          className="inline-flex"
-          style={{ width: 52, height: 52 }}
+          className="inline-flex w-14 h-14"
         />
 
-        <div
-          className="text-[30px] font-black mt-1"
-          style={{
-            letterSpacing: "-0.03em",
-            background: "linear-gradient(135deg, #818cf8, #60a5fa)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
+        <div className="text-3xl font-black mt-2 tracking-tight bg-gradient-to-br from-onork-p3 to-onork-b2 bg-clip-text text-transparent">
           0nork
         </div>
 
-        <div className="text-[11px] text-onork-text-dim mt-1 tracking-[0.15em] uppercase">
+        <div className="text-xs text-onork-text-dim mt-1.5 tracking-widest uppercase">
           Enter Access Code
         </div>
 
         {/* PIN dots */}
-        <div
-          className={`flex gap-2.5 justify-center my-6 ${shk ? "animate-shake" : ""}`}
-        >
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className="transition-all duration-[120ms]"
-              style={{
-                width: 14,
-                height: 14,
-                borderRadius: "50%",
-                border: `2px solid ${err ? "#f87171" : i < pin.length ? "#6366f1" : "#1e2258"}`,
-                background: i < pin.length ? (err ? "#f87171" : "#6366f1") : "transparent",
-                boxShadow: i < pin.length && !err ? "0 0 8px #6366f144" : "none",
-              }}
-            />
-          ))}
+        <div className={`flex gap-3 justify-center my-8 ${shk ? "animate-shake" : ""}`}>
+          {[0, 1, 2, 3, 4, 5].map((i) => {
+            const filled = i < pin.length;
+            return (
+              <div
+                key={i}
+                className={`w-4 h-4 rounded-full border-2 transition-all duration-150 ${
+                  err
+                    ? "border-onork-red bg-onork-red"
+                    : filled
+                      ? "border-onork-p2 bg-onork-p2 shadow-[0_0_10px_#6366f144]"
+                      : "border-onork-border bg-transparent"
+                }`}
+              />
+            );
+          })}
         </div>
 
         {/* Keypad */}
-        <div className="grid grid-cols-3 gap-2 max-w-[230px] mx-auto">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, null, 0, "\u232B"].map((n, i) =>
+        <div className="grid grid-cols-3 gap-2.5 max-w-[260px] mx-auto">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, null, 0, "del"].map((n, i) =>
             n === null ? (
               <div key={i} />
             ) : (
               <button
                 key={i}
                 onClick={() =>
-                  n === "\u232B"
+                  n === "del"
                     ? setPin((p) => p.slice(0, -1))
                     : handleDigit(String(n))
                 }
-                className="cursor-pointer transition-all duration-100 active:scale-95"
-                style={{
-                  width: 60,
-                  height: 52,
-                  borderRadius: 12,
-                  background: n === "\u232B" ? "transparent" : "#12143a",
-                  border: n === "\u232B" ? "none" : "1px solid #1e2258",
-                  color: "#f0f0ff",
-                  fontSize: n === "\u232B" ? 18 : 20,
-                  fontWeight: 600,
-                  fontFamily: "'Inter', sans-serif",
-                }}
+                className={`h-14 rounded-2xl text-xl font-semibold transition-all duration-100 active:scale-95 cursor-pointer flex items-center justify-center ${
+                  n === "del"
+                    ? "bg-transparent border-none text-onork-text-dim hover:text-onork-text"
+                    : "glass-card text-onork-text hover:bg-white/[0.08]"
+                }`}
               >
-                {n}
+                {n === "del" ? <Delete size={20} /> : n}
               </button>
             ),
           )}

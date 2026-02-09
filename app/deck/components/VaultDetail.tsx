@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowLeft, Eye, EyeOff, ExternalLink } from "lucide-react";
 import { SVC } from "@/lib/services";
 import { Ico } from "@/components/ui/Ico";
 import { Dot } from "@/components/ui/Dot";
@@ -36,21 +37,26 @@ export function VaultDetail({
   const accentColor = s.c === "#e2e2e2" ? "#60a5fa" : s.c;
 
   return (
-    <div className="animate-slide-up">
+    <div className="animate-fade-in space-y-5">
+      {/* Back */}
       <button
         onClick={onBack}
-        className="bg-none border-none text-onork-b2 text-xs cursor-pointer mb-3.5 p-0"
+        className="flex items-center gap-1.5 text-sm text-onork-b2 hover:text-onork-p3 transition-colors cursor-pointer bg-transparent border-none p-0"
       >
-        &larr; Back to all services
+        <ArrowLeft size={14} />
+        All services
       </button>
 
-      <div className="flex items-center gap-3 mb-3.5">
-        <Ico name={s.logo} sz={34} />
+      {/* Service header */}
+      <div className="flex items-center gap-3.5">
+        <div className="w-12 h-12 rounded-2xl bg-white/[0.06] flex items-center justify-center">
+          <Ico name={s.logo} sz={28} />
+        </div>
         <div className="flex-1">
-          <div className="font-bold text-[17px] text-onork-text">{s.l}</div>
-          <div className="text-[11px] flex items-center gap-[5px]">
+          <div className="font-bold text-xl text-onork-text">{s.l}</div>
+          <div className="text-sm flex items-center gap-2 mt-0.5">
             <Dot on={isC} />
-            <span style={{ color: isC ? "#34d399" : "#f87171" }}>
+            <span className={isC ? "text-onork-green" : "text-onork-red"}>
               {isC ? "Connected" : "Not connected"}
             </span>
           </div>
@@ -58,33 +64,23 @@ export function VaultDetail({
       </div>
 
       {/* Description */}
-      <div
-        className="text-xs text-onork-text-dim leading-relaxed mb-4"
-        style={{
-          padding: "10px 12px",
-          background: "#12143a",
-          borderRadius: 10,
-          border: "1px solid #1e2258",
-        }}
-      >
+      <div className="glass-card rounded-xl p-4 text-sm text-onork-text-dim leading-relaxed">
         {s.d}
       </div>
 
       {/* Capabilities */}
-      <div className="mb-[18px]">
-        <div className="text-[9px] text-onork-text-muted font-extrabold tracking-[0.1em] uppercase mb-2">
+      <div>
+        <h4 className="text-xs text-onork-text-muted font-semibold tracking-wider uppercase mb-2.5">
           Capabilities ({s.cap.length})
-        </div>
-        <div className="flex flex-wrap gap-1">
+        </h4>
+        <div className="flex flex-wrap gap-1.5">
           {s.cap.map((c) => (
             <span
               key={c}
-              className="text-[10px] font-medium"
+              className="text-xs font-medium px-2.5 py-1 rounded-full"
               style={{
-                padding: "3px 10px",
-                borderRadius: 16,
                 background: accentColor + "14",
-                border: `1px solid ${accentColor}30`,
+                border: `1px solid ${accentColor}25`,
                 color: accentColor,
               }}
             >
@@ -95,76 +91,71 @@ export function VaultDetail({
       </div>
 
       {/* Credentials */}
-      <div className="text-[9px] text-onork-text-muted font-extrabold tracking-[0.1em] uppercase mb-2.5">
-        Credentials ({s.f.length})
-      </div>
+      <div>
+        <h4 className="text-xs text-onork-text-muted font-semibold tracking-wider uppercase mb-3">
+          Credentials ({s.f.length})
+        </h4>
 
-      {s.f.map((f) => (
-        <div
-          key={f.k}
-          className="mb-3 transition-colors duration-200"
-          style={{
-            padding: "12px 14px",
-            background: "#12143a",
-            borderRadius: 12,
-            border: `1px solid ${get(serviceKey, f.k) ? accentColor + "30" : "#1e2258"}`,
-          }}
-        >
-          <div className="flex justify-between items-center mb-1.5">
-            <label className="text-[11px] text-onork-text font-semibold">{f.lb}</label>
-            {f.s && (
-              <button
-                onClick={() => setShow((p) => ({ ...p, [f.k]: !p[f.k] }))}
-                className="bg-none border-none text-onork-text-dim text-[10px] cursor-pointer"
-              >
-                {show[f.k] ? "Hide" : "Show"}
-              </button>
-            )}
-          </div>
-          <input
-            type={f.s && !show[f.k] ? "password" : "text"}
-            value={get(serviceKey, f.k)}
-            onChange={(e) => {
-              const val = e.target.value;
-              const prev = get(serviceKey, f.k);
-              if (!prev && val && f.s) {
-                onConfirmModal({
-                  title: `Connect ${s.l}?`,
-                  body: `You're adding a ${f.lb} for ${s.l}. This credential will be saved in your browser's local storage.`,
-                  onConfirm: () => {
+        <div className="space-y-3">
+          {s.f.map((f) => (
+            <div
+              key={f.k}
+              className="glass-card rounded-xl p-4 transition-all duration-200"
+              style={{
+                borderColor: get(serviceKey, f.k)
+                  ? accentColor + "30"
+                  : undefined,
+              }}
+            >
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm text-onork-text font-medium">{f.lb}</label>
+                {f.s && (
+                  <button
+                    onClick={() => setShow((p) => ({ ...p, [f.k]: !p[f.k] }))}
+                    className="flex items-center gap-1 text-xs text-onork-text-dim hover:text-onork-text transition-colors cursor-pointer bg-transparent border-none"
+                  >
+                    {show[f.k] ? <EyeOff size={12} /> : <Eye size={12} />}
+                    {show[f.k] ? "Hide" : "Show"}
+                  </button>
+                )}
+              </div>
+              <input
+                type={f.s && !show[f.k] ? "password" : "text"}
+                value={get(serviceKey, f.k)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const prev = get(serviceKey, f.k);
+                  if (!prev && val && f.s) {
+                    onConfirmModal({
+                      title: `Connect ${s.l}?`,
+                      body: `You're adding a ${f.lb} for ${s.l}. This credential will be saved in your browser's local storage.`,
+                      onConfirm: () => {
+                        set(serviceKey, f.k, val);
+                        onHistory("connect", `Added ${f.lb} for ${s.l}`);
+                      },
+                    });
+                  } else {
                     set(serviceKey, f.k, val);
-                    onHistory("connect", `Added ${f.lb} for ${s.l}`);
-                  },
-                });
-              } else {
-                set(serviceKey, f.k, val);
-              }
-            }}
-            placeholder={f.ph}
-            className="w-full outline-none text-onork-text"
-            style={{
-              background: "#08081a",
-              border: "1px solid #1e2258",
-              borderRadius: 8,
-              padding: "8px 10px",
-              fontSize: 12,
-              fontFamily: "'JetBrains Mono', monospace",
-            }}
-            onFocus={(e) => (e.target.style.borderColor = "#6366f166")}
-            onBlur={(e) => (e.target.style.borderColor = "#1e2258")}
-          />
-          <div className="text-[10px] text-onork-text-muted mt-[5px]">{f.h}</div>
-          <a
-            href={f.lk}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[10px] font-medium no-underline mt-1"
-            style={{ color: accentColor }}
-          >
-            &nearr; {f.ll}
-          </a>
+                  }
+                }}
+                placeholder={f.ph}
+                className="w-full h-10 px-3 rounded-lg bg-onork-bg border border-white/[0.08] text-sm text-onork-text font-mono placeholder:text-onork-text-muted outline-none focus-visible:ring-2 focus-visible:ring-onork-p2 ring-offset-2 ring-offset-onork-bg transition-all"
+              />
+              <p className="text-xs text-onork-text-muted mt-2">{f.h}</p>
+              <a
+                href={f.lk}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-medium no-underline mt-1.5 hover:underline"
+                style={{ color: accentColor }}
+              >
+                <ExternalLink size={10} />
+                {f.ll}
+              </a>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
     </div>
   );
 }

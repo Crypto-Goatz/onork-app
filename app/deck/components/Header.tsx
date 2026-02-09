@@ -1,79 +1,51 @@
 "use client";
 
-import { Ico } from "@/components/ui/Ico";
+import { Search, Menu, X } from "lucide-react";
 import { Dot } from "@/components/ui/Dot";
 import { SERVICE_COUNT } from "@/lib/services";
 
 interface HeaderProps {
+  title: string;
   vaultCount: number;
-  view: string;
-  setView: (v: string) => void;
-  onVaultOpen: () => void;
+  onCmdK: () => void;
+  onMobileMenu: () => void;
+  mobileMenuOpen: boolean;
 }
 
-export function Header({ vaultCount, view, setView, onVaultOpen }: HeaderProps) {
-  const buttons: [string, string, string][] = [
-    ["history", "\uD83D\uDCCB", "#818cf8"],
-    ["flows", "\u26A1", "#60a5fa"],
-    ["vault", "\uD83D\uDD10", "#7c3aed"],
-  ];
-
+export function Header({ title, vaultCount, onCmdK, onMobileMenu, mobileMenuOpen }: HeaderProps) {
   return (
-    <div
-      className="flex items-center justify-between shrink-0 z-10"
-      style={{
-        padding: "10px 14px",
-        borderBottom: "1px solid #1e2258",
-        background: "rgba(8,8,26,0.9)",
-        backdropFilter: "blur(12px)",
-      }}
-    >
-      <div className="flex items-center gap-2">
-        <div className="animate-breathe">
-          <Ico name="onork" sz={30} />
-        </div>
-        <div>
-          <div
-            className="text-base font-black animate-shimmer"
-            style={{
-              letterSpacing: "-0.03em",
-              background: "linear-gradient(90deg, #818cf8, #60a5fa)",
-              backgroundSize: "200% auto",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            0nork
-          </div>
-          <div className="text-[9px] text-onork-text-muted flex items-center gap-1">
-            <Dot on={vaultCount > 0} />
-            {vaultCount}/{SERVICE_COUNT}
-          </div>
-        </div>
+    <header className="shrink-0 h-14 lg:h-16 flex items-center justify-between px-4 md:px-6 lg:px-8 border-b border-white/[0.08] bg-onork-bg/80 backdrop-blur-xl z-10">
+      {/* Left: mobile menu + title */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onMobileMenu}
+          className="md:hidden p-1.5 rounded-lg text-onork-text-dim hover:text-onork-text hover:bg-white/[0.06] transition-colors cursor-pointer"
+        >
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+        <h1 className="text-lg lg:text-xl font-semibold text-onork-text tracking-tight">{title}</h1>
       </div>
 
-      <div className="flex gap-[5px]">
-        {buttons.map(([v, icon, color]) => (
-          <button
-            key={v}
-            onClick={() => {
-              if (v === "vault") onVaultOpen();
-              setView(view === v ? "home" : v);
-            }}
-            className="cursor-pointer transition-all duration-150"
-            style={{
-              background: view === v ? color + "22" : "transparent",
-              border: `1px solid ${view === v ? color + "44" : "#1e2258"}`,
-              borderRadius: 8,
-              padding: "5px 8px",
-              color: "#f0f0ff",
-              fontSize: 12,
-            }}
-          >
-            {icon}
-          </button>
-        ))}
+      {/* Right: search + status */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onCmdK}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-onork-text-dim hover:text-onork-text hover:bg-white/[0.06] transition-all cursor-pointer"
+        >
+          <Search size={14} />
+          <span className="text-xs hidden sm:inline">Search...</span>
+          <kbd className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-onork-text-muted font-mono">
+            {"\u2318"}K
+          </kbd>
+        </button>
+
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08]">
+          <Dot on={vaultCount > 0} />
+          <span className="text-xs text-onork-text-dim font-medium">
+            {vaultCount}/{SERVICE_COUNT}
+          </span>
+        </div>
       </div>
-    </div>
+    </header>
   );
 }

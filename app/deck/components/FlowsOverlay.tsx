@@ -1,132 +1,106 @@
 "use client";
 
-import type { Workflow } from "@/lib/hooks/useFlows";
+import { Workflow, Zap, Trash2, Plus } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import type { Workflow as WorkflowType } from "@/lib/hooks/useFlows";
 
 interface FlowsOverlayProps {
-  flows: Workflow[];
-  onClose: () => void;
+  flows: WorkflowType[];
   onToggle: (id: string) => void;
-  onDelete: (flow: Workflow) => void;
+  onDelete: (flow: WorkflowType) => void;
   onNewFlow: () => void;
   onHistory: (type: string, detail: string) => void;
 }
 
 export function FlowsOverlay({
   flows,
-  onClose,
   onToggle,
   onDelete,
   onNewFlow,
   onHistory,
 }: FlowsOverlayProps) {
   return (
-    <div
-      className="absolute inset-0 z-[100] flex flex-col animate-slide-up"
-      style={{
-        background: "rgba(8,8,26,0.97)",
-        backdropFilter: "blur(16px)",
-      }}
-    >
+    <div className="p-4 md:p-6 lg:p-8 max-w-full mx-auto w-full animate-fade-in">
       {/* Header */}
-      <div
-        className="flex justify-between items-center"
-        style={{ padding: "14px 18px", borderBottom: "1px solid #1e2258" }}
-      >
-        <div className="text-[15px] font-bold text-onork-text">
-          Workflows{" "}
-          <span className="text-[11px] text-onork-text-muted">{flows.length}</span>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl lg:text-2xl font-bold text-onork-text">Workflows</h2>
+          <p className="text-sm text-onork-text-dim mt-0.5">
+            {flows.length} workflow{flows.length !== 1 ? "s" : ""}
+          </p>
         </div>
         <button
-          onClick={onClose}
-          className="bg-none border-none text-onork-text-dim text-lg cursor-pointer"
+          onClick={onNewFlow}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-onork-p1 to-onork-b1 hover:shadow-lg hover:shadow-onork-p1/20 active:scale-[0.98] transition-all cursor-pointer"
         >
-          &#x2715;
+          <Plus size={16} />
+          New Workflow
         </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-3.5">
-        {flows.length === 0 ? (
-          <div className="text-center py-9 text-onork-text-dim">
-            <div className="text-4xl mb-1.5">&#x26A1;</div>
-            <div className="text-sm font-semibold text-onork-text">No workflows yet</div>
-            <div className="text-xs mt-1">Build your first automation</div>
-          </div>
-        ) : (
-          flows.map((f) => (
+      {flows.length === 0 ? (
+        <EmptyState
+          icon={Workflow}
+          title="No workflows yet"
+          description="Build your first automation to connect services and trigger actions automatically."
+          action={{ label: "Create Workflow", onClick: onNewFlow }}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {flows.map((f, i) => (
             <div
               key={f.id}
-              className="mb-1.5"
-              style={{
-                background: "#12143a",
-                border: `1px solid ${f.on ? "#60a5fa30" : "#1e2258"}`,
-                borderRadius: 10,
-                padding: 12,
-              }}
+              className="glass-card rounded-2xl p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-onork-p1/5 animate-stagger-in"
+              style={{ animationDelay: `${i * 60}ms` }}
             >
-              <div className="flex justify-between items-center mb-[5px]">
-                <span className="font-semibold text-[13px] text-onork-text">{f.name}</span>
-                <div className="flex gap-[5px]">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    f.on ? "bg-onork-b1/15" : "bg-white/[0.04]"
+                  }`}>
+                    <Zap size={16} className={f.on ? "text-onork-b2" : "text-onork-text-muted"} />
+                  </div>
+                  <span className="font-semibold text-sm text-onork-text truncate">{f.name}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => {
                       onToggle(f.id);
                       onHistory("workflow", `Toggled "${f.name}" ${f.on ? "off" : "on"}`);
                     }}
-                    className="cursor-pointer font-bold"
-                    style={{
-                      padding: "2px 8px",
-                      borderRadius: 14,
-                      border: "none",
-                      fontSize: 9,
-                      background: f.on ? "#34d39922" : "#12143a",
-                      color: f.on ? "#34d399" : "#505880",
-                    }}
+                    className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer border-none ${
+                      f.on
+                        ? "bg-onork-green/15 text-onork-green"
+                        : "bg-white/[0.04] text-onork-text-muted"
+                    }`}
                   >
                     {f.on ? "ON" : "OFF"}
                   </button>
                   <button
                     onClick={() => onDelete(f)}
-                    className="cursor-pointer"
-                    style={{
-                      padding: "2px 6px",
-                      borderRadius: 6,
-                      border: "none",
-                      background: "#f8717118",
-                      color: "#f87171",
-                      fontSize: 9,
-                    }}
+                    className="p-1.5 rounded-lg text-onork-text-muted hover:text-onork-red hover:bg-onork-red/10 transition-colors cursor-pointer border-none bg-transparent"
                   >
-                    &#x2715;
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
-              <div className="text-[11px] text-onork-b2">&#x26A1; {f.trigger}</div>
-              {f.actions.map((a, i) => (
-                <div key={i} className="text-[11px] text-onork-text-dim pl-2.5 mt-px">
-                  &rarr; {a}
-                </div>
-              ))}
-            </div>
-          ))
-        )}
-      </div>
 
-      {/* Footer */}
-      <div style={{ padding: "10px 16px", borderTop: "1px solid #1e2258" }}>
-        <button
-          onClick={onNewFlow}
-          className="w-full cursor-pointer font-bold text-onork-b2"
-          style={{
-            padding: 10,
-            borderRadius: 10,
-            border: "none",
-            background: "linear-gradient(135deg, #7c3aed22, #3b82f622)",
-            fontSize: 13,
-          }}
-        >
-          + New Workflow
-        </button>
-      </div>
+              <div className="space-y-1 ml-[46px]">
+                <div className="text-xs text-onork-b2 flex items-center gap-1.5">
+                  <Zap size={10} />
+                  {f.trigger}
+                </div>
+                {f.actions.map((a, idx) => (
+                  <div key={idx} className="text-xs text-onork-text-dim pl-3 border-l border-white/[0.06]">
+                    {a}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

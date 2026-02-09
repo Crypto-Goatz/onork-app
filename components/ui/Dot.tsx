@@ -2,20 +2,18 @@
 
 interface DotProps {
   on: boolean;
+  size?: "sm" | "md";
 }
 
-export function Dot({ on }: DotProps) {
+export function Dot({ on, size = "sm" }: DotProps) {
+  const px = size === "md" ? "w-2 h-2" : "w-1.5 h-1.5";
   return (
     <span
-      className={on ? "animate-pulse-dot" : ""}
-      style={{
-        width: 6,
-        height: 6,
-        borderRadius: "50%",
-        display: "inline-block",
-        background: on ? "#34d399" : "#f87171",
-        boxShadow: `0 0 6px ${on ? "#34d39955" : "#f8717155"}`,
-      }}
+      className={`inline-block rounded-full shrink-0 ${px} ${
+        on
+          ? "bg-onork-green shadow-[0_0_6px_#34d39955] animate-pulse-dot"
+          : "bg-onork-red shadow-[0_0_6px_#f8717155]"
+      }`}
     />
   );
 }
