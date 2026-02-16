@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, ExternalLink, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { SVC } from "@/lib/services";
 import { Ico } from "@/components/ui/Ico";
 import { Dot } from "@/components/ui/Dot";
@@ -31,10 +31,54 @@ export function VaultDetail({
 }: VaultDetailProps) {
   const s = SVC[serviceKey];
   const [show, setShow] = useState<Record<string, boolean>>({});
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<"success" | "error" | null>(null);
 
   if (!s) return null;
 
   const accentColor = s.c === "#e2e2e2" ? "#60a5fa" : s.c;
+
+  // Sync credentials to 0nMCP server
+  const syncToMCP = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      // Build credential description
+      const creds = s.f
+        .map((f) => {
+          const val = get(serviceKey, f.k);
+          if (val) return `${f.lb}: ${val}`;
+          return null;
+        })
+        .filter(Boolean)
+        .join(", ");
+
+      if (!creds) {
+        setSyncResult("error");
+        return;
+      }
+
+      const res = await fetch("/api/0nmcp/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: `Connect to ${s.l} service with these credentials: ${creds}`,
+        }),
+      });
+
+      if (res.ok) {
+        setSyncResult("success");
+        onHistory("sync", `Synced ${s.l} to 0nMCP`);
+      } else {
+        setSyncResult("error");
+      }
+    } catch {
+      setSyncResult("error");
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncResult(null), 3000);
+    }
+  };
 
   return (
     <div className="animate-fade-in space-y-5">
@@ -67,6 +111,36 @@ export function VaultDetail({
       <div className="glass-card rounded-xl p-4 text-sm text-onork-text-dim leading-relaxed">
         {s.d}
       </div>
+
+      {/* Sync to 0nMCP button */}
+      {isC && (
+        <button
+          onClick={syncToMCP}
+          disabled={syncing}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-onork-p1 to-onork-b1 hover:shadow-lg hover:shadow-onork-p1/20 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
+        >
+          {syncing ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              Syncing to 0nMCP...
+            </>
+          ) : syncResult === "success" ? (
+            <>
+              <CheckCircle2 size={16} />
+              Synced to 0nMCP
+            </>
+          ) : syncResult === "error" ? (
+            <>
+              <XCircle size={16} />
+              Sync failed — is 0nMCP running?
+            </>
+          ) : (
+            <>
+              Sync to 0nMCP
+            </>
+          )}
+        </button>
+      )}
 
       {/* Capabilities */}
       <div>

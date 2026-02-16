@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect } from "react";
 import { useVault } from "@/lib/hooks/useVault";
 import { useFlows } from "@/lib/hooks/useFlows";
 import { useHistory } from "@/lib/hooks/useHistory";
-import { respond } from "@/lib/ai-responder";
 import { Modal } from "@/components/ui/Modal";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { Sidebar } from "./components/Sidebar";
@@ -33,18 +32,27 @@ export default function DeckPage() {
   const [activeSvc, setActiveSvc] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mcpOnline, setMcpOnline] = useState(false);
   const vault = useVault();
   const flows = useFlows();
   const hist = useHistory();
   const [msgs, setMsgs] = useState<ChatMessage[]>([
     {
       r: "sys",
-      t: "Welcome to 0nork. I'm your command orchestrator. Open the Vault to connect services, or just ask me anything.",
+      t: "Welcome to 0nork. I'm your command orchestrator — powered by 0nMCP with 550 tools across 26 services. Open the Vault to connect services, or just tell me what you need done.",
     },
   ]);
   const [inp, setInp] = useState("");
   const [showCmd, setShowCmd] = useState(false);
   const [modal, setModal] = useState<ModalConfig | null>(null);
+
+  // Check 0nMCP health on load
+  useEffect(() => {
+    fetch("/api/0nmcp/health")
+      .then((r) => r.json())
+      .then((data) => setMcpOnline(data.status !== "offline"))
+      .catch(() => setMcpOnline(false));
+  }, []);
 
   // Responsive sidebar
   useEffect(() => {
@@ -70,24 +78,73 @@ export default function DeckPage() {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  const addMsg = useCallback((r: "user" | "sys", t: string) => {
-    setMsgs((prev) => [...prev, { r, t }]);
+  const addMsg = useCallback((msg: ChatMessage) => {
+    setMsgs((prev) => [...prev, msg]);
   }, []);
 
-  const send = useCallback(() => {
+  const updateLastMsg = useCallback((update: Partial<ChatMessage>) => {
+    setMsgs((prev) => {
+      const newMsgs = [...prev];
+      const last = newMsgs[newMsgs.length - 1];
+      if (last) {
+        newMsgs[newMsgs.length - 1] = { ...last, ...update };
+      }
+      return newMsgs;
+    });
+  }, []);
+
+  const send = useCallback(async () => {
     const t = inp.trim();
     if (!t) return;
     setInp("");
     setShowCmd(false);
-    addMsg("user", t);
-    hist.add("chat", t);
 
+    // Slash commands
     if (t === "/flows") { setView("flows"); return; }
     if (t === "/vault") { setView("vault"); setActiveSvc(null); return; }
     if (t === "/history") { setView("history"); return; }
 
-    addMsg("sys", respond(t, vault, flows));
-  }, [inp, addMsg, hist, vault, flows]);
+    // Add user message
+    addMsg({ r: "user", t });
+    hist.add("chat", t);
+
+    // Add loading indicator
+    addMsg({ r: "sys", t: "", loading: true, source: "0nmcp" });
+
+    try {
+      // Get connected services for context
+      const connectedServices = Object.keys(vault.credentials || {}).filter(
+        (k) => vault.isC(k)
+      );
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: t, connectedServices }),
+      });
+
+      const data = await res.json();
+
+      // Replace loading message with real response
+      updateLastMsg({
+        t: data.response || "No response received.",
+        loading: false,
+        source: data.source || "local",
+        status: data.status,
+        steps: data.steps,
+        services: data.services,
+      });
+
+      hist.add("execution", `${data.source === "0nmcp" ? "[0nMCP] " : ""}${t}`);
+    } catch {
+      updateLastMsg({
+        t: "Failed to reach the server. Check that 0nMCP is running.",
+        loading: false,
+        source: "local",
+        status: "failed",
+      });
+    }
+  }, [inp, addMsg, updateLastMsg, hist, vault]);
 
   const handleServiceClick = useCallback((key: string) => {
     setActiveSvc(key);
@@ -191,6 +248,7 @@ export default function DeckPage() {
             onCmdK={() => setShowCmd(true)}
             onMobileMenu={() => setMobileMenuOpen((p) => !p)}
             mobileMenuOpen={mobileMenuOpen}
+            mcpOnline={mcpOnline}
           />
 
           <main className="flex-1 overflow-hidden">
@@ -203,6 +261,7 @@ export default function DeckPage() {
                   isC={vault.isC}
                   recentHistory={hist.h}
                   setView={handleViewChange}
+                  mcpOnline={mcpOnline}
                 />
               </div>
             )}
@@ -215,6 +274,7 @@ export default function DeckPage() {
                   onChange={setInp}
                   onSend={send}
                   onSlash={setShowCmd}
+                  mcpOnline={mcpOnline}
                 />
               </div>
             )}
@@ -265,10 +325,10 @@ export default function DeckPage() {
                     })
                   }
                   onNewFlow={() => {
-                    addMsg(
-                      "sys",
-                      "Workflow builder coming soon - use natural language in chat to describe what you want to automate.",
-                    );
+                    addMsg({
+                      r: "sys",
+                      t: "Describe what you want to automate in plain English and I'll build the workflow for you.",
+                    });
                     hist.add("ui", "Opened workflow builder");
                     handleViewChange("chat");
                   }}

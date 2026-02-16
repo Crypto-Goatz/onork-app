@@ -1,23 +1,54 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { execute, isOnline } from '@/lib/0nmcp-client'
+import { respond } from '@/lib/ai-responder'
 
 export async function POST(request: NextRequest) {
-  const { message, connectedServices } = await request.json();
+  const cookieStore = await cookies()
+  if (cookieStore.get('onork_session')?.value !== 'authenticated') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-  // For now, use the local responder logic
-  // TODO: Replace with real Anthropic API calls
-  const systemPrompt = `You are 0nork, a command orchestrator AI. The user has these services connected: ${(connectedServices || []).join(", ")}.
-You speak in plain, direct English - no jargon, no fluff. You help users:
-- Execute actions on connected services
-- Build cross-service workflows
-- Troubleshoot connections
-- Suggest automations based on their stack
-When a service isn't connected, tell them exactly how to add it in the Vault.
-Keep responses concise - 1-3 sentences for simple questions, more for complex ones.`;
+  const { message, connectedServices } = await request.json()
 
-  // Placeholder: return a simple response
-  // Real implementation will call Anthropic API
+  // Check if 0nMCP server is online
+  const online = await isOnline()
+
+  if (online) {
+    // Route through 0nMCP for real execution
+    try {
+      const result = await execute(message)
+      return NextResponse.json({
+        response: result.message || 'Task completed.',
+        source: '0nmcp',
+        status: result.status,
+        steps: result.steps_executed,
+        services: result.services_used,
+        plan: result.plan,
+      })
+    } catch (error) {
+      // Fall back to local responder on error
+      const fallback = respond(message, {
+        isC: (s: string) => (connectedServices || []).includes(s),
+        n: (connectedServices || []).length,
+      }, { f: [] })
+      return NextResponse.json({
+        response: fallback,
+        source: 'local',
+        note: '0nMCP server error — using local responder',
+      })
+    }
+  }
+
+  // 0nMCP offline — use local responder
+  const response = respond(message, {
+    isC: (s: string) => (connectedServices || []).includes(s),
+    n: (connectedServices || []).length,
+  }, { f: [] })
+
   return NextResponse.json({
-    response: `Received: "${message}". AI-powered responses coming soon. Connected: ${(connectedServices || []).length} services.`,
-    systemPrompt,
-  });
+    response,
+    source: 'local',
+    note: '0nMCP server offline — using local responder',
+  })
 }

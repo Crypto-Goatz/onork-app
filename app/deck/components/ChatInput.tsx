@@ -8,9 +8,10 @@ interface ChatInputProps {
   onChange: (v: string) => void;
   onSend: () => void;
   onSlash: (show: boolean) => void;
+  mcpOnline?: boolean;
 }
 
-export function ChatInput({ value, onChange, onSend, onSlash }: ChatInputProps) {
+export function ChatInput({ value, onChange, onSend, onSlash, mcpOnline }: ChatInputProps) {
   const iRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -25,7 +26,7 @@ export function ChatInput({ value, onChange, onSend, onSlash }: ChatInputProps) 
               onSlash(e.target.value === "/");
             }}
             onKeyDown={(e) => e.key === "Enter" && onSend()}
-            placeholder="Ask anything or type / for commands..."
+            placeholder={mcpOnline ? "Execute any task across 26 services..." : "Ask anything or type / for commands..."}
             className="flex-1 h-12 px-4 rounded-xl bg-onork-surface border border-white/[0.08] text-sm text-onork-text placeholder:text-onork-text-muted outline-none focus-visible:ring-2 focus-visible:ring-onork-p2 ring-offset-2 ring-offset-onork-bg transition-all"
           />
           <button
@@ -36,7 +37,14 @@ export function ChatInput({ value, onChange, onSend, onSlash }: ChatInputProps) 
           </button>
         </div>
         <div className="text-center text-xs text-onork-text-muted mt-2 tracking-widest uppercase">
-          0nork &middot; Rocket+ &middot; 0nMCP
+          {mcpOnline ? (
+            <span>
+              <span className="text-onork-green">0nMCP Live</span>
+              {" \u00b7 "}550 Tools{" \u00b7 "}26 Services
+            </span>
+          ) : (
+            <span>0nork &middot; Rocket+ &middot; 0nMCP</span>
+          )}
         </div>
       </div>
     </div>

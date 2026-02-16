@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import {
   KeyRound,
   MessageSquare,
@@ -8,6 +8,8 @@ import {
   Clock,
   Sparkles,
   ArrowRight,
+  Server,
+  Zap,
 } from "lucide-react";
 import { SVC, SERVICE_COUNT } from "@/lib/services";
 import { Ico } from "@/components/ui/Ico";
@@ -23,6 +25,14 @@ interface DashboardViewProps {
   isC: (service: string) => boolean;
   recentHistory: HistoryEntry[];
   setView: (v: View) => void;
+  mcpOnline?: boolean;
+}
+
+interface McpHealth {
+  version?: string;
+  uptime?: number;
+  connections?: number;
+  services?: string[];
 }
 
 export function DashboardView({
@@ -32,13 +42,27 @@ export function DashboardView({
   isC,
   recentHistory,
   setView,
+  mcpOnline,
 }: DashboardViewProps) {
   const connectedKeys = Object.keys(SVC).filter((k) => isC(k));
+  const [mcpHealth, setMcpHealth] = useState<McpHealth | null>(null);
 
   const ideas = useMemo(() => {
     return getIdeas(connectedKeys);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectedKeys.join(",")]);
+
+  // Fetch MCP health details
+  useEffect(() => {
+    if (mcpOnline) {
+      fetch("/api/0nmcp/health")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.status !== "offline") setMcpHealth(data);
+        })
+        .catch(() => {});
+    }
+  }, [mcpOnline]);
 
   const stats = [
     {
@@ -81,10 +105,60 @@ export function DashboardView({
       <div>
         <h1 className="text-2xl lg:text-3xl font-bold text-onork-text">Command Center</h1>
         <p className="text-sm text-onork-text-dim mt-1">
-          {vaultCount > 0
-            ? `${vaultCount} service${vaultCount !== 1 ? "s" : ""} connected and ready.`
-            : "Connect your first service to get started."}
+          {mcpOnline
+            ? `0nMCP online — 550 tools across 26 services ready.`
+            : vaultCount > 0
+              ? `${vaultCount} service${vaultCount !== 1 ? "s" : ""} connected and ready.`
+              : "Connect your first service to get started."}
         </p>
+      </div>
+
+      {/* 0nMCP Server Status Banner */}
+      <div className={`rounded-2xl p-5 border transition-all ${
+        mcpOnline
+          ? "glass-card border-onork-green/20 bg-onork-green/[0.03]"
+          : "glass-card border-onork-red/20 bg-onork-red/[0.03]"
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              mcpOnline ? "bg-onork-green/10" : "bg-onork-red/10"
+            }`}>
+              <Server size={20} className={mcpOnline ? "text-onork-green" : "text-onork-red"} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-onork-text">0nMCP Server</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                  mcpOnline
+                    ? "bg-onork-green/15 text-onork-green"
+                    : "bg-onork-red/15 text-onork-red"
+                }`}>
+                  {mcpOnline ? "ONLINE" : "OFFLINE"}
+                </span>
+              </div>
+              <p className="text-xs text-onork-text-muted mt-0.5">
+                {mcpOnline && mcpHealth
+                  ? `v${mcpHealth.version || "1.7.0"} — ${mcpHealth.connections || 0} connections active`
+                  : mcpOnline
+                    ? "Universal AI API Orchestrator"
+                    : "Run: npx 0nmcp serve --port 3001"}
+              </p>
+            </div>
+          </div>
+          {mcpOnline && (
+            <div className="hidden sm:flex items-center gap-4 text-xs text-onork-text-dim">
+              <div className="flex items-center gap-1.5">
+                <Zap size={12} className="text-onork-p3" />
+                <span>550 Tools</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Server size={12} className="text-onork-b2" />
+                <span>26 Services</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats */}
