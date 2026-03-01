@@ -6,13 +6,14 @@ import {
   KeyRound,
   Workflow,
   Clock,
+  ShoppingBag,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
 import { Dot } from "@/components/ui/Dot";
 import { SERVICE_COUNT } from "@/lib/services";
 
-type View = "dashboard" | "chat" | "vault" | "flows" | "history";
+type View = "dashboard" | "chat" | "vault" | "flows" | "history" | "store";
 
 interface SidebarProps {
   view: View;
@@ -27,6 +28,7 @@ const NAV_ITEMS: { key: View; label: string; icon: typeof LayoutDashboard }[] = 
   { key: "chat", label: "Chat", icon: MessageSquare },
   { key: "vault", label: "Vault", icon: KeyRound },
   { key: "flows", label: "Workflows", icon: Workflow },
+  { key: "store", label: "Store", icon: ShoppingBag },
   { key: "history", label: "History", icon: Clock },
 ];
 

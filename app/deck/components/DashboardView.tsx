@@ -16,7 +16,7 @@ import { Ico } from "@/components/ui/Ico";
 import { getIdeas } from "@/lib/ideas";
 import type { HistoryEntry } from "@/lib/hooks/useHistory";
 
-type View = "dashboard" | "chat" | "vault" | "flows" | "history";
+type View = "dashboard" | "chat" | "vault" | "flows" | "history" | "store";
 
 interface DashboardViewProps {
   vaultCount: number;
@@ -106,7 +106,7 @@ export function DashboardView({
         <h1 className="text-2xl lg:text-3xl font-bold text-onork-text">Command Center</h1>
         <p className="text-sm text-onork-text-dim mt-1">
           {mcpOnline
-            ? `0nMCP online — 550 tools across 26 services ready.`
+            ? `0nMCP online — 819 tools across 48 services ready.`
             : vaultCount > 0
               ? `${vaultCount} service${vaultCount !== 1 ? "s" : ""} connected and ready.`
               : "Connect your first service to get started."}
@@ -139,7 +139,7 @@ export function DashboardView({
               </div>
               <p className="text-xs text-onork-text-muted mt-0.5">
                 {mcpOnline && mcpHealth
-                  ? `v${mcpHealth.version || "1.7.0"} — ${mcpHealth.connections || 0} connections active`
+                  ? `v${mcpHealth.version || "2.2.0"} — ${mcpHealth.connections || 0} connections active`
                   : mcpOnline
                     ? "Universal AI API Orchestrator"
                     : "Run: npx 0nmcp serve --port 3001"}
@@ -150,11 +150,11 @@ export function DashboardView({
             <div className="hidden sm:flex items-center gap-4 text-xs text-onork-text-dim">
               <div className="flex items-center gap-1.5">
                 <Zap size={12} className="text-onork-p3" />
-                <span>550 Tools</span>
+                <span>819 Tools</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Server size={12} className="text-onork-b2" />
-                <span>26 Services</span>
+                <span>48 Services</span>
               </div>
             </div>
           )}

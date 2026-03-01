@@ -16,8 +16,9 @@ import { VaultOverlay } from "./components/VaultOverlay";
 import { VaultDetail } from "./components/VaultDetail";
 import { FlowsOverlay } from "./components/FlowsOverlay";
 import { HistoryOverlay } from "./components/HistoryOverlay";
+import { StoreView } from "./components/StoreView";
 
-type View = "dashboard" | "chat" | "vault" | "flows" | "history";
+type View = "dashboard" | "chat" | "vault" | "flows" | "history" | "store";
 
 interface ModalConfig {
   title: string;
@@ -39,7 +40,7 @@ export default function DeckPage() {
   const [msgs, setMsgs] = useState<ChatMessage[]>([
     {
       r: "sys",
-      t: "Welcome to 0nork. I'm your command orchestrator — powered by 0nMCP with 550 tools across 26 services. Open the Vault to connect services, or just tell me what you need done.",
+      t: "Welcome to 0nork. I'm your command orchestrator — powered by 0nMCP with 819 tools across 48 services. Open the Vault to connect services, or just tell me what you need done.",
     },
   ]);
   const [inp, setInp] = useState("");
@@ -176,6 +177,7 @@ export default function DeckPage() {
     vault: "Vault",
     flows: "Workflows",
     history: "History",
+    store: "Marketplace",
   };
 
   return (
@@ -354,6 +356,12 @@ export default function DeckPage() {
                     })
                   }
                 />
+              </div>
+            )}
+
+            {view === "store" && (
+              <div className="h-full overflow-y-auto">
+                <StoreView />
               </div>
             )}
           </main>
