@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -9,7 +9,18 @@ interface CalendarEvent {
   day: number
   label: string
   color: 'green' | 'cyan' | 'purple'
+  id?: string
+  time?: string
+  calendarName?: string
 }
+
+const fallbackEvents: CalendarEvent[] = [
+  { day: 22, label: 'Team standup', color: 'green' },
+  { day: 24, label: 'Client call', color: 'cyan' },
+  { day: 27, label: 'Deploy v2.6', color: 'purple' },
+  { day: 19, label: 'Sprint review', color: 'green' },
+  { day: 29, label: 'Billing cycle', color: 'cyan' },
+]
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate()
@@ -19,10 +30,34 @@ function getFirstDayOfMonth(year: number, month: number): number {
   return new Date(year, month, 1).getDay()
 }
 
+const EVENT_COLORS: Array<'green' | 'cyan' | 'purple'> = ['green', 'cyan', 'purple']
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCrmEvents(crmEvents: any[]): CalendarEvent[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return crmEvents.map((ev: any, idx: number) => {
+    const startDate = ev.startTime || ev.start || ev.appointmentStartTime
+    const date = startDate ? new Date(startDate) : new Date()
+    const title = ev.title || ev.name || ev.appointmentTitle || 'Appointment'
+
+    return {
+      day: date.getDate(),
+      label: title,
+      color: EVENT_COLORS[idx % EVENT_COLORS.length],
+      id: ev.id,
+      time: date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+      calendarName: ev.calendarName || ev.calendar?.name,
+    }
+  })
+}
+
 export default function CalendarPage() {
   const now = new Date()
   const [currentMonth, setCurrentMonth] = useState(now.getMonth())
   const [currentYear, setCurrentYear] = useState(now.getFullYear())
+  const [events, setEvents] = useState<CalendarEvent[]>(fallbackEvents)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth)
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth)
@@ -30,15 +65,41 @@ export default function CalendarPage() {
   const today = now.getDate()
   const isCurrentMonth = now.getMonth() === currentMonth && now.getFullYear() === currentYear
 
-  // Sample events
-  const allEvents: CalendarEvent[] = [
-    { day: today, label: 'Team standup', color: 'green' },
-    { day: today + 2, label: 'Client call', color: 'cyan' },
-    { day: today + 5, label: 'Deploy v2.6', color: 'purple' },
-    { day: today - 3, label: 'Sprint review', color: 'green' },
-    { day: today + 7, label: 'Billing cycle', color: 'cyan' },
-  ]
-  const events = allEvents.filter((e) => e.day > 0 && e.day <= daysInMonth)
+  const fetchEvents = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const startTime = new Date(currentYear, currentMonth, 1).toISOString()
+      const endTime = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59).toISOString()
+
+      const res = await fetch(`/api/crm/calendar?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch calendar')
+
+      const mapped = mapCrmEvents(data.events || [])
+      if (mapped.length > 0) {
+        setEvents(mapped)
+      } else if (isCurrentMonth) {
+        // Keep fallback events for current month if CRM returns empty
+        setEvents(fallbackEvents)
+      } else {
+        setEvents([])
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load calendar')
+      if (isCurrentMonth) {
+        setEvents(fallbackEvents)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [currentMonth, currentYear, isCurrentMonth])
+
+  useEffect(() => {
+    fetchEvents()
+  }, [fetchEvents])
+
+  const displayEvents = events.filter((e) => e.day > 0 && e.day <= daysInMonth)
 
   function prevMonth() {
     if (currentMonth === 0) {
@@ -82,7 +143,9 @@ export default function CalendarPage() {
       <div className="jp-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h1 className="jp-page-title">Calendar</h1>
-          <p className="jp-page-subtitle">Manage your schedule and upcoming events</p>
+          <p className="jp-page-subtitle">
+            {loading ? 'Loading events...' : error ? 'Using sample data' : 'Manage your schedule and upcoming events'}
+          </p>
         </div>
         <button className="jp-btn jp-btn-primary">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -91,6 +154,13 @@ export default function CalendarPage() {
           New Event
         </button>
       </div>
+
+      {error && (
+        <div style={{ marginBottom: 16, padding: '8px 14px', borderRadius: 8, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', fontSize: '0.8125rem', color: 'var(--jp-red)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{error}</span>
+          <button onClick={fetchEvents} style={{ background: 'none', border: 'none', color: 'var(--jp-cyan)', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>Retry</button>
+        </div>
+      )}
 
       <div className="jp-card">
         {/* Calendar Header */}
@@ -110,9 +180,14 @@ export default function CalendarPage() {
               </svg>
             </button>
           </div>
-          <button className="jp-btn-outline" onClick={() => { setCurrentMonth(now.getMonth()); setCurrentYear(now.getFullYear()); }}>
-            Today
-          </button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {loading && (
+              <div style={{ width: 16, height: 16, border: '2px solid var(--jp-green)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            )}
+            <button className="jp-btn-outline" onClick={() => { setCurrentMonth(now.getMonth()); setCurrentYear(now.getFullYear()); }}>
+              Today
+            </button>
+          </div>
         </div>
 
         <div className="jp-card-body" style={{ padding: 0 }}>
@@ -124,7 +199,7 @@ export default function CalendarPage() {
 
             {/* Day cells */}
             {cells.map((cell, i) => {
-              const cellEvents = cell.dimmed ? [] : events.filter((e) => e.day === cell.day)
+              const cellEvents = cell.dimmed ? [] : displayEvents.filter((e) => e.day === cell.day)
               return (
                 <div
                   key={i}
@@ -132,7 +207,7 @@ export default function CalendarPage() {
                 >
                   <div className="jp-calendar-day">{cell.day}</div>
                   {cellEvents.map((ev, ei) => (
-                    <div key={ei} className={`jp-calendar-event ${ev.color}`}>
+                    <div key={ei} className={`jp-calendar-event ${ev.color}`} title={ev.time ? `${ev.time} — ${ev.label}` : ev.label}>
                       {ev.label}
                     </div>
                   ))}
@@ -149,8 +224,8 @@ export default function CalendarPage() {
           <h6>Upcoming Events</h6>
         </div>
         <ul className="jp-activity-list">
-          {events
-            .filter((e) => e.day >= today)
+          {displayEvents
+            .filter((e) => isCurrentMonth ? e.day >= today : true)
             .sort((a, b) => a.day - b.day)
             .map((ev, i) => (
               <li key={i} className="jp-activity-item">
@@ -159,14 +234,16 @@ export default function CalendarPage() {
                   <div className="jp-activity-text">{ev.label}</div>
                   <div className="jp-activity-meta">
                     {MONTHS[currentMonth]} {ev.day}, {currentYear}
+                    {ev.time ? ` at ${ev.time}` : ''}
+                    {ev.calendarName ? ` — ${ev.calendarName}` : ''}
                   </div>
                 </div>
                 <span className="jp-activity-time">
-                  {ev.day === today ? 'Today' : `In ${ev.day - today}d`}
+                  {isCurrentMonth && ev.day === today ? 'Today' : isCurrentMonth && ev.day > today ? `In ${ev.day - today}d` : `${MONTHS[currentMonth].substring(0, 3)} ${ev.day}`}
                 </span>
               </li>
             ))}
-          {events.filter((e) => e.day >= today).length === 0 && (
+          {displayEvents.filter((e) => isCurrentMonth ? e.day >= today : true).length === 0 && (
             <div className="jp-empty-state">
               <div className="jp-empty-state-icon">
                 <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>

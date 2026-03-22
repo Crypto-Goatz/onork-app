@@ -28,6 +28,13 @@ const STORAGE_KEY = '0ncore_dashboard_layout'
 
 // ── Main Component ──────────────────────────────────────────
 
+interface DashboardStats {
+  contacts: number
+  opportunities: number
+  conversations: number
+  pipelines: number
+}
+
 export default function DashboardHome() {
   const [userName, setUserName] = useState('')
   const [mcpStatus, setMcpStatus] = useState<'online' | 'offline' | 'checking'>('checking')
@@ -35,6 +42,7 @@ export default function DashboardHome() {
   const [editMode, setEditMode] = useState(false)
   const [dragId, setDragId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [stats, setStats] = useState<DashboardStats>({ contacts: 0, opportunities: 0, conversations: 0, pipelines: 0 })
   const dragRef = useRef<HTMLDivElement | null>(null)
   const supabase = createClient()
 
@@ -71,6 +79,14 @@ export default function DashboardHome() {
       .then(r => r.json())
       .then(d => setMcpStatus(d.status === 'offline' ? 'offline' : 'online'))
       .catch(() => setMcpStatus('offline'))
+
+    // Fetch live CRM stats
+    fetch('/api/dashboard/stats')
+      .then(r => r.json())
+      .then(d => {
+        if (d.stats) setStats(d.stats)
+      })
+      .catch(() => { /* keep defaults */ })
   }, [supabase.auth])
 
   // ── Drag & Drop ─────────────────────────────────────────
@@ -157,9 +173,9 @@ export default function DashboardHome() {
         return (
           <div className="jp-stat-grid">
             {[
-              { label: 'Total Contacts', value: '0', change: '+0%', colorClass: 'cyan', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
-              { label: 'Active Workflows', value: '0', change: '+0', colorClass: 'green', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
-              { label: "Executions", value: '0', change: '+0%', colorClass: 'purple', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
+              { label: 'Total Contacts', value: stats.contacts.toLocaleString(), change: stats.contacts > 0 ? 'Live' : 'CRM', colorClass: 'cyan', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+              { label: 'Opportunities', value: stats.opportunities.toLocaleString(), change: stats.pipelines > 0 ? `${stats.pipelines} pipeline${stats.pipelines > 1 ? 's' : ''}` : 'CRM', colorClass: 'green', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
+              { label: "Conversations", value: stats.conversations.toLocaleString(), change: stats.conversations > 0 ? 'Live' : 'CRM', colorClass: 'purple', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
               { label: 'Balance', value: '$0.00', change: 'Active', colorClass: 'amber', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
             ].map(card => (
               <div key={card.label} className={`jp-stat-card ${card.colorClass}`}>
@@ -317,10 +333,10 @@ export default function DashboardHome() {
             </div>
             <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {[
-                { label: 'Contacts', value: '0' },
-                { label: 'Pipelines', value: '1' },
-                { label: 'Opportunities', value: '0' },
-                { label: 'Conversations', value: '0' },
+                { label: 'Contacts', value: stats.contacts.toLocaleString() },
+                { label: 'Pipelines', value: stats.pipelines.toLocaleString() },
+                { label: 'Opportunities', value: stats.opportunities.toLocaleString() },
+                { label: 'Conversations', value: stats.conversations.toLocaleString() },
               ].map(s => (
                 <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)' }}>{s.label}</span>
