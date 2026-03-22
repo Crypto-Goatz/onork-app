@@ -2,11 +2,17 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { useState } from 'react'
 
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
   isAdmin?: boolean
+}
+
+interface SubNavItem {
+  name: string
+  href: string
 }
 
 interface NavItem {
@@ -15,6 +21,7 @@ interface NavItem {
   icon: React.ReactNode
   badge?: string
   badgeCyan?: string
+  children?: SubNavItem[]
 }
 
 interface NavGroup {
@@ -48,6 +55,11 @@ const navGroups: NavGroup[] = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         ),
+        children: [
+          { name: 'All Contacts', href: '/dashboard/contacts' },
+          { name: 'Import Contacts', href: '/dashboard/contacts/import' },
+          { name: 'Segments', href: '/dashboard/contacts/segments' },
+        ],
       },
       {
         name: 'Pipeline',
@@ -57,6 +69,10 @@ const navGroups: NavGroup[] = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
           </svg>
         ),
+        children: [
+          { name: 'Board View', href: '/dashboard/pipeline' },
+          { name: 'List View', href: '/dashboard/pipeline/list' },
+        ],
       },
       {
         name: 'Workflows',
@@ -100,6 +116,11 @@ const navGroups: NavGroup[] = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         ),
+        children: [
+          { name: 'Inbox', href: '/dashboard/email' },
+          { name: 'Compose', href: '/dashboard/email?compose=true' },
+          { name: 'Templates', href: '/dashboard/email/templates' },
+        ],
       },
       {
         name: 'Social',
@@ -153,6 +174,24 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
+        name: 'Billing',
+        href: '/dashboard/billing',
+        icon: (
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+        ),
+      },
+      {
+        name: 'Downloads',
+        href: '/dashboard/downloads',
+        icon: (
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+        ),
+      },
+      {
         name: 'Settings',
         href: '/dashboard/settings',
         icon: (
@@ -179,6 +218,25 @@ const adminItem: NavItem = {
 
 export default function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
   const pathname = usePathname()
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+
+  const toggleExpand = (name: string) => {
+    setExpandedItems(prev => {
+      const next = new Set(prev)
+      if (next.has(name)) {
+        next.delete(name)
+      } else {
+        next.add(name)
+      }
+      return next
+    })
+  }
+
+  // Auto-expand parent items if child is active
+  const isChildActive = (children?: SubNavItem[]) => {
+    if (!children) return false
+    return children.some(child => pathname === child.href || pathname.startsWith(child.href + '/'))
+  }
 
   return (
     <>
@@ -209,26 +267,72 @@ export default function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
                   <div className="jp-menu-group-label">{group.label}</div>
                 )}
                 {items.map((item) => {
-                  const isActive =
-                    item.href === '/dashboard'
+                  const hasChildren = item.children && item.children.length > 0
+                  const isExpanded = expandedItems.has(item.name) || isChildActive(item.children)
+                  const isActive = hasChildren
+                    ? false
+                    : item.href === '/dashboard'
                       ? pathname === '/dashboard'
                       : pathname.startsWith(item.href)
+
                   return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onClose}
-                      className={`jp-nav-item ${isActive ? 'active' : ''}`}
-                    >
-                      <span className="jp-nav-icon">{item.icon}</span>
-                      <span>{item.name}</span>
-                      {item.badge && (
-                        <span className="jp-nav-badge">{item.badge}</span>
+                    <div key={item.href}>
+                      {hasChildren ? (
+                        <button
+                          onClick={() => toggleExpand(item.name)}
+                          className={`jp-nav-item jp-nav-parent ${isChildActive(item.children) ? 'active' : ''}`}
+                        >
+                          <span className="jp-nav-icon">{item.icon}</span>
+                          <span>{item.name}</span>
+                          {item.badge && (
+                            <span className="jp-nav-badge">{item.badge}</span>
+                          )}
+                          {item.badgeCyan && (
+                            <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
+                          )}
+                          <span className={`jp-submenu-indicator ${isExpanded ? 'expanded' : ''}`}>
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M4.5 3L7.5 6L4.5 9" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </span>
+                        </button>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          onClick={onClose}
+                          className={`jp-nav-item ${isActive ? 'active' : ''}`}
+                        >
+                          <span className="jp-nav-icon">{item.icon}</span>
+                          <span>{item.name}</span>
+                          {item.badge && (
+                            <span className="jp-nav-badge">{item.badge}</span>
+                          )}
+                          {item.badgeCyan && (
+                            <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
+                          )}
+                        </Link>
                       )}
-                      {item.badgeCyan && (
-                        <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
+
+                      {/* Sub-menu */}
+                      {hasChildren && (
+                        <div className={`jp-submenu ${isExpanded ? 'open' : ''}`}>
+                          {item.children!.map((child) => {
+                            const isSubActive = pathname === child.href ||
+                              (child.href !== '/dashboard/contacts' && child.href !== '/dashboard/pipeline' && child.href !== '/dashboard/email' && pathname.startsWith(child.href))
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                onClick={onClose}
+                                className={`jp-submenu-item ${isSubActive ? 'active' : ''}`}
+                              >
+                                {child.name}
+                              </Link>
+                            )
+                          })}
+                        </div>
                       )}
-                    </Link>
+                    </div>
                   )
                 })}
               </div>

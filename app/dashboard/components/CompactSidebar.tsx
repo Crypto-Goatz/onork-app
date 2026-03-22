@@ -10,12 +10,18 @@ interface CompactSidebarProps {
   isAdmin?: boolean
 }
 
+interface SubNavItem {
+  name: string
+  href: string
+}
+
 interface NavItem {
   name: string
   href: string
   icon: React.ReactNode
   badge?: string
   badgeCyan?: string
+  children?: SubNavItem[]
 }
 
 interface NavGroup {
@@ -49,6 +55,11 @@ const navGroups: NavGroup[] = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         ),
+        children: [
+          { name: 'All Contacts', href: '/dashboard/contacts' },
+          { name: 'Import Contacts', href: '/dashboard/contacts/import' },
+          { name: 'Segments', href: '/dashboard/contacts/segments' },
+        ],
       },
       {
         name: 'Pipeline',
@@ -58,6 +69,10 @@ const navGroups: NavGroup[] = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
           </svg>
         ),
+        children: [
+          { name: 'Board View', href: '/dashboard/pipeline' },
+          { name: 'List View', href: '/dashboard/pipeline/list' },
+        ],
       },
       {
         name: 'Workflows',
@@ -101,6 +116,11 @@ const navGroups: NavGroup[] = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         ),
+        children: [
+          { name: 'Inbox', href: '/dashboard/email' },
+          { name: 'Compose', href: '/dashboard/email?compose=true' },
+          { name: 'Templates', href: '/dashboard/email/templates' },
+        ],
       },
       {
         name: 'Social',
@@ -154,6 +174,24 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
+        name: 'Billing',
+        href: '/dashboard/billing',
+        icon: (
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+        ),
+      },
+      {
+        name: 'Downloads',
+        href: '/dashboard/downloads',
+        icon: (
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+        ),
+      },
+      {
         name: 'Settings',
         href: '/dashboard/settings',
         icon: (
@@ -181,6 +219,12 @@ const adminItem: NavItem = {
 export default function CompactSidebar({ isOpen, onClose, isAdmin }: CompactSidebarProps) {
   const pathname = usePathname()
   const [expanded, setExpanded] = useState(false)
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null)
+
+  const isChildActive = (children?: SubNavItem[]) => {
+    if (!children) return false
+    return children.some(child => pathname === child.href || pathname.startsWith(child.href + '/'))
+  }
 
   return (
     <>
@@ -194,7 +238,7 @@ export default function CompactSidebar({ isOpen, onClose, isAdmin }: CompactSide
       <aside
         className={`jp-compact-sidebar ${isOpen ? 'open' : ''} ${expanded ? 'expanded' : ''}`}
         onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => setExpanded(false)}
+        onMouseLeave={() => { setExpanded(false); setHoveredItem(null) }}
       >
         {/* Header */}
         <div className="jp-compact-sidebar-header">
@@ -215,21 +259,34 @@ export default function CompactSidebar({ isOpen, onClose, isAdmin }: CompactSide
                   <div className="jp-menu-group-label">{group.label}</div>
                 )}
                 {items.map((item) => {
-                  const isActive =
-                    item.href === '/dashboard'
+                  const hasChildren = item.children && item.children.length > 0
+                  const isActive = hasChildren
+                    ? isChildActive(item.children)
+                    : item.href === '/dashboard'
                       ? pathname === '/dashboard'
                       : pathname.startsWith(item.href)
+
                   return (
-                    <Link
+                    <div
                       key={item.href}
-                      href={item.href}
-                      onClick={onClose}
-                      className={`jp-nav-item ${isActive ? 'active' : ''}`}
-                      title={!expanded ? item.name : undefined}
+                      className="jp-compact-flyout-wrapper"
+                      onMouseEnter={() => !expanded && hasChildren && setHoveredItem(item.name)}
+                      onMouseLeave={() => !expanded && setHoveredItem(null)}
                     >
-                      <span className="jp-nav-icon">{item.icon}</span>
-                      {expanded && (
-                        <>
+                      {hasChildren && !expanded ? (
+                        <div
+                          className={`jp-nav-item ${isActive ? 'active' : ''}`}
+                          title={item.name}
+                        >
+                          <span className="jp-nav-icon">{item.icon}</span>
+                        </div>
+                      ) : hasChildren && expanded ? (
+                        <Link
+                          href={item.href}
+                          onClick={onClose}
+                          className={`jp-nav-item ${isActive ? 'active' : ''}`}
+                        >
+                          <span className="jp-nav-icon">{item.icon}</span>
                           <span>{item.name}</span>
                           {item.badge && (
                             <span className="jp-nav-badge">{item.badge}</span>
@@ -237,9 +294,68 @@ export default function CompactSidebar({ isOpen, onClose, isAdmin }: CompactSide
                           {item.badgeCyan && (
                             <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
                           )}
-                        </>
+                        </Link>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          onClick={onClose}
+                          className={`jp-nav-item ${isActive ? 'active' : ''}`}
+                          title={!expanded ? item.name : undefined}
+                        >
+                          <span className="jp-nav-icon">{item.icon}</span>
+                          {expanded && (
+                            <>
+                              <span>{item.name}</span>
+                              {item.badge && (
+                                <span className="jp-nav-badge">{item.badge}</span>
+                              )}
+                              {item.badgeCyan && (
+                                <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
+                              )}
+                            </>
+                          )}
+                        </Link>
                       )}
-                    </Link>
+
+                      {/* Flyout panel for compact mode */}
+                      {hasChildren && !expanded && hoveredItem === item.name && (
+                        <div className="jp-compact-flyout">
+                          <div className="jp-compact-flyout-title">{item.name}</div>
+                          {item.children!.map((child) => {
+                            const isSubActive = pathname === child.href
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                onClick={onClose}
+                                className={`jp-compact-flyout-item ${isSubActive ? 'active' : ''}`}
+                              >
+                                {child.name}
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Inline sub-items when expanded */}
+                      {hasChildren && expanded && (
+                        <div className="jp-submenu open">
+                          {item.children!.map((child) => {
+                            const isSubActive = pathname === child.href
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                onClick={onClose}
+                                className={`jp-submenu-item ${isSubActive ? 'active' : ''}`}
+                              >
+                                {child.name}
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </div>
