@@ -2,11 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-
-interface SidebarProps {
-  isOpen: boolean
-  onClose: () => void
-}
+import { useState, useRef, useEffect } from 'react'
 
 interface NavItem {
   name: string
@@ -137,69 +133,101 @@ const navGroups: NavGroup[] = [
   },
 ]
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function HorizontalNav() {
   const pathname = usePathname()
+  const [openGroup, setOpenGroup] = useState<string | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenGroup(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Flatten ungrouped items, keep grouped items as dropdowns
+  const ungrouped = navGroups.filter(g => !g.label)
+  const grouped = navGroups.filter(g => g.label)
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className={`jp-backdrop ${isOpen ? 'visible' : ''}`}
-        onClick={onClose}
-      />
+    <nav className="jp-horizontal-nav" ref={dropdownRef}>
+      <div className="jp-horizontal-nav-inner">
+        {/* Ungrouped items */}
+        {ungrouped.flatMap(g => g.items).map(item => {
+          const isActive =
+            item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : pathname.startsWith(item.href)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`jp-hnav-item ${isActive ? 'active' : ''}`}
+            >
+              <span className="jp-hnav-icon">{item.icon}</span>
+              <span>{item.name}</span>
+            </Link>
+          )
+        })}
 
-      {/* Sidebar */}
-      <aside className={`jp-sidebar ${isOpen ? 'open' : ''}`}>
-        {/* Header */}
-        <div className="jp-sidebar-header">
-          <Link href="/dashboard" className="jp-sidebar-brand" onClick={onClose}>
-            <img src="/logo.png" alt="0nCore" style={{ height: 32, objectFit: 'contain' }} />
-          </Link>
-        </div>
+        {/* Grouped items as dropdowns */}
+        {grouped.map(group => {
+          const isGroupActive = group.items.some(item =>
+            item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : pathname.startsWith(item.href)
+          )
+          const isDropdownOpen = openGroup === group.label
 
-        {/* Nav */}
-        <div className="jp-sidebar-body">
-          {navGroups.map((group, gi) => (
-            <div className="jp-menu-group" key={gi}>
-              {group.label && (
-                <div className="jp-menu-group-label">{group.label}</div>
+          return (
+            <div key={group.label} className="jp-hnav-dropdown">
+              <button
+                className={`jp-hnav-item ${isGroupActive ? 'active' : ''}`}
+                onClick={() => setOpenGroup(isDropdownOpen ? null : group.label)}
+              >
+                <span>{group.label}</span>
+                <svg
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}
+                  style={{ width: 12, height: 12, marginLeft: 4, transition: 'transform 0.2s', transform: isDropdownOpen ? 'rotate(180deg)' : 'none' }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {isDropdownOpen && (
+                <div className="jp-hnav-dropdown-menu">
+                  {group.items.map(item => {
+                    const isActive =
+                      item.href === '/dashboard'
+                        ? pathname === '/dashboard'
+                        : pathname.startsWith(item.href)
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`jp-hnav-dropdown-item ${isActive ? 'active' : ''}`}
+                        onClick={() => setOpenGroup(null)}
+                      >
+                        <span className="jp-hnav-icon">{item.icon}</span>
+                        <span>{item.name}</span>
+                        {item.badge && (
+                          <span className="jp-nav-badge">{item.badge}</span>
+                        )}
+                        {item.badgeCyan && (
+                          <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
+                        )}
+                      </Link>
+                    )
+                  })}
+                </div>
               )}
-              {group.items.map((item) => {
-                const isActive =
-                  item.href === '/dashboard'
-                    ? pathname === '/dashboard'
-                    : pathname.startsWith(item.href)
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onClose}
-                    className={`jp-nav-item ${isActive ? 'active' : ''}`}
-                  >
-                    <span className="jp-nav-icon">{item.icon}</span>
-                    <span>{item.name}</span>
-                    {item.badge && (
-                      <span className="jp-nav-badge">{item.badge}</span>
-                    )}
-                    {item.badgeCyan && (
-                      <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
-                    )}
-                  </Link>
-                )
-              })}
             </div>
-          ))}
-        </div>
-
-        {/* Footer */}
-        <div className="jp-sidebar-footer">
-          <div className="jp-sidebar-footer-label">Powered by</div>
-          <div className="jp-sidebar-footer-value">
-            <span className="jp-sidebar-footer-dot" />
-            0nMCP v2.5.0
-          </div>
-        </div>
-      </aside>
-    </>
+          )
+        })}
+      </div>
+    </nav>
   )
 }

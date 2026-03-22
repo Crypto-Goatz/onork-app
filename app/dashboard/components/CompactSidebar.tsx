@@ -2,8 +2,9 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { useState } from 'react'
 
-interface SidebarProps {
+interface CompactSidebarProps {
   isOpen: boolean
   onClose: () => void
 }
@@ -137,23 +138,28 @@ const navGroups: NavGroup[] = [
   },
 ]
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function CompactSidebar({ isOpen, onClose }: CompactSidebarProps) {
   const pathname = usePathname()
+  const [expanded, setExpanded] = useState(false)
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Mobile backdrop */}
       <div
         className={`jp-backdrop ${isOpen ? 'visible' : ''}`}
         onClick={onClose}
       />
 
-      {/* Sidebar */}
-      <aside className={`jp-sidebar ${isOpen ? 'open' : ''}`}>
+      {/* Compact Sidebar */}
+      <aside
+        className={`jp-compact-sidebar ${isOpen ? 'open' : ''} ${expanded ? 'expanded' : ''}`}
+        onMouseEnter={() => setExpanded(true)}
+        onMouseLeave={() => setExpanded(false)}
+      >
         {/* Header */}
-        <div className="jp-sidebar-header">
-          <Link href="/dashboard" className="jp-sidebar-brand" onClick={onClose}>
-            <img src="/logo.png" alt="0nCore" style={{ height: 32, objectFit: 'contain' }} />
+        <div className="jp-compact-sidebar-header">
+          <Link href="/dashboard" className="jp-compact-sidebar-brand" onClick={onClose}>
+            <img src="/logo.png" alt="0nCore" style={{ height: 28, objectFit: 'contain' }} />
           </Link>
         </div>
 
@@ -161,7 +167,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="jp-sidebar-body">
           {navGroups.map((group, gi) => (
             <div className="jp-menu-group" key={gi}>
-              {group.label && (
+              {group.label && expanded && (
                 <div className="jp-menu-group-label">{group.label}</div>
               )}
               {group.items.map((item) => {
@@ -175,14 +181,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     href={item.href}
                     onClick={onClose}
                     className={`jp-nav-item ${isActive ? 'active' : ''}`}
+                    title={!expanded ? item.name : undefined}
                   >
                     <span className="jp-nav-icon">{item.icon}</span>
-                    <span>{item.name}</span>
-                    {item.badge && (
-                      <span className="jp-nav-badge">{item.badge}</span>
-                    )}
-                    {item.badgeCyan && (
-                      <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
+                    {expanded && (
+                      <>
+                        <span>{item.name}</span>
+                        {item.badge && (
+                          <span className="jp-nav-badge">{item.badge}</span>
+                        )}
+                        {item.badgeCyan && (
+                          <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
+                        )}
+                      </>
                     )}
                   </Link>
                 )
@@ -193,11 +204,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Footer */}
         <div className="jp-sidebar-footer">
-          <div className="jp-sidebar-footer-label">Powered by</div>
-          <div className="jp-sidebar-footer-value">
-            <span className="jp-sidebar-footer-dot" />
-            0nMCP v2.5.0
-          </div>
+          {expanded ? (
+            <>
+              <div className="jp-sidebar-footer-label">Powered by</div>
+              <div className="jp-sidebar-footer-value">
+                <span className="jp-sidebar-footer-dot" />
+                0nMCP v2.5.0
+              </div>
+            </>
+          ) : (
+            <div className="jp-sidebar-footer-value" style={{ justifyContent: 'center' }}>
+              <span className="jp-sidebar-footer-dot" />
+            </div>
+          )}
         </div>
       </aside>
     </>
