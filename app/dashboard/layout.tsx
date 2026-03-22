@@ -16,6 +16,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('classic')
+  const [isAdmin, setIsAdmin] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -35,8 +36,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
       setUser(user)
       setLoading(false)
+
+      // Check admin status
+      supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.is_admin) setIsAdmin(true)
+        })
     })
-  }, [router, supabase.auth])
+  }, [router, supabase])
 
   function handleLayoutChange(mode: LayoutMode) {
     setLayoutMode(mode)
@@ -88,7 +99,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="jp-wrapper jp-wrapper-horizontal">
         <div className="jp-main jp-main-horizontal">
           <Header {...headerProps} />
-          <HorizontalNav />
+          <HorizontalNav isAdmin={isAdmin} />
           <main className="jp-content">
             {children}
           </main>
@@ -101,7 +112,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (layoutMode === 'compact') {
     return (
       <div className="jp-wrapper jp-wrapper-compact">
-        <CompactSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <CompactSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isAdmin={isAdmin} />
         <div className="jp-main jp-main-compact">
           <Header {...headerProps} />
           <main className="jp-content">
@@ -115,7 +126,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Classic layout (default)
   return (
     <div className="jp-wrapper">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isAdmin={isAdmin} />
       <div className="jp-main">
         <Header {...headerProps} />
         <main className="jp-content">

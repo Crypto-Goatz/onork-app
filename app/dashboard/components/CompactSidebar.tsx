@@ -7,6 +7,7 @@ import { useState } from 'react'
 interface CompactSidebarProps {
   isOpen: boolean
   onClose: () => void
+  isAdmin?: boolean
 }
 
 interface NavItem {
@@ -166,7 +167,18 @@ const navGroups: NavGroup[] = [
   },
 ]
 
-export default function CompactSidebar({ isOpen, onClose }: CompactSidebarProps) {
+const adminItem: NavItem = {
+  name: 'Admin',
+  href: '/dashboard/admin',
+  badge: 'ADMIN',
+  icon: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+    </svg>
+  ),
+}
+
+export default function CompactSidebar({ isOpen, onClose, isAdmin }: CompactSidebarProps) {
   const pathname = usePathname()
   const [expanded, setExpanded] = useState(false)
 
@@ -193,41 +205,46 @@ export default function CompactSidebar({ isOpen, onClose }: CompactSidebarProps)
 
         {/* Nav */}
         <div className="jp-sidebar-body">
-          {navGroups.map((group, gi) => (
-            <div className="jp-menu-group" key={gi}>
-              {group.label && expanded && (
-                <div className="jp-menu-group-label">{group.label}</div>
-              )}
-              {group.items.map((item) => {
-                const isActive =
-                  item.href === '/dashboard'
-                    ? pathname === '/dashboard'
-                    : pathname.startsWith(item.href)
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={onClose}
-                    className={`jp-nav-item ${isActive ? 'active' : ''}`}
-                    title={!expanded ? item.name : undefined}
-                  >
-                    <span className="jp-nav-icon">{item.icon}</span>
-                    {expanded && (
-                      <>
-                        <span>{item.name}</span>
-                        {item.badge && (
-                          <span className="jp-nav-badge">{item.badge}</span>
-                        )}
-                        {item.badgeCyan && (
-                          <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
-                        )}
-                      </>
-                    )}
-                  </Link>
-                )
-              })}
-            </div>
-          ))}
+          {navGroups.map((group, gi) => {
+            const items = group.label === 'Account' && isAdmin
+              ? [...group.items, adminItem]
+              : group.items
+            return (
+              <div className="jp-menu-group" key={gi}>
+                {group.label && expanded && (
+                  <div className="jp-menu-group-label">{group.label}</div>
+                )}
+                {items.map((item) => {
+                  const isActive =
+                    item.href === '/dashboard'
+                      ? pathname === '/dashboard'
+                      : pathname.startsWith(item.href)
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onClose}
+                      className={`jp-nav-item ${isActive ? 'active' : ''}`}
+                      title={!expanded ? item.name : undefined}
+                    >
+                      <span className="jp-nav-icon">{item.icon}</span>
+                      {expanded && (
+                        <>
+                          <span>{item.name}</span>
+                          {item.badge && (
+                            <span className="jp-nav-badge">{item.badge}</span>
+                          )}
+                          {item.badgeCyan && (
+                            <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
+                          )}
+                        </>
+                      )}
+                    </Link>
+                  )
+                })}
+              </div>
+            )
+          })}
         </div>
 
         {/* Footer */}
