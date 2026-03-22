@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./jampack.css";
 
 export const metadata: Metadata = {
   title: "0ncore — AI Command Center",
