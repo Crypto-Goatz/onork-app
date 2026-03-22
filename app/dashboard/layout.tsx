@@ -37,14 +37,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setUser(user)
       setLoading(false)
 
-      // Check admin status
+      // Check admin status + provisioning
       supabase
         .from('profiles')
-        .select('is_admin')
+        .select('is_admin, crm_location_id, stripe_customer_id')
         .eq('id', user.id)
         .single()
         .then(({ data }) => {
           if (data?.is_admin) setIsAdmin(true)
+
+          // Auto-provision if missing crm_location_id or stripe_customer_id
+          if (!data?.crm_location_id || !data?.stripe_customer_id) {
+            fetch('/api/provision', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: user.id,
+                email: user.email || '',
+                name: user.user_metadata?.full_name || '',
+              }),
+            }).catch(() => {
+              // Provisioning failure is non-blocking
+            })
+          }
         })
     })
   }, [router, supabase])

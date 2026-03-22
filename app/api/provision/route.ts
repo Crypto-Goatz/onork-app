@@ -146,7 +146,46 @@ export async function POST(request: Request) {
     results.stripe_note = 'STRIPE_SECRET_KEY not configured'
   }
 
-  // ── 3. Update profile as provisioned ──────────────────────
+  // ── 3. CRM Sub-Account (Location) ────────────────────────
+  const CRM_AGENCY_PIT_TOKEN = process.env.CRM_AGENCY_PIT
+  if (CRM_AGENCY_PIT_TOKEN) {
+    try {
+      const { data: profileCheck } = await admin
+        .from('profiles')
+        .select('crm_location_id')
+        .eq('id', userId)
+        .single()
+
+      if (profileCheck?.crm_location_id) {
+        results.crm_location_id = profileCheck.crm_location_id
+        results.crm_subaccount_status = 'existing'
+      } else {
+        // Call the sub-account creation endpoint internally
+        const subRes = await fetch(`${new URL(request.url).origin}/api/provision/crm-subaccount`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, email, name }),
+        })
+        const subData = await subRes.json()
+
+        if (subData.crm_location_id) {
+          results.crm_location_id = subData.crm_location_id
+          results.crm_subaccount_status = subData.status
+        } else {
+          results.crm_subaccount_status = 'failed'
+          results.crm_subaccount_error = subData.error || subData.detail
+        }
+      }
+    } catch (err) {
+      results.crm_subaccount_status = 'error'
+      results.crm_subaccount_error = (err as Error).message
+    }
+  } else {
+    results.crm_subaccount_status = 'skipped'
+    results.crm_subaccount_note = 'CRM_AGENCY_PIT not configured'
+  }
+
+  // ── 4. Update profile as provisioned ──────────────────────
   await admin.from('profiles').update({
     onboarding_completed: true,
     provisioned_at: new Date().toISOString(),
@@ -169,7 +208,7 @@ export async function GET(request: Request) {
 
   const admin = getAdmin()
   const { data: profile } = await admin.from('profiles')
-    .select('stripe_customer_id, crm_contact_id, onboarding_completed, plan')
+    .select('stripe_customer_id, crm_contact_id, crm_location_id, onboarding_completed, plan')
     .eq('id', userId)
     .single()
 
@@ -177,6 +216,7 @@ export async function GET(request: Request) {
     provisioned: !!(profile?.stripe_customer_id || profile?.crm_contact_id),
     stripe: !!profile?.stripe_customer_id,
     crm: !!profile?.crm_contact_id,
+    crm_location: !!profile?.crm_location_id,
     plan: profile?.plan || 'free',
     onboarding_completed: profile?.onboarding_completed || false,
   })
