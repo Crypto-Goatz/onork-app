@@ -68,6 +68,20 @@ export default function LandingPage() {
       {/* Grain overlay */}
       <div className="grain-overlay" />
 
+      {/* Logo */}
+      <img
+        src="/logo.png"
+        alt="0nCore"
+        style={{
+          height: 'clamp(50px, 8vw, 80px)',
+          objectFit: 'contain',
+          marginBottom: '1.5rem',
+          position: 'relative',
+          zIndex: 2,
+          filter: 'drop-shadow(0 0 30px rgba(126, 217, 87, 0.3))',
+        }}
+      />
+
       {/* Blur glow effect title */}
       <div className="blur-title-container">
         <h1 className="blur-title" data-text="0ncore">

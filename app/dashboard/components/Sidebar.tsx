@@ -144,11 +144,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Header */}
         <div className="jp-sidebar-header">
           <Link href="/dashboard" className="jp-sidebar-brand" onClick={onClose}>
-            <svg viewBox="0 0 28 28" fill="none">
-              <rect width="28" height="28" rx="6" fill="#7ed957" fillOpacity="0.15" />
-              <text x="14" y="19" textAnchor="middle" fill="#7ed957" fontSize="14" fontWeight="800" fontFamily="system-ui">0n</text>
-            </svg>
-            0nCore
+            <img src="/logo.png" alt="0nCore" style={{ height: 32, objectFit: 'contain' }} />
           </Link>
         </div>
 
