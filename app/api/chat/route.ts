@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 import { execute, isOnline } from '@/lib/0nmcp-client'
-import { respond } from '@/lib/ai-responder'
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies()
-  if (cookieStore.get('onork_session')?.value !== 'authenticated') {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { message, connectedServices } = await request.json()
+  const { message } = await request.json()
 
-  // Check if 0nMCP server is online
   const online = await isOnline()
 
   if (online) {
-    // Route through 0nMCP for real execution
     try {
       const result = await execute(message)
       return NextResponse.json({
@@ -26,29 +24,16 @@ export async function POST(request: NextRequest) {
         services: result.services_used,
         plan: result.plan,
       })
-    } catch (error) {
-      // Fall back to local responder on error
-      const fallback = respond(message, {
-        isC: (s: string) => (connectedServices || []).includes(s),
-        n: (connectedServices || []).length,
-      }, { f: [] })
+    } catch {
       return NextResponse.json({
-        response: fallback,
-        source: 'local',
-        note: '0nMCP server error — using local responder',
+        response: '0nMCP encountered an error processing your request.',
+        source: 'error',
       })
     }
   }
 
-  // 0nMCP offline — use local responder
-  const response = respond(message, {
-    isC: (s: string) => (connectedServices || []).includes(s),
-    n: (connectedServices || []).length,
-  }, { f: [] })
-
   return NextResponse.json({
-    response,
-    source: 'local',
-    note: '0nMCP server offline — using local responder',
+    response: '0nMCP server is offline. Start it with: 0nmcp serve',
+    source: 'offline',
   })
 }

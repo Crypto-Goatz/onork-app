@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "0nork - Universal Command Orchestrator",
-  description: "Connect 22+ services into one unified command center",
+  title: "0ncore — AI Command Center",
+  description: "Your AI command center. Manage CRM contacts, run automations with 0nMCP, and track billing — all in one portal.",
+  icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({
@@ -12,8 +13,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="antialiased">{children}</body>
+    <html lang="en" className="dark">
+      <body className="antialiased bg-core-bg text-core-text min-h-screen">
+        {children}
+      </body>
     </html>
   );
 }

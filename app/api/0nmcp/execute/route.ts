@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 import { execute } from '@/lib/0nmcp-client'
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies()
-  if (cookieStore.get('onork_session')?.value !== 'authenticated') {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
