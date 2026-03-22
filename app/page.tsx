@@ -1,109 +1,332 @@
 'use client'
 
-import Link from 'next/link'
-
-const features = [
-  {
-    title: 'CRM',
-    description: 'Manage contacts, pipelines, and conversations. Full CRM integration with 245 tools.',
-    icon: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Automation',
-    description: 'Run workflows powered by 0nMCP. 54 services, one command. Describe outcomes, not steps.',
-    icon: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Billing',
-    description: 'Track usage, view invoices, and manage your subscription. Transparent $0.01/run pricing.',
-    icon: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-      </svg>
-    ),
-  },
-]
-
-const stats = [
-  { value: '245', label: 'CRM Tools' },
-  { value: '54', label: 'Services' },
-  { value: 'AES-256', label: 'Vault' },
-  { value: '$0.01', label: '/run' },
-]
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function LandingPage() {
+  const router = useRouter()
+  const [toggled, setToggled] = useState(false)
+  const [typedText, setTypedText] = useState('')
+  const [showToggle, setShowToggle] = useState(false)
+  const [pulse, setPulse] = useState(false)
+  const [exiting, setExiting] = useState(false)
+  const pulseRef = useRef<NodeJS.Timeout | null>(null)
+
+  const fullText = 'Agentic AI Re-imagined. Turn it on.'
+
+  // Typing animation
+  useEffect(() => {
+    let i = 0
+    const timer = setInterval(() => {
+      if (i <= fullText.length) {
+        setTypedText(fullText.slice(0, i))
+        i++
+      } else {
+        clearInterval(timer)
+        // Show toggle after typing completes
+        setTimeout(() => setShowToggle(true), 400)
+      }
+    }, 55)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Pulse effect every 2 seconds
+  useEffect(() => {
+    if (!showToggle || toggled) return
+    pulseRef.current = setInterval(() => {
+      setPulse(true)
+      setTimeout(() => setPulse(false), 600)
+    }, 2000)
+    return () => { if (pulseRef.current) clearInterval(pulseRef.current) }
+  }, [showToggle, toggled])
+
+  // Handle toggle
+  function handleToggle() {
+    if (toggled) return
+    setToggled(true)
+    if (pulseRef.current) clearInterval(pulseRef.current)
+
+    // Exit animation then navigate
+    setTimeout(() => setExiting(true), 800)
+    setTimeout(() => router.push('/login'), 1800)
+  }
+
   return (
-    <div className="min-h-screen bg-core-bg flex flex-col">
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto w-full">
-        <div className="text-xl font-bold text-core-green">0ncore</div>
-        <Link
-          href="/login"
-          className="text-sm text-core-text-dim hover:text-core-text transition-colors"
+    <div
+      className={`landing-root ${exiting ? 'landing-exit' : ''}`}
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#050505',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      {/* Grain overlay */}
+      <div className="grain-overlay" />
+
+      {/* Blur glow effect title */}
+      <div className="blur-title-container">
+        <h1 className="blur-title" data-text="0ncore">
+          0ncore
+        </h1>
+      </div>
+
+      {/* Typed subtitle */}
+      <div
+        style={{
+          marginTop: '2rem',
+          minHeight: '2rem',
+          textAlign: 'center',
+        }}
+      >
+        <span className="typed-text">
+          {typedText}
+          <span className="typed-cursor">|</span>
+        </span>
+      </div>
+
+      {/* Toggle switch */}
+      <div
+        style={{
+          marginTop: '3rem',
+          opacity: showToggle ? 1 : 0,
+          transform: showToggle ? 'translateY(0)' : 'translateY(20px)',
+          transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
+        <button
+          onClick={handleToggle}
+          className={`toggle-switch ${toggled ? 'toggled' : ''} ${pulse && !toggled ? 'pulse' : ''}`}
+          aria-label="Turn it on"
         >
-          Sign in
-        </Link>
-      </nav>
-
-      {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="text-center max-w-3xl mx-auto animate-slide-up">
-          <h1 className="text-6xl sm:text-7xl font-bold text-core-green mb-4 tracking-tight">
-            0ncore
-          </h1>
-          <p className="text-xl sm:text-2xl text-core-text-dim mb-12">
-            Your AI command center
-          </p>
-
-          {/* Feature Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16">
-            {features.map((f) => (
-              <div
-                key={f.title}
-                className="bg-core-card border border-core-border rounded-xl p-6 text-left hover:border-core-border-hi hover:bg-core-card-hover transition-all duration-200"
-              >
-                <div className="text-core-green mb-3">{f.icon}</div>
-                <h3 className="text-lg font-semibold mb-2 text-core-text">{f.title}</h3>
-                <p className="text-sm text-core-text-dim leading-relaxed">{f.description}</p>
-              </div>
-            ))}
+          <div className="toggle-track">
+            <div className="toggle-thumb" />
           </div>
+        </button>
+      </div>
 
-          {/* Stats Bar */}
-          <div className="flex flex-wrap items-center justify-center gap-8 mb-12 py-4 px-6 bg-core-card border border-core-border rounded-xl">
-            {stats.map((s, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="text-lg font-bold text-core-green">{s.value}</span>
-                <span className="text-sm text-core-text-muted">{s.label}</span>
-              </div>
-            ))}
-          </div>
+      {/* Powered by footer */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '2rem',
+          textAlign: 'center',
+          fontSize: '0.7rem',
+          color: '#333',
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+        }}
+      >
+        Powered by 0nMCP — RocketOpp LLC
+      </div>
 
-          {/* CTA */}
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 bg-core-green text-core-bg font-semibold px-8 py-3 rounded-lg hover:brightness-110 transition-all duration-200 text-lg"
-          >
-            Get Started
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </Link>
-        </div>
-      </main>
+      <style>{`
+        /* ── Grain Overlay ──────────────────────────────── */
+        .grain-overlay {
+          position: fixed;
+          top: -50%;
+          left: -50%;
+          right: -50%;
+          bottom: -50%;
+          width: 200%;
+          height: 200%;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+          pointer-events: none;
+          z-index: 1;
+          opacity: 0.6;
+        }
 
-      {/* Footer */}
-      <footer className="py-6 text-center text-core-text-muted text-sm">
-        Powered by <span className="text-core-green">0nMCP</span> — RocketOpp LLC
-      </footer>
+        /* ── Blur Title Effect ──────────────────────────── */
+        .blur-title-container {
+          position: relative;
+          z-index: 2;
+        }
+
+        .blur-title {
+          font-size: clamp(4rem, 12vw, 10rem);
+          font-weight: 900;
+          letter-spacing: -0.02em;
+          color: #0a0a0a;
+          text-transform: lowercase;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          position: relative;
+          text-shadow:
+            0 0 20px rgba(126, 217, 87, 0.8),
+            0 0 40px rgba(126, 217, 87, 0.6),
+            0 0 80px rgba(126, 217, 87, 0.4),
+            0 0 120px rgba(126, 217, 87, 0.3),
+            0 4px 30px rgba(126, 217, 87, 0.5),
+            0 -4px 30px rgba(126, 217, 87, 0.3),
+            0 0 160px rgba(126, 217, 87, 0.2);
+          -webkit-text-stroke: 1px rgba(126, 217, 87, 0.15);
+          animation: blur-breathe 4s ease-in-out infinite;
+          user-select: none;
+        }
+
+        .blur-title::before {
+          content: attr(data-text);
+          position: absolute;
+          top: 0;
+          left: 0;
+          color: transparent;
+          text-shadow:
+            0 0 60px rgba(126, 217, 87, 0.9),
+            0 0 120px rgba(126, 217, 87, 0.5),
+            0 8px 40px rgba(126, 217, 87, 0.6);
+          filter: blur(8px);
+          z-index: -1;
+        }
+
+        .blur-title::after {
+          content: attr(data-text);
+          position: absolute;
+          top: 0;
+          left: 0;
+          color: transparent;
+          text-shadow:
+            0 0 100px rgba(126, 217, 87, 0.4),
+            0 20px 60px rgba(126, 217, 87, 0.3);
+          filter: blur(30px);
+          z-index: -2;
+          animation: blur-drip 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes blur-breathe {
+          0%, 100% {
+            text-shadow:
+              0 0 20px rgba(126, 217, 87, 0.8),
+              0 0 40px rgba(126, 217, 87, 0.6),
+              0 0 80px rgba(126, 217, 87, 0.4),
+              0 0 120px rgba(126, 217, 87, 0.3),
+              0 4px 30px rgba(126, 217, 87, 0.5),
+              0 -4px 30px rgba(126, 217, 87, 0.3),
+              0 0 160px rgba(126, 217, 87, 0.2);
+          }
+          50% {
+            text-shadow:
+              0 0 30px rgba(126, 217, 87, 0.9),
+              0 0 60px rgba(126, 217, 87, 0.7),
+              0 0 100px rgba(126, 217, 87, 0.5),
+              0 0 140px rgba(126, 217, 87, 0.35),
+              0 6px 40px rgba(126, 217, 87, 0.6),
+              0 -6px 40px rgba(126, 217, 87, 0.4),
+              0 0 200px rgba(126, 217, 87, 0.25);
+          }
+        }
+
+        @keyframes blur-drip {
+          0% { transform: translateY(0); opacity: 0.6; }
+          100% { transform: translateY(8px); opacity: 0.4; }
+        }
+
+        /* ── Typed Text ────────────────────────────────── */
+        .typed-text {
+          font-size: clamp(0.9rem, 2vw, 1.2rem);
+          color: #888;
+          letter-spacing: 0.05em;
+          font-weight: 300;
+          position: relative;
+          z-index: 2;
+        }
+
+        .typed-cursor {
+          color: #7ed957;
+          animation: cursor-blink 0.8s step-end infinite;
+          font-weight: 200;
+          margin-left: 2px;
+        }
+
+        @keyframes cursor-blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+
+        /* ── Toggle Switch ─────────────────────────────── */
+        .toggle-switch {
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 8px;
+          position: relative;
+          z-index: 2;
+          outline: none;
+        }
+
+        .toggle-track {
+          width: 72px;
+          height: 36px;
+          background: #1a1a1a;
+          border-radius: 18px;
+          border: 1px solid #333;
+          position: relative;
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .toggle-thumb {
+          width: 28px;
+          height: 28px;
+          background: #555;
+          border-radius: 50%;
+          position: absolute;
+          top: 3px;
+          left: 4px;
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Toggled ON state */
+        .toggle-switch.toggled .toggle-track {
+          background: rgba(126, 217, 87, 0.15);
+          border-color: #7ed957;
+          box-shadow: 0 0 30px rgba(126, 217, 87, 0.4), 0 0 60px rgba(126, 217, 87, 0.2);
+        }
+
+        .toggle-switch.toggled .toggle-thumb {
+          left: 40px;
+          background: #7ed957;
+          box-shadow: 0 0 20px rgba(126, 217, 87, 0.8);
+        }
+
+        /* Pulse animation */
+        .toggle-switch.pulse .toggle-track {
+          box-shadow: 0 0 0 0 rgba(126, 217, 87, 0.5);
+          animation: toggle-pulse 0.6s ease-out;
+        }
+
+        @keyframes toggle-pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(126, 217, 87, 0.5);
+          }
+          70% {
+            box-shadow: 0 0 0 16px rgba(126, 217, 87, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(126, 217, 87, 0);
+          }
+        }
+
+        /* ── Exit Animation ────────────────────────────── */
+        .landing-exit {
+          animation: landing-dissolve 1s ease-in forwards;
+        }
+
+        @keyframes landing-dissolve {
+          0% { opacity: 1; filter: blur(0); }
+          100% { opacity: 0; filter: blur(20px); }
+        }
+
+        /* ── Hover ─────────────────────────────────────── */
+        .toggle-switch:not(.toggled):hover .toggle-track {
+          border-color: #555;
+        }
+
+        .toggle-switch:not(.toggled):hover .toggle-thumb {
+          background: #777;
+        }
+      `}</style>
     </div>
   )
 }
