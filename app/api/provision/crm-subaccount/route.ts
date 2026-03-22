@@ -80,6 +80,13 @@ export async function POST(request: Request) {
         settings: {
           allowDuplicateContact: false,
           allowDuplicateOpportunity: false,
+          disableContactNotifications: true,
+        },
+        // Empty prospect info = no invite email sent
+        prospectInfo: {
+          firstName: '',
+          lastName: '',
+          email: '',
         },
       }),
     })

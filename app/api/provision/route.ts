@@ -76,7 +76,7 @@ export async function POST(request: Request) {
           firstName: nameParts[0] || '',
           lastName: nameParts.slice(1).join(' ') || '',
           source: '0ncore',
-          tags: ['0ncore', 'auto-provisioned'],
+          tags: ['0ncore-user', 'auto-provisioned', 'needs-onboarding', 'free-tier'],
         })
 
         if (contact.contact?.id) {

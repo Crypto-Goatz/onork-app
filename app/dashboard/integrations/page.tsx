@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getLogoSrc } from '@/lib/logo-map'
 
 interface Integration {
   name: string
@@ -297,7 +298,11 @@ export default function IntegrationsPage() {
                   fontSize: '0.7rem',
                   fontWeight: 800,
                 }}>
-                  {SERVICE_META[connectingService]?.icon}
+                  {(() => {
+                    const src = getLogoSrc(connectingService)
+                    if (src) return <img src={src} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                    return SERVICE_META[connectingService]?.icon
+                  })()}
                 </div>
                 <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--jp-text)' }}>
                   Connect {SERVICE_META[connectingService]?.name}
@@ -498,7 +503,13 @@ export default function IntegrationsPage() {
           <div key={integration.key} className="jp-integration-card">
             <div className="jp-integration-card-header">
               <div className="jp-integration-icon" style={{ background: integration.iconBg, color: integration.iconColor }}>
-                {integration.icon}
+                {(() => {
+                  const logoSrc = getLogoSrc(integration.key)
+                  if (logoSrc) {
+                    return <img src={logoSrc} alt={integration.name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                  }
+                  return integration.icon
+                })()}
               </div>
               <span className={`jp-integration-status ${integration.connected ? 'connected' : 'available'}`}>
                 {integration.connected ? 'Connected' : 'Available'}
