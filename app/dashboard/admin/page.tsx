@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 
 type Tab = 'overview' | 'database' | 'users' | 'training' | 'ecosystem' | 'sitemaps'
 
@@ -214,6 +215,60 @@ export default function AdminPage() {
         ))}
       </div>
 
+      {/* Sub-Page Links */}
+      <div style={{
+        display: 'flex',
+        gap: 10,
+        marginBottom: 24,
+        flexWrap: 'wrap',
+      }}>
+        {[
+          { href: '/dashboard/admin/workflows', label: 'Workflows', desc: 'Launch & manage', color: 'var(--jp-green)', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+          { href: '/dashboard/admin/crm', label: 'CRM Live', desc: 'Real-time data', color: 'var(--jp-cyan)', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
+          { href: '/dashboard/admin/marketing', label: 'Marketing Tools', desc: 'Content & social', color: 'var(--jp-purple)', icon: 'M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z' },
+        ].map((link, i) => (
+          <Link
+            key={i}
+            href={link.href}
+            style={{
+              padding: '12px 20px',
+              background: 'var(--jp-bg-card)',
+              border: '1px solid var(--jp-border)',
+              borderRadius: 'var(--jp-radius-sm)',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              transition: 'all 0.2s',
+              flex: '1 1 200px',
+              minWidth: 200,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = link.color; e.currentTarget.style.background = 'var(--jp-bg-card-hover)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--jp-border)'; e.currentTarget.style.background = 'var(--jp-bg-card)' }}
+          >
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: 'var(--jp-radius-xs)',
+              background: `${link.color}15`,
+              border: `1px solid ${link.color}30`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <svg width={18} height={18} fill="none" stroke={link.color} viewBox="0 0 24 24" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d={link.icon} />
+              </svg>
+            </div>
+            <div>
+              <div style={{ color: link.color, fontSize: 14, fontWeight: 700 }}>{link.label}</div>
+              <div style={{ color: 'var(--jp-text-muted)', fontSize: 11 }}>{link.desc}</div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
       {/* Tab Content */}
       {tab === 'overview' && (
         <div>
@@ -338,6 +393,299 @@ export default function AdminPage() {
                 <span style={{ color: 'var(--jp-text-muted)', fontSize: 12 }}>Agency PIT</span>
                 <div style={{ color: 'var(--jp-text-secondary)', fontSize: 13, fontFamily: 'monospace', marginTop: 2 }}>pit-e789d87e-...-ff46aa47a316</div>
               </div>
+            </div>
+          </div>
+
+          {/* ===== Nubra UI Theme Showcase ===== */}
+          <div style={{ marginTop: 40 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--jp-text)', marginBottom: 6 }}>Theme Components</h3>
+            <p style={{ color: 'var(--jp-text-muted)', fontSize: 12, marginBottom: 24 }}>Nubra UI / Jampack dark theme reference — all jp- styled components</p>
+
+            {/* Stat Cards — 4 colors */}
+            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--jp-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Stat Cards</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 28 }}>
+              {[
+                { label: 'Revenue', value: '$12,847', change: '+14.2%', color: 'var(--jp-green)' },
+                { label: 'Deployments', value: '1,284', change: '+8.7%', color: 'var(--jp-cyan)' },
+                { label: 'Active Users', value: '342', change: '+23.1%', color: 'var(--jp-purple)' },
+                { label: 'Uptime', value: '99.97%', change: 'Stable', color: 'var(--jp-amber)' },
+              ].map((stat, i) => (
+                <div key={i} style={{
+                  background: 'var(--jp-bg-card)',
+                  border: '1px solid var(--jp-border)',
+                  borderRadius: 'var(--jp-radius)',
+                  padding: 18,
+                  borderTop: `2px solid ${stat.color}`,
+                }}>
+                  <div style={{ color: 'var(--jp-text-muted)', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{stat.label}</div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: stat.color, marginBottom: 4 }}>{stat.value}</div>
+                  <div style={{ fontSize: 11, color: stat.color, fontWeight: 600, opacity: 0.8 }}>{stat.change}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Progress Bars */}
+            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--jp-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Progress Bars</h4>
+            <div style={{ background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius)', padding: 20, marginBottom: 28 }}>
+              {[
+                { label: 'API Quota', value: 78, color: 'var(--jp-green)' },
+                { label: 'Storage', value: 45, color: 'var(--jp-cyan)' },
+                { label: 'Training Progress', value: 92, color: 'var(--jp-purple)' },
+                { label: 'Bandwidth', value: 31, color: 'var(--jp-amber)' },
+              ].map((bar, i) => (
+                <div key={i} style={{ marginBottom: i < 3 ? 16 : 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ color: 'var(--jp-text-secondary)', fontSize: 12, fontWeight: 500 }}>{bar.label}</span>
+                    <span style={{ color: bar.color, fontSize: 12, fontWeight: 700 }}>{bar.value}%</span>
+                  </div>
+                  <div style={{ height: 6, background: 'var(--jp-bg)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%',
+                      width: `${bar.value}%`,
+                      background: `linear-gradient(90deg, ${bar.color}, ${bar.color}aa)`,
+                      borderRadius: 3,
+                      transition: 'width 1s ease-out',
+                      boxShadow: `0 0 8px ${bar.color}40`,
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Badge Variants */}
+            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--jp-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Badge Variants</h4>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 28 }}>
+              {[
+                { label: 'Active', bg: 'rgba(126, 217, 87, 0.1)', border: 'rgba(126, 217, 87, 0.25)', color: 'var(--jp-green)' },
+                { label: 'Processing', bg: 'rgba(0, 212, 255, 0.1)', border: 'rgba(0, 212, 255, 0.25)', color: 'var(--jp-cyan)' },
+                { label: 'Pending', bg: 'rgba(251, 191, 36, 0.1)', border: 'rgba(251, 191, 36, 0.25)', color: 'var(--jp-amber)' },
+                { label: 'Error', bg: 'rgba(248, 113, 113, 0.1)', border: 'rgba(248, 113, 113, 0.25)', color: 'var(--jp-red)' },
+                { label: 'Premium', bg: 'rgba(167, 139, 250, 0.1)', border: 'rgba(167, 139, 250, 0.25)', color: 'var(--jp-purple)' },
+                { label: 'v2.5.0', bg: 'rgba(126, 217, 87, 0.06)', border: 'rgba(126, 217, 87, 0.15)', color: 'var(--jp-green)' },
+                { label: '1,171 tools', bg: 'rgba(0, 212, 255, 0.06)', border: 'rgba(0, 212, 255, 0.15)', color: 'var(--jp-cyan)' },
+                { label: 'MIT', bg: 'rgba(167, 139, 250, 0.06)', border: 'rgba(167, 139, 250, 0.15)', color: 'var(--jp-purple)' },
+              ].map((badge, i) => (
+                <span key={i} style={{
+                  padding: '4px 12px',
+                  background: badge.bg,
+                  border: `1px solid ${badge.border}`,
+                  borderRadius: 20,
+                  color: badge.color,
+                  fontSize: 11,
+                  fontWeight: 600,
+                }}>
+                  {badge.label}
+                </span>
+              ))}
+            </div>
+
+            {/* CSS Bar Chart */}
+            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--jp-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Chart Area</h4>
+            <div style={{ background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius)', padding: 20, marginBottom: 28 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                <span style={{ color: 'var(--jp-text)', fontSize: 14, fontWeight: 600 }}>Weekly Executions</span>
+                <span style={{ color: 'var(--jp-green)', fontSize: 13, fontWeight: 700 }}>+24% vs last week</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 120 }}>
+                {[45, 62, 38, 78, 95, 72, 88].map((val, i) => (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                    <span style={{ color: 'var(--jp-text-muted)', fontSize: 9, fontWeight: 600 }}>{val}</span>
+                    <div style={{
+                      width: '100%',
+                      height: `${val}%`,
+                      background: `linear-gradient(180deg, var(--jp-green), var(--jp-green-dim))`,
+                      borderRadius: '4px 4px 0 0',
+                      opacity: 0.7 + (val / 300),
+                      transition: 'height 0.6s ease-out',
+                    }} />
+                    <span style={{ color: 'var(--jp-text-muted)', fontSize: 9 }}>
+                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Activity Timeline */}
+            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--jp-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Activity Timeline</h4>
+            <div style={{ background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius)', padding: 20, marginBottom: 28 }}>
+              {[
+                { time: '2 min ago', event: 'Workflow executed: CRM Health Check', color: 'var(--jp-green)', icon: 'M5 13l4 4L19 7' },
+                { time: '15 min ago', event: 'New contact synced from CRM', color: 'var(--jp-cyan)', icon: 'M12 4v16m8-8H4' },
+                { time: '1 hr ago', event: 'Training batch completed (47 sources)', color: 'var(--jp-purple)', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707' },
+                { time: '3 hrs ago', event: 'Stripe webhook: Payment succeeded ($49)', color: 'var(--jp-amber)', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2' },
+                { time: '6 hrs ago', event: 'Deploy: 0nCore v1.2.0 to production', color: 'var(--jp-green)', icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z' },
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: 14, paddingBottom: i < 4 ? 16 : 0, marginBottom: i < 4 ? 16 : 0, borderBottom: i < 4 ? '1px solid var(--jp-border)' : 'none' }}>
+                  <div style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: `${item.color}15`,
+                    border: `1px solid ${item.color}30`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <svg width={14} height={14} fill="none" stroke={item.color} viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: 'var(--jp-text-secondary)', fontSize: 13 }}>{item.event}</div>
+                    <div style={{ color: 'var(--jp-text-muted)', fontSize: 11, marginTop: 2 }}>{item.time}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Glassmorphism Card */}
+            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--jp-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Glassmorphism Card</h4>
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(126, 217, 87, 0.06) 0%, rgba(0, 212, 255, 0.06) 50%, rgba(167, 139, 250, 0.06) 100%)',
+              border: '1px solid rgba(126, 217, 87, 0.15)',
+              borderRadius: 'var(--jp-radius)',
+              padding: 24,
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              marginBottom: 28,
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: -40,
+                right: -40,
+                width: 120,
+                height: 120,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(126, 217, 87, 0.1) 0%, transparent 70%)',
+              }} />
+              <div style={{ position: 'relative' }}>
+                <div style={{ color: 'var(--jp-green)', fontSize: 20, fontWeight: 800, marginBottom: 8 }}>0nMCP Orchestrator</div>
+                <div style={{ color: 'var(--jp-text-secondary)', fontSize: 13, lineHeight: 1.6, marginBottom: 16 }}>
+                  Universal AI API Orchestrator — 1,171 tools across 54 services. Three-level execution: Pipeline &gt; Assembly Line &gt; Radial Burst.
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <span style={{ padding: '4px 12px', background: 'rgba(126, 217, 87, 0.1)', border: '1px solid rgba(126, 217, 87, 0.2)', borderRadius: 20, color: 'var(--jp-green)', fontSize: 11, fontWeight: 600 }}>v2.5.0</span>
+                  <span style={{ padding: '4px 12px', background: 'rgba(0, 212, 255, 0.1)', border: '1px solid rgba(0, 212, 255, 0.2)', borderRadius: 20, color: 'var(--jp-cyan)', fontSize: 11, fontWeight: 600 }}>MIT License</span>
+                  <span style={{ padding: '4px 12px', background: 'rgba(167, 139, 250, 0.1)', border: '1px solid rgba(167, 139, 250, 0.2)', borderRadius: 20, color: 'var(--jp-purple)', fontSize: 11, fontWeight: 600 }}>Patent Pending</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Gradient Button Variants */}
+            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--jp-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Gradient Buttons</h4>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 28 }}>
+              {[
+                { label: 'Primary', bg: 'linear-gradient(135deg, #7ed957, #5cb83a)', color: '#000' },
+                { label: 'Cyan', bg: 'linear-gradient(135deg, #00d4ff, #00a8cc)', color: '#000' },
+                { label: 'Purple', bg: 'linear-gradient(135deg, #a78bfa, #7c3aed)', color: '#fff' },
+                { label: 'Amber', bg: 'linear-gradient(135deg, #fbbf24, #d97706)', color: '#000' },
+                { label: 'Danger', bg: 'linear-gradient(135deg, #f87171, #dc2626)', color: '#fff' },
+                { label: 'Ghost', bg: 'transparent', color: 'var(--jp-text-secondary)', border: true as boolean | undefined },
+              ].map((btn, i) => (
+                <button key={i} style={{
+                  padding: '10px 24px',
+                  background: btn.bg,
+                  color: btn.color,
+                  border: btn.border ? '1px solid var(--jp-border)' : 'none',
+                  borderRadius: 'var(--jp-radius-xs)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  letterSpacing: 0.3,
+                }}>
+                  {btn.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Alert/Toast Examples */}
+            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--jp-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Alerts</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 28 }}>
+              {[
+                { type: 'Success', message: 'Workflow executed successfully. 47 contacts processed.', color: 'var(--jp-green)', bg: 'rgba(126, 217, 87, 0.06)', border: 'rgba(126, 217, 87, 0.15)' },
+                { type: 'Info', message: 'CRM sync running in background. ETA: 2 minutes.', color: 'var(--jp-cyan)', bg: 'rgba(0, 212, 255, 0.06)', border: 'rgba(0, 212, 255, 0.15)' },
+                { type: 'Warning', message: '15 stale contacts detected. Consider running a nurture sequence.', color: 'var(--jp-amber)', bg: 'rgba(251, 191, 36, 0.06)', border: 'rgba(251, 191, 36, 0.15)' },
+                { type: 'Error', message: 'CRM API rate limit exceeded. Retrying in 30 seconds.', color: 'var(--jp-red)', bg: 'rgba(248, 113, 113, 0.06)', border: 'rgba(248, 113, 113, 0.15)' },
+              ].map((alert, i) => (
+                <div key={i} style={{
+                  padding: '12px 16px',
+                  background: alert.bg,
+                  border: `1px solid ${alert.border}`,
+                  borderRadius: 'var(--jp-radius-sm)',
+                  borderLeft: `3px solid ${alert.color}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}>
+                  <span style={{ color: alert.color, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, flexShrink: 0 }}>{alert.type}</span>
+                  <span style={{ color: 'var(--jp-text-secondary)', fontSize: 12 }}>{alert.message}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Table with Sortable Headers */}
+            <h4 style={{ fontSize: 13, fontWeight: 600, color: 'var(--jp-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Data Table</h4>
+            <div style={{ background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius)', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr>
+                    {['Service', 'Tools', 'Status', 'Latency', 'Uptime'].map(col => (
+                      <th key={col} style={{
+                        padding: '10px 14px',
+                        textAlign: 'left',
+                        color: 'var(--jp-text-muted)',
+                        fontWeight: 600,
+                        borderBottom: '1px solid var(--jp-border)',
+                        fontSize: 11,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                      }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          {col}
+                          <svg width={10} height={10} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4M16 15l-4 4-4-4" />
+                          </svg>
+                        </span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { service: 'Stripe', tools: 38, status: 'Active', latency: '45ms', uptime: '99.99%', statusColor: 'var(--jp-green)' },
+                    { service: 'CRM', tools: 245, status: 'Active', latency: '120ms', uptime: '99.95%', statusColor: 'var(--jp-green)' },
+                    { service: 'SendGrid', tools: 24, status: 'Active', latency: '89ms', uptime: '99.98%', statusColor: 'var(--jp-green)' },
+                    { service: 'Supabase', tools: 32, status: 'Active', latency: '33ms', uptime: '99.99%', statusColor: 'var(--jp-green)' },
+                    { service: 'Shopify', tools: 42, status: 'Degraded', latency: '340ms', uptime: '98.2%', statusColor: 'var(--jp-amber)' },
+                  ].map((row, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--jp-border)' }}>
+                      <td style={{ padding: '10px 14px', color: 'var(--jp-text)', fontWeight: 500 }}>{row.service}</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--jp-cyan)', fontWeight: 600 }}>{row.tools}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <span style={{
+                          padding: '2px 8px',
+                          background: `${row.statusColor}15`,
+                          border: `1px solid ${row.statusColor}30`,
+                          borderRadius: 20,
+                          color: row.statusColor,
+                          fontSize: 10,
+                          fontWeight: 600,
+                        }}>
+                          {row.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 14px', color: 'var(--jp-text-secondary)', fontFamily: 'monospace', fontSize: 11 }}>{row.latency}</td>
+                      <td style={{ padding: '10px 14px', color: row.uptime === '99.99%' ? 'var(--jp-green)' : 'var(--jp-text-secondary)', fontWeight: 600 }}>{row.uptime}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -928,12 +1276,16 @@ export default function AdminPage() {
                 '/dashboard/invoices',
                 '/dashboard/settings',
                 '/dashboard/admin',
+                '/dashboard/admin/workflows',
+                '/dashboard/admin/crm',
+                '/dashboard/admin/marketing',
               ],
             },
             {
               title: '0nCore API Routes',
               routes: [
                 '/api/admin',
+                '/api/admin/workflows',
                 '/api/auth/callback',
                 '/api/chat',
                 '/api/crm/contacts',
