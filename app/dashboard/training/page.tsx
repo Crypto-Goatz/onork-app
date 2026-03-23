@@ -193,23 +193,23 @@ export default function TrainingPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="jp-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 className="text-2xl font-bold text-core-text">0nAI Training Center</h1>
-          <p className="text-sm text-core-text-dim mt-1">
+          <h1 className="jp-page-title">0nAI Training Center</h1>
+          <p className="jp-page-subtitle">
             Train the model. Ingest sources. Build datasets. Export for fine-tuning.
           </p>
         </div>
         <button
           onClick={runFeed}
           disabled={feedRunning}
-          className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+          className={feedRunning ? 'jp-btn jp-btn-outline' : 'jp-btn jp-btn-outline'}
           style={{
-            background: feedRunning ? '#1a1a1a' : 'rgba(126,217,87,0.1)',
-            border: '1px solid',
-            borderColor: feedRunning ? '#333' : 'rgba(126,217,87,0.3)',
-            color: feedRunning ? '#666' : '#7ed957',
+            opacity: feedRunning ? 0.5 : 1,
             cursor: feedRunning ? 'not-allowed' : 'pointer',
+            borderColor: feedRunning ? 'var(--jp-border)' : 'rgba(126,217,87,0.3)',
+            color: feedRunning ? 'var(--jp-text-muted)' : 'var(--jp-green)',
+            background: feedRunning ? 'transparent' : 'var(--jp-green-glow)',
           }}
         >
           {feedRunning ? 'Fetching...' : 'Run Feed Now'}
@@ -217,22 +217,23 @@ export default function TrainingPage() {
       </div>
 
       {feedResult && (
-        <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'rgba(126,217,87,0.06)', border: '1px solid rgba(126,217,87,0.15)', color: '#7ed957' }}>
+        <div className="jp-card" style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: 'var(--jp-green-glow)', borderColor: 'rgba(126,217,87,0.15)', color: 'var(--jp-green)', fontSize: '0.875rem' }}>
           {feedResult}
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 p-1 rounded-lg" style={{ background: '#111' }}>
+      <div className="jp-tabs" style={{ borderBottom: 'none', background: 'var(--jp-bg-elevated)', borderRadius: 'var(--jp-radius-sm)', padding: '4px', marginBottom: '1.5rem', gap: '4px' }}>
         {TABS.map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className="px-4 py-2 rounded-md text-sm font-medium transition-all"
+            className={`jp-tab ${tab === t.key ? 'active' : ''}`}
             style={{
-              background: tab === t.key ? '#1a1a1a' : 'transparent',
-              color: tab === t.key ? '#7ed957' : '#888',
-              border: tab === t.key ? '1px solid #262626' : '1px solid transparent',
+              borderBottom: 'none',
+              borderRadius: 'var(--jp-radius-xs)',
+              background: tab === t.key ? 'var(--jp-bg-card-hover)' : 'transparent',
+              border: tab === t.key ? '1px solid var(--jp-border-hi)' : '1px solid transparent',
             }}
           >
             {t.label}
@@ -240,112 +241,119 @@ export default function TrainingPage() {
         ))}
       </div>
 
-      {/* ── OVERVIEW TAB ──────────────────────────────── */}
+      {/* -- OVERVIEW TAB -- */}
       {tab === 'overview' && stats && (
         <div>
           {/* Stat cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="jp-stat-grid" style={{ marginBottom: '1.5rem' }}>
             {[
-              { label: 'Sources', value: stats.sources.total, sub: `${(stats.sources.total_tokens / 1000).toFixed(1)}k tokens` },
-              { label: 'Training Pairs', value: stats.pairs.total, sub: `${stats.pairs.approved} approved` },
-              { label: 'Avg Quality', value: stats.pairs.avg_quality ? `${(stats.pairs.avg_quality * 100).toFixed(0)}%` : '—', sub: `${stats.pairs.scored} scored` },
-              { label: 'Knowledge', value: stats.council.knowledge_entries, sub: `${stats.council.training_runs} runs` },
+              { label: 'Sources', value: stats.sources.total, sub: `${(stats.sources.total_tokens / 1000).toFixed(1)}k tokens`, accent: 'green' },
+              { label: 'Training Pairs', value: stats.pairs.total, sub: `${stats.pairs.approved} approved`, accent: 'cyan' },
+              { label: 'Avg Quality', value: stats.pairs.avg_quality ? `${(stats.pairs.avg_quality * 100).toFixed(0)}%` : '\u2014', sub: `${stats.pairs.scored} scored`, accent: 'purple' },
+              { label: 'Knowledge', value: stats.council.knowledge_entries, sub: `${stats.council.training_runs} runs`, accent: 'amber' },
             ].map(s => (
-              <div key={s.label} className="p-4 rounded-xl" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
-                <div className="text-2xl font-bold text-core-green">{s.value}</div>
-                <div className="text-sm font-medium text-core-text mt-1">{s.label}</div>
-                <div className="text-xs text-core-text-muted mt-1">{s.sub}</div>
+              <div key={s.label} className={`jp-stat-card ${s.accent}`}>
+                <div className="jp-stat-label">{s.label}</div>
+                <div className="jp-stat-value" style={{ color: `var(--jp-${s.accent})` }}>{s.value}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginTop: '4px' }}>{s.sub}</div>
               </div>
             ))}
           </div>
 
           {/* Source breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
-              <h3 className="text-sm font-semibold text-core-text-dim mb-3">Sources by Category</h3>
-              {Object.entries(stats.sources.by_type).map(([type, count]) => (
-                <div key={type} className="flex justify-between items-center py-1.5 border-b border-core-border last:border-0">
-                  <span className="text-sm text-core-text">{type}</span>
-                  <span className="text-sm font-mono text-core-green">{count}</span>
-                </div>
-              ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+            <div className="jp-card">
+              <div className="jp-card-header">
+                <h3>Sources by Category</h3>
+              </div>
+              <div className="jp-card-body" style={{ padding: 0 }}>
+                {Object.entries(stats.sources.by_type).map(([type, count]) => (
+                  <div key={type} className="jp-activity-item" style={{ padding: '10px 20px' }}>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--jp-text)', flex: 1 }}>{type}</span>
+                    <span style={{ fontSize: '0.875rem', fontFamily: 'monospace', color: 'var(--jp-green)' }}>{count}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="p-4 rounded-xl" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
-              <h3 className="text-sm font-semibold text-core-text-dim mb-3">Pairs by Domain</h3>
-              {Object.entries(stats.pairs.by_domain).length > 0 ? Object.entries(stats.pairs.by_domain).map(([domain, count]) => (
-                <div key={domain} className="flex justify-between items-center py-1.5 border-b border-core-border last:border-0">
-                  <span className="text-sm text-core-text">{domain}</span>
-                  <span className="text-sm font-mono text-core-cyan">{count}</span>
-                </div>
-              )) : (
-                <p className="text-sm text-core-text-muted">No pairs yet. Add training pairs to get started.</p>
-              )}
+            <div className="jp-card">
+              <div className="jp-card-header">
+                <h3>Pairs by Domain</h3>
+              </div>
+              <div className="jp-card-body" style={{ padding: 0 }}>
+                {Object.entries(stats.pairs.by_domain).length > 0 ? Object.entries(stats.pairs.by_domain).map(([domain, count]) => (
+                  <div key={domain} className="jp-activity-item" style={{ padding: '10px 20px' }}>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--jp-text)', flex: 1 }}>{domain}</span>
+                    <span style={{ fontSize: '0.875rem', fontFamily: 'monospace', color: 'var(--jp-cyan)' }}>{count}</span>
+                  </div>
+                )) : (
+                  <div className="jp-empty-state" style={{ padding: '2rem' }}>
+                    <p className="jp-empty-state-text">No pairs yet. Add training pairs to get started.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── SOURCES TAB ───────────────────────────────── */}
+      {/* -- SOURCES TAB -- */}
       {tab === 'sources' && (
         <div>
-          <div className="mb-4">
+          <div style={{ marginBottom: '1rem' }}>
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && loadSources()}
               placeholder="Search sources..."
-              className="w-full px-4 py-2.5 rounded-lg text-sm"
-              style={{ background: '#111', border: '1px solid #262626', color: '#f0f0f0', outline: 'none' }}
+              className="jp-input"
             />
           </div>
 
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {sources.map(s => (
-              <div key={s.id} className="p-3 rounded-lg flex items-start gap-3" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
-                <div className="px-2 py-0.5 rounded text-xs font-mono" style={{ background: 'rgba(0,212,255,0.08)', color: '#00d4ff', border: '1px solid rgba(0,212,255,0.15)', flexShrink: 0 }}>
+              <div key={s.id} className="jp-card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <span className="jp-badge cyan" style={{ flexShrink: 0 }}>
                   {s.source_type}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-core-text truncate">{s.title}</div>
-                  <div className="text-xs text-core-text-muted mt-1">
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--jp-text)' }} className="truncate">{s.title}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginTop: '4px' }}>
                     {s.token_count} tokens · {s.tags?.join(', ')} · {new Date(s.created_at).toLocaleDateString()}
                   </div>
                 </div>
-                <div className="px-2 py-0.5 rounded text-xs" style={{
-                  background: s.status === 'raw' ? 'rgba(251,191,36,0.08)' : 'rgba(126,217,87,0.08)',
-                  color: s.status === 'raw' ? '#fbbf24' : '#7ed957',
-                  border: `1px solid ${s.status === 'raw' ? 'rgba(251,191,36,0.15)' : 'rgba(126,217,87,0.15)'}`,
-                }}>
+                <span className={`jp-badge ${s.status === 'raw' ? 'amber' : 'green'}`}>
                   {s.status}
-                </div>
+                </span>
               </div>
             ))}
             {sources.length === 0 && (
-              <p className="text-center text-core-text-muted py-8">No sources yet. Run the feed or ingest data.</p>
+              <div className="jp-empty-state">
+                <p className="jp-empty-state-text">No sources yet. Run the feed or ingest data.</p>
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ── PAIRS TAB ─────────────────────────────────── */}
+      {/* -- PAIRS TAB -- */}
       {tab === 'pairs' && (
         <div>
-          <div className="flex gap-3 mb-4">
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && loadPairs()}
               placeholder="Search pairs..."
-              className="flex-1 px-4 py-2.5 rounded-lg text-sm"
-              style={{ background: '#111', border: '1px solid #262626', color: '#f0f0f0', outline: 'none' }}
+              className="jp-input"
+              style={{ flex: 1 }}
             />
             <button
               onClick={() => setShowNewPair(!showNewPair)}
-              className="px-4 py-2 rounded-lg text-sm font-semibold"
-              style={{ background: 'rgba(126,217,87,0.1)', border: '1px solid rgba(126,217,87,0.3)', color: '#7ed957' }}
+              className="jp-btn jp-btn-outline"
+              style={{ borderColor: 'rgba(126,217,87,0.3)', color: 'var(--jp-green)', background: 'var(--jp-green-glow)' }}
             >
               + New Pair
             </button>
@@ -353,38 +361,35 @@ export default function TrainingPage() {
 
           {/* New pair form */}
           {showNewPair && (
-            <div className="mb-4 p-4 rounded-xl" style={{ background: '#111', border: '1px solid #262626' }}>
-              <div className="grid grid-cols-1 gap-3 mb-3">
+            <div className="jp-card" style={{ marginBottom: '1rem', padding: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
                 <div>
-                  <label className="text-xs text-core-text-dim block mb-1">User Input (question)</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--jp-text-secondary)', display: 'block', marginBottom: '4px' }}>User Input (question)</label>
                   <textarea
                     value={newPairInput}
                     onChange={e => setNewPairInput(e.target.value)}
                     rows={2}
                     placeholder="How do I create a contact in the CRM?"
-                    className="w-full px-3 py-2 rounded-lg text-sm"
-                    style={{ background: '#0a0a0a', border: '1px solid #262626', color: '#f0f0f0', outline: 'none', resize: 'none' }}
+                    className="jp-textarea"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-core-text-dim block mb-1">Assistant Output (ideal response)</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--jp-text-secondary)', display: 'block', marginBottom: '4px' }}>Assistant Output (ideal response)</label>
                   <textarea
                     value={newPairOutput}
                     onChange={e => setNewPairOutput(e.target.value)}
                     rows={4}
                     placeholder="To create a contact, use the CRM API..."
-                    className="w-full px-3 py-2 rounded-lg text-sm"
-                    style={{ background: '#0a0a0a', border: '1px solid #262626', color: '#f0f0f0', outline: 'none', resize: 'none' }}
+                    className="jp-textarea"
                   />
                 </div>
-                <div className="flex gap-3 items-end">
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
                   <div>
-                    <label className="text-xs text-core-text-dim block mb-1">Domain</label>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--jp-text-secondary)', display: 'block', marginBottom: '4px' }}>Domain</label>
                     <select
                       value={newPairDomain}
                       onChange={e => setNewPairDomain(e.target.value)}
-                      className="px-3 py-2 rounded-lg text-sm"
-                      style={{ background: '#0a0a0a', border: '1px solid #262626', color: '#f0f0f0', outline: 'none' }}
+                      className="jp-select"
                     >
                       {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
@@ -392,8 +397,8 @@ export default function TrainingPage() {
                   <button
                     onClick={savePair}
                     disabled={saving || !newPairInput.trim() || !newPairOutput.trim()}
-                    className="px-4 py-2 rounded-lg text-sm font-semibold"
-                    style={{ background: '#7ed957', color: '#0a0a0a', opacity: saving ? 0.5 : 1 }}
+                    className="jp-btn jp-btn-primary"
+                    style={{ opacity: saving ? 0.5 : 1 }}
                   >
                     {saving ? 'Saving...' : 'Save Pair'}
                   </button>
@@ -403,105 +408,110 @@ export default function TrainingPage() {
           )}
 
           {/* Pairs list */}
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {pairs.map(p => (
-              <div key={p.id} className="p-3 rounded-lg" style={{ background: '#111', border: `1px solid ${p.approved ? 'rgba(126,217,87,0.2)' : '#1a1a1a'}` }}>
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-xs font-mono" style={{ background: 'rgba(0,212,255,0.08)', color: '#00d4ff' }}>{p.domain}</span>
+              <div key={p.id} className="jp-card" style={{ padding: '12px 16px', borderColor: p.approved ? 'rgba(126,217,87,0.2)' : undefined }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="jp-badge cyan">{p.domain}</span>
                     {p.quality_score !== null && (
-                      <span className="text-xs font-mono" style={{ color: p.quality_score >= 0.7 ? '#7ed957' : p.quality_score >= 0.5 ? '#fbbf24' : '#f87171' }}>
+                      <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: p.quality_score >= 0.7 ? 'var(--jp-green)' : p.quality_score >= 0.5 ? 'var(--jp-amber)' : 'var(--jp-red)' }}>
                         {(p.quality_score * 100).toFixed(0)}%
                       </span>
                     )}
-                    {p.approved && <span className="text-xs text-core-green">Approved</span>}
+                    {p.approved && <span className="jp-badge green">Approved</span>}
                   </div>
                   {!p.human_reviewed && (
-                    <div className="flex gap-1">
-                      <button onClick={() => approvePair(p.id)} className="px-2 py-1 rounded text-xs" style={{ background: 'rgba(126,217,87,0.1)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)' }}>Approve</button>
-                      <button onClick={() => rejectPair(p.id)} className="px-2 py-1 rounded text-xs" style={{ background: 'rgba(248,113,113,0.1)', color: '#f87171', border: '1px solid rgba(248,113,113,0.2)' }}>Reject</button>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button onClick={() => approvePair(p.id)} className="jp-btn jp-btn-outline" style={{ padding: '2px 8px', fontSize: '0.75rem', borderColor: 'rgba(126,217,87,0.2)', color: 'var(--jp-green)' }}>Approve</button>
+                      <button onClick={() => rejectPair(p.id)} className="jp-btn jp-btn-outline" style={{ padding: '2px 8px', fontSize: '0.75rem', borderColor: 'rgba(248,113,113,0.2)', color: 'var(--jp-red)' }}>Reject</button>
                     </div>
                   )}
                 </div>
-                <div className="text-sm text-core-text-dim mb-1"><strong className="text-core-text">Q:</strong> {p.user_input.slice(0, 200)}</div>
-                <div className="text-sm text-core-text-dim"><strong className="text-core-text">A:</strong> {p.assistant_output.slice(0, 300)}{p.assistant_output.length > 300 ? '...' : ''}</div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--jp-text-secondary)', marginBottom: '4px' }}><strong style={{ color: 'var(--jp-text)' }}>Q:</strong> {p.user_input.slice(0, 200)}</div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--jp-text-secondary)' }}><strong style={{ color: 'var(--jp-text)' }}>A:</strong> {p.assistant_output.slice(0, 300)}{p.assistant_output.length > 300 ? '...' : ''}</div>
               </div>
             ))}
             {pairs.length === 0 && (
-              <p className="text-center text-core-text-muted py-8">No training pairs yet. Click &quot;+ New Pair&quot; to start teaching the model.</p>
+              <div className="jp-empty-state">
+                <p className="jp-empty-state-text">No training pairs yet. Click &quot;+ New Pair&quot; to start teaching the model.</p>
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ── DATASETS TAB ──────────────────────────────── */}
+      {/* -- DATASETS TAB -- */}
       {tab === 'datasets' && (
         <div>
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {datasets.map(d => (
-              <div key={d.id} className="p-4 rounded-xl" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-base font-semibold text-core-text">{d.name}</h3>
-                  <span className="px-2 py-0.5 rounded text-xs font-mono" style={{
-                    background: d.status === 'exported' ? 'rgba(126,217,87,0.08)' : 'rgba(0,212,255,0.08)',
-                    color: d.status === 'exported' ? '#7ed957' : '#00d4ff',
-                  }}>{d.status}</span>
+              <div key={d.id} className="jp-card" style={{ padding: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>{d.name}</h3>
+                  <span className={`jp-badge ${d.status === 'exported' ? 'green' : 'cyan'}`}>{d.status}</span>
                 </div>
-                {d.description && <p className="text-sm text-core-text-dim mb-2">{d.description}</p>}
-                <div className="flex gap-4 text-xs text-core-text-muted">
+                {d.description && <p style={{ fontSize: '0.875rem', color: 'var(--jp-text-secondary)', margin: '0 0 8px' }}>{d.description}</p>}
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
                   <span>{d.pair_count} pairs</span>
-                  <span>Quality: {d.avg_quality ? `${(d.avg_quality * 100).toFixed(0)}%` : '—'}</span>
+                  <span>Quality: {d.avg_quality ? `${(d.avg_quality * 100).toFixed(0)}%` : '\u2014'}</span>
                   <span>Target: {d.target_model}</span>
                   <span>{new Date(d.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
             ))}
             {datasets.length === 0 && (
-              <p className="text-center text-core-text-muted py-8">No datasets yet. Create one via the MCP tools to organize your training pairs.</p>
+              <div className="jp-empty-state">
+                <p className="jp-empty-state-text">No datasets yet. Create one via the MCP tools to organize your training pairs.</p>
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ── FEED TAB ──────────────────────────────────── */}
+      {/* -- FEED TAB -- */}
       {tab === 'feed' && (
         <div>
-          <div className="mb-4 p-4 rounded-xl" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-core-text">Live Data Sources</h3>
-              <span className="text-xs text-core-text-muted">11 verified sources · Zero cost</span>
+          <div className="jp-card" style={{ marginBottom: '1rem' }}>
+            <div className="jp-card-header">
+              <h3>Live Data Sources</h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>11 verified sources · Zero cost</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {[
-                { name: 'Hacker News — AI', interval: '10 min', category: 'ai_industry' },
-                { name: 'arXiv — AI Papers', interval: '1 hour', category: 'ai_research' },
-                { name: 'Dev.to — AI', interval: '15 min', category: 'ai_industry' },
-                { name: 'Dev.to — MCP', interval: '15 min', category: 'ai_industry' },
-                { name: 'Hacker News — Top', interval: '10 min', category: 'tech' },
-                { name: 'GitHub — Trending', interval: '1 hour', category: 'open_source' },
-                { name: 'npm — MCP Packages', interval: '1 hour', category: 'open_source' },
-                { name: 'Dev.to — API', interval: '30 min', category: 'saas' },
-                { name: 'Dev.to — Automation', interval: '30 min', category: 'automation' },
-                { name: 'CoinGecko — Market', interval: '10 min', category: 'crypto' },
-                { name: 'Wikipedia — Featured', interval: 'daily', category: 'general' },
-              ].map(s => (
-                <div key={s.name} className="flex items-center gap-2 p-2 rounded-lg" style={{ background: '#0a0a0a' }}>
-                  <div className="w-2 h-2 rounded-full" style={{ background: '#7ed957' }} />
-                  <span className="text-sm text-core-text flex-1">{s.name}</span>
-                  <span className="text-xs text-core-text-muted">{s.interval}</span>
-                </div>
-              ))}
+            <div className="jp-card-body">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.5rem' }}>
+                {[
+                  { name: 'Hacker News \u2014 AI', interval: '10 min', category: 'ai_industry' },
+                  { name: 'arXiv \u2014 AI Papers', interval: '1 hour', category: 'ai_research' },
+                  { name: 'Dev.to \u2014 AI', interval: '15 min', category: 'ai_industry' },
+                  { name: 'Dev.to \u2014 MCP', interval: '15 min', category: 'ai_industry' },
+                  { name: 'Hacker News \u2014 Top', interval: '10 min', category: 'tech' },
+                  { name: 'GitHub \u2014 Trending', interval: '1 hour', category: 'open_source' },
+                  { name: 'npm \u2014 MCP Packages', interval: '1 hour', category: 'open_source' },
+                  { name: 'Dev.to \u2014 API', interval: '30 min', category: 'saas' },
+                  { name: 'Dev.to \u2014 Automation', interval: '30 min', category: 'automation' },
+                  { name: 'CoinGecko \u2014 Market', interval: '10 min', category: 'crypto' },
+                  { name: 'Wikipedia \u2014 Featured', interval: 'daily', category: 'general' },
+                ].map(s => (
+                  <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: 'var(--jp-radius-xs)', background: 'var(--jp-bg)' }}>
+                    <div className="jp-activity-dot green" style={{ width: 8, height: 8 }} />
+                    <span style={{ fontSize: '0.875rem', color: 'var(--jp-text)', flex: 1 }}>{s.name}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>{s.interval}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
           <button
             onClick={runFeed}
             disabled={feedRunning}
-            className="w-full py-3 rounded-lg text-sm font-bold transition-all"
+            className={feedRunning ? 'jp-btn jp-btn-outline' : 'jp-btn jp-btn-primary'}
             style={{
-              background: feedRunning ? '#1a1a1a' : '#7ed957',
-              color: feedRunning ? '#666' : '#0a0a0a',
+              width: '100%',
+              justifyContent: 'center',
+              padding: '0.75rem',
               cursor: feedRunning ? 'not-allowed' : 'pointer',
+              opacity: feedRunning ? 0.5 : 1,
             }}
           >
             {feedRunning ? 'Fetching from all sources...' : 'Fetch Now'}
