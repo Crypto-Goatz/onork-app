@@ -12,7 +12,7 @@ export default function LandingPage() {
   const [exiting, setExiting] = useState(false)
   const pulseRef = useRef<NodeJS.Timeout | null>(null)
 
-  const fullText = '0nAI is Here.'
+  const fullText = 'One brain. Every service. Zero limits.'
 
   // Typing animation
   useEffect(() => {
