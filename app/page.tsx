@@ -12,7 +12,7 @@ export default function LandingPage() {
   const [exiting, setExiting] = useState(false)
   const pulseRef = useRef<NodeJS.Timeout | null>(null)
 
-  const fullText = 'Agentic AI Re-imagined. Turn it on.'
+  const fullText = '0nAI is Here.'
 
   // Typing animation
   useEffect(() => {
@@ -84,8 +84,8 @@ export default function LandingPage() {
 
       {/* Blur glow effect title */}
       <div className="blur-title-container">
-        <h1 className="blur-title" data-text="0ncore">
-          0ncore
+        <h1 className="blur-title" data-text="0nAI">
+          0nAI
         </h1>
       </div>
 

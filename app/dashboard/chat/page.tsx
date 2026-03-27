@@ -1,203 +1,237 @@
 'use client'
 
-import { useState } from 'react'
-
-interface ChatContact {
-  id: string
-  name: string
-  initials: string
-  preview: string
-  time: string
-  online: boolean
-}
+import { useState, useRef, useEffect } from 'react'
 
 interface ChatMessage {
   id: string
   text: string
   direction: 'incoming' | 'outgoing'
   time: string
+  source?: string
 }
 
-const contacts: ChatContact[] = [
-  { id: 'jaxx', name: 'Jaxx AI', initials: 'JX', preview: 'How can I help you today?', time: 'Now', online: true },
-  { id: '2', name: 'Support Bot', initials: 'SB', preview: 'Ticket #1024 resolved', time: '2h', online: true },
-  { id: '3', name: 'System Alerts', initials: 'SA', preview: 'All systems operational', time: '5h', online: false },
-  { id: '4', name: 'CRM Sync', initials: 'CR', preview: 'Last sync: 2m ago', time: '1d', online: false },
-  { id: '5', name: 'Workflow Log', initials: 'WL', preview: 'No recent executions', time: '3d', online: false },
-]
-
-const initialMessages: ChatMessage[] = [
-  {
-    id: '1',
-    text: 'Welcome to 0nCore. I\'m Jaxx, your AI assistant powered by 0nMCP. I have access to 1,171 tools across 54 services.',
-    direction: 'incoming',
-    time: '10:00 AM',
-  },
-  {
-    id: '2',
-    text: 'I can help you manage contacts, run workflows, check billing, configure integrations, and more. What would you like to do?',
-    direction: 'incoming',
-    time: '10:00 AM',
-  },
-]
-
 export default function ChatPage() {
-  const [activeContact, setActiveContact] = useState('jaxx')
-  const [messages] = useState<ChatMessage[]>(initialMessages)
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: '1',
+      text: "Welcome to 0nCore. I'm your AI assistant powered by 0nAI + 0nMCP. I have access to 1,171 tools across 54 services.\n\nI can help you manage contacts, run workflows, check billing, generate content, and more. What would you like to do?",
+      direction: 'incoming',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      source: '0nai',
+    },
+  ])
   const [inputValue, setInputValue] = useState('')
+  const [sending, setSending] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const currentContact = contacts.find((c) => c.id === activeContact)
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  async function sendMessage() {
+    const text = inputValue.trim()
+    if (!text || sending) return
+
+    const userMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      text,
+      direction: 'outgoing',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    }
+
+    setMessages(prev => [...prev, userMsg])
+    setInputValue('')
+    setSending(true)
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      })
+
+      const data = await res.json()
+
+      const aiMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        text: data.response || data.error || 'No response received.',
+        direction: 'incoming',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        source: data.source || '0nai',
+      }
+
+      setMessages(prev => [...prev, aiMsg])
+    } catch {
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        text: 'Connection error. Make sure 0nMCP is running: 0nmcp serve',
+        direction: 'incoming',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        source: 'error',
+      }])
+    }
+
+    setSending(false)
+  }
 
   return (
     <div>
       <div className="jp-page-header">
-        <h1 className="jp-page-title">Chat</h1>
-        <p className="jp-page-subtitle">Talk to Jaxx AI or view system messages</p>
+        <h1 className="jp-page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ color: 'var(--jp-green)' }}>0n</span>AI Chat
+          <span style={{
+            fontSize: 10, fontWeight: 700, padding: '3px 8px',
+            background: 'rgba(126,217,87,0.15)', color: 'var(--jp-green)',
+            borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.06em',
+          }}>Live</span>
+        </h1>
+        <p className="jp-page-subtitle">Talk to your AI — powered by 0nMCP with 1,171 tools</p>
       </div>
 
-      <div className="jp-chat-wrapper">
-        {/* Contact List */}
-        <div className="jp-chat-sidebar">
-          <div className="jp-chat-sidebar-header">
-            <div className="jp-chat-sidebar-title">Messages</div>
-            <input
-              type="text"
-              className="jp-chat-input"
-              placeholder="Search conversations..."
-              style={{ height: 34, fontSize: '0.8125rem' }}
-              readOnly
-            />
+      <div style={{
+        background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)',
+        borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        height: 'calc(100vh - 200px)', minHeight: 500,
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '14px 20px', borderBottom: '1px solid var(--jp-border)',
+          display: 'flex', alignItems: 'center', gap: 12,
+          background: 'var(--jp-bg-card)',
+        }}>
+          <div style={{
+            width: 38, height: 38, borderRadius: 10,
+            background: 'linear-gradient(135deg, #7ed957, #5cb83a)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: 900, fontSize: 14, color: '#0A0E17',
+          }}>0n</div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--jp-text)' }}>0nAI</div>
+            <div style={{ fontSize: 11, color: 'var(--jp-green)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: 'var(--jp-green)', display: 'inline-block',
+              }} />
+              {sending ? 'Thinking...' : 'Online — 1,171 tools ready'}
+            </div>
           </div>
-          <div className="jp-chat-contact-list">
-            {contacts.map((contact) => (
-              <div
-                key={contact.id}
-                className={`jp-chat-contact ${activeContact === contact.id ? 'active' : ''}`}
-                onClick={() => setActiveContact(contact.id)}
-              >
-                <div
-                  className="jp-chat-contact-avatar"
-                  style={{
-                    background: contact.id === 'jaxx' ? 'var(--jp-green)' : 'var(--jp-border-hi)',
-                    color: contact.id === 'jaxx' ? '#000' : 'var(--jp-text)',
-                    position: 'relative',
-                  }}
-                >
-                  {contact.initials}
-                  {contact.online && (
-                    <span style={{
-                      position: 'absolute',
-                      bottom: -1,
-                      right: -1,
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      background: 'var(--jp-green)',
-                      border: '2px solid var(--jp-bg-card)',
-                    }} />
-                  )}
-                </div>
-                <div className="jp-chat-contact-info">
-                  <div className="jp-chat-contact-name">{contact.name}</div>
-                  <div className="jp-chat-contact-preview">{contact.preview}</div>
-                </div>
-                <span className="jp-chat-contact-time">{contact.time}</span>
-              </div>
-            ))}
+          <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--jp-text-muted)' }}>
+            0nMCP v2.5.0
           </div>
         </div>
 
-        {/* Chat Main */}
-        <div className="jp-chat-main">
-          {/* Chat Header */}
-          <div className="jp-chat-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  background: currentContact?.id === 'jaxx' ? 'var(--jp-green)' : 'var(--jp-border-hi)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.8125rem',
-                  fontWeight: 700,
-                  color: currentContact?.id === 'jaxx' ? '#000' : 'var(--jp-text)',
-                }}
-              >
-                {currentContact?.initials}
+        {/* Messages */}
+        <div style={{
+          flex: 1, overflowY: 'auto', padding: 20,
+          display: 'flex', flexDirection: 'column', gap: 12,
+        }}>
+          {messages.map(msg => (
+            <div key={msg.id}>
+              <div style={{
+                maxWidth: '80%',
+                padding: '12px 16px',
+                borderRadius: 14,
+                fontSize: 13,
+                lineHeight: 1.6,
+                whiteSpace: 'pre-wrap',
+                wordWrap: 'break-word',
+                ...(msg.direction === 'outgoing' ? {
+                  alignSelf: 'flex-end',
+                  marginLeft: 'auto',
+                  background: 'var(--jp-green)',
+                  color: '#0A0E17',
+                  borderBottomRightRadius: 4,
+                } : {
+                  alignSelf: 'flex-start',
+                  background: 'var(--jp-bg)',
+                  color: 'var(--jp-text)',
+                  border: '1px solid var(--jp-border)',
+                  borderBottomLeftRadius: 4,
+                }),
+              }}>
+                {msg.text}
               </div>
-              <div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)' }}>
-                  {currentContact?.name}
-                </div>
-                <div style={{ fontSize: '0.6875rem', color: 'var(--jp-green)' }}>
-                  {currentContact?.online ? 'Online' : 'Offline'}
-                </div>
+              <div style={{
+                fontSize: 10, color: 'var(--jp-text-muted)', marginTop: 4,
+                textAlign: msg.direction === 'outgoing' ? 'right' : 'left',
+                display: 'flex', gap: 6,
+                justifyContent: msg.direction === 'outgoing' ? 'flex-end' : 'flex-start',
+              }}>
+                <span>{msg.time}</span>
+                {msg.source && msg.direction === 'incoming' && (
+                  <span style={{
+                    background: msg.source === 'error' ? 'rgba(239,68,68,0.15)' : 'rgba(126,217,87,0.1)',
+                    color: msg.source === 'error' ? '#ef4444' : 'var(--jp-green)',
+                    padding: '1px 5px', borderRadius: 3, fontSize: 9,
+                  }}>{msg.source}</span>
+                )}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button className="jp-header-btn" title="Voice Call">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-              </button>
-              <button className="jp-header-btn" title="More">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                </svg>
-              </button>
-            </div>
-          </div>
+          ))}
 
-          {/* Messages */}
-          <div className="jp-chat-messages">
+          {sending && (
             <div style={{
-              textAlign: 'center',
-              fontSize: '0.6875rem',
-              color: 'var(--jp-text-muted)',
-              padding: '8px 0',
+              alignSelf: 'flex-start', padding: '12px 16px',
+              background: 'var(--jp-bg)', border: '1px solid var(--jp-border)',
+              borderRadius: 14, borderBottomLeftRadius: 4,
+              display: 'flex', gap: 4,
             }}>
-              Today
+              {[0, 1, 2].map(i => (
+                <span key={i} style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: 'var(--jp-text-muted)',
+                  animation: `bounce 1.4s infinite ${i * 0.2}s`,
+                }} />
+              ))}
             </div>
-            {messages.map((msg) => (
-              <div key={msg.id}>
-                <div className={`jp-chat-message ${msg.direction}`}>
-                  {msg.text}
-                </div>
-                <div style={{
-                  fontSize: '0.6875rem',
-                  color: 'var(--jp-text-muted)',
-                  marginTop: 4,
-                  textAlign: msg.direction === 'outgoing' ? 'right' : 'left',
-                  paddingLeft: msg.direction === 'incoming' ? 4 : 0,
-                  paddingRight: msg.direction === 'outgoing' ? 4 : 0,
-                }}>
-                  {msg.time}
-                </div>
-              </div>
-            ))}
-          </div>
+          )}
 
-          {/* Input */}
-          <div className="jp-chat-input-area">
-            <button className="jp-header-btn" style={{ flexShrink: 0 }}>
-              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-              </svg>
-            </button>
-            <input
-              type="text"
-              className="jp-chat-input"
-              placeholder="Ask Jaxx anything..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-            />
-            <button className="jp-chat-send-btn">Send</button>
-          </div>
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input */}
+        <div style={{
+          padding: '14px 20px', borderTop: '1px solid var(--jp-border)',
+          display: 'flex', gap: 10, alignItems: 'center',
+          background: 'var(--jp-bg-card)',
+        }}>
+          <input
+            type="text"
+            placeholder="Ask 0nAI anything..."
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
+            disabled={sending}
+            style={{
+              flex: 1, padding: '12px 16px',
+              background: 'var(--jp-bg)', border: '1px solid var(--jp-border)',
+              borderRadius: 12, color: 'var(--jp-text)',
+              fontSize: 13, fontFamily: 'inherit', outline: 'none',
+            }}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={sending || !inputValue.trim()}
+            style={{
+              padding: '12px 24px',
+              background: sending ? 'var(--jp-border)' : 'var(--jp-green)',
+              color: '#0A0E17', border: 'none', borderRadius: 12,
+              fontWeight: 700, fontSize: 13, cursor: sending ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit', transition: 'all 0.2s',
+              opacity: sending || !inputValue.trim() ? 0.5 : 1,
+            }}
+          >
+            {sending ? '...' : 'Send'}
+          </button>
         </div>
       </div>
+
+      <style>{`
+        @keyframes bounce {
+          0%, 60%, 100% { transform: translateY(0); }
+          30% { transform: translateY(-6px); }
+        }
+      `}</style>
     </div>
   )
 }
