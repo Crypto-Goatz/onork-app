@@ -1,8 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export type LayoutMode = 'classic' | 'compact' | 'horizontal'
+
+interface Location {
+  id: string
+  name: string
+}
 
 interface HeaderProps {
   userEmail?: string
@@ -46,6 +51,30 @@ const layoutOptions: { mode: LayoutMode; label: string; icon: React.ReactNode }[
 export default function Header({ userEmail, userName, onMenuToggle, onLogout, layoutMode = 'classic', onLayoutChange }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showLayoutMenu, setShowLayoutMenu] = useState(false)
+  const [showLocations, setShowLocations] = useState(false)
+  const [locations, setLocations] = useState<Location[]>([])
+  const [activeLocation, setActiveLocation] = useState<string>('')
+
+  useEffect(() => {
+    fetch('/api/crm/locations').then(r => r.json()).then(d => {
+      if (d.locations) setLocations(d.locations)
+    }).catch(() => {})
+    // Get active from localStorage
+    const saved = localStorage.getItem('0ncore-active-location')
+    if (saved) setActiveLocation(saved)
+  }, [])
+
+  async function switchLocation(id: string) {
+    setActiveLocation(id)
+    localStorage.setItem('0ncore-active-location', id)
+    setShowLocations(false)
+    await fetch('/api/crm/locations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locationId: id }),
+    }).catch(() => {})
+    window.location.reload()
+  }
 
   const initials = userName
     ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -68,6 +97,40 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
           <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', marginRight: 16, textDecoration: 'none' }}>
             <img src="/logo.png" alt="0nCore" style={{ height: 28, objectFit: 'contain' }} />
           </a>
+        )}
+
+        {/* Location Switcher */}
+        {locations.length > 1 && (
+          <div style={{ position: 'relative', marginRight: 12 }}>
+            <button onClick={() => setShowLocations(!showLocations)} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 12px', background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)',
+              borderRadius: 8, color: 'var(--jp-text-secondary)', fontSize: 12, cursor: 'pointer',
+              maxWidth: 180, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+            }}>
+              <span style={{ fontSize: 10 }}>📍</span>
+              {locations.find(l => l.id === activeLocation)?.name || 'Select location'}
+              <span style={{ fontSize: 9, marginLeft: 'auto' }}>▼</span>
+            </button>
+            {showLocations && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, marginTop: 4,
+                width: 240, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)',
+                borderRadius: 10, overflow: 'hidden', zIndex: 100,
+                boxShadow: '0 12px 40px rgba(0,0,0,0.5)', maxHeight: 300, overflowY: 'auto',
+              }}>
+                {locations.map(loc => (
+                  <button key={loc.id} onClick={() => switchLocation(loc.id)} style={{
+                    width: '100%', padding: '10px 14px', background: loc.id === activeLocation ? 'var(--jp-bg-card-hover)' : 'transparent',
+                    border: 'none', borderBottom: '1px solid rgba(28,43,66,0.4)',
+                    color: loc.id === activeLocation ? 'var(--jp-green)' : 'var(--jp-text)',
+                    fontSize: 13, cursor: 'pointer', textAlign: 'left',
+                    fontWeight: loc.id === activeLocation ? 600 : 400,
+                  }}>{loc.name}</button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Search */}
