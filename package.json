@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/genai": "^1.47.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "@types/node": "^25.2.2",
