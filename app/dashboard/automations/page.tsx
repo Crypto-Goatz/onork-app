@@ -26,7 +26,7 @@ export default function AutomationsPage() {
   const [automationName, setAutomationName] = useState('Untitled Automation')
   const [automationId, setAutomationId] = useState<string>(crypto.randomUUID())
   const [editing, setEditing] = useState(false)
-  const [showPalette, setShowPalette] = useState(false)
+  const [menuSize, setMenuSize] = useState<'expand' | 'compact' | 'minimize'>('expand')
   const [showWorkflowMenu, setShowWorkflowMenu] = useState(false)
   const [savedDrafts, setSavedDrafts] = useState<SavedAutomation[]>([])
   const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('unsaved')
@@ -294,15 +294,17 @@ export default function AutomationsPage() {
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => setShowPalette(!showPalette)}
-            style={{
-              padding: '8px 16px', background: showPalette ? '#2dd4bf15' : 'none',
-              border: `1px solid ${showPalette ? '#2dd4bf40' : '#1c2b42'}`,
-              borderRadius: 8, color: showPalette ? '#2dd4bf' : '#8b9ab5',
-              fontSize: 13, cursor: 'pointer', fontFamily: '-apple-system, sans-serif',
-            }}
-          >{showPalette ? 'Hide' : 'Show'} Palette</button>
+          {/* Menu size toggles */}
+          <div style={{ display: 'flex', background: '#141e30', borderRadius: 8, border: '1px solid #1c2b42', overflow: 'hidden' }}>
+            {(['minimize', 'compact', 'expand'] as const).map(size => (
+              <button key={size} onClick={() => setMenuSize(size)} style={{
+                padding: '6px 10px', background: menuSize === size ? '#1c2b42' : 'none',
+                border: 'none', color: menuSize === size ? '#2dd4bf' : '#556880',
+                fontSize: 11, cursor: 'pointer', fontWeight: 600,
+                fontFamily: '-apple-system, sans-serif',
+              }}>{size === 'minimize' ? '—' : size === 'compact' ? '◧' : '☰'}</button>
+            ))}
+          </div>
           <button onClick={handleSaveDraft} style={{
             padding: '8px 16px', background: 'none',
             border: '1px solid #1c2b42', borderRadius: 8,
@@ -339,8 +341,8 @@ export default function AutomationsPage() {
             <AIRecommendations nodes={nodes} onAdd={handleAddFromRecommendation} />
           </div>
 
-          {/* Right side: Palette or Config Panel */}
-          {showPalette && !selectedNode && <CapabilityPalette />}
+          {/* Right side: Menu + Config Panel */}
+          {menuSize !== 'minimize' && !selectedNode && <CapabilityPalette size={menuSize} />}
           {selectedNode && (
             <ConfigPanel
               node={selectedNode}

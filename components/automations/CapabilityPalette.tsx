@@ -3,9 +3,14 @@
 import { useState, type DragEvent } from 'react'
 import { CATEGORIES, CAPABILITIES, getCapabilitiesByCategory } from './capabilities'
 
-export default function CapabilityPalette() {
+interface PaletteProps {
+  size?: 'expand' | 'compact';
+}
+
+export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
   const [search, setSearch] = useState('')
   const [expandedCat, setExpandedCat] = useState<string | null>('triggers')
+  const isCompact = size === 'compact'
 
   const filtered = search
     ? CAPABILITIES.filter(c =>
@@ -23,9 +28,9 @@ export default function CapabilityPalette() {
 
   return (
     <div style={{
-      width: 280,
+      width: isCompact ? 200 : 280,
       background: '#0e1825',
-      borderRight: '1px solid #1c2b42',
+      borderLeft: '1px solid #1c2b42',
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
@@ -33,10 +38,10 @@ export default function CapabilityPalette() {
     }}>
       {/* Header */}
       <div style={{ padding: '16px', borderBottom: '1px solid #1c2b42' }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#e8ecf2', marginBottom: 10, fontFamily: '-apple-system, sans-serif' }}>
-          Capabilities
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#e8ecf2', marginBottom: isCompact ? 0 : 10, fontFamily: '-apple-system, sans-serif' }}>
+          Menu
         </div>
-        <input
+        {!isCompact && <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search capabilities..."
@@ -53,7 +58,7 @@ export default function CapabilityPalette() {
           }}
           onFocus={e => e.target.style.borderColor = '#2dd4bf'}
           onBlur={e => e.target.style.borderColor = '#1c2b42'}
-        />
+        />}
       </div>
 
       {/* Categories + Items */}
@@ -180,7 +185,7 @@ export default function CapabilityPalette() {
         textAlign: 'center',
         fontFamily: '-apple-system, sans-serif',
       }}>
-        Drag capabilities onto the canvas →
+        ← Drag onto canvas
       </div>
     </div>
   )

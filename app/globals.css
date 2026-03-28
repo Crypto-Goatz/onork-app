@@ -1,23 +1,23 @@
 @import "tailwindcss";
 
 @theme {
-  --color-core-bg: #0a0a0a;
-  --color-core-surface: #111111;
-  --color-core-card: #161616;
-  --color-core-card-hover: #1a1a1a;
-  --color-core-border: #262626;
-  --color-core-border-hi: #333333;
-  --color-core-green: #7ed957;
-  --color-core-green-dim: #5cb83a;
-  --color-core-green-glow: rgba(126, 217, 87, 0.15);
-  --color-core-cyan: #00d4ff;
-  --color-core-cyan-dim: #00a8cc;
-  --color-core-purple: #a78bfa;
+  --color-core-bg: #0c1220;
+  --color-core-surface: #0e1825;
+  --color-core-card: #141e30;
+  --color-core-card-hover: #1a2740;
+  --color-core-border: #1c2b42;
+  --color-core-border-hi: #243650;
+  --color-core-green: #2dd4bf;
+  --color-core-green-dim: #14b8a6;
+  --color-core-green-glow: rgba(45, 212, 191, 0.12);
+  --color-core-cyan: #2dd4bf;
+  --color-core-cyan-dim: #14b8a6;
+  --color-core-purple: #8b5cf6;
   --color-core-red: #f87171;
   --color-core-amber: #fbbf24;
-  --color-core-text: #f0f0f0;
-  --color-core-text-dim: #9aa0a8;
-  --color-core-text-muted: #666666;
+  --color-core-text: #e8ecf2;
+  --color-core-text-dim: #8b9ab5;
+  --color-core-text-muted: #556880;
 
   --animate-fade-in: fade-in 0.3s ease both;
   --animate-slide-up: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -60,7 +60,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #444;
+  background: #3a5070;
 }
 
 @media (prefers-reduced-motion: reduce) {

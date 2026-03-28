@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState, useMemo, type DragEvent } from 'react'
+import { useCallback, useMemo, useEffect, type DragEvent } from 'react'
 import {
   ReactFlow,
   Background,
@@ -35,7 +35,14 @@ export default function AutomationCanvas({
   nodes, edges, onNodesChange: setNodes, onEdgesChange: setEdges,
   onNodeSelect, stepCounter, onStepCounterUpdate,
 }: AutomationCanvasProps) {
-  const { screenToFlowPosition } = useReactFlow()
+  const { screenToFlowPosition, fitView } = useReactFlow()
+
+  // Auto-recenter when nodes change
+  useEffect(() => {
+    if (nodes.length > 0) {
+      setTimeout(() => fitView({ padding: 0.3, duration: 300 }), 100)
+    }
+  }, [nodes.length, fitView])
 
   const handleNodesChange: OnNodesChange<CapabilityNodeType> = useCallback(
     (changes) => setNodes(applyNodeChanges(changes, nodes) as CapabilityNodeType[]),
@@ -77,8 +84,10 @@ export default function AutomationCanvas({
     if (!raw) return
 
     const cap: Capability = JSON.parse(raw)
-    const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
     const newCounter = stepCounter + 1
+
+    // Position: center of canvas, stacked vertically
+    const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
 
     const data: CapabilityNodeData = {
       capabilityId: cap.id,
@@ -99,9 +108,22 @@ export default function AutomationCanvas({
       data,
     }
 
-    setNodes([...nodes, newNode])
+    // Auto-connect to the last node
+    const lastNode = nodes[nodes.length - 1]
+    const updatedNodes = [...nodes, newNode]
+    const updatedEdges = lastNode ? [...edges, {
+      id: `e_${lastNode.id}_${newNode.id}`,
+      source: lastNode.id,
+      target: newNode.id,
+      animated: true,
+      style: { stroke: '#2dd4bf', strokeWidth: 2 },
+      type: 'smoothstep',
+    }] : edges
+
+    setNodes(updatedNodes)
+    setEdges(updatedEdges)
     onStepCounterUpdate(newCounter)
-  }, [nodes, stepCounter, setNodes, onStepCounterUpdate, screenToFlowPosition])
+  }, [nodes, edges, stepCounter, setNodes, setEdges, onStepCounterUpdate, screenToFlowPosition])
 
   const defaultEdgeOptions = useMemo(() => ({
     animated: true,
@@ -127,11 +149,21 @@ export default function AutomationCanvas({
         snapToGrid
         snapGrid={[20, 20]}
         fitView
+        fitViewOptions={{ padding: 0.4 }}
+        minZoom={0.1}
+        maxZoom={1.5}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
         proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#1c2b42" />
         <Controls
-          style={{ background: '#141e30', border: '1px solid #1c2b42', borderRadius: 10 }}
+          showInteractive={false}
+          style={{
+            background: '#141e30',
+            border: '1px solid #1c2b42',
+            borderRadius: 10,
+            overflow: 'hidden',
+          }}
         />
       </ReactFlow>
     </div>
