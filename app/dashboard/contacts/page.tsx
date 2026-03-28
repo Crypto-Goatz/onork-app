@@ -19,9 +19,7 @@ export default function ContactsPage() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
 
-  useEffect(() => {
-    fetchContacts()
-  }, [])
+  useEffect(() => { fetchContacts() }, [])
 
   async function fetchContacts() {
     setLoading(true)
@@ -29,10 +27,10 @@ export default function ContactsPage() {
     try {
       const res = await fetch('/api/crm/contacts')
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch contacts')
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch')
       setContacts(data.contacts || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load contacts')
+      setError(err instanceof Error ? err.message : 'Failed to load')
     } finally {
       setLoading(false)
     }
@@ -41,123 +39,140 @@ export default function ContactsPage() {
   const filtered = contacts.filter((c) => {
     if (!search) return true
     const q = search.toLowerCase()
-    return (
-      (c.contactName || '').toLowerCase().includes(q) ||
+    return (c.contactName || '').toLowerCase().includes(q) ||
       (c.email || '').toLowerCase().includes(q) ||
       (c.phone || '').includes(q)
-    )
   })
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
+    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 8px' }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h1 className="text-2xl font-bold text-core-text">Contacts</h1>
-          <p className="text-sm text-core-text-dim mt-1">
-            Manage your CRM contacts. {contacts.length > 0 && `${contacts.length} total`}
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#e8ecf2', margin: 0 }}>Contacts</h1>
+          <p style={{ fontSize: 13, color: '#556880', marginTop: 4 }}>
+            {contacts.length > 0 ? `${contacts.length} contacts` : 'Manage your contacts'}
           </p>
         </div>
-        <button className="bg-core-green text-core-bg font-medium text-sm px-4 py-2 rounded-lg hover:brightness-110 transition-all">
-          Add Contact
-        </button>
+        <button style={{
+          padding: '10px 20px',
+          background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
+          color: '#0c1220', fontWeight: 700, fontSize: 13,
+          borderRadius: 10, border: 'none', cursor: 'pointer',
+        }}>+ Add Contact</button>
       </div>
 
       {/* Search */}
-      <div className="relative">
-        <svg
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-core-text-muted"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+      <div style={{ marginBottom: 20 }}>
         <input
           type="text"
           placeholder="Search contacts..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-core-card border border-core-border rounded-lg pl-10 pr-4 py-2.5 text-sm text-core-text placeholder:text-core-text-muted focus:outline-none focus:border-core-green transition-colors"
+          style={{
+            width: '100%', padding: '12px 16px 12px 40px',
+            background: '#141e30', border: '1px solid #1c2b42',
+            borderRadius: 10, color: '#e8ecf2', fontSize: 14,
+            outline: 'none', transition: 'border-color 0.2s',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23556880' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: '14px center',
+          }}
+          onFocus={e => e.target.style.borderColor = '#2dd4bf'}
+          onBlur={e => e.target.style.borderColor = '#1c2b42'}
         />
       </div>
 
       {/* Content */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-core-green border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+          <div style={{
+            width: 32, height: 32, border: '3px solid #1c2b42',
+            borderTopColor: '#2dd4bf', borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       ) : error ? (
-        <div className="bg-core-card border border-core-border rounded-xl p-8 text-center">
-          <div className="text-core-red text-sm mb-3">{error}</div>
-          <button
-            onClick={fetchContacts}
-            className="text-sm text-core-green hover:underline"
-          >
-            Try again
-          </button>
+        <div style={{
+          background: '#141e30', border: '1px solid #1c2b42',
+          borderRadius: 14, padding: '40px', textAlign: 'center',
+        }}>
+          <p style={{ color: '#f87171', fontSize: 14, marginBottom: 12 }}>{error}</p>
+          <button onClick={fetchContacts} style={{
+            color: '#2dd4bf', background: 'none', border: 'none',
+            cursor: 'pointer', fontSize: 13, fontWeight: 600,
+          }}>Try again</button>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-core-card border border-core-border rounded-xl p-12 text-center">
-          <svg className="w-12 h-12 text-core-text-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <p className="text-core-text-dim text-sm">
-            {search ? 'No contacts match your search.' : 'No contacts yet. Add your first contact to get started.'}
+        <div style={{
+          background: '#141e30', border: '1px solid #1c2b42',
+          borderRadius: 14, padding: '60px 40px', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>👤</div>
+          <p style={{ color: '#8b9ab5', fontSize: 14 }}>
+            {search ? 'No contacts match your search.' : 'No contacts yet.'}
           </p>
         </div>
       ) : (
-        <div className="bg-core-card border border-core-border rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-core-border">
-                  <th className="text-left text-xs font-medium text-core-text-muted uppercase tracking-wider px-5 py-3">Name</th>
-                  <th className="text-left text-xs font-medium text-core-text-muted uppercase tracking-wider px-5 py-3">Email</th>
-                  <th className="text-left text-xs font-medium text-core-text-muted uppercase tracking-wider px-5 py-3 hidden md:table-cell">Phone</th>
-                  <th className="text-left text-xs font-medium text-core-text-muted uppercase tracking-wider px-5 py-3 hidden lg:table-cell">Tags</th>
-                  <th className="text-left text-xs font-medium text-core-text-muted uppercase tracking-wider px-5 py-3 hidden sm:table-cell">Added</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-core-border">
-                {filtered.map((contact) => (
-                  <tr key={contact.id} className="hover:bg-core-card-hover transition-colors">
-                    <td className="px-5 py-3.5">
-                      <span className="text-sm font-medium text-core-text">
-                        {contact.contactName || `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || 'Unknown'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="text-sm text-core-text-dim">{contact.email || '-'}</span>
-                    </td>
-                    <td className="px-5 py-3.5 hidden md:table-cell">
-                      <span className="text-sm text-core-text-dim">{contact.phone || '-'}</span>
-                    </td>
-                    <td className="px-5 py-3.5 hidden lg:table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {(contact.tags || []).slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            className="inline-flex text-xs bg-core-green/10 text-core-green px-2 py-0.5 rounded"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {(contact.tags || []).length > 3 && (
-                          <span className="text-xs text-core-text-muted">+{contact.tags.length - 3}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 hidden sm:table-cell">
-                      <span className="text-sm text-core-text-muted">
-                        {contact.dateAdded ? new Date(contact.dateAdded).toLocaleDateString() : '-'}
-                      </span>
-                    </td>
-                  </tr>
+        <div style={{
+          background: '#141e30', border: '1px solid #1c2b42',
+          borderRadius: 14, overflow: 'hidden',
+        }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #1c2b42' }}>
+                {['Name', 'Email', 'Phone', 'Tags', 'Added'].map(h => (
+                  <th key={h} style={{
+                    textAlign: 'left', padding: '12px 20px',
+                    fontSize: 11, fontWeight: 600, color: '#556880',
+                    textTransform: 'uppercase', letterSpacing: '0.06em',
+                  }}>{h}</th>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((c) => (
+                <tr key={c.id} style={{ borderBottom: '1px solid rgba(28,43,66,0.5)', cursor: 'pointer' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#1a2740'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <td style={{ padding: '14px 20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: 8,
+                        background: 'linear-gradient(135deg, #2dd4bf20, #8b5cf620)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 700, color: '#2dd4bf', flexShrink: 0,
+                      }}>
+                        {(c.firstName?.[0] || c.contactName?.[0] || '?').toUpperCase()}
+                      </div>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: '#e8ecf2' }}>
+                        {c.contactName || `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Unknown'}
+                      </span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '14px 20px', fontSize: 13, color: '#8b9ab5' }}>{c.email || '—'}</td>
+                  <td style={{ padding: '14px 20px', fontSize: 13, color: '#8b9ab5' }}>{c.phone || '—'}</td>
+                  <td style={{ padding: '14px 20px' }}>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      {(c.tags || []).slice(0, 2).map(tag => (
+                        <span key={tag} style={{
+                          padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
+                          background: 'rgba(45,212,191,0.1)', color: '#2dd4bf',
+                        }}>{tag}</span>
+                      ))}
+                      {(c.tags || []).length > 2 && (
+                        <span style={{ fontSize: 11, color: '#556880' }}>+{c.tags.length - 2}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td style={{ padding: '14px 20px', fontSize: 12, color: '#556880' }}>
+                    {c.dateAdded ? new Date(c.dateAdded).toLocaleDateString() : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
