@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------
   Jampack Admin Styles — Ported for 0nCore
-  Dark theme with brand green #7ed957 accent
+  Dark navy theme with teal #2dd4bf accent
   Works alongside Tailwind — all classes prefixed with .jp-
 ------------------------------------------------------------------*/
 
@@ -9,26 +9,26 @@
   --jp-sidebar-width: 260px;
   --jp-sidebar-collapsed-width: 0px;
   --jp-header-height: 64px;
-  --jp-green: #7ed957;
-  --jp-green-dim: #5cb83a;
-  --jp-green-glow: rgba(126, 217, 87, 0.15);
-  --jp-cyan: #00d4ff;
-  --jp-cyan-dim: #00a8cc;
-  --jp-purple: #a78bfa;
+  --jp-green: #2dd4bf;
+  --jp-green-dim: #14b8a6;
+  --jp-green-glow: rgba(45, 212, 191, 0.12);
+  --jp-cyan: #2dd4bf;
+  --jp-cyan-dim: #14b8a6;
+  --jp-purple: #8b5cf6;
   --jp-amber: #fbbf24;
   --jp-red: #f87171;
-  --jp-bg: #0a0a0a;
-  --jp-surface: #111111;
-  --jp-bg-elevated: #111111;
-  --jp-bg-card: #161616;
-  --jp-bg-card-hover: #1a1a1a;
-  --jp-bg-input: #0d0d0d;
-  --jp-border: #262626;
-  --jp-border-hi: #333333;
-  --jp-border-focus: #333333;
-  --jp-text: #f0f0f0;
-  --jp-text-secondary: #9aa0a8;
-  --jp-text-muted: #666666;
+  --jp-bg: #0c1220;
+  --jp-surface: #0e1825;
+  --jp-bg-elevated: #0e1825;
+  --jp-bg-card: #141e30;
+  --jp-bg-card-hover: #1a2740;
+  --jp-bg-input: #0e1825;
+  --jp-border: #1c2b42;
+  --jp-border-hi: #243650;
+  --jp-border-focus: #2dd4bf;
+  --jp-text: #e8ecf2;
+  --jp-text-secondary: #8b9ab5;
+  --jp-text-muted: #556880;
   --jp-radius: 12px;
   --jp-radius-sm: 8px;
   --jp-radius-xs: 6px;
