@@ -6,6 +6,7 @@ import CapabilityPalette from '@/components/automations/CapabilityPalette'
 import AutomationCanvas from '@/components/automations/AutomationCanvas'
 import ConfigPanel from '@/components/automations/ConfigPanel'
 import AIRecommendations from '@/components/automations/AIRecommendations'
+import GenerateBar from '@/components/automations/GenerateBar'
 import type { CapabilityNodeType, CapabilityNodeData } from '@/components/automations/CapabilityNode'
 import type { Capability } from '@/components/automations/capabilities'
 
@@ -339,6 +340,15 @@ export default function AutomationsPage() {
 
             {/* AI Recommendations — floating on left */}
             <AIRecommendations nodes={nodes} onAdd={handleAddFromRecommendation} />
+
+            {/* Generate bar — floating on bottom center */}
+            <GenerateBar onGenerate={(newNodes, newEdges) => {
+              setNodes(newNodes)
+              setEdges(newEdges)
+              setStepCounter(newNodes.length)
+              setAutomationName(newNodes.length > 0 ? 'Generated Automation' : automationName)
+              setSaveStatus('unsaved')
+            }} />
           </div>
 
           {/* Right side: Menu + Config Panel */}
