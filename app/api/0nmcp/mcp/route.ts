@@ -16,7 +16,7 @@ const t = (name: string, desc: string, props: Record<string, any>, required: str
 })
 const s = { type: 'string' as const }
 const n = { type: 'number' as const }
-const a = (itemType = 'string') => ({ type: 'array' as const, items: { type: itemType as const } })
+const a = (itemType: string = 'string') => ({ type: 'array' as const, items: { type: itemType } })
 const o = { type: 'object' as const }
 
 const TOOLS = [

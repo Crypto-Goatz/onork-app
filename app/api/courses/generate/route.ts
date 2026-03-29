@@ -60,6 +60,36 @@ Make the course practical, actionable, and immediately useful. Each lesson title
       } catch {}
     }
 
+    // Try Groq (FREE cloud fallback)
+    const groqPool = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '').split(',').filter(Boolean)
+    if (groqPool.length > 0) {
+      const groqKey = groqPool[Math.floor(Math.random() * groqPool.length)].trim()
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: 'You are a course curriculum designer. Return ONLY valid JSON. No markdown, no explanation.' },
+            { role: 'user', content: prompt },
+          ],
+          max_tokens: 4096,
+          temperature: 0.4,
+          response_format: { type: 'json_object' },
+        }),
+        signal: AbortSignal.timeout(60000),
+      }).catch(() => null)
+
+      if (groqRes?.ok) {
+        const data = await groqRes.json()
+        const text = data.choices?.[0]?.message?.content || ''
+        try {
+          const course = JSON.parse(text)
+          return NextResponse.json({ course, provider: 'groq' })
+        } catch {}
+      }
+    }
+
     // Fallback: generate a template
     const modules = []
     const count = parseInt(String(moduleCount)) || 5
