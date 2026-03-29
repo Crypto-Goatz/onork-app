@@ -537,6 +537,157 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
       return { score: scanData.overallScore, grade: scanData.grade, report: scanData, contactCreated: !!args.email }
     }
 
+    // ── Supabase ──
+    case 'supabase_query': {
+      const sb = await import('@supabase/supabase-js')
+      const client = sb.createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '')
+      let q = client.from(args.table).select(args.select || '*')
+      if (args.limit) q = q.limit(args.limit)
+      const { data, error } = await q
+      return error ? { error: error.message } : { data }
+    }
+    case 'supabase_insert': {
+      const sb = await import('@supabase/supabase-js')
+      const client = sb.createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '')
+      const { data, error } = await client.from(args.table).insert(args.data).select()
+      return error ? { error: error.message } : { data }
+    }
+    case 'supabase_update': {
+      const sb = await import('@supabase/supabase-js')
+      const client = sb.createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '')
+      let q = client.from(args.table).update(args.data)
+      if (args.match) for (const [k, v] of Object.entries(args.match)) q = q.eq(k, v as string)
+      const { data, error } = await q.select()
+      return error ? { error: error.message } : { data }
+    }
+    case 'supabase_delete': {
+      const sb = await import('@supabase/supabase-js')
+      const client = sb.createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '')
+      let q = client.from(args.table).delete()
+      if (args.match) for (const [k, v] of Object.entries(args.match)) q = q.eq(k, v as string)
+      const { data, error } = await q
+      return error ? { error: error.message } : { success: true }
+    }
+
+    // ── GitHub ──
+    case 'github_create_issue': {
+      const res = await fetch(`https://api.github.com/repos/${args.owner}/${args.repo}/issues`, { method: 'POST', headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': '0nMCP' }, body: JSON.stringify({ title: args.title, body: args.body, labels: args.labels }) })
+      return await res.json()
+    }
+    case 'github_list_repos': {
+      const res = await fetch(`https://api.github.com/users/${args.username || 'rocketopp'}/repos?per_page=30`, { headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, 'User-Agent': '0nMCP' } })
+      return await res.json()
+    }
+
+    // ── OpenAI ──
+    case 'openai_chat': {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: args.model || 'gpt-4o-mini', messages: [{ role: 'user', content: args.prompt }], max_tokens: args.maxTokens || 1000 }) })
+      const d = await res.json(); return { response: d.choices?.[0]?.message?.content, model: d.model }
+    }
+    case 'openai_image': {
+      const res = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: args.prompt, n: 1, size: args.size || '1024x1024' }) })
+      return await res.json()
+    }
+
+    // ── ElevenLabs ──
+    case 'elevenlabs_tts': {
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${args.voiceId || '21m00Tcm4TlvDq8ikWAM'}`, { method: 'POST', headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY || '', 'Content-Type': 'application/json' }, body: JSON.stringify({ text: args.text, model_id: 'eleven_monolingual_v1' }) })
+      return { success: res.ok, contentType: res.headers.get('content-type'), status: res.status }
+    }
+    case 'elevenlabs_list_voices': {
+      const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY || '' } })
+      return await res.json()
+    }
+
+    // ── Deepgram ──
+    case 'deepgram_transcribe': {
+      const res = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true', { method: 'POST', headers: { Authorization: `Token ${process.env.DEEPGRAM_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ url: args.url }) })
+      return await res.json()
+    }
+
+    // ── Notion ──
+    case 'notion_search': {
+      const res = await fetch('https://api.notion.com/v1/search', { method: 'POST', headers: { Authorization: `Bearer ${process.env.NOTION_API_KEY}`, 'Notion-Version': '2022-06-28', 'Content-Type': 'application/json' }, body: JSON.stringify({ query: args.query }) })
+      return await res.json()
+    }
+    case 'notion_create_page': {
+      const res = await fetch('https://api.notion.com/v1/pages', { method: 'POST', headers: { Authorization: `Bearer ${process.env.NOTION_API_KEY}`, 'Notion-Version': '2022-06-28', 'Content-Type': 'application/json' }, body: JSON.stringify({ parent: { database_id: args.parentId }, properties: { title: { title: [{ text: { content: args.title } }] } } }) })
+      return await res.json()
+    }
+
+    // ── Figma ──
+    case 'figma_get_file': {
+      const res = await fetch(`https://api.figma.com/v1/files/${args.file_key}`, { headers: { 'X-Figma-Token': process.env.FIGMA_TOKEN || '' } })
+      return await res.json()
+    }
+    case 'figma_export_images': {
+      const res = await fetch(`https://api.figma.com/v1/images/${args.file_key}?ids=${args.ids}&format=${args.format || 'png'}&scale=${args.scale || 2}`, { headers: { 'X-Figma-Token': process.env.FIGMA_TOKEN || '' } })
+      return await res.json()
+    }
+
+    // ── HubSpot ──
+    case 'hubspot_create_contact': {
+      const res = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', { method: 'POST', headers: { Authorization: `Bearer ${process.env.HUBSPOT_ACCESS_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ properties: { email: args.email, firstname: args.firstname, lastname: args.lastname, company: args.company } }) })
+      return await res.json()
+    }
+    case 'hubspot_list_contacts': {
+      const res = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts?limit=${args.limit || 10}`, { headers: { Authorization: `Bearer ${process.env.HUBSPOT_ACCESS_TOKEN}` } })
+      return await res.json()
+    }
+    case 'hubspot_create_deal': {
+      const res = await fetch('https://api.hubapi.com/crm/v3/objects/deals', { method: 'POST', headers: { Authorization: `Bearer ${process.env.HUBSPOT_ACCESS_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ properties: { dealname: args.dealname, amount: args.amount, pipeline: args.pipeline || 'default', dealstage: args.dealstage || 'appointmentscheduled' } }) })
+      return await res.json()
+    }
+
+    // ── Shopify ──
+    case 'shopify_list_products': {
+      const res = await fetch(`https://${process.env.SHOPIFY_STORE}.myshopify.com/admin/api/2024-10/products.json?limit=${args.limit || 10}`, { headers: { 'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN || '' } })
+      return await res.json()
+    }
+    case 'shopify_create_product': {
+      const res = await fetch(`https://${process.env.SHOPIFY_STORE}.myshopify.com/admin/api/2024-10/products.json`, { method: 'POST', headers: { 'X-Shopify-Access-Token': process.env.SHOPIFY_ACCESS_TOKEN || '', 'Content-Type': 'application/json' }, body: JSON.stringify({ product: { title: args.title, body_html: args.bodyHtml, vendor: args.vendor, product_type: args.productType } }) })
+      return await res.json()
+    }
+
+    // ── WordPress ──
+    case 'wordpress_create_post': {
+      const wpAuth = Buffer.from(`${process.env.WORDPRESS_USER}:${process.env.WORDPRESS_APP_PASSWORD}`).toString('base64')
+      const res = await fetch(`https://${process.env.WORDPRESS_SITE}/wp-json/wp/v2/posts`, { method: 'POST', headers: { Authorization: `Basic ${wpAuth}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ title: args.title, content: args.content, status: args.status || 'draft' }) })
+      return await res.json()
+    }
+    case 'wordpress_list_posts': {
+      const wpAuth = Buffer.from(`${process.env.WORDPRESS_USER}:${process.env.WORDPRESS_APP_PASSWORD}`).toString('base64')
+      const res = await fetch(`https://${process.env.WORDPRESS_SITE}/wp-json/wp/v2/posts?per_page=${args.perPage || 10}`, { headers: { Authorization: `Basic ${wpAuth}` } })
+      return await res.json()
+    }
+
+    // ── Mailchimp ──
+    case 'mailchimp_add_subscriber': {
+      const dc = (process.env.MAILCHIMP_API_KEY || '').split('-').pop()
+      const res = await fetch(`https://${dc}.api.mailchimp.com/3.0/lists/${args.listId}/members`, { method: 'POST', headers: { Authorization: `Bearer ${process.env.MAILCHIMP_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ email_address: args.email, status: 'subscribed', merge_fields: { FNAME: args.firstName || '', LNAME: args.lastName || '' } }) })
+      return await res.json()
+    }
+
+    // ── Zoom ──
+    case 'zoom_create_meeting': {
+      const res = await fetch('https://api.zoom.us/v2/users/me/meetings', { method: 'POST', headers: { Authorization: `Bearer ${process.env.ZOOM_ACCESS_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ topic: args.topic, type: 2, start_time: args.startTime, duration: args.duration || 30 }) })
+      return await res.json()
+    }
+
+    // ── Webflow ──
+    case 'webflow_list_sites': {
+      const res = await fetch('https://api.webflow.com/v2/sites', { headers: { Authorization: `Bearer ${process.env.WEBFLOW_ACCESS_TOKEN}` } })
+      return await res.json()
+    }
+    case 'webflow_create_item': {
+      const res = await fetch(`https://api.webflow.com/v2/collections/${args.collectionId}/items`, { method: 'POST', headers: { Authorization: `Bearer ${process.env.WEBFLOW_ACCESS_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ fieldData: args.fieldData }) })
+      return await res.json()
+    }
+    case 'webflow_publish_site': {
+      const res = await fetch(`https://api.webflow.com/v2/sites/${args.siteId}/publish`, { method: 'POST', headers: { Authorization: `Bearer ${process.env.WEBFLOW_ACCESS_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ domains: [] }) })
+      return await res.json()
+    }
+
     // ── Generic handler for services needing API keys not yet configured ──
     default: {
       // Check if it's a known tool pattern we can route
