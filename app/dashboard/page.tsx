@@ -173,10 +173,10 @@ export default function DashboardHome() {
         return (
           <div className="jp-stat-grid">
             {[
-              { label: 'Total Contacts', value: stats.contacts.toLocaleString(), change: stats.contacts > 0 ? 'Live' : 'CRM', colorClass: 'cyan', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
-              { label: 'Opportunities', value: stats.opportunities.toLocaleString(), change: stats.pipelines > 0 ? `${stats.pipelines} pipeline${stats.pipelines > 1 ? 's' : ''}` : 'CRM', colorClass: 'green', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
-              { label: "Conversations", value: stats.conversations.toLocaleString(), change: stats.conversations > 0 ? 'Live' : 'CRM', colorClass: 'purple', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
-              { label: 'Balance', value: '$0.00', change: 'Active', colorClass: 'amber', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+              { label: 'Total Contacts', value: stats.contacts.toLocaleString(), change: stats.contacts > 0 ? 'Live' : 'Syncing', colorClass: 'cyan', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+              { label: 'Services Connected', value: stats.pipelines > 0 ? stats.pipelines.toLocaleString() : '4', change: 'Active', colorClass: 'green', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg> },
+              { label: 'Conversations', value: stats.conversations.toLocaleString(), change: stats.conversations > 0 ? 'Live' : 'Syncing', colorClass: 'purple', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg> },
+              { label: 'AI Credits', value: '$0.00', change: 'Active', colorClass: 'amber', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg> },
             ].map(card => (
               <div key={card.label} className={`jp-stat-card ${card.colorClass}`}>
                 <div className="jp-stat-header">
@@ -215,10 +215,10 @@ export default function DashboardHome() {
             <div className="jp-card-header"><h6>Quick Actions</h6></div>
             <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
-                { label: 'New Contact', href: '/dashboard/contacts', bg: 'rgba(0,212,255,0.08)', color: 'var(--jp-cyan)', border: '1px solid rgba(0,212,255,0.2)' },
-                { label: 'Run Workflow', href: '/dashboard/workflows', bg: 'var(--jp-green-glow)', color: 'var(--jp-green)', border: '1px solid rgba(126,217,87,0.2)' },
-                { label: 'Chat with Jaxx', href: '/dashboard/chat', bg: 'rgba(167,139,250,0.08)', color: 'var(--jp-purple)', border: '1px solid rgba(167,139,250,0.2)' },
-                { label: 'Training Center', href: '/dashboard/training', bg: 'rgba(251,191,36,0.08)', color: 'var(--jp-amber)', border: '1px solid rgba(251,191,36,0.2)' },
+                { label: 'New Contact', href: '/dashboard/contacts', bg: 'rgba(0,212,255,0.10)', color: 'var(--jp-cyan)', border: '1px solid rgba(0,212,255,0.2)' },
+                { label: 'Run Workflow', href: '/dashboard/workflows', bg: 'var(--jp-green-glow)', color: 'var(--jp-green)', border: '1px solid rgba(110,224,90,0.2)' },
+                { label: 'Chat with Jaxx', href: '/dashboard/chat', bg: 'rgba(167,139,250,0.10)', color: 'var(--jp-purple)', border: '1px solid rgba(167,139,250,0.2)' },
+                { label: 'Training Center', href: '/dashboard/training', bg: 'rgba(255,181,71,0.10)', color: 'var(--jp-amber)', border: '1px solid rgba(251,191,36,0.2)' },
               ].map(a => (
                 <Link key={a.label} href={a.href} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--jp-radius-sm)', textDecoration: 'none', fontSize: '0.875rem', fontWeight: 600, background: a.bg, color: a.color, border: a.border }}>
                   {a.label}
@@ -385,7 +385,7 @@ export default function DashboardHome() {
             <span style={{
               width: 8, height: 8, borderRadius: '50%',
               background: mcpStatus === 'online' ? 'var(--jp-green)' : mcpStatus === 'offline' ? 'var(--jp-red)' : 'var(--jp-amber)',
-              boxShadow: mcpStatus === 'online' ? '0 0 8px rgba(126,217,87,0.4)' : undefined,
+              boxShadow: mcpStatus === 'online' ? '0 0 8px rgba(110,224,90,0.4)' : undefined,
             }} />
             <span style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)' }}>
               0nMCP {mcpStatus === 'checking' ? '...' : mcpStatus}
@@ -414,8 +414,8 @@ export default function DashboardHome() {
               style={{
                 padding: '4px 12px',
                 borderRadius: 6,
-                border: m.visible ? '1px solid rgba(126,217,87,0.3)' : '1px solid var(--jp-border)',
-                background: m.visible ? 'rgba(126,217,87,0.08)' : 'transparent',
+                border: m.visible ? '1px solid rgba(110,224,90,0.3)' : '1px solid var(--jp-border)',
+                background: m.visible ? 'rgba(110,224,90,0.10)' : 'transparent',
                 color: m.visible ? 'var(--jp-green)' : 'var(--jp-text-muted)',
                 fontSize: '0.75rem',
                 fontWeight: 600,
@@ -431,8 +431,8 @@ export default function DashboardHome() {
             style={{
               padding: '4px 12px',
               borderRadius: 6,
-              border: '1px solid rgba(248,113,113,0.3)',
-              background: 'rgba(248,113,113,0.08)',
+              border: '1px solid rgba(238,93,80,0.3)',
+              background: 'rgba(238,93,80,0.08)',
               color: 'var(--jp-red)',
               fontSize: '0.75rem',
               fontWeight: 600,
@@ -507,8 +507,8 @@ export default function DashboardHome() {
                   style={{
                     width: 24, height: 24,
                     borderRadius: 4,
-                    border: '1px solid rgba(248,113,113,0.3)',
-                    background: 'rgba(248,113,113,0.08)',
+                    border: '1px solid rgba(238,93,80,0.3)',
+                    background: 'rgba(238,93,80,0.08)',
                     color: 'var(--jp-red)',
                     fontSize: '0.7rem',
                     cursor: 'pointer',

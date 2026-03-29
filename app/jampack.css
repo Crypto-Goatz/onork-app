@@ -1,38 +1,41 @@
 /*------------------------------------------------------------------
-  Jampack Admin Styles — Ported for 0nCore
-  Dark navy theme with teal #2dd4bf accent
+  Portu Admin Styles — Adapted for 0nCore
+  Light theme with brand green #6EE05A accent
   Works alongside Tailwind — all classes prefixed with .jp-
 ------------------------------------------------------------------*/
 
 /* ======= CSS Variables ======= */
 :root {
-  --jp-sidebar-width: 260px;
+  --jp-sidebar-width: 220px;
   --jp-sidebar-collapsed-width: 0px;
   --jp-header-height: 64px;
-  --jp-green: #2dd4bf;
-  --jp-green-dim: #14b8a6;
-  --jp-green-glow: rgba(45, 212, 191, 0.12);
-  --jp-cyan: #2dd4bf;
-  --jp-cyan-dim: #14b8a6;
-  --jp-purple: #8b5cf6;
-  --jp-amber: #fbbf24;
-  --jp-red: #f87171;
-  --jp-bg: #0c1220;
-  --jp-surface: #0e1825;
-  --jp-bg-elevated: #0e1825;
-  --jp-bg-card: #141e30;
-  --jp-bg-card-hover: #1a2740;
-  --jp-bg-input: #0e1825;
-  --jp-border: #1c2b42;
-  --jp-border-hi: #243650;
-  --jp-border-focus: #2dd4bf;
-  --jp-text: #e8ecf2;
-  --jp-text-secondary: #8b9ab5;
-  --jp-text-muted: #556880;
-  --jp-radius: 12px;
-  --jp-radius-sm: 8px;
+  --jp-green: #6EE05A;
+  --jp-green-dim: #5CB83A;
+  --jp-green-glow: rgba(110, 224, 90, 0.12);
+  --jp-cyan: #00d4ff;
+  --jp-cyan-dim: #00b8db;
+  --jp-purple: #a78bfa;
+  --jp-amber: #FFB547;
+  --jp-red: #EE5D50;
+  --jp-bg: #F5F6FA;
+  --jp-surface: #FFFFFF;
+  --jp-surface-elevated: #F0F2F8;
+  --jp-bg-elevated: #FFFFFF;
+  --jp-bg-card: #FFFFFF;
+  --jp-bg-card-hover: #F0F2F8;
+  --jp-bg-input: #F5F6FA;
+  --jp-border: #E9EDF7;
+  --jp-border-hi: #D3D9E8;
+  --jp-border-focus: #6EE05A;
+  --jp-text: #2B3674;
+  --jp-text-secondary: #707EAE;
+  --jp-text-muted: #A3AED0;
+  --jp-radius: 16px;
+  --jp-radius-sm: 10px;
   --jp-radius-xs: 6px;
   --jp-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --jp-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --jp-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
 /* ======= Layout Wrapper ======= */
@@ -56,6 +59,7 @@
   z-index: 1040;
   transition: transform var(--jp-transition);
   overflow: hidden;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.04);
 }
 
 .jp-sidebar-header {
@@ -97,7 +101,7 @@
 
 .jp-sidebar-toggle:hover {
   color: var(--jp-text);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--jp-bg);
 }
 
 /* Sidebar Scrollable Area */
@@ -155,7 +159,7 @@
 
 .jp-nav-item:hover {
   color: var(--jp-text);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--jp-bg);
 }
 
 .jp-nav-item:hover .jp-nav-icon {
@@ -249,8 +253,8 @@
 /* ======= Header / Top Nav ======= */
 .jp-header {
   height: var(--jp-header-height);
-  background: var(--jp-bg-elevated);
-  border-bottom: 1px solid var(--jp-border);
+  background: var(--jp-bg);
+  border-bottom: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -258,8 +262,6 @@
   position: sticky;
   top: 0;
   z-index: 1020;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .jp-header-start {
@@ -296,11 +298,11 @@
 
 .jp-search-input {
   width: 100%;
-  height: 38px;
+  height: 40px;
   padding: 0 14px 0 38px;
   background: var(--jp-bg-input);
-  border: 1px solid var(--jp-border);
-  border-radius: var(--jp-radius-sm);
+  border: none;
+  border-radius: 24px;
   color: var(--jp-text);
   font-size: 0.875rem;
   outline: none;
@@ -312,8 +314,8 @@
 }
 
 .jp-search-input:focus {
-  border-color: var(--jp-border-focus);
   background: var(--jp-bg-card);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .jp-search-icon {
@@ -360,8 +362,9 @@
 }
 
 .jp-header-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--jp-bg-card);
   color: var(--jp-text);
+  box-shadow: var(--jp-shadow);
 }
 
 .jp-header-btn svg {
@@ -376,8 +379,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--jp-green);
-  border: 2px solid var(--jp-bg-elevated);
+  background: var(--jp-red);
+  border: 2px solid var(--jp-bg);
 }
 
 /* User Avatar */
@@ -392,7 +395,9 @@
 }
 
 .jp-header-user:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--jp-bg-card);
+  box-shadow: var(--jp-shadow);
+  border-radius: var(--jp-radius-sm);
 }
 
 .jp-header-user-info {
@@ -412,16 +417,16 @@
 }
 
 .jp-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--jp-radius-sm);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   background: linear-gradient(135deg, var(--jp-green-dim), var(--jp-green));
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.8125rem;
   font-weight: 700;
-  color: #000;
+  color: #fff;
   flex-shrink: 0;
 }
 
@@ -447,9 +452,9 @@
 }
 
 .jp-page-title {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: var(--jp-text);
+  color: #2B3674;
   letter-spacing: -0.02em;
 }
 
@@ -462,21 +467,22 @@
 /* ======= Cards ======= */
 .jp-card {
   background: var(--jp-bg-card);
-  border: 1px solid var(--jp-border);
+  border: none;
   border-radius: var(--jp-radius);
   overflow: hidden;
   transition: all var(--jp-transition);
+  box-shadow: var(--jp-shadow);
 }
 
 .jp-card:hover {
-  border-color: var(--jp-border-hi);
+  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.08);
 }
 
 .jp-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 20px 24px;
   border-bottom: 1px solid var(--jp-border);
 }
 
@@ -508,12 +514,13 @@
 
 .jp-stat-card {
   background: var(--jp-bg-card);
-  border: 1px solid var(--jp-border);
+  border: none;
   border-radius: var(--jp-radius);
-  padding: 20px;
+  padding: 24px;
   transition: all var(--jp-transition);
   position: relative;
   overflow: hidden;
+  box-shadow: var(--jp-shadow);
 }
 
 .jp-stat-card::after {
@@ -534,8 +541,8 @@
 .jp-stat-card.amber::after { background: var(--jp-amber); }
 
 .jp-stat-card:hover {
-  border-color: var(--jp-border-hi);
-  transform: translateY(-1px);
+  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 
 .jp-stat-header {
@@ -552,9 +559,9 @@
 }
 
 .jp-stat-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--jp-radius-sm);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -571,11 +578,11 @@
 .jp-stat-icon.amber { background: rgba(251, 191, 36, 0.12); color: var(--jp-amber); }
 
 .jp-stat-value {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 800;
   color: var(--jp-text);
   line-height: 1;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   letter-spacing: -0.02em;
 }
 
@@ -645,7 +652,7 @@
 }
 
 .jp-activity-item:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--jp-bg);
 }
 
 .jp-activity-dot {
@@ -732,7 +739,7 @@
 }
 
 .jp-chat-contact:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--jp-bg);
 }
 
 .jp-chat-contact.active {
@@ -826,7 +833,7 @@
 .jp-chat-message.outgoing {
   align-self: flex-end;
   background: var(--jp-green);
-  color: #000;
+  color: #fff;
   border-bottom-right-radius: 4px;
 }
 
@@ -865,7 +872,7 @@
   background: var(--jp-green);
   border: none;
   border-radius: var(--jp-radius-sm);
-  color: #000;
+  color: #fff;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -1004,7 +1011,7 @@
 }
 
 .jp-integration-status.available {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--jp-bg);
   color: var(--jp-text-secondary);
 }
 
@@ -1065,7 +1072,7 @@
 
 .jp-btn-primary {
   background: var(--jp-green);
-  color: #000;
+  color: #fff;
 }
 
 .jp-btn-primary:hover {
@@ -1081,7 +1088,7 @@
 .jp-btn-outline:hover {
   border-color: var(--jp-border-hi);
   color: var(--jp-text);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--jp-bg);
 }
 
 .jp-btn-ghost {
@@ -1092,7 +1099,7 @@
 
 .jp-btn-ghost:hover {
   color: var(--jp-text);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--jp-bg);
 }
 
 /* ======= Form Elements ======= */
@@ -1231,7 +1238,7 @@
 .jp-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(43, 54, 116, 0.3);
   z-index: 1035;
   opacity: 0;
   visibility: hidden;
@@ -1453,7 +1460,7 @@
 
 .jp-hnav-item:hover {
   color: var(--jp-text);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--jp-bg);
 }
 
 .jp-hnav-item.active {
@@ -1491,7 +1498,7 @@
   border-radius: var(--jp-radius-sm);
   padding: 6px;
   z-index: 1060;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   animation: jp-dropdown-in 0.15s ease;
 }
 
@@ -1521,7 +1528,7 @@
 
 .jp-hnav-dropdown-item:hover {
   color: var(--jp-text);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--jp-bg);
 }
 
 .jp-hnav-dropdown-item.active {
@@ -1652,7 +1659,7 @@
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--jp-bg);
   color: var(--jp-text-secondary);
 }
 
@@ -1685,7 +1692,7 @@
 .jp-pipeline-card:active {
   cursor: grabbing;
   transform: rotate(1deg);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .jp-pipeline-card:hover {
@@ -1738,7 +1745,7 @@
 .jp-pipeline-card-days {
   font-size: 0.6875rem;
   color: var(--jp-text-muted);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--jp-bg);
   padding: 2px 8px;
   border-radius: 4px;
 }
@@ -1762,7 +1769,7 @@
   letter-spacing: 0.04em;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--jp-bg);
   color: var(--jp-text-muted);
 }
 
@@ -1879,7 +1886,7 @@
 
 .jp-submenu-item:hover {
   color: var(--jp-text);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--jp-bg);
 }
 
 .jp-submenu-item.active {
@@ -1902,7 +1909,7 @@
   border-radius: var(--jp-radius-sm);
   padding: 8px;
   z-index: 1070;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   animation: jp-flyout-in 0.15s ease;
 }
 
@@ -1939,7 +1946,7 @@
 
 .jp-compact-flyout-item:hover {
   color: var(--jp-text);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--jp-bg);
 }
 
 .jp-compact-flyout-item.active {
@@ -1978,7 +1985,7 @@
   justify-content: center;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #000;
+  color: #fff;
   flex-shrink: 0;
 }
 
@@ -2285,7 +2292,7 @@
 }
 
 .jp-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--jp-bg);
 }
 
 .jp-table tbody tr:last-child td {
