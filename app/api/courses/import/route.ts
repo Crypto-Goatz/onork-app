@@ -21,30 +21,37 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Format course for CRM courses API
-    const crmCourse = {
+    // Format course for CRM courses importer API
+    const crmPayload = {
       locationId,
-      title: course.title,
-      description: course.description,
-      categories: course.modules.map((mod: any, i: number) => ({
-        title: mod.title,
-        position: i,
-        posts: mod.lessons.map((lesson: string, j: number) => ({
-          title: lesson,
-          contentType: 'text',
-          position: j,
+      products: [{
+        title: course.title,
+        description: course.description,
+        instructorDetails: course.instructor ? {
+          name: course.instructor.name || 'AI Generated',
+          description: course.instructor.description || '',
+        } : undefined,
+        categories: course.modules.map((mod: any, i: number) => ({
+          title: mod.title,
+          visibility: 'published' as const,
+          posts: (mod.lessons || []).map((lesson: any, j: number) => ({
+            title: typeof lesson === 'string' ? lesson : lesson.title,
+            visibility: 'published' as const,
+            contentType: 'video' as const,
+            description: typeof lesson === 'string' ? lesson : (lesson.description || lesson.title),
+          })),
         })),
-      })),
+      }],
     }
 
-    const res = await fetch(`${CRM_BASE}/courses/`, {
+    const res = await fetch(`${CRM_BASE}/courses/courses-exporter/public/import`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         Version: CRM_VERSION,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(crmCourse),
+      body: JSON.stringify(crmPayload),
     })
 
     if (!res.ok) {
