@@ -359,7 +359,205 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
       return { response: data.choices?.[0]?.message?.content, model: data.model }
     }
 
-    default:
-      return { error: `Tool '${name}' not implemented yet. Available: ${TOOLS.map(t => t.name).join(', ')}` }
+    // ── CRM Extended ──
+    case 'crm_update_contact': {
+      const { contactId, ...updateData } = args
+      const res = await fetch(`${CRM_BASE}/contacts/${contactId}`, { method: 'PUT', headers: crmHeaders, body: JSON.stringify(updateData) })
+      return { success: res.ok, data: await res.json() }
+    }
+    case 'crm_get_contact': {
+      const res = await fetch(`${CRM_BASE}/contacts/${args.contactId}`, { headers: crmHeaders })
+      return await res.json()
+    }
+    case 'crm_delete_contact': {
+      const res = await fetch(`${CRM_BASE}/contacts/${args.contactId}`, { method: 'DELETE', headers: crmHeaders })
+      return { success: res.ok }
+    }
+    case 'crm_remove_tags': {
+      const res = await fetch(`${CRM_BASE}/contacts/${args.contactId}/tags`, { method: 'DELETE', headers: crmHeaders, body: JSON.stringify({ tags: args.tags }) })
+      return { success: res.ok, data: await res.json() }
+    }
+    case 'crm_update_opportunity': {
+      const { opportunityId, ...oppData } = args
+      const res = await fetch(`${CRM_BASE}/opportunities/${opportunityId}`, { method: 'PUT', headers: crmHeaders, body: JSON.stringify(oppData) })
+      return { success: res.ok, data: await res.json() }
+    }
+    case 'crm_list_pipelines': {
+      const res = await fetch(`${CRM_BASE}/opportunities/pipelines?locationId=${LOC}`, { headers: crmHeaders })
+      return await res.json()
+    }
+    case 'crm_create_task': {
+      const res = await fetch(`${CRM_BASE}/contacts/${args.contactId}/tasks`, { method: 'POST', headers: crmHeaders, body: JSON.stringify({ title: args.title, body: args.body, dueDate: args.dueDate }) })
+      return { success: res.ok, data: await res.json() }
+    }
+    case 'crm_list_tasks': {
+      const res = await fetch(`${CRM_BASE}/contacts/${args.contactId}/tasks`, { headers: crmHeaders })
+      return await res.json()
+    }
+    case 'crm_send_email': {
+      const res = await fetch(`${CRM_BASE}/conversations/messages`, { method: 'POST', headers: crmHeaders, body: JSON.stringify({ type: 'Email', contactId: args.contactId, subject: args.subject, body: args.body }) })
+      return { success: res.ok, data: await res.json() }
+    }
+    case 'crm_send_sms': {
+      const res = await fetch(`${CRM_BASE}/conversations/messages`, { method: 'POST', headers: crmHeaders, body: JSON.stringify({ type: 'SMS', contactId: args.contactId, body: args.message }) })
+      return { success: res.ok, data: await res.json() }
+    }
+    case 'crm_list_calendars': {
+      const res = await fetch(`${CRM_BASE}/calendars/?locationId=${LOC}`, { headers: crmHeaders })
+      return await res.json()
+    }
+    case 'crm_book_appointment': {
+      const res = await fetch(`${CRM_BASE}/calendars/events/appointments`, { method: 'POST', headers: crmHeaders, body: JSON.stringify({ calendarId: args.calendarId, locationId: LOC, contactId: args.contactId, startTime: args.startTime, endTime: args.endTime || args.startTime, title: args.title || 'Appointment' }) })
+      return { success: res.ok, data: await res.json() }
+    }
+    case 'crm_create_note': {
+      const res = await fetch(`${CRM_BASE}/contacts/${args.contactId}/notes`, { method: 'POST', headers: crmHeaders, body: JSON.stringify({ body: args.body }) })
+      return { success: res.ok, data: await res.json() }
+    }
+    case 'crm_list_workflows': {
+      const res = await fetch(`${CRM_BASE}/workflows/?locationId=${LOC}`, { headers: crmHeaders })
+      return await res.json()
+    }
+    case 'crm_create_custom_field': {
+      const res = await fetch(`${CRM_BASE}/locations/${LOC}/customFields`, { method: 'POST', headers: crmHeaders, body: JSON.stringify({ name: args.name, dataType: args.dataType || 'TEXT' }) })
+      return { success: res.ok, data: await res.json() }
+    }
+    case 'crm_create_tag': {
+      const res = await fetch(`${CRM_BASE}/locations/${LOC}/tags`, { method: 'POST', headers: crmHeaders, body: JSON.stringify({ name: args.name }) })
+      return { success: res.ok, data: await res.json() }
+    }
+
+    // ── Stripe Extended ──
+    case 'stripe_create_customer': {
+      const res = await fetch('https://api.stripe.com/v1/customers', { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ email: args.email, name: args.name || '' }).toString() })
+      return await res.json()
+    }
+    case 'stripe_list_customers': {
+      const res = await fetch(`https://api.stripe.com/v1/customers?limit=${args.limit || 10}${args.email ? '&email=' + args.email : ''}`, { headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}` } })
+      return await res.json()
+    }
+    case 'stripe_get_customer': {
+      const res = await fetch(`https://api.stripe.com/v1/customers/${args.id}`, { headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}` } })
+      return await res.json()
+    }
+    case 'stripe_create_invoice': {
+      const res = await fetch('https://api.stripe.com/v1/invoices', { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ customer: args.customer, 'auto_advance': 'true' }).toString() })
+      return await res.json()
+    }
+    case 'stripe_send_invoice': {
+      const res = await fetch(`https://api.stripe.com/v1/invoices/${args.invoiceId}/send`, { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' } })
+      return await res.json()
+    }
+    case 'stripe_list_invoices': {
+      const res = await fetch(`https://api.stripe.com/v1/invoices?limit=${args.limit || 10}`, { headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}` } })
+      return await res.json()
+    }
+    case 'stripe_create_subscription': {
+      const res = await fetch('https://api.stripe.com/v1/subscriptions', { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ customer: args.customer, 'items[0][price]': args.priceId }).toString() })
+      return await res.json()
+    }
+    case 'stripe_cancel_subscription': {
+      const res = await fetch(`https://api.stripe.com/v1/subscriptions/${args.subscriptionId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}` } })
+      return await res.json()
+    }
+    case 'stripe_get_balance': {
+      const res = await fetch('https://api.stripe.com/v1/balance', { headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}` } })
+      return await res.json()
+    }
+    case 'stripe_list_payments': {
+      const res = await fetch(`https://api.stripe.com/v1/payment_intents?limit=${args.limit || 10}`, { headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}` } })
+      return await res.json()
+    }
+    case 'stripe_create_product': {
+      const res = await fetch('https://api.stripe.com/v1/products', { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ name: args.name, description: args.description || '' }).toString() })
+      return await res.json()
+    }
+    case 'stripe_create_price': {
+      const res = await fetch('https://api.stripe.com/v1/prices', { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ product: args.product, unit_amount: String(args.unitAmount), currency: args.currency || 'usd' }).toString() })
+      return await res.json()
+    }
+    case 'stripe_create_checkout': {
+      const res = await fetch('https://api.stripe.com/v1/checkout/sessions', { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ 'line_items[0][price]': args.priceId, 'line_items[0][quantity]': '1', mode: 'payment', success_url: args.successUrl || 'https://0ncore.com/thank-you', cancel_url: args.cancelUrl || 'https://0ncore.com' }).toString() })
+      return await res.json()
+    }
+
+    // ── Slack ──
+    case 'slack_send_message': {
+      const res = await fetch('https://slack.com/api/chat.postMessage', { method: 'POST', headers: { 'Authorization': `Bearer ${process.env.SLACK_BOT_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ channel: args.channel, text: args.text }) })
+      return await res.json()
+    }
+    case 'slack_list_channels': {
+      const res = await fetch('https://slack.com/api/conversations.list', { headers: { 'Authorization': `Bearer ${process.env.SLACK_BOT_TOKEN}` } })
+      return await res.json()
+    }
+
+    // ── AI Extended ──
+    case 'ai_council_debate': {
+      return { message: 'Council debate requires the 0nAI server. Use command.0nmcp.com/api/ai/council', tool: name }
+    }
+    case 'ai_score_lead': {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: 'You are a lead scoring AI. Score this lead 1-100 based on the data provided. Return ONLY a JSON object: {"score": N, "label": "Hot/Warm/Cold", "reasoning": "brief reason", "nextAction": "recommended action"}' }, { role: 'user', content: `Score this lead: ${JSON.stringify(args)}` }], max_tokens: 200 }) })
+      const data = await groqRes.json()
+      try { return JSON.parse(data.choices?.[0]?.message?.content || '{}') } catch { return { response: data.choices?.[0]?.message?.content } }
+    }
+    case 'ai_generate_email': {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: `Write a ${args.tone || 'professional'} email. Return ONLY the email text, no meta-commentary.` }, { role: 'user', content: `To: ${args.to}. Context: ${args.context}` }], max_tokens: 500 }) })
+      const data = await groqRes.json()
+      return { email: data.choices?.[0]?.message?.content }
+    }
+    case 'ai_generate_blog': {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: 'Write a complete blog post in markdown format. Include H2 headings, bullet points, and a conclusion.' }, { role: 'user', content: `Topic: ${args.topic}. Keywords: ${(args.keywords || []).join(', ')}. Target length: ${args.wordCount || 1000} words.` }], max_tokens: 2048 }) })
+      const data = await groqRes.json()
+      return { blog: data.choices?.[0]?.message?.content }
+    }
+    case 'ai_generate_social': {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: `Write a ${args.platform} post. Match the platform style and character limits. Include relevant hashtags.` }, { role: 'user', content: `Topic: ${args.topic}. Tone: ${args.tone || 'engaging'}.` }], max_tokens: 300 }) })
+      const data = await groqRes.json()
+      return { post: data.choices?.[0]?.message?.content }
+    }
+    case 'ai_summarize': {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: 'Summarize the following concisely in 3-5 sentences.' }, { role: 'user', content: args.text || args.url || '' }], max_tokens: 300 }) })
+      const data = await groqRes.json()
+      return { summary: data.choices?.[0]?.message?.content }
+    }
+    case 'ai_translate': {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: `Translate the following to ${args.targetLanguage}. Return ONLY the translation.` }, { role: 'user', content: args.text }], max_tokens: 1000 }) })
+      const data = await groqRes.json()
+      return { translation: data.choices?.[0]?.message?.content }
+    }
+
+    // ── SXO Extended ──
+    case 'sxo_generate_report': {
+      // Trigger the SXO scan and create CRM contact
+      const scanRes = await fetch('https://sxowebsite.com/api/sxo-score', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: args.url }) })
+      const scanData = await scanRes.json()
+      if (args.email) {
+        await fetch(`${CRM_BASE}/contacts/`, { method: 'POST', headers: crmHeaders, body: JSON.stringify({ locationId: LOC, email: args.email, tags: ['sxo-scan'], customFields: [{ key: 'sxo_score', value: String(scanData.overallScore || 0) }, { key: 'sxo_domain', value: args.url }] }) })
+      }
+      return { score: scanData.overallScore, grade: scanData.grade, report: scanData, contactCreated: !!args.email }
+    }
+
+    // ── Generic handler for services needing API keys not yet configured ──
+    default: {
+      // Check if it's a known tool pattern we can route
+      const [service, action] = name.split('_', 2)
+      const keyMap: Record<string, string> = {
+        sendgrid: 'SENDGRID_API_KEY', slack: 'SLACK_BOT_TOKEN', discord: 'DISCORD_BOT_TOKEN',
+        twilio: 'TWILIO_AUTH_TOKEN', github: 'GITHUB_TOKEN', shopify: 'SHOPIFY_ACCESS_TOKEN',
+        notion: 'NOTION_API_KEY', figma: 'FIGMA_TOKEN', hubspot: 'HUBSPOT_ACCESS_TOKEN',
+        mailchimp: 'MAILCHIMP_API_KEY', zoom: 'ZOOM_ACCESS_TOKEN', linkedin: 'LINKEDIN_ACCESS_TOKEN',
+        wordpress: 'WORDPRESS_APP_PASSWORD', webflow: 'WEBFLOW_ACCESS_TOKEN', mongodb: 'MONGODB_API_KEY',
+        airtable: 'AIRTABLE_API_KEY', calendly: 'CALENDLY_ACCESS_TOKEN', typeform: 'TYPEFORM_ACCESS_TOKEN',
+        docusign: 'DOCUSIGN_ACCESS_TOKEN', woocommerce: 'WOOCOMMERCE_KEY', square: 'SQUARE_ACCESS_TOKEN',
+        quickbooks: 'QUICKBOOKS_ACCESS_TOKEN', elevenlabs: 'ELEVENLABS_API_KEY', deepgram: 'DEEPGRAM_API_KEY',
+      }
+
+      const envKey = keyMap[service]
+      if (envKey && !process.env[envKey]) {
+        return { error: `${service} not configured. Set ${envKey} environment variable to enable ${name}.`, tool: name, service, needsKey: envKey }
+      }
+
+      return { error: `Tool '${name}' execution not yet implemented. Service: ${service}, Action: ${action || name}`, tool: name }
+    }
   }
 }
