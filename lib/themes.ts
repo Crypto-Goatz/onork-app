@@ -17,10 +17,12 @@ export const THEMES: Record<ThemeMode, {
     label: 'Light',
     icon: '☀️',
     vars: {
-      '--bg-page': '#F5F6FA',
-      '--bg-card': '#FFFFFF',
-      '--bg-sidebar': '#FFFFFF',
-      '--bg-header': 'rgba(255,255,255,0.8)',
+      '--bg-page': '#F0F2F8',
+      '--bg-page-gradient': 'radial-gradient(ellipse at 20% 0%, rgba(110,224,90,0.06) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(0,212,255,0.04) 0%, transparent 50%), #F0F2F8',
+      '--bg-card': 'rgba(255,255,255,0.85)',
+      '--bg-card-blur': 'blur(12px)',
+      '--bg-sidebar': 'rgba(255,255,255,0.7)',
+      '--bg-header': 'rgba(255,255,255,0.6)',
       '--bg-input': '#F4F7FE',
       '--bg-hover': '#F0F3F9',
       '--bg-active': 'rgba(110,224,90,0.12)',
@@ -50,9 +52,11 @@ export const THEMES: Record<ThemeMode, {
     icon: '🌙',
     vars: {
       '--bg-page': '#0B0F19',
-      '--bg-card': '#111827',
-      '--bg-sidebar': '#0E1422',
-      '--bg-header': 'rgba(14,20,34,0.85)',
+      '--bg-page-gradient': 'radial-gradient(ellipse at 15% 5%, rgba(110,224,90,0.08) 0%, transparent 40%), radial-gradient(ellipse at 85% 80%, rgba(0,212,255,0.06) 0%, transparent 40%), radial-gradient(ellipse at 50% 50%, rgba(167,139,250,0.04) 0%, transparent 50%), #0B0F19',
+      '--bg-card': 'rgba(17,24,39,0.8)',
+      '--bg-card-blur': 'blur(12px)',
+      '--bg-sidebar': 'rgba(14,20,34,0.9)',
+      '--bg-header': 'rgba(14,20,34,0.75)',
       '--bg-input': '#1C2333',
       '--bg-hover': '#1C2B42',
       '--bg-active': 'rgba(110,224,90,0.12)',
@@ -82,9 +86,11 @@ export const THEMES: Record<ThemeMode, {
     icon: '💚',
     vars: {
       '--bg-page': '#0A1A0F',
-      '--bg-card': '#0F2517',
-      '--bg-sidebar': '#0A1A0F',
-      '--bg-header': 'rgba(10,26,15,0.85)',
+      '--bg-page-gradient': 'radial-gradient(ellipse at 30% 10%, rgba(110,224,90,0.15) 0%, transparent 50%), radial-gradient(ellipse at 70% 90%, rgba(110,224,90,0.08) 0%, transparent 40%), #0A1A0F',
+      '--bg-card': 'rgba(15,37,23,0.7)',
+      '--bg-card-blur': 'blur(16px)',
+      '--bg-sidebar': 'rgba(10,26,15,0.9)',
+      '--bg-header': 'rgba(10,26,15,0.75)',
       '--bg-input': '#133A1F',
       '--bg-hover': '#1A4D28',
       '--bg-active': 'rgba(110,224,90,0.2)',
@@ -114,7 +120,9 @@ export const THEMES: Record<ThemeMode, {
     icon: '✨',
     vars: {
       '--bg-page': '#0D1117',
+      '--bg-page-gradient': 'radial-gradient(ellipse at 25% 0%, rgba(110,224,90,0.1) 0%, transparent 40%), radial-gradient(ellipse at 75% 100%, rgba(0,212,255,0.08) 0%, transparent 40%), radial-gradient(ellipse at 50% 40%, rgba(167,139,250,0.06) 0%, transparent 50%), #0D1117',
       '--bg-card': 'rgba(255,255,255,0.04)',
+      '--bg-card-blur': 'blur(20px) saturate(180%)',
       '--bg-sidebar': 'rgba(255,255,255,0.03)',
       '--bg-header': 'rgba(255,255,255,0.05)',
       '--bg-input': 'rgba(255,255,255,0.06)',
@@ -156,8 +164,12 @@ export function applyTheme(mode: ThemeMode) {
     root.style.setProperty(key, value)
   }
 
-  // Toggle glass class
-  root.classList.toggle('glass-mode', mode === 'glass')
+  // Apply gradient background to body
+  document.body.style.background = theme.vars['--bg-page-gradient'] || theme.vars['--bg-page']
+
+  // Toggle theme classes
+  root.classList.remove('theme-light', 'theme-dark', 'theme-brand', 'theme-glass')
+  root.classList.add(`theme-${mode}`)
 
   // Store preference
   try { localStorage.setItem('0ncore-theme', mode) } catch {}
