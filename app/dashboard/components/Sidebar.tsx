@@ -256,6 +256,17 @@ const navGroups: NavGroup[] = [
   },
 ]
 
+const agencyItem: NavItem = {
+  name: 'Agency',
+  href: '/dashboard/agency',
+  badge: 'HQ',
+  icon: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+    </svg>
+  ),
+}
+
 const adminItem: NavItem = {
   name: 'Admin',
   href: '/dashboard/admin',
@@ -310,7 +321,7 @@ export default function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
         <div className="jp-sidebar-body">
           {navGroups.map((group, gi) => {
             const items = group.label === 'Account' && isAdmin
-              ? [...group.items, adminItem]
+              ? [...group.items, agencyItem, adminItem]
               : group.items
             return (
               <div className="jp-menu-group" key={gi}>
