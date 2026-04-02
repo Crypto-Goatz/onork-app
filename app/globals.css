@@ -15,9 +15,9 @@
   --color-core-purple: #a78bfa;
   --color-core-red: #EE5D50;
   --color-core-amber: #FFB547;
-  --color-core-text: #2B3674;
-  --color-core-text-dim: #A3AED0;
-  --color-core-text-muted: #A3AED0;
+  --color-core-text: #1B2559;
+  --color-core-text-dim: #596785;
+  --color-core-text-muted: #8F9BBA;
 
   --animate-fade-in: fade-in 0.3s ease both;
   --animate-slide-up: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;

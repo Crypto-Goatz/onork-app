@@ -27,15 +27,62 @@
   --jp-border: #E9EDF7;
   --jp-border-hi: #D3D9E8;
   --jp-border-focus: #6EE05A;
-  --jp-text: #2B3674;
-  --jp-text-secondary: #707EAE;
-  --jp-text-muted: #A3AED0;
+  --jp-text: #1B2559;
+  --jp-text-secondary: #4A5578;
+  --jp-text-muted: #7A85A3;
   --jp-radius: 16px;
   --jp-radius-sm: 10px;
   --jp-radius-xs: 6px;
   --jp-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --jp-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   --jp-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ======= Dark Mode Overrides ======= */
+.theme-dark {
+  --jp-bg: #0B0F19;
+  --jp-surface: #111827;
+  --jp-surface-elevated: #1C2333;
+  --jp-bg-elevated: #111827;
+  --jp-bg-card: #111827;
+  --jp-bg-card-hover: #1C2B42;
+  --jp-bg-input: #1C2333;
+  --jp-border: #1E293B;
+  --jp-border-hi: #2D3748;
+  --jp-border-focus: #6EE05A;
+  --jp-text: #E8EAED;
+  --jp-text-secondary: #A0AEC0;
+  --jp-text-muted: #718096;
+  --jp-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
+}
+
+.theme-dark body,
+.theme-dark .jp-wrapper {
+  background: #0B0F19;
+  color: #E8EAED;
+}
+
+/* Brand mode */
+.theme-brand {
+  --jp-bg: #0A1A0F;
+  --jp-surface: #0F2517;
+  --jp-bg-card: #0F2517;
+  --jp-border: #1B5E20;
+  --jp-text: #E8F5E9;
+  --jp-text-secondary: #81C784;
+  --jp-text-muted: #4CAF50;
+}
+
+/* Glass mode */
+.theme-glass {
+  --jp-bg: #0D1117;
+  --jp-surface: rgba(255,255,255,0.04);
+  --jp-bg-card: rgba(255,255,255,0.04);
+  --jp-border: rgba(255,255,255,0.08);
+  --jp-text: #F0F6FC;
+  --jp-text-secondary: #8B949E;
+  --jp-text-muted: #484F58;
 }
 
 /* ======= Layout Wrapper ======= */
