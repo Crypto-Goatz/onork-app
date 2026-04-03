@@ -35,6 +35,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-BE81T6STW6" />
+        <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-BE81T6STW6');` }} />
+      </head>
       <body className="antialiased min-h-screen" style={{ background: '#F5F6FA', color: '#2B3674' }}>
         {children}
       </body>
