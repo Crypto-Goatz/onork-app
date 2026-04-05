@@ -42,6 +42,7 @@ export default function RootLayout({
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-BE81T6STW6" />
         <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-BE81T6STW6');` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('0n-theme')||'light';document.documentElement.setAttribute('data-theme',t)})()` }} />
+        <script src="https://api.rocketclients.com/js/external-tracking.js" data-tracking-id="tk_f9c5376df66c45e69941dd3f3bbe22a2" async />
       </head>
       <body className="antialiased min-h-screen">
         {children}
