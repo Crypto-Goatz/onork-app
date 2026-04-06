@@ -29,7 +29,7 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
   return (
     <div style={{
       width: isCompact ? 200 : 280,
-      background: '#0e1825',
+      background: 'var(--bg-secondary, #161b22)',
       borderLeft: '1px solid #1c2b42',
       display: 'flex',
       flexDirection: 'column',
@@ -38,7 +38,7 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
     }}>
       {/* Header */}
       <div style={{ padding: '16px', borderBottom: '1px solid #1c2b42' }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#e8ecf2', marginBottom: isCompact ? 0 : 10, fontFamily: '-apple-system, sans-serif' }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: isCompact ? 0 : 10, fontFamily: '-apple-system, sans-serif' }}>
           Menu
         </div>
         {!isCompact && <input
@@ -48,16 +48,16 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
           style={{
             width: '100%',
             padding: '9px 12px',
-            background: '#141e30',
+            background: 'var(--bg-card, #1f2937)',
             border: '1px solid #1c2b42',
             borderRadius: 8,
-            color: '#e8ecf2',
+            color: 'var(--text-primary, #f0f4f8)',
             fontSize: 13,
             outline: 'none',
             fontFamily: '-apple-system, sans-serif',
           }}
-          onFocus={e => e.target.style.borderColor = '#2dd4bf'}
-          onBlur={e => e.target.style.borderColor = '#1c2b42'}
+          onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
+          onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
         />}
       </div>
 
@@ -66,7 +66,7 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
         {search && filtered ? (
           // Search results
           <div style={{ padding: '0 12px' }}>
-            <div style={{ fontSize: 11, color: '#556880', padding: '4px 4px 8px', fontFamily: '-apple-system, sans-serif' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', padding: '4px 4px 8px', fontFamily: '-apple-system, sans-serif' }}>
               {filtered.length} results
             </div>
             {filtered.map(cap => (
@@ -76,7 +76,7 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
                 onDragStart={e => onDragStart(e, cap.id)}
                 style={{
                   padding: '10px 12px',
-                  background: '#141e30',
+                  background: 'var(--bg-card, #1f2937)',
                   border: '1px solid #1c2b42',
                   borderRadius: 10,
                   marginBottom: 6,
@@ -91,14 +91,14 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
                   e.currentTarget.style.background = '#1a2740'
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = '#1c2b42'
-                  e.currentTarget.style.background = '#141e30'
+                  e.currentTarget.style.borderColor = 'var(--border, #30363d)'
+                  e.currentTarget.style.background = 'var(--bg-card, #1f2937)'
                 }}
               >
                 <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>{cap.icon}</span>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#e8ecf2', marginBottom: 2, fontFamily: '-apple-system, sans-serif' }}>{cap.name}</div>
-                  <div style={{ fontSize: 11, color: '#556880', lineHeight: 1.4, fontFamily: '-apple-system, sans-serif' }}>{cap.description}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)', marginBottom: 2, fontFamily: '-apple-system, sans-serif' }}>{cap.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', lineHeight: 1.4, fontFamily: '-apple-system, sans-serif' }}>{cap.description}</div>
                 </div>
               </div>
             ))}
@@ -126,11 +126,11 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
                   }}
                 >
                   <span style={{ fontSize: 16 }}>{cat.icon}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: isOpen ? cat.color : '#8b9ab5', flex: 1, textAlign: 'left' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: isOpen ? cat.color : 'var(--text-secondary, #9ca3af)', flex: 1, textAlign: 'left' }}>
                     {cat.name}
                   </span>
-                  <span style={{ fontSize: 11, color: '#556880' }}>{items.length}</span>
-                  <span style={{ color: '#556880', fontSize: 12, transition: 'transform 0.2s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>{items.length}</span>
+                  <span style={{ color: 'var(--text-muted, #6b7280)', fontSize: 12, transition: 'transform 0.2s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
                 </button>
 
                 {isOpen && (
@@ -142,7 +142,7 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
                         onDragStart={e => onDragStart(e, cap.id)}
                         style={{
                           padding: '10px 12px',
-                          background: '#141e30',
+                          background: 'var(--bg-card, #1f2937)',
                           border: '1px solid transparent',
                           borderRadius: 10,
                           marginBottom: 4,
@@ -158,13 +158,13 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
                         }}
                         onMouseLeave={e => {
                           e.currentTarget.style.borderColor = 'transparent'
-                          e.currentTarget.style.background = '#141e30'
+                          e.currentTarget.style.background = 'var(--bg-card, #1f2937)'
                         }}
                       >
                         <span style={{ fontSize: 16, flexShrink: 0 }}>{cap.icon}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#e8ecf2', fontFamily: '-apple-system, sans-serif' }}>{cap.name}</div>
-                          <div style={{ fontSize: 11, color: '#556880', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: '-apple-system, sans-serif' }}>{cap.description}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)', fontFamily: '-apple-system, sans-serif' }}>{cap.name}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: '-apple-system, sans-serif' }}>{cap.description}</div>
                         </div>
                       </div>
                     ))}
@@ -181,7 +181,7 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
         padding: '12px 16px',
         borderTop: '1px solid #1c2b42',
         fontSize: 11,
-        color: '#556880',
+        color: 'var(--text-muted, #6b7280)',
         textAlign: 'center',
         fontFamily: '-apple-system, sans-serif',
       }}>

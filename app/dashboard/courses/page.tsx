@@ -66,13 +66,13 @@ export default function CoursesPage() {
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#e8ecf2', margin: '0 0 4px' }}>AI Course Generator</h1>
-        <p style={{ fontSize: 13, color: '#556880' }}>Describe a topic — AI builds the entire course and imports it into your CRM.</p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px' }}>AI Course Generator</h1>
+        <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)' }}>Describe a topic — AI builds the entire course and imports it into your CRM.</p>
       </div>
 
       {/* Generator Form */}
       <div style={{
-        background: '#141e30', border: '1px solid #1c2b42',
+        background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
         borderRadius: 14, padding: 24, marginBottom: 24,
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -83,8 +83,8 @@ export default function CoursesPage() {
               onChange={e => setTopic(e.target.value)}
               placeholder="e.g. Facebook Ads for Local Businesses, How to Close More Deals, Email Marketing Fundamentals"
               style={inputStyle}
-              onFocus={e => e.target.style.borderColor = '#2dd4bf'}
-              onBlur={e => e.target.style.borderColor = '#1c2b42'}
+              onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
+              onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
             />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
@@ -95,8 +95,8 @@ export default function CoursesPage() {
                 onChange={e => setAudience(e.target.value)}
                 placeholder="e.g. small business owners, real estate agents"
                 style={inputStyle}
-                onFocus={e => e.target.style.borderColor = '#2dd4bf'}
-                onBlur={e => e.target.style.borderColor = '#1c2b42'}
+                onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
               />
             </div>
             <div>
@@ -112,8 +112,8 @@ export default function CoursesPage() {
           </div>
           <button onClick={handleGenerate} disabled={generating || !topic.trim()} style={{
             padding: '13px',
-            background: generating ? '#1c2b42' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-            color: generating ? '#556880' : '#0c1220',
+            background: generating ? 'var(--border, #30363d)' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
+            color: generating ? 'var(--text-muted, #6b7280)' : '#0c1220',
             fontWeight: 700, fontSize: 15, borderRadius: 10,
             border: 'none', cursor: generating ? 'not-allowed' : 'pointer',
           }}>
@@ -125,24 +125,24 @@ export default function CoursesPage() {
       {/* Generated Course Preview */}
       {course && (
         <div style={{
-          background: '#141e30', border: '1px solid #1c2b42',
+          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
           borderRadius: 14, overflow: 'hidden',
         }}>
           {/* Course Header */}
           <div style={{ padding: 24, borderBottom: '1px solid #1c2b42' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: '#e8ecf2', margin: '0 0 6px' }}>{course.title}</h2>
-                <p style={{ fontSize: 13, color: '#8b9ab5', lineHeight: 1.6 }}>{course.description}</p>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 6px' }}>{course.title}</h2>
+                <p style={{ fontSize: 13, color: 'var(--text-secondary, #9ca3af)', lineHeight: 1.6 }}>{course.description}</p>
               </div>
               <div style={{ display: 'flex', gap: 12, flexShrink: 0, marginLeft: 20 }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#2dd4bf' }}>{course.modules.length}</div>
-                  <div style={{ fontSize: 10, color: '#556880' }}>modules</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--color-cyan, #14b8a6)' }}>{course.modules.length}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted, #6b7280)' }}>modules</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: '#8b5cf6' }}>{totalLessons}</div>
-                  <div style={{ fontSize: 10, color: '#556880' }}>lessons</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted, #6b7280)' }}>lessons</div>
                 </div>
               </div>
             </div>
@@ -153,7 +153,7 @@ export default function CoursesPage() {
             {course.modules.map((mod, i) => (
               <div key={i} style={{
                 marginTop: 16,
-                background: '#0e1825',
+                background: 'var(--bg-secondary, #161b22)',
                 border: '1px solid #1c2b42',
                 borderRadius: 10,
                 overflow: 'hidden',
@@ -167,10 +167,10 @@ export default function CoursesPage() {
                     width: 24, height: 24, borderRadius: 6,
                     background: 'rgba(45,212,191,0.12)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 11, fontWeight: 800, color: '#2dd4bf', flexShrink: 0,
+                    fontSize: 11, fontWeight: 800, color: 'var(--color-cyan, #14b8a6)', flexShrink: 0,
                   }}>{i + 1}</span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#e8ecf2' }}>{mod.title}</span>
-                  <span style={{ fontSize: 11, color: '#556880', marginLeft: 'auto' }}>{mod.lessons.length} lessons</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>{mod.title}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', marginLeft: 'auto' }}>{mod.lessons.length} lessons</span>
                 </div>
                 <div style={{ padding: '8px 16px' }}>
                   {mod.lessons.map((lesson, j) => (
@@ -179,8 +179,8 @@ export default function CoursesPage() {
                       borderBottom: j < mod.lessons.length - 1 ? '1px solid rgba(28,43,66,0.5)' : 'none',
                       display: 'flex', gap: 10, alignItems: 'center',
                     }}>
-                      <span style={{ fontSize: 10, color: '#556880', flexShrink: 0 }}>{i + 1}.{j + 1}</span>
-                      <span style={{ fontSize: 13, color: '#8b9ab5' }}>{lesson}</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-muted, #6b7280)', flexShrink: 0 }}>{i + 1}.{j + 1}</span>
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary, #9ca3af)' }}>{lesson}</span>
                     </div>
                   ))}
                 </div>
@@ -194,7 +194,7 @@ export default function CoursesPage() {
             borderTop: '1px solid #1c2b42',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
-            <span style={{ fontSize: 12, color: '#556880' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)' }}>
               {imported ? '✓ Imported to your CRM' : 'Ready to import into your CRM'}
             </span>
             {imported ? (
@@ -202,8 +202,8 @@ export default function CoursesPage() {
             ) : (
               <button onClick={handleImport} disabled={importing} style={{
                 padding: '10px 24px',
-                background: importing ? '#1c2b42' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                color: importing ? '#556880' : '#fff',
+                background: importing ? 'var(--border, #30363d)' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                color: importing ? 'var(--text-muted, #6b7280)' : '#fff',
                 fontWeight: 700, fontSize: 13, borderRadius: 8,
                 border: 'none', cursor: importing ? 'not-allowed' : 'pointer',
               }}>
@@ -217,12 +217,12 @@ export default function CoursesPage() {
       {/* Empty State */}
       {!course && !generating && (
         <div style={{
-          background: '#141e30', border: '1px solid #1c2b42',
+          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
           borderRadius: 14, padding: '48px 24px', textAlign: 'center',
         }}>
           <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>🎓</div>
-          <p style={{ color: '#556880', fontSize: 14 }}>Describe a topic above and AI will generate a complete course structure.</p>
-          <p style={{ color: '#556880', fontSize: 12, marginTop: 8 }}>One click imports it directly into your CRM.</p>
+          <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: 14 }}>Describe a topic above and AI will generate a complete course structure.</p>
+          <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: 12, marginTop: 8 }}>One click imports it directly into your CRM.</p>
         </div>
       )}
     </div>
@@ -231,13 +231,13 @@ export default function CoursesPage() {
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '12px 16px',
-  background: '#0e1825', border: '1px solid #1c2b42',
-  borderRadius: 10, color: '#e8ecf2', fontSize: 14, outline: 'none',
+  background: 'var(--bg-secondary, #161b22)', border: '1px solid #1c2b42',
+  borderRadius: 10, color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
   transition: 'border-color 0.2s',
 }
 
 const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: 11, color: '#556880',
+  display: 'block', fontSize: 11, color: 'var(--text-muted, #6b7280)',
   marginBottom: 6, fontWeight: 600, textTransform: 'uppercase',
   letterSpacing: '0.06em',
 }

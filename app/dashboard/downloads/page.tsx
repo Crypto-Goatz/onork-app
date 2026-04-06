@@ -212,7 +212,7 @@ const DOWNLOADS: Download[] = [
     description: 'Connect your WordPress site to 0nCore. Sync contacts, forms, and analytics.',
     icon: '🔌',
     category: 'wordpress',
-    color: '#2dd4bf',
+    color: 'var(--color-cyan, #14b8a6)',
     action: 'link',
     actionLabel: 'Coming Soon',
     actionData: '#',
@@ -226,7 +226,7 @@ const DOWNLOADS: Download[] = [
     description: 'Install 0nCore directly in your CRM. Full dashboard, automations, AI — inside the sidebar.',
     icon: '🚀',
     category: 'crm',
-    color: '#2dd4bf',
+    color: 'var(--color-cyan, #14b8a6)',
     action: 'link',
     actionLabel: 'Install App',
     actionData: 'https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&client_id=69c762225a31e1cd2f28dd4c-mn9wyk9o&version_id=69c762225a31e1cd2f28dd4c',
@@ -285,7 +285,7 @@ const DOWNLOADS: Download[] = [
     description: 'Source code, issues, contributions. Star us and join the community.',
     icon: '🐙',
     category: 'dev',
-    color: '#e8ecf2',
+    color: 'var(--text-primary, #f0f4f8)',
     action: 'link',
     actionLabel: 'View on GitHub',
     actionData: 'https://github.com/0nork/0nMCP',
@@ -296,7 +296,7 @@ const DOWNLOADS: Download[] = [
     description: 'Complete API reference for all 900+ tools and 55 services.',
     icon: '📖',
     category: 'dev',
-    color: '#2dd4bf',
+    color: 'var(--color-cyan, #14b8a6)',
     action: 'link',
     actionLabel: 'View Docs',
     actionData: 'https://0nmcp.com/learn',
@@ -307,7 +307,7 @@ const DOWNLOADS: Download[] = [
     description: 'The .0n file format — universal workflow configuration. Parse, validate, create.',
     icon: '📐',
     category: 'dev',
-    color: '#2dd4bf',
+    color: 'var(--color-cyan, #14b8a6)',
     action: 'copy',
     actionLabel: 'Copy Command',
     actionData: 'npm install 0n-spec',
@@ -320,7 +320,7 @@ const DOWNLOADS: Download[] = [
     description: 'Add 0nCore to your home screen. Full dashboard, AI chat, contacts — on your phone.',
     icon: '📱',
     category: 'mobile',
-    color: '#2dd4bf',
+    color: 'var(--color-cyan, #14b8a6)',
     action: 'link',
     actionLabel: 'Open 0nCore',
     actionData: 'https://0ncore.com/dashboard',
@@ -349,21 +349,21 @@ export default function DownloadsPage() {
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#e8ecf2', margin: '0 0 4px' }}>Downloads & Integrations</h1>
-        <p style={{ fontSize: 13, color: '#556880' }}>Connect 0nCore to every platform. One ecosystem, everywhere.</p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px' }}>Downloads & Integrations</h1>
+        <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)' }}>Connect 0nCore to every platform. One ecosystem, everywhere.</p>
       </div>
 
       {/* Category Tabs */}
       <div style={{
         display: 'flex', gap: 4, marginBottom: 28,
-        background: '#0e1825', borderRadius: 10, padding: 4, width: 'fit-content',
+        background: 'var(--bg-secondary, #161b22)', borderRadius: 10, padding: 4, width: 'fit-content',
         border: '1px solid #1c2b42',
       }}>
         {CATEGORIES.map(c => (
           <button key={c.id} onClick={() => setActiveCategory(c.id)} style={{
             padding: '7px 14px', borderRadius: 7, border: 'none',
-            background: activeCategory === c.id ? '#1c2b42' : 'transparent',
-            color: activeCategory === c.id ? '#2dd4bf' : '#556880',
+            background: activeCategory === c.id ? 'var(--border, #30363d)' : 'transparent',
+            color: activeCategory === c.id ? 'var(--color-cyan, #14b8a6)' : 'var(--text-muted, #6b7280)',
             fontSize: 12, fontWeight: 600, cursor: 'pointer',
             transition: 'all 0.15s',
           }}>{c.label}</button>
@@ -374,13 +374,13 @@ export default function DownloadsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
         {filtered.map(d => (
           <div key={d.id} style={{
-            background: '#141e30', border: '1px solid #1c2b42',
+            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
             borderRadius: 14, padding: 20,
             transition: 'all 0.2s', cursor: 'pointer',
             position: 'relative', overflow: 'hidden',
           }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = `${d.color}40`; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#1c2b42'; e.currentTarget.style.transform = 'none' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border, #30363d)'; e.currentTarget.style.transform = 'none' }}
           >
             {/* Badge */}
             {d.badge && (
@@ -394,10 +394,10 @@ export default function DownloadsPage() {
                   d.badge === 'PWA' ? 'rgba(59,130,246,0.12)' :
                   'rgba(85,104,128,0.12)',
                 color: d.badge === 'LIVE' ? '#34d399' :
-                  d.badge === 'NEW' ? '#2dd4bf' :
+                  d.badge === 'NEW' ? 'var(--color-cyan, #14b8a6)' :
                   d.badge === 'POPULAR' ? '#8b5cf6' :
                   d.badge === 'PWA' ? '#3b82f6' :
-                  '#556880',
+                  'var(--text-muted, #6b7280)',
               }}>{d.badge}</span>
             )}
 
@@ -405,21 +405,21 @@ export default function DownloadsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
               <span style={{ fontSize: 24 }}>{d.icon}</span>
               <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#e8ecf2' }}>{d.name}</div>
-                {d.size && <div style={{ fontSize: 10, color: '#556880' }}>{d.size}</div>}
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)' }}>{d.name}</div>
+                {d.size && <div style={{ fontSize: 10, color: 'var(--text-muted, #6b7280)' }}>{d.size}</div>}
               </div>
             </div>
 
             {/* Description */}
-            <p style={{ fontSize: 12, color: '#8b9ab5', lineHeight: 1.6, marginBottom: 14 }}>{d.description}</p>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary, #9ca3af)', lineHeight: 1.6, marginBottom: 14 }}>{d.description}</p>
 
             {/* Action */}
             <button onClick={() => handleAction(d)} style={{
               width: '100%', padding: '9px 16px',
-              background: d.actionData === '#' ? '#1c2b42' : `${d.color}12`,
-              border: `1px solid ${d.actionData === '#' ? '#1c2b42' : d.color + '25'}`,
+              background: d.actionData === '#' ? 'var(--border, #30363d)' : `${d.color}12`,
+              border: `1px solid ${d.actionData === '#' ? 'var(--border, #30363d)' : d.color + '25'}`,
               borderRadius: 8,
-              color: d.actionData === '#' ? '#556880' : d.color,
+              color: d.actionData === '#' ? 'var(--text-muted, #6b7280)' : d.color,
               fontSize: 12, fontWeight: 600, cursor: d.actionData === '#' ? 'default' : 'pointer',
               transition: 'all 0.15s',
             }}>
@@ -432,7 +432,7 @@ export default function DownloadsPage() {
       {/* Stats Footer */}
       <div style={{
         marginTop: 32, padding: '20px 24px',
-        background: '#141e30', border: '1px solid #1c2b42',
+        background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
         borderRadius: 14, display: 'flex', justifyContent: 'space-around',
         textAlign: 'center',
       }}>
@@ -444,8 +444,8 @@ export default function DownloadsPage() {
           { value: '1', label: 'CRM App' },
         ].map(s => (
           <div key={s.label}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#2dd4bf' }}>{s.value}</div>
-            <div style={{ fontSize: 10, color: '#556880', marginTop: 2 }}>{s.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-cyan, #14b8a6)' }}>{s.value}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted, #6b7280)', marginTop: 2 }}>{s.label}</div>
           </div>
         ))}
       </div>

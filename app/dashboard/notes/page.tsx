@@ -20,7 +20,7 @@ interface Block {
   fontSize: number
 }
 
-const COLORS = ['#6EE05A', '#00d4ff', '#a78bfa', '#f59e0b', '#ef4444', '#E8EAED', '#7A8290']
+const COLORS = ['#7ed957', '#00d4ff', '#a78bfa', '#f59e0b', '#ef4444', '#E8EAED', '#7A8290']
 const ICONS = ['/', '//', ':::', '[]', '<>', '()', '{}', '***', '---', '+++', '###', '@', '#', '$', '%', '&']
 
 const BLOCK_TEMPLATES: { type: Block['type']; label: string; icon: string }[] = [
@@ -40,7 +40,7 @@ function newBlock(type: Block['type'], x: number, y: number): Block {
     case 'note': return { ...base, w: 200, h: 140, content: 'Note', color: '#f59e0b', fontSize: 13 }
     case 'box': return { ...base, w: 200, h: 120, content: '', color: '#7A8290', fontSize: 12 }
     case 'divider': return { ...base, w: 300, h: 4, content: '', color: '#2D3748', fontSize: 0 }
-    case 'icon': return { ...base, w: 48, h: 48, content: '///', color: '#6EE05A', fontSize: 20 }
+    case 'icon': return { ...base, w: 48, h: 48, content: '///', color: '#7ed957', fontSize: 20 }
     default: return { ...base, w: 200, h: 32, content: '', fontSize: 14 }
   }
 }
@@ -158,7 +158,7 @@ export default function NotesCanvas() {
           <button key={t.type} onClick={() => setTool(t.type)} style={{
             padding: '6px 12px', borderRadius: 6, border: 'none',
             background: tool === t.type ? 'rgba(110,224,90,0.15)' : 'transparent',
-            color: tool === t.type ? '#6EE05A' : 'var(--jp-text-muted, #4A5568)',
+            color: tool === t.type ? '#7ed957' : 'var(--jp-text-muted, #4A5568)',
             fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.15s',
           }}>
@@ -196,7 +196,7 @@ export default function NotesCanvas() {
           <span style={{
             fontSize: '0.5625rem', fontWeight: 700, padding: '2px 8px', borderRadius: 4,
             background: saving ? 'rgba(245,158,11,0.1)' : 'rgba(110,224,90,0.08)',
-            color: saving ? '#f59e0b' : '#6EE05A',
+            color: saving ? '#f59e0b' : '#7ed957',
           }}>
             {saving ? 'Saving...' : 'Saved'}
           </span>
@@ -246,7 +246,7 @@ export default function NotesCanvas() {
                   position: 'absolute', left: block.x, top: block.y,
                   width: block.w, height: 4, borderRadius: 2,
                   background: block.color, cursor: 'grab',
-                  outline: isSelected ? '2px solid #6EE05A' : 'none', outlineOffset: 4,
+                  outline: isSelected ? '2px solid #7ed957' : 'none', outlineOffset: 4,
                 }}
               />
             )
@@ -263,7 +263,7 @@ export default function NotesCanvas() {
                   width: block.w, height: block.h, borderRadius: 10,
                   border: `2px solid ${block.color}40`, background: `${block.color}08`,
                   cursor: 'grab',
-                  outline: isSelected ? '2px solid #6EE05A' : 'none', outlineOffset: 2,
+                  outline: isSelected ? '2px solid #7ed957' : 'none', outlineOffset: 2,
                 }}
               />
             )
@@ -286,7 +286,7 @@ export default function NotesCanvas() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: block.color, fontSize: block.fontSize, fontWeight: 800,
                   fontFamily: "'JetBrains Mono', monospace", cursor: 'grab',
-                  outline: isSelected ? '2px solid #6EE05A' : 'none', outlineOffset: 2,
+                  outline: isSelected ? '2px solid #7ed957' : 'none', outlineOffset: 2,
                 }}
                 title="Double-click to cycle icon"
               >
@@ -308,7 +308,7 @@ export default function NotesCanvas() {
                   background: block.color, padding: '10px 12px',
                   cursor: isEditing ? 'text' : 'grab',
                   boxShadow: '2px 2px 8px rgba(0,0,0,0.3)',
-                  outline: isSelected ? '2px solid #6EE05A' : 'none', outlineOffset: 2,
+                  outline: isSelected ? '2px solid #7ed957' : 'none', outlineOffset: 2,
                 }}
               >
                 {isEditing ? (
@@ -343,7 +343,7 @@ export default function NotesCanvas() {
               style={{
                 position: 'absolute', left: block.x, top: block.y,
                 minWidth: 60, cursor: isEditing ? 'text' : 'grab',
-                outline: isSelected ? '2px solid #6EE05A' : 'none', outlineOffset: 4,
+                outline: isSelected ? '2px solid #7ed957' : 'none', outlineOffset: 4,
                 borderRadius: 4,
               }}
             >

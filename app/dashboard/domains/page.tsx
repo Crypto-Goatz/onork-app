@@ -62,8 +62,8 @@ export default function DomainsPage() {
   return (
     <div style={{ maxWidth: 700, margin: '0 auto' }}>
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#e8ecf2', margin: '0 0 4px' }}>Domains</h1>
-        <p style={{ fontSize: 13, color: '#556880' }}>Find and register a domain for your business.</p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px' }}>Domains</h1>
+        <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)' }}>Find and register a domain for your business.</p>
       </div>
 
       {/* Search */}
@@ -74,16 +74,16 @@ export default function DomainsPage() {
           placeholder="Search for a domain name..."
           style={{
             flex: 1, padding: '14px 16px',
-            background: '#141e30', border: '1px solid #1c2b42',
-            borderRadius: 10, color: '#e8ecf2', fontSize: 15, outline: 'none',
+            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
+            borderRadius: 10, color: 'var(--text-primary, #f0f4f8)', fontSize: 15, outline: 'none',
           }}
-          onFocus={e => e.target.style.borderColor = '#2dd4bf'}
-          onBlur={e => e.target.style.borderColor = '#1c2b42'}
+          onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
+          onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
         />
         <button type="submit" disabled={loading} style={{
           padding: '14px 24px',
-          background: loading ? '#1c2b42' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-          color: loading ? '#556880' : '#0c1220',
+          background: loading ? 'var(--border, #30363d)' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
+          color: loading ? 'var(--text-muted, #6b7280)' : '#0c1220',
           fontWeight: 700, fontSize: 14, borderRadius: 10,
           border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
         }}>{loading ? 'Searching...' : 'Search'}</button>
@@ -92,12 +92,12 @@ export default function DomainsPage() {
       {/* Results */}
       {results.map(r => (
         <div key={r.domain} style={{
-          background: '#141e30', border: '1px solid #1c2b42',
+          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
           borderRadius: 14, padding: '20px 24px', marginBottom: 12,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#e8ecf2' }}>{r.domain}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)' }}>{r.domain}</div>
             <div style={{
               fontSize: 12, fontWeight: 600, marginTop: 4,
               color: r.available ? '#34d399' : '#f87171',
@@ -108,7 +108,7 @@ export default function DomainsPage() {
           </div>
           {r.available && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {r.price && <span style={{ fontSize: 20, fontWeight: 700, color: '#2dd4bf' }}>${r.price}</span>}
+              {r.price && <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-cyan, #14b8a6)' }}>${r.price}</span>}
               {registered.includes(r.domain) ? (
                 <span style={{ color: '#34d399', fontWeight: 600, fontSize: 13 }}>✓ Registered</span>
               ) : (
@@ -117,7 +117,7 @@ export default function DomainsPage() {
                   disabled={registering === r.domain}
                   style={{
                     padding: '10px 20px',
-                    background: registering === r.domain ? '#1c2b42' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
+                    background: registering === r.domain ? 'var(--border, #30363d)' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
                     color: '#0c1220', fontWeight: 700, fontSize: 13,
                     borderRadius: 8, border: 'none', cursor: 'pointer',
                   }}
@@ -131,21 +131,21 @@ export default function DomainsPage() {
       {/* Suggestions */}
       {suggestions.length > 0 && (
         <div style={{ marginTop: 24 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: '#8b9ab5', marginBottom: 12 }}>Also available</h3>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary, #9ca3af)', marginBottom: 12 }}>Also available</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
             {suggestions.map(s => (
               <div key={s.domain} style={{
-                background: '#141e30', border: '1px solid #1c2b42',
+                background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
                 borderRadius: 10, padding: '14px 16px',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 cursor: 'pointer', transition: 'all 0.15s',
               }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = '#2dd4bf40'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = '#1c2b42'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border, #30363d)'}
                 onClick={() => { setSearch(s.domain); handleSearch(new Event('submit') as any) }}
               >
-                <span style={{ fontSize: 14, fontWeight: 600, color: '#e8ecf2' }}>{s.domain}</span>
-                {s.price && <span style={{ fontSize: 13, color: '#2dd4bf', fontWeight: 600 }}>${s.price}</span>}
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>{s.domain}</span>
+                {s.price && <span style={{ fontSize: 13, color: 'var(--color-cyan, #14b8a6)', fontWeight: 600 }}>${s.price}</span>}
               </div>
             ))}
           </div>
@@ -155,14 +155,14 @@ export default function DomainsPage() {
       {/* Empty state */}
       {!loading && results.length === 0 && (
         <div style={{
-          background: '#141e30', border: '1px solid #1c2b42',
+          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
           borderRadius: 14, padding: '48px 24px', textAlign: 'center',
         }}>
           <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.3 }}>🌐</div>
-          <p style={{ color: '#556880', fontSize: 14 }}>
+          <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: 14 }}>
             Search for your perfect domain name above.
           </p>
-          <p style={{ color: '#556880', fontSize: 12, marginTop: 8 }}>
+          <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: 12, marginTop: 8 }}>
             Auto-configures DNS, enables privacy, and connects to your site.
           </p>
         </div>

@@ -97,7 +97,7 @@ function dotOnToNodes(workflow: any): { nodes: CapabilityNodeType[], edges: Edge
         source: prevId,
         target: nodeId,
         animated: true,
-        style: { stroke: '#2dd4bf', strokeWidth: 2 },
+        style: { stroke: 'var(--color-cyan, #14b8a6)', strokeWidth: 2 },
         type: 'smoothstep',
       })
     }
@@ -149,7 +149,7 @@ export default function GenerateBar({ onGenerate }: GenerateBarProps) {
           backdropFilter: 'blur(12px)',
           border: '1px solid #1c2b42',
           borderRadius: 12,
-          color: '#8b9ab5',
+          color: 'var(--text-secondary, #9ca3af)',
           fontSize: 14,
           cursor: 'pointer',
           zIndex: 10,
@@ -158,8 +158,8 @@ export default function GenerateBar({ onGenerate }: GenerateBarProps) {
           gap: 8,
           transition: 'all 0.2s',
         }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = '#2dd4bf'; e.currentTarget.style.color = '#2dd4bf' }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = '#1c2b42'; e.currentTarget.style.color = '#8b9ab5' }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-cyan, #14b8a6)'; e.currentTarget.style.color = 'var(--color-cyan, #14b8a6)' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border, #30363d)'; e.currentTarget.style.color = 'var(--text-secondary, #9ca3af)' }}
       >
         <span style={{ fontSize: 16 }}>✨</span>
         Describe what you want to automate...
@@ -184,11 +184,11 @@ export default function GenerateBar({ onGenerate }: GenerateBarProps) {
       boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: '#2dd4bf' }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-cyan, #14b8a6)' }}>
           ✨ Describe your automation
         </span>
         <button onClick={() => setExpanded(false)} style={{
-          background: 'none', border: 'none', color: '#556880', cursor: 'pointer', fontSize: 16,
+          background: 'none', border: 'none', color: 'var(--text-muted, #6b7280)', cursor: 'pointer', fontSize: 16,
         }}>×</button>
       </div>
       <textarea
@@ -200,29 +200,29 @@ export default function GenerateBar({ onGenerate }: GenerateBarProps) {
         style={{
           width: '100%',
           padding: '12px 14px',
-          background: '#0e1825',
+          background: 'var(--bg-secondary, #161b22)',
           border: '1px solid #1c2b42',
           borderRadius: 10,
-          color: '#e8ecf2',
+          color: 'var(--text-primary, #f0f4f8)',
           fontSize: 14,
           lineHeight: 1.6,
           resize: 'none',
           outline: 'none',
           fontFamily: '-apple-system, sans-serif',
         }}
-        onFocus={e => e.target.style.borderColor = '#2dd4bf'}
-        onBlur={e => e.target.style.borderColor = '#1c2b42'}
+        onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
+        onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
         onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) handleGenerate() }}
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-        <span style={{ fontSize: 11, color: '#556880' }}>⌘+Enter to generate</span>
+        <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>⌘+Enter to generate</span>
         <button
           onClick={handleGenerate}
           disabled={loading || !prompt.trim()}
           style={{
             padding: '9px 20px',
-            background: loading ? '#1c2b42' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-            color: loading ? '#556880' : '#0c1220',
+            background: loading ? 'var(--border, #30363d)' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
+            color: loading ? 'var(--text-muted, #6b7280)' : '#0c1220',
             fontWeight: 700, fontSize: 13, borderRadius: 8,
             border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
           }}

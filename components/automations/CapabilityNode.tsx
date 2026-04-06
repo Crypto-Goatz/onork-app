@@ -24,8 +24,8 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
 
   return (
     <div style={{
-      background: '#141e30',
-      border: `2px solid ${selected ? data.color : '#1c2b42'}`,
+      background: 'var(--bg-card, #1f2937)',
+      border: `2px solid ${selected ? data.color : 'var(--border, #30363d)'}`,
       borderRadius: 16,
       padding: 0,
       width: 240,
@@ -41,7 +41,7 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
           position={Position.Top}
           style={{
             width: 12, height: 12,
-            background: '#0c1220',
+            background: 'var(--bg-primary, #0d1117)',
             border: `2px solid ${data.color}`,
             top: -6,
           }}
@@ -83,7 +83,7 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
         <div style={{
           fontSize: 15,
           fontWeight: 700,
-          color: '#e8ecf2',
+          color: 'var(--text-primary, #f0f4f8)',
           marginBottom: 6,
           lineHeight: 1.3,
           fontFamily: '-apple-system, sans-serif',
@@ -92,7 +92,7 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
         </div>
         <div style={{
           fontSize: 12,
-          color: '#556880',
+          color: 'var(--text-muted, #6b7280)',
           lineHeight: 1.5,
           fontFamily: '-apple-system, sans-serif',
         }}>
@@ -122,7 +122,7 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
         position={Position.Bottom}
         style={{
           width: 12, height: 12,
-          background: '#0c1220',
+          background: 'var(--bg-primary, #0d1117)',
           border: `2px solid ${data.color}`,
           bottom: -6,
         }}

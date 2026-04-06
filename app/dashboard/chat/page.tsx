@@ -451,7 +451,7 @@ const portuStyles = `
 .portu-chat-layout {
   display: flex;
   height: 100%;
-  background: #F5F6FA;
+  background: var(--jp-bg, #f1f2f7);
   position: relative;
   overflow: hidden;
 }
@@ -464,7 +464,7 @@ const portuStyles = `
   left: 16px;
   z-index: 20;
   background: #fff;
-  border: 1px solid #E9EDF7;
+  border: 1px solid var(--jp-border, #e2e8f0);
   border-radius: 10px;
   padding: 8px;
   cursor: pointer;
@@ -541,7 +541,7 @@ const portuStyles = `
   border-radius: 8px;
   transition: background 0.15s;
 }
-.portu-compose-btn:hover { background: #F5F6FA; }
+.portu-compose-btn:hover { background: var(--jp-bg, #f1f2f7); }
 
 /* Search */
 .portu-search-wrap {
@@ -560,7 +560,7 @@ const portuStyles = `
 .portu-search-input {
   width: 100%;
   padding: 10px 12px 10px 36px;
-  background: #F5F6FA;
+  background: var(--jp-bg, #f1f2f7);
   border: none;
   border-radius: 12px;
   font-size: 13px;
@@ -601,7 +601,7 @@ const portuStyles = `
   text-align: left;
   font-family: inherit;
 }
-.portu-contact-row:hover { background: #F5F6FA; }
+.portu-contact-row:hover { background: var(--jp-bg, #f1f2f7); }
 .portu-contact-row--active { background: #F0FBF0; }
 
 .portu-contact-info {
@@ -649,7 +649,7 @@ const portuStyles = `
 }
 
 .portu-unread-badge {
-  background: #6EE05A;
+  background: #7ed957;
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -667,12 +667,12 @@ const portuStyles = `
 .portu-view-more {
   margin: 8px 16px 16px;
   padding: 10px;
-  background: #F5F6FA;
+  background: var(--jp-bg, #f1f2f7);
   border: none;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
-  color: #6EE05A;
+  color: #7ed957;
   cursor: pointer;
   font-family: inherit;
   transition: background 0.15s;
@@ -695,7 +695,7 @@ const portuStyles = `
 }
 
 .portu-avatar--green {
-  background: linear-gradient(135deg, #6EE05A, #4CAF50) !important;
+  background: linear-gradient(135deg, #7ed957, #4CAF50) !important;
 }
 
 .portu-avatar--header {
@@ -777,7 +777,7 @@ const portuStyles = `
 
 .portu-chat-status {
   font-size: 12px;
-  color: #6EE05A;
+  color: #7ed957;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -787,7 +787,7 @@ const portuStyles = `
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #6EE05A;
+  background: #7ed957;
   display: inline-block;
 }
 
@@ -807,7 +807,7 @@ const portuStyles = `
   align-items: center;
   justify-content: center;
 }
-.portu-icon-btn:hover { background: #F5F6FA; }
+.portu-icon-btn:hover { background: var(--jp-bg, #f1f2f7); }
 
 /* Messages Area */
 .portu-messages {
@@ -844,7 +844,7 @@ const portuStyles = `
   width: 28px;
   height: 28px;
   border-radius: 9px;
-  background: linear-gradient(135deg, #6EE05A, #4CAF50);
+  background: linear-gradient(135deg, #7ed957, #4CAF50);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -866,7 +866,7 @@ const portuStyles = `
 }
 
 .portu-bubble--sent {
-  background: #6EE05A;
+  background: #7ed957;
   color: #fff;
   border-radius: 14px 14px 4px 14px;
 }
@@ -914,12 +914,12 @@ const portuStyles = `
   justify-content: center;
   transition: background 0.15s;
 }
-.portu-attach-btn:hover { background: #F5F6FA; }
+.portu-attach-btn:hover { background: var(--jp-bg, #f1f2f7); }
 
 .portu-message-input {
   flex: 1;
   padding: 12px 16px;
-  background: #F5F6FA;
+  background: var(--jp-bg, #f1f2f7);
   border: none;
   border-radius: 12px;
   font-size: 13.5px;
@@ -934,7 +934,7 @@ const portuStyles = `
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: #6EE05A;
+  background: #7ed957;
   border: none;
   cursor: pointer;
   display: flex;
@@ -1017,7 +1017,7 @@ const portuStyles = `
   width: 64px;
   height: 64px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #6EE05A, #4CAF50);
+  background: linear-gradient(135deg, #7ed957, #4CAF50);
   display: flex;
   align-items: center;
   justify-content: center;

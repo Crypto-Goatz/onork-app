@@ -3,18 +3,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap');
 
 :root {
-    --app-bg: #09090b; /* Deep dark background */
-    --stage-bg: #18181b; 
-    --text-primary: #ffffff;
-    --text-secondary: #a1a1aa;
-    --accent-color: #ffffff;
-    --accent-bg: #27272a;
-    
-    --input-bg: rgba(24, 24, 27, 0.8); /* Semi-transparent dark for floating input */
-    --border-color: #27272a;
+    --app-bg: var(--bg-deep, #040A1A);
+    --stage-bg: var(--bg-secondary, #161b22);
+    --text-primary: #f0f4f8;
+    --text-secondary: #9ca3af;
+    --accent-color: #f0f4f8;
+    --accent-bg: var(--bg-tertiary, #1c2333);
+
+    --input-bg: rgba(13, 17, 23, 0.8);
+    --border-color: var(--border, #30363d);
     --glass-border: rgba(255, 255, 255, 0.1);
 
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --font-sans: var(--font-body, 'Nunito Sans', 'Inter', system-ui, sans-serif);
 }
 
 html, body {

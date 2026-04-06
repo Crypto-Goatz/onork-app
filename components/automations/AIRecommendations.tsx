@@ -117,7 +117,7 @@ export default function AIRecommendations({ nodes, onAdd }: AIRecommendationsPro
       }}>
         <span style={{ fontSize: 16 }}>🤖</span>
         <span style={{
-          fontSize: 13, fontWeight: 700, color: '#2dd4bf',
+          fontSize: 13, fontWeight: 700, color: 'var(--color-cyan, #14b8a6)',
           fontFamily: '-apple-system, sans-serif',
         }}>AI Recommends</span>
       </div>
@@ -131,7 +131,7 @@ export default function AIRecommendations({ nodes, onAdd }: AIRecommendationsPro
             style={{
               width: '100%',
               padding: '12px',
-              background: '#141e30',
+              background: 'var(--bg-card, #1f2937)',
               border: '1px solid transparent',
               borderRadius: 10,
               marginBottom: 6,
@@ -146,14 +146,14 @@ export default function AIRecommendations({ nodes, onAdd }: AIRecommendationsPro
             }}
             onMouseLeave={e => {
               e.currentTarget.style.borderColor = 'transparent'
-              e.currentTarget.style.background = '#141e30'
+              e.currentTarget.style.background = 'var(--bg-card, #1f2937)'
             }}
           >
             {/* Top row: icon + name + success rate */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <span style={{ fontSize: 16 }}>{rec.capability.icon}</span>
               <span style={{
-                fontSize: 13, fontWeight: 600, color: '#e8ecf2', flex: 1,
+                fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)', flex: 1,
                 fontFamily: '-apple-system, sans-serif',
               }}>{rec.capability.name}</span>
               <span style={{
@@ -165,14 +165,14 @@ export default function AIRecommendations({ nodes, onAdd }: AIRecommendationsPro
 
             {/* Reason */}
             <div style={{
-              fontSize: 11, color: '#8b9ab5', lineHeight: 1.5,
+              fontSize: 11, color: 'var(--text-secondary, #9ca3af)', lineHeight: 1.5,
               fontFamily: '-apple-system, sans-serif',
             }}>{rec.reason}</div>
 
             {/* Success bar */}
             <div style={{
               marginTop: 8, height: 3, borderRadius: 2,
-              background: '#1c2b42', overflow: 'hidden',
+              background: 'var(--border, #30363d)', overflow: 'hidden',
             }}>
               <div style={{
                 width: `${rec.successRate}%`,
@@ -191,7 +191,7 @@ export default function AIRecommendations({ nodes, onAdd }: AIRecommendationsPro
         padding: '10px 16px',
         borderTop: '1px solid #1c2b42',
         fontSize: 10,
-        color: '#556880',
+        color: 'var(--text-muted, #6b7280)',
         textAlign: 'center',
         fontFamily: '-apple-system, sans-serif',
       }}>

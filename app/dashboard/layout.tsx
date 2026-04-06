@@ -81,7 +81,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#F5F6FA',
+        background: 'var(--bg-primary, #f1f2f7)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -89,8 +89,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div style={{
           width: 36,
           height: 36,
-          border: '2px solid #E9EDF7',
-          borderTopColor: '#6EE05A',
+          border: '2px solid var(--border, #e2e8f0)',
+          borderTopColor: 'var(--accent, #7ed957)',
           borderRadius: '50%',
           animation: 'spin 0.8s linear infinite',
         }} />

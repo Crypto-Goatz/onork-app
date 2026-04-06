@@ -21,7 +21,7 @@ const SERVICES = [
   { id: 'openai', name: 'OpenAI', color: '#10a37f', icon: 'OA', defaultUrl: 'https://platform.openai.com/api-keys' },
   { id: 'groq', name: 'Groq', color: '#F55036', icon: 'Gq', defaultUrl: 'https://console.groq.com/keys' },
   { id: 'stripe', name: 'Stripe', color: '#635BFF', icon: 'St', defaultUrl: 'https://dashboard.stripe.com/apikeys' },
-  { id: 'crm', name: 'CRM (PIT)', color: '#6EE05A', icon: '0n', defaultUrl: 'https://app.rocketclients.com/settings' },
+  { id: 'crm', name: 'CRM (PIT)', color: '#7ed957', icon: '0n', defaultUrl: 'https://app.rocketclients.com/settings' },
   { id: 'sendgrid', name: 'SendGrid', color: '#1A82E2', icon: 'SG', defaultUrl: 'https://app.sendgrid.com/settings/api_keys' },
   { id: 'resend', name: 'Resend', color: '#000000', icon: 'Re', defaultUrl: 'https://resend.com/api-keys' },
   { id: 'github', name: 'GitHub', color: '#333333', icon: 'GH', defaultUrl: 'https://github.com/settings/tokens/new' },
@@ -107,7 +107,7 @@ export default function AdminConnections() {
               background: 'linear-gradient(135deg, rgba(110,224,90,0.15), rgba(0,212,255,0.10))',
               border: '1px solid rgba(110,224,90,0.25)',
             }}>
-              <svg width="18" height="18" fill="none" stroke="#6EE05A" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+              <svg width="18" height="18" fill="none" stroke="#7ed957" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
             </span>
             Connection Links
           </h1>
@@ -117,7 +117,7 @@ export default function AdminConnections() {
         </div>
         <button onClick={handleSave} disabled={saving} style={{
           padding: '8px 20px', borderRadius: 8,
-          background: saved ? 'rgba(110,224,90,0.15)' : 'var(--jp-green, #6EE05A)',
+          background: saved ? 'rgba(110,224,90,0.15)' : 'var(--jp-green, #7ed957)',
           color: saved ? 'var(--jp-green)' : '#000',
           border: saved ? '1px solid rgba(110,224,90,0.3)' : 'none',
           fontSize: '0.8125rem', fontWeight: 700,
@@ -184,7 +184,7 @@ export default function AdminConnections() {
                   />
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.5625rem', fontWeight: 700, color: 'var(--jp-green, #6EE05A)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                  <div style={{ fontSize: '0.5625rem', fontWeight: 700, color: 'var(--jp-green, #7ed957)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                     Affiliate Link
                   </div>
                   <input
@@ -204,7 +204,7 @@ export default function AdminConnections() {
       <div style={{ padding: '2rem 0', textAlign: 'center' }}>
         <button onClick={handleSave} disabled={saving} style={{
           padding: '12px 32px', borderRadius: 10,
-          background: saved ? 'rgba(110,224,90,0.15)' : 'var(--jp-green, #6EE05A)',
+          background: saved ? 'rgba(110,224,90,0.15)' : 'var(--jp-green, #7ed957)',
           color: saved ? 'var(--jp-green)' : '#000',
           border: saved ? '1px solid rgba(110,224,90,0.3)' : 'none',
           fontSize: '0.9375rem', fontWeight: 700,

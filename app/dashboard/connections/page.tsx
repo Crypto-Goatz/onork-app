@@ -57,7 +57,7 @@ const SERVICES: ServiceDef[] = [
     keyUrl: 'https://dashboard.stripe.com/apikeys', affiliateUrl: 'https://stripe.com/partners/referral', keyLabel: 'Get API Key',
   },
   {
-    id: 'crm', name: 'CRM (PIT Token)', color: '#6EE05A', icon: '0n', pattern: 'pit-...', placeholder: 'pit-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', category: 'CRM',
+    id: 'crm', name: 'CRM (PIT Token)', color: '#7ed957', icon: '0n', pattern: 'pit-...', placeholder: 'pit-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', category: 'CRM',
     description: 'Full CRM access — contacts, pipeline, calendar, email, SMS',
     toolCount: 245, scopes: ['Contacts', 'Calendars', 'Opportunities', 'Invoices', 'Conversations', 'Social', 'Users', 'Locations'],
     guide: ['Go to your CRM Settings > Business Profile', 'Scroll to "API" section', 'Generate a Private Integration Token (PIT)', 'Copy the token (starts with pit-)'],
@@ -417,7 +417,7 @@ export default function IntegrationsPage() {
                   disabled={!modalValue.trim() || modalStatus === 'saving'}
                   style={{
                     width: '100%', padding: '12px', borderRadius: 10, border: 'none',
-                    background: modalStatus === 'saved' ? 'rgba(110,224,90,0.15)' : 'var(--jp-green, #6EE05A)',
+                    background: modalStatus === 'saved' ? 'rgba(110,224,90,0.15)' : 'var(--jp-green, #7ed957)',
                     color: modalStatus === 'saved' ? 'var(--jp-green)' : '#000',
                     fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                     opacity: !modalValue.trim() ? 0.4 : 1, transition: 'all 0.2s',

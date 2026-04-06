@@ -49,8 +49,8 @@ export default function ContactsPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#e8ecf2', margin: 0 }}>Contacts</h1>
-          <p style={{ fontSize: 13, color: '#556880', marginTop: 4 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0 }}>Contacts</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', marginTop: 4 }}>
             {contacts.length > 0 ? `${contacts.length} contacts` : 'Manage your contacts'}
           </p>
         </div>
@@ -71,15 +71,15 @@ export default function ContactsPage() {
           onChange={(e) => setSearch(e.target.value)}
           style={{
             width: '100%', padding: '12px 16px 12px 40px',
-            background: '#141e30', border: '1px solid #1c2b42',
-            borderRadius: 10, color: '#e8ecf2', fontSize: 14,
+            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
+            borderRadius: 10, color: 'var(--text-primary, #f0f4f8)', fontSize: 14,
             outline: 'none', transition: 'border-color 0.2s',
             backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23556880' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E")`,
             backgroundRepeat: 'no-repeat',
             backgroundPosition: '14px center',
           }}
-          onFocus={e => e.target.style.borderColor = '#2dd4bf'}
-          onBlur={e => e.target.style.borderColor = '#1c2b42'}
+          onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
+          onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
         />
       </div>
 
@@ -88,35 +88,35 @@ export default function ContactsPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
           <div style={{
             width: 32, height: 32, border: '3px solid #1c2b42',
-            borderTopColor: '#2dd4bf', borderRadius: '50%',
+            borderTopColor: 'var(--color-cyan, #14b8a6)', borderRadius: '50%',
             animation: 'spin 0.8s linear infinite',
           }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       ) : error ? (
         <div style={{
-          background: '#141e30', border: '1px solid #1c2b42',
+          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
           borderRadius: 14, padding: '40px', textAlign: 'center',
         }}>
           <p style={{ color: '#f87171', fontSize: 14, marginBottom: 12 }}>{error}</p>
           <button onClick={fetchContacts} style={{
-            color: '#2dd4bf', background: 'none', border: 'none',
+            color: 'var(--color-cyan, #14b8a6)', background: 'none', border: 'none',
             cursor: 'pointer', fontSize: 13, fontWeight: 600,
           }}>Try again</button>
         </div>
       ) : filtered.length === 0 ? (
         <div style={{
-          background: '#141e30', border: '1px solid #1c2b42',
+          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
           borderRadius: 14, padding: '60px 40px', textAlign: 'center',
         }}>
           <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>👤</div>
-          <p style={{ color: '#8b9ab5', fontSize: 14 }}>
+          <p style={{ color: 'var(--text-secondary, #9ca3af)', fontSize: 14 }}>
             {search ? 'No contacts match your search.' : 'No contacts yet.'}
           </p>
         </div>
       ) : (
         <div style={{
-          background: '#141e30', border: '1px solid #1c2b42',
+          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
           borderRadius: 14, overflow: 'hidden',
         }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -125,7 +125,7 @@ export default function ContactsPage() {
                 {['Name', 'Email', 'Phone', 'Tags', 'Added'].map(h => (
                   <th key={h} style={{
                     textAlign: 'left', padding: '12px 20px',
-                    fontSize: 11, fontWeight: 600, color: '#556880',
+                    fontSize: 11, fontWeight: 600, color: 'var(--text-muted, #6b7280)',
                     textTransform: 'uppercase', letterSpacing: '0.06em',
                   }}>{h}</th>
                 ))}
@@ -142,31 +142,31 @@ export default function ContactsPage() {
                         width: 32, height: 32, borderRadius: 8,
                         background: 'linear-gradient(135deg, #2dd4bf20, #8b5cf620)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 13, fontWeight: 700, color: '#2dd4bf', flexShrink: 0,
+                        fontSize: 13, fontWeight: 700, color: 'var(--color-cyan, #14b8a6)', flexShrink: 0,
                       }}>
                         {(c.firstName?.[0] || c.contactName?.[0] || '?').toUpperCase()}
                       </div>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: '#e8ecf2' }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>
                         {c.contactName || `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Unknown'}
                       </span>
                     </div>
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 13, color: '#8b9ab5' }}>{c.email || '—'}</td>
-                  <td style={{ padding: '14px 20px', fontSize: 13, color: '#8b9ab5' }}>{c.phone || '—'}</td>
+                  <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--text-secondary, #9ca3af)' }}>{c.email || '—'}</td>
+                  <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--text-secondary, #9ca3af)' }}>{c.phone || '—'}</td>
                   <td style={{ padding: '14px 20px' }}>
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                       {(c.tags || []).slice(0, 2).map(tag => (
                         <span key={tag} style={{
                           padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
-                          background: 'rgba(45,212,191,0.1)', color: '#2dd4bf',
+                          background: 'rgba(45,212,191,0.1)', color: 'var(--color-cyan, #14b8a6)',
                         }}>{tag}</span>
                       ))}
                       {(c.tags || []).length > 2 && (
-                        <span style={{ fontSize: 11, color: '#556880' }}>+{c.tags.length - 2}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>+{c.tags.length - 2}</span>
                       )}
                     </div>
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 12, color: '#556880' }}>
+                  <td style={{ padding: '14px 20px', fontSize: 12, color: 'var(--text-muted, #6b7280)' }}>
                     {c.dateAdded ? new Date(c.dateAdded).toLocaleDateString() : '—'}
                   </td>
                 </tr>

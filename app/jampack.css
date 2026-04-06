@@ -4,85 +4,90 @@
   Works alongside Tailwind — all classes prefixed with .jp-
 ------------------------------------------------------------------*/
 
-/* ======= CSS Variables ======= */
+/* ======= CSS Variables — 0nMCP Brand System V3.0 ======= */
 :root {
   --jp-sidebar-width: 220px;
   --jp-sidebar-collapsed-width: 0px;
   --jp-header-height: 64px;
-  --jp-green: #6EE05A;
-  --jp-green-dim: #5CB83A;
-  --jp-green-glow: rgba(110, 224, 90, 0.12);
-  --jp-cyan: #00d4ff;
-  --jp-cyan-dim: #00b8db;
-  --jp-purple: #a78bfa;
-  --jp-amber: #FFB547;
-  --jp-red: #EE5D50;
-  --jp-bg: #F5F6FA;
-  --jp-surface: #FFFFFF;
-  --jp-surface-elevated: #F0F2F8;
-  --jp-bg-elevated: #FFFFFF;
-  --jp-bg-card: #FFFFFF;
-  --jp-bg-card-hover: #F0F2F8;
-  --jp-bg-input: #F5F6FA;
-  --jp-border: #E9EDF7;
-  --jp-border-hi: #D3D9E8;
-  --jp-border-focus: #6EE05A;
-  --jp-text: #1B2559;
-  --jp-text-secondary: #4A5578;
-  --jp-text-muted: #7A85A3;
+  --jp-green: #7ed957;
+  --jp-green-dim: #5cb83a;
+  --jp-green-glow: rgba(126, 217, 87, 0.12);
+  --jp-cyan: #14b8a6;
+  --jp-cyan-dim: #0d9488;
+  --jp-purple: #8b5cf6;
+  --jp-amber: #d97706;
+  --jp-red: #b91c1c;
+  --jp-orange: #FF6B35;
+  --jp-teal: #00C2C7;
+  --jp-gold: #FFD700;
+  --jp-flow: #7000FF;
+  --jp-success: #10b981;
+  --jp-bg: #f1f2f7;
+  --jp-surface: #ffffff;
+  --jp-surface-elevated: #f8f9fc;
+  --jp-bg-elevated: #ffffff;
+  --jp-bg-card: #ffffff;
+  --jp-bg-card-hover: #f8f9fc;
+  --jp-bg-input: #f1f2f7;
+  --jp-border: #e2e8f0;
+  --jp-border-hi: #cbd5e1;
+  --jp-border-focus: #7ed957;
+  --jp-text: #1f2937;
+  --jp-text-secondary: #4b5563;
+  --jp-text-muted: #6b7280;
   --jp-radius: 16px;
   --jp-radius-sm: 10px;
   --jp-radius-xs: 6px;
   --jp-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --jp-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  --jp-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --jp-font-mono: 'Roboto Mono', 'JetBrains Mono', monospace;
 }
 
 /* ======= Dark Mode Overrides ======= */
 .theme-dark {
-  --jp-bg: #0B0F19;
-  --jp-surface: #111827;
-  --jp-surface-elevated: #1C2333;
-  --jp-bg-elevated: #111827;
-  --jp-bg-card: #111827;
-  --jp-bg-card-hover: #1C2B42;
-  --jp-bg-input: #1C2333;
-  --jp-border: #1E293B;
-  --jp-border-hi: #2D3748;
-  --jp-border-focus: #6EE05A;
-  --jp-text: #E8EAED;
-  --jp-text-secondary: #A0AEC0;
-  --jp-text-muted: #718096;
+  --jp-bg: #0d1117;
+  --jp-surface: #161b22;
+  --jp-surface-elevated: #1c2333;
+  --jp-bg-elevated: #161b22;
+  --jp-bg-card: #1f2937;
+  --jp-bg-card-hover: #1c2333;
+  --jp-bg-input: #1c2333;
+  --jp-border: #30363d;
+  --jp-border-hi: #484f58;
+  --jp-border-focus: #7ed957;
+  --jp-text: #f0f4f8;
+  --jp-text-secondary: #9ca3af;
+  --jp-text-muted: #6b7280;
   --jp-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
   color-scheme: dark;
 }
 
 .theme-dark body,
 .theme-dark .jp-wrapper {
-  background: #0B0F19;
-  color: #E8EAED;
+  background: var(--jp-bg);
+  color: var(--jp-text);
 }
 
 /* Brand mode */
 .theme-brand {
-  --jp-bg: #0A1A0F;
-  --jp-surface: #0F2517;
-  --jp-bg-card: #0F2517;
+  --jp-bg: #040A1A;
+  --jp-surface: #081C4F;
+  --jp-bg-card: #081C4F;
   --jp-border: #1B5E20;
-  --jp-text: #E8F5E9;
-  --jp-text-secondary: #81C784;
-  --jp-text-muted: #4CAF50;
+  --jp-text: #E0E0E0;
+  --jp-text-secondary: #7ed957;
+  --jp-text-muted: #5cb83a;
 }
 
 /* Glass mode */
 .theme-glass {
-  --jp-bg: #0D1117;
+  --jp-bg: #0d1117;
   --jp-surface: rgba(255,255,255,0.04);
   --jp-bg-card: rgba(255,255,255,0.04);
   --jp-border: rgba(255,255,255,0.08);
-  --jp-text: #F0F6FC;
-  --jp-text-secondary: #8B949E;
-  --jp-text-muted: #484F58;
+  --jp-text: #f0f4f8;
+  --jp-text-secondary: #9ca3af;
+  --jp-text-muted: #6b7280;
 }
 
 /* ======= Layout Wrapper ======= */

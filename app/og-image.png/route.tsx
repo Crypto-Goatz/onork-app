@@ -34,14 +34,14 @@ export async function GET() {
           >
             0n
           </div>
-          <span style={{ fontSize: 56, fontWeight: 900, color: '#e8ecf2' }}>
-            <span style={{ color: '#2dd4bf' }}>0n</span>Core
+          <span style={{ fontSize: 56, fontWeight: 900, color: 'var(--text-primary, #f0f4f8)' }}>
+            <span style={{ color: 'var(--color-cyan, #14b8a6)' }}>0n</span>Core
           </span>
         </div>
         <div
           style={{
             fontSize: 28,
-            color: '#8b9ab5',
+            color: 'var(--text-secondary, #9ca3af)',
             marginBottom: 40,
             letterSpacing: '0.05em',
           }}
@@ -67,12 +67,12 @@ export async function GET() {
                 borderRadius: 12,
               }}
             >
-              <span style={{ fontSize: 32, fontWeight: 900, color: '#2dd4bf' }}>{s.n}</span>
-              <span style={{ fontSize: 14, color: '#556880', marginTop: 4 }}>{s.l}</span>
+              <span style={{ fontSize: 32, fontWeight: 900, color: 'var(--color-cyan, #14b8a6)' }}>{s.n}</span>
+              <span style={{ fontSize: 14, color: 'var(--text-muted, #6b7280)', marginTop: 4 }}>{s.l}</span>
             </div>
           ))}
         </div>
-        <div style={{ position: 'absolute', bottom: 24, fontSize: 14, color: '#556880' }}>
+        <div style={{ position: 'absolute', bottom: 24, fontSize: 14, color: 'var(--text-muted, #6b7280)' }}>
           0ncore.com — Powered by 0nMCP — RocketOpp LLC
         </div>
       </div>

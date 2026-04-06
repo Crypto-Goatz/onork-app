@@ -21,7 +21,7 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
   return (
     <div style={{
       width: 300,
-      background: '#0e1825',
+      background: 'var(--bg-secondary, #161b22)',
       borderLeft: '1px solid #1c2b42',
       display: 'flex',
       flexDirection: 'column',
@@ -38,10 +38,10 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 20 }}>{node.data.icon}</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#e8ecf2', fontFamily: '-apple-system, sans-serif' }}>Configure</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', fontFamily: '-apple-system, sans-serif' }}>Configure</span>
         </div>
         <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: '#556880', cursor: 'pointer', fontSize: 18,
+          background: 'none', border: 'none', color: 'var(--text-muted, #6b7280)', cursor: 'pointer', fontSize: 18,
         }}>×</button>
       </div>
 
@@ -49,8 +49,8 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
         {/* Name + Description */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#e8ecf2', marginBottom: 4, fontFamily: '-apple-system, sans-serif' }}>{node.data.name}</div>
-          <div style={{ fontSize: 13, color: '#556880', lineHeight: 1.5, fontFamily: '-apple-system, sans-serif' }}>{node.data.description}</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: 4, fontFamily: '-apple-system, sans-serif' }}>{node.data.name}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', lineHeight: 1.5, fontFamily: '-apple-system, sans-serif' }}>{node.data.description}</div>
         </div>
 
         {/* What this does */}
@@ -70,7 +70,7 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
                 fontSize: 10, fontWeight: 800, flexShrink: 0,
                 fontFamily: '-apple-system, sans-serif',
               }}>{i + 1}</span>
-              <span style={{ fontSize: 13, color: '#8b9ab5', lineHeight: 1.4, fontFamily: '-apple-system, sans-serif' }}>{step}</span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary, #9ca3af)', lineHeight: 1.4, fontFamily: '-apple-system, sans-serif' }}>{step}</span>
             </div>
           ))}
         </div>
@@ -78,12 +78,12 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
         {/* Config fields */}
         {cap?.configFields && cap.configFields.length > 0 && (
           <div>
-            <div style={{ fontSize: 11, color: '#2dd4bf', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12, fontFamily: '-apple-system, sans-serif' }}>
+            <div style={{ fontSize: 11, color: 'var(--color-cyan, #14b8a6)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12, fontFamily: '-apple-system, sans-serif' }}>
               Settings
             </div>
             {cap.configFields.map(field => (
               <div key={field.key} style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: 12, color: '#8b9ab5', marginBottom: 4, fontWeight: 600, fontFamily: '-apple-system, sans-serif' }}>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary, #9ca3af)', marginBottom: 4, fontWeight: 600, fontFamily: '-apple-system, sans-serif' }}>
                   {field.label} {field.required && <span style={{ color: '#ef4444' }}>*</span>}
                 </label>
                 {field.type === 'select' ? (
@@ -92,8 +92,8 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
                     onChange={e => handleChange(field.key, e.target.value)}
                     style={{
                       width: '100%', padding: '9px 12px',
-                      background: '#141e30', border: '1px solid #1c2b42', borderRadius: 8,
-                      color: '#e8ecf2', fontSize: 13, outline: 'none',
+                      background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 8,
+                      color: 'var(--text-primary, #f0f4f8)', fontSize: 13, outline: 'none',
                       fontFamily: '-apple-system, sans-serif',
                     }}
                   >
@@ -107,8 +107,8 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
                     placeholder={field.placeholder}
                     style={{
                       width: '100%', padding: '9px 12px',
-                      background: '#141e30', border: '1px solid #1c2b42', borderRadius: 8,
-                      color: '#e8ecf2', fontSize: 13, outline: 'none',
+                      background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 8,
+                      color: 'var(--text-primary, #f0f4f8)', fontSize: 13, outline: 'none',
                       fontFamily: '-apple-system, sans-serif',
                     }}
                   />
@@ -120,12 +120,12 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
                     placeholder={field.placeholder}
                     style={{
                       width: '100%', padding: '9px 12px',
-                      background: '#141e30', border: '1px solid #1c2b42', borderRadius: 8,
-                      color: '#e8ecf2', fontSize: 13, outline: 'none',
+                      background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 8,
+                      color: 'var(--text-primary, #f0f4f8)', fontSize: 13, outline: 'none',
                       fontFamily: '-apple-system, sans-serif',
                     }}
-                    onFocus={e => e.target.style.borderColor = '#2dd4bf'}
-                    onBlur={e => e.target.style.borderColor = '#1c2b42'}
+                    onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
                   />
                 )}
               </div>

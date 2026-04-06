@@ -48,13 +48,13 @@ export default function VoicePage() {
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#e8ecf2', margin: '0 0 4px' }}>Voice AI</h1>
-        <p style={{ fontSize: 13, color: '#556880' }}>Talk to your AI or embed it on your website for clients.</p>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px' }}>Voice AI</h1>
+        <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)' }}>Talk to your AI or embed it on your website for clients.</p>
       </div>
 
       {/* Live Voice Orb */}
       <div style={{
-        background: '#141e30', border: '1px solid #1c2b42',
+        background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
         borderRadius: 16, padding: '40px', marginBottom: 24,
         textAlign: 'center',
       }}>
@@ -79,15 +79,15 @@ export default function VoicePage() {
             </svg>
           </div>
         </div>
-        <h3 style={{ fontSize: 16, fontWeight: 700, color: '#e8ecf2', marginBottom: 6 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: 6 }}>
           {aiName}'s Voice
         </h3>
-        <p style={{ fontSize: 13, color: '#556880', marginBottom: 20 }}>
+        <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', marginBottom: 20 }}>
           {agentId ? 'Your AI agent is active and ready to talk.' : 'Set up your AI agent in the CRM to enable voice.'}
         </p>
         {agentId && (
-          <p style={{ fontSize: 11, color: '#556880' }}>
-            Agent ID: <code style={{ background: '#0e1825', padding: '2px 8px', borderRadius: 4, color: '#8b9ab5' }}>{agentId}</code>
+          <p style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>
+            Agent ID: <code style={{ background: 'var(--bg-secondary, #161b22)', padding: '2px 8px', borderRadius: 4, color: 'var(--text-secondary, #9ca3af)' }}>{agentId}</code>
           </p>
         )}
         <style>{`
@@ -101,32 +101,32 @@ export default function VoicePage() {
       {/* Embed Options */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
         <div style={{
-          background: '#141e30', border: '1px solid #1c2b42',
+          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
           borderRadius: 14, padding: '24px',
         }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#e8ecf2', marginBottom: 6 }}>Chat Widget</h3>
-          <p style={{ fontSize: 12, color: '#556880', marginBottom: 16, lineHeight: 1.6 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: 6 }}>Chat Widget</h3>
+          <p style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)', marginBottom: 16, lineHeight: 1.6 }}>
             Add a chat bubble to your website. Visitors type or talk to your AI.
           </p>
           <button onClick={() => copyCode(embedCode)} style={{
             width: '100%', padding: '10px',
             background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.2)',
-            borderRadius: 8, color: '#2dd4bf', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            borderRadius: 8, color: 'var(--color-cyan, #14b8a6)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
           }}>{copied ? '✓ Copied!' : 'Copy Embed Code'}</button>
         </div>
 
         <div style={{
-          background: '#141e30', border: '1px solid #1c2b42',
+          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
           borderRadius: 14, padding: '24px',
         }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#e8ecf2', marginBottom: 6 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: 6 }}>
             Free Assessment
             <span style={{
               marginLeft: 8, padding: '2px 8px', borderRadius: 4,
               background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', fontSize: 10, fontWeight: 700,
             }}>LEAD GEN</span>
           </h3>
-          <p style={{ fontSize: 12, color: '#556880', marginBottom: 16, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)', marginBottom: 16, lineHeight: 1.6 }}>
             Visitors get a free AI assessment of their business. Every conversation = a new lead.
           </p>
           <button onClick={() => copyCode(assessmentEmbedCode)} style={{
@@ -139,28 +139,28 @@ export default function VoicePage() {
 
       {/* Preview */}
       <div style={{
-        background: '#141e30', border: '1px solid #1c2b42',
+        background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
         borderRadius: 14, padding: '24px',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#e8ecf2' }}>Preview Embed Code</h3>
-          <div style={{ display: 'flex', gap: 4, background: '#0e1825', borderRadius: 6, padding: 2 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)' }}>Preview Embed Code</h3>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--bg-secondary, #161b22)', borderRadius: 6, padding: 2 }}>
             <button onClick={() => setTheme('dark')} style={{
               padding: '4px 10px', borderRadius: 4, border: 'none', fontSize: 11, cursor: 'pointer',
-              background: theme === 'dark' ? '#1c2b42' : 'transparent',
-              color: theme === 'dark' ? '#2dd4bf' : '#556880',
+              background: theme === 'dark' ? 'var(--border, #30363d)' : 'transparent',
+              color: theme === 'dark' ? 'var(--color-cyan, #14b8a6)' : 'var(--text-muted, #6b7280)',
             }}>Dark</button>
             <button onClick={() => setTheme('light')} style={{
               padding: '4px 10px', borderRadius: 4, border: 'none', fontSize: 11, cursor: 'pointer',
-              background: theme === 'light' ? '#1c2b42' : 'transparent',
-              color: theme === 'light' ? '#2dd4bf' : '#556880',
+              background: theme === 'light' ? 'var(--border, #30363d)' : 'transparent',
+              color: theme === 'light' ? 'var(--color-cyan, #14b8a6)' : 'var(--text-muted, #6b7280)',
             }}>Light</button>
           </div>
         </div>
         <pre style={{
-          background: '#0e1825', border: '1px solid #1c2b42',
+          background: 'var(--bg-secondary, #161b22)', border: '1px solid #1c2b42',
           borderRadius: 8, padding: '16px', overflow: 'auto',
-          fontSize: 12, color: '#8b9ab5', lineHeight: 1.7,
+          fontSize: 12, color: 'var(--text-secondary, #9ca3af)', lineHeight: 1.7,
           fontFamily: 'JetBrains Mono, monospace',
         }}>{embedCode}</pre>
       </div>

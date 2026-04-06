@@ -145,7 +145,7 @@ export default function AIPage() {
   if (checking) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
-        <div style={{ width: 32, height: 32, border: '2px solid #1c2b42', borderTopColor: '#6EE05A', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ width: 32, height: 32, border: '2px solid #1c2b42', borderTopColor: '#7ed957', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
@@ -175,7 +175,7 @@ export default function AIPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 1.5rem',
           }}>
-            <svg width="28" height="28" fill="none" stroke="#6EE05A" viewBox="0 0 24 24" strokeWidth={1.5}>
+            <svg width="28" height="28" fill="none" stroke="#7ed957" viewBox="0 0 24 24" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
             </svg>
           </div>
@@ -228,7 +228,7 @@ export default function AIPage() {
               style={{
                 padding: '14px 24px',
                 borderRadius: 12,
-                background: pin.length === 4 ? '#6EE05A' : 'var(--jp-border, #1E293B)',
+                background: pin.length === 4 ? '#7ed957' : 'var(--jp-border, #1E293B)',
                 color: pin.length === 4 ? '#000' : 'var(--jp-text-muted, #4A5568)',
                 border: 'none',
                 fontWeight: 700,
@@ -284,10 +284,10 @@ export default function AIPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{
             width: 8, height: 8, borderRadius: '50%',
-            background: '#6EE05A',
+            background: '#7ed957',
             boxShadow: '0 0 8px rgba(110,224,90,0.5)',
           }} />
-          <span style={{ fontWeight: 700, color: '#6EE05A', letterSpacing: '0.05em' }}>0nAI ONLINE</span>
+          <span style={{ fontWeight: 700, color: '#7ed957', letterSpacing: '0.05em' }}>0nAI ONLINE</span>
           <span style={{ color: 'var(--jp-text-muted, #3a4a5c)' }}>|</span>
           <span>1,183 tools</span>
           <span style={{ color: 'var(--jp-text-muted, #3a4a5c)' }}>|</span>
@@ -300,7 +300,7 @@ export default function AIPage() {
           borderRadius: 4,
           background: 'rgba(110,224,90,0.08)',
           border: '1px solid rgba(110,224,90,0.15)',
-          color: '#6EE05A',
+          color: '#7ed957',
           fontWeight: 700,
           fontSize: '0.5625rem',
           letterSpacing: '0.08em',
@@ -321,7 +321,7 @@ export default function AIPage() {
               maxWidth: '85%',
               padding: msg.role === 'system' ? '20px 0' : '14px 18px',
               borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-              background: msg.role === 'user' ? 'linear-gradient(135deg, #6EE05A, #3ecf8e)' :
+              background: msg.role === 'user' ? 'linear-gradient(135deg, #7ed957, #3ecf8e)' :
                 msg.role === 'system' ? 'transparent' : 'var(--jp-surface, #141e30)',
               color: msg.role === 'user' ? '#0c1220' : 'var(--jp-text, #e8ecf2)',
               border: msg.role === 'system' ? 'none' : msg.role === 'ai' ? '1px solid var(--jp-border, #1c2b42)' : 'none',
@@ -331,12 +331,12 @@ export default function AIPage() {
             }}>
               {msg.role === 'ai' && (
                 <div style={{
-                  fontSize: 10, color: '#6EE05A', fontWeight: 700,
+                  fontSize: 10, color: '#7ed957', fontWeight: 700,
                   textTransform: 'uppercase', letterSpacing: '0.08em',
                   marginBottom: 6,
                   display: 'flex', alignItems: 'center', gap: 6,
                 }}>
-                  <svg width="12" height="12" fill="none" stroke="#6EE05A" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+                  <svg width="12" height="12" fill="none" stroke="#7ed957" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
                   0nAI
                 </div>
               )}
@@ -346,7 +346,7 @@ export default function AIPage() {
                   marginTop: 10, padding: '6px 10px',
                   background: 'rgba(110,224,90,0.06)',
                   border: '1px solid rgba(110,224,90,0.12)',
-                  borderRadius: 6, fontSize: 11, color: '#6EE05A',
+                  borderRadius: 6, fontSize: 11, color: '#7ed957',
                   fontFamily: "'JetBrains Mono', monospace",
                 }}>
                   Action: {msg.action}
@@ -364,7 +364,7 @@ export default function AIPage() {
             }}>
               <div style={{ display: 'flex', gap: 4 }}>
                 {[0, 0.2, 0.4].map(d => (
-                  <span key={d} style={{ width: 6, height: 6, borderRadius: 3, background: '#6EE05A', animation: `pulse 1s infinite ${d}s` }} />
+                  <span key={d} style={{ width: 6, height: 6, borderRadius: 3, background: '#7ed957', animation: `pulse 1s infinite ${d}s` }} />
                 ))}
               </div>
             </div>
@@ -389,7 +389,7 @@ export default function AIPage() {
                   textAlign: 'left', lineHeight: 1.4,
                   fontFamily: 'inherit',
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(110,224,90,0.3)'; e.currentTarget.style.color = '#6EE05A' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(110,224,90,0.3)'; e.currentTarget.style.color = '#7ed957' }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--jp-border, #1c2b42)'; e.currentTarget.style.color = 'var(--jp-text-secondary, #8b9ab5)' }}
                 >{s}</button>
               ))}
@@ -437,13 +437,13 @@ export default function AIPage() {
           <button onClick={handleSend} disabled={loading || !input.trim()} style={{
             width: 40, height: 40,
             borderRadius: 10,
-            background: input.trim() ? '#6EE05A' : 'var(--jp-border, #1c2b42)',
+            background: input.trim() ? '#7ed957' : 'var(--jp-border, #1c2b42)',
             border: 'none', cursor: input.trim() ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0, marginBottom: 2,
             transition: 'background 0.2s',
           }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={input.trim() ? '#0c1220' : '#556880'} strokeWidth="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={input.trim() ? '#0c1220' : 'var(--text-muted, #6b7280)'} strokeWidth="2">
               <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
             </svg>
           </button>
@@ -454,7 +454,7 @@ export default function AIPage() {
         }}>
           <span style={{ fontSize: 11, color: 'var(--jp-text-muted, #556880)' }}>Enter to send · Shift+Enter for new line</span>
           <span style={{ fontSize: 11, color: 'var(--jp-text-muted, #3a4a5c)' }}>
-            <span style={{ color: '#6EE05A' }}>1,183</span> tools · <span style={{ color: '#6EE05A' }}>99</span> services · owner mode
+            <span style={{ color: '#7ed957' }}>1,183</span> tools · <span style={{ color: '#7ed957' }}>99</span> services · owner mode
           </span>
         </div>
       </div>

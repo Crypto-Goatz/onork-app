@@ -59,7 +59,7 @@ export default function AutomationCanvas({
       setEdges(addEdge({
         ...connection,
         animated: true,
-        style: { stroke: '#2dd4bf', strokeWidth: 2 },
+        style: { stroke: 'var(--color-cyan, #14b8a6)', strokeWidth: 2 },
         type: 'smoothstep',
       }, edges))
     },
@@ -116,7 +116,7 @@ export default function AutomationCanvas({
       source: lastNode.id,
       target: newNode.id,
       animated: true,
-      style: { stroke: '#2dd4bf', strokeWidth: 2 },
+      style: { stroke: 'var(--color-cyan, #14b8a6)', strokeWidth: 2 },
       type: 'smoothstep',
     }] : edges
 
@@ -127,7 +127,7 @@ export default function AutomationCanvas({
 
   const defaultEdgeOptions = useMemo(() => ({
     animated: true,
-    style: { stroke: '#2dd4bf', strokeWidth: 2 },
+    style: { stroke: 'var(--color-cyan, #14b8a6)', strokeWidth: 2 },
     type: 'smoothstep' as const,
   }), [])
 
@@ -159,7 +159,7 @@ export default function AutomationCanvas({
         <Controls
           showInteractive={false}
           style={{
-            background: '#141e30',
+            background: 'var(--bg-card, #1f2937)',
             border: '1px solid #1c2b42',
             borderRadius: 10,
             overflow: 'hidden',

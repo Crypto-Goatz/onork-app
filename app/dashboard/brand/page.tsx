@@ -40,7 +40,7 @@ const DEFAULT_BRAND: BrandProfile = {
       dark: { url: '', width: 180, height: 48 },
       light: { url: '', width: 180, height: 48 },
     },
-    colors: { primary: '#000000', secondary: '#ffffff', accent: '#6EE05A', background: '#0A0A0A', text_color: '#F5F5F0' },
+    colors: { primary: '#000000', secondary: '#ffffff', accent: '#7ed957', background: '#0A0A0A', text_color: '#F5F5F0' },
     fonts: {
       display: { family: 'Space Mono', weight: '700' },
       body: { family: 'DM Sans', weight: '400' },
@@ -323,7 +323,7 @@ export default function BrandBuilder() {
               background: 'linear-gradient(135deg, rgba(110,224,90,0.15), rgba(167,139,250,0.10))',
               border: '1px solid rgba(110,224,90,0.25)',
             }}>
-              <svg width="18" height="18" fill="none" stroke="#6EE05A" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+              <svg width="18" height="18" fill="none" stroke="#7ed957" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
             </span>
             0nBrandBuilder
           </h1>
@@ -333,7 +333,7 @@ export default function BrandBuilder() {
         </div>
         <button onClick={save} disabled={saving} style={{
           padding: '8px 20px', borderRadius: 8,
-          background: saved ? 'rgba(110,224,90,0.15)' : 'var(--jp-green, #6EE05A)',
+          background: saved ? 'rgba(110,224,90,0.15)' : 'var(--jp-green, #7ed957)',
           color: saved ? 'var(--jp-green)' : '#000',
           border: saved ? '1px solid rgba(110,224,90,0.3)' : 'none',
           fontSize: '0.8125rem', fontWeight: 700,
@@ -356,7 +356,7 @@ export default function BrandBuilder() {
           <button key={t.key} onClick={() => setTab(t.key)} style={{
             flex: 1, padding: '10px 8px', borderRadius: 8, border: 'none',
             background: tab === t.key ? 'var(--jp-surface-elevated, #162032)' : 'transparent',
-            color: tab === t.key ? 'var(--jp-green, #6EE05A)' : 'var(--jp-text-muted, #4A5568)',
+            color: tab === t.key ? 'var(--jp-green, #7ed957)' : 'var(--jp-text-muted, #4A5568)',
             fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
             transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             boxShadow: tab === t.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
@@ -378,7 +378,7 @@ export default function BrandBuilder() {
             <div style={{ display: 'flex', gap: 8 }}>
               <input value={importUrl} onChange={e => setImportUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleImportUrl()} placeholder="https://example.com" style={{ ...inp, flex: 1 }} />
               <button onClick={handleImportUrl} disabled={importing} style={{
-                padding: '10px 20px', borderRadius: 8, background: 'var(--jp-green, #6EE05A)',
+                padding: '10px 20px', borderRadius: 8, background: 'var(--jp-green, #7ed957)',
                 color: '#000', fontWeight: 700, fontSize: '0.8125rem', border: 'none', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
               }}>
                 {importing ? 'Extracting...' : 'Extract Brand'}
@@ -489,7 +489,7 @@ export default function BrandBuilder() {
             <div key={f.id} style={{ ...card, opacity: f.enabled ? 1 : 0.5 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={() => updFact(f.id, 'enabled', !f.enabled)} style={{ width: 36, height: 20, borderRadius: 10, border: 'none', background: f.enabled ? '#6EE05A' : 'var(--jp-border)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
+                  <button onClick={() => updFact(f.id, 'enabled', !f.enabled)} style={{ width: 36, height: 20, borderRadius: 10, border: 'none', background: f.enabled ? '#7ed957' : 'var(--jp-border)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
                     <span style={{ position: 'absolute', top: 2, left: f.enabled ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
                   </button>
                   <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>{f.label || 'New Fact'}</span>
@@ -525,7 +525,7 @@ export default function BrandBuilder() {
             <div key={s.id} style={{ ...card, opacity: s.enabled ? 1 : 0.5 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={() => updSvc(s.id, 'enabled', !s.enabled)} style={{ width: 36, height: 20, borderRadius: 10, border: 'none', background: s.enabled ? '#6EE05A' : 'var(--jp-border)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
+                  <button onClick={() => updSvc(s.id, 'enabled', !s.enabled)} style={{ width: 36, height: 20, borderRadius: 10, border: 'none', background: s.enabled ? '#7ed957' : 'var(--jp-border)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
                     <span style={{ position: 'absolute', top: 2, left: s.enabled ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
                   </button>
                   <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--jp-text)' }}>Service {s.id}</span>
@@ -607,7 +607,7 @@ export default function BrandBuilder() {
           {/* Export actions */}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button onClick={exportFile} style={{
-              padding: '12px 24px', borderRadius: 10, background: 'var(--jp-green, #6EE05A)',
+              padding: '12px 24px', borderRadius: 10, background: 'var(--jp-green, #7ed957)',
               color: '#000', fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
             }}>
               Download .0n File

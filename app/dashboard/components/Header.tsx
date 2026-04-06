@@ -115,15 +115,15 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
             {showLocations && (
               <div style={{
                 position: 'absolute', top: '100%', left: 0, marginTop: 4,
-                width: 240, background: '#FFFFFF', border: '1px solid #E9EDF7',
+                width: 240, background: '#FFFFFF', border: '1px solid var(--jp-border, #e2e8f0)',
                 borderRadius: 10, overflow: 'hidden', zIndex: 100,
                 boxShadow: '0 12px 40px rgba(0,0,0,0.1)', maxHeight: 300, overflowY: 'auto',
               }}>
                 {locations.map(loc => (
                   <button key={loc.id} onClick={() => switchLocation(loc.id)} style={{
                     width: '100%', padding: '10px 14px', background: loc.id === activeLocation ? '#F0F2F8' : 'transparent',
-                    border: 'none', borderBottom: '1px solid #E9EDF7',
-                    color: loc.id === activeLocation ? '#6EE05A' : '#2B3674',
+                    border: 'none', borderBottom: '1px solid var(--jp-border, #e2e8f0)',
+                    color: loc.id === activeLocation ? '#7ed957' : '#2B3674',
                     fontSize: 13, cursor: 'pointer', textAlign: 'left',
                     fontWeight: loc.id === activeLocation ? 600 : 400,
                   }}>{loc.name}</button>
@@ -216,7 +216,7 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
                     transition: 'all 0.15s',
                   }}
                   onMouseEnter={(e) => {
-                    if (layoutMode !== opt.mode) e.currentTarget.style.background = '#F5F6FA'
+                    if (layoutMode !== opt.mode) e.currentTarget.style.background = 'var(--jp-bg, #f1f2f7)'
                   }}
                   onMouseLeave={(e) => {
                     if (layoutMode !== opt.mode) e.currentTarget.style.background = 'none'

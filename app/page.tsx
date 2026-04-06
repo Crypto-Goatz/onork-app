@@ -60,7 +60,7 @@ export default function LandingPage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#050505',
+        background: 'var(--bg-deep, #040A1A)',
         overflow: 'hidden',
         position: 'relative',
       }}
@@ -130,7 +130,7 @@ export default function LandingPage() {
           bottom: '2rem',
           textAlign: 'center',
           fontSize: '0.7rem',
-          color: '#333',
+          color: 'var(--text-muted, #6b7280)',
           letterSpacing: '0.1em',
           textTransform: 'uppercase',
         }}
@@ -164,7 +164,7 @@ export default function LandingPage() {
           font-size: clamp(4rem, 12vw, 10rem);
           font-weight: 900;
           letter-spacing: -0.02em;
-          color: #0a0a0a;
+          color: var(--bg-deep, #040A1A);
           text-transform: lowercase;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           position: relative;
@@ -240,7 +240,7 @@ export default function LandingPage() {
         /* ── Typed Text ────────────────────────────────── */
         .typed-text {
           font-size: clamp(0.9rem, 2vw, 1.2rem);
-          color: #888;
+          color: var(--text-muted, #6b7280);
           letter-spacing: 0.05em;
           font-weight: 300;
           position: relative;
@@ -248,7 +248,7 @@ export default function LandingPage() {
         }
 
         .typed-cursor {
-          color: #7ed957;
+          color: var(--accent, #7ed957);
           animation: cursor-blink 0.8s step-end infinite;
           font-weight: 200;
           margin-left: 2px;
@@ -273,9 +273,9 @@ export default function LandingPage() {
         .toggle-track {
           width: 72px;
           height: 36px;
-          background: #1a1a1a;
+          background: var(--bg-secondary, #161b22);
           border-radius: 18px;
-          border: 1px solid #333;
+          border: 1px solid var(--border, #30363d);
           position: relative;
           transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -283,7 +283,7 @@ export default function LandingPage() {
         .toggle-thumb {
           width: 28px;
           height: 28px;
-          background: #555;
+          background: var(--text-muted, #6b7280);
           border-radius: 50%;
           position: absolute;
           top: 3px;
@@ -294,13 +294,13 @@ export default function LandingPage() {
         /* Toggled ON state */
         .toggle-switch.toggled .toggle-track {
           background: rgba(126, 217, 87, 0.15);
-          border-color: #7ed957;
+          border-color: var(--accent, #7ed957);
           box-shadow: 0 0 30px rgba(126, 217, 87, 0.4), 0 0 60px rgba(126, 217, 87, 0.2);
         }
 
         .toggle-switch.toggled .toggle-thumb {
           left: 40px;
-          background: #7ed957;
+          background: var(--accent, #7ed957);
           box-shadow: 0 0 20px rgba(126, 217, 87, 0.8);
         }
 
@@ -334,11 +334,11 @@ export default function LandingPage() {
 
         /* ── Hover ─────────────────────────────────────── */
         .toggle-switch:not(.toggled):hover .toggle-track {
-          border-color: #555;
+          border-color: var(--text-muted, #6b7280);
         }
 
         .toggle-switch:not(.toggled):hover .toggle-thumb {
-          background: #777;
+          background: var(--text-secondary, #9ca3af);
         }
       `}</style>
     </div>

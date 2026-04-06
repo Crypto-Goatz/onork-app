@@ -80,7 +80,7 @@ export default function AutomationsPage() {
       source: lastNode.id,
       target: newNode.id,
       animated: true,
-      style: { stroke: '#2dd4bf', strokeWidth: 2 },
+      style: { stroke: 'var(--color-cyan, #14b8a6)', strokeWidth: 2 },
       type: 'smoothstep',
     } : null
 
@@ -158,7 +158,7 @@ export default function AutomationsPage() {
       display: 'flex',
       flexDirection: 'column',
       height: 'calc(100vh - 64px)',
-      background: '#0c1220',
+      background: 'var(--bg-primary, #0d1117)',
     }}>
       {/* Top Bar */}
       <div style={{
@@ -167,7 +167,7 @@ export default function AutomationsPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: '#0e1825',
+        background: 'var(--bg-secondary, #161b22)',
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -177,8 +177,8 @@ export default function AutomationsPage() {
               onClick={() => setShowWorkflowMenu(!showWorkflowMenu)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 12px', background: '#141e30', border: '1px solid #1c2b42',
-                borderRadius: 8, color: '#8b9ab5', fontSize: 12, cursor: 'pointer',
+                padding: '6px 12px', background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
+                borderRadius: 8, color: 'var(--text-secondary, #9ca3af)', fontSize: 12, cursor: 'pointer',
                 fontFamily: '-apple-system, sans-serif',
               }}
             >
@@ -190,21 +190,21 @@ export default function AutomationsPage() {
             {showWorkflowMenu && (
               <div style={{
                 position: 'absolute', top: '100%', left: 0, marginTop: 4,
-                width: 280, background: '#141e30', border: '1px solid #1c2b42',
+                width: 280, background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
                 borderRadius: 10, overflow: 'hidden', zIndex: 100,
                 boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
               }}>
                 <button onClick={handleNewAutomation} style={{
                   width: '100%', padding: '10px 14px', background: 'none',
                   border: 'none', borderBottom: '1px solid #1c2b42',
-                  color: '#2dd4bf', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  color: 'var(--color-cyan, #14b8a6)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                   textAlign: 'left', fontFamily: '-apple-system, sans-serif',
                   display: 'flex', gap: 8, alignItems: 'center',
                 }}>
                   <span>+</span> New Automation
                 </button>
                 {savedDrafts.length === 0 ? (
-                  <div style={{ padding: '16px 14px', color: '#556880', fontSize: 12, textAlign: 'center', fontFamily: '-apple-system, sans-serif' }}>
+                  <div style={{ padding: '16px 14px', color: 'var(--text-muted, #6b7280)', fontSize: 12, textAlign: 'center', fontFamily: '-apple-system, sans-serif' }}>
                     No saved workflows yet
                   </div>
                 ) : (
@@ -216,7 +216,7 @@ export default function AutomationsPage() {
                         style={{
                           width: '100%', padding: '10px 14px', background: draft.id === automationId ? '#1a2740' : 'none',
                           border: 'none', borderBottom: '1px solid rgba(28,43,66,0.5)',
-                          color: '#e8ecf2', fontSize: 13, cursor: 'pointer',
+                          color: 'var(--text-primary, #f0f4f8)', fontSize: 13, cursor: 'pointer',
                           textAlign: 'left', fontFamily: '-apple-system, sans-serif',
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         }}
@@ -225,7 +225,7 @@ export default function AutomationsPage() {
                       >
                         <div>
                           <div style={{ fontWeight: 600 }}>{draft.name}</div>
-                          <div style={{ fontSize: 11, color: '#556880', marginTop: 2 }}>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', marginTop: 2 }}>
                             {draft.nodes.length} steps · {new Date(draft.updatedAt).toLocaleDateString()}
                           </div>
                         </div>
@@ -251,18 +251,18 @@ export default function AutomationsPage() {
               onBlur={() => setEditing(false)}
               onKeyDown={e => e.key === 'Enter' && setEditing(false)}
               style={{
-                background: '#141e30', border: '1px solid #2dd4bf', borderRadius: 8,
-                padding: '6px 12px', color: '#e8ecf2', fontSize: 15, fontWeight: 700,
+                background: 'var(--bg-card, #1f2937)', border: '1px solid #2dd4bf', borderRadius: 8,
+                padding: '6px 12px', color: 'var(--text-primary, #f0f4f8)', fontSize: 15, fontWeight: 700,
                 outline: 'none', width: 240, fontFamily: '-apple-system, sans-serif',
               }}
             />
           ) : (
             <h1 onClick={() => setEditing(true)} style={{
-              fontSize: 16, fontWeight: 700, color: '#e8ecf2', cursor: 'pointer',
+              fontSize: 16, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', cursor: 'pointer',
               margin: 0, fontFamily: '-apple-system, sans-serif',
             }}>
               {automationName}
-              <span style={{ fontSize: 11, color: '#556880', marginLeft: 8 }}>✎</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', marginLeft: 8 }}>✎</span>
             </h1>
           )}
 
@@ -286,7 +286,7 @@ export default function AutomationsPage() {
             <span style={{
               padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
               background: saveStatus === 'saved' ? 'rgba(52,211,153,0.1)' : saveStatus === 'saving' ? 'rgba(45,212,191,0.1)' : 'rgba(85,104,128,0.1)',
-              color: saveStatus === 'saved' ? '#34d399' : saveStatus === 'saving' ? '#2dd4bf' : '#556880',
+              color: saveStatus === 'saved' ? '#34d399' : saveStatus === 'saving' ? 'var(--color-cyan, #14b8a6)' : 'var(--text-muted, #6b7280)',
               fontFamily: '-apple-system, sans-serif',
             }}>
               {saveStatus === 'saved' ? '✓ Saved' : saveStatus === 'saving' ? 'Saving...' : '○ Unsaved'}
@@ -296,11 +296,11 @@ export default function AutomationsPage() {
 
         <div style={{ display: 'flex', gap: 8 }}>
           {/* Menu size toggles */}
-          <div style={{ display: 'flex', background: '#141e30', borderRadius: 8, border: '1px solid #1c2b42', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', background: 'var(--bg-card, #1f2937)', borderRadius: 8, border: '1px solid #1c2b42', overflow: 'hidden' }}>
             {(['minimize', 'compact', 'expand'] as const).map(size => (
               <button key={size} onClick={() => setMenuSize(size)} style={{
-                padding: '6px 10px', background: menuSize === size ? '#1c2b42' : 'none',
-                border: 'none', color: menuSize === size ? '#2dd4bf' : '#556880',
+                padding: '6px 10px', background: menuSize === size ? 'var(--border, #30363d)' : 'none',
+                border: 'none', color: menuSize === size ? 'var(--color-cyan, #14b8a6)' : 'var(--text-muted, #6b7280)',
                 fontSize: 11, cursor: 'pointer', fontWeight: 600,
                 fontFamily: '-apple-system, sans-serif',
               }}>{size === 'minimize' ? '—' : size === 'compact' ? '◧' : '☰'}</button>
@@ -309,13 +309,13 @@ export default function AutomationsPage() {
           <button onClick={handleSaveDraft} style={{
             padding: '8px 16px', background: 'none',
             border: '1px solid #1c2b42', borderRadius: 8,
-            color: '#8b9ab5', fontSize: 13, cursor: 'pointer',
+            color: 'var(--text-secondary, #9ca3af)', fontSize: 13, cursor: 'pointer',
             fontFamily: '-apple-system, sans-serif',
           }}>Save Draft</button>
           <button style={{
             padding: '8px 20px',
-            background: nodeCount > 0 && hasTrigger ? 'linear-gradient(135deg, #2dd4bf, #14b8a6)' : '#1c2b42',
-            color: nodeCount > 0 && hasTrigger ? '#0c1220' : '#556880',
+            background: nodeCount > 0 && hasTrigger ? 'linear-gradient(135deg, #2dd4bf, #14b8a6)' : 'var(--border, #30363d)',
+            color: nodeCount > 0 && hasTrigger ? '#0c1220' : 'var(--text-muted, #6b7280)',
             border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
             cursor: nodeCount > 0 && hasTrigger ? 'pointer' : 'not-allowed',
             fontFamily: '-apple-system, sans-serif',
