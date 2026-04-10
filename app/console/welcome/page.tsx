@@ -33,22 +33,21 @@ export default function WelcomePage() {
     // 2. Upsert K1 content
     await supabase.from('kb_content_queue').upsert({
       user_id: user.id,
-      k_layer: 'K1',
-      content_type: 'brand_voice',
+      layer: 'K1',
       content: {
         business_name: businessName.trim(),
         what_we_do: whatWeDo.trim(),
         brand_tone: brandTone,
       },
       status: 'active',
-    }, { onConflict: 'user_id,k_layer' })
+    }, { onConflict: 'user_id,layer' })
 
     // 3. Upsert K1 registry
     await supabase.from('user_kb_registry').upsert({
       user_id: user.id,
-      k_layer: 'K1',
+      layer: 'K1',
       status: 'ready',
-    }, { onConflict: 'user_id,k_layer' })
+    }, { onConflict: 'user_id,layer' })
 
     router.push('/console')
   }

@@ -11,13 +11,13 @@ export async function POST(req: Request) {
   // Load K-Layer context
   const { data: kContent } = await supabase
     .from('kb_content_queue')
-    .select('k_layer, content')
+    .select('layer, content')
     .eq('user_id', user.id)
     .eq('status', 'active')
-    .order('k_layer')
+    .order('layer')
 
-  const k1 = kContent?.find(k => k.k_layer === 'K1')?.content as Record<string, string> | undefined
-  const k6 = kContent?.find(k => k.k_layer === 'K6')?.content as Record<string, unknown> | undefined
+  const k1 = kContent?.find(k => k.layer === 'K1')?.content as Record<string, string> | undefined
+  const k6 = kContent?.find(k => k.layer === 'K6')?.content as Record<string, unknown> | undefined
 
   const integrations = k6?.integrations as Array<{ name: string }> | undefined
 

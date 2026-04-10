@@ -185,10 +185,27 @@ export async function POST(request: Request) {
     results.crm_subaccount_note = 'CRM_AGENCY_PIT not configured'
   }
 
-  // ── 4. Update profile as provisioned ──────────────────────
+  // ── 4. Seed user_tiers at tier 0 (lobby) ──────────────────
+  await admin.from('user_tiers').upsert({
+    user_id: userId,
+    tier_level: 0,
+    tier_name: 'lobby',
+  }, { onConflict: 'user_id' })
+  results.user_tier = 'lobby (0)'
+
+  // ── 5. Seed K1 in kb_content_queue (pending — filled during onboarding) ──
+  await admin.from('kb_content_queue').upsert({
+    user_id: userId,
+    layer: 'K1',
+    content: { business_name: '', brand_tone: 'professional' },
+    status: 'pending',
+  }, { onConflict: 'user_id,layer' })
+  results.k1_seeded = true
+
+  // ── 6. Update profile as provisioned (but NOT onboarded yet) ──
   await admin.from('profiles').update({
-    onboarding_completed: true,
     provisioned_at: new Date().toISOString(),
+    tier_level: 0,
   }).eq('id', userId)
 
   results.provisioned = true
@@ -208,7 +225,7 @@ export async function GET(request: Request) {
 
   const admin = getAdmin()
   const { data: profile } = await admin.from('profiles')
-    .select('stripe_customer_id, crm_contact_id, crm_location_id, onboarding_completed, plan')
+    .select('stripe_customer_id, crm_contact_id, crm_location_id, onboarding_complete, plan')
     .eq('id', userId)
     .single()
 
@@ -218,6 +235,6 @@ export async function GET(request: Request) {
     crm: !!profile?.crm_contact_id,
     crm_location: !!profile?.crm_location_id,
     plan: profile?.plan || 'free',
-    onboarding_completed: profile?.onboarding_completed || false,
+    onboarding_complete: profile?.onboarding_complete || false,
   })
 }
