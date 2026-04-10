@@ -6,11 +6,13 @@ import { UpgradeButton } from '@/components/UpgradeButton'
 
 interface Feature {
   id: string
-  name: string
+  feature_key: string
+  feature_name: string
   description: string
   tier_required: number
   category: string
-  route: string | null
+  icon: string | null
+  sort_order: number
 }
 
 const TIER_NAMES: Record<number, string> = {
@@ -44,7 +46,7 @@ export default function ConsoleDashboard() {
 
       const [tierRes, featRes, profileRes] = await Promise.all([
         supabase.from('user_tiers').select('tier_level').eq('user_id', user.id).single(),
-        supabase.from('feature_catalog').select('*').order('tier_required').order('name'),
+        supabase.from('feature_catalog').select('*').order('tier_required').order('sort_order'),
         supabase.from('profiles').select('business_name').eq('id', user.id).single(),
       ])
 
@@ -154,7 +156,7 @@ export default function ConsoleDashboard() {
                     color: unlocked ? '#111827' : '#9CA3AF',
                     marginBottom: '4px',
                   }}>
-                    {feature.name}
+                    {feature.feature_name}
                   </h3>
                   <p style={{
                     fontSize: '12px',
@@ -164,9 +166,9 @@ export default function ConsoleDashboard() {
                   }}>
                     {feature.description}
                   </p>
-                  {unlocked && feature.route && (
+                  {unlocked && feature.feature_key && (
                     <a
-                      href={feature.route}
+                      href={`/console/${feature.feature_key}`}
                       style={{
                         fontSize: '12px',
                         fontWeight: 600,
