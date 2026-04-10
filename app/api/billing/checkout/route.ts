@@ -70,8 +70,8 @@ export async function POST(req: Request) {
       customer: customerId,
       payment_method_types: ['card'],
       line_items: [{ price: getTierPrices()[tier_level], quantity: 1 }],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?upgrade=success&tier=${tier_level}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?upgrade=cancelled`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/console?upgrade=success&tier=${tier_level}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/console?upgrade=cancelled`,
       subscription_data: {
         metadata: {
           user_id: user.id,
@@ -101,8 +101,8 @@ export async function POST(req: Request) {
       customer: customerId,
       payment_method_types: ['card'],
       line_items: [{ price: pack.stripe_price_id, quantity: 1 }],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?sparks=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/console?sparks=success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/console`,
       metadata: {
         user_id: user.id,
         pack_id: pack.id,
