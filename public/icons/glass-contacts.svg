@@ -1,0 +1,14 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow-contacts" x="-4" y="-2" width="48" height="48" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.08"/>
+    </filter>
+    <linearGradient id="glass-contacts" x1="8" y1="8" x2="36" y2="36">
+      <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="22" cy="22" r="14" fill="url(#glass-contacts)" filter="url(#shadow-contacts)"/>
+  <circle cx="17" cy="12" r="4" fill="#6EE05A"/>
+  <path d="M10 22C10 18.6863 12.6863 16 16 16H18C21.3137 16 24 18.6863 24 22V23H10V22Z" fill="#6EE05A" opacity="0.7"/>
+</svg>

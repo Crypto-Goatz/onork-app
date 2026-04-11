@@ -49,27 +49,27 @@ const productCols = [
   {
     heading: 'Platform',
     items: [
-      { icon: '💬', title: 'AI Chat', desc: 'Claude-powered assistant with business context' },
-      { icon: '👥', title: 'Contacts', desc: 'Manage 9,500+ contacts in real time' },
-      { icon: '📊', title: 'Pipeline', desc: 'Visual deal tracking and forecasting' },
-      { icon: '⚡', title: 'Automations', desc: 'Plain-English workflow builder' },
+      { icon: '/icons/glass-chat.svg', title: 'AI Chat', desc: 'Claude-powered assistant with business context' },
+      { icon: '/icons/glass-contacts.svg', title: 'Contacts', desc: 'Manage 9,500+ contacts in real time' },
+      { icon: '/icons/glass-pipeline.svg', title: 'Pipeline', desc: 'Visual deal tracking and forecasting' },
+      { icon: '/icons/glass-automation.svg', title: 'Automations', desc: 'Plain-English workflow builder' },
     ],
   },
   {
     heading: 'Intelligence',
     items: [
-      { icon: '🧠', title: 'K-Layer Brain', desc: 'Seven layers of business knowledge' },
-      { icon: '📈', title: 'Analytics', desc: 'Revenue, engagement, and funnel metrics' },
-      { icon: '🎨', title: 'Brand Generator', desc: 'On-brand content in seconds' },
-      { icon: '🎙', title: 'Voice AI', desc: 'Conversational AI for calls and IVR' },
+      { icon: '/icons/glass-brain.svg', title: 'K-Layer Brain', desc: 'Seven layers of business knowledge' },
+      { icon: '/icons/glass-analytics.svg', title: 'Analytics', desc: 'Revenue, engagement, and funnel metrics' },
+      { icon: '/icons/glass-brand.svg', title: 'Brand Generator', desc: 'On-brand content in seconds' },
+      { icon: '/icons/glass-voice.svg', title: 'Voice AI', desc: 'Conversational AI for calls and IVR' },
     ],
   },
   {
     heading: 'Security',
     items: [
-      { icon: '🔐', title: 'Vault Protocol', desc: 'Patent-pending encrypted credential store' },
-      { icon: '🔑', title: 'API Access', desc: 'Full REST + MCP server endpoints' },
-      { icon: '🏷', title: 'White Label', desc: 'Your brand, your domain, your AI' },
+      { icon: '/icons/glass-vault.svg', title: 'Vault Protocol', desc: 'Patent-pending encrypted credential store' },
+      { icon: '/icons/glass-api.svg', title: 'API Access', desc: 'Full REST + MCP server endpoints' },
+      { icon: '/icons/glass-whitelabel.svg', title: 'White Label', desc: 'Your brand, your domain, your AI' },
     ],
   },
 ]
@@ -212,52 +212,68 @@ export default function HomePage() {
   }, [activeMenu])
 
   // ── Dropdown item renderer ──
-  const DropItem = ({ icon, title, desc }: { icon: string; title: string; desc: string }) => (
-    <a
-      href="#"
-      style={{
-        display: 'flex',
-        gap: 12,
-        padding: '12px 14px',
-        borderRadius: 10,
-        textDecoration: 'none',
-        transition: 'all 200ms cubic-bezier(0.16, 1, 0.3, 1)',
-        border: '1px solid transparent',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(110,224,90,0.04)'
-        e.currentTarget.style.borderColor = 'rgba(110,224,90,0.1)'
-        e.currentTarget.style.transform = 'translateX(4px)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'transparent'
-        e.currentTarget.style.borderColor = 'transparent'
-        e.currentTarget.style.transform = 'translateX(0)'
-      }}
-    >
-      <span
+  const DropItem = ({ icon, title, desc }: { icon: string; title: string; desc: string }) => {
+    const isImage = icon.startsWith('/')
+    return (
+      <a
+        href="#"
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          background: C.greenDim,
-          border: `1px solid ${C.greenBorder}`,
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 18,
-          flexShrink: 0,
-          transition: 'transform 200ms ease',
+          gap: 12,
+          padding: '12px 14px',
+          borderRadius: 10,
+          textDecoration: 'none',
+          transition: 'all 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+          border: '1px solid transparent',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(110,224,90,0.04)'
+          e.currentTarget.style.borderColor = 'rgba(110,224,90,0.1)'
+          e.currentTarget.style.transform = 'translateX(4px)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'transparent'
+          e.currentTarget.style.borderColor = 'transparent'
+          e.currentTarget.style.transform = 'translateX(0)'
         }}
       >
-        {icon}
-      </span>
-      <div>
-        <div style={{ color: C.text, fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{title}</div>
-        <div style={{ color: C.textMut, fontSize: 13, lineHeight: 1.4 }}>{desc}</div>
-      </div>
-    </a>
-  )
+        {isImage ? (
+          <img
+            src={icon}
+            alt={title}
+            style={{
+              width: 40,
+              height: 40,
+              flexShrink: 0,
+              transition: 'transform 200ms ease',
+            }}
+          />
+        ) : (
+          <span
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 10,
+              background: C.greenDim,
+              border: `1px solid ${C.greenBorder}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 18,
+              flexShrink: 0,
+              transition: 'transform 200ms ease',
+            }}
+          >
+            {icon}
+          </span>
+        )}
+        <div>
+          <div style={{ color: C.text, fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{title}</div>
+          <div style={{ color: C.textMut, fontSize: 13, lineHeight: 1.4 }}>{desc}</div>
+        </div>
+      </a>
+    )
+  }
 
   const navItems = ['Product', 'Solutions', 'Pricing', 'Resources']
 

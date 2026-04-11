@@ -1,0 +1,16 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow-voice" x="-4" y="-2" width="48" height="48" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.08"/>
+    </filter>
+    <linearGradient id="glass-voice" x1="8" y1="8" x2="36" y2="36">
+      <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="22" cy="22" r="14" fill="url(#glass-voice)" filter="url(#shadow-voice)"/>
+  <rect x="15" y="8" width="6" height="10" rx="3" fill="#6EE05A"/>
+  <path d="M11 15V16C11 20.4183 14.5817 24 19 24H17C21.4183 24 25 20.4183 25 16V15" stroke="#6EE05A" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6"/>
+  <line x1="18" y1="24" x2="18" y2="27" stroke="#6EE05A" stroke-width="2" stroke-linecap="round"/>
+  <line x1="14" y1="27" x2="22" y2="27" stroke="#6EE05A" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+</svg>

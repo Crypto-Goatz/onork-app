@@ -1,0 +1,14 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow-analytics" x="-4" y="-2" width="48" height="48" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.08"/>
+    </filter>
+    <linearGradient id="glass-analytics" x1="8" y1="8" x2="36" y2="36">
+      <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="22" cy="22" r="14" fill="url(#glass-analytics)" filter="url(#shadow-analytics)"/>
+  <polyline points="10,20 14,14 18,17 22,10 26,13" stroke="#6EE05A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="26" cy="13" r="2.5" fill="#6EE05A"/>
+</svg>

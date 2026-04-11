@@ -1,0 +1,15 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow-brain" x="-4" y="-2" width="48" height="48" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.08"/>
+    </filter>
+    <linearGradient id="glass-brain" x1="8" y1="8" x2="36" y2="36">
+      <stop offset="0%" stop-color="white" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="22" cy="22" r="14" fill="url(#glass-brain)" filter="url(#shadow-brain)"/>
+  <path d="M18 8C14.134 8 11 11.134 11 15C11 17.38 12.19 19.47 14 20.74V22C14 22.5523 14.4477 23 15 23H21C21.5523 23 22 22.5523 22 22V20.74C23.81 19.47 25 17.38 25 15C25 11.134 21.866 8 18 8Z" fill="#6EE05A"/>
+  <rect x="15" y="24" width="6" height="1.5" rx="0.75" fill="#6EE05A" opacity="0.5"/>
+  <rect x="16" y="26.5" width="4" height="1.5" rx="0.75" fill="#6EE05A" opacity="0.3"/>
+</svg>
