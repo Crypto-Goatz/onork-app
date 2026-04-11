@@ -85,41 +85,77 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Try Ollama first (free, local)
-    const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: OLLAMA_MODEL,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: `Generate a .0n SWITCH file for this automation:\n\n${prompt}` },
-        ],
-        stream: false,
-        options: { temperature: 0.3, num_predict: 4096 },
-        format: 'json',
-      }),
-      signal: AbortSignal.timeout(60000),
-    }).catch(() => null)
-
     let workflow: any = null
-    let provider = 'ollama'
+    let provider = 'template'
 
-    if (ollamaRes?.ok) {
-      const data = await ollamaRes.json()
-      const text = data.message?.content || ''
-      try {
-        workflow = JSON.parse(text)
-      } catch {
-        // Try extracting JSON from the response
-        const match = text.match(/\{[\s\S]*\}/)
-        if (match) workflow = JSON.parse(match[0])
+    // Try Groq first (fast, free API)
+    const groqKey = process.env.GROQ_API_KEY || process.env.GROQ_API_KEYS?.split(',')[0]
+    if (groqKey) {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${groqKey}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          max_tokens: 4096,
+          temperature: 0.3,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: `Generate a .0n SWITCH file for this automation:\n\n${prompt}` },
+          ],
+        }),
+        signal: AbortSignal.timeout(30000),
+      }).catch(() => null)
+
+      if (groqRes?.ok) {
+        const data = await groqRes.json()
+        const text = data.choices?.[0]?.message?.content || ''
+        try {
+          workflow = JSON.parse(text)
+          provider = 'groq'
+        } catch {
+          const match = text.match(/\{[\s\S]*\}/)
+          if (match) { workflow = JSON.parse(match[0]); provider = 'groq' }
+        }
       }
     }
 
-    // Fallback: generate a basic template from the prompt
+    // Try Ollama (local, if running)
     if (!workflow) {
-      provider = 'template'
+      const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: OLLAMA_MODEL,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: `Generate a .0n SWITCH file for this automation:\n\n${prompt}` },
+          ],
+          stream: false,
+          options: { temperature: 0.3, num_predict: 4096 },
+          format: 'json',
+        }),
+        signal: AbortSignal.timeout(60000),
+      }).catch(() => null)
+
+      if (ollamaRes?.ok) {
+        const data = await ollamaRes.json()
+        const text = data.message?.content || ''
+        try {
+          workflow = JSON.parse(text)
+          provider = 'ollama'
+        } catch {
+          const match = text.match(/\{[\s\S]*\}/)
+          if (match) { workflow = JSON.parse(match[0]); provider = 'ollama' }
+        }
+      }
+    }
+
+    // Fallback: template-based generation
+    if (!workflow) {
       workflow = generateTemplate(prompt)
     }
 
