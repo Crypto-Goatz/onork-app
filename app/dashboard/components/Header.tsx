@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { NotificationBell } from '@/components/NotificationBell'
 
 export type LayoutMode = 'classic' | 'compact' | 'horizontal'
 
@@ -151,6 +152,9 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
       </div>
 
       <div className="jp-header-end">
+        {/* Notifications */}
+        <NotificationBell />
+
         {/* Layout Switcher */}
         <div style={{ position: 'relative' }}>
           <button
