@@ -46,8 +46,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .then(({ data }) => {
           if (data?.is_admin) setIsAdmin(true)
 
-          // Auto-provision if missing crm_location_id or stripe_customer_id
-          if (!data?.crm_location_id || !data?.stripe_customer_id) {
+          // Auto-provision ONLY if crm_location_id is missing (not stripe)
+          // Never overwrite an existing crm_location_id
+          if (!data?.crm_location_id) {
             fetch('/api/provision', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -56,9 +57,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 email: user.email || '',
                 name: user.user_metadata?.full_name || '',
               }),
-            }).catch(() => {
-              // Provisioning failure is non-blocking
-            })
+            }).catch(() => {})
           }
         })
     })

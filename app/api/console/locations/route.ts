@@ -1,7 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 
-const CRM_API = 'https://services.leadconnectorhq.com'
-const CRM_VERSION = '2021-07-28'
+// Known locations (hardcoded for reliability — agency PIT search is unreliable)
+const KNOWN_LOCATIONS = [
+  { id: '6MSqx0trfxgLxeHBJE1k', name: 'RocketOpp' },
+  { id: 'nphConTwfHcVE1oA0uep', name: '0nCore Master' },
+]
 
 export async function GET() {
   const supabase = await createClient()
@@ -14,48 +17,31 @@ export async function GET() {
     .eq('id', user.id)
     .single()
 
-  if (!profile?.crm_location_id) {
-    return Response.json({ locations: [] })
+  const currentId = profile?.crm_location_id || ''
+
+  // Build location list — include known + current
+  const locations = [...KNOWN_LOCATIONS]
+
+  // Add current location if not in known list
+  if (currentId && !locations.find(l => l.id === currentId)) {
+    locations.unshift({ id: currentId, name: 'Current Location' })
   }
 
-  // Get locations accessible to this user via the agency PIT
-  const agencyPit = process.env.CRM_AGENCY_PIT
-  if (!agencyPit) {
-    return Response.json({
-      locations: [{ id: profile.crm_location_id, name: 'Primary Location' }],
-    })
-  }
+  return Response.json({ locations, activeLocationId: currentId })
+}
 
-  try {
-    const res = await fetch(`${CRM_API}/locations/search`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${agencyPit}`,
-        'Version': CRM_VERSION,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        companyId: process.env.CRM_COMPANY_ID || '',
-        limit: 50,
-      }),
-      cache: 'no-store',
-    })
+export async function POST(req: Request) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const data = await res.json()
-    const locations = (data.locations || []).map((loc: { id: string; name: string }) => ({
-      id: loc.id,
-      name: loc.name,
-    }))
+  const { locationId } = await req.json()
+  if (!locationId) return Response.json({ error: 'locationId required' }, { status: 400 })
 
-    // Make sure the user's current location is included
-    if (!locations.find((l: { id: string }) => l.id === profile.crm_location_id)) {
-      locations.unshift({ id: profile.crm_location_id, name: 'My Location' })
-    }
+  // Update profile with new location
+  await supabase.from('profiles').update({
+    crm_location_id: locationId,
+  }).eq('id', user.id)
 
-    return Response.json({ locations })
-  } catch {
-    return Response.json({
-      locations: [{ id: profile.crm_location_id, name: 'Primary Location' }],
-    })
-  }
+  return Response.json({ ok: true, locationId })
 }

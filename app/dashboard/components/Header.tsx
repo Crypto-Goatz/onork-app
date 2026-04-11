@@ -57,19 +57,27 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
   const [activeLocation, setActiveLocation] = useState<string>('')
 
   useEffect(() => {
+    // Fetch locations from API
     fetch('/api/crm/locations').then(r => r.json()).then(d => {
-      if (d.locations) setLocations(d.locations)
+      const locs = d.locations || []
+      setLocations(locs)
+      // Set active from profile's current location
+      if (locs.length > 0 && !activeLocation) {
+        setActiveLocation(locs[0]?.id || '')
+      }
     }).catch(() => {})
-    // Get active from localStorage
-    const saved = localStorage.getItem('0ncore-active-location')
-    if (saved) setActiveLocation(saved)
-  }, [])
+
+    // Also get profile's current location
+    fetch('/api/dashboard/stats').then(r => r.json()).then(d => {
+      if (d.locationId) setActiveLocation(d.locationId)
+    }).catch(() => {})
+  }, [activeLocation])
 
   async function switchLocation(id: string) {
     setActiveLocation(id)
-    localStorage.setItem('0ncore-active-location', id)
     setShowLocations(false)
-    await fetch('/api/crm/locations', {
+    // Update profile in Supabase
+    await fetch('/api/console/locations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ locationId: id }),
@@ -100,8 +108,8 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
           </a>
         )}
 
-        {/* Location Switcher */}
-        {locations.length > 1 && (
+        {/* Location Switcher — always show */}
+        {locations.length >= 0 && (
           <div style={{ position: 'relative', marginRight: 12 }}>
             <button onClick={() => setShowLocations(!showLocations)} style={{
               display: 'flex', alignItems: 'center', gap: 6,
@@ -116,19 +124,35 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
             {showLocations && (
               <div style={{
                 position: 'absolute', top: '100%', left: 0, marginTop: 4,
-                width: 240, background: '#FFFFFF', border: '1px solid var(--jp-border, #e2e8f0)',
+                width: 260, background: 'var(--jp-bg-card, #161b22)', border: '1px solid var(--jp-border, #30363d)',
                 borderRadius: 10, overflow: 'hidden', zIndex: 100,
-                boxShadow: '0 12px 40px rgba(0,0,0,0.1)', maxHeight: 300, overflowY: 'auto',
+                boxShadow: '0 12px 40px rgba(0,0,0,0.4)', maxHeight: 300, overflowY: 'auto',
               }}>
+                <div style={{ padding: '8px 14px', fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--jp-border)' }}>
+                  Switch Location
+                </div>
                 {locations.map(loc => (
                   <button key={loc.id} onClick={() => switchLocation(loc.id)} style={{
-                    width: '100%', padding: '10px 14px', background: loc.id === activeLocation ? '#F0F2F8' : 'transparent',
-                    border: 'none', borderBottom: '1px solid var(--jp-border, #e2e8f0)',
-                    color: loc.id === activeLocation ? '#7ed957' : '#2B3674',
+                    width: '100%', padding: '10px 14px', background: loc.id === activeLocation ? 'rgba(110,224,90,0.06)' : 'transparent',
+                    border: 'none', borderBottom: '1px solid var(--jp-border, #30363d)',
+                    color: loc.id === activeLocation ? 'var(--jp-green, #6EE05A)' : 'var(--jp-text-secondary)',
                     fontSize: 13, cursor: 'pointer', textAlign: 'left',
                     fontWeight: loc.id === activeLocation ? 600 : 400,
-                  }}>{loc.name}</button>
+                    fontFamily: 'inherit',
+                    transition: 'background 0.15s',
+                  }}
+                    onMouseEnter={e => { if (loc.id !== activeLocation) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+                    onMouseLeave={e => { if (loc.id !== activeLocation) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <div>{loc.name}</div>
+                    <div style={{ fontSize: 10, color: 'var(--jp-text-muted)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>{loc.id}</div>
+                  </button>
                 ))}
+                {locations.length === 0 && (
+                  <div style={{ padding: '16px 14px', fontSize: 12, color: 'var(--jp-text-muted)', textAlign: 'center' }}>
+                    No locations found
+                  </div>
+                )}
               </div>
             )}
           </div>
