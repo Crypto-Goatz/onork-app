@@ -33,6 +33,8 @@ interface DashboardStats {
   opportunities: number
   conversations: number
   pipelines: number
+  businessName?: string
+  tierLevel?: number
 }
 
 export default function DashboardHome() {
@@ -43,6 +45,8 @@ export default function DashboardHome() {
   const [dragId, setDragId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const [stats, setStats] = useState<DashboardStats>({ contacts: 0, opportunities: 0, conversations: 0, pipelines: 0 })
+  const [activity, setActivity] = useState<{ text: string; meta: string; time: string; dot: string }[]>([])
+  const [kLayerCount, setKLayerCount] = useState(0)
   const dragRef = useRef<HTMLDivElement | null>(null)
   const supabase = createClient()
 
@@ -86,7 +90,36 @@ export default function DashboardHome() {
       .then(d => {
         if (d.stats) setStats(d.stats)
       })
-      .catch(() => { /* keep defaults */ })
+      .catch(() => {})
+
+    // Fetch recent activity from notifications
+    fetch('/api/notifications')
+      .then(r => r.json())
+      .then(d => {
+        const notifs = (d.notifications || []).slice(0, 5).map((n: { title: string; message: string; created_at: string; type: string }) => {
+          const ago = Math.floor((Date.now() - new Date(n.created_at).getTime()) / 60000)
+          const time = ago < 1 ? 'Just now' : ago < 60 ? `${ago}m ago` : ago < 1440 ? `${Math.floor(ago / 60)}h ago` : `${Math.floor(ago / 1440)}d ago`
+          return {
+            text: n.title,
+            meta: n.message.slice(0, 80),
+            time,
+            dot: n.type === 'success' ? 'green' : n.type === 'error' ? 'red' : 'blue',
+          }
+        })
+        setActivity(notifs)
+      })
+      .catch(() => {})
+
+    // Fetch K-layer count
+    supabase.auth.getUser().then(({ data: { user: u } }) => {
+      if (!u) return
+      supabase
+        .from('kb_content_queue')
+        .select('layer')
+        .eq('user_id', u.id)
+        .eq('status', 'active')
+        .then(({ data }) => setKLayerCount(data?.length || 0))
+    })
   }, [supabase.auth])
 
   // ── Drag & Drop ─────────────────────────────────────────
@@ -257,10 +290,21 @@ export default function DashboardHome() {
           <div className="jp-card" style={{ height: '100%' }}>
             <div className="jp-card-header"><h6>Recent Activity</h6></div>
             <ul className="jp-activity-list">
-              {([] as { text: string; meta: string; time: string; dot: string }[]).length === 0 && (
+              {activity.length === 0 ? (
                 <li className="jp-activity-item" style={{ justifyContent: 'center', color: 'var(--jp-text-muted)', fontSize: '0.8125rem' }}>
                   No recent activity
                 </li>
+              ) : (
+                activity.map((a, i) => (
+                  <li key={i} className="jp-activity-item">
+                    <span className={`jp-activity-dot ${a.dot}`} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text-primary)' }}>{a.text}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.meta}</div>
+                    </div>
+                    <span style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)', flexShrink: 0 }}>{a.time}</span>
+                  </li>
+                ))
               )}
             </ul>
           </div>
@@ -276,10 +320,10 @@ export default function DashboardHome() {
             <div className="jp-card-body">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {[
-                  { label: 'Sources', value: '91+', color: 'var(--jp-cyan)' },
-                  { label: 'Pairs', value: '0', color: 'var(--jp-green)' },
-                  { label: 'Feeds', value: '11', color: 'var(--jp-amber)' },
-                  { label: 'Quality', value: '—', color: 'var(--jp-purple)' },
+                  { label: 'K-Layers', value: String(kLayerCount), color: 'var(--jp-cyan)' },
+                  { label: 'Contacts', value: stats.contacts > 0 ? stats.contacts.toLocaleString() : '0', color: 'var(--jp-green)' },
+                  { label: 'Pipelines', value: String(stats.pipelines), color: 'var(--jp-amber)' },
+                  { label: 'Tier', value: String(stats.tierLevel ?? 0), color: 'var(--jp-purple)' },
                 ].map(s => (
                   <div key={s.label} style={{ padding: '12px', borderRadius: 8, background: 'var(--jp-surface-elevated)', border: '1px solid var(--jp-border)' }}>
                     <div style={{ fontSize: '1.25rem', fontWeight: 700, color: s.color }}>{s.value}</div>

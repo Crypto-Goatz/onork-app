@@ -1,21 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getPitForLocation } from '@/lib/crm'
 
 export const dynamic = 'force-dynamic'
 
 const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
-
-async function crmFetch(path: string) {
-  const res = await fetch(`${CRM_API}${path}`, {
-    headers: {
-      Authorization: `Bearer ${process.env.CRM_PIT}`,
-      'Content-Type': 'application/json',
-      Version: CRM_VERSION,
-    },
-  })
-  return res
-}
 
 export async function GET() {
   const supabase = await createClient()
@@ -24,36 +14,55 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const pit = process.env.CRM_PIT
-  const locationId = process.env.CRM_LOCATION_ID
+  // Get user's CRM location from profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('crm_location_id, business_name, tier_level')
+    .eq('id', user.id)
+    .single()
+
+  const locationId = profile?.crm_location_id || process.env.CRM_LOCATION_ID
+  const pit = locationId ? getPitForLocation(locationId) : ''
 
   const stats = {
     contacts: 0,
     opportunities: 0,
     conversations: 0,
     pipelines: 0,
+    businessName: profile?.business_name || '',
+    tierLevel: profile?.tier_level ?? 0,
   }
 
   if (!pit || !locationId) {
     return NextResponse.json({ stats })
   }
 
+  async function crmFetch(path: string) {
+    return fetch(`${CRM_API}${path}`, {
+      headers: {
+        Authorization: `Bearer ${pit}`,
+        'Content-Type': 'application/json',
+        Version: CRM_VERSION,
+      },
+      cache: 'no-store',
+    })
+  }
+
   try {
-    // Fetch contacts count (limit=1 to get meta.total)
+    // Fetch contacts count
     const contactsRes = await crmFetch(`/contacts/?locationId=${locationId}&limit=1`)
     if (contactsRes.ok) {
       const contactsData = await contactsRes.json()
-      stats.contacts = contactsData.meta?.total || contactsData.contacts?.length || 0
+      stats.contacts = contactsData.meta?.total || contactsData.total || contactsData.contacts?.length || 0
     }
 
-    // Fetch pipelines + opportunities count
+    // Fetch pipelines + opportunities
     const pipelinesRes = await crmFetch(`/opportunities/pipelines?locationId=${locationId}`)
     if (pipelinesRes.ok) {
       const pipelinesData = await pipelinesRes.json()
       const pipelines = pipelinesData.pipelines || []
       stats.pipelines = pipelines.length
 
-      // Get opportunity count from first pipeline
       if (pipelines.length > 0) {
         const oppsRes = await crmFetch(
           `/opportunities/search?locationId=${locationId}&pipeline_id=${pipelines[0].id}`
