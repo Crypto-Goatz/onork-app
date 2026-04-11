@@ -35,34 +35,25 @@ const mockStages: Stage[] = [
     id: 'free',
     name: 'Free',
     color: 'var(--jp-text-muted)',
-    deals: [
-      { id: 'd1', name: 'Acme Corp Trial', company: 'Acme Corp', value: 0, assignee: 'MK', daysInStage: 3, priority: 'medium', tags: ['trial'], stageId: 'free' },
-      { id: 'd2', name: 'Beta User Signup', company: 'Startup Labs', value: 0, assignee: 'JD', daysInStage: 1, priority: 'low', tags: ['beta'], stageId: 'free' },
-    ],
+    deals: [],
   },
   {
     id: 'supporter',
     name: 'Supporter',
     color: 'var(--jp-cyan)',
-    deals: [
-      { id: 'd5', name: 'Pro Upgrade', company: 'CloudBase', value: 29, assignee: 'JD', daysInStage: 7, priority: 'medium', tags: ['upgrade'], stageId: 'supporter' },
-    ],
+    deals: [],
   },
   {
     id: 'builder',
     name: 'Builder',
     color: 'var(--jp-green)',
-    deals: [
-      { id: 'd8', name: 'API Integration', company: 'MegaCorp', value: 199, assignee: 'MK', daysInStage: 10, priority: 'high', tags: ['api', 'enterprise'], stageId: 'builder' },
-    ],
+    deals: [],
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
     color: 'var(--jp-purple)',
-    deals: [
-      { id: 'd10', name: 'Enterprise Deal', company: 'GlobalTech', value: 999, assignee: 'MK', daysInStage: 21, priority: 'high', tags: ['enterprise', 'annual'], stageId: 'enterprise' },
-    ],
+    deals: [],
   },
 ]
 
@@ -147,11 +138,11 @@ export default function PipelinePage() {
         if (mapped.length > 0) {
           setStages(mapped)
         }
-        // If mapped is empty, keep mock data as fallback
+        // If mapped is empty, keep empty stages as fallback
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load pipeline')
-      // Keep mock data on error
+      // Keep empty stages on error
     } finally {
       setLoading(false)
     }
@@ -237,7 +228,7 @@ export default function PipelinePage() {
         <div>
           <h1 className="jp-page-title">Sales Pipeline</h1>
           <p className="jp-page-subtitle">
-            {loading ? 'Loading pipeline data...' : error ? 'Using sample data' : 'Drag deals between stages to update their status'}
+            {loading ? 'Loading pipeline data...' : error ? 'No pipeline data yet' : 'Drag deals between stages to update their status'}
           </p>
         </div>
         <div className="jp-pipeline-stats">
@@ -255,7 +246,7 @@ export default function PipelinePage() {
 
       {error && (
         <div style={{ marginBottom: 16, padding: '8px 14px', borderRadius: 8, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', fontSize: '0.8125rem', color: 'var(--jp-red)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{error} — showing sample data</span>
+          <span>{error} — no pipeline data yet</span>
           <button onClick={fetchPipeline} style={{ background: 'none', border: 'none', color: 'var(--jp-cyan)', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>Retry</button>
         </div>
       )}

@@ -17,47 +17,7 @@ interface Email {
   contactId?: string
 }
 
-const mockEmails: Email[] = [
-  {
-    id: '1',
-    from: 'Rachel @ Spa Ligonier',
-    initials: 'RL',
-    subject: 'New booking confirmation needed',
-    preview: 'Hi, we just received a new appointment request for the couples massage package...',
-    body: 'Hi,\n\nWe just received a new appointment request for the couples massage package on Saturday March 29th at 2:00 PM.\n\nThe client is Jennifer Matthews — she\'s a returning customer. Could you confirm the booking and send the pre-appointment intake form?\n\nAlso, I wanted to discuss upgrading our online booking flow. The current one feels clunky.\n\nThanks!\nRachel',
-    time: '10:23 AM',
-    date: 'Mar 22, 2026',
-    read: false,
-    starred: true,
-    folder: 'inbox',
-  },
-  {
-    id: '2',
-    from: 'Stripe Notifications',
-    initials: 'ST',
-    subject: 'Payment received — $247.00',
-    preview: 'You have a new payment from Wallwork Hardscape for invoice #INV-0042...',
-    body: 'Payment Confirmation\n\nYou have received a new payment.\n\nAmount: $247.00\nFrom: Wallwork Hardscape\nInvoice: #INV-0042\nMethod: Visa ending in 4242\nDate: March 22, 2026\n\nThis payment has been deposited to your connected Stripe account.\n\nView in Dashboard: https://dashboard.stripe.com',
-    time: '9:15 AM',
-    date: 'Mar 22, 2026',
-    read: false,
-    starred: false,
-    folder: 'inbox',
-  },
-  {
-    id: '3',
-    from: 'Dave Wallwork',
-    initials: 'DW',
-    subject: 'RE: Spring campaign assets',
-    preview: 'Looks great! I approved the social media posts. Go ahead and schedule them...',
-    body: 'Looks great! I approved the social media posts. Go ahead and schedule them for next week.\n\nAlso — can we add a 15% discount code for returning customers? Something like SPRING15.\n\nLet me know the estimated reach numbers when you have them.\n\nDave',
-    time: 'Yesterday',
-    date: 'Mar 21, 2026',
-    read: true,
-    starred: false,
-    folder: 'inbox',
-  },
-]
+const mockEmails: Email[] = []
 
 function getInitials(name: string): string {
   return name.split(' ').filter(Boolean).map(w => w[0]).join('').substring(0, 2).toUpperCase()
@@ -176,12 +136,12 @@ export default function EmailPage() {
         setEmails(mapped)
         setSelectedEmail(mapped[0].id)
       } else {
-        // Keep mock data
-        setSelectedEmail('1')
+        // No conversations available
+        setSelectedEmail(null)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load conversations')
-      setSelectedEmail('1')
+      setSelectedEmail(null)
     } finally {
       setLoading(false)
     }
@@ -247,7 +207,7 @@ export default function EmailPage() {
       <div className="jp-page-header">
         <h1 className="jp-page-title">Email</h1>
         <p className="jp-page-subtitle">
-          {loading ? 'Loading conversations...' : error ? 'Using sample data' : 'CRM conversations and email management'}
+          {loading ? 'Loading conversations...' : error ? 'No conversations yet' : 'CRM conversations and email management'}
         </p>
       </div>
 

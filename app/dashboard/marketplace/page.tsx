@@ -44,14 +44,8 @@ export default function MarketplaceDashboard() {
     }
     window.addEventListener('message', handleMessage)
 
-    // Load demo data
-    setRecentActions([
-      { action: 'Lead scored', detail: 'Sarah Chen — 87/100 (Hot)', time: '2 min ago', icon: '🔥' },
-      { action: 'Email sent', detail: 'Follow-up to John Smith', time: '15 min ago', icon: '📧' },
-      { action: 'Contact created', detail: 'Mike Davis — mike@acme.com', time: '1 hr ago', icon: '👤' },
-      { action: 'Appointment booked', detail: 'Demo call — Tomorrow 2pm', time: '2 hr ago', icon: '📅' },
-      { action: 'SXO scan complete', detail: 'acme.com — Score: 42/100', time: '3 hr ago', icon: '🔍' },
-    ])
+    // Start with empty state — actions will be populated from live data
+    setRecentActions([])
 
     return () => window.removeEventListener('message', handleMessage)
   }, [])

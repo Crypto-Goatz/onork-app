@@ -14,13 +14,7 @@ interface CalendarEvent {
   calendarName?: string
 }
 
-const fallbackEvents: CalendarEvent[] = [
-  { day: 22, label: 'Team standup', color: 'green' },
-  { day: 24, label: 'Client call', color: 'cyan' },
-  { day: 27, label: 'Deploy v2.6', color: 'purple' },
-  { day: 19, label: 'Sprint review', color: 'green' },
-  { day: 29, label: 'Billing cycle', color: 'cyan' },
-]
+const fallbackEvents: CalendarEvent[] = []
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate()
@@ -144,7 +138,7 @@ export default function CalendarPage() {
         <div>
           <h1 className="jp-page-title">Calendar</h1>
           <p className="jp-page-subtitle">
-            {loading ? 'Loading events...' : error ? 'Using sample data' : 'Manage your schedule and upcoming events'}
+            {loading ? 'Loading events...' : error ? 'No events scheduled' : 'Manage your schedule and upcoming events'}
           </p>
         </div>
         <button className="jp-btn jp-btn-primary">

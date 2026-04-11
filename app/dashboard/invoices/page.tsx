@@ -28,24 +28,7 @@ const statusStyles: Record<InvoiceStatus, { color: string; bg: string }> = {
   draft: { color: 'var(--jp-text-muted)', bg: 'rgba(96, 96, 96, 0.12)' },
 }
 
-const mockInvoices: Invoice[] = [
-  {
-    id: '1', number: 'INV-0047', client: 'Wallwork Hardscape', clientInitials: 'WH',
-    amount: 2400, status: 'paid', date: 'Mar 20, 2026', dueDate: 'Mar 20, 2026',
-    items: [
-      { description: 'Website Redesign — Phase 1', amount: 1800 },
-      { description: 'SEO Setup + 30 Pages', amount: 600 },
-    ],
-  },
-  {
-    id: '2', number: 'INV-0046', client: 'Spa Ligonier', clientInitials: 'SL',
-    amount: 1250, status: 'pending', date: 'Mar 18, 2026', dueDate: 'Apr 1, 2026',
-    items: [
-      { description: 'Monthly CRM Management', amount: 750 },
-      { description: 'Social Media Package', amount: 500 },
-    ],
-  },
-]
+const mockInvoices: Invoice[] = []
 
 function getInitials(name: string): string {
   return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
@@ -113,7 +96,7 @@ export default function InvoicesPage() {
       if (mapped.length > 0) {
         setInvoices(mapped)
       }
-      // Keep mock data if API returns empty
+      // Keep empty state if API returns empty
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load invoices')
     } finally {
@@ -173,7 +156,7 @@ export default function InvoicesPage() {
         <div>
           <h1 className="jp-page-title">Invoices</h1>
           <p className="jp-page-subtitle">
-            {loading ? 'Loading invoices...' : error ? 'Using sample data' : 'Create, send, and track client invoices'}
+            {loading ? 'Loading invoices...' : error ? 'No invoices yet' : 'Create, send, and track client invoices'}
           </p>
         </div>
         <button

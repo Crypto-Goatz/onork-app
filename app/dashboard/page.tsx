@@ -163,7 +163,7 @@ export default function DashboardHome() {
   }
 
   // ── Chart data ────────────────────────────────────────────
-  const chartBars = [35, 55, 42, 68, 48, 75, 58, 82, 65, 45, 72, 52, 60, 78, 50, 85, 62, 70, 55, 88, 64, 48, 76, 58]
+  const chartBars = Array(24).fill(0)
 
   // ── Render Module Content ─────────────────────────────────
 
@@ -257,21 +257,11 @@ export default function DashboardHome() {
           <div className="jp-card" style={{ height: '100%' }}>
             <div className="jp-card-header"><h6>Recent Activity</h6></div>
             <ul className="jp-activity-list">
-              {[
-                { text: 'System initialized', meta: '0nCore connected', time: 'Just now', dot: 'green' },
-                { text: '0nMCP engine ready', meta: '1,171 tools loaded', time: '1m ago', dot: 'cyan' },
-                { text: 'Dashboard loaded', meta: 'All systems nominal', time: '2m ago', dot: 'muted' },
-                { text: 'Vault sealed', meta: 'AES-256-GCM active', time: '5m ago', dot: 'purple' },
-              ].map((item, i) => (
-                <li key={i} className="jp-activity-item">
-                  <span className={`jp-activity-dot ${item.dot}`} />
-                  <div className="jp-activity-content">
-                    <div className="jp-activity-text">{item.text}</div>
-                    <div className="jp-activity-meta">{item.meta}</div>
-                  </div>
-                  <span className="jp-activity-time">{item.time}</span>
+              {([] as { text: string; meta: string; time: string; dot: string }[]).length === 0 && (
+                <li className="jp-activity-item" style={{ justifyContent: 'center', color: 'var(--jp-text-muted)', fontSize: '0.8125rem' }}>
+                  No recent activity
                 </li>
-              ))}
+              )}
             </ul>
           </div>
         )

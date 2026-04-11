@@ -68,30 +68,15 @@ const HASHTAG_SUGGESTIONS = [
 ]
 
 // ── Scheduled posts (demo data) ──────────────────────────────
-const DEMO_SCHEDULED: ScheduledPost[] = [
-  { id: '1', content: 'Excited to announce 0nMCP v2.5 — now with 1,171 tools across 54 services. AI orchestration has never been this powerful.', platforms: ['LinkedIn', 'X'], date: '2026-03-31', time: '09:00', status: 'pending', campaign: 'v2.5-launch' },
-  { id: '2', content: 'How we automated 90% of our client onboarding with a single .0n SWITCH file. Thread below.', platforms: ['X', 'Reddit'], date: '2026-03-30', time: '14:00', status: 'pending', campaign: 'education' },
-  { id: '3', content: 'New blog post: Building a Universal API Orchestrator — lessons from 558 to 1,171 tools', platforms: ['LinkedIn', 'Dev.to'], date: '2026-03-28', time: '10:00', status: 'posted', campaign: 'content' },
-  { id: '4', content: '0nVault Container System is now patent-pending. Secure credential transfer for AI agents.', platforms: ['LinkedIn'], date: '2026-03-25', time: '11:00', status: 'posted', campaign: 'product' },
-  { id: '5', content: 'Quick tip: Use the 0nMCP engine import command to auto-map credentials across 26 services', platforms: ['X', 'Dev.to'], date: '2026-03-22', time: '15:00', status: 'failed' },
-]
+const DEMO_SCHEDULED: ScheduledPost[] = []
 
 // ── Analytics demo data ──────────────────────────────────────
-const ANALYTICS_PLATFORMS = [
-  { platform: 'LinkedIn', posts: 12, reach: '8.2K', engagement: '5.1%', clicks: 342, color: '#0A66C2' },
-  { platform: 'Reddit', posts: 6, reach: '2.1K', engagement: '3.8%', clicks: 87, color: '#FF4500' },
-  { platform: 'Dev.to', posts: 4, reach: '1.4K', engagement: '6.2%', clicks: 156, color: '#0a0a0a' },
-  { platform: 'X / Twitter', posts: 2, reach: '700', engagement: '2.1%', clicks: 23, color: '#000' },
-]
+const ANALYTICS_PLATFORMS: { platform: string; posts: number; reach: string; engagement: string; clicks: number; color: string }[] = []
 
-const TOP_POSTS = [
-  { content: '0nVault Container System is now patent-pending...', platform: 'LinkedIn', reach: '3.2K', engagement: '8.4%' },
-  { content: 'Building a Universal API Orchestrator...', platform: 'Dev.to', reach: '1.1K', engagement: '7.2%' },
-  { content: 'How we automated 90% of our client onboarding...', platform: 'Reddit', reach: '890', engagement: '5.6%' },
-]
+const TOP_POSTS: { content: string; platform: string; reach: string; engagement: string }[] = []
 
 // ── Chart bars (30 days) ─────────────────────────────────────
-const CHART_BARS = [18, 25, 12, 30, 42, 35, 28, 40, 55, 38, 22, 45, 50, 33, 60, 48, 72, 55, 40, 65, 58, 44, 70, 82, 68, 50, 75, 90, 78, 85]
+const CHART_BARS = Array(30).fill(0)
 
 export default function SocialPage() {
   const [activeTab, setActiveTab] = useState<Tab>('compose')
