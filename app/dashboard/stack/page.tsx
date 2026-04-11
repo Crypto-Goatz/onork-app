@@ -12,7 +12,7 @@ interface UsageData {
 
 interface StackJob {
   id: string
-  file_name: string
+  source_filename: string
   total_contacts: number
   no_crm_count: number
   status: 'complete' | 'processing' | 'pending' | 'failed'
@@ -51,8 +51,8 @@ export default function StackDashboard() {
       if (user) {
         const { data } = await supabase
           .from('stack_jobs')
-          .select('id, file_name, total_contacts, no_crm_count, status, created_at')
-          .eq('user_id', user.id)
+          .select('id, source_filename, total_contacts, no_crm_count, status, created_at')
+          .eq('onmcp_user_id', user.id)
           .order('created_at', { ascending: false })
         setJobs(data || [])
       }
@@ -213,7 +213,7 @@ export default function StackDashboard() {
                         color: 'var(--text-primary, #f0f4f8)', fontFamily: 'monospace',
                         maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}>
-                        {job.file_name}
+                        {job.source_filename}
                       </td>
                       <td style={{
                         padding: '12px 16px', fontSize: 14, fontFamily: 'monospace',

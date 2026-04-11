@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
 interface JobMeta {
-  file_name: string
+  source_filename: string
   total_contacts: number
   no_crm_count: number
   crm_detected: number
@@ -168,7 +168,7 @@ export default function StackResults() {
               Results
             </h1>
             <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: '2px 0 0' }}>
-              {meta?.file_name || '...'} &mdash; {meta?.total_contacts.toLocaleString() || '...'} contacts
+              {meta?.source_filename || '...'} &mdash; {meta?.total_contacts.toLocaleString() || '...'} contacts
             </p>
           </div>
         </div>
