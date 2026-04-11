@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     .single()
 
   const locationId = profile?.crm_location_id || process.env.CRM_LOCATION_ID
-  const pit = process.env.CRM_PIT_TOKEN || process.env.CRM_AGENCY_PIT || process.env.CRM_PIT
+  const pit = process.env.CRM_PIT_RAW || process.env.CRM_PIT || process.env.CRM_AGENCY_PIT
 
   if (!pit || !locationId) {
     return NextResponse.json({ error: 'CRM not configured. Complete onboarding first.' }, { status: 500 })

@@ -16,7 +16,7 @@ export async function GET() {
     .single()
 
   const locationId = profile?.crm_location_id || process.env.CRM_LOCATION_ID
-  const pit = process.env.CRM_AGENT_STUDIO_PIT || process.env.CRM_AGENCY_PIT
+  const pit = process.env.CRM_PIT_RAW || process.env.CRM_AGENT_STUDIO_PIT || process.env.CRM_AGENCY_PIT
 
   if (!pit || !locationId) {
     return NextResponse.json({ agentId: null })

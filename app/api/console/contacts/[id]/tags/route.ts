@@ -24,7 +24,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const res = await fetch(`${CRM_API}/contacts/${id}/tags`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.CRM_PIT_TOKEN || ''}`,
+      'Authorization': `Bearer ${process.env.CRM_PIT_RAW || process.env.CRM_PIT_TOKEN || ''}`,
       'Version': CRM_VERSION,
       'Content-Type': 'application/json',
     },

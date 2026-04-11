@@ -9,7 +9,7 @@ const CRM_VERSION = '2021-07-28'
 async function crmFetch(path: string) {
   const res = await fetch(`${CRM_API}${path}`, {
     headers: {
-      Authorization: `Bearer ${process.env.CRM_PIT}`,
+      Authorization: `Bearer ${process.env.CRM_PIT_RAW || process.env.CRM_PIT}`,
       'Content-Type': 'application/json',
       Version: CRM_VERSION,
     },
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const pit = process.env.CRM_PIT
+  const pit = process.env.CRM_PIT_RAW || process.env.CRM_PIT
 
   const { data: profile } = await supabase
     .from('profiles')
