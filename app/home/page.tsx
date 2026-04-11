@@ -607,35 +607,21 @@ export default function HomePage() {
           overflow: 'hidden',
         }}
       >
-        {/* Perspective grid background */}
+        {/* Neon cyberpunk grid background */}
         <div
           style={{
             position: 'absolute',
             bottom: 0,
             left: 0,
             right: 0,
-            height: '70%',
-            backgroundImage: 'url(/bg/perspective-grid.png)',
+            height: '80%',
+            backgroundImage: 'url(/bg/neon-grid.jpg)',
             backgroundSize: 'cover',
             backgroundPosition: 'top center',
-            opacity: 0.22,
+            opacity: 0.35,
             pointerEvents: 'none',
-            maskImage: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 80%)',
-            WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 80%)',
-          }}
-        />
-        {/* Green glow overlay */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '30%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 800,
-            height: 600,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(110,224,90,0.05) 0%, transparent 70%)',
-            pointerEvents: 'none',
+            maskImage: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 85%)',
+            WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 85%)',
           }}
         />
 
