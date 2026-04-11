@@ -7,15 +7,35 @@ const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
 
 /**
- * 0nAGENCY App (Marketplace, full scopes)
- * App ID: 69cf4d25a74f834803470537
- * Client ID: 69cf4d25a74f834803470537-mnu5bzyo
- * This is the master agency app — works across all sub-locations
+ * CRM Marketplace Apps
+ *
+ * 0nAGENCY (Agency-level, all scopes):
+ *   App ID: 69cf4d25a74f834803470537
+ *   Client ID: 69cf4d25a74f834803470537-mnu5bzyo
+ *   → Agency operations across all sub-locations
+ *
+ * 0nCORE Marketplace App (Sub-account level, 140+ scopes):
+ *   App ID: 69c762225a31e1cd2f28dd4c
+ *   Client ID: 69c762225a31e1cd2f28dd4c
+ *   Redirect: https://0ncore.com/api/oauth/callback
+ *   → Installed by users into their CRM sub-accounts
+ *   → Modules: Conversation AI, Custom JS, Custom Page, Widgets,
+ *     Workflows, Snapshots, Voice AI, Payment/Conversation Providers
+ *   → This is the app users buy to connect 0nCore to their CRM
  */
 export const AGENCY_APP = {
   appId: process.env.CRM_AGENCY_APP_ID || '69cf4d25a74f834803470537',
   clientId: process.env.CRM_AGENCY_CLIENT_ID || '69cf4d25a74f834803470537-mnu5bzyo',
   clientSecret: process.env.CRM_AGENCY_CLIENT_SECRET || '',
+}
+
+export const MARKETPLACE_APP = {
+  appId: process.env.CRM_MARKETPLACE_APP_ID || '69c762225a31e1cd2f28dd4c',
+  clientId: process.env.CRM_MARKETPLACE_APP_CLIENT_ID || '69c762225a31e1cd2f28dd4c-mnu5pazi',
+  clientSecret: process.env.CRM_MARKETPLACE_CLIENT_SECRET || '',
+  sharedSecret: process.env.CRM_MARKETPLACE_SHARED_SECRET || '',
+  redirectUri: 'https://0ncore.com/api/oauth/callback',
+  scopes: '140+ scopes (all available)',
 }
 
 export function getPitForLocation(locationId: string): string {
