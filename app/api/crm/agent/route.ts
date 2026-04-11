@@ -9,7 +9,13 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const locationId = user.user_metadata?.active_location_id || process.env.CRM_LOCATION_ID
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('crm_location_id')
+    .eq('id', user.id)
+    .single()
+
+  const locationId = profile?.crm_location_id || process.env.CRM_LOCATION_ID
   const pit = process.env.CRM_AGENT_STUDIO_PIT || process.env.CRM_AGENCY_PIT
 
   if (!pit || !locationId) {

@@ -27,7 +27,14 @@ export async function GET(request: NextRequest) {
   }
 
   const pit = process.env.CRM_PIT
-  const locationId = process.env.CRM_LOCATION_ID
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('crm_location_id')
+    .eq('id', user.id)
+    .single()
+
+  const locationId = profile?.crm_location_id || process.env.CRM_LOCATION_ID
   if (!pit || !locationId) {
     return NextResponse.json({ error: 'CRM not configured' }, { status: 500 })
   }

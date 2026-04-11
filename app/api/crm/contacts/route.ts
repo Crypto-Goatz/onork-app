@@ -11,13 +11,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Use user's active location, fall back to env var
-  const locationId = user.user_metadata?.active_location_id || process.env.CRM_LOCATION_ID
-  // Use agency PIT for multi-location access, fall back to location PIT
-  const pit = process.env.CRM_AGENCY_PIT || process.env.CRM_PIT
+  // Get user's CRM location from profiles table
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('crm_location_id')
+    .eq('id', user.id)
+    .single()
+
+  const locationId = profile?.crm_location_id || process.env.CRM_LOCATION_ID
+  const pit = process.env.CRM_PIT_TOKEN || process.env.CRM_AGENCY_PIT || process.env.CRM_PIT
 
   if (!pit || !locationId) {
-    return NextResponse.json({ error: 'CRM not configured. Go to Settings to connect your CRM.' }, { status: 500 })
+    return NextResponse.json({ error: 'CRM not configured. Complete onboarding first.' }, { status: 500 })
   }
 
   try {
