@@ -5,8 +5,10 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 interface UsageData {
-  used: number
-  limit: number
+  contactsUsed: number
+  contactsLimit: number
+  contactsRemaining: number
+  percentUsed: number
   tier: string
 }
 
@@ -63,7 +65,7 @@ export default function StackDashboard() {
     }
   }
 
-  const usagePct = usage ? Math.min((usage.used / usage.limit) * 100, 100) : 0
+  const usagePct = usage ? usage.percentUsed : 0
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 8px' }}>
@@ -112,7 +114,7 @@ export default function StackDashboard() {
               fontFamily: 'monospace', fontSize: 14, fontWeight: 700,
               color: 'var(--text-primary, #f0f4f8)',
             }}>
-              {usage ? `${usage.used.toLocaleString()} / ${usage.limit.toLocaleString()}` : '---'}
+              {usage ? `${usage.contactsUsed.toLocaleString()} / ${usage.contactsLimit.toLocaleString()}` : '---'}
             </span>
             {usage && (
               <span style={{
