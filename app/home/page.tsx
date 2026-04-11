@@ -190,13 +190,26 @@ const trustItems = [
 // ─── Component ───────────────────────────────────────────────────
 export default function HomePage() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
+  const [prevMenu, setPrevMenu] = useState<string | null>(null)
   const [scrolled, setScrolled] = useState(false)
+  const [menuVisible, setMenuVisible] = useState(false)
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', handler, { passive: true })
     return () => window.removeEventListener('scroll', handler)
   }, [])
+
+  // Animate menu transitions
+  useEffect(() => {
+    if (activeMenu) {
+      setPrevMenu(activeMenu)
+      setMenuVisible(true)
+    } else {
+      const t = setTimeout(() => setMenuVisible(false), 250)
+      return () => clearTimeout(t)
+    }
+  }, [activeMenu])
 
   // ── Dropdown item renderer ──
   const DropItem = ({ icon, title, desc }: { icon: string; title: string; desc: string }) => (
@@ -205,25 +218,36 @@ export default function HomePage() {
       style={{
         display: 'flex',
         gap: 12,
-        padding: '10px 12px',
-        borderRadius: 8,
+        padding: '12px 14px',
+        borderRadius: 10,
         textDecoration: 'none',
-        transition: 'background 150ms',
+        transition: 'all 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+        border: '1px solid transparent',
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
-      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'rgba(110,224,90,0.04)'
+        e.currentTarget.style.borderColor = 'rgba(110,224,90,0.1)'
+        e.currentTarget.style.transform = 'translateX(4px)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'transparent'
+        e.currentTarget.style.borderColor = 'transparent'
+        e.currentTarget.style.transform = 'translateX(0)'
+      }}
     >
       <span
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 8,
+          width: 40,
+          height: 40,
+          borderRadius: 10,
           background: C.greenDim,
+          border: `1px solid ${C.greenBorder}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: 18,
           flexShrink: 0,
+          transition: 'transform 200ms ease',
         }}
       >
         {icon}
@@ -235,22 +259,25 @@ export default function HomePage() {
     </a>
   )
 
-  // ── Nav link with hover ──
+  const navItems = ['Product', 'Solutions', 'Pricing', 'Resources']
+
+  // ── Nav link with active indicator ──
   const NavLink = ({ label }: { label: string }) => {
     const isActive = activeMenu === label
     return (
       <button
         onMouseEnter={() => setActiveMenu(label)}
         style={{
-          background: 'none',
+          position: 'relative',
+          background: isActive ? 'rgba(255,255,255,0.06)' : 'none',
           border: 'none',
           color: isActive ? C.text : C.textSec,
           fontSize: 14,
           fontWeight: 500,
           cursor: 'pointer',
           padding: '8px 16px',
-          borderRadius: 6,
-          transition: 'color 150ms, background 150ms',
+          borderRadius: 8,
+          transition: 'all 200ms cubic-bezier(0.16, 1, 0.3, 1)',
           fontFamily: C.font,
         }}
       >
@@ -260,17 +287,30 @@ export default function HomePage() {
             display: 'inline-block',
             marginLeft: 4,
             fontSize: 10,
-            transition: 'transform 200ms',
+            transition: 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
             transform: isActive ? 'rotate(180deg)' : 'rotate(0deg)',
           }}
         >
           ▾
         </span>
+        {/* Active indicator line */}
+        <span style={{
+          position: 'absolute',
+          bottom: -1,
+          left: '20%',
+          right: '20%',
+          height: 2,
+          borderRadius: 1,
+          background: C.green,
+          transform: isActive ? 'scaleX(1)' : 'scaleX(0)',
+          transition: 'transform 250ms cubic-bezier(0.16, 1, 0.3, 1)',
+          boxShadow: isActive ? `0 0 8px ${C.green}` : 'none',
+        }} />
       </button>
     )
   }
 
-  // ── Dropdown wrapper ──
+  // ── Dropdown container with height animation ──
   const Dropdown = ({
     name,
     children,
@@ -279,6 +319,9 @@ export default function HomePage() {
     children: React.ReactNode
   }) => {
     const isOpen = activeMenu === name
+    const shouldRender = isOpen || (menuVisible && prevMenu === name)
+    if (!shouldRender && !isOpen) return null
+
     return (
       <div
         style={{
@@ -286,20 +329,53 @@ export default function HomePage() {
           top: 64,
           left: 0,
           right: 0,
-          background: C.card,
-          borderBottom: `1px solid ${C.border}`,
-          padding: '28px 0',
-          opacity: isOpen ? 1 : 0,
-          transform: isOpen ? 'translateY(0)' : 'translateY(-8px)',
-          pointerEvents: isOpen ? 'auto' : 'none',
-          transition: 'opacity 200ms ease, transform 200ms ease',
+          overflow: 'hidden',
           zIndex: 99,
         }}
       >
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>{children}</div>
+        {/* Backdrop blur overlay */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(7,8,12,0.85)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: `1px solid ${C.border}`,
+        }} />
+
+        {/* Content */}
+        <div
+          style={{
+            position: 'relative',
+            padding: '28px 0 32px',
+            opacity: isOpen ? 1 : 0,
+            transform: isOpen ? 'translateY(0)' : 'translateY(-12px)',
+            transition: 'opacity 250ms cubic-bezier(0.16, 1, 0.3, 1), transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        >
+          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>{children}</div>
+        </div>
       </div>
     )
   }
+
+  // ── Overlay that dims the page when menu is open ──
+  const MenuOverlay = () => (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        top: 64,
+        background: 'rgba(0,0,0,0.4)',
+        backdropFilter: 'blur(2px)',
+        zIndex: 50,
+        opacity: activeMenu ? 1 : 0,
+        pointerEvents: activeMenu ? 'auto' : 'none',
+        transition: 'opacity 300ms ease',
+      }}
+      onMouseEnter={() => setActiveMenu(null)}
+    />
+  )
 
   return (
     <>
@@ -495,6 +571,9 @@ export default function HomePage() {
           </div>
         </Dropdown>
       </nav>
+
+      {/* Menu overlay dims page when dropdown is open */}
+      <MenuOverlay />
 
       {/* ═══════════════════════════════════════════════════════════
           2. HERO SECTION
