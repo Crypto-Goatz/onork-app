@@ -139,31 +139,75 @@ export async function POST(req: Request) {
 
   // Count active K-layers for response metadata
   const activeKLayers = Object.keys(layers)
+  const hasKLayers = activeKLayers.length > 0
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  // Route: K-layers exist → Anthropic (full context). No K-layers → Groq (fast fallback).
+  if (hasKLayers && process.env.ANTHROPIC_API_KEY) {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: [...history.slice(-20), { role: 'user', content: message }],
+      }),
+    })
+
+    const data = await response.json()
+    if (data.error) {
+      return Response.json({ error: data.error.message || 'AI error' }, { status: 500 })
+    }
+
+    return Response.json({
+      reply: data.content?.[0]?.text || '',
+      kLayers: activeKLayers,
+      model: 'claude-sonnet-4-20250514',
+      provider: 'anthropic',
+    })
+  }
+
+  // Fallback: Groq (no K-layers or no Anthropic key)
+  const groqKey = process.env.GROQ_API_KEY || process.env.GROQ_API_KEYS?.split(',')[0]
+  if (!groqKey) {
+    return Response.json({ error: 'No AI provider configured' }, { status: 500 })
+  }
+
+  const groqMessages = [
+    { role: 'system' as const, content: systemPrompt },
+    ...history.slice(-20).map((m: { role: string; content: string }) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    })),
+    { role: 'user' as const, content: message },
+  ]
+
+  const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
+      'Authorization': `Bearer ${groqKey}`,
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'llama-3.3-70b-versatile',
       max_tokens: 2048,
-      system: systemPrompt,
-      messages: [...history.slice(-20), { role: 'user', content: message }],
+      messages: groqMessages,
     }),
   })
 
-  const data = await response.json()
-
-  if (data.error) {
-    return Response.json({ error: data.error.message || 'AI error' }, { status: 500 })
+  const groqData = await groqResponse.json()
+  if (groqData.error) {
+    return Response.json({ error: groqData.error.message || 'Groq error' }, { status: 500 })
   }
 
   return Response.json({
-    reply: data.content?.[0]?.text || '',
+    reply: groqData.choices?.[0]?.message?.content || '',
     kLayers: activeKLayers,
-    model: 'claude-sonnet-4-20250514',
+    model: 'llama-3.3-70b-versatile',
+    provider: 'groq',
   })
 }
