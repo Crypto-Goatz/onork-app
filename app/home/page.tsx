@@ -618,7 +618,7 @@ export default function HomePage() {
             backgroundImage: 'url(/bg/perspective-grid.png)',
             backgroundSize: 'cover',
             backgroundPosition: 'top center',
-            opacity: 0.12,
+            opacity: 0.22,
             pointerEvents: 'none',
             maskImage: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 80%)',
             WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 80%)',
