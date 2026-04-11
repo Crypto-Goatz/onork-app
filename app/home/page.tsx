@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { ChatWidget } from '@/components/ChatWidget'
 
 // ─── Brand Tokens ────────────────────────────────────────────────
 const C = {
@@ -1234,6 +1235,9 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* 0nAI Chatbot */}
+      <ChatWidget />
     </>
   )
 }
