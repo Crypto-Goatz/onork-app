@@ -81,9 +81,9 @@ export async function GET() {
       stats.conversations = convoData.total || convoData.conversations?.length || 0
     }
 
-    return NextResponse.json({ stats })
+    return NextResponse.json({ stats, locationId, pitAvailable: !!pit })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Stats fetch failed'
-    return NextResponse.json({ stats, error: message })
+    return NextResponse.json({ stats, error: message, locationId, pitAvailable: !!pit })
   }
 }

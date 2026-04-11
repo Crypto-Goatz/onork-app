@@ -6,21 +6,16 @@
 const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
 
-// Location → PIT mapping
-// Each CRM location requires its own PIT token with appropriate scopes
-const LOCATION_PITS: Record<string, string | undefined> = {
-  // RocketOpp main location
-  '6MSqx0trfxgLxeHBJE1k': process.env.CRM_PIT_ROCKETOPP,
-  // 0nCore sub-location
-  'nphConTwfHcVE1oA0uep': process.env.CRM_PIT_RAW,
-}
-
 export function getPitForLocation(locationId: string): string {
-  // Try location-specific PIT first
-  const specific = LOCATION_PITS[locationId]
+  // Read env vars at call time (not module init) to ensure they resolve on Vercel
+  const pits: Record<string, string | undefined> = {
+    '6MSqx0trfxgLxeHBJE1k': process.env.CRM_PIT_ROCKETOPP,
+    'nphConTwfHcVE1oA0uep': process.env.CRM_PIT_RAW,
+  }
+
+  const specific = pits[locationId]
   if (specific) return specific
 
-  // Fallback chain
   return process.env.CRM_PIT_RAW || process.env.CRM_PIT_ROCKETOPP || process.env.CRM_PIT || ''
 }
 

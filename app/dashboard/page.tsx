@@ -47,6 +47,8 @@ export default function DashboardHome() {
   const [stats, setStats] = useState<DashboardStats>({ contacts: 0, opportunities: 0, conversations: 0, pipelines: 0 })
   const [activity, setActivity] = useState<{ text: string; meta: string; time: string; dot: string }[]>([])
   const [kLayerCount, setKLayerCount] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+  const [lastRefresh, setLastRefresh] = useState<string>('')
   const dragRef = useRef<HTMLDivElement | null>(null)
   const supabase = createClient()
 
@@ -73,18 +75,16 @@ export default function DashboardHome() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newModules))
   }, [])
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'User')
-      }
-    })
+  const loadDashboardData = useCallback(async () => {
+    setRefreshing(true)
+
+    // MCP health
     fetch('/api/0nmcp/health')
       .then(r => r.json())
       .then(d => setMcpStatus(d.status === 'offline' ? 'offline' : 'online'))
       .catch(() => setMcpStatus('offline'))
 
-    // Fetch live CRM stats
+    // CRM stats
     fetch('/api/dashboard/stats')
       .then(r => r.json())
       .then(d => {
@@ -92,7 +92,7 @@ export default function DashboardHome() {
       })
       .catch(() => {})
 
-    // Fetch recent activity from notifications
+    // Activity from notifications
     fetch('/api/notifications')
       .then(r => r.json())
       .then(d => {
@@ -110,17 +110,29 @@ export default function DashboardHome() {
       })
       .catch(() => {})
 
-    // Fetch K-layer count
-    supabase.auth.getUser().then(({ data: { user: u } }) => {
-      if (!u) return
-      supabase
+    // K-layer count
+    const { data: { user: u } } = await supabase.auth.getUser()
+    if (u) {
+      const { data } = await supabase
         .from('kb_content_queue')
         .select('layer')
         .eq('user_id', u.id)
         .eq('status', 'active')
-        .then(({ data }) => setKLayerCount(data?.length || 0))
+      setKLayerCount(data?.length || 0)
+    }
+
+    setLastRefresh(new Date().toLocaleTimeString())
+    setTimeout(() => setRefreshing(false), 500)
+  }, [supabase])
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'User')
+      }
     })
-  }, [supabase.auth])
+    loadDashboardData()
+  }, [supabase, loadDashboardData])
 
   // ── Drag & Drop ─────────────────────────────────────────
 
@@ -399,6 +411,37 @@ export default function DashboardHome() {
           <p className="jp-page-subtitle">Your command center overview</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Refresh Button */}
+          <button
+            onClick={loadDashboardData}
+            disabled={refreshing}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 8,
+              border: '1px solid var(--jp-border)',
+              background: refreshing ? 'var(--jp-green-glow)' : 'transparent',
+              color: refreshing ? 'var(--jp-green)' : 'var(--jp-text-muted)',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: refreshing ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all 0.2s',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }}>
+              <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+            </svg>
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          {lastRefresh && (
+            <span style={{ fontSize: '0.65rem', color: 'var(--jp-text-muted)' }}>
+              Last: {lastRefresh}
+            </span>
+          )}
           <button
             onClick={() => setEditMode(!editMode)}
             style={{
