@@ -22,18 +22,18 @@
   --jp-gold: #FFD700;
   --jp-flow: #7000FF;
   --jp-success: #10b981;
-  --jp-bg: #f1f2f7;
-  --jp-surface: #ffffff;
-  --jp-surface-elevated: #f8f9fc;
-  --jp-bg-elevated: #ffffff;
-  --jp-bg-card: #ffffff;
-  --jp-bg-card-hover: #f8f9fc;
-  --jp-bg-input: #f1f2f7;
-  --jp-border: #e2e8f0;
-  --jp-border-hi: #cbd5e1;
-  --jp-border-focus: #7ed957;
-  --jp-text: #1f2937;
-  --jp-text-secondary: #4b5563;
+  --jp-bg: #0d1117;
+  --jp-surface: #161b22;
+  --jp-surface-elevated: #1c2333;
+  --jp-bg-elevated: #161b22;
+  --jp-bg-card: #161b22;
+  --jp-bg-card-hover: #1c2333;
+  --jp-bg-input: #1c2333;
+  --jp-border: #30363d;
+  --jp-border-hi: #484f58;
+  --jp-border-focus: #6EE05A;
+  --jp-text: #f0f4f8;
+  --jp-text-secondary: #9ca3af;
   --jp-text-muted: #6b7280;
   --jp-radius: 16px;
   --jp-radius-sm: 10px;
@@ -352,13 +352,14 @@
   width: 100%;
   height: 40px;
   padding: 0 14px 0 38px;
-  background: var(--jp-bg-input);
-  border: none;
-  border-radius: 24px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
   color: var(--jp-text);
   font-size: 0.875rem;
   outline: none;
   transition: all var(--jp-transition);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .jp-search-input::placeholder {
@@ -366,8 +367,9 @@
 }
 
 .jp-search-input:focus {
-  background: var(--jp-bg-card);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(110,224,90,0.3);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(110,224,90,0.08);
 }
 
 .jp-search-icon {

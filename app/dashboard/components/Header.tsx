@@ -113,9 +113,12 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
           <div style={{ position: 'relative', marginRight: 12 }}>
             <button onClick={() => setShowLocations(!showLocations)} style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              padding: '6px 12px', background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)',
-              borderRadius: 8, color: 'var(--jp-text-secondary)', fontSize: 12, cursor: 'pointer',
-              maxWidth: 180, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+              padding: '8px 14px', background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 10, color: 'var(--jp-text-secondary)', fontSize: 12, cursor: 'pointer',
+              maxWidth: 200, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s',
             }}>
               <span style={{ fontSize: 10 }}>📍</span>
               {locations.find(l => l.id === activeLocation)?.name || 'Select location'}
@@ -262,14 +265,6 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
             </div>
           )}
         </div>
-
-        {/* Notifications */}
-        <button className="jp-header-btn">
-          <span className="jp-header-indicator" />
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-          </svg>
-        </button>
 
         {/* User */}
         <div
