@@ -49,6 +49,7 @@ export default function DashboardHome() {
   const [kLayerCount, setKLayerCount] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<string>('')
+  const [debugInfo, setDebugInfo] = useState<Record<string, unknown>>({})
   const dragRef = useRef<HTMLDivElement | null>(null)
   const supabase = createClient()
 
@@ -89,8 +90,9 @@ export default function DashboardHome() {
       .then(r => r.json())
       .then(d => {
         if (d.stats) setStats(d.stats)
+        setDebugInfo({ locationId: d.locationId, pitAvailable: d.pitAvailable, debug: d.debug, error: d.error })
       })
-      .catch(() => {})
+      .catch((err) => { setDebugInfo({ fetchError: err.message }) })
 
     // Activity from notifications
     fetch('/api/notifications')
@@ -408,7 +410,25 @@ export default function DashboardHome() {
           <h1 className="jp-page-title">
             Welcome back, <span style={{ color: 'var(--jp-green)' }}>{userName}</span>
           </h1>
-          <p className="jp-page-subtitle">Your command center overview</p>
+          <p className="jp-page-subtitle">
+            Your command center overview
+            {debugInfo.locationId ? (
+              <span style={{ marginLeft: 12, fontSize: '0.65rem', color: 'var(--jp-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                {'Location: ' + String(debugInfo.locationId).slice(0, 20) + (String(debugInfo.locationId).length > 20 ? '...' : '')}
+                {debugInfo.pitAvailable ? ' · PIT ✓' : ' · PIT ✗'}
+              </span>
+            ) : null}
+            {debugInfo.debug ? (
+              <span style={{ marginLeft: 8, fontSize: '0.65rem', color: 'var(--jp-amber)', fontFamily: 'var(--font-mono)' }}>
+                {'(' + String((debugInfo.debug as Record<string, string>)?.userEmail || 'unknown') + ')'}
+              </span>
+            ) : null}
+            {debugInfo.error ? (
+              <span style={{ marginLeft: 8, fontSize: '0.65rem', color: 'var(--jp-red)', fontFamily: 'var(--font-mono)' }}>
+                {'Error: ' + String(debugInfo.error).slice(0, 40)}
+              </span>
+            ) : null}
+          </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {/* Refresh Button */}
