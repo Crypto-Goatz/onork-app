@@ -18,6 +18,11 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [showAdd, setShowAdd] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [addSuccess, setAddSuccess] = useState('')
+  const [addError, setAddError] = useState('')
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', tags: '' })
 
   useEffect(() => { fetchContacts() }, [])
 
@@ -36,6 +41,47 @@ export default function ContactsPage() {
     }
   }
 
+  async function handleAddContact(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.firstName && !form.email && !form.phone) return
+    setAdding(true)
+    setAddError('')
+    setAddSuccess('')
+
+    try {
+      const res = await fetch('/api/crm/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email || undefined,
+          phone: form.phone || undefined,
+          tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : ['0ncore-contact'],
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to create contact')
+
+      setAddSuccess(`${form.firstName} ${form.lastName} added successfully`)
+      setForm({ firstName: '', lastName: '', email: '', phone: '', tags: '' })
+
+      // Refresh contacts list
+      await fetchContacts()
+
+      // Close modal after 1.5s
+      setTimeout(() => {
+        setShowAdd(false)
+        setAddSuccess('')
+      }, 1500)
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : 'Failed to create')
+    } finally {
+      setAdding(false)
+    }
+  }
+
   const filtered = contacts.filter((c) => {
     if (!search) return true
     const q = search.toLowerCase()
@@ -46,6 +92,173 @@ export default function ContactsPage() {
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 8px' }}>
+
+      {/* ═══ ADD CONTACT MODAL ═══ */}
+      {showAdd && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '24px',
+        }} onClick={() => !adding && setShowAdd(false)}>
+          <div
+            style={{
+              background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
+              borderRadius: 16, padding: '28px', maxWidth: 460, width: '100%',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 20px' }}>
+              Add Contact
+            </h2>
+
+            {addSuccess && (
+              <div style={{
+                padding: '10px 14px', borderRadius: 8, marginBottom: 16,
+                background: 'rgba(110,224,90,0.1)', border: '1px solid rgba(110,224,90,0.3)',
+                color: '#6EE05A', fontSize: 13, fontWeight: 600,
+              }}>
+                {addSuccess}
+              </div>
+            )}
+
+            {addError && (
+              <div style={{
+                padding: '10px 14px', borderRadius: 8, marginBottom: 16,
+                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                color: '#f87171', fontSize: 13,
+              }}>
+                {addError}
+              </div>
+            )}
+
+            <form onSubmit={handleAddContact}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <label>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    First Name
+                  </span>
+                  <input
+                    type="text"
+                    value={form.firstName}
+                    onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
+                    placeholder="John"
+                    style={{
+                      width: '100%', padding: '10px 12px', borderRadius: 8,
+                      border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
+                      color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </label>
+                <label>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Last Name
+                  </span>
+                  <input
+                    type="text"
+                    value={form.lastName}
+                    onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
+                    placeholder="Doe"
+                    style={{
+                      width: '100%', padding: '10px 12px', borderRadius: 8,
+                      border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
+                      color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </label>
+              </div>
+
+              <label style={{ display: 'block', marginBottom: 12 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Email
+                </span>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="john@company.com"
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 8,
+                    border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
+                    color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </label>
+
+              <label style={{ display: 'block', marginBottom: 12 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Phone
+                </span>
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                  placeholder="+1 (412) 555-1234"
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 8,
+                    border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
+                    color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </label>
+
+              <label style={{ display: 'block', marginBottom: 20 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Tags (comma separated)
+                </span>
+                <input
+                  type="text"
+                  value={form.tags}
+                  onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+                  placeholder="lead, marketing, inbound"
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 8,
+                    border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
+                    color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </label>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  type="submit"
+                  disabled={adding || (!form.firstName && !form.email && !form.phone)}
+                  style={{
+                    flex: 1, padding: '12px',
+                    background: adding ? '#374151' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
+                    color: adding ? '#9CA3AF' : '#0c1220',
+                    fontWeight: 700, fontSize: 14, borderRadius: 10,
+                    border: 'none', cursor: adding ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  {adding ? 'Adding...' : 'Add Contact'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAdd(false)}
+                  disabled={adding}
+                  style={{
+                    padding: '12px 20px', borderRadius: 10,
+                    border: '1px solid #1c2b42', background: 'transparent',
+                    color: 'var(--text-muted, #6b7280)', fontSize: 14,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
@@ -54,12 +267,17 @@ export default function ContactsPage() {
             {contacts.length > 0 ? `${contacts.length} contacts` : 'Manage your contacts'}
           </p>
         </div>
-        <button style={{
-          padding: '10px 20px',
-          background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-          color: '#0c1220', fontWeight: 700, fontSize: 13,
-          borderRadius: 10, border: 'none', cursor: 'pointer',
-        }}>+ Add Contact</button>
+        <button
+          onClick={() => setShowAdd(true)}
+          style={{
+            padding: '10px 20px',
+            background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
+            color: '#0c1220', fontWeight: 700, fontSize: 13,
+            borderRadius: 10, border: 'none', cursor: 'pointer',
+          }}
+        >
+          + Add Contact
+        </button>
       </div>
 
       {/* Search */}
@@ -79,7 +297,7 @@ export default function ContactsPage() {
             backgroundPosition: '14px center',
           }}
           onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-          onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
+          onBlur={e => e.target.style.borderColor = '#1c2b42'}
         />
       </div>
 
@@ -110,9 +328,22 @@ export default function ContactsPage() {
           borderRadius: 14, padding: '60px 40px', textAlign: 'center',
         }}>
           <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>👤</div>
-          <p style={{ color: 'var(--text-secondary, #9ca3af)', fontSize: 14 }}>
-            {search ? 'No contacts match your search.' : 'No contacts yet.'}
+          <p style={{ color: 'var(--text-secondary, #9ca3af)', fontSize: 14, marginBottom: 16 }}>
+            {search ? 'No contacts match your search.' : 'No contacts yet. Add your first one.'}
           </p>
+          {!search && (
+            <button
+              onClick={() => setShowAdd(true)}
+              style={{
+                padding: '10px 20px',
+                background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
+                color: '#0c1220', fontWeight: 700, fontSize: 13,
+                borderRadius: 10, border: 'none', cursor: 'pointer',
+              }}
+            >
+              + Add Contact
+            </button>
+          )}
         </div>
       ) : (
         <div style={{
