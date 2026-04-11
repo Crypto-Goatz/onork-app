@@ -6,8 +6,21 @@
 const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
 
+/**
+ * 0nAGENCY App (Marketplace, full scopes)
+ * App ID: 69cf4d25a74f834803470537
+ * Client ID: 69cf4d25a74f834803470537-mnu5bzyo
+ * This is the master agency app — works across all sub-locations
+ */
+export const AGENCY_APP = {
+  appId: process.env.CRM_AGENCY_APP_ID || '69cf4d25a74f834803470537',
+  clientId: process.env.CRM_AGENCY_CLIENT_ID || '69cf4d25a74f834803470537-mnu5bzyo',
+  clientSecret: process.env.CRM_AGENCY_CLIENT_SECRET || '',
+}
+
 export function getPitForLocation(locationId: string): string {
   // Read env vars at call time (not module init) to ensure they resolve on Vercel
+  // Priority: location-specific PIT → agency PIT → fallback chain
   const pits: Record<string, string | undefined> = {
     '6MSqx0trfxgLxeHBJE1k': process.env.CRM_PIT_ROCKETOPP,
     'nphConTwfHcVE1oA0uep': process.env.CRM_PIT_RAW,
@@ -15,6 +28,9 @@ export function getPitForLocation(locationId: string): string {
 
   const specific = pits[locationId]
   if (specific) return specific
+
+  // Agency PIT (full scope across all sub-locations)
+  if (process.env.CRM_AGENCY_PIT_NEW) return process.env.CRM_AGENCY_PIT_NEW
 
   return process.env.CRM_PIT_RAW || process.env.CRM_PIT_ROCKETOPP || process.env.CRM_PIT || ''
 }
@@ -74,4 +90,3 @@ export async function crmDelete(path: string, locationId: string): Promise<Respo
     },
   })
 }
-// env vars updated Sat Apr 11 05:03:46 EDT 2026
