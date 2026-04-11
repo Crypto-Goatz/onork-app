@@ -95,6 +95,25 @@
   display: flex;
   min-height: 100vh;
   background: var(--jp-bg);
+  position: relative;
+}
+
+/* Neon grid background — fixed at bottom, subtle behind everything */
+.jp-wrapper::after {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  background-image: url('/bg/neon-grid.jpg');
+  background-size: cover;
+  background-position: top center;
+  opacity: 0.06;
+  pointer-events: none;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 70%);
+  mask-image: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 70%);
 }
 
 /* ======= Sidebar ======= */

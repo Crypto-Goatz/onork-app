@@ -57,21 +57,14 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
   const [activeLocation, setActiveLocation] = useState<string>('')
 
   useEffect(() => {
-    // Fetch locations from API
-    fetch('/api/crm/locations').then(r => r.json()).then(d => {
+    // Fetch locations from console API (has known locations + POST handler)
+    fetch('/api/console/locations').then(r => r.json()).then(d => {
       const locs = d.locations || []
       setLocations(locs)
-      // Set active from profile's current location
-      if (locs.length > 0 && !activeLocation) {
-        setActiveLocation(locs[0]?.id || '')
-      }
+      if (d.activeLocationId) setActiveLocation(d.activeLocationId)
+      else if (locs.length > 0) setActiveLocation(locs[0]?.id || '')
     }).catch(() => {})
-
-    // Also get profile's current location
-    fetch('/api/dashboard/stats').then(r => r.json()).then(d => {
-      if (d.locationId) setActiveLocation(d.locationId)
-    }).catch(() => {})
-  }, [activeLocation])
+  }, [])
 
   async function switchLocation(id: string) {
     setActiveLocation(id)
@@ -104,7 +97,7 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
         {/* Logo for horizontal layout */}
         {layoutMode === 'horizontal' && (
           <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', marginRight: 16, textDecoration: 'none' }}>
-            <img src="/logo.png" alt="0nCore" style={{ height: 28, objectFit: 'contain' }} />
+            <img src="/brand/on-white.png" alt="0nCore" style={{ height: 32, objectFit: 'contain' }} />
           </a>
         )}
 
