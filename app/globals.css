@@ -1,23 +1,23 @@
 @import "tailwindcss";
 
 @theme {
-  /* 0nMCP Brand System V3.0 — Light Mode (default) */
-  --color-bg-primary: #f1f2f7;
-  --color-bg-secondary: #ffffff;
-  --color-bg-tertiary: #f8f9fc;
-  --color-bg-card: #ffffff;
-  --color-bg-sidebar: #1f2937;
-  --color-bg-header: #ffffff;
+  /* 0nCore Brand System — DARK MODE ONLY */
+  --color-bg-primary: #0d1117;
+  --color-bg-secondary: #161b22;
+  --color-bg-tertiary: #1c2333;
+  --color-bg-card: #161b22;
+  --color-bg-sidebar: #0d1117;
+  --color-bg-header: #0d1117;
   --color-bg-deep: #040A1A;
   --color-bg-vault: #081C4F;
-  --color-text-primary: #1f2937;
-  --color-text-secondary: #4b5563;
+  --color-text-primary: #f0f4f8;
+  --color-text-secondary: #9ca3af;
   --color-text-muted: #6b7280;
   --color-text-on-dark: #E0E0E0;
-  --color-accent: #7ed957;
-  --color-accent-action: #2d8a1e;
+  --color-accent: #6EE05A;
+  --color-accent-action: #6EE05A;
   --color-accent-dim: #5cb83a;
-  --color-accent-glow: rgba(126, 217, 87, 0.12);
+  --color-accent-glow: rgba(110, 224, 90, 0.15);
   --color-orange: #FF6B35;
   --color-teal: #00C2C7;
   --color-gold: #FFD700;
@@ -25,96 +25,22 @@
   --color-cyan: #14b8a6;
   --color-purple: #8b5cf6;
   --color-amber: #d97706;
-  --color-red: #b91c1c;
+  --color-red: #ef4444;
   --color-success: #10b981;
-  --color-cta-bg: #FF6B35;
-  --color-cta-text: #ffffff;
-  --color-border: #e2e8f0;
+  --color-cta-bg: #6EE05A;
+  --color-cta-text: #0d1117;
+  --color-border: #30363d;
 
-  /* Legacy aliases for Tailwind classes */
-  --color-core-bg: #f1f2f7;
-  --color-core-surface: #ffffff;
-  --color-core-card: #ffffff;
-  --color-core-card-hover: #f8f9fc;
-  --color-core-border: #e2e8f0;
-  --color-core-border-hi: #cbd5e1;
-  --color-core-green: #7ed957;
-  --color-core-green-dim: #2d8a1e;
-  --color-core-green-glow: rgba(126, 217, 87, 0.12);
-  --color-core-cyan: #14b8a6;
-  --color-core-cyan-dim: #0d9488;
-  --color-core-purple: #8b5cf6;
-  --color-core-red: #b91c1c;
-  --color-core-amber: #d97706;
-  --color-core-text: #1f2937;
-  --color-core-text-dim: #4b5563;
-  --color-core-text-muted: #6b7280;
-  --color-core-sidebar: #1f2937;
-  --color-core-sidebar-text: #E0E0E0;
-
-  --animate-fade-in: fade-in 0.3s ease both;
-  --animate-slide-up: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-/* V3.0 CSS Custom Properties (non-Tailwind) */
-:root {
-  --bg-primary: #f1f2f7;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f8f9fc;
-  --bg-card: #ffffff;
-  --bg-sidebar: #1f2937;
-  --bg-header: #ffffff;
-  --bg-deep: #040A1A;
-  --bg-vault: #081C4F;
-  --text-primary: #1f2937;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
-  --text-on-dark: #E0E0E0;
-  --accent: #7ed957;
-  --accent-action: #2d8a1e;
-  --accent-dim: #5cb83a;
-  --accent-glow: rgba(126, 217, 87, 0.12);
-  --color-orange: #FF6B35;
-  --color-teal: #00C2C7;
-  --color-gold: #FFD700;
-  --color-flow: #7000FF;
-  --color-cyan: #14b8a6;
-  --color-purple: #8b5cf6;
-  --color-amber: #d97706;
-  --color-red: #b91c1c;
-  --color-success: #10b981;
-  --cta-bg: #FF6B35;
-  --cta-text: #ffffff;
-  --border: #e2e8f0;
-  --font-display: 'Inter', system-ui, sans-serif;
-  --font-body: 'Nunito Sans', 'Inter', system-ui, sans-serif;
-  --font-mono: 'Roboto Mono', 'JetBrains Mono', monospace;
-}
-
-/* Dark Mode */
-[data-theme="dark"] {
-  --bg-primary: #0d1117;
-  --bg-secondary: #161b22;
-  --bg-tertiary: #1c2333;
-  --bg-card: #1f2937;
-  --bg-sidebar: #0d1117;
-  --bg-header: #0d1117;
-  --text-primary: #f0f4f8;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
-  --cta-bg: #FF6B35;
-  --cta-text: #ffffff;
-  --border: #30363d;
-
+  /* Tailwind class aliases */
   --color-core-bg: #0d1117;
   --color-core-surface: #161b22;
   --color-core-card: #161b22;
   --color-core-card-hover: #1c2333;
   --color-core-border: #30363d;
   --color-core-border-hi: #484f58;
-  --color-core-green: #7ed957;
+  --color-core-green: #6EE05A;
   --color-core-green-dim: #5cb83a;
-  --color-core-green-glow: rgba(126, 217, 87, 0.15);
+  --color-core-green-glow: rgba(110, 224, 90, 0.15);
   --color-core-cyan: #14b8a6;
   --color-core-cyan-dim: #2dd4bf;
   --color-core-purple: #8b5cf6;
@@ -125,6 +51,45 @@
   --color-core-text-muted: #6b7280;
   --color-core-sidebar: #0d1117;
   --color-core-sidebar-text: #f0f4f8;
+
+  --animate-fade-in: fade-in 0.3s ease both;
+  --animate-slide-up: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* V3.0 CSS Custom Properties — DARK MODE ONLY */
+:root {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #1c2333;
+  --bg-card: #1f2937;
+  --bg-sidebar: #0d1117;
+  --bg-header: #0d1117;
+  --bg-deep: #040A1A;
+  --bg-vault: #081C4F;
+  --text-primary: #f0f4f8;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --text-on-dark: #E0E0E0;
+  --accent: #6EE05A;
+  --accent-action: #6EE05A;
+  --accent-dim: #5cb83a;
+  --accent-glow: rgba(110, 224, 90, 0.15);
+  --color-orange: #FF6B35;
+  --color-teal: #00C2C7;
+  --color-gold: #FFD700;
+  --color-flow: #7000FF;
+  --color-cyan: #14b8a6;
+  --color-purple: #8b5cf6;
+  --color-amber: #d97706;
+  --color-red: #ef4444;
+  --color-success: #10b981;
+  --cta-bg: #6EE05A;
+  --cta-text: #0d1117;
+  --border: #30363d;
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-body: 'Nunito Sans', 'Inter', system-ui, sans-serif;
+  --font-mono: 'Roboto Mono', 'JetBrains Mono', monospace;
+  color-scheme: dark;
 }
 
 @keyframes fade-in {
@@ -147,11 +112,6 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-body);
-}
-
-[data-theme="dark"] body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
 }
 
 h1, h2, h3, h4, h5, h6 {

@@ -21,7 +21,7 @@ export async function GET() {
     .eq('id', user.id)
     .single()
 
-  const locationId = profile?.crm_location_id || process.env.CRM_LOCATION_ID
+  const locationId = profile?.crm_location_id || ''
   const pit = locationId ? getPitForLocation(locationId) : ''
 
   const stats = {
@@ -34,7 +34,7 @@ export async function GET() {
   }
 
   if (!pit || !locationId) {
-    return NextResponse.json({ stats })
+    return NextResponse.json({ stats, debug: { userEmail: user.email, hasProfile: !!profile, locationId: locationId || 'none' } })
   }
 
   async function crmFetch(path: string) {
