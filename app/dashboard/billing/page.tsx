@@ -20,11 +20,6 @@ const TIER_PRICES: Record<number, string> = {
   3: '$149.00/mo', 4: '$299.00/mo', 5: '$499.00/mo',
 }
 
-const TIER_COLORS: Record<number, string> = {
-  0: '#9ca3af', 1: '#14b8a6', 2: '#3b82f6',
-  3: '#8b5cf6', 4: '#f59e0b', 5: '#6EE05A',
-}
-
 const SPARK_PACKS = [
   { id: 'starter', name: 'Starter', sparks: 50, price: '$5.00' },
   { id: 'builder', name: 'Builder', sparks: 250, price: '$20.00' },
@@ -88,124 +83,81 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-        <div style={{ width: 32, height: 32, border: '3px solid #1c2b42', borderTopColor: '#14b8a6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex justify-center py-16">
+        <div className="w-8 h-8 border-3 border-core-border border-t-core-cyan rounded-full animate-spin" />
       </div>
     )
   }
 
   const currentTier = data?.tier.level ?? 0
-  const tierColor = TIER_COLORS[currentTier]
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 8px' }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0 }}>Billing</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', marginTop: 4 }}>Manage your subscription, credits, and payment.</p>
+    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+      <div>
+        <h1 className="text-2xl font-bold text-core-text">Billing</h1>
+        <p className="text-sm text-core-text-dim mt-1">Manage your subscription, credits, and payment.</p>
       </div>
 
-      {/* ═══ CURRENT PLAN ═══ */}
-      <div style={{
-        background: 'var(--bg-card, #1f2937)',
-        border: `1px solid ${tierColor}30`,
-        borderRadius: 14,
-        padding: '24px',
-        marginBottom: 20,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0 }}>Current Plan</h2>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              {data?.subscription?.status === 'active' ? 'Active subscription' : 'No active subscription'}
-            </p>
-          </div>
-          <span style={{
-            padding: '6px 16px',
-            borderRadius: 20,
-            background: `${tierColor}15`,
-            border: `1px solid ${tierColor}30`,
-            color: tierColor,
-            fontSize: 13,
-            fontWeight: 700,
-          }}>
+      {/* Current Plan */}
+      <div className="bg-core-card border border-core-border rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-core-text">Current Plan</h2>
+          <span className="text-xs bg-core-green/10 text-core-green px-3 py-1 rounded-full font-medium">
             {TIER_NAMES[currentTier]}
           </span>
         </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-          <div style={{ background: 'var(--bg-primary, #0d1117)', border: '1px solid #1c2b42', borderRadius: 10, padding: '16px' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Tier</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: tierColor }}>{currentTier}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{TIER_NAMES[currentTier]}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="bg-core-bg border border-core-border rounded-lg p-4">
+            <div className="text-sm text-core-text-dim mb-1">Tier</div>
+            <div className="text-2xl font-bold text-core-cyan">{currentTier}</div>
+            <div className="text-xs text-core-text-muted mt-1">{TIER_NAMES[currentTier]}</div>
           </div>
-          <div style={{ background: 'var(--bg-primary, #0d1117)', border: '1px solid #1c2b42', borderRadius: 10, padding: '16px' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Price</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary, #f0f4f8)' }}>{TIER_PRICES[currentTier]}</div>
+          <div className="bg-core-bg border border-core-border rounded-lg p-4">
+            <div className="text-sm text-core-text-dim mb-1">Price</div>
+            <div className="text-2xl font-bold text-core-text">{TIER_PRICES[currentTier]}</div>
           </div>
-          <div style={{ background: 'var(--bg-primary, #0d1117)', border: '1px solid #1c2b42', borderRadius: 10, padding: '16px' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Status</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: data?.subscription?.status === 'active' ? '#6EE05A' : '#9ca3af' }}>
+          <div className="bg-core-bg border border-core-border rounded-lg p-4">
+            <div className="text-sm text-core-text-dim mb-1">Status</div>
+            <div className={`text-2xl font-bold ${data?.subscription?.status === 'active' ? 'text-core-green' : 'text-core-text-muted'}`}>
               {data?.subscription?.status === 'active' ? 'Active' : 'Free'}
             </div>
           </div>
-          <div style={{ background: 'var(--bg-primary, #0d1117)', border: '1px solid #1c2b42', borderRadius: 10, padding: '16px' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>K-Layers</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: '#14b8a6' }}>{data?.kLayers || 0}/7</div>
+          <div className="bg-core-bg border border-core-border rounded-lg p-4">
+            <div className="text-sm text-core-text-dim mb-1">K-Layers</div>
+            <div className="text-2xl font-bold text-core-cyan">{data?.kLayers || 0}/7</div>
           </div>
         </div>
-
         {data?.subscription?.current_period_end && (
-          <div style={{ marginTop: 12, fontSize: 11, color: 'var(--text-muted)' }}>
+          <p className="text-xs text-core-text-muted mt-3">
             Renews: {new Date(data.subscription.current_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-          </div>
+          </p>
         )}
       </div>
 
-      {/* ═══ UPGRADE TIERS ═══ */}
-      <div style={{
-        background: 'var(--bg-card, #1f2937)',
-        border: '1px solid #1c2b42',
-        borderRadius: 14,
-        padding: '24px',
-        marginBottom: 20,
-      }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 16px' }}>Subscription Tiers</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+      {/* Subscription Tiers */}
+      <div className="bg-core-card border border-core-border rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-core-text mb-4">Subscription Tiers</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[1, 2, 3, 4, 5].map(tier => {
             const isActive = currentTier >= tier
-            const color = TIER_COLORS[tier]
             return (
-              <div key={tier} style={{
-                border: `1px solid ${isActive ? `${color}30` : '#1c2b42'}`,
-                borderRadius: 10,
-                padding: '16px',
-                background: isActive ? `${color}08` : 'var(--bg-primary, #0d1117)',
-                transition: 'all 0.2s',
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? color : 'var(--text-primary)', marginBottom: 4 }}>
+              <div key={tier} className={`bg-core-bg border rounded-lg p-4 ${isActive ? 'border-core-green/30' : 'border-core-border'}`}>
+                <div className={`text-sm font-semibold mb-1 ${isActive ? 'text-core-green' : 'text-core-text'}`}>
                   {TIER_NAMES[tier]}
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: isActive ? color : 'var(--text-primary)', marginBottom: 8 }}>
-                  {TIER_PRICES[tier]}
-                </div>
+                <div className="text-xl font-bold text-core-text mb-3">{TIER_PRICES[tier]}</div>
                 {isActive ? (
-                  <span style={{ fontSize: 11, color, fontWeight: 600 }}>Current</span>
+                  <span className="text-xs text-core-green font-medium">Current</span>
                 ) : (
                   <button
                     onClick={() => handleUpgrade(tier)}
                     disabled={upgrading === tier}
+                    className="w-full py-2 rounded-lg text-sm font-semibold transition-all"
                     style={{
-                      width: '100%',
-                      padding: '8px',
-                      borderRadius: 8,
                       background: upgrading === tier ? '#374151' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
                       color: '#0c1220',
                       border: 'none',
-                      fontSize: 12,
-                      fontWeight: 700,
                       cursor: upgrading === tier ? 'not-allowed' : 'pointer',
-                      fontFamily: 'inherit',
                     }}
                   >
                     {upgrading === tier ? 'Redirecting...' : 'Upgrade'}
@@ -217,57 +169,35 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* ═══ SPARK CREDITS ═══ */}
-      <div style={{
-        background: 'var(--bg-card, #1f2937)',
-        border: '1px solid #1c2b42',
-        borderRadius: 14,
-        padding: '24px',
-        marginBottom: 20,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      {/* Spark Credits */}
+      <div className="bg-core-card border border-core-border rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0 }}>Spark Credits</h2>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>$0.01 per MCP tool call · Buy packs for bulk savings</p>
+            <h2 className="text-lg font-semibold text-core-text">Spark Credits</h2>
+            <p className="text-xs text-core-text-muted mt-1">$0.01 per MCP tool call · Buy packs for bulk savings</p>
           </div>
-          <div style={{
-            padding: '8px 20px',
-            borderRadius: 10,
-            background: 'rgba(110,224,90,0.08)',
-            border: '1px solid rgba(110,224,90,0.2)',
-          }}>
-            <div style={{ fontSize: 11, color: '#6EE05A', fontWeight: 600, textAlign: 'center' }}>Balance</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#6EE05A', fontFamily: "'JetBrains Mono', monospace" }}>
+          <div className="bg-core-green/10 border border-core-green/20 rounded-lg px-4 py-2 text-center">
+            <div className="text-xs text-core-green font-semibold">Balance</div>
+            <div className="text-xl font-bold text-core-green font-mono">
               {data?.balance?.balance?.toLocaleString() || '0'}
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {SPARK_PACKS.map(pack => (
-            <div key={pack.id} style={{
-              border: '1px solid #1c2b42',
-              borderRadius: 10,
-              padding: '14px',
-              background: 'var(--bg-primary, #0d1117)',
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#f59e0b', fontFamily: "'JetBrains Mono', monospace" }}>{pack.sparks}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>sparks</div>
+            <div key={pack.id} className="bg-core-bg border border-core-border rounded-lg p-4 text-center">
+              <div className="text-xl font-bold text-core-amber font-mono">{pack.sparks}</div>
+              <div className="text-xs text-core-text-muted mb-3">sparks</div>
               <button
                 onClick={() => handleBuyPack(pack.id)}
                 disabled={buyingPack === pack.id}
+                className="w-full py-1.5 rounded-md text-xs font-semibold border transition-all"
                 style={{
-                  width: '100%',
-                  padding: '6px',
-                  borderRadius: 6,
-                  background: buyingPack === pack.id ? '#374151' : 'rgba(245,158,11,0.1)',
-                  border: '1px solid rgba(245,158,11,0.2)',
-                  color: '#f59e0b',
-                  fontSize: 12,
-                  fontWeight: 700,
+                  background: buyingPack === pack.id ? '#374151' : 'rgba(217,119,6,0.1)',
+                  borderColor: 'rgba(217,119,6,0.2)',
+                  color: '#d97706',
                   cursor: buyingPack === pack.id ? 'not-allowed' : 'pointer',
-                  fontFamily: 'inherit',
                 }}
               >
                 {buyingPack === pack.id ? '...' : pack.price}
@@ -276,23 +206,18 @@ export default function BillingPage() {
           ))}
         </div>
 
-        {/* Usage stats */}
-        <div style={{ display: 'flex', gap: 20, paddingTop: 12, borderTop: '1px solid #1c2b42' }}>
+        <div className="flex gap-6 pt-3 border-t border-core-border">
           <div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Lifetime Earned</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
-              {data?.balance?.lifetime_earned?.toLocaleString() || '0'}
-            </div>
+            <div className="text-xs text-core-text-muted mb-0.5">Lifetime Earned</div>
+            <div className="text-sm font-bold text-core-text font-mono">{data?.balance?.lifetime_earned?.toLocaleString() || '0'}</div>
           </div>
           <div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Lifetime Spent</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
-              {data?.balance?.lifetime_spent?.toLocaleString() || '0'}
-            </div>
+            <div className="text-xs text-core-text-muted mb-0.5">Lifetime Spent</div>
+            <div className="text-sm font-bold text-core-text font-mono">{data?.balance?.lifetime_spent?.toLocaleString() || '0'}</div>
           </div>
           <div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Stripe Customer</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
+            <div className="text-xs text-core-text-muted mb-0.5">Stripe Customer</div>
+            <div className="text-sm font-bold text-core-text font-mono">
               {data?.balance?.stripe_customer_id ? `${data.balance.stripe_customer_id.slice(0, 12)}...` : 'NA'}
             </div>
           </div>
