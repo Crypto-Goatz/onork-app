@@ -1,383 +1,637 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, memo } from 'react'
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  MiniMap,
+  Controls,
+  Background,
+  BackgroundVariant,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  type Node,
+  type Edge,
+  type Connection,
+  type NodeTypes,
+  type NodeProps,
+  Handle,
+  Position,
+  useReactFlow,
+} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
 
-/**
- * 0nCanvas Notes — Freeform creative workspace
- * Blank canvas with draggable blocks: text, headings, icons, boxes, dividers.
- * Click canvas to add. Drag to move. Double-click to edit. Auto-saves.
- */
+/* ────────────────────────────────────────────
+   Constants
+   ──────────────────────────────────────────── */
 
-interface Block {
-  id: string
-  type: 'text' | 'heading' | 'icon' | 'box' | 'divider' | 'note'
-  x: number
-  y: number
-  w: number
-  h: number
-  content: string
-  color: string
-  fontSize: number
-}
-
-const COLORS = ['#7ed957', '#00d4ff', '#a78bfa', '#f59e0b', '#ef4444', '#E8EAED', '#7A8290']
-const ICONS = ['/', '//', ':::', '[]', '<>', '()', '{}', '***', '---', '+++', '###', '@', '#', '$', '%', '&']
-
-const BLOCK_TEMPLATES: { type: Block['type']; label: string; icon: string }[] = [
-  { type: 'text', label: 'Text', icon: 'T' },
-  { type: 'heading', label: 'Heading', icon: 'H' },
-  { type: 'note', label: 'Sticky Note', icon: 'N' },
-  { type: 'box', label: 'Box', icon: '[]' },
-  { type: 'divider', label: 'Divider', icon: '--' },
-  { type: 'icon', label: 'Icon', icon: '*' },
+const PASTEL_COLORS = [
+  '#fef3c7', // yellow
+  '#d1fae5', // green
+  '#dbeafe', // blue
+  '#fce7f3', // pink
+  '#ede9fe', // purple
+  '#ffedd5', // orange
 ]
 
-function newBlock(type: Block['type'], x: number, y: number): Block {
-  const base = { id: `b${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, type, x, y, color: '#E8EAED' }
-  switch (type) {
-    case 'heading': return { ...base, w: 300, h: 48, content: 'Heading', fontSize: 24 }
-    case 'text': return { ...base, w: 240, h: 32, content: 'Type here...', fontSize: 14 }
-    case 'note': return { ...base, w: 200, h: 140, content: 'Note', color: '#f59e0b', fontSize: 13 }
-    case 'box': return { ...base, w: 200, h: 120, content: '', color: '#7A8290', fontSize: 12 }
-    case 'divider': return { ...base, w: 300, h: 4, content: '', color: '#2D3748', fontSize: 0 }
-    case 'icon': return { ...base, w: 48, h: 48, content: '///', color: '#7ed957', fontSize: 20 }
-    default: return { ...base, w: 200, h: 32, content: '', fontSize: 14 }
-  }
-}
+const EDGE_COLOR = 'rgba(110, 224, 90, 0.4)'
+const STORAGE_KEY = '0ncore-board'
 
-export default function NotesCanvas() {
-  const [blocks, setBlocks] = useState<Block[]>([])
-  const [selected, setSelected] = useState<string | null>(null)
-  const [editing, setEditing] = useState<string | null>(null)
-  const [dragging, setDragging] = useState<{ id: string; ox: number; oy: number } | null>(null)
-  const [tool, setTool] = useState<Block['type']>('text')
-  const [saving, setSaving] = useState(false)
-  const [loaded, setLoaded] = useState(false)
-  const canvasRef = useRef<HTMLDivElement>(null)
-  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+type ToolMode = 'select' | 'note' | 'text' | 'shape' | 'connect'
 
-  // Load
-  useEffect(() => {
-    fetch('/api/notes').then(r => r.json()).then(d => {
-      if (d.blocks?.length) setBlocks(d.blocks)
-      setLoaded(true)
-    }).catch(() => setLoaded(true))
-  }, [])
+/* ────────────────────────────────────────────
+   Custom Node: StickyNote
+   ──────────────────────────────────────────── */
 
-  // Auto-save with debounce
-  const save = useCallback((b: Block[]) => {
-    if (saveTimer.current) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(async () => {
-      setSaving(true)
-      await fetch('/api/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blocks: b }),
-      }).catch(() => {})
-      setSaving(false)
-    }, 1500)
-  }, [])
+const StickyNoteNode = memo(({ id, data, selected }: NodeProps) => {
+  const [editing, setEditing] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { setNodes } = useReactFlow()
 
-  function updateBlock(id: string, patch: Partial<Block>) {
-    setBlocks(prev => {
-      const next = prev.map(b => b.id === id ? { ...b, ...patch } : b)
-      save(next)
-      return next
-    })
+  const bgColor = (data.color as string) || '#fef3c7'
+
+  function updateText(value: string) {
+    setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, text: value } } : n))
   }
 
-  function addBlock(x: number, y: number) {
-    const b = newBlock(tool, x, y)
-    setBlocks(prev => {
-      const next = [...prev, b]
-      save(next)
-      return next
-    })
-    setSelected(b.id)
-    if (b.type !== 'box' && b.type !== 'divider') setEditing(b.id)
-  }
-
-  function deleteBlock(id: string) {
-    setBlocks(prev => {
-      const next = prev.filter(b => b.id !== id)
-      save(next)
-      return next
-    })
-    setSelected(null)
-    setEditing(null)
-  }
-
-  function handleCanvasClick(e: React.MouseEvent) {
-    if (e.target !== canvasRef.current) return
-    const rect = canvasRef.current!.getBoundingClientRect()
-    addBlock(e.clientX - rect.left + canvasRef.current!.scrollLeft, e.clientY - rect.top + canvasRef.current!.scrollTop)
-  }
-
-  function handleMouseDown(e: React.MouseEvent, id: string) {
+  function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
-    setSelected(id)
-    const block = blocks.find(b => b.id === id)
-    if (!block) return
-    setDragging({ id, ox: e.clientX - block.x, oy: e.clientY - block.y })
+    setNodes(nds => nds.filter(n => n.id !== id))
   }
-
-  function handleMouseMove(e: React.MouseEvent) {
-    if (!dragging) return
-    const rect = canvasRef.current!.getBoundingClientRect()
-    updateBlock(dragging.id, {
-      x: Math.max(0, e.clientX - rect.left + canvasRef.current!.scrollLeft - dragging.ox + (canvasRef.current?.scrollLeft || 0)),
-      y: Math.max(0, e.clientY - rect.top + canvasRef.current!.scrollTop - dragging.oy + (canvasRef.current?.scrollTop || 0)),
-    })
-  }
-
-  function handleMouseUp() {
-    setDragging(null)
-  }
-
-  const selectedBlock = blocks.find(b => b.id === selected)
-
-  if (!loaded) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--jp-text-muted)' }}>Loading canvas...</div>
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)' }}>
-      <style>{`
-        @keyframes note-pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-        .canvas-block { animation: note-pop 0.15s ease-out; }
-        .canvas-block:hover { z-index: 10 !important; }
-      `}</style>
-
-      {/* ── Toolbar ── */}
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onDoubleClick={() => setEditing(true)}
+      onContextMenu={(e) => { e.preventDefault(); handleDelete(e) }}
+      style={{
+        width: 200,
+        minHeight: 140,
+        background: bgColor,
+        borderRadius: 12,
+        padding: '28px 14px 14px',
+        position: 'relative',
+        boxShadow: selected
+          ? '0 0 0 2px #6EE05A, 0 4px 20px rgba(0,0,0,0.4)'
+          : '0 2px 12px rgba(0,0,0,0.3)',
+        transition: 'box-shadow 0.15s',
+        cursor: editing ? 'text' : 'grab',
+      }}
+    >
+      {/* Grab handle */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px',
-        borderBottom: '1px solid var(--jp-border, #1E293B)',
-        background: 'var(--jp-surface, #111827)',
-        flexWrap: 'wrap',
-      }}>
-        {/* Block type tools */}
-        {BLOCK_TEMPLATES.map(t => (
-          <button key={t.type} onClick={() => setTool(t.type)} style={{
-            padding: '6px 12px', borderRadius: 6, border: 'none',
-            background: tool === t.type ? 'rgba(110,224,90,0.15)' : 'transparent',
-            color: tool === t.type ? '#7ed957' : 'var(--jp-text-muted, #4A5568)',
-            fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.15s',
-          }}>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '0.6875rem', opacity: 0.6 }}>{t.icon}</span>
-            {t.label}
-          </button>
-        ))}
+        position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
+        width: 40, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.15)',
+      }} />
 
-        <div style={{ width: 1, height: 20, background: 'var(--jp-border)', margin: '0 4px' }} />
+      {/* Delete button */}
+      {hovered && (
+        <button
+          onClick={handleDelete}
+          style={{
+            position: 'absolute', top: 6, right: 8,
+            width: 20, height: 20, borderRadius: 4,
+            background: 'rgba(0,0,0,0.12)', border: 'none',
+            color: 'rgba(0,0,0,0.5)', fontSize: 12, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: 700, lineHeight: 1,
+          }}
+        >
+          x
+        </button>
+      )}
 
-        {/* Color picker (for selected) */}
-        {selectedBlock && (
-          <>
-            {COLORS.map(c => (
-              <button key={c} onClick={() => updateBlock(selected!, { color: c })} style={{
-                width: 18, height: 18, borderRadius: 4, background: c, border: selectedBlock.color === c ? '2px solid #fff' : '1px solid var(--jp-border)',
-                cursor: 'pointer', flexShrink: 0,
-              }} />
-            ))}
-            <div style={{ width: 1, height: 20, background: 'var(--jp-border)', margin: '0 4px' }} />
-            <button onClick={() => deleteBlock(selected!)} style={{
-              padding: '4px 10px', borderRadius: 5, border: '1px solid rgba(239,68,68,0.3)',
-              background: 'rgba(239,68,68,0.08)', color: '#ef4444', fontSize: '0.6875rem',
-              fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
-              Delete
-            </button>
-          </>
-        )}
-
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: '0.625rem', color: 'var(--jp-text-muted)', fontFamily: "'JetBrains Mono', monospace" }}>
-            {blocks.length} blocks
-          </span>
-          <span style={{
-            fontSize: '0.5625rem', fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-            background: saving ? 'rgba(245,158,11,0.1)' : 'rgba(110,224,90,0.08)',
-            color: saving ? '#f59e0b' : '#7ed957',
-          }}>
-            {saving ? 'Saving...' : 'Saved'}
-          </span>
+      {editing ? (
+        <textarea
+          ref={textareaRef}
+          autoFocus
+          value={(data.text as string) || ''}
+          onChange={e => updateText(e.target.value)}
+          onBlur={() => setEditing(false)}
+          onKeyDown={e => { if (e.key === 'Escape') setEditing(false) }}
+          style={{
+            width: '100%', minHeight: 90, background: 'transparent',
+            border: 'none', outline: 'none', resize: 'none',
+            color: '#1a1a1a', fontSize: 13, fontFamily: 'inherit',
+            lineHeight: 1.5, fontWeight: 500,
+          }}
+        />
+      ) : (
+        <div style={{
+          color: '#1a1a1a', fontSize: 13, lineHeight: 1.5,
+          whiteSpace: 'pre-wrap', fontWeight: 500, minHeight: 40,
+          userSelect: 'none',
+        }}>
+          {(data.text as string) || 'Double-click to edit'}
         </div>
-      </div>
+      )}
 
-      {/* ── Canvas ── */}
-      <div
-        ref={canvasRef}
-        onClick={handleCanvasClick}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+      <Handle type="target" position={Position.Top} style={handleStyle} />
+      <Handle type="source" position={Position.Bottom} style={handleStyle} />
+      <Handle type="target" position={Position.Left} style={{ ...handleStyle, top: '50%' }} id="left-t" />
+      <Handle type="source" position={Position.Right} style={{ ...handleStyle, top: '50%' }} id="right-s" />
+    </div>
+  )
+})
+StickyNoteNode.displayName = 'StickyNoteNode'
+
+/* ────────────────────────────────────────────
+   Custom Node: TextNode
+   ──────────────────────────────────────────── */
+
+const TextNode = memo(({ id, data, selected }: NodeProps) => {
+  const [editing, setEditing] = useState(false)
+  const { setNodes } = useReactFlow()
+
+  const sizeMap: Record<string, number> = { small: 14, medium: 20, large: 28 }
+  const fontSize = sizeMap[(data.fontSize as string) || 'medium'] || 20
+
+  function updateText(value: string) {
+    setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, text: value } } : n))
+  }
+
+  function cycleSize() {
+    const sizes = ['small', 'medium', 'large']
+    const current = (data.fontSize as string) || 'medium'
+    const next = sizes[(sizes.indexOf(current) + 1) % sizes.length]
+    setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, fontSize: next } } : n))
+  }
+
+  return (
+    <div
+      onDoubleClick={() => setEditing(true)}
+      onContextMenu={(e) => {
+        e.preventDefault()
+        setNodes(nds => nds.filter(n => n.id !== id))
+      }}
+      style={{
+        padding: '4px 8px', cursor: editing ? 'text' : 'grab',
+        outline: selected ? '2px solid #6EE05A' : 'none',
+        outlineOffset: 4, borderRadius: 4, minWidth: 40,
+      }}
+    >
+      {editing ? (
+        <input
+          autoFocus
+          value={(data.text as string) || ''}
+          onChange={e => updateText(e.target.value)}
+          onBlur={() => setEditing(false)}
+          onKeyDown={e => {
+            if (e.key === 'Escape' || e.key === 'Enter') setEditing(false)
+            if (e.key === 'Tab') { e.preventDefault(); cycleSize() }
+          }}
+          style={{
+            background: 'transparent', border: 'none', outline: 'none',
+            color: '#f0f4f8', fontSize, fontWeight: 700,
+            fontFamily: 'inherit', minWidth: 80,
+          }}
+        />
+      ) : (
+        <div
+          onClick={cycleSize}
+          style={{
+            color: '#f0f4f8', fontSize, fontWeight: 700,
+            whiteSpace: 'nowrap', userSelect: 'none',
+          }}
+        >
+          {(data.text as string) || 'Text'}
+        </div>
+      )}
+
+      <Handle type="target" position={Position.Top} style={handleStyle} />
+      <Handle type="source" position={Position.Bottom} style={handleStyle} />
+      <Handle type="target" position={Position.Left} style={{ ...handleStyle, top: '50%' }} id="left-t" />
+      <Handle type="source" position={Position.Right} style={{ ...handleStyle, top: '50%' }} id="right-s" />
+    </div>
+  )
+})
+TextNode.displayName = 'TextNode'
+
+/* ────────────────────────────────────────────
+   Custom Node: ShapeNode
+   ──────────────────────────────────────────── */
+
+const ShapeNode = memo(({ id, data, selected }: NodeProps) => {
+  const [editing, setEditing] = useState(false)
+  const { setNodes } = useReactFlow()
+
+  const borderColor = (data.color as string) || '#dbeafe'
+
+  function updateText(value: string) {
+    setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, text: value } } : n))
+  }
+
+  return (
+    <div
+      onDoubleClick={() => setEditing(true)}
+      onContextMenu={(e) => {
+        e.preventDefault()
+        setNodes(nds => nds.filter(n => n.id !== id))
+      }}
+      style={{
+        width: 150, height: 80, borderRadius: 12,
+        border: `2px solid ${borderColor}`,
+        background: `${borderColor}10`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: editing ? 'text' : 'grab',
+        boxShadow: selected
+          ? '0 0 0 2px #6EE05A, 0 2px 12px rgba(0,0,0,0.3)'
+          : '0 1px 6px rgba(0,0,0,0.2)',
+        transition: 'box-shadow 0.15s',
+      }}
+    >
+      {editing ? (
+        <input
+          autoFocus
+          value={(data.text as string) || ''}
+          onChange={e => updateText(e.target.value)}
+          onBlur={() => setEditing(false)}
+          onKeyDown={e => { if (e.key === 'Escape' || e.key === 'Enter') setEditing(false) }}
+          style={{
+            background: 'transparent', border: 'none', outline: 'none',
+            color: '#f0f4f8', fontSize: 13, fontWeight: 600,
+            textAlign: 'center', width: '90%', fontFamily: 'inherit',
+          }}
+        />
+      ) : (
+        <div style={{
+          color: '#f0f4f8', fontSize: 13, fontWeight: 600,
+          textAlign: 'center', userSelect: 'none', padding: '0 8px',
+        }}>
+          {(data.text as string) || 'Label'}
+        </div>
+      )}
+
+      <Handle type="target" position={Position.Top} style={handleStyle} />
+      <Handle type="source" position={Position.Bottom} style={handleStyle} />
+      <Handle type="target" position={Position.Left} style={{ ...handleStyle, top: '50%' }} id="left-t" />
+      <Handle type="source" position={Position.Right} style={{ ...handleStyle, top: '50%' }} id="right-s" />
+    </div>
+  )
+})
+ShapeNode.displayName = 'ShapeNode'
+
+/* ────────────────────────────────────────────
+   Shared handle style
+   ──────────────────────────────────────────── */
+
+const handleStyle: React.CSSProperties = {
+  width: 8, height: 8, borderRadius: 4,
+  background: '#6EE05A', border: '2px solid #0d1117',
+  opacity: 0,
+  transition: 'opacity 0.15s',
+}
+
+/* ────────────────────────────────────────────
+   Node type registry
+   ──────────────────────────────────────────── */
+
+const nodeTypes: NodeTypes = {
+  stickyNote: StickyNoteNode,
+  textNode: TextNode,
+  shapeNode: ShapeNode,
+}
+
+/* ────────────────────────────────────────────
+   Toolbar Icons (inline SVG)
+   ──────────────────────────────────────────── */
+
+function IconCursor() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
+    </svg>
+  )
+}
+
+function IconStickyNote() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z" />
+      <path d="M14 3v6h6" />
+    </svg>
+  )
+}
+
+function IconText() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="4 7 4 4 20 4 20 7" />
+      <line x1="9" y1="20" x2="15" y2="20" />
+      <line x1="12" y1="4" x2="12" y2="20" />
+    </svg>
+  )
+}
+
+function IconShape() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+    </svg>
+  )
+}
+
+function IconConnect() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  )
+}
+
+function IconPalette() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="13.5" cy="6.5" r="2.5" />
+      <circle cx="17.5" cy="10.5" r="2.5" />
+      <circle cx="8.5" cy="7.5" r="2.5" />
+      <circle cx="6.5" cy="12.5" r="2.5" />
+      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+    </svg>
+  )
+}
+
+/* ────────────────────────────────────────────
+   Floating Toolbar
+   ──────────────────────────────────────────── */
+
+interface ToolbarProps {
+  tool: ToolMode
+  setTool: (t: ToolMode) => void
+  selectedColor: string
+  onCycleColor: () => void
+}
+
+function FloatingToolbar({ tool, setTool, selectedColor, onCycleColor }: ToolbarProps) {
+  const tools: { mode: ToolMode; icon: React.ReactNode; label: string }[] = [
+    { mode: 'select', icon: <IconCursor />, label: 'Select (V)' },
+    { mode: 'note', icon: <IconStickyNote />, label: 'Sticky Note (N)' },
+    { mode: 'text', icon: <IconText />, label: 'Text (T)' },
+    { mode: 'shape', icon: <IconShape />, label: 'Shape (S)' },
+    { mode: 'connect', icon: <IconConnect />, label: 'Connector (C)' },
+  ]
+
+  return (
+    <div style={{
+      position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+      zIndex: 50, display: 'flex', flexDirection: 'column', gap: 4,
+      background: '#161b22', borderRadius: 14, padding: 6,
+      border: '1px solid #30363d',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+    }}>
+      {tools.map(t => (
+        <button
+          key={t.mode}
+          onClick={() => setTool(t.mode)}
+          title={t.label}
+          style={{
+            width: 36, height: 36, borderRadius: 8, border: 'none',
+            background: tool === t.mode ? 'rgba(110,224,90,0.15)' : 'transparent',
+            color: tool === t.mode ? '#6EE05A' : '#6b7280',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all 0.15s',
+          }}
+        >
+          {t.icon}
+        </button>
+      ))}
+
+      {/* Separator */}
+      <div style={{ width: 24, height: 1, background: '#30363d', margin: '2px auto' }} />
+
+      {/* Color cycle button */}
+      <button
+        onClick={onCycleColor}
+        title={`Color (K) - cycle`}
         style={{
-          flex: 1, position: 'relative', overflow: 'auto',
-          background: '#0B0F19',
-          backgroundImage: 'radial-gradient(circle, #1E293B 1px, transparent 1px)',
-          backgroundSize: '24px 24px',
-          cursor: dragging ? 'grabbing' : 'crosshair',
-          minHeight: 0,
+          width: 36, height: 36, borderRadius: 8, border: 'none',
+          background: 'transparent',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', position: 'relative',
         }}
       >
-        {/* Hint when empty */}
-        {blocks.length === 0 && (
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            textAlign: 'center', pointerEvents: 'none', color: 'var(--jp-text-muted)',
-          }}>
-            <div style={{ fontSize: '2rem', marginBottom: 8, opacity: 0.3, fontFamily: "'JetBrains Mono', monospace" }}>0n</div>
-            <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>Click anywhere to add a block</div>
-            <div style={{ fontSize: '0.75rem', marginTop: 4, opacity: 0.5 }}>Select a tool from the toolbar above</div>
-          </div>
-        )}
-
-        {/* Blocks */}
-        {blocks.map(block => {
-          const isSelected = selected === block.id
-          const isEditing = editing === block.id
-
-          if (block.type === 'divider') {
-            return (
-              <div
-                key={block.id}
-                className="canvas-block"
-                onMouseDown={e => handleMouseDown(e, block.id)}
-                style={{
-                  position: 'absolute', left: block.x, top: block.y,
-                  width: block.w, height: 4, borderRadius: 2,
-                  background: block.color, cursor: 'grab',
-                  outline: isSelected ? '2px solid #7ed957' : 'none', outlineOffset: 4,
-                }}
-              />
-            )
-          }
-
-          if (block.type === 'box') {
-            return (
-              <div
-                key={block.id}
-                className="canvas-block"
-                onMouseDown={e => handleMouseDown(e, block.id)}
-                style={{
-                  position: 'absolute', left: block.x, top: block.y,
-                  width: block.w, height: block.h, borderRadius: 10,
-                  border: `2px solid ${block.color}40`, background: `${block.color}08`,
-                  cursor: 'grab',
-                  outline: isSelected ? '2px solid #7ed957' : 'none', outlineOffset: 2,
-                }}
-              />
-            )
-          }
-
-          if (block.type === 'icon') {
-            return (
-              <div
-                key={block.id}
-                className="canvas-block"
-                onMouseDown={e => handleMouseDown(e, block.id)}
-                onDoubleClick={() => {
-                  const next = ICONS[(ICONS.indexOf(block.content) + 1) % ICONS.length]
-                  updateBlock(block.id, { content: next })
-                }}
-                style={{
-                  position: 'absolute', left: block.x, top: block.y,
-                  width: block.w, height: block.h, borderRadius: 10,
-                  background: `${block.color}15`, border: `1px solid ${block.color}30`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: block.color, fontSize: block.fontSize, fontWeight: 800,
-                  fontFamily: "'JetBrains Mono', monospace", cursor: 'grab',
-                  outline: isSelected ? '2px solid #7ed957' : 'none', outlineOffset: 2,
-                }}
-                title="Double-click to cycle icon"
-              >
-                {block.content}
-              </div>
-            )
-          }
-
-          if (block.type === 'note') {
-            return (
-              <div
-                key={block.id}
-                className="canvas-block"
-                onMouseDown={e => { if (!isEditing) handleMouseDown(e, block.id) }}
-                onDoubleClick={e => { e.stopPropagation(); setEditing(block.id) }}
-                style={{
-                  position: 'absolute', left: block.x, top: block.y,
-                  width: block.w, minHeight: block.h, borderRadius: 4,
-                  background: block.color, padding: '10px 12px',
-                  cursor: isEditing ? 'text' : 'grab',
-                  boxShadow: '2px 2px 8px rgba(0,0,0,0.3)',
-                  outline: isSelected ? '2px solid #7ed957' : 'none', outlineOffset: 2,
-                }}
-              >
-                {isEditing ? (
-                  <textarea
-                    autoFocus
-                    value={block.content}
-                    onChange={e => updateBlock(block.id, { content: e.target.value })}
-                    onBlur={() => setEditing(null)}
-                    onKeyDown={e => { if (e.key === 'Escape') setEditing(null) }}
-                    style={{
-                      width: '100%', minHeight: 80, background: 'transparent', border: 'none',
-                      color: '#1a1a1a', fontSize: block.fontSize, fontFamily: 'inherit',
-                      outline: 'none', resize: 'both', lineHeight: 1.5,
-                    }}
-                  />
-                ) : (
-                  <div style={{ color: '#1a1a1a', fontSize: block.fontSize, lineHeight: 1.5, whiteSpace: 'pre-wrap', fontWeight: 500 }}>
-                    {block.content || 'Double-click to edit'}
-                  </div>
-                )}
-              </div>
-            )
-          }
-
-          // text + heading
-          return (
-            <div
-              key={block.id}
-              className="canvas-block"
-              onMouseDown={e => { if (!isEditing) handleMouseDown(e, block.id) }}
-              onDoubleClick={e => { e.stopPropagation(); setEditing(block.id) }}
-              style={{
-                position: 'absolute', left: block.x, top: block.y,
-                minWidth: 60, cursor: isEditing ? 'text' : 'grab',
-                outline: isSelected ? '2px solid #7ed957' : 'none', outlineOffset: 4,
-                borderRadius: 4,
-              }}
-            >
-              {isEditing ? (
-                <input
-                  autoFocus
-                  value={block.content}
-                  onChange={e => updateBlock(block.id, { content: e.target.value })}
-                  onBlur={() => setEditing(null)}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') setEditing(null) }}
-                  style={{
-                    background: 'transparent', border: 'none', padding: 0,
-                    color: block.color, fontSize: block.fontSize,
-                    fontWeight: block.type === 'heading' ? 800 : 400,
-                    fontFamily: block.type === 'heading' ? 'inherit' : "'JetBrains Mono', monospace",
-                    outline: 'none', minWidth: 100,
-                    letterSpacing: block.type === 'heading' ? '-0.02em' : undefined,
-                  }}
-                />
-              ) : (
-                <div style={{
-                  color: block.color, fontSize: block.fontSize,
-                  fontWeight: block.type === 'heading' ? 800 : 400,
-                  fontFamily: block.type === 'heading' ? 'inherit' : "'JetBrains Mono', monospace",
-                  whiteSpace: 'nowrap', letterSpacing: block.type === 'heading' ? '-0.02em' : undefined,
-                  userSelect: 'none',
-                }}>
-                  {block.content || 'Double-click'}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+        <IconPalette />
+        <div style={{
+          position: 'absolute', bottom: 4, right: 4,
+          width: 8, height: 8, borderRadius: '50%',
+          background: selectedColor, border: '1px solid #30363d',
+        }} />
+      </button>
     </div>
+  )
+}
+
+/* ────────────────────────────────────────────
+   Main Board (inner, needs ReactFlowProvider)
+   ──────────────────────────────────────────── */
+
+function BoardInner() {
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
+  const [tool, setTool] = useState<ToolMode>('select')
+  const [selectedColor, setSelectedColor] = useState(PASTEL_COLORS[0])
+  const [loaded, setLoaded] = useState(false)
+  const { screenToFlowPosition, fitView } = useReactFlow()
+
+  // Load from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.nodes) setNodes(parsed.nodes)
+        if (parsed.edges) setEdges(parsed.edges)
+      }
+    } catch {}
+    setLoaded(true)
+    // Fit after load
+    setTimeout(() => fitView({ padding: 0.2 }), 100)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Save to localStorage on changes
+  useEffect(() => {
+    if (!loaded) return
+    const timer = setTimeout(() => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ nodes, edges }))
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [nodes, edges, loaded])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return
+      switch (e.key.toLowerCase()) {
+        case 'v': setTool('select'); break
+        case 'n': setTool('note'); break
+        case 't': setTool('text'); break
+        case 's': if (!e.metaKey && !e.ctrlKey) setTool('shape'); break
+        case 'c': if (!e.metaKey && !e.ctrlKey) setTool('connect'); break
+        case 'k': cycleColor(); break
+        case 'escape': setTool('select'); break
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedColor])
+
+  const cycleColor = useCallback(() => {
+    setSelectedColor(prev => {
+      const idx = PASTEL_COLORS.indexOf(prev)
+      return PASTEL_COLORS[(idx + 1) % PASTEL_COLORS.length]
+    })
+  }, [])
+
+  const onConnect = useCallback((params: Connection) => {
+    setEdges(eds => addEdge({
+      ...params,
+      type: 'smoothstep',
+      animated: true,
+      style: { stroke: EDGE_COLOR, strokeWidth: 2, strokeDasharray: '6 3' },
+    }, eds))
+  }, [setEdges])
+
+  const onPaneClick = useCallback((event: React.MouseEvent) => {
+    if (tool === 'select' || tool === 'connect') return
+
+    const position = screenToFlowPosition({ x: event.clientX, y: event.clientY })
+    const id = `n_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
+
+    let newNode: Node
+    switch (tool) {
+      case 'note':
+        newNode = {
+          id,
+          type: 'stickyNote',
+          position,
+          data: { text: '', color: selectedColor },
+        }
+        break
+      case 'text':
+        newNode = {
+          id,
+          type: 'textNode',
+          position,
+          data: { text: 'Text', fontSize: 'medium' },
+        }
+        break
+      case 'shape':
+        newNode = {
+          id,
+          type: 'shapeNode',
+          position,
+          data: { text: '', color: selectedColor },
+        }
+        break
+      default:
+        return
+    }
+
+    setNodes(nds => [...nds, newNode])
+  }, [tool, selectedColor, screenToFlowPosition, setNodes])
+
+  // Edge click to delete
+  const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
+    setEdges(eds => eds.filter(e => e.id !== edge.id))
+  }, [setEdges])
+
+  if (!loaded) {
+    return (
+      <div style={{
+        height: 'calc(100vh - 64px)', display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
+        color: 'var(--text-muted, #6b7280)', background: 'var(--bg-primary, #0d1117)',
+      }}>
+        Loading board...
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ height: 'calc(100vh - 64px)', position: 'relative' }}>
+      <style>{`
+        .react-flow__handle { opacity: 0; transition: opacity 0.15s; }
+        .react-flow__node:hover .react-flow__handle { opacity: 1; }
+        .react-flow__edge:hover { cursor: pointer; }
+        .react-flow__edge:hover .react-flow__edge-path { stroke: #6EE05A !important; stroke-opacity: 0.8 !important; }
+        .react-flow__minimap { background: #161b22 !important; border: 1px solid #30363d !important; border-radius: 8px !important; }
+        .react-flow__controls { background: #161b22 !important; border: 1px solid #30363d !important; border-radius: 10px !important; overflow: hidden; }
+        .react-flow__controls button { background: #161b22 !important; color: #9ca3af !important; border: none !important; border-bottom: 1px solid #30363d !important; width: 32px !important; height: 32px !important; }
+        .react-flow__controls button:hover { background: #1c2333 !important; color: #f0f4f8 !important; }
+        .react-flow__controls button svg { fill: currentColor !important; }
+        .react-flow__attribution { display: none !important; }
+        .react-flow__pane { cursor: ${tool === 'select' ? 'grab' : tool === 'connect' ? 'crosshair' : 'cell'} !important; }
+      `}</style>
+
+      <FloatingToolbar
+        tool={tool}
+        setTool={setTool}
+        selectedColor={selectedColor}
+        onCycleColor={cycleColor}
+      />
+
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onPaneClick={onPaneClick}
+        onEdgeClick={onEdgeClick}
+        nodeTypes={nodeTypes}
+        defaultEdgeOptions={{
+          type: 'smoothstep',
+          animated: true,
+          style: { stroke: EDGE_COLOR, strokeWidth: 2, strokeDasharray: '6 3' },
+        }}
+        fitView
+        fitViewOptions={{ padding: 0.2 }}
+        connectOnClick={tool === 'connect'}
+        panOnDrag={tool === 'select' || tool === 'connect'}
+        selectionOnDrag={false}
+        style={{ background: 'var(--bg-primary, #0d1117)' }}
+        proOptions={{ hideAttribution: true }}
+      >
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={24}
+          size={1}
+          color="#30363d"
+        />
+        <MiniMap
+          nodeColor={(node) => {
+            if (node.type === 'stickyNote') return (node.data.color as string) || '#fef3c7'
+            if (node.type === 'shapeNode') return (node.data.color as string) || '#dbeafe'
+            return '#6EE05A'
+          }}
+          maskColor="rgba(13, 17, 23, 0.7)"
+          style={{ width: 140, height: 90 }}
+          position="bottom-right"
+        />
+        <Controls
+          showInteractive={false}
+          position="bottom-center"
+        />
+      </ReactFlow>
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────
+   Page Export (wrapped in Provider)
+   ──────────────────────────────────────────── */
+
+export default function NotesBoard() {
+  return (
+    <ReactFlowProvider>
+      <BoardInner />
+    </ReactFlowProvider>
   )
 }
