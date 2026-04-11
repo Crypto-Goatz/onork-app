@@ -105,10 +105,22 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { message, history = [] } = await req.json()
+  const { message, history = [], crewId } = await req.json()
   if (!message) return Response.json({ error: 'message required' }, { status: 400 })
 
-  // Load ALL K-Layer content for this user
+  // If a crew is specified, load its config for layer filtering
+  let crewConfig: { name: string; role: string; description: string; k_layers: string[]; tools: string[] } | null = null
+  if (crewId) {
+    const { data: crew } = await supabase
+      .from('crews')
+      .select('name, role, description, k_layers, tools')
+      .eq('id', crewId)
+      .eq('user_id', user.id)
+      .single()
+    crewConfig = crew
+  }
+
+  // Load K-Layer content — filtered by crew's assigned layers if applicable
   const { data: kContent } = await supabase
     .from('kb_content_queue')
     .select('layer, content')
@@ -116,11 +128,18 @@ export async function POST(req: Request) {
     .eq('status', 'active')
     .order('layer')
 
-  // Build layer map
+  // Build layer map — filter to crew's assigned layers if applicable
   const layers: Record<string, Record<string, unknown>> = {}
   for (const row of kContent || []) {
     if (row.layer && row.content) {
-      layers[row.layer] = row.content as Record<string, unknown>
+      // If crew has specific layers, only include those
+      if (crewConfig?.k_layers && crewConfig.k_layers.length > 0) {
+        if (crewConfig.k_layers.includes(row.layer)) {
+          layers[row.layer] = row.content as Record<string, unknown>
+        }
+      } else {
+        layers[row.layer] = row.content as Record<string, unknown>
+      }
     }
   }
 
@@ -131,11 +150,33 @@ export async function POST(req: Request) {
     .eq('user_id', user.id)
     .single()
 
-  const systemPrompt = buildSystemPrompt(
+  let systemPrompt = buildSystemPrompt(
     layers,
     user.email || '',
     tierData?.tier_name || 'lobby',
   )
+
+  // Add crew-specific context to the system prompt
+  if (crewConfig) {
+    const crewContext = `\n[CREW IDENTITY]
+You are "${crewConfig.name}" — ${crewConfig.description}
+Role: ${crewConfig.role}
+Available tools: ${crewConfig.tools?.join(', ') || 'general'}
+Active K-Layers: ${crewConfig.k_layers?.join(', ') || 'K1'}
+
+IMPORTANT: You are a SPECIALIZED agent. Stay focused on your role.
+- ${crewConfig.role === 'social' ? 'Focus on social media strategy, content creation, scheduling, ads, and engagement. You can create posts, analyze performance, and manage campaigns.' : ''}
+- ${crewConfig.role === 'design' ? 'Focus on brand design, visual assets, presentations, and brand consistency. You can create designs, review brand guidelines, and generate visual content.' : ''}
+- ${crewConfig.role === 'intelligence' ? 'Focus on research, market analysis, competitor intel, trends, and data-driven insights. You find what others miss.' : ''}
+- ${crewConfig.role === 'sales' ? 'Focus on pipeline management, lead scoring, outreach sequences, follow-ups, and closing deals. You move revenue forward.' : ''}
+- ${crewConfig.role === 'communication' ? 'Focus on message delivery, Slack communications, email campaigns, SMS, notifications. You make sure the right message reaches the right person at the right time.' : ''}
+- ${crewConfig.role === 'development' ? 'Focus on code, WordPress, plugins, deployments, database queries, and infrastructure. You build and ship.' : ''}
+- ${crewConfig.role === 'general' ? 'You are the master AI. You can do anything. Route to specialized crews when appropriate.' : ''}
+
+When the user asks you to DO something (not just answer), describe the exact steps you would take and which tools you would use. Be specific and actionable.`
+
+    systemPrompt = crewContext + '\n\n' + systemPrompt
+  }
 
   // Count active K-layers for response metadata
   const activeKLayers = Object.keys(layers)

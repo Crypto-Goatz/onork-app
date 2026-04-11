@@ -162,7 +162,7 @@ export default function ChatPage() {
       const res = await fetch('/api/console/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, history }),
+        body: JSON.stringify({ message: text, history, crewId: activeCrew.id }),
       })
 
       const data = await res.json()
