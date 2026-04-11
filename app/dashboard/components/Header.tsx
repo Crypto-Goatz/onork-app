@@ -97,7 +97,7 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
         {/* Logo for horizontal layout */}
         {layoutMode === 'horizontal' && (
           <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', marginRight: 16, textDecoration: 'none' }}>
-            <img src="/brand/on-white.png" alt="0nCore" style={{ height: 32, objectFit: 'contain' }} />
+            <img src="/brand/0ncore-logo.svg" alt="0nCore" style={{ height: 28, objectFit: 'contain' }} />
           </a>
         )}
 

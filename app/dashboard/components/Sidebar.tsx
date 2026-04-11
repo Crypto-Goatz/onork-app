@@ -321,9 +321,9 @@ export default function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
       {/* Sidebar */}
       <aside className={`jp-sidebar ${isOpen ? 'open' : ''}`}>
         {/* Header */}
-        <div className="jp-sidebar-header">
-          <Link href="/dashboard" className="jp-sidebar-brand" onClick={onClose}>
-            <img src="/brand/on-white.png" alt="0nCore" style={{ height: 32, objectFit: 'contain' }} />
+        <div className="jp-sidebar-header" style={{ padding: '16px 20px 12px' }}>
+          <Link href="/dashboard" className="jp-sidebar-brand" onClick={onClose} style={{ display: 'block' }}>
+            <img src="/brand/0ncore-logo.svg" alt="0nCore" style={{ width: '100%', maxHeight: 36, objectFit: 'contain', objectPosition: 'left' }} />
           </Link>
         </div>
 
