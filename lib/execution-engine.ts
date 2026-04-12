@@ -22,6 +22,23 @@ function getAdmin() {
   )
 }
 
+async function getUserServiceCreds(userId: string, service: string): Promise<Record<string, string> | null> {
+  const admin = getAdmin()
+  const { data } = await admin
+    .from('user_service_connections')
+    .select('credentials, status')
+    .eq('user_id', userId)
+    .eq('service', service)
+    .eq('status', 'active')
+    .maybeSingle()
+  if (!data?.credentials) return null
+  await admin.from('user_service_connections').update({
+    last_used_at: new Date().toISOString(),
+    call_count: (data as Record<string, unknown>).call_count ? ((data as Record<string, unknown>).call_count as number) + 1 : 1,
+  }).eq('user_id', userId).eq('service', service)
+  return data.credentials as Record<string, string>
+}
+
 export interface DotOnStep {
   id: string
   action: string
@@ -211,32 +228,147 @@ async function executeStep(
       }
 
       case 'stripe.customers.list': {
+        const stripeCreds = await getUserServiceCreds(ctx.userId, 'stripe')
+        const stripeKey = stripeCreds?.api_key || process.env.STRIPE_SECRET_KEY || ''
         const res = await fetch('https://api.stripe.com/v1/customers?limit=10', {
-          headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` },
+          headers: { Authorization: `Bearer ${stripeKey}` },
         })
         data = await res.json()
         break
       }
 
       case 'stripe.invoices.list': {
+        const stripeCreds = await getUserServiceCreds(ctx.userId, 'stripe')
+        const stripeKey = stripeCreds?.api_key || process.env.STRIPE_SECRET_KEY || ''
         const res = await fetch('https://api.stripe.com/v1/invoices?limit=10', {
-          headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` },
+          headers: { Authorization: `Bearer ${stripeKey}` },
         })
         data = await res.json()
         break
       }
 
       case 'slack.message': {
-        const slackChannel = (input.channel as string) || process.env.SLACK_DEFAULT_CHANNEL || ''
+        const slackCreds = await getUserServiceCreds(ctx.userId, 'slack')
+        const slackToken = slackCreds?.bot_token || process.env.SLACK_BOT_TOKEN || ''
+        const slackChannel = (input.channel as string) || slackCreds?.default_channel || ''
         const text = input.text as string
         if (!text) throw new Error('Missing text')
         const res = await fetch('https://slack.com/api/chat.postMessage', {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { Authorization: `Bearer ${slackToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ channel: slackChannel, text }),
+        })
+        data = await res.json()
+        break
+      }
+
+      case 'sendgrid.send': {
+        const sgCreds = await getUserServiceCreds(ctx.userId, 'sendgrid')
+        if (!sgCreds?.api_key) throw new Error('SendGrid not connected')
+        const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${sgCreds.api_key}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        })
+        data = { status: res.status, ok: res.ok }
+        break
+      }
+
+      case 'twilio.sms': {
+        const twCreds = await getUserServiceCreds(ctx.userId, 'twilio')
+        if (!twCreds?.account_sid || !twCreds?.auth_token) throw new Error('Twilio not connected')
+        const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twCreds.account_sid}/Messages.json`, {
+          method: 'POST',
+          headers: {
+            Authorization: 'Basic ' + Buffer.from(`${twCreds.account_sid}:${twCreds.auth_token}`).toString('base64'),
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            To: input.to as string,
+            From: (input.from as string) || twCreds.phone_number || '',
+            Body: input.body as string || input.text as string || '',
+          }),
+        })
+        data = await res.json()
+        break
+      }
+
+      case 'openai.chat': {
+        const oaCreds = await getUserServiceCreds(ctx.userId, 'openai')
+        if (!oaCreds?.api_key) throw new Error('OpenAI not connected')
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${oaCreds.api_key}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: (input.model as string) || 'gpt-4o-mini',
+            messages: input.messages || [{ role: 'user', content: input.prompt || input.text }],
+            max_tokens: (input.max_tokens as number) || 500,
+          }),
+        })
+        data = await res.json()
+        break
+      }
+
+      case 'notion.search':
+      case 'notion.query': {
+        const noCreds = await getUserServiceCreds(ctx.userId, 'notion')
+        if (!noCreds?.api_key) throw new Error('Notion not connected')
+        const res = await fetch('https://api.notion.com/v1/search', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${noCreds.api_key}`, 'Notion-Version': '2022-06-28', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: input.query || input.text || '' }),
+        })
+        data = await res.json()
+        break
+      }
+
+      case 'airtable.list': {
+        const atCreds = await getUserServiceCreds(ctx.userId, 'airtable')
+        if (!atCreds?.api_key) throw new Error('Airtable not connected')
+        const baseId = input.base_id as string || ''
+        const tableId = input.table_id as string || input.table as string || ''
+        const res = await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}?maxRecords=20`, {
+          headers: { Authorization: `Bearer ${atCreds.api_key}` },
+        })
+        data = await res.json()
+        break
+      }
+
+      case 'github.repos': {
+        const ghCreds = await getUserServiceCreds(ctx.userId, 'github')
+        if (!ghCreds?.api_key) throw new Error('GitHub not connected')
+        const res = await fetch('https://api.github.com/user/repos?sort=updated&per_page=10', {
+          headers: { Authorization: `Bearer ${ghCreds.api_key}`, Accept: 'application/vnd.github.v3+json' },
+        })
+        data = await res.json()
+        break
+      }
+
+      case 'shopify.products': {
+        const shCreds = await getUserServiceCreds(ctx.userId, 'shopify')
+        if (!shCreds?.api_key || !shCreds?.store_url) throw new Error('Shopify not connected')
+        const res = await fetch(`https://${shCreds.store_url}/admin/api/2024-01/products.json?limit=10`, {
+          headers: { 'X-Shopify-Access-Token': shCreds.api_key },
+        })
+        data = await res.json()
+        break
+      }
+
+      case 'mailchimp.lists': {
+        const mcCreds = await getUserServiceCreds(ctx.userId, 'mailchimp')
+        if (!mcCreds?.api_key || !mcCreds?.server) throw new Error('Mailchimp not connected')
+        const res = await fetch(`https://${mcCreds.server}.api.mailchimp.com/3.0/lists`, {
+          headers: { Authorization: 'Basic ' + Buffer.from(`anystring:${mcCreds.api_key}`).toString('base64') },
+        })
+        data = await res.json()
+        break
+      }
+
+      case 'hubspot.contacts': {
+        const hsCreds = await getUserServiceCreds(ctx.userId, 'hubspot')
+        if (!hsCreds?.api_key) throw new Error('HubSpot not connected')
+        const res = await fetch('https://api.hubapi.com/crm/v3/objects/contacts?limit=10', {
+          headers: { Authorization: `Bearer ${hsCreds.api_key}` },
         })
         data = await res.json()
         break
