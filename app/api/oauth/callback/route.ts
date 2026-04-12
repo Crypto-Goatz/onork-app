@@ -4,16 +4,19 @@
  * Flow:
  * 1. User installs 0nCore from CRM marketplace
  * 2. CRM redirects to https://0ncore.com/api/oauth/callback?code=XXX
- * 3. We exchange code for access_token + refresh_token
- * 4. Store tokens in crm_installations table (NOT user metadata)
- * 5. Update profile with crm_location_id
- * 6. Redirect to dashboard
+ * 3. Exchange code for access_token + refresh_token
+ * 4. Store tokens in crm_installations (linked to user)
+ * 5. Generate persistent 0n token for cross-channel auth
+ * 6. Update profile with crm_location_id
+ * 7. Redirect to dashboard
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { MARKETPLACE_APP } from '@/lib/crm'
+import { generateToken } from '@/lib/0n-token'
+import { logHealth } from '@/lib/connection-health'
 
 const CRM_TOKEN_URL = 'https://services.leadconnectorhq.com/oauth/token'
 
@@ -32,7 +35,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Exchange authorization code for tokens
     const clientSecret = MARKETPLACE_APP.clientSecret || process.env.CRM_MARKETPLACE_CLIENT_SECRET || ''
 
     const tokenRes = await fetch(CRM_TOKEN_URL, {
@@ -66,9 +68,11 @@ export async function GET(req: NextRequest) {
     } = tokenData
 
     const admin = getAdmin()
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // Store installation in crm_installations (create table if needed)
-    await admin.from('crm_installations').upsert({
+    // Store installation linked to user
+    const installPayload = {
       location_id: locationId,
       company_id: companyId || '',
       crm_user_id: crmUserId || '',
@@ -79,28 +83,78 @@ export async function GET(req: NextRequest) {
       expires_at: new Date(Date.now() + (expires_in || 86400) * 1000).toISOString(),
       scopes: scope || '',
       status: 'active',
-    }, { onConflict: 'location_id,app_id' }).then(({ error }) => {
-      if (error) console.error('[oauth/callback] Installation upsert error:', error)
-    })
+      health_status: 'healthy',
+      last_health_check: new Date().toISOString(),
+      consecutive_failures: 0,
+      user_id: user?.id || null,
+      metadata: {
+        installed_via: 'marketplace',
+        installed_at: new Date().toISOString(),
+        company_id: companyId,
+        crm_user_id: crmUserId,
+      },
+    }
 
-    // Find the logged-in 0nCore user
-    const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: installRow, error: installErr } = await admin
+      .from('crm_installations')
+      .upsert(installPayload, { onConflict: 'location_id,app_id' })
+      .select('id')
+      .single()
+
+    if (installErr) console.error('[oauth/callback] Installation upsert error:', installErr)
+
+    // Log initial health as healthy (we just got a fresh token)
+    if (installRow?.id) {
+      await logHealth({
+        connectionId: installRow.id,
+        connectionType: 'crm',
+        status: 'healthy',
+        latencyMs: 0,
+      })
+    }
 
     if (user) {
-      // Update their profile with the CRM location
+      // Update profile with CRM location
       await admin.from('profiles').update({
         crm_location_id: locationId,
       }).eq('id', user.id)
 
-      // Send notification
+      // Generate persistent 0n token for this user
+      const onToken = await generateToken(user.id, 'crm', ['read', 'write', 'execute'], {
+        crm_location_id: locationId,
+        company_id: companyId,
+        installed_app: MARKETPLACE_APP.appId,
+      }).catch(err => {
+        console.error('[oauth/callback] Token generation failed:', err)
+        return null
+      })
+
+      // Notify user
       await admin.from('dashboard_notifications').insert({
         user_id: user.id,
         type: 'success',
         title: 'CRM Connected',
-        message: `0nCore marketplace app installed. Location: ${locationId}. 140+ API scopes active. Full CRM access enabled.`,
-        metadata: { locationId, companyId, app: '0ncore-marketplace' },
+        message: `0nCore marketplace app installed. Location: ${locationId}. Full API access enabled. Your 0n token has been generated for cross-channel access.`,
+        metadata: {
+          locationId,
+          companyId,
+          app: '0ncore-marketplace',
+          tokenGenerated: !!onToken,
+        },
       })
+
+      // If token was generated, pass prefix in redirect so dashboard can show it once
+      if (onToken) {
+        const response = NextResponse.redirect(new URL('/dashboard?crm=connected', req.url))
+        response.cookies.set('0n_token_once', onToken, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          maxAge: 300,
+          path: '/dashboard',
+        })
+        return response
+      }
     }
 
     return NextResponse.redirect(new URL('/dashboard?crm=connected', req.url))
