@@ -115,8 +115,54 @@ function getShapeStyle(shapeType: ShapeType, borderColor: string, selected: bool
 }
 
 /* ────────────────────────────────────────────
-   Custom Node: StickyNote (resizable)
+   Shared resize handle style (10x10 green)
    ──────────────────────────────────────────── */
+
+const resizerHandleStyle: React.CSSProperties = {
+  width: 10, height: 10, borderRadius: 2, background: '#6EE05A', border: '2px solid #0d1117',
+}
+
+const resizerLineStyle: React.CSSProperties = {
+  borderColor: '#6EE05A', borderWidth: 1,
+}
+
+/* ────────────────────────────────────────────
+   Auto-size helper: measure text in a hidden div
+   ──────────────────────────────────────────── */
+
+function measureText(
+  text: string,
+  fontSize: number,
+  fontWeight: number,
+  lineHeight: number,
+  maxWidth?: number,
+  whiteSpace: string = 'pre-wrap',
+): { width: number; height: number } {
+  if (typeof document === 'undefined') return { width: 120, height: 40 }
+  const el = document.createElement('div')
+  el.style.position = 'absolute'
+  el.style.visibility = 'hidden'
+  el.style.whiteSpace = whiteSpace
+  el.style.fontSize = `${fontSize}px`
+  el.style.fontWeight = String(fontWeight)
+  el.style.lineHeight = String(lineHeight)
+  el.style.fontFamily = 'inherit'
+  el.style.wordBreak = 'break-word'
+  if (maxWidth) el.style.maxWidth = `${maxWidth}px`
+  el.textContent = text || (whiteSpace === 'nowrap' ? 'Text' : 'Double-click to edit')
+  document.body.appendChild(el)
+  const rect = el.getBoundingClientRect()
+  document.body.removeChild(el)
+  return { width: Math.ceil(rect.width), height: Math.ceil(rect.height) }
+}
+
+/* ────────────────────────────────────────────
+   Custom Node: StickyNote (resizable + auto-size)
+   ──────────────────────────────────────────── */
+
+const STICKY_PAD_H = 16
+const STICKY_PAD_V = 12
+const STICKY_TOP_BAR = 28
 
 const StickyNoteNode = memo(({ id, data, selected }: NodeProps) => {
   const [editing, setEditing] = useState(false)
@@ -128,6 +174,22 @@ const StickyNoteNode = memo(({ id, data, selected }: NodeProps) => {
 
   function updateText(value: string) {
     setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, text: value } } : n))
+  }
+
+  function autoResize() {
+    const text = (data.text as string) || ''
+    // Measure with a max-width to allow wrapping (use current width or 300 as default)
+    const measured = measureText(text, 13, 500, 1.5, 300, 'pre-wrap')
+    const newWidth = Math.max(120, measured.width + STICKY_PAD_H * 2)
+    const newHeight = Math.max(80, measured.height + STICKY_TOP_BAR + STICKY_PAD_V * 2)
+    setNodes(nds => nds.map(n =>
+      n.id === id ? { ...n, style: { ...n.style, width: newWidth, height: newHeight } } : n
+    ))
+  }
+
+  function handleBlur() {
+    setEditing(false)
+    autoResize()
   }
 
   function handleDelete(e: React.MouseEvent) {
@@ -148,7 +210,7 @@ const StickyNoteNode = memo(({ id, data, selected }: NodeProps) => {
         minHeight: 80,
         background: bgColor,
         borderRadius: 12,
-        padding: '28px 14px 14px',
+        padding: `${STICKY_TOP_BAR}px ${STICKY_PAD_H}px ${STICKY_PAD_V}px`,
         position: 'relative',
         boxShadow: selected
           ? '0 0 0 2px #6EE05A, 0 4px 20px rgba(0,0,0,0.4)'
@@ -162,8 +224,8 @@ const StickyNoteNode = memo(({ id, data, selected }: NodeProps) => {
         isVisible={!!selected}
         minWidth={120}
         minHeight={80}
-        lineStyle={{ borderColor: '#6EE05A', borderWidth: 1 }}
-        handleStyle={{ width: 8, height: 8, borderRadius: 2, background: '#6EE05A', border: '2px solid #0d1117' }}
+        lineStyle={resizerLineStyle}
+        handleStyle={resizerHandleStyle}
       />
 
       {/* Grab handle */}
@@ -195,10 +257,10 @@ const StickyNoteNode = memo(({ id, data, selected }: NodeProps) => {
           autoFocus
           value={(data.text as string) || ''}
           onChange={e => updateText(e.target.value)}
-          onBlur={() => setEditing(false)}
-          onKeyDown={e => { if (e.key === 'Escape') setEditing(false) }}
+          onBlur={handleBlur}
+          onKeyDown={e => { if (e.key === 'Escape') handleBlur() }}
           style={{
-            width: '100%', height: 'calc(100% - 28px)', background: 'transparent',
+            width: '100%', height: `calc(100% - ${STICKY_TOP_BAR}px)`, background: 'transparent',
             border: 'none', outline: 'none', resize: 'none',
             color: '#1a1a1a', fontSize: 13, fontFamily: 'inherit',
             lineHeight: 1.5, fontWeight: 500,
@@ -227,6 +289,9 @@ StickyNoteNode.displayName = 'StickyNoteNode'
    Custom Node: TextNode
    ──────────────────────────────────────────── */
 
+const TEXT_PAD_H = 16
+const TEXT_PAD_V = 12
+
 const TextNode = memo(({ id, data, selected }: NodeProps) => {
   const [editing, setEditing] = useState(false)
   const { setNodes } = useReactFlow()
@@ -245,6 +310,21 @@ const TextNode = memo(({ id, data, selected }: NodeProps) => {
     setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, fontSize: next } } : n))
   }
 
+  function autoResize() {
+    const text = (data.text as string) || ''
+    const measured = measureText(text, fontSize, 700, 1.2, undefined, 'nowrap')
+    const newWidth = Math.max(60, measured.width + TEXT_PAD_H * 2)
+    const newHeight = Math.max(32, measured.height + TEXT_PAD_V * 2)
+    setNodes(nds => nds.map(n =>
+      n.id === id ? { ...n, style: { ...n.style, width: newWidth, height: newHeight } } : n
+    ))
+  }
+
+  function handleBlur() {
+    setEditing(false)
+    autoResize()
+  }
+
   return (
     <div
       onDoubleClick={() => setEditing(true)}
@@ -253,25 +333,36 @@ const TextNode = memo(({ id, data, selected }: NodeProps) => {
         setNodes(nds => nds.filter(n => n.id !== id))
       }}
       style={{
-        padding: '4px 8px', cursor: editing ? 'text' : 'grab',
-        outline: selected ? '2px solid #6EE05A' : 'none',
-        outlineOffset: 4, borderRadius: 4, minWidth: 40,
+        width: '100%', height: '100%',
+        padding: `${TEXT_PAD_V}px ${TEXT_PAD_H}px`,
+        cursor: editing ? 'text' : 'grab',
+        borderRadius: 4, minWidth: 60, minHeight: 32,
+        display: 'flex', alignItems: 'center',
       }}
     >
+      <NodeResizer
+        color="#6EE05A"
+        isVisible={!!selected}
+        minWidth={60}
+        minHeight={32}
+        lineStyle={resizerLineStyle}
+        handleStyle={resizerHandleStyle}
+      />
+
       {editing ? (
         <input
           autoFocus
           value={(data.text as string) || ''}
           onChange={e => updateText(e.target.value)}
-          onBlur={() => setEditing(false)}
+          onBlur={handleBlur}
           onKeyDown={e => {
-            if (e.key === 'Escape' || e.key === 'Enter') setEditing(false)
+            if (e.key === 'Escape' || e.key === 'Enter') handleBlur()
             if (e.key === 'Tab') { e.preventDefault(); cycleSize() }
           }}
           style={{
             background: 'transparent', border: 'none', outline: 'none',
             color: '#f0f4f8', fontSize, fontWeight: 700,
-            fontFamily: 'inherit', minWidth: 80,
+            fontFamily: 'inherit', minWidth: 80, width: '100%',
           }}
         />
       ) : (
@@ -299,15 +390,50 @@ TextNode.displayName = 'TextNode'
    Custom Node: ShapeNode (resizable + shape types)
    ──────────────────────────────────────────── */
 
+const SHAPE_PAD_H = 16
+const SHAPE_PAD_V = 12
+
+const shapeMinSizes: Record<ShapeType, { width: number; height: number }> = {
+  rectangle: { width: 80, height: 40 },
+  rounded: { width: 80, height: 40 },
+  circle: { width: 60, height: 60 },
+  diamond: { width: 80, height: 80 },
+  triangle: { width: 80, height: 60 },
+  parallelogram: { width: 100, height: 40 },
+}
+
 const ShapeNode = memo(({ id, data, selected }: NodeProps) => {
   const [editing, setEditing] = useState(false)
   const { setNodes } = useReactFlow()
 
   const borderColor = (data.color as string) || '#dbeafe'
   const shapeType = (data.shapeType as ShapeType) || 'rounded'
+  const mins = shapeMinSizes[shapeType] || { width: 80, height: 40 }
 
   function updateText(value: string) {
     setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, text: value } } : n))
+  }
+
+  function autoResize() {
+    const text = (data.text as string) || ''
+    const measured = measureText(text, 13, 600, 1.4, undefined, 'nowrap')
+    // For diamond/circle, keep aspect ratio roughly square
+    const isSquarish = shapeType === 'circle' || shapeType === 'diamond'
+    let newWidth = Math.max(mins.width, measured.width + SHAPE_PAD_H * 2)
+    let newHeight = Math.max(mins.height, measured.height + SHAPE_PAD_V * 2)
+    if (isSquarish) {
+      const side = Math.max(newWidth, newHeight)
+      newWidth = side
+      newHeight = side
+    }
+    setNodes(nds => nds.map(n =>
+      n.id === id ? { ...n, style: { ...n.style, width: newWidth, height: newHeight } } : n
+    ))
+  }
+
+  function handleBlur() {
+    setEditing(false)
+    autoResize()
   }
 
   const shapeStyle = getShapeStyle(shapeType, borderColor, !!selected)
@@ -315,7 +441,7 @@ const ShapeNode = memo(({ id, data, selected }: NodeProps) => {
 
   return (
     <div
-      style={{ width: '100%', height: '100%', position: 'relative', minWidth: 60, minHeight: 40 }}
+      style={{ width: '100%', height: '100%', position: 'relative', minWidth: mins.width, minHeight: mins.height }}
       onContextMenu={(e) => {
         e.preventDefault()
         setNodes(nds => nds.filter(n => n.id !== id))
@@ -324,10 +450,10 @@ const ShapeNode = memo(({ id, data, selected }: NodeProps) => {
       <NodeResizer
         color="#6EE05A"
         isVisible={!!selected}
-        minWidth={60}
-        minHeight={40}
-        lineStyle={{ borderColor: '#6EE05A', borderWidth: 1 }}
-        handleStyle={{ width: 8, height: 8, borderRadius: 2, background: '#6EE05A', border: '2px solid #0d1117' }}
+        minWidth={mins.width}
+        minHeight={mins.height}
+        lineStyle={resizerLineStyle}
+        handleStyle={resizerHandleStyle}
       />
 
       <div
@@ -343,8 +469,8 @@ const ShapeNode = memo(({ id, data, selected }: NodeProps) => {
               autoFocus
               value={(data.text as string) || ''}
               onChange={e => updateText(e.target.value)}
-              onBlur={() => setEditing(false)}
-              onKeyDown={e => { if (e.key === 'Escape' || e.key === 'Enter') setEditing(false) }}
+              onBlur={handleBlur}
+              onKeyDown={e => { if (e.key === 'Escape' || e.key === 'Enter') handleBlur() }}
               style={{
                 background: 'transparent', border: 'none', outline: 'none',
                 color: '#f0f4f8', fontSize: 13, fontWeight: 600,
@@ -1146,7 +1272,7 @@ function BoardInner() {
         .react-flow__controls button svg { fill: currentColor !important; }
         .react-flow__attribution { display: none !important; }
         .react-flow__pane { cursor: ${cursorStyle} !important; }
-        .react-flow__resize-control.handle { background: #6EE05A !important; border: 2px solid #0d1117 !important; border-radius: 2px !important; width: 8px !important; height: 8px !important; }
+        .react-flow__resize-control.handle { background: #6EE05A !important; border: 2px solid #0d1117 !important; border-radius: 2px !important; width: 10px !important; height: 10px !important; }
         .react-flow__resize-control.line { border-color: rgba(110,224,90,0.4) !important; }
       `}</style>
 
