@@ -269,8 +269,10 @@ const StickyNoteNode = memo(({ id, data, selected }: NodeProps) => {
       ) : (
         <div style={{
           color: '#1a1a1a', fontSize: 13, lineHeight: 1.5,
-          whiteSpace: 'pre-wrap', fontWeight: 500, minHeight: 40,
+          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+          fontWeight: 500, minHeight: 40,
           userSelect: 'none', overflow: 'hidden',
+          width: '100%',
         }}>
           {(data.text as string) || 'Double-click to edit'}
         </div>
@@ -312,8 +314,10 @@ const TextNode = memo(({ id, data, selected }: NodeProps) => {
 
   function autoResize() {
     const text = (data.text as string) || ''
-    const measured = measureText(text, fontSize, 700, 1.2, undefined, 'nowrap')
-    const newWidth = Math.max(60, measured.width + TEXT_PAD_H * 2)
+    const currentNode = document.querySelector(`[data-id="${id}"]`)
+    const currentWidth = currentNode ? currentNode.getBoundingClientRect().width : 200
+    const measured = measureText(text, fontSize, 700, 1.4, Math.max(60, currentWidth - TEXT_PAD_H * 2), 'pre-wrap')
+    const newWidth = Math.max(60, Math.min(measured.width + TEXT_PAD_H * 2, currentWidth || 400))
     const newHeight = Math.max(32, measured.height + TEXT_PAD_V * 2)
     setNodes(nds => nds.map(n =>
       n.id === id ? { ...n, style: { ...n.style, width: newWidth, height: newHeight } } : n
@@ -350,19 +354,21 @@ const TextNode = memo(({ id, data, selected }: NodeProps) => {
       />
 
       {editing ? (
-        <input
+        <textarea
           autoFocus
           value={(data.text as string) || ''}
           onChange={e => updateText(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={e => {
-            if (e.key === 'Escape' || e.key === 'Enter') handleBlur()
+            if (e.key === 'Escape') handleBlur()
             if (e.key === 'Tab') { e.preventDefault(); cycleSize() }
           }}
           style={{
             background: 'transparent', border: 'none', outline: 'none',
             color: '#f0f4f8', fontSize, fontWeight: 700,
-            fontFamily: 'inherit', minWidth: 80, width: '100%',
+            fontFamily: 'inherit', width: '100%', height: '100%',
+            resize: 'none', lineHeight: 1.4,
+            wordBreak: 'break-word',
           }}
         />
       ) : (
@@ -370,7 +376,9 @@ const TextNode = memo(({ id, data, selected }: NodeProps) => {
           onClick={cycleSize}
           style={{
             color: '#f0f4f8', fontSize, fontWeight: 700,
-            whiteSpace: 'nowrap', userSelect: 'none',
+            whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+            userSelect: 'none', width: '100%',
+            lineHeight: 1.4, overflow: 'hidden',
           }}
         >
           {(data.text as string) || 'Text'}
@@ -481,7 +489,8 @@ const ShapeNode = memo(({ id, data, selected }: NodeProps) => {
             <div style={{
               color: '#f0f4f8', fontSize: 13, fontWeight: 600,
               textAlign: 'center', userSelect: 'none', padding: '0 8px',
-              overflow: 'hidden', textOverflow: 'ellipsis',
+              overflow: 'hidden', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+              width: '100%', lineHeight: 1.4,
             }}>
               {(data.text as string) || 'Label'}
             </div>
@@ -618,6 +627,167 @@ function ShapePreview({ shape, size = 32 }: { shape: string; size?: number }) {
     default:
       return <svg width={s} height={s} viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="4" fill="none" stroke={c} strokeWidth={sw}/></svg>
   }
+}
+
+/* ────────────────────────────────────────────
+   Floating Element Toolbar (Whimsical-style)
+   ──────────────────────────────────────────── */
+
+const TOOLBAR_COLORS = ['#fef3c7', '#dcfce7', '#dbeafe', '#fce7f3', '#e9d5ff', '#ccfbf1', '#fee2e2', '#f3e8ff', '#fef9c3', '#e0e7ff', '#d1fae5', '#fff1f2']
+
+function FloatingToolbar({
+  selectedNodeIds, nodes, setNodes, selectedColor, setSelectedColor, onDelete, onDuplicate, onSave,
+}: {
+  selectedNodeIds: string[]
+  nodes: Node[]
+  setNodes: (fn: (nds: Node[]) => Node[]) => void
+  selectedColor: string
+  setSelectedColor: (c: string) => void
+  onDelete: () => void
+  onDuplicate: () => void
+  onSave: () => void
+}) {
+  const [showColorPicker, setShowColorPicker] = useState(false)
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+
+  useEffect(() => {
+    if (selectedNodeIds.length !== 1) { setPos(null); return }
+    const el = document.querySelector(`[data-id="${selectedNodeIds[0]}"]`)
+    if (!el) { setPos(null); return }
+    const rect = el.getBoundingClientRect()
+    const container = el.closest('.react-flow')
+    const containerRect = container?.getBoundingClientRect() || { left: 0, top: 0 }
+    setPos({
+      x: rect.left - containerRect.left + rect.width / 2,
+      y: rect.top - containerRect.top - 52,
+    })
+    setShowColorPicker(false)
+  }, [selectedNodeIds, nodes])
+
+  if (!pos || selectedNodeIds.length !== 1) return null
+
+  const node = nodes.find(n => n.id === selectedNodeIds[0])
+  if (!node) return null
+
+  const isText = node.type === 'textNode'
+  const isNote = node.type === 'stickyNote'
+
+  const btnStyle: React.CSSProperties = {
+    background: 'none', border: 'none', color: '#d1d5db',
+    cursor: 'pointer', padding: '6px 8px', borderRadius: 6,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 14, transition: 'background 0.1s, color 0.1s',
+  }
+
+  function cycleFontSize() {
+    if (!isText) return
+    const sizes = ['small', 'medium', 'large']
+    setNodes(nds => nds.map(n => {
+      if (n.id !== selectedNodeIds[0]) return n
+      const cur = (n.data.fontSize as string) || 'medium'
+      const next = sizes[(sizes.indexOf(cur) + 1) % sizes.length]
+      return { ...n, data: { ...n.data, fontSize: next } }
+    }))
+  }
+
+  function applyColor(c: string) {
+    setSelectedColor(c)
+    setNodes(nds => nds.map(n =>
+      selectedNodeIds.includes(n.id) ? { ...n, data: { ...n.data, color: c } } : n
+    ))
+    setShowColorPicker(false)
+  }
+
+  return (
+    <div style={{
+      position: 'absolute',
+      left: pos.x, top: pos.y,
+      transform: 'translateX(-50%)',
+      zIndex: 40,
+      display: 'flex', alignItems: 'center', gap: 2,
+      background: '#1e2330',
+      border: '1px solid #30363d',
+      borderRadius: 10,
+      padding: '4px 6px',
+      boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+    }}>
+      {/* Font size (text nodes only) */}
+      {isText && (
+        <button onClick={cycleFontSize} style={btnStyle} title="Cycle font size (Tab)"
+          onMouseEnter={e => { e.currentTarget.style.background = '#2d3548'; e.currentTarget.style.color = '#f0f4f8' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#d1d5db' }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="4 7 4 4 20 4 20 7" /><line x1="9" y1="20" x2="15" y2="20" /><line x1="12" y1="4" x2="12" y2="20" />
+          </svg>
+        </button>
+      )}
+
+      {/* Color picker */}
+      <div style={{ position: 'relative' }}>
+        <button onClick={() => setShowColorPicker(p => !p)} style={btnStyle} title="Color"
+          onMouseEnter={e => { e.currentTarget.style.background = '#2d3548'; e.currentTarget.style.color = '#f0f4f8' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#d1d5db' }}
+        >
+          <div style={{ width: 16, height: 16, borderRadius: 4, background: (node.data.color as string) || selectedColor, border: '2px solid #555' }} />
+        </button>
+        {showColorPicker && (
+          <div style={{
+            position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+            marginTop: 8, background: '#1e2330', border: '1px solid #30363d', borderRadius: 10,
+            padding: 10, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.5)', zIndex: 50,
+          }}>
+            {TOOLBAR_COLORS.map(c => (
+              <button key={c} onClick={() => applyColor(c)} style={{
+                width: 24, height: 24, borderRadius: 6, background: c,
+                border: c === ((node.data.color as string) || selectedColor) ? '2px solid #6EE05A' : '2px solid transparent',
+                cursor: 'pointer',
+              }} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Separator */}
+      <div style={{ width: 1, height: 20, background: '#30363d', margin: '0 4px' }} />
+
+      {/* Duplicate */}
+      <button onClick={onDuplicate} style={btnStyle} title="Duplicate"
+        onMouseEnter={e => { e.currentTarget.style.background = '#2d3548'; e.currentTarget.style.color = '#f0f4f8' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#d1d5db' }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      </button>
+
+      {/* Save/Bookmark */}
+      {(isNote || isText) && (
+        <button onClick={onSave} style={btnStyle} title="Save to bookmarks"
+          onMouseEnter={e => { e.currentTarget.style.background = '#2d3548'; e.currentTarget.style.color = '#f0f4f8' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#d1d5db' }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
+      )}
+
+      {/* Separator */}
+      <div style={{ width: 1, height: 20, background: '#30363d', margin: '0 4px' }} />
+
+      {/* Delete */}
+      <button onClick={onDelete} style={{ ...btnStyle, color: '#f87171' }} title="Delete"
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.12)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        </svg>
+      </button>
+    </div>
+  )
 }
 
 /* ────────────────────────────────────────────
@@ -1295,6 +1465,26 @@ function BoardInner() {
         setCustomHex={setCustomHex}
         connectorType={connectorType}
         setConnectorType={setConnectorType}
+      />
+
+      {/* ═══ Floating Element Toolbar (Whimsical-style) ═══ */}
+      <FloatingToolbar
+        selectedNodeIds={selectedNodeIds}
+        nodes={nodes}
+        setNodes={setNodes}
+        selectedColor={selectedColor}
+        setSelectedColor={setSelectedColor}
+        onDelete={() => setNodes(nds => nds.filter(n => !selectedNodeIds.includes(n.id)))}
+        onDuplicate={() => {
+          const dupes = nodes.filter(n => selectedNodeIds.includes(n.id)).map(n => ({
+            ...n,
+            id: `n_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            position: { x: n.position.x + 20, y: n.position.y + 20 },
+            selected: false,
+          }))
+          setNodes(nds => [...nds, ...dupes])
+        }}
+        onSave={onSaveSelectedNote}
       />
 
       <ReactFlow
