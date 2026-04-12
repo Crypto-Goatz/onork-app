@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { resolveChannelSession, type ChannelType } from '@/lib/channel-adapter'
 import { validateToken, extractToken } from '@/lib/0n-token'
+import { executeWorkflow, type DotOnFile } from '@/lib/execution-engine'
 
 function getAdmin() {
   return createClient(
@@ -138,15 +139,14 @@ async function routeMessage(
   }
 
   // Generate .0n structure for execution
-  const dotOnFile = {
+  const dotOnFile: DotOnFile = {
     name: `bridge_${Date.now()}`,
     version: '1.0.0',
     description: `Generated from ${ctx.channel}: ${text.slice(0, 100)}`,
-    triggers: [{ type: 'manual', source: ctx.channel }],
     steps: commands.map((cmd, i) => ({
       id: `step_${i + 1}`,
       action: 'resolve',
-      input: { command: cmd.trim(), context: ctx },
+      input: { command: cmd.trim() },
       ...(i > 0 ? { depends_on: [`step_${i}`] } : {}),
     })),
     metadata: {
@@ -157,21 +157,35 @@ async function routeMessage(
     },
   }
 
-  // Log the execution
-  await admin.from('workflow_executions').insert({
-    user_id: ctx.userId,
-    workflow_name: dotOnFile.name,
-    status: 'pending',
-    input: { text, channel: ctx.channel },
-    dot_on_file: dotOnFile,
-  } as Record<string, unknown>).then(() => {}, () => {})
+  // Execute the workflow through connected services
+  const execution = await executeWorkflow(dotOnFile, {
+    userId: ctx.userId,
+    crmLocationId: ctx.crmLocationId,
+    tier: ctx.tier,
+  })
+
+  // Format results
+  const successSteps = execution.steps.filter(s => s.status === 'success')
+  const failedSteps = execution.steps.filter(s => s.status === 'error')
+
+  let message: string
+  if (execution.status === 'completed') {
+    message = isMultiCommand
+      ? `Executed ${successSteps.length} commands via radial burst (${execution.totalDurationMs}ms)`
+      : `Done (${execution.totalDurationMs}ms)`
+  } else if (execution.status === 'partial') {
+    message = `${successSteps.length}/${execution.steps.length} commands succeeded. ${failedSteps.map(s => s.error).join('; ')}`
+  } else {
+    message = `Execution failed: ${failedSteps.map(s => s.error).join('; ')}`
+  }
 
   return {
     type: isMultiCommand ? 'radial_burst' : 'single',
-    message: isMultiCommand
-      ? `Processing ${commands.length} commands via radial burst...`
-      : `Processing: ${text}`,
+    message,
+    status: execution.status,
     commands: commands.length,
+    steps: execution.steps,
+    totalDurationMs: execution.totalDurationMs,
     dotOnFile,
     userContext: {
       tier: ctx.tier,
