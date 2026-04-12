@@ -19,13 +19,19 @@ interface Integration {
   placeholders: string[]
 }
 
-const SERVICE_META: Record<string, { name: string; description: string; icon: string; iconBg: string; iconColor: string; tools: number; category: string }> = {
-  crm: { name: 'CRM', description: 'Full contact, pipeline, calendar, and conversation management.', icon: 'CRM', iconBg: 'rgba(126,217,87,0.12)', iconColor: '#7ed957', tools: 245, category: 'Core' },
-  stripe: { name: 'Stripe', description: 'Payment processing, subscriptions, invoices, and metered billing.', icon: 'S', iconBg: 'rgba(99,91,255,0.12)', iconColor: '#635bff', tools: 42, category: 'Core' },
+interface ServiceMeta {
+  name: string; description: string; icon: string; iconBg: string; iconColor: string;
+  tools: number; category: string; verified?: boolean; docsUrl?: string; keyUrl?: string;
+  capabilities?: string[]; setupNote?: string;
+}
+
+const SERVICE_META: Record<string, ServiceMeta> = {
+  crm: { name: 'CRM', description: 'Full contact, pipeline, calendar, and conversation management.', icon: 'CRM', iconBg: 'rgba(126,217,87,0.12)', iconColor: '#7ed957', tools: 245, category: 'Core', verified: true, docsUrl: 'https://highlevel.stoplight.io/docs/integrations', keyUrl: 'https://app.gohighlevel.com/settings/integrations', capabilities: ['Contacts CRUD', 'Pipeline management', 'Calendar booking', 'Conversations', 'Invoices', 'Opportunities', 'Email/SMS sending', 'Workflow triggers'], setupNote: 'Use your Private Integration Token (PIT) from Settings → Integrations → API Key' },
+  stripe: { name: 'Stripe', description: 'Payment processing, subscriptions, invoices, and metered billing.', icon: 'S', iconBg: 'rgba(99,91,255,0.12)', iconColor: '#635bff', tools: 42, category: 'Core', verified: true, docsUrl: 'https://stripe.com/docs/api', keyUrl: 'https://dashboard.stripe.com/apikeys', capabilities: ['Payments', 'Subscriptions', 'Invoices', 'Customers', 'Products', 'Checkout sessions', 'Webhooks', 'Balance'], setupNote: 'Get your Secret Key from Stripe Dashboard → Developers → API Keys' },
   supabase: { name: 'Supabase', description: 'Database, authentication, storage, and edge functions.', icon: 'SB', iconBg: 'rgba(62,207,142,0.12)', iconColor: '#3ecf8e', tools: 38, category: 'Core' },
   openai: { name: 'OpenAI', description: 'GPT models, DALL-E, embeddings, and fine-tuning.', icon: 'AI', iconBg: 'rgba(0,212,255,0.12)', iconColor: '#00d4ff', tools: 22, category: 'AI' },
-  anthropic: { name: 'Anthropic', description: 'Claude AI models, messages API, and tool use.', icon: 'CL', iconBg: 'rgba(204,169,128,0.12)', iconColor: '#cc9a80', tools: 18, category: 'AI' },
-  slack: { name: 'Slack', description: 'Team messaging, channel management, and notifications.', icon: 'SL', iconBg: 'rgba(74,21,75,0.2)', iconColor: '#e01e5a', tools: 35, category: 'Communication' },
+  anthropic: { name: 'Anthropic', description: 'Claude AI models, messages API, and tool use.', icon: 'CL', iconBg: 'rgba(204,169,128,0.12)', iconColor: '#cc9a80', tools: 18, category: 'AI', verified: true, docsUrl: 'https://docs.anthropic.com', keyUrl: 'https://console.anthropic.com/settings/keys', capabilities: ['Chat completions', 'Tool use', 'Vision', 'Streaming', 'System prompts', 'K-Layer context injection'], setupNote: 'Get your API key from console.anthropic.com → Settings → API Keys' },
+  slack: { name: 'Slack', description: 'Team messaging, channel management, and notifications.', icon: 'SL', iconBg: 'rgba(74,21,75,0.2)', iconColor: '#e01e5a', tools: 35, category: 'Communication', verified: true, docsUrl: 'https://api.slack.com/docs', keyUrl: 'https://api.slack.com/apps', capabilities: ['Post messages', '25 slash commands', 'Channel management', 'Event subscriptions', 'Interactive buttons', 'File uploads', 'User lookup'], setupNote: 'Bot token (xoxb-) from api.slack.com → Your Apps → 0nMCP → OAuth & Permissions' },
   sendgrid: { name: 'SendGrid', description: 'Transactional email, templates, and campaigns.', icon: 'SG', iconBg: 'rgba(0,116,212,0.12)', iconColor: '#0074d4', tools: 28, category: 'Communication' },
   resend: { name: 'Resend', description: 'Developer-first email API with React templates.', icon: 'RE', iconBg: 'rgba(255,255,255,0.08)', iconColor: '#ffffff', tools: 24, category: 'Communication' },
   discord: { name: 'Discord', description: 'Server management, bots, and community features.', icon: 'DC', iconBg: 'rgba(88,101,242,0.12)', iconColor: '#5865f2', tools: 32, category: 'Communication' },
@@ -247,7 +253,10 @@ export default function IntegrationsPage() {
       )}
 
       {/* Connect Modal Overlay */}
-      {connectingService && modalIntegration && (
+      {connectingService && modalIntegration && (() => {
+        const meta = SERVICE_META[connectingService] || {} as ServiceMeta
+        const isVerified = meta.verified
+        return (
         <div
           onClick={() => { setConnectingService(null); setCredentials({}) }}
           style={{
@@ -256,7 +265,9 @@ export default function IntegrationsPage() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0,0,0,0.7)',
+            background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
             zIndex: 9000,
             display: 'flex',
             alignItems: 'center',
@@ -264,17 +275,28 @@ export default function IntegrationsPage() {
             animation: 'modalFadeIn 0.2s ease-out',
           }}
         >
+          {/* Gradient glow behind modal */}
+          <div style={{
+            position: 'absolute',
+            width: 600, height: 600,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${meta.iconColor || '#6EE05A'}15 0%, transparent 70%)`,
+            pointerEvents: 'none',
+          }} />
           <div
             onClick={e => e.stopPropagation()}
             style={{
+              position: 'relative',
               width: '100%',
-              maxWidth: 480,
-              background: 'var(--jp-card-bg, #141414)',
-              border: '1px solid var(--jp-border)',
-              borderRadius: 16,
+              maxWidth: 520,
+              background: 'rgba(15,17,23,0.85)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: `1px solid ${isVerified ? 'rgba(110,224,90,0.2)' : 'rgba(255,255,255,0.06)'}`,
+              borderRadius: 20,
               overflow: 'hidden',
               animation: 'modalSlideIn 0.25s ease-out',
-              boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+              boxShadow: `0 24px 80px rgba(0,0,0,0.6)${isVerified ? ', 0 0 40px rgba(110,224,90,0.05)' : ''}`,
             }}
           >
             {/* Modal Header */}
@@ -371,6 +393,57 @@ export default function IntegrationsPage() {
               </div>
             </div>
 
+            {/* Setup note + capabilities + docs */}
+            <div style={{ padding: '0 24px 16px' }}>
+              {meta.setupNote && (
+                <div style={{
+                  padding: '10px 14px', borderRadius: 10, marginBottom: 12,
+                  background: 'rgba(110,224,90,0.04)', border: '1px solid rgba(110,224,90,0.1)',
+                  fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5,
+                }}>
+                  {meta.setupNote}
+                </div>
+              )}
+
+              {meta.capabilities && meta.capabilities.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--jp-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                    Capabilities
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {meta.capabilities.map(cap => (
+                      <span key={cap} style={{
+                        fontSize: '0.65rem', padding: '3px 8px', borderRadius: 6,
+                        background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
+                        color: 'rgba(255,255,255,0.4)',
+                      }}>
+                        {cap}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                {meta.keyUrl && (
+                  <a href={meta.keyUrl} target="_blank" rel="noopener noreferrer" style={{
+                    fontSize: '0.7rem', color: '#6EE05A', textDecoration: 'none',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                  }}>
+                    Get API Key ↗
+                  </a>
+                )}
+                {meta.docsUrl && (
+                  <a href={meta.docsUrl} target="_blank" rel="noopener noreferrer" style={{
+                    fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'none',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                  }}>
+                    Documentation ↗
+                  </a>
+                )}
+              </div>
+            </div>
+
             {/* Modal Footer */}
             <div style={{ padding: '0 24px 24px' }}>
               <button
@@ -443,7 +516,8 @@ export default function IntegrationsPage() {
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
