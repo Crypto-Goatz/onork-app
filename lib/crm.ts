@@ -48,6 +48,7 @@ export function getPitForLocation(locationId: string): string {
   const pits: Record<string, string | undefined> = {
     '6MSqx0trfxgLxeHBJE1k': process.env.CRM_PIT_ROCKETOPP,
     'nphConTwfHcVE1oA0uep': process.env.CRM_PIT_RAW,
+    'AZLSL7r6X2tDV1A48Yrb': process.env.CRM_PIT_FAIRICE || process.env.CRM_AGENCY_PIT_NEW,
   }
   const specific = pits[locationId]
   if (specific) return specific
