@@ -207,7 +207,7 @@ export default function IntegrationsPage() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', margin: '0 0 4px' }}>Integrations</h1>
-          <p style={{ fontSize: 13, color: 'var(--jp-text-muted, #6b7280)', margin: 0 }}>
+          <p style={{ fontSize: 13, color: 'var(--jp-text-muted, #8b95a5)', margin: 0 }}>
             {connectedCount} connected — {totalTools}+ tools across {services.length} services
           </p>
         </div>
@@ -240,7 +240,7 @@ export default function IntegrationsPage() {
             padding: '18px 20px', position: 'relative', overflow: 'hidden',
           }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${s.color}, transparent)` }} />
-            <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #6b7280)', fontWeight: 600, letterSpacing: '0.04em' }}>{s.label}</div>
+            <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', fontWeight: 600, letterSpacing: '0.04em' }}>{s.label}</div>
             <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--jp-text, #f0f4f8)', margin: '6px 0 4px', fontFamily: 'var(--jp-font-mono, monospace)' }}>{s.value}</div>
             <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: `${s.color}15`, color: s.color, fontWeight: 600 }}>{s.tag}</span>
           </div>
@@ -281,14 +281,16 @@ export default function IntegrationsPage() {
                 boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-3px)'
-                e.currentTarget.style.boxShadow = `0 12px 40px rgba(0,0,0,0.3), 0 0 24px ${svc.color}10`
-                e.currentTarget.style.borderColor = `${svc.color}40`
+                e.currentTarget.style.transform = 'translateY(-4px)'
+                e.currentTarget.style.boxShadow = `0 16px 48px rgba(0,0,0,0.35), 0 0 30px ${svc.color}18`
+                e.currentTarget.style.borderColor = `${svc.color}60`
+                e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.transform = 'translateY(0)'
                 e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.15)'
                 e.currentTarget.style.borderColor = svc.connected ? 'rgba(126,217,87,0.2)' : 'rgba(255,255,255,0.06)'
+                e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
               }}
               onClick={() => { if (!svc.connected) { setConnectingService(svc); setCredentials({}) } }}
             >
@@ -321,25 +323,25 @@ export default function IntegrationsPage() {
 
               {/* Name + description */}
               <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', marginBottom: 6 }}>{svc.name}</div>
-              <div style={{ fontSize: 12, color: 'var(--jp-text-muted, #6b7280)', lineHeight: 1.5, marginBottom: 16, minHeight: 36 }}>{svc.description}</div>
+              <div style={{ fontSize: 12, color: 'var(--jp-text-muted, #8b95a5)', lineHeight: 1.5, marginBottom: 16, minHeight: 36 }}>{svc.description}</div>
 
               {/* Footer: tools + actions */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 11, color: 'var(--jp-text-muted, #6b7280)', fontFamily: 'var(--jp-font-mono, monospace)' }}>
+                <span style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', fontFamily: 'var(--jp-font-mono, monospace)' }}>
                   {svc.tools} tools
                 </span>
                 {svc.connected ? (
                   <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
                     <button onClick={() => handleTest(svc)} disabled={testing === svc.id} style={{
                       padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)',
-                      background: 'rgba(255,255,255,0.03)', color: 'var(--jp-text-muted, #6b7280)',
+                      background: 'rgba(255,255,255,0.03)', color: 'var(--jp-text-muted, #8b95a5)',
                       fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                     }}>
                       {testing === svc.id ? '...' : 'Test'}
                     </button>
                     <button onClick={() => { setConnectingService(svc); setCredentials({}) }} style={{
                       padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)',
-                      background: 'rgba(255,255,255,0.03)', color: 'var(--jp-text-muted, #6b7280)',
+                      background: 'rgba(255,255,255,0.03)', color: 'var(--jp-text-muted, #8b95a5)',
                       fontSize: 11, fontWeight: 600, cursor: 'pointer',
                     }}>
                       Configure
@@ -368,7 +370,7 @@ export default function IntegrationsPage() {
       </div>
 
       {filtered.length === 0 && (
-        <div style={{ textAlign: 'center', padding: 60, color: 'var(--jp-text-muted, #6b7280)' }}>
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--jp-text-muted, #8b95a5)' }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>🔍</div>
           <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>No integrations found</div>
           <div style={{ fontSize: 13 }}>Try a different search or category</div>
@@ -417,11 +419,11 @@ export default function IntegrationsPage() {
                 </div>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)' }}>Connect {connectingService.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #6b7280)' }}>{connectingService.tools} tools unlocked</div>
+                  <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)' }}>{connectingService.tools} tools unlocked</div>
                 </div>
               </div>
               <button onClick={() => { setConnectingService(null); setCredentials({}) }} style={{
-                background: 'none', border: 'none', color: 'var(--jp-text-muted, #6b7280)',
+                background: 'none', border: 'none', color: 'var(--jp-text-muted, #8b95a5)',
                 cursor: 'pointer', fontSize: 18, padding: '4px 8px', borderRadius: 6,
               }}>✕</button>
             </div>
@@ -441,7 +443,7 @@ export default function IntegrationsPage() {
               {/* Step-by-step Guide */}
               {connectingService.guide.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
                     How to get your key
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -453,7 +455,7 @@ export default function IntegrationsPage() {
                           background: `${connectingService.color}12`, color: connectingService.color,
                           fontSize: 10, fontWeight: 800,
                         }}>{i + 1}</span>
-                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5, paddingTop: 2 }}>{step}</span>
+                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, paddingTop: 2 }}>{step}</span>
                       </div>
                     ))}
                   </div>
@@ -475,7 +477,7 @@ export default function IntegrationsPage() {
               {/* Capability tags */}
               {connectingService.capabilities.length > 0 && (
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
                     Capabilities
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
@@ -483,7 +485,7 @@ export default function IntegrationsPage() {
                       <span key={cap} style={{
                         fontSize: 10, padding: '3px 8px', borderRadius: 6,
                         background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-                        color: 'rgba(255,255,255,0.4)',
+                        color: 'rgba(255,255,255,0.55)',
                       }}>{cap}</span>
                     ))}
                   </div>
@@ -494,7 +496,7 @@ export default function IntegrationsPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
                 {connectingService.fields.map(field => (
                   <div key={field.key}>
-                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
                       {field.label} {field.required && <span style={{ color: connectingService.color }}>*</span>}
                     </label>
                     <input
@@ -536,11 +538,11 @@ export default function IntegrationsPage() {
               {/* Doc link + security note */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
                 {connectingService.docUrl && (
-                  <a href={connectingService.docUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>
+                  <a href={connectingService.docUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>
                     Documentation ↗
                   </a>
                 )}
-                <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #6b7280)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="#7ed957"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" /></svg>
                   Encrypted in vault
                 </div>

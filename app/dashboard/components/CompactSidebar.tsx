@@ -254,7 +254,7 @@ export default function CompactSidebar({ isOpen, onClose, isAdmin }: CompactSide
         {/* Header */}
         <div className="jp-compact-sidebar-header" style={{ padding: '14px 0', display: 'flex', justifyContent: 'center' }}>
           <Link href="/dashboard" className="jp-compact-sidebar-brand" onClick={onClose}>
-            <img src="/brand/on-white.png" alt="0nCore" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+            <img src="/brand/0ncore-logo.png" alt="0nCore" style={{ width: 32, height: 32, objectFit: 'contain' }} />
           </Link>
         </div>
 

@@ -33,8 +33,8 @@
   --jp-border-hi: #484f58;
   --jp-border-focus: #6EE05A;
   --jp-text: #f0f4f8;
-  --jp-text-secondary: #9ca3af;
-  --jp-text-muted: #6b7280;
+  --jp-text-secondary: #c4cad4;
+  --jp-text-muted: #8b95a5;
   --jp-radius: 16px;
   --jp-radius-sm: 10px;
   --jp-radius-xs: 6px;
@@ -56,8 +56,8 @@
   --jp-border-hi: #484f58;
   --jp-border-focus: #7ed957;
   --jp-text: #f0f4f8;
-  --jp-text-secondary: #9ca3af;
-  --jp-text-muted: #6b7280;
+  --jp-text-secondary: #c4cad4;
+  --jp-text-muted: #8b95a5;
   --jp-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
   color-scheme: dark;
 }
@@ -86,8 +86,8 @@
   --jp-bg-card: rgba(255,255,255,0.04);
   --jp-border: rgba(255,255,255,0.08);
   --jp-text: #f0f4f8;
-  --jp-text-secondary: #9ca3af;
-  --jp-text-muted: #6b7280;
+  --jp-text-secondary: #c4cad4;
+  --jp-text-muted: #8b95a5;
 }
 
 /* ======= Layout Wrapper ======= */
