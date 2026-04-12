@@ -4,67 +4,75 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getLogoSrc } from '@/lib/logo-map'
 
-interface Integration {
-  name: string
-  key: string
-  description: string
-  icon: string
-  iconBg: string
-  iconColor: string
-  connected: boolean
-  tools: number
-  category: string
-  credentialKeys: string[]
-  labels: string[]
-  placeholders: string[]
+interface ServiceField {
+  key: string; label: string; type: string; placeholder: string; required: boolean
 }
 
-interface ServiceMeta {
-  name: string; description: string; icon: string; iconBg: string; iconColor: string;
-  tools: number; category: string; verified?: boolean; docsUrl?: string; keyUrl?: string;
-  capabilities?: string[]; setupNote?: string;
+interface ServiceItem {
+  id: string; name: string; category: string; icon: string; color: string
+  description: string; fields: ServiceField[]; docUrl: string
+  tools: number; guide: string[]; keyUrl: string; keyLabel: string
+  capabilities: string[]; setupNote: string; affiliateUrl?: string
+  connected: boolean; health?: string; lastVerified?: string | null
 }
 
-const SERVICE_META: Record<string, ServiceMeta> = {
-  crm: { name: 'CRM', description: 'Full contact, pipeline, calendar, and conversation management.', icon: 'CRM', iconBg: 'rgba(126,217,87,0.12)', iconColor: '#7ed957', tools: 245, category: 'Core', verified: true, docsUrl: 'https://highlevel.stoplight.io/docs/integrations', keyUrl: 'https://app.gohighlevel.com/settings/integrations', capabilities: ['Contacts CRUD', 'Pipeline management', 'Calendar booking', 'Conversations', 'Invoices', 'Opportunities', 'Email/SMS sending', 'Workflow triggers'], setupNote: 'Use your Private Integration Token (PIT) from Settings → Integrations → API Key' },
-  stripe: { name: 'Stripe', description: 'Payment processing, subscriptions, invoices, and metered billing.', icon: 'S', iconBg: 'rgba(99,91,255,0.12)', iconColor: '#635bff', tools: 42, category: 'Core', verified: true, docsUrl: 'https://stripe.com/docs/api', keyUrl: 'https://dashboard.stripe.com/apikeys', capabilities: ['Payments', 'Subscriptions', 'Invoices', 'Customers', 'Products', 'Checkout sessions', 'Webhooks', 'Balance'], setupNote: 'Get your Secret Key from Stripe Dashboard → Developers → API Keys' },
-  supabase: { name: 'Supabase', description: 'Database, authentication, storage, and edge functions.', icon: 'SB', iconBg: 'rgba(62,207,142,0.12)', iconColor: '#3ecf8e', tools: 38, category: 'Core' },
-  openai: { name: 'OpenAI', description: 'GPT models, DALL-E, embeddings, and fine-tuning.', icon: 'AI', iconBg: 'rgba(0,212,255,0.12)', iconColor: '#00d4ff', tools: 22, category: 'AI' },
-  anthropic: { name: 'Anthropic', description: 'Claude AI models, messages API, and tool use.', icon: 'CL', iconBg: 'rgba(204,169,128,0.12)', iconColor: '#cc9a80', tools: 18, category: 'AI', verified: true, docsUrl: 'https://docs.anthropic.com', keyUrl: 'https://console.anthropic.com/settings/keys', capabilities: ['Chat completions', 'Tool use', 'Vision', 'Streaming', 'System prompts', 'K-Layer context injection'], setupNote: 'Get your API key from console.anthropic.com → Settings → API Keys' },
-  slack: { name: 'Slack', description: 'Team messaging, channel management, and notifications.', icon: 'SL', iconBg: 'rgba(74,21,75,0.2)', iconColor: '#e01e5a', tools: 35, category: 'Communication', verified: true, docsUrl: 'https://api.slack.com/docs', keyUrl: 'https://api.slack.com/apps', capabilities: ['Post messages', '25 slash commands', 'Channel management', 'Event subscriptions', 'Interactive buttons', 'File uploads', 'User lookup'], setupNote: 'Bot token (xoxb-) from api.slack.com → Your Apps → 0nMCP → OAuth & Permissions' },
-  sendgrid: { name: 'SendGrid', description: 'Transactional email, templates, and campaigns.', icon: 'SG', iconBg: 'rgba(0,116,212,0.12)', iconColor: '#0074d4', tools: 28, category: 'Communication' },
-  resend: { name: 'Resend', description: 'Developer-first email API with React templates.', icon: 'RE', iconBg: 'rgba(255,255,255,0.08)', iconColor: '#ffffff', tools: 24, category: 'Communication' },
-  discord: { name: 'Discord', description: 'Server management, bots, and community features.', icon: 'DC', iconBg: 'rgba(88,101,242,0.12)', iconColor: '#5865f2', tools: 32, category: 'Communication' },
-  twilio: { name: 'Twilio', description: 'SMS, voice calls, video, and WhatsApp messaging.', icon: 'TW', iconBg: 'rgba(241,35,46,0.12)', iconColor: '#f1232e', tools: 24, category: 'Communication' },
-  github: { name: 'GitHub', description: 'Repositories, issues, PRs, actions, and deployments.', icon: 'GH', iconBg: 'rgba(255,255,255,0.08)', iconColor: '#ffffff', tools: 45, category: 'Development' },
-  linear: { name: 'Linear', description: 'Issue tracking, project management, and sprints.', icon: 'LN', iconBg: 'rgba(99,91,255,0.12)', iconColor: '#5e6ad2', tools: 18, category: 'Development' },
-  shopify: { name: 'Shopify', description: 'E-commerce products, orders, customers, and inventory.', icon: 'SH', iconBg: 'rgba(150,191,72,0.12)', iconColor: '#96bf48', tools: 38, category: 'Commerce' },
-  notion: { name: 'Notion', description: 'Workspace management, databases, and collaboration.', icon: 'N', iconBg: 'rgba(255,255,255,0.08)', iconColor: '#ffffff', tools: 28, category: 'Productivity' },
-  airtable: { name: 'Airtable', description: 'Flexible databases, views, and automations.', icon: 'AT', iconBg: 'rgba(18,131,218,0.12)', iconColor: '#1283da', tools: 24, category: 'Productivity' },
-  google_sheets: { name: 'Google Sheets', description: 'Spreadsheet operations, data sync, and reporting.', icon: 'GS', iconBg: 'rgba(52,168,83,0.12)', iconColor: '#34a853', tools: 18, category: 'Productivity' },
-  google_drive: { name: 'Google Drive', description: 'Cloud file storage and sharing.', icon: 'GD', iconBg: 'rgba(66,133,244,0.12)', iconColor: '#4285f4', tools: 16, category: 'Productivity' },
-  gmail: { name: 'Gmail', description: 'Email sending, reading, and management.', icon: 'GM', iconBg: 'rgba(234,67,53,0.12)', iconColor: '#ea4335', tools: 14, category: 'Productivity' },
-  google_calendar: { name: 'Google Calendar', description: 'Events, scheduling, and calendar sync.', icon: 'GC', iconBg: 'rgba(66,133,244,0.12)', iconColor: '#4285f4', tools: 12, category: 'Productivity' },
-  hubspot: { name: 'HubSpot', description: 'Marketing, sales, and CRM automation.', icon: 'HS', iconBg: 'rgba(255,122,89,0.12)', iconColor: '#ff7a59', tools: 35, category: 'CRM' },
-  zendesk: { name: 'Zendesk', description: 'Customer support, tickets, and knowledge base.', icon: 'ZD', iconBg: 'rgba(3,54,61,0.2)', iconColor: '#03363d', tools: 28, category: 'Support' },
-  jira: { name: 'Jira', description: 'Project tracking, sprints, and agile boards.', icon: 'JR', iconBg: 'rgba(0,82,204,0.12)', iconColor: '#0052cc', tools: 22, category: 'Development' },
-  mailchimp: { name: 'Mailchimp', description: 'Email campaigns, audiences, and automations.', icon: 'MC', iconBg: 'rgba(255,224,27,0.12)', iconColor: '#ffe01b', tools: 20, category: 'Communication' },
-  mongodb: { name: 'MongoDB', description: 'Document database CRUD and aggregation.', icon: 'MG', iconBg: 'rgba(0,237,100,0.12)', iconColor: '#00ed64', tools: 22, category: 'Database' },
-  cloudflare: { name: 'Cloudflare', description: 'DNS, Workers, R2 storage, and edge compute.', icon: 'CF', iconBg: 'rgba(245,130,32,0.12)', iconColor: '#f58220', tools: 30, category: 'Infrastructure' },
-  calendly: { name: 'Calendly', description: 'Scheduling links and appointment booking.', icon: 'CY', iconBg: 'rgba(0,107,255,0.12)', iconColor: '#006bff', tools: 10, category: 'Productivity' },
-  zoom: { name: 'Zoom', description: 'Video meetings, webinars, and recordings.', icon: 'ZM', iconBg: 'rgba(45,140,255,0.12)', iconColor: '#2d8cff', tools: 14, category: 'Communication' },
-  microsoft: { name: 'Microsoft 365', description: 'Outlook, Teams, OneDrive, and Calendar.', icon: 'MS', iconBg: 'rgba(0,120,212,0.12)', iconColor: '#0078d4', tools: 28, category: 'Productivity' },
+const SERVICE_EXTRAS: Record<string, { tools?: number; guide?: string[]; keyUrl?: string; keyLabel?: string; capabilities?: string[]; setupNote?: string; affiliateUrl?: string }> = {
+  sendgrid: { tools: 28, guide: ['Go to app.sendgrid.com/settings/api_keys', 'Click "Create API Key"', 'Choose "Full Access" and name it "0nCore"', 'Copy the key (starts with SG.)'], keyUrl: 'https://app.sendgrid.com/settings/api_keys', keyLabel: 'Get API Key', capabilities: ['Send Email', 'Templates', 'Contacts', 'Lists', 'Stats'], setupNote: 'Create a Full Access API key from Settings → API Keys' },
+  twilio: { tools: 24, guide: ['Go to console.twilio.com', 'Account SID is on the dashboard', 'Click "Show" to reveal Auth Token', 'Get a phone number from Phone Numbers → Manage'], keyUrl: 'https://console.twilio.com', keyLabel: 'Get Credentials', capabilities: ['SMS', 'Voice', 'WhatsApp', 'Verify', 'Lookup'], setupNote: 'You need Account SID + Auth Token + a Twilio phone number', affiliateUrl: 'https://www.twilio.com/referral' },
+  stripe: { tools: 42, guide: ['Go to dashboard.stripe.com/apikeys', 'Copy your "Secret key" (live mode)', 'Starts with sk_live_ or rk_live_'], keyUrl: 'https://dashboard.stripe.com/apikeys', keyLabel: 'Get API Key', capabilities: ['Payments', 'Subscriptions', 'Invoices', 'Customers', 'Products', 'Checkout', 'Webhooks', 'Balance'], setupNote: 'Get your Secret Key from Stripe Dashboard → Developers → API Keys', affiliateUrl: 'https://stripe.com/partners/referral' },
+  openai: { tools: 22, guide: ['Go to platform.openai.com/api-keys', 'Click "Create new secret key"', 'Name it "0nCore" and copy the key'], keyUrl: 'https://platform.openai.com/api-keys', keyLabel: 'Get API Key', capabilities: ['Chat', 'Images', 'Audio', 'Embeddings', 'Files', 'Fine-tuning'], setupNote: 'Create a new secret key from the OpenAI platform dashboard' },
+  anthropic: { tools: 18, guide: ['Go to console.anthropic.com/settings/keys', 'Click "Create Key"', 'Name it "0nCore" and copy (starts with sk-ant-)'], keyUrl: 'https://console.anthropic.com/settings/keys', keyLabel: 'Get API Key', capabilities: ['Chat', 'Tool Use', 'Vision', 'Streaming', 'System Prompts'], setupNote: 'Get your API key from console.anthropic.com → Settings → API Keys' },
+  groq: { tools: 12, guide: ['Go to console.groq.com/keys', 'Click "Create API Key"', 'Copy the key (starts with gsk_)'], keyUrl: 'https://console.groq.com/keys', keyLabel: 'Get Free Key', capabilities: ['Chat Completions', 'Models', 'Ultra-fast inference'], setupNote: 'Free tier available — no credit card required' },
+  slack: { tools: 35, guide: ['Go to api.slack.com/apps', 'Create or select your app', 'Go to OAuth & Permissions', 'Copy the "Bot User OAuth Token" (xoxb-)'], keyUrl: 'https://api.slack.com/apps', keyLabel: 'Create App', capabilities: ['Messages', 'Channels', 'Users', 'Files', 'Reactions', 'Slash Commands'], setupNote: 'Bot token (xoxb-) from api.slack.com → Your Apps → OAuth & Permissions' },
+  github: { tools: 45, guide: ['Go to github.com/settings/tokens', 'Click "Generate new token (classic)"', 'Select scopes: repo, workflow, read:org', 'Copy the token (starts with ghp_)'], keyUrl: 'https://github.com/settings/tokens/new', keyLabel: 'Generate Token', capabilities: ['Repos', 'Issues', 'Pull Requests', 'Actions', 'Releases', 'Gists'], setupNote: 'Generate a classic PAT with repo + workflow scopes' },
+  hubspot: { tools: 35, guide: ['Go to app.hubspot.com → Settings → Integrations → Private Apps', 'Create a new private app', 'Grant CRM scopes and copy the token'], keyUrl: 'https://app.hubspot.com', keyLabel: 'Get Token', capabilities: ['Contacts', 'Companies', 'Deals', 'Tickets', 'Marketing', 'Forms'], setupNote: 'Create a Private App and grant CRM + Marketing scopes' },
+  notion: { tools: 28, guide: ['Go to notion.so/my-integrations', 'Create a new integration', 'Copy the "Internal Integration Token" (secret_)'], keyUrl: 'https://www.notion.so/my-integrations', keyLabel: 'Create Integration', capabilities: ['Pages', 'Databases', 'Blocks', 'Users', 'Search', 'Comments'], setupNote: 'Create an internal integration and share pages with it' },
+  shopify: { tools: 38, guide: ['Go to your Shopify admin → Settings → Apps', 'Click "Develop apps" → Create an app', 'Install and copy the Admin API access token (shpat_)'], keyUrl: 'https://admin.shopify.com', keyLabel: 'Create App', capabilities: ['Products', 'Orders', 'Customers', 'Inventory', 'Themes', 'Metafields'], setupNote: 'Need your store URL (yourstore.myshopify.com) + Admin API access token' },
+  supabase: { tools: 38, guide: ['Go to supabase.com/dashboard', 'Select your project', 'Go to Settings → API', 'Copy the URL + service_role key'], keyUrl: 'https://supabase.com/dashboard', keyLabel: 'Get Keys', capabilities: ['Database', 'Auth', 'Storage', 'Realtime', 'Edge Functions', 'RLS'], setupNote: 'You need both the Project URL and the service_role key' },
+  cloudflare: { tools: 30, guide: ['Go to dash.cloudflare.com/profile/api-tokens', 'Create a new API token', 'Use "Edit zone DNS" template or custom'], keyUrl: 'https://dash.cloudflare.com/profile/api-tokens', keyLabel: 'Create Token', capabilities: ['DNS', 'CDN', 'Workers', 'R2', 'Pages', 'WAF', 'Analytics'], setupNote: 'Create an API token with the permissions you need' },
+  airtable: { tools: 24, guide: ['Go to airtable.com/create/tokens', 'Create a personal access token', 'Grant scopes for your bases', 'Copy the token (starts with pat)'], keyUrl: 'https://airtable.com/create/tokens', keyLabel: 'Create Token', capabilities: ['Records', 'Tables', 'Bases', 'Views', 'Fields', 'Webhooks'], setupNote: 'Create a PAT and grant access to specific bases' },
+  mailchimp: { tools: 20, guide: ['Go to mailchimp.com → Account → Extras → API keys', 'Click "Create A Key"', 'Copy the key — the server prefix is after the dash (e.g. us1)'], keyUrl: 'https://us1.admin.mailchimp.com/account/api/', keyLabel: 'Get API Key', capabilities: ['Campaigns', 'Lists', 'Templates', 'Automations', 'Reports'], setupNote: 'You need the API key + server prefix (e.g. us1)' },
+  hostinger: { tools: 118, guide: ['Log in to hPanel at hpanel.hostinger.com', 'Go to Profile → Account Information → API', 'Generate an API token and set expiration', 'Copy the token'], keyUrl: 'https://hpanel.hostinger.com', keyLabel: 'Generate Token', capabilities: ['Domains', 'DNS', 'Hosting', 'VPS', 'WordPress', 'Email', 'Billing', 'SSL'], setupNote: '118 tools — domains, DNS, hosting, VPS, WordPress management, and more' },
+  resend: { tools: 24, guide: ['Go to resend.com/api-keys', 'Click "Create API Key"', 'Copy the key (starts with re_)'], keyUrl: 'https://resend.com/api-keys', keyLabel: 'Get API Key', capabilities: ['Send', 'Domains', 'Audiences', 'Emails'], setupNote: 'Developer-friendly email API — simple and modern' },
+  godaddy: { tools: 20, guide: ['Go to developer.godaddy.com/keys', 'Create a new API key', 'Copy both the Key and Secret'], keyUrl: 'https://developer.godaddy.com/keys', keyLabel: 'Get API Key', capabilities: ['Domains', 'DNS', 'Certificates', 'Aftermarket'], setupNote: 'Need both API Key and API Secret' },
+  linear: { tools: 18, guide: ['Go to linear.app → Settings → API', 'Create a personal API key', 'Copy the key (starts with lin_api_)'], keyUrl: 'https://linear.app/settings/api', keyLabel: 'Get API Key', capabilities: ['Issues', 'Projects', 'Teams', 'Cycles', 'Labels'], setupNote: 'GraphQL API — create a personal key from Settings → API' },
+  calendly: { tools: 10, guide: ['Go to calendly.com → Integrations → API', 'Generate a Personal Access Token', 'Copy the token'], keyUrl: 'https://calendly.com/integrations/api_webhooks', keyLabel: 'Get Token', capabilities: ['Events', 'Scheduling', 'Invitees', 'Webhooks'], setupNote: 'Personal access token from Integrations → API & Webhooks' },
 }
 
-const categories = ['All', 'Core', 'AI', 'Communication', 'Development', 'Productivity', 'Commerce', 'CRM', 'Database', 'Infrastructure', 'Support']
+const CATEGORIES = ['All', 'Core', 'AI', 'Communication', 'Development', 'Productivity', 'Commerce', 'CRM', 'Database', 'Infrastructure', 'Marketing', 'Analytics', 'Payments', 'Support']
+
+function buildService(raw: Record<string, unknown>): ServiceItem {
+  const id = raw.id as string
+  const extras = SERVICE_EXTRAS[id] || {}
+  const fields = (raw.fields as ServiceField[]) || []
+  return {
+    id,
+    name: raw.name as string || id,
+    category: raw.category as string || 'Other',
+    icon: raw.icon as string || id.slice(0, 2).toUpperCase(),
+    color: raw.color as string || '#6EE05A',
+    description: raw.description as string || '',
+    fields,
+    docUrl: raw.docUrl as string || '',
+    tools: extras.tools || (raw as Record<string, unknown>).tools as number || fields.length * 4,
+    guide: extras.guide || [],
+    keyUrl: extras.keyUrl || raw.docUrl as string || '',
+    keyLabel: extras.keyLabel || 'Get API Key',
+    capabilities: extras.capabilities || [],
+    setupNote: extras.setupNote || '',
+    affiliateUrl: extras.affiliateUrl,
+    connected: !!(raw.connection as Record<string, unknown>),
+    health: (raw.connection as Record<string, unknown>)?.health as string,
+    lastVerified: (raw.connection as Record<string, unknown>)?.lastVerified as string,
+  }
+}
 
 export default function IntegrationsPage() {
+  const [services, setServices] = useState<ServiceItem[]>([])
   const [activeCategory, setActiveCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
-  const [integrations, setIntegrations] = useState<Integration[]>([])
   const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState('')
-  const [connectingService, setConnectingService] = useState<string | null>(null)
+  const [connectingService, setConnectingService] = useState<ServiceItem | null>(null)
   const [credentials, setCredentials] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -72,584 +80,473 @@ export default function IntegrationsPage() {
 
   const supabase = createClient()
 
-  // Auto-dismiss toast after 3 seconds
   useEffect(() => {
     if (!toast) return
-    const timer = setTimeout(() => setToast(null), 3000)
-    return () => clearTimeout(timer)
+    const t = setTimeout(() => setToast(null), 3000)
+    return () => clearTimeout(t)
   }, [toast])
 
-  // Close modal on Escape key
   useEffect(() => {
     if (!connectingService) return
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        setConnectingService(null)
-        setCredentials({})
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') { setConnectingService(null); setCredentials({}) } }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
   }, [connectingService])
 
-  const loadIntegrations = useCallback(async (uid: string) => {
+  const loadServices = useCallback(async () => {
     try {
-      const res = await fetch(`/api/integrations?user_id=${uid}`)
+      const res = await fetch('/api/services/list')
       if (!res.ok) return
       const data = await res.json()
-
-      const merged: Integration[] = Object.entries(SERVICE_META).map(([key, meta]) => {
-        const svc = (data.services || []).find((s: { key: string }) => s.key === key)
-        return {
-          ...meta,
-          key,
-          connected: svc?.connected || false,
-          credentialKeys: svc?.credentialKeys || ['apiKey'],
-          labels: svc?.labels || ['API Key'],
-          placeholders: svc?.placeholders || ['...'],
-        }
-      })
-
-      setIntegrations(merged)
+      const items = ((data.services || []) as Record<string, unknown>[]).map(buildService)
+      setServices(items)
     } catch { /* silent */ }
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setUserId(user.id)
-        loadIntegrations(user.id)
-      } else {
-        setLoading(false)
-      }
-    })
-  }, [supabase.auth, loadIntegrations])
+  useEffect(() => { loadServices() }, [loadServices])
 
-  async function handleConnect(service: string) {
-    if (!userId) return
+  async function handleConnect() {
+    if (!connectingService) return
     setSaving(true)
-    setToast(null)
-
     try {
-      const res = await fetch('/api/integrations', {
+      const res = await fetch('/api/services/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'connect', user_id: userId, service, credentials }),
+        body: JSON.stringify({ service: connectingService.id, credentials }),
       })
       const data = await res.json()
-
-      if (!res.ok) {
-        setToast({ type: 'error', text: data.error || 'Connection failed' })
-        setSaving(false)
-        return
+      if (data.status === 'active' || data.verified) {
+        setToast({ type: 'success', text: `${connectingService.name} connected!` })
+        setConnectingService(null)
+        setCredentials({})
+        await loadServices()
+      } else {
+        setToast({ type: 'error', text: data.error || 'Verification failed — check your credentials' })
       }
-
-      setToast({ type: 'success', text: `${SERVICE_META[service]?.name || service} connected!` })
-      setConnectingService(null)
-      setCredentials({})
-      await loadIntegrations(userId)
     } catch {
       setToast({ type: 'error', text: 'Connection failed' })
     }
     setSaving(false)
   }
 
-  async function handleDisconnect(service: string) {
-    if (!userId) return
-    setToast(null)
-
+  async function handleDisconnect(serviceId: string) {
     try {
-      await fetch('/api/integrations', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, service }),
-      })
-      setToast({ type: 'success', text: `${SERVICE_META[service]?.name || service} disconnected` })
-      await loadIntegrations(userId)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const admin = createClient()
+      await admin.from('user_service_connections').delete().eq('user_id', user.id).eq('service', serviceId)
+      setToast({ type: 'success', text: 'Disconnected' })
+      await loadServices()
     } catch {
       setToast({ type: 'error', text: 'Failed to disconnect' })
     }
   }
 
-  async function handleTest(service: string) {
-    if (!userId) return
-    setTesting(service)
-    setToast(null)
-
+  async function handleTest(service: ServiceItem) {
+    setTesting(service.id)
     try {
-      const res = await fetch('/api/integrations', {
+      const res = await fetch('/api/services/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'test', user_id: userId, service }),
+        body: JSON.stringify({ service: service.id, credentials: {} }),
       })
       const data = await res.json()
-
-      if (!res.ok) {
-        setToast({ type: 'error', text: data.error || 'Connection test failed' })
-      } else {
-        setToast({ type: 'success', text: `${SERVICE_META[service]?.name || service} connection verified` })
-      }
+      setToast({ type: data.verified ? 'success' : 'error', text: data.verified ? `${service.name} verified` : 'Verification failed' })
     } catch {
-      setToast({ type: 'error', text: 'Connection test failed' })
+      setToast({ type: 'error', text: 'Test failed' })
     }
     setTesting(null)
   }
 
-  const filtered = integrations.filter(int => {
-    const matchesCategory = activeCategory === 'All' || int.category === activeCategory
-    const matchesSearch = !searchQuery || int.name.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
+  const filtered = services.filter(s => {
+    const matchesCat = activeCategory === 'All' || s.category.toLowerCase() === activeCategory.toLowerCase()
+    const matchesSearch = !searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.description.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesCat && matchesSearch
   })
 
-  const connectedCount = integrations.filter(i => i.connected).length
-  const totalTools = integrations.reduce((sum, i) => sum + i.tools, 0)
+  const connectedCount = services.filter(s => s.connected).length
+  const totalTools = services.reduce((sum, s) => sum + s.tools, 0)
+  const usedCategories = CATEGORIES.filter(c => c === 'All' || services.some(s => s.category.toLowerCase() === c.toLowerCase()))
 
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
-        <div style={{ width: 36, height: 36, border: '2px solid var(--jp-border)', borderTopColor: 'var(--jp-green)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ width: 36, height: 36, border: '2px solid var(--jp-border, #30363d)', borderTopColor: '#7ed957', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
 
-  const modalIntegration = connectingService ? integrations.find(i => i.key === connectingService) : null
-
   return (
     <div>
-      {/* Toast notification */}
-      {toast && (
-        <div style={{
-          position: 'fixed',
-          top: 24,
-          right: 24,
-          zIndex: 10000,
-          padding: '12px 20px',
-          borderRadius: 10,
-          fontSize: '0.85rem',
-          fontWeight: 600,
-          background: toast.type === 'success' ? 'rgba(126,217,87,0.12)' : 'rgba(248,113,113,0.12)',
-          border: `1px solid ${toast.type === 'success' ? 'rgba(126,217,87,0.3)' : 'rgba(248,113,113,0.3)'}`,
-          color: toast.type === 'success' ? '#7ed957' : '#f87171',
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-          animation: 'toastIn 0.3s ease-out',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}>
-          {toast.type === 'success' ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ed957" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          )}
-          {toast.text}
-        </div>
-      )}
-
-      {/* Connect Modal Overlay */}
-      {connectingService && modalIntegration && (() => {
-        const meta = SERVICE_META[connectingService] || {} as ServiceMeta
-        const isVerified = meta.verified
-        return (
-        <div
-          onClick={() => { setConnectingService(null); setCredentials({}) }}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.6)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            zIndex: 9000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            animation: 'modalFadeIn 0.2s ease-out',
-          }}
-        >
-          {/* Gradient glow behind modal */}
-          <div style={{
-            position: 'absolute',
-            width: 600, height: 600,
-            borderRadius: '50%',
-            background: `radial-gradient(circle, ${meta.iconColor || '#6EE05A'}15 0%, transparent 70%)`,
-            pointerEvents: 'none',
-          }} />
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              position: 'relative',
-              width: '100%',
-              maxWidth: 520,
-              background: 'rgba(15,17,23,0.85)',
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
-              border: `1px solid ${isVerified ? 'rgba(110,224,90,0.2)' : 'rgba(255,255,255,0.06)'}`,
-              borderRadius: 20,
-              overflow: 'hidden',
-              animation: 'modalSlideIn 0.25s ease-out',
-              boxShadow: `0 24px 80px rgba(0,0,0,0.6)${isVerified ? ', 0 0 40px rgba(110,224,90,0.05)' : ''}`,
-            }}
-          >
-            {/* Modal Header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '20px 24px',
-              borderBottom: '1px solid var(--jp-border)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: SERVICE_META[connectingService]?.iconBg,
-                  color: SERVICE_META[connectingService]?.iconColor,
-                  fontSize: '0.7rem',
-                  fontWeight: 800,
-                }}>
-                  {(() => {
-                    const src = getLogoSrc(connectingService)
-                    if (src) return <img src={src} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
-                    return SERVICE_META[connectingService]?.icon
-                  })()}
-                </div>
-                <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--jp-text)' }}>
-                  Connect {SERVICE_META[connectingService]?.name}
-                </span>
-              </div>
-              <button
-                onClick={() => { setConnectingService(null); setCredentials({}) }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--jp-text-muted)',
-                  cursor: 'pointer',
-                  fontSize: '1.3rem',
-                  lineHeight: 1,
-                  padding: '4px 8px',
-                  borderRadius: 6,
-                  transition: 'background 0.15s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {modalIntegration.credentialKeys.map((key, i) => (
-                  <div key={key}>
-                    <label style={{
-                      fontSize: '0.72rem',
-                      color: 'var(--jp-text-muted)',
-                      fontWeight: 600,
-                      display: 'block',
-                      marginBottom: 6,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                    }}>
-                      {modalIntegration.labels[i] || key}
-                    </label>
-                    <input
-                      type="password"
-                      value={credentials[key] || ''}
-                      onChange={e => setCredentials(prev => ({ ...prev, [key]: e.target.value }))}
-                      placeholder={modalIntegration.placeholders[i] || '...'}
-                      autoComplete="off"
-                      style={{
-                        width: '100%',
-                        padding: '11px 14px',
-                        borderRadius: 10,
-                        border: '1px solid var(--jp-border)',
-                        background: 'var(--jp-bg, #0a0a0a)',
-                        color: 'var(--jp-text)',
-                        fontSize: '0.875rem',
-                        fontFamily: 'var(--jp-font-mono)',
-                        outline: 'none',
-                        transition: 'border-color 0.15s',
-                        boxSizing: 'border-box',
-                      }}
-                      onFocus={e => (e.currentTarget.style.borderColor = 'rgba(126,217,87,0.4)')}
-                      onBlur={e => (e.currentTarget.style.borderColor = 'var(--jp-border)')}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Setup note + capabilities + docs */}
-            <div style={{ padding: '0 24px 16px' }}>
-              {meta.setupNote && (
-                <div style={{
-                  padding: '10px 14px', borderRadius: 10, marginBottom: 12,
-                  background: 'rgba(110,224,90,0.04)', border: '1px solid rgba(110,224,90,0.1)',
-                  fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5,
-                }}>
-                  {meta.setupNote}
-                </div>
-              )}
-
-              {meta.capabilities && meta.capabilities.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--jp-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-                    Capabilities
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {meta.capabilities.map(cap => (
-                      <span key={cap} style={{
-                        fontSize: '0.65rem', padding: '3px 8px', borderRadius: 6,
-                        background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-                        color: 'rgba(255,255,255,0.4)',
-                      }}>
-                        {cap}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
-                {meta.keyUrl && (
-                  <a href={meta.keyUrl} target="_blank" rel="noopener noreferrer" style={{
-                    fontSize: '0.7rem', color: '#6EE05A', textDecoration: 'none',
-                    display: 'flex', alignItems: 'center', gap: 4,
-                  }}>
-                    Get API Key ↗
-                  </a>
-                )}
-                {meta.docsUrl && (
-                  <a href={meta.docsUrl} target="_blank" rel="noopener noreferrer" style={{
-                    fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'none',
-                    display: 'flex', alignItems: 'center', gap: 4,
-                  }}>
-                    Documentation ↗
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div style={{ padding: '0 24px 24px' }}>
-              <button
-                onClick={() => handleConnect(connectingService)}
-                disabled={saving || modalIntegration.credentialKeys.some(k => !credentials[k])}
-                style={{
-                  width: '100%',
-                  padding: '12px 20px',
-                  borderRadius: 10,
-                  border: 'none',
-                  background: '#7ed957',
-                  color: '#0a0a0a',
-                  fontSize: '0.9rem',
-                  fontWeight: 700,
-                  cursor: saving || modalIntegration.credentialKeys.some(k => !credentials[k]) ? 'not-allowed' : 'pointer',
-                  opacity: saving || modalIntegration.credentialKeys.some(k => !credentials[k]) ? 0.5 : 1,
-                  fontFamily: 'inherit',
-                  transition: 'opacity 0.15s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                }}
-              >
-                {saving && (
-                  <div style={{
-                    width: 16,
-                    height: 16,
-                    border: '2px solid rgba(10,10,10,0.3)',
-                    borderTopColor: '#0a0a0a',
-                    borderRadius: '50%',
-                    animation: 'spin 0.8s linear infinite',
-                  }} />
-                )}
-                {saving ? 'Connecting...' : 'Connect'}
-              </button>
-
-              <div style={{ textAlign: 'center', marginTop: 12 }}>
-                <button
-                  onClick={() => { setConnectingService(null); setCredentials({}) }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--jp-text-muted)',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    textDecoration: 'underline',
-                    textUnderlineOffset: '3px',
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-
-              <div style={{
-                marginTop: 16,
-                fontSize: '0.7rem',
-                color: 'var(--jp-text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-              }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--jp-green, #7ed957)">
-                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
-                </svg>
-                Credentials encrypted in your personal vault
-              </div>
-            </div>
-          </div>
-        </div>
-        )
-      })()}
-
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes modalSlideIn { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes cardHover { from { box-shadow: 0 2px 12px rgba(0,0,0,0.2); } to { box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(126,217,87,0.06); } }
       `}</style>
 
-      <div className="jp-page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 24, right: 24, zIndex: 10000,
+          padding: '12px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+          background: toast.type === 'success' ? 'rgba(126,217,87,0.12)' : 'rgba(248,113,113,0.12)',
+          border: `1px solid ${toast.type === 'success' ? 'rgba(126,217,87,0.3)' : 'rgba(248,113,113,0.3)'}`,
+          color: toast.type === 'success' ? '#7ed957' : '#f87171',
+          backdropFilter: 'blur(12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          animation: 'toastIn 0.3s ease-out', display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          {toast.type === 'success' ? '✓' : '✕'} {toast.text}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 className="jp-page-title">Integrations</h1>
-          <p className="jp-page-subtitle">
-            {connectedCount} connected — {totalTools}+ tools available across {integrations.length} services
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', margin: '0 0 4px' }}>Integrations</h1>
+          <p style={{ fontSize: 13, color: 'var(--jp-text-muted, #6b7280)', margin: 0 }}>
+            {connectedCount} connected — {totalTools}+ tools across {services.length} services
           </p>
         </div>
-        <div className="jp-search" style={{ width: 220 }}>
-          <span className="jp-search-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </span>
-          <input type="text" className="jp-search-input" placeholder="Search services..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        <div style={{ position: 'relative', width: 220 }}>
+          <input
+            type="text" placeholder="Search services..." value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%', padding: '9px 14px 9px 36px', borderRadius: 8,
+              background: 'var(--jp-bg-card, #161b22)', border: '1px solid var(--jp-border, #30363d)',
+              color: 'var(--jp-text, #f0f4f8)', fontSize: 13, outline: 'none',
+            }}
+          />
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--jp-text-muted, #6b7280)" strokeWidth="2" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>
+            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+          </svg>
         </div>
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
-        <div className="jp-stat-card green">
-          <div className="jp-stat-label">Connected</div>
-          <div className="jp-stat-value" style={{ marginTop: 8 }}>{connectedCount}</div>
-          <span className="jp-stat-change up">Active</span>
-        </div>
-        <div className="jp-stat-card cyan">
-          <div className="jp-stat-label">Available</div>
-          <div className="jp-stat-value" style={{ marginTop: 8 }}>{integrations.length - connectedCount}</div>
-          <span className="jp-stat-change up">Ready</span>
-        </div>
-        <div className="jp-stat-card purple">
-          <div className="jp-stat-label">Total Tools</div>
-          <div className="jp-stat-value" style={{ marginTop: 8 }}>{totalTools}+</div>
-          <span className="jp-stat-change up">0nMCP</span>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+        {[
+          { label: 'Connected', value: connectedCount, color: '#7ed957', tag: 'Active' },
+          { label: 'Available', value: services.length - connectedCount, color: '#00d4ff', tag: 'Ready' },
+          { label: 'Total Tools', value: `${totalTools}+`, color: '#a78bfa', tag: '0nMCP' },
+        ].map(s => (
+          <div key={s.label} style={{
+            background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14,
+            padding: '18px 20px', position: 'relative', overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${s.color}, transparent)` }} />
+            <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #6b7280)', fontWeight: 600, letterSpacing: '0.04em' }}>{s.label}</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--jp-text, #f0f4f8)', margin: '6px 0 4px', fontFamily: 'var(--jp-font-mono, monospace)' }}>{s.value}</div>
+            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: `${s.color}15`, color: s.color, fontWeight: 600 }}>{s.tag}</span>
+          </div>
+        ))}
       </div>
 
-      {/* Categories */}
-      <div className="jp-tabs" style={{ flexWrap: 'wrap' }}>
-        {categories.map(cat => (
-          <button key={cat} className={`jp-tab ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
-            {cat}
-          </button>
+      {/* Category Tabs */}
+      <div style={{
+        display: 'flex', gap: 6, marginBottom: 28, flexWrap: 'wrap',
+        background: 'var(--jp-bg-card, #161b22)', borderRadius: 10, padding: 4,
+        border: '1px solid rgba(255,255,255,0.04)', width: 'fit-content',
+      }}>
+        {usedCategories.map(cat => (
+          <button key={cat} onClick={() => setActiveCategory(cat)} style={{
+            padding: '7px 14px', borderRadius: 7, border: 'none',
+            background: activeCategory === cat ? 'rgba(126,217,87,0.1)' : 'transparent',
+            color: activeCategory === cat ? '#7ed957' : 'var(--jp-text-muted, #6b7280)',
+            fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+            whiteSpace: 'nowrap',
+          }}>{cat}</button>
         ))}
       </div>
 
       {/* Integration Grid */}
-      <div className="jp-integration-grid">
-        {filtered.map(integration => (
-          <div key={integration.key} className="jp-integration-card">
-            <div className="jp-integration-card-header">
-              <div className="jp-integration-icon" style={{ background: integration.iconBg, color: integration.iconColor }}>
-                {(() => {
-                  const logoSrc = getLogoSrc(integration.key)
-                  if (logoSrc) {
-                    return <img src={logoSrc} alt={integration.name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
-                  }
-                  return integration.icon
-                })()}
-              </div>
-              <span className={`jp-integration-status ${integration.connected ? 'connected' : 'available'}`}>
-                {integration.connected ? 'Connected' : 'Available'}
-              </span>
-            </div>
-            <div className="jp-integration-name">{integration.name}</div>
-            <div className="jp-integration-desc">{integration.description}</div>
-            <div className="jp-integration-footer">
-              <span className="jp-integration-tools">{integration.tools} tools</span>
-              {integration.connected ? (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button
-                    className="jp-integration-btn"
-                    onClick={() => handleTest(integration.key)}
-                    disabled={testing === integration.key}
-                    style={{
-                      opacity: testing === integration.key ? 0.6 : 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                    }}
-                  >
-                    {testing === integration.key ? (
-                      <>
-                        <div style={{
-                          width: 10,
-                          height: 10,
-                          border: '1.5px solid var(--jp-border)',
-                          borderTopColor: 'var(--jp-green)',
-                          borderRadius: '50%',
-                          animation: 'spin 0.8s linear infinite',
-                        }} />
-                        Testing
-                      </>
-                    ) : (
-                      'Test'
-                    )}
-                  </button>
-                  <button className="jp-integration-btn" onClick={() => { setConnectingService(integration.key); setCredentials({}) }}>Configure</button>
-                  <button
-                    className="jp-integration-btn"
-                    onClick={() => handleDisconnect(integration.key)}
-                    style={{ color: 'var(--jp-red)', borderColor: 'rgba(248,113,113,0.2)' }}
-                  >
-                    Disconnect
-                  </button>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+        {filtered.map(svc => {
+          const logoSrc = getLogoSrc(svc.id)
+          return (
+            <div
+              key={svc.id}
+              style={{
+                background: 'rgba(255,255,255,0.02)',
+                backdropFilter: 'blur(12px)',
+                border: `1px solid ${svc.connected ? 'rgba(126,217,87,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                borderRadius: 16, padding: 22,
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-3px)'
+                e.currentTarget.style.boxShadow = `0 12px 40px rgba(0,0,0,0.3), 0 0 24px ${svc.color}10`
+                e.currentTarget.style.borderColor = `${svc.color}40`
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.15)'
+                e.currentTarget.style.borderColor = svc.connected ? 'rgba(126,217,87,0.2)' : 'rgba(255,255,255,0.06)'
+              }}
+              onClick={() => { if (!svc.connected) { setConnectingService(svc); setCredentials({}) } }}
+            >
+              {/* Top accent line */}
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${svc.color}, ${svc.color}40)`, opacity: svc.connected ? 1 : 0.4 }} />
+
+              {/* Header: icon + status */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{
+                  width: 42, height: 42, borderRadius: 12,
+                  background: `${svc.color}12`, border: `1px solid ${svc.color}20`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {logoSrc ? (
+                    <img src={logoSrc} alt={svc.name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                  ) : (
+                    <span style={{ color: svc.color, fontSize: 13, fontWeight: 800, fontFamily: 'var(--jp-font-mono, monospace)' }}>{svc.icon}</span>
+                  )}
                 </div>
-              ) : (
-                <button className="jp-integration-btn" onClick={() => { setConnectingService(integration.key); setCredentials({}) }}>
-                  Connect
-                </button>
-              )}
+                <span style={{
+                  fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 6,
+                  background: svc.connected ? 'rgba(126,217,87,0.1)' : 'rgba(255,255,255,0.04)',
+                  color: svc.connected ? '#7ed957' : 'var(--jp-text-muted, #6b7280)',
+                  border: `1px solid ${svc.connected ? 'rgba(126,217,87,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                  letterSpacing: '0.04em',
+                }}>
+                  {svc.connected ? 'CONNECTED' : 'AVAILABLE'}
+                </span>
+              </div>
+
+              {/* Name + description */}
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', marginBottom: 6 }}>{svc.name}</div>
+              <div style={{ fontSize: 12, color: 'var(--jp-text-muted, #6b7280)', lineHeight: 1.5, marginBottom: 16, minHeight: 36 }}>{svc.description}</div>
+
+              {/* Footer: tools + actions */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 11, color: 'var(--jp-text-muted, #6b7280)', fontFamily: 'var(--jp-font-mono, monospace)' }}>
+                  {svc.tools} tools
+                </span>
+                {svc.connected ? (
+                  <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
+                    <button onClick={() => handleTest(svc)} disabled={testing === svc.id} style={{
+                      padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(255,255,255,0.03)', color: 'var(--jp-text-muted, #6b7280)',
+                      fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    }}>
+                      {testing === svc.id ? '...' : 'Test'}
+                    </button>
+                    <button onClick={() => { setConnectingService(svc); setCredentials({}) }} style={{
+                      padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(255,255,255,0.03)', color: 'var(--jp-text-muted, #6b7280)',
+                      fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                    }}>
+                      Configure
+                    </button>
+                    <button onClick={() => handleDisconnect(svc.id)} style={{
+                      padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(248,113,113,0.15)',
+                      background: 'rgba(248,113,113,0.05)', color: '#f87171',
+                      fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                    }}>
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={e => { e.stopPropagation(); setConnectingService(svc); setCredentials({}) }} style={{
+                    padding: '5px 14px', borderRadius: 6, border: 'none',
+                    background: `${svc.color}15`, color: svc.color,
+                    fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                  }}>
+                    Connect
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {filtered.length === 0 && (
-        <div className="jp-empty-state" style={{ marginTop: 40 }}>
-          <div className="jp-empty-state-icon">
-            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--jp-text-muted, #6b7280)' }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🔍</div>
+          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>No integrations found</div>
+          <div style={{ fontSize: 13 }}>Try a different search or category</div>
+        </div>
+      )}
+
+      {/* ═══ CONNECT MODAL ═══ */}
+      {connectingService && (
+        <div
+          onClick={() => { setConnectingService(null); setCredentials({}) }}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(8px)', zIndex: 9000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            animation: 'modalFadeIn 0.2s ease-out',
+          }}
+        >
+          <div style={{
+            position: 'absolute', width: 600, height: 600, borderRadius: '50%',
+            background: `radial-gradient(circle, ${connectingService.color}15 0%, transparent 70%)`,
+            pointerEvents: 'none',
+          }} />
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'relative', width: '100%', maxWidth: 520,
+              background: 'rgba(15,17,23,0.9)', backdropFilter: 'blur(24px)',
+              border: `1px solid ${connectingService.color}30`,
+              borderRadius: 20, overflow: 'hidden',
+              animation: 'modalSlideIn 0.25s ease-out',
+              boxShadow: `0 24px 80px rgba(0,0,0,0.6), 0 0 40px ${connectingService.color}08`,
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: `${connectingService.color}12`, border: `1px solid ${connectingService.color}20`,
+                }}>
+                  {(() => {
+                    const src = getLogoSrc(connectingService.id)
+                    return src ? <img src={src} alt="" style={{ width: 24, height: 24, objectFit: 'contain' }} /> :
+                      <span style={{ color: connectingService.color, fontSize: 13, fontWeight: 800 }}>{connectingService.icon}</span>
+                  })()}
+                </div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)' }}>Connect {connectingService.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #6b7280)' }}>{connectingService.tools} tools unlocked</div>
+                </div>
+              </div>
+              <button onClick={() => { setConnectingService(null); setCredentials({}) }} style={{
+                background: 'none', border: 'none', color: 'var(--jp-text-muted, #6b7280)',
+                cursor: 'pointer', fontSize: 18, padding: '4px 8px', borderRadius: 6,
+              }}>✕</button>
+            </div>
+
+            <div style={{ padding: 24 }}>
+              {/* Setup Note */}
+              {connectingService.setupNote && (
+                <div style={{
+                  padding: '10px 14px', borderRadius: 10, marginBottom: 16,
+                  background: `${connectingService.color}06`, border: `1px solid ${connectingService.color}15`,
+                  fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5,
+                }}>
+                  {connectingService.setupNote}
+                </div>
+              )}
+
+              {/* Step-by-step Guide */}
+              {connectingService.guide.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                    How to get your key
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {connectingService.guide.map((step, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <span style={{
+                          width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: `${connectingService.color}12`, color: connectingService.color,
+                          fontSize: 10, fontWeight: 800,
+                        }}>{i + 1}</span>
+                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5, paddingTop: 2 }}>{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Get Key Button */}
+              {connectingService.keyUrl && (
+                <a href={connectingService.affiliateUrl || connectingService.keyUrl} target="_blank" rel="noopener noreferrer" style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  width: '100%', padding: 12, borderRadius: 10, marginBottom: 20,
+                  background: connectingService.color, color: '#fff', fontSize: 13, fontWeight: 700,
+                  textDecoration: 'none', transition: 'opacity 0.15s',
+                }}>
+                  ↗ {connectingService.keyLabel}
+                </a>
+              )}
+
+              {/* Capability tags */}
+              {connectingService.capabilities.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                    Capabilities
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {connectingService.capabilities.map(cap => (
+                      <span key={cap} style={{
+                        fontSize: 10, padding: '3px 8px', borderRadius: 6,
+                        background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
+                        color: 'rgba(255,255,255,0.4)',
+                      }}>{cap}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Credential fields */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+                {connectingService.fields.map(field => (
+                  <div key={field.key}>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+                      {field.label} {field.required && <span style={{ color: connectingService.color }}>*</span>}
+                    </label>
+                    <input
+                      type={field.type === 'password' ? 'password' : 'text'}
+                      value={credentials[field.key] || ''}
+                      onChange={e => setCredentials(prev => ({ ...prev, [field.key]: e.target.value }))}
+                      placeholder={field.placeholder}
+                      autoComplete="off"
+                      style={{
+                        width: '100%', padding: '11px 14px', borderRadius: 10,
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        background: 'rgba(0,0,0,0.3)', color: 'var(--jp-text, #f0f4f8)',
+                        fontSize: 13, fontFamily: 'var(--jp-font-mono, monospace)',
+                        outline: 'none', transition: 'border-color 0.15s', boxSizing: 'border-box',
+                      }}
+                      onFocus={e => (e.currentTarget.style.borderColor = `${connectingService.color}50`)}
+                      onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Connect button */}
+              <button
+                onClick={handleConnect}
+                disabled={saving || connectingService.fields.filter(f => f.required).some(f => !credentials[f.key])}
+                style={{
+                  width: '100%', padding: 13, borderRadius: 10, border: 'none',
+                  background: '#7ed957', color: '#0a0a0a', fontSize: 14, fontWeight: 700,
+                  cursor: saving ? 'wait' : 'pointer', fontFamily: 'inherit',
+                  opacity: saving || connectingService.fields.filter(f => f.required).some(f => !credentials[f.key]) ? 0.5 : 1,
+                  transition: 'opacity 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                {saving && <div style={{ width: 16, height: 16, border: '2px solid rgba(10,10,10,0.3)', borderTopColor: '#0a0a0a', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />}
+                {saving ? 'Connecting...' : 'Connect & Verify'}
+              </button>
+
+              {/* Doc link + security note */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
+                {connectingService.docUrl && (
+                  <a href={connectingService.docUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>
+                    Documentation ↗
+                  </a>
+                )}
+                <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #6b7280)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="#7ed957"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" /></svg>
+                  Encrypted in vault
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="jp-empty-state-title">No integrations found</div>
-          <div className="jp-empty-state-text">Try a different search term or category</div>
         </div>
       )}
     </div>
