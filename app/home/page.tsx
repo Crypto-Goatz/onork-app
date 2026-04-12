@@ -761,6 +761,82 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════
+          2.5 PARALLAX ORB SECTION
+      ═══════════════════════════════════════════════════════════ */}
+      <section
+        style={{
+          position: 'relative',
+          height: '80vh',
+          minHeight: 500,
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {/* Parallax orb background */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'url(/bg/0n-orb.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed',
+            transform: 'scale(1.05)',
+          }}
+        />
+        {/* Dark vignette overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'radial-gradient(ellipse at center, transparent 30%, rgba(7,8,12,0.7) 70%, rgba(7,8,12,0.95) 100%)',
+            pointerEvents: 'none',
+          }}
+        />
+        {/* Top/bottom fade */}
+        <div
+          style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 120,
+            background: 'linear-gradient(to bottom, rgba(7,8,12,1) 0%, transparent 100%)',
+            pointerEvents: 'none',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, height: 120,
+            background: 'linear-gradient(to top, rgba(7,8,12,1) 0%, transparent 100%)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Content overlay */}
+        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 700, padding: '0 24px' }}>
+          <h2
+            style={{
+              fontSize: 'clamp(32px, 5vw, 56px)',
+              fontWeight: 800,
+              lineHeight: 1.1,
+              letterSpacing: '-0.03em',
+              color: C.text,
+              marginBottom: 20,
+              textShadow: '0 0 40px rgba(110,224,90,0.3)',
+            }}
+          >
+            The 0n Network
+          </h2>
+          <p style={{
+            fontSize: 18, lineHeight: 1.7, color: C.textSec, maxWidth: 540, margin: '0 auto',
+            textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+          }}>
+            1,554 tools. 96 services. One universal orchestrator connecting
+            every channel, every API, every workflow — through a single AI brain.
+          </p>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════
           3. HOW IT WORKS
       ═══════════════════════════════════════════════════════════ */}
       <section style={{ background: C.dark }}>
