@@ -1,14 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ComponentType, type SVGProps } from 'react'
+import {
+  Bot,
+  Code2,
+  Sparkles,
+  Terminal,
+  Wind,
+  Zap,
+  Brain,
+  Play,
+  Globe,
+  Palette,
+  Search,
+  Plug,
+  Rocket,
+  Mic,
+  GraduationCap,
+  Package,
+  PackageOpen,
+  Github,
+  BookOpen,
+  FileCode2,
+  Smartphone,
+} from 'lucide-react'
+
+type LucideIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>
 
 interface Download {
   id: string
   name: string
   description: string
-  icon: string
-  category: string
-  color: string
+  Icon: LucideIcon
+  category: 'ai' | 'browser' | 'wordpress' | 'crm' | 'dev' | 'mobile'
   action: 'download' | 'copy' | 'link' | 'install'
   actionLabel: string
   actionData: string
@@ -24,72 +48,60 @@ const CATEGORIES = [
   { id: 'crm', label: 'CRM' },
   { id: 'dev', label: 'Developer' },
   { id: 'mobile', label: 'Mobile' },
-]
+] as const
+
+const CATEGORY_COLORS: Record<Download['category'], { fg: string; bg: string; border: string }> = {
+  ai:        { fg: '#00d4ff', bg: 'rgba(0,212,255,0.10)',  border: 'rgba(0,212,255,0.25)' },
+  browser:   { fg: '#f97316', bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.25)' },
+  wordpress: { fg: '#3b82f6', bg: 'rgba(59,130,246,0.10)', border: 'rgba(59,130,246,0.25)' },
+  crm:       { fg: '#7ed957', bg: 'rgba(126,217,87,0.10)', border: 'rgba(126,217,87,0.30)' },
+  dev:       { fg: '#a78bfa', bg: 'rgba(167,139,250,0.10)',border: 'rgba(167,139,250,0.25)' },
+  mobile:    { fg: '#ec4899', bg: 'rgba(236,72,153,0.10)', border: 'rgba(236,72,153,0.25)' },
+}
+
+const MCP_CONFIG = JSON.stringify({
+  mcpServers: { '0nMCP': { command: 'npx', args: ['-y', '0nmcp@latest'] } },
+}, null, 2)
 
 const DOWNLOADS: Download[] = [
   // AI Platforms
   {
     id: 'claude-desktop',
     name: 'Claude Desktop',
-    description: 'Connect 0nMCP to Claude Desktop. 900+ tools available in every conversation.',
-    icon: '🟤',
+    description: 'Connect 0nMCP to Claude Desktop. 1,554 tools available in every conversation.',
+    Icon: Bot,
     category: 'ai',
-    color: '#cc9a80',
     action: 'copy',
     actionLabel: 'Copy Config',
-    actionData: JSON.stringify({
-      "mcpServers": {
-        "0nMCP": {
-          "command": "npx",
-          "args": ["-y", "0nmcp@latest"]
-        }
-      }
-    }, null, 2),
+    actionData: MCP_CONFIG,
     badge: 'POPULAR',
   },
   {
     id: 'cursor',
     name: 'Cursor IDE',
-    description: 'Add 0nMCP to Cursor as an MCP server. Build with 900+ tools inline.',
-    icon: '⚡',
+    description: 'Add 0nMCP to Cursor as an MCP server. Build with 1,554 tools inline.',
+    Icon: Code2,
     category: 'ai',
-    color: '#00d4ff',
     action: 'copy',
     actionLabel: 'Copy Config',
-    actionData: JSON.stringify({
-      "mcpServers": {
-        "0nMCP": {
-          "command": "npx",
-          "args": ["-y", "0nmcp@latest"]
-        }
-      }
-    }, null, 2),
+    actionData: MCP_CONFIG,
   },
   {
     id: 'windsurf',
     name: 'Windsurf',
     description: 'Connect 0nMCP to Windsurf IDE for AI-powered development.',
-    icon: '🏄',
+    Icon: Wind,
     category: 'ai',
-    color: '#3b82f6',
     action: 'copy',
     actionLabel: 'Copy Config',
-    actionData: JSON.stringify({
-      "mcpServers": {
-        "0nMCP": {
-          "command": "npx",
-          "args": ["-y", "0nmcp@latest"]
-        }
-      }
-    }, null, 2),
+    actionData: MCP_CONFIG,
   },
   {
     id: 'claude-code',
     name: 'Claude Code (CLI)',
     description: 'Add 0nMCP to Claude Code terminal. Full ecosystem access from the command line.',
-    icon: '🖥️',
+    Icon: Terminal,
     category: 'ai',
-    color: '#cc9a80',
     action: 'copy',
     actionLabel: 'Copy Command',
     actionData: 'claude mcp add --scope user 0nMCP -- npx -y 0nmcp@latest',
@@ -99,72 +111,48 @@ const DOWNLOADS: Download[] = [
     id: 'vscode',
     name: 'VS Code Copilot',
     description: 'Use 0nMCP tools inside VS Code with GitHub Copilot agent mode.',
-    icon: '💎',
+    Icon: Zap,
     category: 'ai',
-    color: '#007acc',
     action: 'copy',
     actionLabel: 'Copy Config',
     actionData: JSON.stringify({
-      "servers": {
-        "0nMCP": {
-          "type": "stdio",
-          "command": "npx",
-          "args": ["-y", "0nmcp@latest"]
-        }
-      }
+      servers: { '0nMCP': { type: 'stdio', command: 'npx', args: ['-y', '0nmcp@latest'] } },
     }, null, 2),
   },
   {
     id: 'gemini',
     name: 'Google Gemini',
     description: 'Connect 0nMCP to Gemini CLI for Google AI with full tool access.',
-    icon: '✨',
+    Icon: Sparkles,
     category: 'ai',
-    color: '#4285f4',
     action: 'copy',
     actionLabel: 'Copy Config',
-    actionData: JSON.stringify({
-      "mcpServers": {
-        "0nMCP": {
-          "command": "npx",
-          "args": ["-y", "0nmcp@latest"]
-        }
-      }
-    }, null, 2),
+    actionData: MCP_CONFIG,
   },
   {
     id: 'openai',
     name: 'OpenAI / ChatGPT',
     description: 'Use 0nMCP tools with OpenAI function calling.',
-    icon: '🟢',
+    Icon: Brain,
     category: 'ai',
-    color: '#10a37f',
     action: 'copy',
     actionLabel: 'Copy Config',
-    actionData: JSON.stringify({
-      "mcpServers": {
-        "0nMCP": {
-          "command": "npx",
-          "args": ["-y", "0nmcp@latest"]
-        }
-      }
-    }, null, 2),
+    actionData: MCP_CONFIG,
   },
   {
     id: 'continue',
     name: 'Continue.dev',
     description: 'Add 0nMCP to Continue — the open-source AI code assistant.',
-    icon: '▶️',
+    Icon: Play,
     category: 'ai',
-    color: '#f97316',
     action: 'copy',
     actionLabel: 'Copy Config',
     actionData: JSON.stringify({
-      "experimental": {
-        "modelContextProtocolServers": [{
-          "transport": { "type": "stdio", "command": "npx", "args": ["-y", "0nmcp@latest"] }
-        }]
-      }
+      experimental: {
+        modelContextProtocolServers: [{
+          transport: { type: 'stdio', command: 'npx', args: ['-y', '0nmcp@latest'] },
+        }],
+      },
     }, null, 2),
   },
 
@@ -173,9 +161,8 @@ const DOWNLOADS: Download[] = [
     id: 'chrome-extension',
     name: 'Chrome Extension',
     description: 'Access 0nCore from any webpage. Quick actions, contact lookup, and AI chat.',
-    icon: '🌐',
+    Icon: Globe,
     category: 'browser',
-    color: '#4285f4',
     action: 'link',
     actionLabel: 'Coming Soon',
     actionData: '#',
@@ -187,9 +174,8 @@ const DOWNLOADS: Download[] = [
     id: 'onpress-wp',
     name: 'OnPress — Figma to WordPress',
     description: 'Convert Figma designs into complete WordPress themes and plugins.',
-    icon: '🎨',
+    Icon: Palette,
     category: 'wordpress',
-    color: '#f97316',
     action: 'link',
     actionLabel: 'Get OnPress',
     actionData: 'https://wpsxo.com/products/onpress',
@@ -199,9 +185,8 @@ const DOWNLOADS: Download[] = [
     id: 'wpsxo',
     name: 'WP-SXO',
     description: 'Search Experience Optimization for WordPress. AI-powered content scoring.',
-    icon: '🔍',
+    Icon: Search,
     category: 'wordpress',
-    color: '#8b5cf6',
     action: 'link',
     actionLabel: 'Get WP-SXO',
     actionData: 'https://wpsxo.com/products/wpsxo',
@@ -210,9 +195,8 @@ const DOWNLOADS: Download[] = [
     id: 'wp-0ncore',
     name: '0nCore WordPress Plugin',
     description: 'Connect your WordPress site to 0nCore. Sync contacts, forms, and analytics.',
-    icon: '🔌',
+    Icon: Plug,
     category: 'wordpress',
-    color: 'var(--color-cyan, #14b8a6)',
     action: 'link',
     actionLabel: 'Coming Soon',
     actionData: '#',
@@ -222,23 +206,21 @@ const DOWNLOADS: Download[] = [
   // CRM
   {
     id: 'crm-marketplace',
-    name: 'CRM Marketplace App',
+    name: '0nCore for CRM',
     description: 'Install 0nCore directly in your CRM. Full dashboard, automations, AI — inside the sidebar.',
-    icon: '🚀',
+    Icon: Rocket,
     category: 'crm',
-    color: 'var(--color-cyan, #14b8a6)',
     action: 'link',
     actionLabel: 'Install App',
-    actionData: 'https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&client_id=69c762225a31e1cd2f28dd4c-mn9wyk9o&version_id=69c762225a31e1cd2f28dd4c',
+    actionData: '/api/oauth/authorize',
     badge: 'LIVE',
   },
   {
     id: 'crm-voice-ai',
     name: 'Voice AI Widget',
     description: 'Embed the 0nAI voice orb on any website. Visitors talk, AI responds, leads captured.',
-    icon: '🎙️',
+    Icon: Mic,
     category: 'crm',
-    color: '#8b5cf6',
     action: 'link',
     actionLabel: 'Set Up Voice',
     actionData: '/dashboard/voice',
@@ -247,9 +229,8 @@ const DOWNLOADS: Download[] = [
     id: 'crm-course-gen',
     name: 'AI Course Generator',
     description: 'Generate complete online courses with AI and import them into your CRM in one click.',
-    icon: '🎓',
+    Icon: GraduationCap,
     category: 'crm',
-    color: '#f59e0b',
     action: 'link',
     actionLabel: 'Generate Course',
     actionData: '/dashboard/courses',
@@ -259,10 +240,9 @@ const DOWNLOADS: Download[] = [
   {
     id: 'npm',
     name: '0nMCP (npm)',
-    description: 'Install the 0nMCP server via npm. 900+ tools, 55 services, runs anywhere.',
-    icon: '📦',
+    description: 'Install the 0nMCP server via npm. 1,554 tools, 96 services, runs anywhere.',
+    Icon: Package,
     category: 'dev',
-    color: '#cb3837',
     action: 'copy',
     actionLabel: 'Copy Command',
     actionData: 'npm install -g 0nmcp',
@@ -272,9 +252,8 @@ const DOWNLOADS: Download[] = [
     id: 'npx',
     name: 'Run with npx (no install)',
     description: 'Run 0nMCP instantly without installing. Always the latest version.',
-    icon: '⚡',
+    Icon: PackageOpen,
     category: 'dev',
-    color: '#cb3837',
     action: 'copy',
     actionLabel: 'Copy Command',
     actionData: 'npx 0nmcp@latest',
@@ -283,9 +262,8 @@ const DOWNLOADS: Download[] = [
     id: 'github',
     name: 'GitHub Repository',
     description: 'Source code, issues, contributions. Star us and join the community.',
-    icon: '🐙',
+    Icon: Github,
     category: 'dev',
-    color: 'var(--text-primary, #f0f4f8)',
     action: 'link',
     actionLabel: 'View on GitHub',
     actionData: 'https://github.com/0nork/0nMCP',
@@ -293,10 +271,9 @@ const DOWNLOADS: Download[] = [
   {
     id: 'api-docs',
     name: 'API Documentation',
-    description: 'Complete API reference for all 900+ tools and 55 services.',
-    icon: '📖',
+    description: 'Complete API reference for all 1,554 tools and 96 services.',
+    Icon: BookOpen,
     category: 'dev',
-    color: 'var(--color-cyan, #14b8a6)',
     action: 'link',
     actionLabel: 'View Docs',
     actionData: 'https://0nmcp.com/learn',
@@ -305,9 +282,8 @@ const DOWNLOADS: Download[] = [
     id: 'dot-on-spec',
     name: '.0n Standard (npm)',
     description: 'The .0n file format — universal workflow configuration. Parse, validate, create.',
-    icon: '📐',
+    Icon: FileCode2,
     category: 'dev',
-    color: 'var(--color-cyan, #14b8a6)',
     action: 'copy',
     actionLabel: 'Copy Command',
     actionData: 'npm install 0n-spec',
@@ -318,9 +294,8 @@ const DOWNLOADS: Download[] = [
     id: 'mobile-pwa',
     name: '0nCore Mobile (PWA)',
     description: 'Add 0nCore to your home screen. Full dashboard, AI chat, contacts — on your phone.',
-    icon: '📱',
+    Icon: Smartphone,
     category: 'mobile',
-    color: 'var(--color-cyan, #14b8a6)',
     action: 'link',
     actionLabel: 'Open 0nCore',
     actionData: 'https://0ncore.com/dashboard',
@@ -329,7 +304,7 @@ const DOWNLOADS: Download[] = [
 ]
 
 export default function DownloadsPage() {
-  const [activeCategory, setActiveCategory] = useState('all')
+  const [activeCategory, setActiveCategory] = useState<string>('all')
   const [copied, setCopied] = useState<string | null>(null)
 
   const filtered = activeCategory === 'all'
@@ -342,7 +317,10 @@ export default function DownloadsPage() {
       setCopied(d.id)
       setTimeout(() => setCopied(null), 2000)
     } else if (d.action === 'link' || d.action === 'download') {
-      if (d.actionData !== '#') window.open(d.actionData, d.actionData.startsWith('/') ? '_self' : '_blank')
+      if (d.actionData !== '#') {
+        const isInternal = d.actionData.startsWith('/')
+        window.open(d.actionData, isInternal ? '_self' : '_blank')
+      }
     }
   }
 
@@ -363,7 +341,7 @@ export default function DownloadsPage() {
           <button key={c.id} onClick={() => setActiveCategory(c.id)} style={{
             padding: '7px 14px', borderRadius: 7, border: 'none',
             background: activeCategory === c.id ? 'var(--border, #30363d)' : 'transparent',
-            color: activeCategory === c.id ? 'var(--color-cyan, #14b8a6)' : 'var(--text-muted, #6b7280)',
+            color: activeCategory === c.id ? '#7ed957' : 'var(--text-muted, #6b7280)',
             fontSize: 12, fontWeight: 600, cursor: 'pointer',
             transition: 'all 0.15s',
           }}>{c.label}</button>
@@ -372,61 +350,69 @@ export default function DownloadsPage() {
 
       {/* Downloads Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-        {filtered.map(d => (
-          <div key={d.id} style={{
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 14, padding: 20,
-            transition: 'all 0.2s', cursor: 'pointer',
-            position: 'relative', overflow: 'hidden',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = `${d.color}40`; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border, #30363d)'; e.currentTarget.style.transform = 'none' }}
-          >
-            {/* Badge */}
-            {d.badge && (
-              <span style={{
-                position: 'absolute', top: 12, right: 12,
-                padding: '2px 8px', borderRadius: 4,
-                fontSize: 9, fontWeight: 800, letterSpacing: '0.08em',
-                background: d.badge === 'LIVE' ? 'rgba(52,211,153,0.12)' :
-                  d.badge === 'NEW' ? 'rgba(45,212,191,0.12)' :
-                  d.badge === 'POPULAR' ? 'rgba(139,92,246,0.12)' :
-                  d.badge === 'PWA' ? 'rgba(59,130,246,0.12)' :
-                  'rgba(85,104,128,0.12)',
-                color: d.badge === 'LIVE' ? '#34d399' :
-                  d.badge === 'NEW' ? 'var(--color-cyan, #14b8a6)' :
-                  d.badge === 'POPULAR' ? '#8b5cf6' :
-                  d.badge === 'PWA' ? '#3b82f6' :
-                  'var(--text-muted, #6b7280)',
-              }}>{d.badge}</span>
-            )}
+        {filtered.map(d => {
+          const c = CATEGORY_COLORS[d.category]
+          const disabled = d.actionData === '#'
+          return (
+            <div key={d.id} style={{
+              background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
+              borderRadius: 14, padding: 20,
+              transition: 'all 0.2s', cursor: 'pointer',
+              position: 'relative', overflow: 'hidden',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = c.border; e.currentTarget.style.transform = 'translateY(-2px)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#1c2b42'; e.currentTarget.style.transform = 'none' }}
+            >
+              {d.badge && (
+                <span style={{
+                  position: 'absolute', top: 12, right: 12,
+                  padding: '2px 8px', borderRadius: 4,
+                  fontSize: 9, fontWeight: 800, letterSpacing: '0.08em',
+                  background: d.badge === 'LIVE' ? 'rgba(126,217,87,0.14)' :
+                    d.badge === 'NEW' ? 'rgba(0,212,255,0.12)' :
+                    d.badge === 'POPULAR' ? 'rgba(167,139,250,0.14)' :
+                    d.badge === 'PWA' ? 'rgba(236,72,153,0.12)' :
+                    'rgba(85,104,128,0.14)',
+                  color: d.badge === 'LIVE' ? '#7ed957' :
+                    d.badge === 'NEW' ? '#00d4ff' :
+                    d.badge === 'POPULAR' ? '#a78bfa' :
+                    d.badge === 'PWA' ? '#ec4899' :
+                    'var(--text-muted, #6b7280)',
+                }}>{d.badge}</span>
+              )}
 
-            {/* Icon + Name */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-              <span style={{ fontSize: 24 }}>{d.icon}</span>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)' }}>{d.name}</div>
-                {d.size && <div style={{ fontSize: 10, color: 'var(--text-muted, #6b7280)' }}>{d.size}</div>}
+              {/* Icon + Name */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  background: c.bg, border: `1px solid ${c.border}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <d.Icon size={20} color={c.fg} strokeWidth={2} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</div>
+                  {d.size && <div style={{ fontSize: 10, color: 'var(--text-muted, #6b7280)' }}>{d.size}</div>}
+                </div>
               </div>
+
+              <p style={{ fontSize: 12, color: 'var(--text-secondary, #9ca3af)', lineHeight: 1.6, marginBottom: 14 }}>{d.description}</p>
+
+              <button onClick={() => handleAction(d)} disabled={disabled} style={{
+                width: '100%', padding: '9px 16px',
+                background: disabled ? 'var(--border, #30363d)' : c.bg,
+                border: `1px solid ${disabled ? 'var(--border, #30363d)' : c.border}`,
+                borderRadius: 8,
+                color: disabled ? 'var(--text-muted, #6b7280)' : c.fg,
+                fontSize: 12, fontWeight: 600, cursor: disabled ? 'default' : 'pointer',
+                transition: 'all 0.15s',
+              }}>
+                {copied === d.id ? '✓ Copied!' : d.actionLabel}
+              </button>
             </div>
-
-            {/* Description */}
-            <p style={{ fontSize: 12, color: 'var(--text-secondary, #9ca3af)', lineHeight: 1.6, marginBottom: 14 }}>{d.description}</p>
-
-            {/* Action */}
-            <button onClick={() => handleAction(d)} style={{
-              width: '100%', padding: '9px 16px',
-              background: d.actionData === '#' ? 'var(--border, #30363d)' : `${d.color}12`,
-              border: `1px solid ${d.actionData === '#' ? 'var(--border, #30363d)' : d.color + '25'}`,
-              borderRadius: 8,
-              color: d.actionData === '#' ? 'var(--text-muted, #6b7280)' : d.color,
-              fontSize: 12, fontWeight: 600, cursor: d.actionData === '#' ? 'default' : 'pointer',
-              transition: 'all 0.15s',
-            }}>
-              {copied === d.id ? '✓ Copied!' : d.actionLabel}
-            </button>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Stats Footer */}
@@ -437,14 +423,14 @@ export default function DownloadsPage() {
         textAlign: 'center',
       }}>
         {[
-          { value: '900+', label: 'Tools' },
-          { value: '55', label: 'Services' },
+          { value: '1,554', label: 'Tools' },
+          { value: '96', label: 'Services' },
           { value: '8', label: 'AI Platforms' },
           { value: '2', label: 'WP Plugins' },
           { value: '1', label: 'CRM App' },
         ].map(s => (
           <div key={s.label}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-cyan, #14b8a6)' }}>{s.value}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#7ed957' }}>{s.value}</div>
             <div style={{ fontSize: 10, color: 'var(--text-muted, #6b7280)', marginTop: 2 }}>{s.label}</div>
           </div>
         ))}
