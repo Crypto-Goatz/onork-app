@@ -206,31 +206,49 @@ export default function ExecOrbitPage() {
       if (!ctx || !W) return
       ctx.clearRect(0, 0, W, H)
 
-      // Stars
+      const t = timeRef.current
+
+      // ── Twinkling stars ──
       for (const s of stars) {
+        const twinkle = s.a * (0.6 + 0.4 * Math.sin(t * 1.5 + s.x * 20 + s.y * 30))
         ctx.beginPath()
         ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255,255,255,${s.a})`
+        ctx.fillStyle = `rgba(200,220,255,${twinkle})`
         ctx.fill()
       }
 
-      // Orbit rings + labels
+      // ── Deep space nebula glow behind center ──
+      const nebula = ctx.createRadialGradient(CX, CY, 0, CX, CY, MIN_RING_R + stages.length * RING_GAP + 40)
+      nebula.addColorStop(0, 'rgba(110,224,90,0.04)')
+      nebula.addColorStop(0.3, 'rgba(30,80,40,0.02)')
+      nebula.addColorStop(0.6, 'rgba(20,40,80,0.015)')
+      nebula.addColorStop(1, 'transparent')
+      ctx.fillStyle = nebula
+      ctx.fillRect(0, 0, W, H)
+
+      // ── Orbit rings with glow ──
       for (const stage of stages) {
         const r = MIN_RING_R + (stage.ring - 1) * RING_GAP
-        ctx.beginPath()
-        ctx.arc(CX, CY, r, 0, Math.PI * 2)
-        ctx.strokeStyle = stage.color + '25'
-        ctx.lineWidth = 1
-        ctx.setLineDash([4, 8])
-        ctx.stroke()
-        ctx.setLineDash([])
 
-        const lx = CX
-        const ly = CY - r - 12
+        // Subtle glow ring
+        ctx.beginPath(); ctx.arc(CX, CY, r, 0, Math.PI * 2)
+        ctx.strokeStyle = stage.color + '10'; ctx.lineWidth = 6; ctx.stroke()
+
+        // Main dashed ring
+        ctx.beginPath(); ctx.arc(CX, CY, r, 0, Math.PI * 2)
+        ctx.strokeStyle = stage.color + '30'; ctx.lineWidth = 1
+        ctx.setLineDash([4, 8]); ctx.stroke(); ctx.setLineDash([])
+
+        // Stage label with backdrop
+        const lx = CX; const ly = CY - r - 14
+        const labelText = stage.name.toUpperCase()
         ctx.font = '9px JetBrains Mono'
-        ctx.fillStyle = stage.color + 'aa'
+        const tw = ctx.measureText(labelText).width
+        ctx.fillStyle = 'rgba(4,6,13,0.7)'
+        ctx.fillRect(lx - tw / 2 - 6, ly - 8, tw + 12, 22)
+        ctx.fillStyle = stage.color + 'cc'
         ctx.textAlign = 'center'
-        ctx.fillText(stage.name.toUpperCase(), lx, ly)
+        ctx.fillText(labelText, lx, ly)
 
         const sc = contacts.filter(c => c.stage === stage.name)
         if (sc.length) {
@@ -241,39 +259,70 @@ export default function ExecOrbitPage() {
         }
       }
 
-      // Sun
-      const t = timeRef.current
+      // ── Sun with radial gradient + animated corona ──
       const pulse = Math.sin(t * 2) * 0.5 + 0.5
-      for (let i = 3; i >= 1; i--) {
-        ctx.beginPath(); ctx.arc(CX, CY, 28 + i * 10, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(110,224,90,${0.02 * i})`; ctx.fill()
+
+      // Corona layers
+      for (let i = 5; i >= 1; i--) {
+        const coronaR = 20 + i * 12 + pulse * i * 2
+        const grad = ctx.createRadialGradient(CX, CY, 0, CX, CY, coronaR)
+        grad.addColorStop(0, `rgba(110,224,90,${0.03 * i})`)
+        grad.addColorStop(1, 'transparent')
+        ctx.beginPath(); ctx.arc(CX, CY, coronaR, 0, Math.PI * 2)
+        ctx.fillStyle = grad; ctx.fill()
       }
-      ctx.beginPath(); ctx.arc(CX, CY, 32 + pulse * 4, 0, Math.PI * 2)
-      ctx.strokeStyle = `rgba(110,224,90,${0.15 + pulse * 0.1})`; ctx.lineWidth = 1; ctx.stroke()
+
+      // Rotating energy ring
+      ctx.save(); ctx.translate(CX, CY); ctx.rotate(t * 0.3)
+      ctx.beginPath(); ctx.arc(0, 0, 34 + pulse * 3, 0, Math.PI * 1.2)
+      ctx.strokeStyle = `rgba(110,224,90,${0.12 + pulse * 0.08})`; ctx.lineWidth = 1.5; ctx.stroke()
+      ctx.beginPath(); ctx.arc(0, 0, 34 + pulse * 3, Math.PI * 1.4, Math.PI * 2.2)
+      ctx.strokeStyle = `rgba(110,224,90,${0.08 + pulse * 0.06})`; ctx.lineWidth = 1; ctx.stroke()
+      ctx.restore()
+
+      // Core sphere with gradient
+      const sunGrad = ctx.createRadialGradient(CX - 4, CY - 4, 2, CX, CY, 22)
+      sunGrad.addColorStop(0, '#1a4a1a')
+      sunGrad.addColorStop(0.5, '#0d2a0d')
+      sunGrad.addColorStop(1, '#0a1a0a')
       ctx.beginPath(); ctx.arc(CX, CY, 22, 0, Math.PI * 2)
-      ctx.fillStyle = '#0a1a0a'; ctx.fill()
+      ctx.fillStyle = sunGrad; ctx.fill()
       ctx.strokeStyle = '#6EE05A'; ctx.lineWidth = 1.5; ctx.stroke()
+
+      // 0n logo
       ctx.font = 'bold 11px JetBrains Mono'; ctx.fillStyle = '#6EE05A'
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('0n', CX, CY)
       ctx.textBaseline = 'alphabetic'
 
-      // Particles
+      // ── Particles with gradient fills ──
       for (const p of particlesRef.current) {
         p.angle += p.orbitSpeed
         const x = CX + Math.cos(p.angle) * p.r
         const y = CY + Math.sin(p.angle) * p.r
 
-        // Tail
+        // Smooth comet tail with gradient
         if (p.hasTail) {
           p.trailPoints.unshift({ x, y })
-          if (p.trailPoints.length > 18) p.trailPoints.pop()
-          for (let i = 1; i < p.trailPoints.length; i++) {
-            const alpha = (1 - i / p.trailPoints.length) * 0.4
+          if (p.trailPoints.length > 24) p.trailPoints.pop()
+          if (p.trailPoints.length >= 2) {
             ctx.beginPath()
-            ctx.moveTo(p.trailPoints[i - 1].x, p.trailPoints[i - 1].y)
-            ctx.lineTo(p.trailPoints[i].x, p.trailPoints[i].y)
-            ctx.strokeStyle = p.tailColor + Math.round(alpha * 255).toString(16).padStart(2, '0')
-            ctx.lineWidth = Math.max(1, (1 - i / p.trailPoints.length) * 4)
+            ctx.moveTo(p.trailPoints[0].x, p.trailPoints[0].y)
+            for (let i = 1; i < p.trailPoints.length; i++) {
+              const prev = p.trailPoints[i - 1]
+              const curr = p.trailPoints[i]
+              const cpx = (prev.x + curr.x) / 2
+              const cpy = (prev.y + curr.y) / 2
+              ctx.quadraticCurveTo(prev.x, prev.y, cpx, cpy)
+            }
+            const tailGrad = ctx.createLinearGradient(
+              p.trailPoints[0].x, p.trailPoints[0].y,
+              p.trailPoints[p.trailPoints.length - 1].x, p.trailPoints[p.trailPoints.length - 1].y
+            )
+            tailGrad.addColorStop(0, p.tailColor + '60')
+            tailGrad.addColorStop(1, p.tailColor + '00')
+            ctx.strokeStyle = tailGrad
+            ctx.lineWidth = 3
+            ctx.lineCap = 'round'
             ctx.stroke()
           }
         }
@@ -284,42 +333,85 @@ export default function ExecOrbitPage() {
         const isSel = selectedIdRef.current === c.id
         const isCrit = c.current_score < 40
 
+        // Critical pulse rings
         if (isCrit) {
           const pp = Math.sin(t * 4 + p.pulsePhase) * 0.5 + 0.5
-          ctx.beginPath(); ctx.arc(x, y, p.dotR + 5 + pp * 4, 0, Math.PI * 2)
-          ctx.strokeStyle = `rgba(239,68,68,${0.3 + pp * 0.3})`; ctx.lineWidth = 1; ctx.stroke()
+          for (let ring = 0; ring < 2; ring++) {
+            const rr = p.dotR + 4 + pp * 5 + ring * 4
+            ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2)
+            ctx.strokeStyle = `rgba(239,68,68,${(0.25 - ring * 0.1) * (0.5 + pp * 0.5)})`
+            ctx.lineWidth = 1; ctx.stroke()
+          }
         }
 
-        const glowR = p.dotR + (isSel ? 12 : 6)
+        // Outer glow with radial gradient
+        const glowR = p.dotR + (isSel ? 14 : 8)
+        const glowGrad = ctx.createRadialGradient(x, y, p.dotR * 0.5, x, y, glowR)
+        glowGrad.addColorStop(0, glow.replace(/[\d.]+\)$/, isSel ? '0.3)' : '0.15)'))
+        glowGrad.addColorStop(1, 'transparent')
         ctx.beginPath(); ctx.arc(x, y, glowR, 0, Math.PI * 2)
-        ctx.fillStyle = glow.replace('0.6', isSel ? '0.35' : '0.15').replace('0.5', isSel ? '0.3' : '0.12').replace('0.7', isSel ? '0.4' : '0.15')
-        ctx.fill()
+        ctx.fillStyle = glowGrad; ctx.fill()
 
+        // Selection ring with rotation
         if (isSel) {
-          ctx.beginPath(); ctx.arc(x, y, p.dotR + 8, 0, Math.PI * 2)
-          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke()
+          ctx.save(); ctx.translate(x, y); ctx.rotate(t * 1.5)
+          ctx.beginPath(); ctx.arc(0, 0, p.dotR + 8, 0, Math.PI * 1.5)
+          ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.stroke()
+          ctx.beginPath(); ctx.arc(0, 0, p.dotR + 8, Math.PI * 1.7, Math.PI * 2.8)
+          ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1; ctx.stroke()
+          ctx.restore()
         }
 
+        // Main dot with radial gradient
+        const dotGrad = ctx.createRadialGradient(x - p.dotR * 0.3, y - p.dotR * 0.3, 0, x, y, p.dotR)
+        dotGrad.addColorStop(0, lightenColor(color, 30))
+        dotGrad.addColorStop(0.7, color)
+        dotGrad.addColorStop(1, darkenColor(color, 20))
         ctx.beginPath(); ctx.arc(x, y, p.dotR, 0, Math.PI * 2)
-        ctx.fillStyle = color; ctx.shadowColor = glow; ctx.shadowBlur = isSel ? 20 : 10
+        ctx.fillStyle = dotGrad; ctx.shadowColor = glow; ctx.shadowBlur = isSel ? 25 : 12
         ctx.fill(); ctx.shadowBlur = 0
 
+        // Specular highlight
+        ctx.beginPath(); ctx.arc(x - p.dotR * 0.25, y - p.dotR * 0.25, p.dotR * 0.35, 0, Math.PI * 2)
+        ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fill()
+
+        // Score text
         if (p.dotR >= 9) {
-          ctx.font = `bold ${Math.round(p.dotR * 0.85)}px JetBrains Mono`
+          ctx.font = `bold ${Math.round(p.dotR * 0.8)}px JetBrains Mono`
           ctx.fillStyle = c.current_score >= 60 ? '#04060d' : '#fff'
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-          ctx.fillText(String(c.current_score), x, y); ctx.textBaseline = 'alphabetic'
+          ctx.fillText(String(c.current_score), x, y + 0.5); ctx.textBaseline = 'alphabetic'
         }
 
-        if (isSel || p.dotR >= 13) {
-          const label = c.company.length > 14 ? c.company.slice(0, 13) + '…' : c.company
-          ctx.font = '9px DM Sans'; ctx.fillStyle = 'rgba(228,239,255,0.85)'
-          ctx.textAlign = 'center'; ctx.fillText(label, x, y + p.dotR + 12)
+        // Company label with shadow
+        if (isSel || p.dotR >= 12) {
+          const label = c.company.length > 16 ? c.company.slice(0, 15) + '…' : c.company
+          ctx.font = '500 9px DM Sans'
+          ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.textAlign = 'center'
+          ctx.fillText(label, x + 1, y + p.dotR + 13)
+          ctx.fillStyle = 'rgba(228,239,255,0.9)'
+          ctx.fillText(label, x, y + p.dotR + 12)
         }
       }
 
       timeRef.current += 0.016
       animRef.current = requestAnimationFrame(draw)
+    }
+
+    function lightenColor(hex: string, pct: number): string {
+      const num = parseInt(hex.slice(1), 16)
+      const r = Math.min(255, (num >> 16) + pct)
+      const g = Math.min(255, ((num >> 8) & 0xff) + pct)
+      const b = Math.min(255, (num & 0xff) + pct)
+      return `rgb(${r},${g},${b})`
+    }
+
+    function darkenColor(hex: string, pct: number): string {
+      const num = parseInt(hex.slice(1), 16)
+      const r = Math.max(0, (num >> 16) - pct)
+      const g = Math.max(0, ((num >> 8) & 0xff) - pct)
+      const b = Math.max(0, (num & 0xff) - pct)
+      return `rgb(${r},${g},${b})`
     }
 
     resize()
