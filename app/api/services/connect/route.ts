@@ -1,10 +1,5 @@
 /**
  * POST /api/services/connect — Connect a service with user's API credentials
- *
- * Stores credentials in user_service_connections, then verifies the connection
- * by hitting the service's verify endpoint. Marks active on success.
- *
- * Auth: Supabase session or 0n token
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -18,22 +13,39 @@ function getAdmin() {
 }
 
 async function resolveUserId(req: NextRequest): Promise<string | null> {
+  // Try 0n token first
   const token = extractToken(req)
   if (token) {
     const ctx = await validateToken(token)
     if (ctx) return ctx.userId
   }
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user?.id || null
+
+  // Try Supabase session from cookies
+  try {
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.id) return user.id
+  } catch (e) {
+    console.error('[services/connect] Auth error:', e)
+  }
+
+  return null
 }
 
 export async function POST(req: NextRequest) {
   const userId = await resolveUserId(req)
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!userId) {
+    return NextResponse.json({ error: 'Not authenticated. Please log in first.' }, { status: 401 })
+  }
 
-  const body = await req.json()
-  const { service, credentials } = body
+  let body: Record<string, unknown>
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  const { service, credentials } = body as { service?: string; credentials?: Record<string, string> }
 
   if (!service || !credentials) {
     return NextResponse.json({ error: 'Missing service and credentials' }, { status: 400 })
@@ -44,7 +56,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Unknown service: ${service}` }, { status: 400 })
   }
 
-  // Validate required fields
   for (const field of serviceDef.fields) {
     if (field.required && !credentials[field.key]) {
       return NextResponse.json({ error: `Missing required field: ${field.label}` }, { status: 400 })
@@ -66,7 +77,8 @@ export async function POST(req: NextRequest) {
     }, { onConflict: 'user_id,service' })
 
   if (upsertErr) {
-    return NextResponse.json({ error: 'Failed to store credentials' }, { status: 500 })
+    console.error('[services/connect] Upsert error:', upsertErr)
+    return NextResponse.json({ error: `Failed to store: ${upsertErr.message}` }, { status: 500 })
   }
 
   // Verify the connection
@@ -120,7 +132,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // No verify endpoint — mark as active (manual)
   await admin.from('user_service_connections').update({
     status: 'active',
     health_status: 'unknown',
