@@ -86,6 +86,22 @@ const navGroups: NavGroup[] = [
           </svg>
         ),
       },
+      {
+        name: '0nExec',
+        href: '/console/exec',
+        badge: 'NEW',
+        icon: (
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+          </svg>
+        ),
+        children: [
+          { name: 'Orbit View', href: '/console/exec' },
+          { name: 'Formulas', href: '/console/exec/formulas' },
+          { name: 'Orbits', href: '/console/exec/orbits' },
+          { name: 'AI Insights', href: '/console/exec/insights' },
+        ],
+      },
     ],
   },
   {
@@ -202,8 +218,8 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
-        name: 'Connections',
-        href: '/dashboard/connections',
+        name: 'Integrations',
+        href: '/dashboard/integrations',
         icon: (
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />

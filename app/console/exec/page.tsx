@@ -467,7 +467,7 @@ export default function ExecOrbitPage() {
   const activeCount = contacts.length
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#04060d', color: '#b8cce0', fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#04060d', color: '#b8cce0', fontFamily: "'DM Sans', sans-serif" }}>
       {/* Topbar */}
       <div style={{
         height: 50, background: 'rgba(4,6,13,0.95)', borderBottom: '1px solid rgba(255,255,255,0.06)',
