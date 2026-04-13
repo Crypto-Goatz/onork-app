@@ -31,6 +31,8 @@ export default function AutomationsPage() {
   const [showWorkflowMenu, setShowWorkflowMenu] = useState(false)
   const [savedDrafts, setSavedDrafts] = useState<SavedAutomation[]>([])
   const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('unsaved')
+  const [activating, setActivating] = useState(false)
+  const [activateToast, setActivateToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) : null
   const nodeCount = nodes.length
@@ -145,6 +147,82 @@ export default function AutomationsPage() {
     setSaveStatus('unsaved')
   }, [])
 
+  const handleActivate = useCallback(async () => {
+    if (nodes.length === 0 || !hasTrigger || activating) return
+    setActivating(true)
+    setActivateToast(null)
+
+    // Build .0n workflow from nodes
+    const dotOnSteps = nodes.map((node, i) => ({
+      id: node.id,
+      action: node.data.capabilityId || node.data.name || 'unknown',
+      input: {
+        name: node.data.name,
+        category: node.data.category,
+        config: node.data.config || {},
+        description: node.data.description,
+      },
+      ...(i > 0 ? { depends_on: [nodes[i - 1].id] } : {}),
+    }))
+
+    const triggerNode = nodes.find(n => n.data.category === 'triggers')
+    const dotOnFile = {
+      name: automationName,
+      version: '1.0.0',
+      description: `Automation: ${automationName} (${nodes.length} steps)`,
+      triggers: [{
+        type: triggerNode?.data.capabilityId || 'manual',
+        config: triggerNode?.data.config || {},
+      }],
+      steps: dotOnSteps,
+      metadata: {
+        automation_id: automationId,
+        created_at: new Date().toISOString(),
+        node_count: nodes.length,
+        source: 'visual_builder',
+      },
+    }
+
+    try {
+      // Save to user_workflows via API
+      const res = await fetch('/api/automations/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: automationName,
+          description: `${nodes.length} steps, trigger: ${triggerNode?.data.name || 'manual'}`,
+          dot_on_file: dotOnFile,
+          nodes: nodes.map(n => ({ id: n.id, type: n.type, position: n.position, data: n.data })),
+          edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target })),
+          status: 'active',
+        }),
+      })
+
+      if (res.ok) {
+        // Update local draft status
+        setSavedDrafts(prev => prev.map(d =>
+          d.id === automationId ? { ...d, status: 'active' as const } : d
+        ))
+        try {
+          const all = JSON.parse(localStorage.getItem('0ncore-automations') || '[]')
+          const idx = all.findIndex((d: SavedAutomation) => d.id === automationId)
+          if (idx >= 0) { all[idx].status = 'active'; localStorage.setItem('0ncore-automations', JSON.stringify(all)) }
+        } catch {}
+
+        setActivateToast({ type: 'success', text: `"${automationName}" activated! Workflow is now live.` })
+        setSaveStatus('saved')
+      } else {
+        const data = await res.json().catch(() => ({ error: 'Unknown error' }))
+        setActivateToast({ type: 'error', text: data.error || 'Activation failed' })
+      }
+    } catch (err) {
+      setActivateToast({ type: 'error', text: err instanceof Error ? err.message : 'Network error' })
+    } finally {
+      setActivating(false)
+      setTimeout(() => setActivateToast(null), 5000)
+    }
+  }, [nodes, edges, hasTrigger, activating, automationName, automationId])
+
   // Load drafts from localStorage on mount
   useState(() => {
     try {
@@ -160,6 +238,25 @@ export default function AutomationsPage() {
       height: 'calc(100vh - 64px)',
       background: 'var(--bg-primary, #0d1117)',
     }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes toastSlide { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }`}</style>
+
+      {/* Activate Toast */}
+      {activateToast && (
+        <div style={{
+          position: 'fixed', top: 20, right: 20, zIndex: 10000,
+          padding: '12px 20px', borderRadius: 10,
+          background: activateToast.type === 'success' ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
+          border: `1px solid ${activateToast.type === 'success' ? 'rgba(52,211,153,0.3)' : 'rgba(248,113,113,0.3)'}`,
+          color: activateToast.type === 'success' ? '#34d399' : '#f87171',
+          fontSize: 13, fontWeight: 600, backdropFilter: 'blur(12px)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          animation: 'toastSlide 0.3s ease-out',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          {activateToast.type === 'success' ? '✓' : '✕'} {activateToast.text}
+        </div>
+      )}
+
       {/* Top Bar */}
       <div style={{
         padding: '10px 20px',
@@ -312,14 +409,23 @@ export default function AutomationsPage() {
             color: 'var(--text-secondary, #9ca3af)', fontSize: 13, cursor: 'pointer',
             fontFamily: '-apple-system, sans-serif',
           }}>Save Draft</button>
-          <button style={{
-            padding: '8px 20px',
-            background: nodeCount > 0 && hasTrigger ? 'linear-gradient(135deg, #2dd4bf, #14b8a6)' : 'var(--border, #30363d)',
-            color: nodeCount > 0 && hasTrigger ? '#0c1220' : 'var(--text-muted, #6b7280)',
-            border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
-            cursor: nodeCount > 0 && hasTrigger ? 'pointer' : 'not-allowed',
-            fontFamily: '-apple-system, sans-serif',
-          }}>Activate</button>
+          <button
+            onClick={handleActivate}
+            disabled={nodeCount === 0 || !hasTrigger || activating}
+            style={{
+              padding: '8px 20px',
+              background: nodeCount > 0 && hasTrigger ? (activating ? '#1a4a4a' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)') : 'var(--border, #30363d)',
+              color: nodeCount > 0 && hasTrigger ? (activating ? '#14b8a6' : '#0c1220') : 'var(--text-muted, #6b7280)',
+              border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
+              cursor: nodeCount > 0 && hasTrigger && !activating ? 'pointer' : 'not-allowed',
+              fontFamily: '-apple-system, sans-serif',
+              display: 'flex', alignItems: 'center', gap: 6,
+              transition: 'all 0.15s',
+            }}
+          >
+            {activating && <span style={{ width: 12, height: 12, border: '2px solid rgba(20,184,166,0.3)', borderTopColor: '#14b8a6', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />}
+            {activating ? 'Activating...' : 'Activate'}
+          </button>
         </div>
       </div>
 
