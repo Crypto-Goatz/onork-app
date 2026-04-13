@@ -23,6 +23,7 @@ import {
   BookOpen,
   FileCode2,
   Smartphone,
+  Link2,
 } from 'lucide-react'
 
 type LucideIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>
@@ -158,8 +159,19 @@ const DOWNLOADS: Download[] = [
 
   // Browser
   {
-    id: 'chrome-extension',
-    name: 'Chrome Extension',
+    id: '0nlink',
+    name: '0nLink — LinkedIn AI Engine',
+    description: 'AI-powered LinkedIn assistant. Post generation, Snip & Respond, image gen, trends, predictions, CRM export.',
+    Icon: Link2,
+    category: 'browser',
+    action: 'download',
+    actionLabel: 'Download Extension',
+    actionData: '/downloads/0nlink-chrome-extension.zip',
+    badge: 'NEW',
+  },
+  {
+    id: 'chrome-core',
+    name: '0nCore Chrome Extension',
     description: 'Access 0nCore from any webpage. Quick actions, contact lookup, and AI chat.',
     Icon: Globe,
     category: 'browser',
