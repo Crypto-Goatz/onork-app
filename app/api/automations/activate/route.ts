@@ -47,6 +47,8 @@ export async function POST(req: NextRequest) {
     edges: edges || [],
     status: status || 'active',
     trigger_type: dot_on_file?.triggers?.[0]?.type || 'manual',
+    source_platform: 'visual_builder',
+    source_channel: 'dashboard',
     last_executed_at: null,
   }
 
