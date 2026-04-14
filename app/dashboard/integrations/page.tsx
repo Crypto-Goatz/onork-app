@@ -77,6 +77,11 @@ export default function IntegrationsPage() {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [testing, setTesting] = useState<string | null>(null)
+  const [showImport, setShowImport] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [showClaudeCode, setShowClaudeCode] = useState(false)
 
   const supabase = createClient()
 
@@ -246,6 +251,178 @@ export default function IntegrationsPage() {
           </div>
         ))}
       </div>
+
+      {/* ═══ .0n File — Export / Import / Claude Code ═══ */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24,
+      }}>
+        {/* Export */}
+        <button onClick={async () => {
+          setExporting(true)
+          try {
+            const res = await fetch('/api/export?format=download')
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url; a.download = '0n-setup.0n'; a.click()
+            URL.revokeObjectURL(url)
+            setToast({ type: 'success', text: '.0n file downloaded!' })
+          } catch { setToast({ type: 'error', text: 'Export failed' }) }
+          setExporting(false)
+        }} style={{
+          background: 'rgba(126,217,87,0.06)', border: '1px solid rgba(126,217,87,0.2)',
+          borderRadius: 12, padding: '16px 14px', cursor: 'pointer', textAlign: 'left',
+          transition: 'all 0.2s',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(126,217,87,0.4)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(126,217,87,0.2)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
+        >
+          <div style={{ fontSize: 20, marginBottom: 8 }}>📤</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#7ed957', marginBottom: 4 }}>
+            {exporting ? 'Exporting...' : 'Export .0n File'}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', lineHeight: 1.4 }}>
+            Download your connections as a portable .0n file
+          </div>
+        </button>
+
+        {/* Import */}
+        <button onClick={() => setShowImport(!showImport)} style={{
+          background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.2)',
+          borderRadius: 12, padding: '16px 14px', cursor: 'pointer', textAlign: 'left',
+          transition: 'all 0.2s',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.4)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.2)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
+        >
+          <div style={{ fontSize: 20, marginBottom: 8 }}>📥</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#00d4ff', marginBottom: 4 }}>Import .0n File</div>
+          <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', lineHeight: 1.4 }}>
+            Paste a .0n file to auto-connect services
+          </div>
+        </button>
+
+        {/* Claude Code */}
+        <button onClick={() => setShowClaudeCode(!showClaudeCode)} style={{
+          background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.2)',
+          borderRadius: 12, padding: '16px 14px', cursor: 'pointer', textAlign: 'left',
+          transition: 'all 0.2s',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.4)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.2)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
+        >
+          <div style={{ fontSize: 20, marginBottom: 8 }}>🤖</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#a78bfa', marginBottom: 4 }}>Claude Code Setup</div>
+          <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', lineHeight: 1.4 }}>
+            Copy-paste config for Claude Desktop
+          </div>
+        </button>
+      </div>
+
+      {/* Import Panel */}
+      {showImport && (
+        <div style={{
+          background: 'rgba(0,212,255,0.03)', border: '1px solid rgba(0,212,255,0.15)',
+          borderRadius: 14, padding: 20, marginBottom: 24,
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#00d4ff', marginBottom: 8 }}>Paste your .0n file</div>
+          <textarea
+            value={importText}
+            onChange={e => setImportText(e.target.value)}
+            placeholder={'{\n  "$0n": { "type": "config", "version": "1.0.0" },\n  "connections": [...]\n}'}
+            style={{
+              width: '100%', minHeight: 120, padding: 14, borderRadius: 10,
+              background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)',
+              color: 'var(--jp-text, #f0f4f8)', fontSize: 12,
+              fontFamily: 'var(--jp-font-mono, monospace)', resize: 'vertical', outline: 'none',
+            }}
+          />
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button
+              onClick={async () => {
+                if (!importText.trim()) return
+                setImporting(true)
+                try {
+                  const parsed = JSON.parse(importText)
+                  const res = await fetch('/api/import', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(parsed),
+                  })
+                  const data = await res.json()
+                  setToast({ type: data.failed === 0 ? 'success' : 'error', text: `${data.connected} services connected${data.failed ? `, ${data.failed} failed` : ''}` })
+                  setShowImport(false)
+                  setImportText('')
+                  loadServices()
+                } catch { setToast({ type: 'error', text: 'Invalid .0n file' }) }
+                setImporting(false)
+              }}
+              disabled={importing || !importText.trim()}
+              style={{
+                padding: '10px 20px', borderRadius: 8, border: 'none',
+                background: importText.trim() ? '#00d4ff' : '#1a2332',
+                color: importText.trim() ? '#0a0a0a' : 'var(--jp-text-muted)',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              }}
+            >{importing ? 'Importing...' : 'Import & Connect'}</button>
+            <button onClick={() => { setShowImport(false); setImportText('') }} style={{
+              padding: '10px 20px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
+              background: 'transparent', color: 'var(--jp-text-muted, #8b95a5)',
+              fontSize: 13, cursor: 'pointer',
+            }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Claude Code Panel */}
+      {showClaudeCode && (
+        <div style={{
+          background: 'rgba(167,139,250,0.03)', border: '1px solid rgba(167,139,250,0.15)',
+          borderRadius: 14, padding: 20, marginBottom: 24,
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#a78bfa', marginBottom: 4 }}>Claude Desktop / Claude Code Setup</div>
+          <div style={{ fontSize: 12, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 12, lineHeight: 1.5 }}>
+            Copy this config and paste it into your Claude Desktop settings.json or run the CLI command in Claude Code.
+          </div>
+
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 6 }}>Option 1: Claude Code (Terminal)</div>
+          <div style={{
+            background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: 12, marginBottom: 14,
+            fontFamily: 'var(--jp-font-mono, monospace)', fontSize: 12, color: '#a78bfa',
+            cursor: 'pointer', position: 'relative',
+          }} onClick={() => {
+            navigator.clipboard.writeText('claude mcp add --scope user 0nMCP -- npx -y 0nmcp@latest')
+            setToast({ type: 'success', text: 'CLI command copied!' })
+          }}>
+            <span style={{ position: 'absolute', top: 8, right: 10, fontSize: 10, color: 'var(--jp-text-muted)' }}>click to copy</span>
+            claude mcp add --scope user 0nMCP -- npx -y 0nmcp@latest
+          </div>
+
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 6 }}>Option 2: Claude Desktop settings.json</div>
+          <div style={{
+            background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: 12, marginBottom: 14,
+            fontFamily: 'var(--jp-font-mono, monospace)', fontSize: 11, color: '#7ed957',
+            cursor: 'pointer', whiteSpace: 'pre', overflowX: 'auto', position: 'relative',
+          }} onClick={() => {
+            navigator.clipboard.writeText(JSON.stringify({ mcpServers: { '0nMCP': { command: 'npx', args: ['-y', '0nmcp@latest'] } } }, null, 2))
+            setToast({ type: 'success', text: 'Config copied!' })
+          }}>
+            <span style={{ position: 'absolute', top: 8, right: 10, fontSize: 10, color: 'var(--jp-text-muted)' }}>click to copy</span>
+{`{
+  "mcpServers": {
+    "0nMCP": {
+      "command": "npx",
+      "args": ["-y", "0nmcp@latest"]
+    }
+  }
+}`}
+          </div>
+
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 6 }}>Option 3: Export your full .0n setup file</div>
+          <div style={{ fontSize: 12, color: 'var(--jp-text-muted, #8b95a5)', lineHeight: 1.5 }}>
+            Click <strong style={{ color: '#7ed957' }}>Export .0n File</strong> above to download a portable config with all your connected services. Then paste the contents into Claude Code when prompted for credentials.
+          </div>
+        </div>
+      )}
 
       {/* Category Tabs */}
       <div style={{
