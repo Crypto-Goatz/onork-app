@@ -344,6 +344,29 @@ export const SERVICES: ServiceDef[] = [
     verifyHeaders: (c) => bearerAuth(c), docUrl: 'https://developers.hostinger.com',
   },
 
+  // ── Video & Media ──
+  {
+    id: 'heygen', name: 'HeyGen', category: 'ai', icon: 'HG', color: '#5046E5',
+    description: 'AI video generation — avatars, text-to-speech, video translation, personalized outreach',
+    fields: [
+      { key: 'api_key', label: 'API Key', type: 'password', placeholder: 'xxx (from app.heygen.com → Settings → API)', required: true },
+    ],
+    verifyEndpoint: 'https://api.heygen.com/v2/user/me', verifyMethod: 'GET',
+    verifyHeaders: (c) => ({ 'X-Api-Key': c.api_key, Accept: 'application/json' }),
+    docUrl: 'https://developers.heygen.com',
+  },
+  {
+    id: 'heygen_mcp', name: 'HeyGen MCP', category: 'ai', icon: 'HG', color: '#5046E5',
+    description: 'HeyGen remote MCP server — create videos, TTS, translate via MCP protocol (OAuth)',
+    fields: [
+      { key: 'mcp_url', label: 'MCP Server URL', type: 'url', placeholder: 'https://mcp.heygen.com/mcp/v1/', required: true },
+      { key: 'oauth_token', label: 'OAuth Token (after auth)', type: 'password', placeholder: 'Bearer token from OAuth flow', required: false },
+    ],
+    verifyEndpoint: '', verifyMethod: 'GET',
+    verifyHeaders: () => ({}),
+    docUrl: 'https://developers.heygen.com/mcp/overview',
+  },
+
   // ── Analytics ──
   {
     id: 'google_analytics', name: 'Google Analytics', category: 'analytics', icon: 'GA', color: '#F9AB00',
