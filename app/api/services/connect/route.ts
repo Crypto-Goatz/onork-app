@@ -64,13 +64,13 @@ export async function POST(req: NextRequest) {
 
   const admin = getAdmin()
 
-  // Store credentials
+  // Store credentials (upsert row first, then encrypt via Vault)
   const { error: upsertErr } = await admin
     .from('user_service_connections')
     .upsert({
       user_id: userId,
       service,
-      credentials,
+      credentials: { encrypted: false, _temp: true },
       status: 'pending',
       health_status: 'unknown',
       updated_at: new Date().toISOString(),
@@ -80,6 +80,17 @@ export async function POST(req: NextRequest) {
     console.error('[services/connect] Upsert error:', upsertErr)
     return NextResponse.json({ error: `Failed to store: ${upsertErr.message}` }, { status: 500 })
   }
+
+  // Encrypt credentials in Vault
+  await admin.rpc('store_encrypted_credentials', {
+    p_user_id: userId,
+    p_service: service,
+    p_credentials: credentials,
+  }).then(() => {}, (err) => {
+    console.error('[services/connect] Vault encryption failed, storing raw:', err)
+    // Fallback: store raw if Vault fails
+    admin.from('user_service_connections').update({ credentials }).eq('user_id', userId).eq('service', service)
+  })
 
   // Verify the connection
   if (serviceDef.verifyEndpoint) {
