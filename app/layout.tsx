@@ -52,6 +52,15 @@ export default function RootLayout({
       </head>
       <body className="antialiased min-h-screen">
         {children}
+        {/* 0nAI Voice Chat Widget — site-wide */}
+        {process.env.NEXT_PUBLIC_VOICE_AGENT_ID && (
+          <script
+            src="https://widgets.leadconnectorhq.com/loader.js"
+            data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
+            data-widget-id={process.env.NEXT_PUBLIC_VOICE_AGENT_ID}
+            async
+          />
+        )}
       </body>
     </html>
   );
