@@ -65,6 +65,35 @@ export default function LandingPage() {
         position: 'relative',
       }}
     >
+      {/* Video background */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          zIndex: 0,
+          opacity: 0.6,
+        }}
+      >
+        <source src="/bg/3d-road-loop.mp4" type="video/mp4" />
+      </video>
+
+      {/* Dark overlay to ensure text readability */}
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'radial-gradient(ellipse at center, rgba(4,10,26,0.4) 0%, rgba(4,10,26,0.75) 100%)',
+        zIndex: 1,
+        pointerEvents: 'none',
+      }} />
+
       {/* Grain overlay */}
       <div className="grain-overlay" />
 
