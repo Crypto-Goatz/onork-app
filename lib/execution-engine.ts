@@ -23,39 +23,26 @@ function getAdmin() {
 }
 
 async function getUserServiceCreds(userId: string, service: string): Promise<Record<string, string> | null> {
+  // Uses the unified validate_and_decrypt Vault function
+  // This decrypts from Vault, logs the access, and updates last_used
   const admin = getAdmin()
-
-  // Try Vault-encrypted credentials first
+  // Direct Vault lookup for execution context (no token needed, we already have userId)
   const { data: vaultData } = await admin.rpc('get_decrypted_credentials', {
     p_user_id: userId,
     p_service: service,
-  }).maybeSingle()
+  })
 
-  if (vaultData && typeof vaultData === 'object' && !(vaultData as Record<string, unknown>).encrypted) {
+  if (vaultData && typeof vaultData === 'object') {
+    const creds = (typeof vaultData === 'string' ? JSON.parse(vaultData) : vaultData) as Record<string, unknown>
+    if (creds.encrypted) return null
     await admin.from('user_service_connections').update({
       last_used_at: new Date().toISOString(),
       call_count: 1,
     }).eq('user_id', userId).eq('service', service)
-    return vaultData as Record<string, string>
+    return creds as Record<string, string>
   }
 
-  // Fallback: read raw credentials (for connections not yet migrated)
-  const { data } = await admin
-    .from('user_service_connections')
-    .select('credentials, status')
-    .eq('user_id', userId)
-    .eq('service', service)
-    .eq('status', 'active')
-    .maybeSingle()
-  if (!data?.credentials) return null
-
-  const creds = data.credentials as Record<string, unknown>
-  if (creds.encrypted) return null
-
-  await admin.from('user_service_connections').update({
-    last_used_at: new Date().toISOString(),
-  }).eq('user_id', userId).eq('service', service)
-  return creds as Record<string, string>
+  return null
 }
 
 export interface DotOnStep {

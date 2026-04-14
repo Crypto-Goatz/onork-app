@@ -12,7 +12,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { validateToken, extractToken } from '@/lib/0n-token'
+import { authAndDecrypt, getUserVault } from '@/lib/token-vault'
+import { extractToken } from '@/lib/0n-token'
 import { createClient } from '@supabase/supabase-js'
 import { executeWorkflow, type DotOnFile } from '@/lib/execution-engine'
 
@@ -26,10 +27,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing 0n token. Set Authorization: Bearer 0n_TOKEN' }, { status: 401 })
   }
 
-  const ctx = await validateToken(token)
+  // Unified token-vault: validate + decrypt in one call
+  const ctx = await authAndDecrypt(req)
   if (!ctx) {
     return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
   }
+
+  // Get all available services for this user
+  const vault = await getUserVault(ctx.userId)
+  const connectedServices = vault.filter(v => Object.keys(v.credentials).length > 0).map(v => v.service)
 
   const body = await req.json()
   const { tool, input, text } = body
@@ -88,26 +94,32 @@ export async function GET(req: NextRequest) {
   if (!token) {
     return NextResponse.json({
       name: '0nCore Bridge for Claude',
-      version: '1.0.0',
+      version: '2.0.0',
       auth: 'Bearer 0n_TOKEN required',
+      security: 'Token-Vault unified system — credentials encrypted at rest via Supabase Vault',
       capabilities: [
         'crm.contacts.list', 'crm.contacts.create', 'crm.contacts.update', 'crm.contacts.tag',
         'crm.conversations.send', 'crm.pipeline.list', 'crm.opportunities.create',
         'crm.calendar.list', 'crm.calendar.create_event',
         'stripe.customers.list', 'stripe.invoices.list',
-        'slack.message',
+        'slack.message', 'sendgrid.send', 'twilio.sms',
+        'openai.chat', 'notion.search', 'github.repos',
+        'shopify.products', 'hubspot.contacts', 'mailchimp.lists',
       ],
       usage: 'POST with { "text": "show my contacts" } or { "tool": "crm.contacts.list", "input": {} }',
     })
   }
 
-  const ctx = await validateToken(token)
-  if (!ctx) return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+  const vaultCtx = await authAndDecrypt(req)
+  if (!vaultCtx) return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+
+  const userVault = await getUserVault(vaultCtx.userId)
 
   return NextResponse.json({
     authenticated: true,
-    userId: ctx.userId,
-    scopes: ctx.scopes,
-    channel: ctx.channel,
+    userId: vaultCtx.userId,
+    scopes: vaultCtx.scopes,
+    connectedServices: userVault.filter(v => Object.keys(v.credentials).length > 0).map(v => v.service),
+    channel: vaultCtx.channel,
   })
 }

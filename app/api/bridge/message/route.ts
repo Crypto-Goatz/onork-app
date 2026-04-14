@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { resolveChannelSession, type ChannelType } from '@/lib/channel-adapter'
 import { validateToken, extractToken } from '@/lib/0n-token'
+import { validateAndDecrypt, getUserVault } from '@/lib/token-vault'
 import { executeWorkflow, type DotOnFile } from '@/lib/execution-engine'
 
 function getAdmin() {
@@ -31,21 +32,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: channel, channelIdentity, text' }, { status: 400 })
     }
 
-    // Resolve user: try channel session first, fall back to bearer token
+    // Resolve user: channel session → 0n token (unified with Vault) → reject
     let userId: string | null = null
     let permissions: string[] = []
+    let availableServices: string[] = []
 
     const session = await resolveChannelSession(channel as ChannelType, channelIdentity)
     if (session) {
       userId = session.userId
       permissions = session.permissions
     } else {
+      // Unified token-vault: validates token in one call
       const token = extractToken(req)
       if (token) {
-        const ctx = await validateToken(token)
-        if (ctx) {
-          userId = ctx.userId
-          permissions = ctx.scopes
+        const vaultResult = await validateAndDecrypt(token)
+        if (vaultResult) {
+          userId = vaultResult.userId
+          permissions = vaultResult.scopes
         }
       }
     }
@@ -55,6 +58,10 @@ export async function POST(req: NextRequest) {
         error: 'Not authenticated. Use /api/bridge/auth first or provide Bearer 0n_... token.',
       }, { status: 401 })
     }
+
+    // Load user's available services from Vault (for execution context)
+    const vault = await getUserVault(userId)
+    availableServices = vault.filter(v => v.status === 'active' && Object.keys(v.credentials).length > 0).map(v => v.service)
 
     if (!permissions.includes('execute') && !permissions.includes('write')) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
