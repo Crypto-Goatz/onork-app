@@ -26,12 +26,22 @@ interface NavItem {
 
 interface NavGroup {
   label: string
+  color: string
   items: NavItem[]
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  '': '#7ed957',           // Dashboard — brand green
+  '0nAI': '#a78bfa',       // AI tools — purple
+  'Manage': '#00d4ff',     // CRM/manage — cyan
+  'Apps': '#f97316',       // Apps — orange
+  'Account': '#8b95a5',    // Account — muted gray
 }
 
 const navGroups: NavGroup[] = [
   {
     label: '',
+    color: '#7ed957',
     items: [
       {
         name: 'Dashboard',
@@ -46,6 +56,7 @@ const navGroups: NavGroup[] = [
   },
   {
     label: '0nAI',
+    color: '#a78bfa',
     items: [
       /* AI Assistant removed from nav — owner-only hidden route at /dashboard/ai */
       {
@@ -106,6 +117,7 @@ const navGroups: NavGroup[] = [
   },
   {
     label: 'Manage',
+    color: '#00d4ff',
     items: [
       {
         name: 'Contacts',
@@ -157,6 +169,7 @@ const navGroups: NavGroup[] = [
   },
   {
     label: 'Apps',
+    color: '#f97316',
     items: [
       {
         name: 'Chat',
@@ -240,6 +253,7 @@ const navGroups: NavGroup[] = [
   },
   {
     label: 'Account',
+    color: '#8b95a5',
     items: [
       {
         name: 'Invoices',
@@ -359,10 +373,11 @@ export default function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
             const items = group.label === 'Account' && isAdmin
               ? [...group.items, agencyItem, adminItem]
               : group.items
+            const catColor = group.color || CATEGORY_COLORS[group.label] || '#8b95a5'
             return (
               <div className="jp-menu-group" key={gi}>
                 {group.label && (
-                  <div className="jp-menu-group-label">{group.label}</div>
+                  <div className="jp-menu-group-label" style={{ color: catColor }}>{group.label}</div>
                 )}
                 {items.map((item) => {
                   const hasChildren = item.children && item.children.length > 0
@@ -373,17 +388,27 @@ export default function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
                       ? pathname === '/dashboard'
                       : pathname.startsWith(item.href)
 
+                  const navStyle: React.CSSProperties = isActive
+                    ? { background: '#000000', color: '#ffffff', borderRadius: 8 }
+                    : {}
+                  const iconStyle: React.CSSProperties = isActive
+                    ? { color: '#ffffff' }
+                    : { color: catColor }
+
                   return (
                     <div key={item.href}>
                       {hasChildren ? (
                         <button
                           onClick={() => toggleExpand(item.name)}
                           className={`jp-nav-item jp-nav-parent ${isChildActive(item.children) ? 'active' : ''}`}
+                          style={isChildActive(item.children) ? { background: '#000000', color: '#ffffff', borderRadius: 8 } : {}}
+                          onMouseEnter={e => { if (!isChildActive(item.children)) { e.currentTarget.style.background = catColor; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.borderRadius = '8px' } }}
+                          onMouseLeave={e => { if (!isChildActive(item.children)) { e.currentTarget.style.background = ''; e.currentTarget.style.color = '' } }}
                         >
-                          <span className="jp-nav-icon">{item.icon}</span>
+                          <span className="jp-nav-icon" style={isChildActive(item.children) ? { color: '#ffffff' } : { color: catColor }}>{item.icon}</span>
                           <span>{item.name}</span>
                           {item.badge && (
-                            <span className="jp-nav-badge">{item.badge}</span>
+                            <span className="jp-nav-badge" style={{ background: `${catColor}20`, color: catColor }}>{item.badge}</span>
                           )}
                           {item.badgeCyan && (
                             <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
@@ -399,11 +424,14 @@ export default function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
                           href={item.href}
                           onClick={onClose}
                           className={`jp-nav-item ${isActive ? 'active' : ''}`}
+                          style={navStyle}
+                          onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = catColor; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.borderRadius = '8px'; const icon = e.currentTarget.querySelector('.jp-nav-icon') as HTMLElement; if (icon) icon.style.color = '#ffffff' } }}
+                          onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = ''; e.currentTarget.style.color = ''; const icon = e.currentTarget.querySelector('.jp-nav-icon') as HTMLElement; if (icon) icon.style.color = catColor } }}
                         >
-                          <span className="jp-nav-icon">{item.icon}</span>
+                          <span className="jp-nav-icon" style={iconStyle}>{item.icon}</span>
                           <span>{item.name}</span>
                           {item.badge && (
-                            <span className="jp-nav-badge">{item.badge}</span>
+                            <span className="jp-nav-badge" style={{ background: `${catColor}20`, color: catColor }}>{item.badge}</span>
                           )}
                           {item.badgeCyan && (
                             <span className="jp-nav-badge cyan">{item.badgeCyan}</span>
