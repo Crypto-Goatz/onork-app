@@ -5,7 +5,13 @@ import "./jampack.css";
 export const metadata: Metadata = {
   title: "0nCore — AI That Runs Your Business | 1,589 Tools, 102 Services",
   description: "The AI-powered CRM with 1,589 tools across 102 services. Automations, voice AI, course generator, domain management — all from one dashboard. Built on 0nMCP. 5 patents pending.",
-  icons: { icon: "/favicon.ico" },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/favicon.png', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
   openGraph: {
     title: "0nCore — One Brain. Every Service. Zero Limits.",
     description: "AI-powered CRM with 900+ tools. Automations builder, voice AI, course generator, domain management, multi-AI council. Your AI runs your business. Starts at $80/mo.",
