@@ -144,6 +144,110 @@ export default function LandingPage() {
         </button>
       </div>
 
+      {/* 0nVideo Coming Soon */}
+      <div
+        style={{
+          marginTop: '4rem',
+          opacity: showToggle ? 1 : 0,
+          transform: showToggle ? 'translateY(0)' : 'translateY(30px)',
+          transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s',
+          textAlign: 'center',
+          position: 'relative',
+          zIndex: 2,
+          maxWidth: '500px',
+          width: '100%',
+        }}
+      >
+        <div
+          style={{
+            position: 'relative',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            border: '1px solid rgba(126, 217, 87, 0.2)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 0 40px rgba(126, 217, 87, 0.08)',
+            background: 'rgba(4,10,26,0.6)',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          {/* GIF preview */}
+          <div style={{ position: 'relative', aspectRatio: '16/9', overflow: 'hidden' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/bg/0nvideo-preview.gif"
+              alt="0nVideo preview"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                opacity: 0.85,
+              }}
+            />
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(0deg, rgba(4,10,26,0.9) 0%, transparent 50%)',
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+              padding: '20px',
+            }}>
+              <div>
+                <div style={{
+                  fontSize: 'clamp(20px, 3vw, 28px)',
+                  fontWeight: 800,
+                  color: '#ffffff',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.1,
+                  fontFamily: 'var(--font-display, system-ui)',
+                }}>
+                  0n<span style={{ color: 'var(--accent, #7ed957)' }}>Video</span>
+                </div>
+                <div style={{
+                  fontSize: '10px',
+                  color: 'var(--accent, #7ed957)',
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  fontWeight: 600,
+                  marginTop: '4px',
+                }}>
+                  Coming Soon
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Description bar */}
+          <div style={{
+            padding: '14px 18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderTop: '1px solid rgba(126, 217, 87, 0.1)',
+          }}>
+            <span style={{
+              fontSize: '12px',
+              color: 'rgba(255,255,255,0.6)',
+              lineHeight: 1.4,
+            }}>
+              AI-generated video, personalized for every customer.
+            </span>
+            <span style={{
+              fontSize: '10px',
+              padding: '4px 10px',
+              borderRadius: '999px',
+              background: 'rgba(126, 217, 87, 0.1)',
+              border: '1px solid rgba(126, 217, 87, 0.25)',
+              color: 'var(--accent, #7ed957)',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              marginLeft: '12px',
+            }}>
+              Q3 2026
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Powered by footer */}
       <div
         style={{
