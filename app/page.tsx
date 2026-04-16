@@ -65,34 +65,25 @@ export default function LandingPage() {
         position: 'relative',
       }}
     >
-      {/* YouTube background — plays once on load, no controls */}
+      {/* Parallax orb background — fixed position, gradient overlay */}
       <div style={{
-        position: 'fixed', top: '-60px', left: '-60px',
-        width: 'calc(100% + 120px)', height: 'calc(100% + 120px)',
-        zIndex: 0, overflow: 'hidden', pointerEvents: 'none',
-        opacity: 0.55,
-      }}>
-        <iframe
-          src="https://www.youtube.com/embed/BsVidbzuSEU?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&loop=0&playsinline=1&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0&start=0&enablejsapi=0"
-          title="Background"
-          frameBorder="0"
-          allow="autoplay; encrypted-media"
-          style={{
-            width: '100%', height: '100%',
-            objectFit: 'cover',
-            pointerEvents: 'none',
-            transform: 'scale(1.2)',
-          }}
-        />
-      </div>
+        position: 'fixed', inset: 0, zIndex: 0,
+        backgroundImage: 'url(/bg/0n-orb.webp)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        backgroundAttachment: 'fixed',
+        backgroundRepeat: 'no-repeat',
+        willChange: 'transform',
+      }} />
 
-      {/* Dark overlay to ensure text readability */}
+      {/* Multi-layer gradient overlay for depth + readability */}
       <div style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'radial-gradient(ellipse at center, rgba(4,10,26,0.4) 0%, rgba(4,10,26,0.75) 100%)',
-        zIndex: 1,
-        pointerEvents: 'none',
+        position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none',
+        background: [
+          'radial-gradient(ellipse at 50% 40%, transparent 0%, rgba(4,10,26,0.3) 50%, rgba(4,10,26,0.85) 100%)',
+          'linear-gradient(180deg, rgba(4,10,26,0.1) 0%, rgba(4,10,26,0.4) 40%, rgba(4,10,26,0.7) 100%)',
+          'radial-gradient(circle at 50% 50%, rgba(126,217,87,0.06) 0%, transparent 60%)',
+        ].join(', '),
       }} />
 
       {/* Grain overlay */}
