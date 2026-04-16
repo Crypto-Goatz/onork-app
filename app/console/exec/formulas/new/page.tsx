@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Variable {
@@ -9,17 +9,15 @@ interface Variable {
   label: string
   description: string
   category: string
+  data_type: string
   min_value: number
   max_value: number
-  default_value: number
-  direction: 'positive' | 'negative'
-  data_type: string
 }
 
 interface FormulaVar {
   variable_key: string
-  label: string
   weight: number
+  label: string
 }
 
 type Tab = 'build' | 'thresholds' | 'preview'
@@ -31,114 +29,113 @@ const BAND_COLORS = {
   CRITICAL: '#ef4444',
 }
 
-function getBand(score: number, critical: number, review: number, monitor: number): keyof typeof BAND_COLORS {
-  if (score < critical) return 'CRITICAL'
-  if (score < review) return 'REVIEW'
-  if (score < monitor) return 'MONITOR'
-  return 'NOMINAL'
+const CATEGORY_COLORS: Record<string, string> = {
+  engagement: '#00d4ff',
+  activity: '#a78bfa',
+  fit: '#6EE05A',
+  pipeline: '#f5c518',
+  custom: '#f97316',
+}
+
+function getBandColor(score: number, critical: number, review: number, monitor: number): string {
+  if (score < critical) return BAND_COLORS.CRITICAL
+  if (score < review) return BAND_COLORS.REVIEW
+  if (score < monitor) return BAND_COLORS.MONITOR
+  return BAND_COLORS.NOMINAL
 }
 
 export default function FormulaBuilderPage() {
   const router = useRouter()
-  const [tab, setTab] = useState<Tab>('build')
-  const [name, setName] = useState('')
-  const [category, setCategory] = useState('sales')
-  const [description, setDescription] = useState('')
-  const [icon, setIcon] = useState('\u2B21')
+  const [variables, setVariables] = useState<Variable[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState<Tab>('build')
 
+  // Formula fields
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('custom')
+
+  // Numerator / Denominator
   const [numerator, setNumerator] = useState<FormulaVar[]>([])
   const [denominator, setDenominator] = useState<FormulaVar[]>([])
 
+  // Thresholds
   const [thresholdCritical, setThresholdCritical] = useState(40)
   const [thresholdReview, setThresholdReview] = useState(60)
   const [thresholdMonitor, setThresholdMonitor] = useState(80)
 
-  const [variables, setVariables] = useState<Variable[]>([])
-  const [varSearch, setVarSearch] = useState('')
-  const [saving, setSaving] = useState(false)
+  // Preview values
   const [previewValues, setPreviewValues] = useState<Record<string, number>>({})
 
   useEffect(() => {
     fetch('/api/exec/variables')
       .then(r => r.json())
-      .then(d => setVariables(d.variables || []))
-      .catch(() => {})
+      .then(d => { setVariables(d.variables || []); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [])
 
-  // Group variables by category
   const grouped = variables.reduce<Record<string, Variable[]>>((acc, v) => {
-    const cat = v.category || 'uncategorized'
+    const cat = v.category || 'custom'
     if (!acc[cat]) acc[cat] = []
     acc[cat].push(v)
     return acc
   }, {})
 
-  const filteredGroups = Object.entries(grouped)
-    .map(([cat, vars]) => ({
-      category: cat,
-      variables: vars.filter(v =>
-        !varSearch || v.label.toLowerCase().includes(varSearch.toLowerCase()) || v.key.toLowerCase().includes(varSearch.toLowerCase())
-      ),
-    }))
-    .filter(g => g.variables.length > 0)
-
-  const addToNumerator = (v: Variable) => {
-    if (numerator.find(n => n.variable_key === v.key)) return
-    setNumerator(prev => [...prev, { variable_key: v.key, label: v.label, weight: 1.0 }])
+  function addToNumerator(v: Variable) {
+    if (numerator.some(n => n.variable_key === v.key)) return
+    setNumerator([...numerator, { variable_key: v.key, weight: 1.0, label: v.label }])
   }
 
-  const addToDenominator = (v: Variable) => {
-    if (denominator.find(d => d.variable_key === v.key)) return
-    setDenominator(prev => [...prev, { variable_key: v.key, label: v.label, weight: 1.0 }])
+  function addToDenominator(v: Variable) {
+    if (denominator.some(d => d.variable_key === v.key)) return
+    setDenominator([...denominator, { variable_key: v.key, weight: 1.0, label: v.label }])
   }
 
-  const removeNumerator = (key: string) => setNumerator(prev => prev.filter(n => n.variable_key !== key))
-  const removeDenominator = (key: string) => setDenominator(prev => prev.filter(d => d.variable_key !== key))
-
-  const updateWeight = (list: 'numerator' | 'denominator', key: string, weight: number) => {
-    const setter = list === 'numerator' ? setNumerator : setDenominator
-    setter(prev => prev.map(v => v.variable_key === key ? { ...v, weight } : v))
+  function removeNumerator(key: string) {
+    setNumerator(numerator.filter(n => n.variable_key !== key))
   }
 
-  // Preview score computation (mirrors formula-engine.ts)
-  const computePreview = useCallback(() => {
-    const varDefMap: Record<string, Variable> = {}
-    for (const v of variables) varDefMap[v.key] = v
+  function removeDenominator(key: string) {
+    setDenominator(denominator.filter(d => d.variable_key !== key))
+  }
 
-    let numSum = 0, numWSum = 0
-    for (const fv of numerator) {
-      const def = varDefMap[fv.variable_key]
-      const raw = previewValues[fv.variable_key] ?? def?.default_value ?? 50
-      const range = def ? def.max_value - def.min_value : 100
-      const norm = range > 0 ? Math.max(0, Math.min(1, (raw - (def?.min_value ?? 0)) / range)) : 0.5
-      numSum += norm * fv.weight
-      numWSum += fv.weight
+  function updateWeight(list: FormulaVar[], setList: (v: FormulaVar[]) => void, key: string, weight: number) {
+    setList(list.map(item => item.variable_key === key ? { ...item, weight } : item))
+  }
+
+  function computePreviewScore(): number {
+    const allVars = [...numerator, ...denominator]
+    if (allVars.length === 0) return 0
+
+    let numSum = 0
+    let numWeightSum = 0
+    for (const n of numerator) {
+      const val = previewValues[n.variable_key] ?? 50
+      numSum += val * n.weight
+      numWeightSum += n.weight
     }
 
-    let denSum = 0, denWSum = 0
-    for (const fv of denominator) {
-      const def = varDefMap[fv.variable_key]
-      const raw = previewValues[fv.variable_key] ?? def?.default_value ?? 50
-      const range = def ? def.max_value - def.min_value : 100
-      const norm = range > 0 ? Math.max(0, Math.min(1, (raw - (def?.min_value ?? 0)) / range)) : 0.5
-      denSum += norm * fv.weight
-      denWSum += fv.weight
+    let denSum = 0
+    let denWeightSum = 0
+    for (const d of denominator) {
+      const val = previewValues[d.variable_key] ?? 50
+      denSum += val * d.weight
+      denWeightSum += d.weight
     }
 
-    const numNorm = numWSum > 0 ? numSum / numWSum : 0.5
-    const denNorm = denWSum > 0 ? Math.max(denSum / denWSum, 0.01) : 0.01
-
-    let raw: number
     if (denominator.length === 0) {
-      raw = numNorm * 100
-    } else {
-      raw = (numNorm / denNorm) * 50
+      return numWeightSum > 0 ? Math.round(numSum / numWeightSum) : 0
     }
 
-    return Math.min(Math.max(Math.round(raw), 1), 100)
-  }, [numerator, denominator, previewValues, variables])
+    const numAvg = numWeightSum > 0 ? numSum / numWeightSum : 0
+    const denAvg = denWeightSum > 0 ? denSum / denWeightSum : 1
+    if (denAvg === 0) return 0
+    const raw = (numAvg / denAvg) * 50
+    return Math.round(Math.max(0, Math.min(100, raw)))
+  }
 
-  const handleSave = async () => {
+  async function handleSave() {
     if (!name.trim()) return
     setSaving(true)
     try {
@@ -146,8 +143,11 @@ export default function FormulaBuilderPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name, description, category, icon,
-          numerator, denominator,
+          name: name.trim(),
+          description: description.trim(),
+          category,
+          numerator,
+          denominator,
           threshold_critical: thresholdCritical,
           threshold_review: thresholdReview,
           threshold_monitor: thresholdMonitor,
@@ -161,37 +161,7 @@ export default function FormulaBuilderPage() {
     }
   }
 
-  const previewScore = computePreview()
-  const previewBand = getBand(previewScore, thresholdCritical, thresholdReview, thresholdMonitor)
-
-  const allFormulaVars = [...numerator, ...denominator]
-  const allVarKeys = allFormulaVars.map(v => v.variable_key)
-
-  // Initialize preview values for new variables
-  useEffect(() => {
-    const newVals = { ...previewValues }
-    let changed = false
-    for (const fv of allFormulaVars) {
-      if (previewValues[fv.variable_key] === undefined) {
-        const def = variables.find(v => v.key === fv.variable_key)
-        newVals[fv.variable_key] = def?.default_value ?? 50
-        changed = true
-      }
-    }
-    if (changed) setPreviewValues(newVals)
-  }, [allVarKeys.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const inputStyle = {
-    width: '100%',
-    padding: '10px 14px',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '10px',
-    color: '#e4efff',
-    fontSize: '14px',
-    fontFamily: '"DM Sans", system-ui, sans-serif',
-    outline: 'none',
-  } as const
+  const mono: React.CSSProperties = { fontFamily: '"JetBrains Mono", monospace' }
 
   return (
     <div style={{
@@ -201,220 +171,188 @@ export default function FormulaBuilderPage() {
       padding: '32px',
     }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        {/* Back link */}
-        <a
-          href="/console/exec/formulas"
-          style={{ fontSize: '13px', color: '#3a4f6a', textDecoration: 'none', fontFamily: '"JetBrains Mono", monospace' }}
-        >
-          &larr; Back to Formulas
-        </a>
-
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#e4efff', margin: '12px 0 24px', letterSpacing: '-0.5px' }}>
-          Formula Builder
-        </h1>
-
-        {/* Meta inputs */}
-        <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 160px', gap: '12px', marginBottom: '24px' }}>
-          <div>
-            <label style={{ fontSize: '11px', color: '#3a4f6a', fontFamily: '"JetBrains Mono", monospace', display: 'block', marginBottom: '4px' }}>icon</label>
-            <input
-              value={icon}
-              onChange={e => setIcon(e.target.value)}
-              style={{ ...inputStyle, textAlign: 'center', fontSize: '20px', padding: '8px' }}
-            />
-          </div>
-          <div>
-            <label style={{ fontSize: '11px', color: '#3a4f6a', fontFamily: '"JetBrains Mono", monospace', display: 'block', marginBottom: '4px' }}>name</label>
-            <input
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="e.g. Pipeline Velocity Score"
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={{ fontSize: '11px', color: '#3a4f6a', fontFamily: '"JetBrains Mono", monospace', display: 'block', marginBottom: '4px' }}>category</label>
-            <select
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-              style={{ ...inputStyle, cursor: 'pointer' }}
-            >
-              <option value="sales">sales</option>
-              <option value="engagement">engagement</option>
-              <option value="health">health</option>
-              <option value="retention">retention</option>
-              <option value="custom">custom</option>
-            </select>
-          </div>
-        </div>
+        {/* Header */}
         <div style={{ marginBottom: '24px' }}>
-          <label style={{ fontSize: '11px', color: '#3a4f6a', fontFamily: '"JetBrains Mono", monospace', display: 'block', marginBottom: '4px' }}>description</label>
-          <textarea
+          <button
+            onClick={() => router.push('/console/exec/formulas')}
+            style={{
+              background: 'none', border: 'none', color: '#3a4f6a', cursor: 'pointer',
+              fontSize: '13px', padding: 0, marginBottom: '12px', ...mono,
+            }}
+          >
+            &larr; Back to Formulas
+          </button>
+          <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#e4efff', margin: 0, letterSpacing: '-0.5px' }}>
+            Formula Builder
+          </h1>
+          <p style={{ fontSize: '14px', color: '#3a4f6a', marginTop: '4px', ...mono }}>
+            Create a custom scoring formula
+          </p>
+        </div>
+
+        {/* Name / Description / Category */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '12px', marginBottom: '24px',
+        }}>
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Formula name"
+            style={{
+              padding: '10px 14px', borderRadius: '10px', fontSize: '14px',
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              color: '#e4efff', outline: 'none',
+            }}
+          />
+          <input
             value={description}
             onChange={e => setDescription(e.target.value)}
-            placeholder="What does this formula measure?"
-            rows={2}
-            style={{ ...inputStyle, resize: 'vertical' }}
+            placeholder="Description"
+            style={{
+              padding: '10px 14px', borderRadius: '10px', fontSize: '14px',
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              color: '#e4efff', outline: 'none',
+            }}
           />
+          <select
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+            style={{
+              padding: '10px 14px', borderRadius: '10px', fontSize: '14px',
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              color: '#e4efff', outline: 'none', minWidth: '130px',
+            }}
+          >
+            <option value="custom">Custom</option>
+            <option value="sales">Sales</option>
+            <option value="engagement">Engagement</option>
+            <option value="health">Health</option>
+            <option value="retention">Retention</option>
+          </select>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '4px' }}>
-          {(['build', 'thresholds', 'preview'] as const).map(t => (
+        <div style={{ display: 'flex', gap: '4px', marginBottom: '24px' }}>
+          {(['build', 'thresholds', 'preview'] as const).map(tab => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={tab}
+              onClick={() => setActiveTab(tab)}
               style={{
-                flex: 1, padding: '10px 0', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                fontSize: '13px', fontWeight: 600,
-                fontFamily: '"JetBrains Mono", monospace',
-                background: tab === t ? 'rgba(110,224,90,0.12)' : 'transparent',
-                color: tab === t ? '#6EE05A' : '#3a4f6a',
-                transition: 'all 0.15s',
+                padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
+                border: 'none', cursor: 'pointer',
+                background: activeTab === tab ? 'rgba(110,224,90,0.15)' : 'rgba(255,255,255,0.03)',
+                color: activeTab === tab ? '#6EE05A' : '#b8cce0',
+                ...mono,
               }}
             >
-              {t === 'build' ? 'Build' : t === 'thresholds' ? 'Thresholds' : 'Preview'}
+              {tab === 'build' ? 'Build' : tab === 'thresholds' ? 'Thresholds' : 'Preview'}
             </button>
           ))}
         </div>
 
         {/* BUILD TAB */}
-        {tab === 'build' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
+        {activeTab === 'build' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
             {/* Left: Variable Picker */}
             <div style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '16px',
-              padding: '16px',
-              maxHeight: 'calc(100vh - 400px)',
-              overflowY: 'auto',
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '16px', padding: '16px', maxHeight: '600px', overflowY: 'auto',
             }}>
-              <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#e4efff', margin: '0 0 12px' }}>Variables</h3>
-              <input
-                value={varSearch}
-                onChange={e => setVarSearch(e.target.value)}
-                placeholder="Search variables..."
-                style={{ ...inputStyle, marginBottom: '12px', fontSize: '12px', padding: '8px 12px' }}
-              />
-
-              {filteredGroups.map(group => (
-                <div key={group.category} style={{ marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#e4efff', margin: '0 0 12px', ...mono }}>
+                Variables
+              </h3>
+              {loading && (
+                <p style={{ fontSize: '12px', color: '#3a4f6a', ...mono }}>Loading...</p>
+              )}
+              {Object.entries(grouped).map(([cat, vars]) => (
+                <div key={cat} style={{ marginBottom: '16px' }}>
                   <div style={{
-                    fontSize: '10px', fontWeight: 700, color: '#3a4f6a', letterSpacing: '1px',
-                    textTransform: 'uppercase', marginBottom: '8px',
-                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px',
+                    color: CATEGORY_COLORS[cat] || '#3a4f6a', marginBottom: '8px',
+                    textTransform: 'uppercase', ...mono,
                   }}>
-                    {group.category}
+                    {cat}
                   </div>
-                  {group.variables.map(v => {
-                    const inNum = numerator.some(n => n.variable_key === v.key)
-                    const inDen = denominator.some(d => d.variable_key === v.key)
-                    return (
-                      <div key={v.id} style={{
-                        padding: '10px',
-                        borderRadius: '10px',
-                        background: inNum || inDen ? 'rgba(110,224,90,0.06)' : 'rgba(255,255,255,0.02)',
-                        border: inNum || inDen ? '1px solid rgba(110,224,90,0.15)' : '1px solid transparent',
-                        marginBottom: '6px',
-                      }}>
-                        <div style={{ fontSize: '13px', fontWeight: 500, color: '#e4efff', marginBottom: '2px' }}>{v.label}</div>
-                        <div style={{ fontSize: '11px', color: '#3a4f6a', marginBottom: '8px', lineHeight: '1.4' }}>{v.description}</div>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button
-                            onClick={() => addToNumerator(v)}
-                            disabled={inNum}
-                            style={{
-                              flex: 1, padding: '5px 0', borderRadius: '6px', border: 'none', cursor: inNum ? 'default' : 'pointer',
-                              fontSize: '11px', fontWeight: 600,
-                              fontFamily: '"JetBrains Mono", monospace',
-                              background: inNum ? 'rgba(110,224,90,0.08)' : 'rgba(110,224,90,0.15)',
-                              color: inNum ? '#3a4f6a' : '#6EE05A',
-                              opacity: inNum ? 0.5 : 1,
-                            }}
-                          >
-                            + Numerator &uarr;
-                          </button>
-                          <button
-                            onClick={() => addToDenominator(v)}
-                            disabled={inDen}
-                            style={{
-                              flex: 1, padding: '5px 0', borderRadius: '6px', border: 'none', cursor: inDen ? 'default' : 'pointer',
-                              fontSize: '11px', fontWeight: 600,
-                              fontFamily: '"JetBrains Mono", monospace',
-                              background: inDen ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.15)',
-                              color: inDen ? '#3a4f6a' : '#ef4444',
-                              opacity: inDen ? 0.5 : 1,
-                            }}
-                          >
-                            + Denominator &darr;
-                          </button>
-                        </div>
+                  {vars.map(v => (
+                    <div key={v.id} style={{
+                      padding: '8px 10px', borderRadius: '8px', marginBottom: '4px',
+                      background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
+                    }}>
+                      <div style={{ fontSize: '13px', color: '#e4efff', fontWeight: 500, marginBottom: '2px' }}>
+                        {v.label}
                       </div>
-                    )
-                  })}
+                      <div style={{ fontSize: '11px', color: '#3a4f6a', marginBottom: '6px', lineHeight: '1.4' }}>
+                        {v.description || v.key}
+                      </div>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button
+                          onClick={() => addToNumerator(v)}
+                          style={{
+                            padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600,
+                            border: 'none', cursor: 'pointer',
+                            background: 'rgba(110,224,90,0.15)', color: '#6EE05A', ...mono,
+                          }}
+                        >
+                          +Num &uarr;
+                        </button>
+                        <button
+                          onClick={() => addToDenominator(v)}
+                          style={{
+                            padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600,
+                            border: 'none', cursor: 'pointer',
+                            background: 'rgba(239,68,68,0.15)', color: '#ef4444', ...mono,
+                          }}
+                        >
+                          +Den &darr;
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ))}
-
-              {filteredGroups.length === 0 && (
-                <p style={{ color: '#3a4f6a', fontSize: '12px', textAlign: 'center', padding: '20px 0' }}>
-                  {variables.length === 0 ? 'No variables defined yet' : 'No matching variables'}
-                </p>
+              {!loading && variables.length === 0 && (
+                <p style={{ fontSize: '12px', color: '#3a4f6a', ...mono }}>No variables found</p>
               )}
             </div>
 
             {/* Right: Formula Structure */}
-            <div>
-              {/* Numerator section */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {/* Numerator */}
               <div style={{
-                background: 'rgba(110,224,90,0.04)',
-                border: '1px solid rgba(110,224,90,0.1)',
-                borderRadius: '16px',
-                padding: '20px',
-                marginBottom: '4px',
+                background: 'rgba(110,224,90,0.04)', border: '1px solid rgba(110,224,90,0.15)',
+                borderRadius: '16px', padding: '16px', minHeight: '120px',
               }}>
-                <h3 style={{
-                  fontSize: '12px', fontWeight: 700, color: '#6EE05A', margin: '0 0 12px',
-                  fontFamily: '"JetBrains Mono", monospace', letterSpacing: '1px', textTransform: 'uppercase',
-                }}>
-                  Numerator (strength signals)
+                <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#6EE05A', margin: '0 0 12px', ...mono }}>
+                  NUMERATOR
                 </h3>
                 {numerator.length === 0 && (
-                  <p style={{ color: '#3a4f6a', fontSize: '12px', fontStyle: 'italic' }}>
-                    Add variables from the picker on the left
+                  <p style={{ fontSize: '12px', color: '#3a4f6a', ...mono }}>
+                    Add variables from the left panel
                   </p>
                 )}
-                {numerator.map(fv => (
-                  <div key={fv.variable_key} style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '10px 14px', borderRadius: '10px',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.04)',
-                    marginBottom: '8px',
+                {numerator.map(n => (
+                  <div key={n.variable_key} style={{
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 10px',
+                    borderRadius: '8px', marginBottom: '6px', background: 'rgba(255,255,255,0.03)',
                   }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#e4efff' }}>{fv.label}</div>
-                      <div style={{ fontSize: '10px', color: '#3a4f6a', fontFamily: '"JetBrains Mono", monospace' }}>{fv.variable_key}</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '10px', color: '#3a4f6a', fontFamily: '"JetBrains Mono", monospace' }}>weight</span>
-                      <input
-                        type="range"
-                        min={0.1} max={2.0} step={0.1}
-                        value={fv.weight}
-                        onChange={e => updateWeight('numerator', fv.variable_key, parseFloat(e.target.value))}
-                        style={{ width: '80px', accentColor: '#6EE05A' }}
-                      />
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#6EE05A', fontFamily: '"JetBrains Mono", monospace', width: '32px', textAlign: 'right' }}>
-                        {fv.weight.toFixed(1)}
-                      </span>
-                    </div>
+                    <span style={{ flex: 1, fontSize: '13px', color: '#e4efff', fontWeight: 500 }}>{n.label}</span>
+                    <span style={{ fontSize: '11px', color: '#3a4f6a', ...mono }}>w:</span>
+                    <input
+                      type="range"
+                      min="0.1" max="2.0" step="0.1"
+                      value={n.weight}
+                      onChange={e => updateWeight(numerator, setNumerator, n.variable_key, parseFloat(e.target.value))}
+                      style={{ width: '80px', accentColor: '#6EE05A' }}
+                    />
+                    <span style={{ fontSize: '12px', color: '#6EE05A', width: '32px', textAlign: 'right', ...mono }}>
+                      {n.weight.toFixed(1)}
+                    </span>
                     <button
-                      onClick={() => removeNumerator(fv.variable_key)}
+                      onClick={() => removeNumerator(n.variable_key)}
                       style={{
-                        background: 'rgba(239,68,68,0.1)', border: 'none', color: '#ef4444',
-                        width: '28px', height: '28px', borderRadius: '6px', cursor: 'pointer',
-                        fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'rgba(239,68,68,0.15)', border: 'none', borderRadius: '6px',
+                        color: '#ef4444', cursor: 'pointer', padding: '4px 8px', fontSize: '12px',
+                        fontWeight: 700,
                       }}
                     >
                       &times;
@@ -425,68 +363,48 @@ export default function FormulaBuilderPage() {
 
               {/* Divider */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '12px 0',
+                textAlign: 'center', fontSize: '24px', fontWeight: 700, color: '#3a4f6a',
+                letterSpacing: '4px', padding: '4px 0',
               }}>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-                <span style={{
-                  fontSize: '12px', color: '#3a4f6a', fontFamily: '"JetBrains Mono", monospace',
-                  padding: '4px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px',
-                }}>
-                  &divide; divided by
-                </span>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+                &divide;
               </div>
 
-              {/* Denominator section */}
+              {/* Denominator */}
               <div style={{
-                background: 'rgba(239,68,68,0.04)',
-                border: '1px solid rgba(239,68,68,0.1)',
-                borderRadius: '16px',
-                padding: '20px',
+                background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.15)',
+                borderRadius: '16px', padding: '16px', minHeight: '120px',
               }}>
-                <h3 style={{
-                  fontSize: '12px', fontWeight: 700, color: '#ef4444', margin: '0 0 12px',
-                  fontFamily: '"JetBrains Mono", monospace', letterSpacing: '1px', textTransform: 'uppercase',
-                }}>
-                  Denominator (risk signals)
+                <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#ef4444', margin: '0 0 12px', ...mono }}>
+                  DENOMINATOR
                 </h3>
                 {denominator.length === 0 && (
-                  <p style={{ color: '#3a4f6a', fontSize: '12px', fontStyle: 'italic' }}>
-                    Optional. Leave empty for additive-only scoring.
+                  <p style={{ fontSize: '12px', color: '#3a4f6a', ...mono }}>
+                    Add variables from the left panel
                   </p>
                 )}
-                {denominator.map(fv => (
-                  <div key={fv.variable_key} style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '10px 14px', borderRadius: '10px',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.04)',
-                    marginBottom: '8px',
+                {denominator.map(d => (
+                  <div key={d.variable_key} style={{
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 10px',
+                    borderRadius: '8px', marginBottom: '6px', background: 'rgba(255,255,255,0.03)',
                   }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#e4efff' }}>{fv.label}</div>
-                      <div style={{ fontSize: '10px', color: '#3a4f6a', fontFamily: '"JetBrains Mono", monospace' }}>{fv.variable_key}</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '10px', color: '#3a4f6a', fontFamily: '"JetBrains Mono", monospace' }}>weight</span>
-                      <input
-                        type="range"
-                        min={0.1} max={2.0} step={0.1}
-                        value={fv.weight}
-                        onChange={e => updateWeight('denominator', fv.variable_key, parseFloat(e.target.value))}
-                        style={{ width: '80px', accentColor: '#ef4444' }}
-                      />
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#ef4444', fontFamily: '"JetBrains Mono", monospace', width: '32px', textAlign: 'right' }}>
-                        {fv.weight.toFixed(1)}
-                      </span>
-                    </div>
+                    <span style={{ flex: 1, fontSize: '13px', color: '#e4efff', fontWeight: 500 }}>{d.label}</span>
+                    <span style={{ fontSize: '11px', color: '#3a4f6a', ...mono }}>w:</span>
+                    <input
+                      type="range"
+                      min="0.1" max="2.0" step="0.1"
+                      value={d.weight}
+                      onChange={e => updateWeight(denominator, setDenominator, d.variable_key, parseFloat(e.target.value))}
+                      style={{ width: '80px', accentColor: '#ef4444' }}
+                    />
+                    <span style={{ fontSize: '12px', color: '#ef4444', width: '32px', textAlign: 'right', ...mono }}>
+                      {d.weight.toFixed(1)}
+                    </span>
                     <button
-                      onClick={() => removeDenominator(fv.variable_key)}
+                      onClick={() => removeDenominator(d.variable_key)}
                       style={{
-                        background: 'rgba(239,68,68,0.1)', border: 'none', color: '#ef4444',
-                        width: '28px', height: '28px', borderRadius: '6px', cursor: 'pointer',
-                        fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'rgba(239,68,68,0.15)', border: 'none', borderRadius: '6px',
+                        color: '#ef4444', cursor: 'pointer', padding: '4px 8px', fontSize: '12px',
+                        fontWeight: 700,
                       }}
                     >
                       &times;
@@ -499,274 +417,194 @@ export default function FormulaBuilderPage() {
         )}
 
         {/* THRESHOLDS TAB */}
-        {tab === 'thresholds' && (
+        {activeTab === 'thresholds' && (
           <div style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: '16px',
-            padding: '32px',
-            maxWidth: '600px',
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '16px', padding: '32px', maxWidth: '600px',
           }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#e4efff', margin: '0 0 24px' }}>
               Score Thresholds
             </h3>
-            <p style={{ fontSize: '13px', color: '#b8cce0', marginBottom: '32px', lineHeight: '1.6' }}>
-              Set the boundaries between score bands. Contacts scoring below the critical threshold trigger alerts.
-            </p>
 
-            {/* Threshold visualization bar */}
-            <div style={{ marginBottom: '40px' }}>
-              <div style={{
-                display: 'flex', height: '40px', borderRadius: '12px', overflow: 'hidden',
-                border: '1px solid rgba(255,255,255,0.06)',
-              }}>
-                <div style={{
-                  width: `${thresholdCritical}%`, background: 'rgba(239,68,68,0.2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '11px', fontWeight: 600, color: BAND_COLORS.CRITICAL,
-                  fontFamily: '"JetBrains Mono", monospace',
-                }}>
-                  {thresholdCritical > 15 ? 'CRITICAL' : ''}
-                </div>
-                <div style={{
-                  width: `${thresholdReview - thresholdCritical}%`, background: 'rgba(249,115,22,0.15)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '11px', fontWeight: 600, color: BAND_COLORS.REVIEW,
-                  fontFamily: '"JetBrains Mono", monospace',
-                }}>
-                  {thresholdReview - thresholdCritical > 10 ? 'REVIEW' : ''}
-                </div>
-                <div style={{
-                  width: `${thresholdMonitor - thresholdReview}%`, background: 'rgba(245,197,24,0.12)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '11px', fontWeight: 600, color: BAND_COLORS.MONITOR,
-                  fontFamily: '"JetBrains Mono", monospace',
-                }}>
-                  {thresholdMonitor - thresholdReview > 10 ? 'MONITOR' : ''}
-                </div>
-                <div style={{
-                  width: `${100 - thresholdMonitor}%`, background: 'rgba(110,224,90,0.1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '11px', fontWeight: 600, color: BAND_COLORS.NOMINAL,
-                  fontFamily: '"JetBrains Mono", monospace',
-                }}>
-                  {100 - thresholdMonitor > 10 ? 'NOMINAL' : ''}
-                </div>
-              </div>
-            </div>
-
-            {/* Critical slider */}
-            <div style={{ marginBottom: '28px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: BAND_COLORS.CRITICAL }}>Critical Threshold</label>
-                <span style={{ fontSize: '16px', fontWeight: 700, color: BAND_COLORS.CRITICAL, fontFamily: '"JetBrains Mono", monospace' }}>
-                  &lt; {thresholdCritical}
+            {/* Critical */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: BAND_COLORS.CRITICAL }}>
+                  Critical (below this = red)
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: BAND_COLORS.CRITICAL, ...mono }}>
+                  {thresholdCritical}
                 </span>
               </div>
               <input
-                type="range" min={5} max={thresholdReview - 5} value={thresholdCritical}
-                onChange={e => setThresholdCritical(parseInt(e.target.value))}
+                type="range" min="10" max="90" value={thresholdCritical}
+                onChange={e => {
+                  const v = parseInt(e.target.value)
+                  setThresholdCritical(v)
+                  if (v >= thresholdReview) setThresholdReview(v + 5)
+                  if (v >= thresholdMonitor) setThresholdMonitor(v + 10)
+                }}
                 style={{ width: '100%', accentColor: BAND_COLORS.CRITICAL }}
               />
-              <p style={{ fontSize: '11px', color: '#3a4f6a', marginTop: '4px' }}>Scores below this trigger critical alerts</p>
             </div>
 
-            {/* Review slider */}
-            <div style={{ marginBottom: '28px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: BAND_COLORS.REVIEW }}>Review Threshold</label>
-                <span style={{ fontSize: '16px', fontWeight: 700, color: BAND_COLORS.REVIEW, fontFamily: '"JetBrains Mono", monospace' }}>
-                  &lt; {thresholdReview}
+            {/* Review */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: BAND_COLORS.REVIEW }}>
+                  Review (below this = orange)
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: BAND_COLORS.REVIEW, ...mono }}>
+                  {thresholdReview}
                 </span>
               </div>
               <input
-                type="range" min={thresholdCritical + 5} max={thresholdMonitor - 5} value={thresholdReview}
-                onChange={e => setThresholdReview(parseInt(e.target.value))}
+                type="range" min="20" max="95" value={thresholdReview}
+                onChange={e => {
+                  const v = parseInt(e.target.value)
+                  setThresholdReview(v)
+                  if (v <= thresholdCritical) setThresholdCritical(v - 5)
+                  if (v >= thresholdMonitor) setThresholdMonitor(v + 5)
+                }}
                 style={{ width: '100%', accentColor: BAND_COLORS.REVIEW }}
               />
-              <p style={{ fontSize: '11px', color: '#3a4f6a', marginTop: '4px' }}>Scores in this range need manual review</p>
             </div>
 
-            {/* Monitor slider */}
-            <div style={{ marginBottom: '28px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: BAND_COLORS.MONITOR }}>Monitor Threshold</label>
-                <span style={{ fontSize: '16px', fontWeight: 700, color: BAND_COLORS.MONITOR, fontFamily: '"JetBrains Mono", monospace' }}>
-                  &lt; {thresholdMonitor}
+            {/* Monitor */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: BAND_COLORS.MONITOR }}>
+                  Monitor (below this = yellow)
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: BAND_COLORS.MONITOR, ...mono }}>
+                  {thresholdMonitor}
                 </span>
               </div>
               <input
-                type="range" min={thresholdReview + 5} max={95} value={thresholdMonitor}
-                onChange={e => setThresholdMonitor(parseInt(e.target.value))}
+                type="range" min="30" max="99" value={thresholdMonitor}
+                onChange={e => {
+                  const v = parseInt(e.target.value)
+                  setThresholdMonitor(v)
+                  if (v <= thresholdReview) setThresholdReview(v - 5)
+                  if (v <= thresholdCritical) setThresholdCritical(v - 10)
+                }}
                 style={{ width: '100%', accentColor: BAND_COLORS.MONITOR }}
               />
-              <p style={{ fontSize: '11px', color: '#3a4f6a', marginTop: '4px' }}>Scores above this are nominal (healthy)</p>
+            </div>
+
+            {/* Preview bar */}
+            <div style={{ marginTop: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ fontSize: '10px', color: '#3a4f6a', ...mono }}>0</span>
+                <span style={{ fontSize: '10px', color: '#3a4f6a', ...mono }}>100</span>
+              </div>
+              <div style={{ display: 'flex', height: '12px', borderRadius: '6px', overflow: 'hidden', width: '100%' }}>
+                <div style={{ width: `${thresholdCritical}%`, background: BAND_COLORS.CRITICAL }} />
+                <div style={{ width: `${thresholdReview - thresholdCritical}%`, background: BAND_COLORS.REVIEW }} />
+                <div style={{ width: `${thresholdMonitor - thresholdReview}%`, background: BAND_COLORS.MONITOR }} />
+                <div style={{ width: `${100 - thresholdMonitor}%`, background: BAND_COLORS.NOMINAL }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+                <span style={{ fontSize: '11px', color: BAND_COLORS.CRITICAL, ...mono }}>Critical &lt;{thresholdCritical}</span>
+                <span style={{ fontSize: '11px', color: BAND_COLORS.REVIEW, ...mono }}>Review &lt;{thresholdReview}</span>
+                <span style={{ fontSize: '11px', color: BAND_COLORS.MONITOR, ...mono }}>Monitor &lt;{thresholdMonitor}</span>
+                <span style={{ fontSize: '11px', color: BAND_COLORS.NOMINAL, ...mono }}>Nominal</span>
+              </div>
             </div>
           </div>
         )}
 
         {/* PREVIEW TAB */}
-        {tab === 'preview' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px' }}>
-            {/* Variable sliders */}
-            <div style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '16px',
-              padding: '24px',
-            }}>
-              <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#e4efff', margin: '0 0 16px' }}>
-                Adjust Variable Values
-              </h3>
-              {allFormulaVars.length === 0 && (
-                <p style={{ color: '#3a4f6a', fontSize: '13px' }}>Add variables in the Build tab first.</p>
-              )}
-              {allFormulaVars.map(fv => {
-                const def = variables.find(v => v.key === fv.variable_key)
-                const min = def?.min_value ?? 0
-                const max = def?.max_value ?? 100
-                const val = previewValues[fv.variable_key] ?? def?.default_value ?? 50
-                const isNum = numerator.some(n => n.variable_key === fv.variable_key)
-                return (
-                  <div key={fv.variable_key} style={{ marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '13px', color: '#e4efff' }}>{fv.label}</span>
-                      <span style={{
-                        fontSize: '13px', fontWeight: 600,
-                        color: isNum ? '#6EE05A' : '#ef4444',
-                        fontFamily: '"JetBrains Mono", monospace',
-                      }}>
-                        {val}
-                      </span>
-                    </div>
-                    <input
-                      type="range" min={min} max={max} value={val}
-                      onChange={e => setPreviewValues(prev => ({ ...prev, [fv.variable_key]: parseInt(e.target.value) }))}
-                      style={{ width: '100%', accentColor: isNum ? '#6EE05A' : '#ef4444' }}
-                    />
-                    <div style={{
-                      display: 'flex', justifyContent: 'space-between',
-                      fontSize: '10px', color: '#3a4f6a', fontFamily: '"JetBrains Mono", monospace', marginTop: '2px',
-                    }}>
-                      <span>{min}</span>
-                      <span style={{
-                        padding: '1px 6px', borderRadius: '3px',
-                        background: isNum ? 'rgba(110,224,90,0.1)' : 'rgba(239,68,68,0.1)',
-                        color: isNum ? '#6EE05A' : '#ef4444',
-                      }}>
-                        {isNum ? 'numerator' : 'denominator'} w:{fv.weight.toFixed(1)}
-                      </span>
-                      <span>{max}</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Score display */}
-            <div style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '16px',
-              padding: '32px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'sticky',
-              top: '32px',
-              height: 'fit-content',
-            }}>
-              <div style={{
-                fontSize: '10px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase',
-                color: '#3a4f6a', fontFamily: '"JetBrains Mono", monospace', marginBottom: '16px',
-              }}>
-                COMPUTED SCORE
-              </div>
-
-              {/* Large score circle */}
-              <div style={{
-                width: '160px', height: '160px', borderRadius: '50%',
-                background: `radial-gradient(circle at center, ${BAND_COLORS[previewBand]}12, transparent 70%)`,
-                border: `3px solid ${BAND_COLORS[previewBand]}`,
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                marginBottom: '16px',
-                boxShadow: `0 0 40px ${BAND_COLORS[previewBand]}20`,
-              }}>
-                <div style={{
-                  fontSize: '48px', fontWeight: 700,
-                  color: BAND_COLORS[previewBand],
-                  fontFamily: '"JetBrains Mono", monospace',
-                  lineHeight: 1,
-                }}>
-                  {previewScore}
-                </div>
-                <div style={{ fontSize: '11px', color: '#b8cce0', fontFamily: '"JetBrains Mono", monospace', marginTop: '4px' }}>
-                  / 100
-                </div>
-              </div>
-
-              {/* Band label */}
-              <div style={{
-                padding: '6px 20px', borderRadius: '8px',
-                background: `${BAND_COLORS[previewBand]}18`,
-                color: BAND_COLORS[previewBand],
-                fontSize: '13px', fontWeight: 700, letterSpacing: '1px',
-                fontFamily: '"JetBrains Mono", monospace',
-              }}>
-                {previewBand}
-              </div>
-
-              {/* Threshold legend */}
-              <div style={{ marginTop: '24px', width: '100%' }}>
-                {[
-                  { band: 'CRITICAL' as const, range: `0-${thresholdCritical - 1}` },
-                  { band: 'REVIEW' as const, range: `${thresholdCritical}-${thresholdReview - 1}` },
-                  { band: 'MONITOR' as const, range: `${thresholdReview}-${thresholdMonitor - 1}` },
-                  { band: 'NOMINAL' as const, range: `${thresholdMonitor}-100` },
-                ].map(item => (
-                  <div key={item.band} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)',
+        {activeTab === 'preview' && (
+          <div style={{
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '16px', padding: '32px',
+          }}>
+            {numerator.length === 0 && denominator.length === 0 ? (
+              <p style={{ fontSize: '14px', color: '#3a4f6a', textAlign: 'center', padding: '40px 0', ...mono }}>
+                Add variables in the Build tab first
+              </p>
+            ) : (
+              <>
+                {/* Score display */}
+                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                  <div style={{
+                    fontSize: '72px', fontWeight: 700, lineHeight: 1,
+                    color: getBandColor(computePreviewScore(), thresholdCritical, thresholdReview, thresholdMonitor),
+                    ...mono,
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: BAND_COLORS[item.band] }} />
-                      <span style={{ fontSize: '11px', color: '#b8cce0', fontFamily: '"JetBrains Mono", monospace' }}>
-                        {item.band}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '11px', color: '#3a4f6a', fontFamily: '"JetBrains Mono", monospace' }}>
-                      {item.range}
-                    </span>
+                    {computePreviewScore()}
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div style={{ fontSize: '13px', color: '#3a4f6a', marginTop: '8px', ...mono }}>
+                    preview score
+                  </div>
+                </div>
+
+                {/* Sliders */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', maxWidth: '700px', margin: '0 auto' }}>
+                  {[...numerator, ...denominator].map(item => {
+                    const isNum = numerator.some(n => n.variable_key === item.variable_key)
+                    const val = previewValues[item.variable_key] ?? 50
+                    return (
+                      <div key={item.variable_key} style={{
+                        padding: '12px 14px', borderRadius: '10px',
+                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '13px', color: '#e4efff', fontWeight: 500 }}>
+                            {item.label}
+                          </span>
+                          <span style={{
+                            fontSize: '12px', fontWeight: 600, ...mono,
+                            color: isNum ? '#6EE05A' : '#ef4444',
+                          }}>
+                            {val}
+                          </span>
+                        </div>
+                        <input
+                          type="range" min="0" max="100" value={val}
+                          onChange={e => setPreviewValues({ ...previewValues, [item.variable_key]: parseInt(e.target.value) })}
+                          style={{ width: '100%', accentColor: isNum ? '#6EE05A' : '#ef4444' }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                          <span style={{ fontSize: '10px', color: '#3a4f6a', ...mono }}>0</span>
+                          <span style={{
+                            fontSize: '10px', ...mono,
+                            color: isNum ? 'rgba(110,224,90,0.5)' : 'rgba(239,68,68,0.5)',
+                          }}>
+                            {isNum ? 'numerator' : 'denominator'} w:{item.weight.toFixed(1)}
+                          </span>
+                          <span style={{ fontSize: '10px', color: '#3a4f6a', ...mono }}>100</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </div>
         )}
 
-        {/* Save button */}
-        <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-          <a
-            href="/console/exec/formulas"
+        {/* Save */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px', gap: '12px' }}>
+          <button
+            onClick={() => router.push('/console/exec/formulas')}
             style={{
-              padding: '10px 24px', borderRadius: '10px', fontSize: '14px', fontWeight: 500,
-              color: '#b8cce0', textDecoration: 'none',
+              padding: '10px 24px', borderRadius: '10px', fontSize: '14px', fontWeight: 600,
               background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              color: '#b8cce0', cursor: 'pointer',
             }}
           >
             Cancel
-          </a>
+          </button>
           <button
             onClick={handleSave}
-            disabled={saving || !name.trim() || numerator.length === 0}
+            disabled={saving || !name.trim()}
             style={{
-              padding: '10px 32px', borderRadius: '10px', fontSize: '14px', fontWeight: 600,
-              border: 'none', cursor: saving || !name.trim() || numerator.length === 0 ? 'not-allowed' : 'pointer',
-              background: saving || !name.trim() || numerator.length === 0 ? 'rgba(110,224,90,0.2)' : '#6EE05A',
-              color: saving || !name.trim() || numerator.length === 0 ? '#3a4f6a' : '#04060d',
-              fontFamily: '"DM Sans", system-ui, sans-serif',
+              padding: '10px 24px', borderRadius: '10px', fontSize: '14px', fontWeight: 600,
+              background: name.trim() ? '#6EE05A' : 'rgba(110,224,90,0.3)',
+              color: '#04060d', border: 'none', cursor: name.trim() ? 'pointer' : 'not-allowed',
+              opacity: saving ? 0.6 : 1,
             }}
           >
             {saving ? 'Saving...' : 'Save Formula'}

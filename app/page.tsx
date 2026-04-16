@@ -65,25 +65,26 @@ export default function LandingPage() {
         position: 'relative',
       }}
     >
-      {/* Video background */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          zIndex: 0,
-          opacity: 0.6,
-        }}
-      >
-        <source src="/bg/3d-road-loop.mp4" type="video/mp4" />
-      </video>
+      {/* YouTube background — plays once on load, no controls */}
+      <div style={{
+        position: 'fixed', top: '-60px', left: '-60px',
+        width: 'calc(100% + 120px)', height: 'calc(100% + 120px)',
+        zIndex: 0, overflow: 'hidden', pointerEvents: 'none',
+        opacity: 0.55,
+      }}>
+        <iframe
+          src="https://www.youtube.com/embed/BsVidbzuSEU?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&loop=0&playsinline=1&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0&start=0&enablejsapi=0"
+          title="Background"
+          frameBorder="0"
+          allow="autoplay; encrypted-media"
+          style={{
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            pointerEvents: 'none',
+            transform: 'scale(1.2)',
+          }}
+        />
+      </div>
 
       {/* Dark overlay to ensure text readability */}
       <div style={{
