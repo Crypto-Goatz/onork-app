@@ -51,6 +51,46 @@ export async function POST(req: Request) {
             stripe_customer_id: session.customer,
           }, { onConflict: 'user_id' })
         }
+
+        // Add-on purchase → write product_keys + report to CRM billing webhook
+        if (session.metadata?.type === 'addon_purchase') {
+          const productSlug = session.metadata.product_slug
+          const locationId = session.metadata.location_id
+          const capabilities = JSON.parse(session.metadata.capabilities || '[]')
+
+          await supabase.from('product_keys').upsert({
+            user_id: userId,
+            location_id: locationId || '',
+            product_slug: productSlug,
+            product_name: session.metadata.product_name || productSlug,
+            status: 'active',
+            capabilities,
+            stripe_payment_id: typeof session.payment_intent === 'string' ? session.payment_intent : '',
+            price_cents: session.amount_total || 0,
+            activated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id,location_id,product_slug' })
+
+          // Report to CRM billing webhook (activate marketplace app for this location)
+          if (locationId) {
+            const CRM_BILLING_URL = 'https://services.leadconnectorhq.com/oauth/billing/webhook'
+            const clientKey = process.env.CRM_MARKETPLACE_CLIENT_ID || ''
+            const clientSecret = process.env.CRM_MARKETPLACE_CLIENT_SECRET || ''
+            fetch(CRM_BILLING_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-ghl-client-key': clientKey, 'x-ghl-client-secret': clientSecret },
+              body: JSON.stringify({
+                clientId: clientKey.split('-')[0],
+                authType: 'location',
+                locationId,
+                subscriptionId: typeof session.subscription === 'string' ? session.subscription : `addon_${productSlug}_${Date.now()}`,
+                paymentId: typeof session.payment_intent === 'string' ? session.payment_intent : `pay_${Date.now()}`,
+                amount: (session.amount_total || 0) / 100,
+                status: 'COMPLETED',
+                paymentType: 'one_time',
+              }),
+            }).catch(err => console.error('[stripe/webhook] CRM billing report failed:', err.message))
+          }
+        }
       }
       break
     }
