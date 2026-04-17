@@ -1,171 +1,170 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Separator } from '@/components/ui/separator'
+import { Progress } from '@/components/ui/progress'
 
-/**
- * 0nMCP Marketplace Dashboard — Custom Page for CRM
- *
- * This page loads inside the CRM as an iframe (Custom Page module).
- * It receives SSO data via postMessage from the CRM parent window.
- * Shows: credits, connected services, recent activity, quick actions.
- */
-
-interface SSOPayload {
-  userId: string
-  locationId: string
-  companyId: string
-  email: string
-  role: string
+interface Addon {
+  slug: string
+  name: string
+  description: string
+  priceCents: number
+  priceLabel: string
+  capabilities: string[]
+  sdkModules: string[]
+  badge?: string
+  icon: string
 }
 
-export default function MarketplaceDashboard() {
-  const [sso, setSSO] = useState<SSOPayload | null>(null)
-  const [credits, setCredits] = useState(5000)
-  const [creditsUsed, setCreditsUsed] = useState(0)
-  const [recentActions, setRecentActions] = useState<any[]>([])
-  const [embedded, setEmbedded] = useState(false)
+const ADDONS: Addon[] = [
+  { slug: 'ai-course-builder', name: 'AI Course Builder', description: 'Generate full courses with AI — lessons, categories, materials. Auto-imported into your CRM.', priceCents: 4900, priceLabel: '$49', capabilities: ['course_create', 'course_import', 'lesson_generate'], sdkModules: ['courses'], icon: '📚', badge: 'Popular' },
+  { slug: 'voice-ai-agent', name: 'Voice AI Agent', description: 'Deploy AI phone agents with knowledge bases, call routing, and custom actions.', priceCents: 9900, priceLabel: '$99', capabilities: ['voice_agent_create', 'voice_agent_configure'], sdkModules: ['voiceAi'], icon: '🎙️' },
+  { slug: 'conversation-ai', name: 'Conversation AI', description: 'Configure AI chatbots for messaging channels with custom personas and knowledge.', priceCents: 4900, priceLabel: '$49', capabilities: ['convo_ai_configure', 'convo_message_send'], sdkModules: ['conversations'], icon: '💬' },
+  { slug: 'social-planner', name: 'Social Media Planner', description: 'Connect social accounts, schedule posts, and publish AI-generated content.', priceCents: 2900, priceLabel: '$29', capabilities: ['social_post_create', 'social_post_schedule'], sdkModules: ['socialMediaPosting'], icon: '📱' },
+  { slug: 'blog-engine', name: 'Blog Engine', description: 'AI-generated blog posts published directly to your CRM. SEO-optimized.', priceCents: 1900, priceLabel: '$19', capabilities: ['blog_post_create', 'blog_post_update'], sdkModules: ['blogs'], icon: '✍️' },
+  { slug: 'snapshot-manager', name: 'Snapshot Manager', description: 'Generate, deploy, and clone CRM snapshots between locations.', priceCents: 9900, priceLabel: '$99', capabilities: ['snapshot_create', 'snapshot_deploy'], sdkModules: ['snapshots'], icon: '📦' },
+  { slug: 'affiliate-manager', name: 'Affiliate Manager', description: 'Create affiliate programs with tracking, campaigns, and commission management.', priceCents: 4900, priceLabel: '$49', capabilities: ['affiliate_create', 'affiliate_campaign'], sdkModules: ['affiliates'], icon: '🤝' },
+  { slug: 'invoice-automation', name: 'Invoice Automation', description: 'AI-generated invoices, estimates, and recurring billing.', priceCents: 2900, priceLabel: '$29', capabilities: ['invoice_create', 'invoice_send'], sdkModules: ['invoices'], icon: '💰' },
+  { slug: 'email-builder', name: 'Email Builder', description: 'AI-generated email campaigns and templates. Schedule and send.', priceCents: 1900, priceLabel: '$19', capabilities: ['email_template_create', 'email_send'], sdkModules: ['emails'], icon: '📧' },
+  { slug: 'knowledge-base', name: 'Knowledge Base Manager', description: 'Create and manage AI knowledge bases. Feed data to agents and bots.', priceCents: 2900, priceLabel: '$29', capabilities: ['kb_create', 'kb_source_add'], sdkModules: ['knowledgeBases'], icon: '🧠' },
+  { slug: 'workflow-reader', name: 'Workflow Intelligence', description: 'Read workflow definitions and export as .0n SWITCH files.', priceCents: 1900, priceLabel: '$19', capabilities: ['workflow_list', 'workflow_export_0n'], sdkModules: ['workflows'], icon: '⚡' },
+  { slug: 'agent-studio', name: 'Agent Studio Pro', description: 'Build, deploy, and manage AI agents with MCP tool access and KB connections.', priceCents: 9900, priceLabel: '$99', capabilities: ['agent_create', 'agent_execute', 'agent_configure_mcp'], sdkModules: ['agentStudio'], icon: '🤖', badge: 'Pro' },
+]
+
+interface OwnedKey {
+  product_slug: string
+  status: string
+}
+
+export default function MarketplacePage() {
+  const supabase = createClient()
+  const [ownedKeys, setOwnedKeys] = useState<OwnedKey[]>([])
+  const [loading, setLoading] = useState(true)
+  const [purchasing, setPurchasing] = useState<string | null>(null)
+  const [tab, setTab] = useState('all')
 
   useEffect(() => {
-    // Check if embedded in CRM iframe
-    const params = new URLSearchParams(window.location.search)
-    setEmbedded(params.get('embedded') === 'true' || window.parent !== window)
-
-    // Listen for SSO postMessage from CRM parent
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'sso' || event.data?.userId) {
-        setSSO({
-          userId: event.data.userId || '',
-          locationId: event.data.locationId || '',
-          companyId: event.data.companyId || '',
-          email: event.data.email || '',
-          role: event.data.role || 'user',
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        const res = await fetch('/api/marketplace/keys', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
         })
+        if (res.ok) {
+          const data = await res.json()
+          setOwnedKeys(data.keys || [])
+        }
       }
+      setLoading(false)
+    })()
+  }, [supabase])
+
+  function isOwned(slug: string) {
+    return ownedKeys.some(k => k.product_slug === slug && k.status === 'active')
+  }
+
+  async function purchase(addon: Addon) {
+    setPurchasing(addon.slug)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setPurchasing(null); return }
+
+    const res = await fetch('/api/marketplace/addon-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ productSlug: addon.slug }),
+    })
+    const data = await res.json()
+    if (data.url) {
+      window.location.href = data.url
+    } else if (data.activated) {
+      setOwnedKeys(prev => [...prev, { product_slug: addon.slug, status: 'active' }])
     }
-    window.addEventListener('message', handleMessage)
+    setPurchasing(null)
+  }
 
-    // Start with empty state — actions will be populated from live data
-    setRecentActions([])
-
-    return () => window.removeEventListener('message', handleMessage)
-  }, [])
-
-  const creditsPercent = Math.round((creditsUsed / credits) * 100)
+  const filtered = tab === 'all' ? ADDONS : tab === 'owned' ? ADDONS.filter(a => isOwned(a.slug)) : ADDONS.filter(a => !isOwned(a.slug))
+  const ownedCount = ADDONS.filter(a => isOwned(a.slug)).length
 
   return (
-    <div style={{ minHeight: '100vh', background: embedded ? '#f9fafb' : '#0c1220', color: embedded ? '#111827' : 'var(--text-primary, #f0f4f8)', fontFamily: 'system-ui, -apple-system, sans-serif', padding: embedded ? 16 : 24 }}>
-      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 12, borderBottom: `1px solid ${embedded ? '#e5e7eb' : 'var(--border, #30363d)'}` }}>
-          <div>
-            <h1 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>
-              <span style={{ color: '#10b981' }}>0n</span>MCP
-              <span style={{ color: embedded ? '#9ca3af' : 'var(--text-muted, #6b7280)', fontSize: 12, fontWeight: 400, marginLeft: 8 }}>Dashboard</span>
-            </h1>
-            {sso && <p style={{ fontSize: 11, color: embedded ? '#9ca3af' : 'var(--text-muted, #6b7280)', marginTop: 2 }}>{sso.email} · Location: {sso.locationId?.slice(0, 8)}...</p>}
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <a href="https://0nmcp.com" target="_blank" rel="noopener noreferrer" style={{ padding: '6px 14px', background: embedded ? '#f3f4f6' : 'var(--bg-card, #1f2937)', border: `1px solid ${embedded ? '#e5e7eb' : 'var(--border, #30363d)'}`, borderRadius: 8, color: embedded ? '#6b7280' : 'var(--text-secondary, #9ca3af)', fontSize: 11, textDecoration: 'none' }}>Docs</a>
-            <a href="https://0nmcp.com/affiliates" target="_blank" rel="noopener noreferrer" style={{ padding: '6px 14px', background: '#10b981', borderRadius: 8, color: 'white', fontSize: 11, textDecoration: 'none', fontWeight: 600 }}>Earn 30%</a>
-          </div>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Add-on Marketplace</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Unlock CRM capabilities. Each add-on connects to a specific SDK module via your marketplace app.
+          </p>
         </div>
-
-        {/* Stats Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-          {[
-            { label: 'AI Credits', value: `${(credits - creditsUsed).toLocaleString()}`, sub: `of ${credits.toLocaleString()}`, color: '#10b981' },
-            { label: 'Services', value: '95', sub: 'Connected', color: '#3b82f6' },
-            { label: 'Tools', value: '926', sub: 'Available', color: '#8b5cf6' },
-            { label: 'Actions Today', value: String(recentActions.length), sub: 'Executed', color: '#f59e0b' },
-          ].map(s => (
-            <div key={s.label} style={{ background: embedded ? 'white' : 'var(--bg-card, #1f2937)', border: `1px solid ${embedded ? '#e5e7eb' : 'var(--border, #30363d)'}`, borderRadius: 12, padding: '14px 16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: 10, color: embedded ? '#9ca3af' : 'var(--text-muted, #6b7280)', marginTop: 2 }}>{s.label}</div>
-              <div style={{ fontSize: 9, color: embedded ? '#d1d5db' : '#3a4a5c' }}>{s.sub}</div>
-            </div>
-          ))}
+        <div className="text-right">
+          <div className="text-2xl font-bold">{ownedCount}/{ADDONS.length}</div>
+          <div className="text-xs text-muted-foreground">Unlocked</div>
         </div>
+      </div>
 
-        {/* Credits Bar */}
-        <div style={{ background: embedded ? 'white' : 'var(--bg-card, #1f2937)', border: `1px solid ${embedded ? '#e5e7eb' : 'var(--border, #30363d)'}`, borderRadius: 12, padding: '14px 18px', marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: embedded ? '#6b7280' : 'var(--text-muted, #6b7280)', marginBottom: 6 }}>
-            <span>AI Credits Used: {creditsUsed.toLocaleString()} / {credits.toLocaleString()}</span>
-            <span>{creditsPercent}%</span>
-          </div>
-          <div style={{ height: 6, background: embedded ? '#f3f4f6' : 'var(--border, #30363d)', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${creditsPercent}%`, background: creditsPercent > 80 ? '#ef4444' : '#10b981', borderRadius: 3, transition: 'width 0.5s' }} />
-          </div>
-        </div>
+      <Progress value={(ownedCount / ADDONS.length) * 100} className="h-2" />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="all">All ({ADDONS.length})</TabsTrigger>
+          <TabsTrigger value="owned">Owned ({ownedCount})</TabsTrigger>
+          <TabsTrigger value="available">Available ({ADDONS.length - ownedCount})</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
-          {/* Quick Actions */}
-          <div>
-            <div style={{ fontSize: 10, color: '#10b981', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Quick Actions</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {[
-                { icon: '🔍', label: 'SXO Scan', desc: 'Scan a domain' },
-                { icon: '📧', label: 'Send Email', desc: 'Email a contact' },
-                { icon: '🔥', label: 'Score Leads', desc: 'AI lead scoring' },
-                { icon: '📅', label: 'Book Apt', desc: 'Schedule meeting' },
-                { icon: '📚', label: 'Gen Course', desc: 'Create a course' },
-                { icon: '💰', label: 'Invoice', desc: 'Stripe invoice' },
-                { icon: '📱', label: 'Send SMS', desc: 'Text a contact' },
-                { icon: '🔗', label: 'Refer', desc: 'Earn 30%' },
-              ].map(a => (
-                <button key={a.label} style={{
-                  background: embedded ? 'white' : 'var(--bg-card, #1f2937)', border: `1px solid ${embedded ? '#e5e7eb' : 'var(--border, #30363d)'}`,
-                  borderRadius: 10, padding: '12px', textAlign: 'left', cursor: 'pointer',
-                  transition: 'border-color 0.2s',
-                }}>
-                  <div style={{ fontSize: 20, marginBottom: 4 }}>{a.icon}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: embedded ? '#111827' : 'var(--text-primary, #f0f4f8)' }}>{a.label}</div>
-                  <div style={{ fontSize: 10, color: embedded ? '#9ca3af' : 'var(--text-muted, #6b7280)' }}>{a.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div>
-            <div style={{ fontSize: 10, color: '#3b82f6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Recent Activity</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {recentActions.map((a, i) => (
-                <div key={i} style={{
-                  background: embedded ? 'white' : 'var(--bg-card, #1f2937)', border: `1px solid ${embedded ? '#e5e7eb' : 'var(--border, #30363d)'}`,
-                  borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10,
-                }}>
-                  <span style={{ fontSize: 18 }}>{a.icon}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: embedded ? '#111827' : 'var(--text-primary, #f0f4f8)' }}>{a.action}</div>
-                    <div style={{ fontSize: 10, color: embedded ? '#9ca3af' : 'var(--text-muted, #6b7280)' }}>{a.detail}</div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {filtered.map(addon => {
+          const owned = isOwned(addon.slug)
+          return (
+            <Card key={addon.slug} className={`flex flex-col transition-all ${owned ? 'border-primary/30' : 'hover:border-primary/20'}`}>
+              <CardHeader className="flex-1">
+                <div className="flex items-start justify-between mb-1">
+                  <span className="text-2xl">{addon.icon}</span>
+                  <div className="flex gap-1.5">
+                    {addon.badge && <Badge variant="secondary" className="text-[10px]">{addon.badge}</Badge>}
+                    {owned && <Badge className="text-[10px] bg-primary/10 text-primary border-primary/30">Active</Badge>}
                   </div>
-                  <span style={{ fontSize: 10, color: embedded ? '#d1d5db' : '#3a4a5c' }}>{a.time}</span>
                 </div>
-              ))}
-            </div>
+                <CardTitle className="text-base">{addon.name}</CardTitle>
+                <CardDescription className="text-sm leading-relaxed">{addon.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3">
+                <Separator />
+                <div className="flex flex-wrap gap-1">
+                  {addon.capabilities.slice(0, 3).map(c => (
+                    <Badge key={c} variant="outline" className="text-[10px] font-mono">{c}</Badge>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold">{addon.priceLabel}<span className="text-xs text-muted-foreground font-normal">/mo</span></span>
+                  {owned ? (
+                    <Button size="sm" variant="outline" disabled>Installed</Button>
+                  ) : (
+                    <Button size="sm" onClick={() => purchase(addon)} disabled={purchasing === addon.slug}>
+                      {purchasing === addon.slug ? 'Processing...' : 'Get Add-on'}
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
 
-            {/* Connected Services Preview */}
-            <div style={{ fontSize: 10, color: '#8b5cf6', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, marginTop: 16 }}>Connected Services</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {['Stripe', 'Slack', 'Gmail', 'Supabase', 'GitHub', 'SendGrid', 'Twilio', 'Shopify', 'Figma', 'Notion', '+85 more'].map(s => (
-                <span key={s} style={{
-                  padding: '4px 10px', borderRadius: 9999, fontSize: 10, fontWeight: 500,
-                  background: embedded ? '#f3f4f6' : 'var(--border, #30363d)',
-                  color: s.startsWith('+') ? '#10b981' : (embedded ? '#6b7280' : 'var(--text-secondary, #9ca3af)'),
-                }}>
-                  {s}
-                </span>
-              ))}
-            </div>
-          </div>
+      {filtered.length === 0 && (
+        <div className="py-12 text-center text-muted-foreground">
+          {tab === 'owned' ? 'No add-ons purchased yet.' : 'All add-ons are unlocked.'}
         </div>
+      )}
 
-        {/* Footer */}
-        <div style={{ textAlign: 'center', marginTop: 24, paddingTop: 16, borderTop: `1px solid ${embedded ? '#e5e7eb' : 'var(--border, #30363d)'}`, fontSize: 10, color: embedded ? '#d1d5db' : '#3a4a5c' }}>
-          0nMCP v2.9.1 · 95 services · 926 endpoints · Patent Pending · RocketOpp LLC
-        </div>
+      <Separator />
+
+      <div className="text-center text-xs text-muted-foreground space-y-1">
+        <p>Add-ons connect to the CRM via the 0nCORE marketplace app (140+ OAuth scopes).</p>
+        <p>Each purchase unlocks SDK modules and MCP tool capabilities for your location.</p>
       </div>
     </div>
   )
