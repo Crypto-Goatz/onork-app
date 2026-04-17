@@ -21,6 +21,7 @@ const ADDON_PRICES: Record<string, { name: string; cents: number; capabilities: 
   'knowledge-base': { name: 'Knowledge Base Manager', cents: 2900, capabilities: ['kb_create', 'kb_update', 'kb_source_add', 'kb_list'] },
   'workflow-reader': { name: 'Workflow Intelligence', cents: 1900, capabilities: ['workflow_list', 'workflow_read', 'workflow_export_0n'] },
   'agent-studio': { name: 'Agent Studio Pro', cents: 9900, capabilities: ['agent_create', 'agent_execute', 'agent_promote', 'agent_configure_kb', 'agent_configure_mcp'] },
+  'phone-system': { name: 'Phone System', cents: 4900, capabilities: ['phone_purchase', 'phone_search', 'phone_list', 'phone_release', 'phone_update', 'phone_pools'] },
 }
 
 export async function POST(req: NextRequest) {

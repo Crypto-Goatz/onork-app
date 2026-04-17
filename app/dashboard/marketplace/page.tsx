@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import {
   GraduationCap, Mic, MessageSquare, Share2, FileText, Package,
-  Users, Receipt, Mail, Brain, Zap, Bot, Check, ArrowRight, X,
+  Users, Receipt, Mail, Brain, Zap, Bot, Check, ArrowRight, X, Phone,
 } from 'lucide-react'
 
 interface Addon {
@@ -38,6 +38,7 @@ const ADDONS: Addon[] = [
   { slug: 'knowledge-base', name: 'Knowledge Base', category: 'ai', priceCents: 2900, icon: <Brain className="h-5 w-5" />, description: 'Create AI knowledge bases for agents and bots.', details: 'Build knowledge bases that power your AI agents, voice bots, and chatbots.', features: ['Document upload', 'URL scraping', 'Agent integration', 'Up to 15 per location', 'Auto-training'] },
   { slug: 'workflow-reader', name: 'Workflow Intelligence', category: 'admin', priceCents: 1900, icon: <Zap className="h-5 w-5" />, description: 'Read workflows and export as .0n SWITCH files.', details: 'Analyze existing CRM workflows and export as portable .0n SWITCH files.', features: ['Workflow analysis', '.0n file export', 'Logic visualization', 'Cross-location portability', 'Version tracking'] },
   { slug: 'agent-studio', name: 'Agent Studio Pro', category: 'ai', priceCents: 9900, badge: 'Pro', icon: <Bot className="h-5 w-5" />, description: 'Build and deploy AI agents with MCP tool access.', details: 'Full Agent Studio control. Create agents, connect knowledge bases, add MCP nodes for 1,554+ tools.', features: ['Agent creation', 'MCP tool integration', 'Knowledge base wiring', 'Production deployment', '1,554+ tools available'] },
+  { slug: 'phone-system', name: 'Phone System', category: 'comms', priceCents: 4900, icon: <Phone className="h-5 w-5" />, description: 'Purchase phone numbers and manage active lines.', details: 'Search and purchase local, toll-free, or mobile numbers. Configure forwarding, call recording, voicemail, and number pools.', features: ['Number purchasing', 'Area code search', 'Call forwarding', 'Call recording', 'Number pools'] },
 ]
 
 function MarketplaceInner() {
