@@ -8,6 +8,7 @@ import Sidebar from './components/Sidebar'
 import CompactSidebar from './components/CompactSidebar'
 import HorizontalNav from './components/HorizontalNav'
 import Header, { type LayoutMode } from './components/Header'
+import { RoleContext, useRoleLoader } from '@/lib/use-role'
 
 const LAYOUT_KEY = '0ncore_layout'
 
@@ -17,6 +18,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('classic')
   const [isAdmin, setIsAdmin] = useState(false)
+  const roleState = useRoleLoader()
   const router = useRouter()
   const supabase = createClient()
 
@@ -110,43 +112,49 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Horizontal layout
   if (layoutMode === 'horizontal') {
     return (
-      <div className="jp-wrapper jp-wrapper-horizontal">
-        <div className="jp-main jp-main-horizontal">
-          <Header {...headerProps} />
-          <HorizontalNav isAdmin={isAdmin} />
-          <main className="jp-content">
-            {children}
-          </main>
+      <RoleContext.Provider value={roleState}>
+        <div className="jp-wrapper jp-wrapper-horizontal">
+          <div className="jp-main jp-main-horizontal">
+            <Header {...headerProps} />
+            <HorizontalNav isAdmin={isAdmin} />
+            <main className="jp-content">
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
+      </RoleContext.Provider>
     )
   }
 
   // Compact layout
   if (layoutMode === 'compact') {
     return (
-      <div className="jp-wrapper jp-wrapper-compact">
-        <CompactSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isAdmin={isAdmin} />
-        <div className="jp-main jp-main-compact">
+      <RoleContext.Provider value={roleState}>
+        <div className="jp-wrapper jp-wrapper-compact">
+          <CompactSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isAdmin={isAdmin} />
+          <div className="jp-main jp-main-compact">
+            <Header {...headerProps} />
+            <main className="jp-content">
+              {children}
+            </main>
+          </div>
+        </div>
+      </RoleContext.Provider>
+    )
+  }
+
+  // Classic layout (default)
+  return (
+    <RoleContext.Provider value={roleState}>
+      <div className="jp-wrapper">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isAdmin={isAdmin} />
+        <div className="jp-main">
           <Header {...headerProps} />
           <main className="jp-content">
             {children}
           </main>
         </div>
       </div>
-    )
-  }
-
-  // Classic layout (default)
-  return (
-    <div className="jp-wrapper">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isAdmin={isAdmin} />
-      <div className="jp-main">
-        <Header {...headerProps} />
-        <main className="jp-content">
-          {children}
-        </main>
-      </div>
-    </div>
+    </RoleContext.Provider>
   )
 }
