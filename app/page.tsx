@@ -65,6 +65,41 @@ export default function LandingPage() {
         position: 'relative',
       }}
     >
+      {/* Navigation */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '16px 32px',
+        background: 'rgba(4, 10, 26, 0.6)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+      }}>
+        <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+          <img src="/brand/0ncore-icon.png" alt="0nCore" style={{ height: 28, objectFit: 'contain' }} onError={e => { (e.target as HTMLImageElement).src = '/logo.png' }} />
+          <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff', letterSpacing: '-0.02em' }}>
+            <span style={{ color: 'var(--accent, #7ed957)' }}>0n</span>Core
+          </span>
+        </a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <a href="https://0nmcp.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => (e.target as HTMLElement).style.color = '#fff'} onMouseLeave={e => (e.target as HTMLElement).style.color = 'rgba(255,255,255,0.5)'}>
+            Integrations
+          </a>
+          <a href="https://0nmcp.com/docs" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => (e.target as HTMLElement).style.color = '#fff'} onMouseLeave={e => (e.target as HTMLElement).style.color = 'rgba(255,255,255,0.5)'}>
+            Documentation
+          </a>
+          <a href="/pricing" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => (e.target as HTMLElement).style.color = '#fff'} onMouseLeave={e => (e.target as HTMLElement).style.color = 'rgba(255,255,255,0.5)'}>
+            Pricing
+          </a>
+          <a href="/login" style={{
+            fontSize: 13, fontWeight: 600, color: 'var(--cta-text, #0d1117)',
+            background: 'var(--accent, #7ed957)', padding: '7px 18px', borderRadius: 8,
+            textDecoration: 'none', transition: 'opacity 0.2s',
+          }} onMouseEnter={e => (e.target as HTMLElement).style.opacity = '0.85'} onMouseLeave={e => (e.target as HTMLElement).style.opacity = '1'}>
+            Get Started
+          </a>
+        </div>
+      </nav>
+
       {/* Parallax orb background — fixed position, gradient overlay */}
       <div style={{
         position: 'fixed', inset: 0, zIndex: 0,
