@@ -1,360 +1,326 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  FolderPlus, Upload, Trash2, RefreshCw, Search, Grid, List,
+  Folder, FileText, Image, Film, Music, File, ChevronRight,
+  ArrowLeft, Eye, Download, MoreHorizontal, X,
+} from 'lucide-react'
 
-type FileTab = 'all' | 'workflows' | 'vault' | 'exports' | 'brains'
-type ViewMode = 'grid' | 'list'
-
-interface FileItem {
-  id: string
+interface MediaItem {
+  _id?: string
+  id?: string
   name: string
-  type: 'workflow' | 'vault' | 'export' | 'brain'
-  ext: string
-  size: string
-  modified: string
-  encrypted?: boolean
+  type: string
+  url?: string
+  size?: number
+  category?: string
+  parentId?: string
+  createdAt?: string
+  updatedAt?: string
+  altType?: string
+  altId?: string
 }
 
-const mockFiles: FileItem[] = [
-  { id: '1', name: 'crm-onboarding.0n', type: 'workflow', ext: '.0n', size: '2.4 KB', modified: 'Mar 22, 2026' },
-  { id: '2', name: 'stripe-setup.0n', type: 'workflow', ext: '.0n', size: '1.8 KB', modified: 'Mar 21, 2026' },
-  { id: '3', name: 'vault-credentials.0nv', type: 'vault', ext: '.0nv', size: '4.1 KB', modified: 'Mar 20, 2026', encrypted: true },
-  { id: '4', name: '0nai-crm-v1.jsonl', type: 'export', ext: '.jsonl', size: '45 KB', modified: 'Mar 18, 2026' },
-  { id: '5', name: 'mcpfed-brain.brain', type: 'brain', ext: '.brain', size: '128 KB', modified: 'Mar 15, 2026' },
-  { id: '6', name: 'lead-nurture.0n', type: 'workflow', ext: '.0n', size: '3.2 KB', modified: 'Mar 14, 2026' },
-  { id: '7', name: 'api-keys-backup.0nv', type: 'vault', ext: '.0nv', size: '2.7 KB', modified: 'Mar 12, 2026', encrypted: true },
-  { id: '8', name: 'analytics-export.jsonl', type: 'export', ext: '.jsonl', size: '89 KB', modified: 'Mar 10, 2026' },
-]
-
-const typeColors: Record<string, string> = {
-  '.0n': 'var(--jp-green)',
-  '.0nv': 'var(--jp-purple)',
-  '.jsonl': 'var(--jp-cyan)',
-  '.brain': 'var(--jp-amber)',
+function getIcon(item: MediaItem) {
+  if (item.type === 'folder') return <Folder className="h-5 w-5 text-amber" />
+  const ext = item.name?.split('.').pop()?.toLowerCase() || ''
+  if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return <Image className="h-5 w-5 text-purple" />
+  if (['mp4','mov','avi','webm'].includes(ext)) return <Film className="h-5 w-5 text-cyan" />
+  if (['mp3','wav','ogg'].includes(ext)) return <Music className="h-5 w-5 text-orange" />
+  if (['pdf','doc','docx','txt'].includes(ext)) return <FileText className="h-5 w-5 text-red" />
+  return <File className="h-5 w-5 text-text-muted" />
 }
 
-const typeBg: Record<string, string> = {
-  '.0n': 'var(--jp-green-glow)',
-  '.0nv': 'rgba(167, 139, 250, 0.12)',
-  '.jsonl': 'rgba(0, 212, 255, 0.12)',
-  '.brain': 'rgba(251, 191, 36, 0.12)',
+function formatSize(bytes?: number) {
+  if (!bytes) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1048576).toFixed(1)} MB`
 }
 
-const typeIcons: Record<string, React.ReactNode> = {
-  workflow: (
-    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-    </svg>
-  ),
-  vault: (
-    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-    </svg>
-  ),
-  export: (
-    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-  ),
-  brain: (
-    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-    </svg>
-  ),
-}
+export default function FileManagerPage() {
+  const supabase = createClient()
+  const [files, setFiles] = useState<MediaItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [search, setSearch] = useState('')
+  const [breadcrumbs, setBreadcrumbs] = useState<{ id: string; name: string }[]>([])
+  const [currentFolder, setCurrentFolder] = useState<string | null>(null)
+  const [showNewFolder, setShowNewFolder] = useState(false)
+  const [folderName, setFolderName] = useState('')
+  const [showUpload, setShowUpload] = useState(false)
+  const [uploadUrl, setUploadUrl] = useState('')
+  const [uploadName, setUploadName] = useState('')
+  const [selected, setSelected] = useState<MediaItem | null>(null)
 
-const tabs: { key: FileTab; label: string }[] = [
-  { key: 'all', label: 'All Files' },
-  { key: 'workflows', label: 'Workflows (.0n)' },
-  { key: 'vault', label: 'Vault' },
-  { key: 'exports', label: 'Exports' },
-  { key: 'brains', label: 'Brains (.brain)' },
-]
+  useEffect(() => { load() }, [currentFolder])
 
-export default function FilesPage() {
-  const [activeTab, setActiveTab] = useState<FileTab>('all')
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [searchQuery, setSearchQuery] = useState('')
+  async function load() {
+    setLoading(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setLoading(false); return }
+    const params = new URLSearchParams()
+    if (currentFolder) params.set('parentId', currentFolder)
+    if (search) params.set('q', search)
+    const res = await fetch(`/api/media?${params}`, { headers: { Authorization: `Bearer ${session.access_token}` } })
+    if (res.ok) {
+      const data = await res.json()
+      setFiles(data.files || [])
+    }
+    setLoading(false)
+  }
 
-  const filteredFiles = mockFiles
-    .filter((f) => {
-      if (activeTab === 'all') return true
-      if (activeTab === 'workflows') return f.type === 'workflow'
-      if (activeTab === 'vault') return f.type === 'vault'
-      if (activeTab === 'exports') return f.type === 'export'
-      if (activeTab === 'brains') return f.type === 'brain'
-      return true
+  function openFolder(item: MediaItem) {
+    const id = item._id || item.id || ''
+    setBreadcrumbs(prev => [...prev, { id, name: item.name }])
+    setCurrentFolder(id)
+  }
+
+  function navigateBack() {
+    const newCrumbs = breadcrumbs.slice(0, -1)
+    setBreadcrumbs(newCrumbs)
+    setCurrentFolder(newCrumbs.length > 0 ? newCrumbs[newCrumbs.length - 1].id : null)
+  }
+
+  function navigateTo(index: number) {
+    if (index < 0) {
+      setBreadcrumbs([])
+      setCurrentFolder(null)
+    } else {
+      const newCrumbs = breadcrumbs.slice(0, index + 1)
+      setBreadcrumbs(newCrumbs)
+      setCurrentFolder(newCrumbs[newCrumbs.length - 1].id)
+    }
+  }
+
+  async function createFolder() {
+    if (!folderName.trim()) return
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    await fetch('/api/media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ action: 'create_folder', name: folderName, parentId: currentFolder }),
     })
-    .filter((f) =>
-      !searchQuery || f.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    setFolderName('')
+    setShowNewFolder(false)
+    load()
+  }
+
+  async function uploadFile() {
+    if (!uploadUrl.trim()) return
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    await fetch('/api/media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ action: 'upload', fileUrl: uploadUrl, name: uploadName || 'uploaded-file', parentId: currentFolder }),
+    })
+    setUploadUrl('')
+    setUploadName('')
+    setShowUpload(false)
+    load()
+  }
+
+  async function deleteItem(id: string) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    await fetch(`/api/media?id=${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${session.access_token}` } })
+    setSelected(null)
+    load()
+  }
+
+  const folders = files.filter(f => f.type === 'folder')
+  const items = files.filter(f => f.type !== 'folder')
+
+  if (loading) return <div className="flex min-h-[60vh] items-center justify-center text-sm text-text-muted animate-pulse">Loading media...</div>
 
   return (
-    <div>
-      <div className="jp-page-header">
-        <h1 className="jp-page-title">File Manager</h1>
-        <p className="jp-page-subtitle">Manage your .0n workflows, vault files, exports, and AI brains</p>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Media Library</h1>
+          <p className="mt-1 text-sm text-text-muted">{files.length} items · CRM media gallery</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowNewFolder(true)} className="gap-1.5"><FolderPlus className="h-3.5 w-3.5" /> New Folder</Button>
+          <Button variant="outline" size="sm" onClick={() => setShowUpload(true)} className="gap-1.5"><Upload className="h-3.5 w-3.5" /> Upload</Button>
+          <Button variant="outline" size="sm" onClick={load} className="gap-1.5"><RefreshCw className="h-3.5 w-3.5" /></Button>
+          <div className="flex border border-border/50 rounded-lg overflow-hidden">
+            <button onClick={() => setView('grid')} className={`p-1.5 ${view === 'grid' ? 'bg-accent/10 text-accent' : 'text-text-muted'}`}><Grid className="h-3.5 w-3.5" /></button>
+            <button onClick={() => setView('list')} className={`p-1.5 ${view === 'list' ? 'bg-accent/10 text-accent' : 'text-text-muted'}`}><List className="h-3.5 w-3.5" /></button>
+          </div>
+        </div>
       </div>
 
-      {/* Top Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        <div className="jp-search" style={{ flex: 1, minWidth: 200, maxWidth: 360 }}>
-          <span className="jp-search-icon">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </span>
+      {/* Search */}
+      <div className="flex gap-2">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
           <input
-            type="text"
-            className="jp-search-input"
-            placeholder="Search files..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ width: '100%' }}
+            className="w-full rounded-lg border border-border/50 bg-bg-card/50 pl-9 pr-3 py-2 text-sm text-white placeholder:text-text-muted"
+            placeholder="Search files and folders..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && load()}
           />
         </div>
-
-        {/* View toggle */}
-        <div style={{ display: 'flex', border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius-sm)', overflow: 'hidden' }}>
-          <button
-            onClick={() => setViewMode('grid')}
-            style={{
-              padding: '8px 12px',
-              background: viewMode === 'grid' ? 'var(--jp-green-glow)' : 'transparent',
-              border: 'none',
-              color: viewMode === 'grid' ? 'var(--jp-green)' : 'var(--jp-text-muted)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-            </svg>
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            style={{
-              padding: '8px 12px',
-              background: viewMode === 'list' ? 'var(--jp-green-glow)' : 'transparent',
-              border: 'none',
-              borderLeft: '1px solid var(--jp-border)',
-              color: viewMode === 'list' ? 'var(--jp-green)' : 'var(--jp-text-muted)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
-          </button>
-        </div>
-
-        <button style={{
-          padding: '9px 20px',
-          background: 'var(--jp-green)',
-          color: '#000',
-          border: 'none',
-          borderRadius: 'var(--jp-radius-sm)',
-          fontSize: '0.8125rem',
-          fontWeight: 700,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-        }}>
-          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-          </svg>
-          Upload
-        </button>
       </div>
 
-      {/* Tabs */}
-      <div style={{
-        display: 'flex',
-        gap: 2,
-        marginBottom: 20,
-        borderBottom: '1px solid var(--jp-border)',
-      }}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              padding: '10px 18px',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === tab.key ? '2px solid var(--jp-green)' : '2px solid transparent',
-              color: activeTab === tab.key ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-              fontSize: '0.8125rem',
-              fontWeight: activeTab === tab.key ? 600 : 500,
-              cursor: 'pointer',
-              transition: 'all var(--jp-transition)',
-            }}
-          >
-            {tab.label}
-          </button>
+      {/* Breadcrumbs */}
+      <div className="flex items-center gap-1 text-xs text-text-muted">
+        <button onClick={() => navigateTo(-1)} className="hover:text-white transition-colors">Media</button>
+        {breadcrumbs.map((crumb, i) => (
+          <span key={crumb.id} className="flex items-center gap-1">
+            <ChevronRight className="h-3 w-3" />
+            <button onClick={() => navigateTo(i)} className="hover:text-white transition-colors">{crumb.name}</button>
+          </span>
         ))}
+        {breadcrumbs.length > 0 && (
+          <button onClick={navigateBack} className="ml-2 text-text-muted hover:text-white"><ArrowLeft className="h-3 w-3" /></button>
+        )}
       </div>
 
-      {/* Grid View */}
-      {viewMode === 'grid' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-          {filteredFiles.map((file) => (
-            <div key={file.id} className="jp-card" style={{ cursor: 'pointer' }}>
-              <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 12 }}>
-                <div style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 'var(--jp-radius)',
-                  background: typeBg[file.ext],
-                  color: typeColors[file.ext],
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  {typeIcons[file.type]}
-                </div>
-                <div>
-                  <div style={{
-                    fontSize: '0.8125rem',
-                    fontWeight: 600,
-                    color: 'var(--jp-text)',
-                    marginBottom: 4,
-                    wordBreak: 'break-all',
-                  }}>
-                    {file.name}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    <span style={{
-                      fontSize: '0.6875rem',
-                      fontWeight: 600,
-                      padding: '2px 8px',
-                      borderRadius: 6,
-                      background: typeBg[file.ext],
-                      color: typeColors[file.ext],
-                    }}>
-                      {file.ext}
-                    </span>
-                    {file.encrypted && (
-                      <svg width="12" height="12" fill="none" stroke="var(--jp-purple)" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    )}
-                  </div>
-                </div>
-                <div style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)' }}>
-                  {file.size} &middot; {file.modified}
-                </div>
-              </div>
+      {/* Folders */}
+      {folders.length > 0 && (
+        <div className={view === 'grid' ? 'grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6' : 'space-y-1'}>
+          {folders.map(folder => (
+            <div
+              key={folder._id || folder.id}
+              onClick={() => openFolder(folder)}
+              className="cursor-pointer rounded-xl border border-border/50 bg-bg-card/50 p-3 flex items-center gap-2.5 transition-colors hover:border-border"
+            >
+              <Folder className="h-5 w-5 text-amber shrink-0" />
+              <span className="text-sm text-white truncate">{folder.name}</span>
             </div>
           ))}
         </div>
       )}
 
-      {/* List View */}
-      {viewMode === 'list' && (
-        <div className="jp-card">
-          {/* Header */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 100px 80px 120px 80px',
-            gap: 12,
-            padding: '12px 20px',
-            borderBottom: '1px solid var(--jp-border)',
-            fontSize: '0.6875rem',
-            fontWeight: 600,
-            color: 'var(--jp-text-muted)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-          }}>
-            <span>Name</span>
-            <span>Type</span>
-            <span>Size</span>
-            <span>Modified</span>
-            <span>Actions</span>
-          </div>
-          {filteredFiles.map((file) => (
+      {/* Files */}
+      {items.length === 0 && folders.length === 0 ? (
+        <div className="rounded-xl border border-border/50 bg-bg-card/50 p-12 text-center">
+          <File className="h-10 w-10 text-text-muted mx-auto mb-3" />
+          <p className="text-sm text-text-muted">No files in this folder.</p>
+        </div>
+      ) : view === 'grid' ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {items.map(item => (
             <div
-              key={file.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 100px 80px 120px 80px',
-                gap: 12,
-                padding: '14px 20px',
-                borderBottom: '1px solid var(--jp-border)',
-                alignItems: 'center',
-                cursor: 'pointer',
-                transition: 'background var(--jp-transition)',
-              }}
-              onMouseOver={(e) => e.currentTarget.style.background = 'var(--jp-bg-card-hover)'}
-              onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+              key={item._id || item.id}
+              onClick={() => setSelected(item)}
+              className="cursor-pointer rounded-xl border border-border/50 bg-bg-card/50 p-3 transition-colors hover:border-border group"
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                <span style={{ color: typeColors[file.ext], display: 'flex', flexShrink: 0 }}>
-                  {typeIcons[file.type]}
-                </span>
-                <span style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  color: 'var(--jp-text)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}>
-                  {file.name}
-                </span>
-                {file.encrypted && (
-                  <svg width="12" height="12" fill="none" stroke="var(--jp-purple)" viewBox="0 0 24 24" strokeWidth={2} style={{ flexShrink: 0 }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
+              {item.url && ['jpg','jpeg','png','gif','webp'].some(ext => item.name?.toLowerCase().endsWith(ext)) ? (
+                <div className="aspect-square rounded-lg overflow-hidden bg-bg-secondary mb-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="aspect-square rounded-lg bg-bg-secondary flex items-center justify-center mb-2">
+                  {getIcon(item)}
+                </div>
+              )}
+              <p className="text-xs text-white truncate">{item.name}</p>
+              <p className="text-[10px] text-text-muted mt-0.5">{formatSize(item.size)}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {items.map(item => (
+            <div
+              key={item._id || item.id}
+              onClick={() => setSelected(item)}
+              className="cursor-pointer rounded-lg border border-border/50 bg-bg-card/50 p-3 flex items-center gap-3 transition-colors hover:border-border"
+            >
+              {getIcon(item)}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white truncate">{item.name}</p>
+                <p className="text-[10px] text-text-muted">{formatSize(item.size)} {item.createdAt && `· ${new Date(item.createdAt).toLocaleDateString()}`}</p>
+              </div>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* New Folder Dialog */}
+      <Dialog open={showNewFolder} onOpenChange={setShowNewFolder}>
+        <DialogContent className="sm:max-w-sm bg-bg-secondary border-border">
+          <DialogHeader><DialogTitle className="text-white">New Folder</DialogTitle></DialogHeader>
+          <input className="w-full rounded-lg border border-border/50 bg-bg-card/50 px-3 py-2.5 text-sm text-white placeholder:text-text-muted" placeholder="Folder name" value={folderName} onChange={e => setFolderName(e.target.value)} autoFocus />
+          <DialogFooter><Button onClick={createFolder} className="bg-accent text-cta-text hover:bg-accent-action">Create Folder</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload Dialog */}
+      <Dialog open={showUpload} onOpenChange={setShowUpload}>
+        <DialogContent className="sm:max-w-md bg-bg-secondary border-border">
+          <DialogHeader><DialogTitle className="text-white">Upload File</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-[10px] text-text-muted uppercase tracking-wider mb-1 block">File URL</label>
+              <input className="w-full rounded-lg border border-border/50 bg-bg-card/50 px-3 py-2.5 text-sm text-white placeholder:text-text-muted" placeholder="https://example.com/file.pdf" value={uploadUrl} onChange={e => setUploadUrl(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted uppercase tracking-wider mb-1 block">File Name</label>
+              <input className="w-full rounded-lg border border-border/50 bg-bg-card/50 px-3 py-2.5 text-sm text-white placeholder:text-text-muted" placeholder="my-file.pdf" value={uploadName} onChange={e => setUploadName(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter><Button onClick={uploadFile} className="bg-accent text-cta-text hover:bg-accent-action">Upload</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* File Detail Dialog */}
+      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+        {selected && (
+          <DialogContent className="sm:max-w-md bg-bg-secondary border-border">
+            <DialogHeader>
+              <div className="flex items-center gap-3">
+                {getIcon(selected)}
+                <DialogTitle className="text-white truncate">{selected.name}</DialogTitle>
+              </div>
+            </DialogHeader>
+            {selected.url && ['jpg','jpeg','png','gif','webp'].some(ext => selected.name?.toLowerCase().endsWith(ext)) && (
+              <div className="rounded-lg overflow-hidden bg-bg-card">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={selected.url} alt={selected.name} className="w-full max-h-64 object-contain" />
+              </div>
+            )}
+            <div className="space-y-1.5 text-xs text-text-secondary">
+              {selected.size && <div className="flex justify-between"><span>Size</span><span>{formatSize(selected.size)}</span></div>}
+              {selected.createdAt && <div className="flex justify-between"><span>Created</span><span>{new Date(selected.createdAt).toLocaleString()}</span></div>}
+              {selected.url && <div className="flex justify-between"><span>URL</span><span className="truncate ml-4 font-mono text-[10px]">{selected.url.slice(0, 40)}...</span></div>}
+            </div>
+            <DialogFooter className="flex-row items-center justify-between sm:justify-between gap-2">
+              <Button variant="outline" size="sm" className="text-red hover:text-red gap-1" onClick={() => deleteItem(selected._id || selected.id || '')}>
+                <Trash2 className="h-3 w-3" /> Delete
+              </Button>
+              <div className="flex gap-1.5">
+                {selected.url && (
+                  <Button variant="outline" size="sm" onClick={() => window.open(selected.url, '_blank')} className="gap-1">
+                    <Eye className="h-3 w-3" /> View
+                  </Button>
+                )}
+                {selected.url && (
+                  <Button size="sm" className="bg-accent text-cta-text hover:bg-accent-action gap-1" onClick={() => { navigator.clipboard.writeText(selected.url || '') }}>
+                    Copy URL
+                  </Button>
                 )}
               </div>
-              <span style={{
-                fontSize: '0.6875rem',
-                fontWeight: 600,
-                padding: '2px 8px',
-                borderRadius: 6,
-                background: typeBg[file.ext],
-                color: typeColors[file.ext],
-                display: 'inline-block',
-                width: 'fit-content',
-              }}>
-                {file.ext}
-              </span>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)' }}>{file.size}</span>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--jp-text-muted)' }}>{file.modified}</span>
-              <div style={{ display: 'flex', gap: 2 }}>
-                <button className="jp-header-btn" title="Download" style={{ width: 30, height: 30 }}>
-                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                </button>
-                <button className="jp-header-btn" title="More" style={{ width: 30, height: 30 }}>
-                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {filteredFiles.length === 0 && (
-        <div style={{
-          textAlign: 'center',
-          padding: 60,
-          color: 'var(--jp-text-muted)',
-        }}>
-          <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1} style={{ margin: '0 auto 12px', display: 'block' }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-          </svg>
-          <div style={{ fontSize: '0.875rem' }}>No files found</div>
-        </div>
-      )}
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   )
 }
