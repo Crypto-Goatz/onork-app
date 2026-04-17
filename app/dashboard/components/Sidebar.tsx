@@ -3,11 +3,46 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useState } from 'react'
+import { useRole } from '@/lib/use-role'
 
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
   isAdmin?: boolean
+}
+
+const ADDON_NAV_MAP: Record<string, { name: string; href: string; addonSlug: string }> = {
+  'email-builder': { name: 'Email Campaigns', href: '/dashboard/email/campaigns', addonSlug: 'email-builder' },
+  'social-planner': { name: 'Social Planner', href: '/dashboard/social', addonSlug: 'social-planner' },
+  'calendar-booking': { name: 'Calendar', href: '/dashboard/calendar', addonSlug: 'calendar-booking' },
+  'invoice-automation': { name: 'Invoices', href: '/dashboard/invoices', addonSlug: 'invoice-automation' },
+  'ai-course-builder': { name: 'Courses', href: '/dashboard/courses', addonSlug: 'ai-course-builder' },
+  'voice-ai-agent': { name: 'Voice AI', href: '/dashboard/voice', addonSlug: 'voice-ai-agent' },
+  'agent-studio': { name: 'Agent Studio', href: '/dashboard/ai', addonSlug: 'agent-studio' },
+  'knowledge-base': { name: 'Knowledge Base', href: '/dashboard/training', addonSlug: 'knowledge-base' },
+  'blog-engine': { name: 'Blog Engine', href: '/dashboard/blog', addonSlug: 'blog-engine' },
+  'phone-system': { name: 'Phone System', href: '/dashboard/phone', addonSlug: 'phone-system' },
+  'snapshot-manager': { name: 'Snapshots', href: '/dashboard/snapshots', addonSlug: 'snapshot-manager' },
+  'workflow-reader': { name: 'Workflows', href: '/dashboard/workflows', addonSlug: 'workflow-reader' },
+  'affiliate-manager': { name: 'Affiliates', href: '/dashboard/affiliates', addonSlug: 'affiliate-manager' },
+  'contact-manager': { name: 'Contacts', href: '/dashboard/contacts', addonSlug: 'contact-manager' },
+  'opportunity-pipeline': { name: 'Pipeline', href: '/dashboard/pipeline', addonSlug: 'opportunity-pipeline' },
+  'payment-processing': { name: 'Payments', href: '/dashboard/billing', addonSlug: 'payment-processing' },
+  'form-builder': { name: 'Forms', href: '/dashboard/forms', addonSlug: 'form-builder' },
+  'funnel-builder': { name: 'Funnels', href: '/dashboard/funnels', addonSlug: 'funnel-builder' },
+  'document-contracts': { name: 'Documents', href: '/dashboard/documents', addonSlug: 'document-contracts' },
+  'ecommerce-store': { name: 'Store', href: '/dashboard/store', addonSlug: 'ecommerce-store' },
+  'campaign-manager': { name: 'Campaigns', href: '/dashboard/campaigns', addonSlug: 'campaign-manager' },
+  'custom-objects': { name: 'Custom Objects', href: '/dashboard/objects', addonSlug: 'custom-objects' },
+  'media-manager': { name: 'Media', href: '/dashboard/files', addonSlug: 'media-manager' },
+  'wordpress-manager': { name: 'WordPress', href: '/dashboard/wordpress', addonSlug: 'wordpress-manager' },
+  'saas-manager': { name: 'SaaS Manager', href: '/dashboard/agency', addonSlug: 'saas-manager' },
+  'location-settings': { name: 'Location Settings', href: '/dashboard/settings', addonSlug: 'location-settings' },
+  'brand-board': { name: 'Brand Board', href: '/dashboard/brand', addonSlug: 'brand-board' },
+  'conversation-ai': { name: 'Conversation AI', href: '/dashboard/chat', addonSlug: 'conversation-ai' },
+  'link-triggers': { name: 'Link Triggers', href: '/dashboard/links', addonSlug: 'link-triggers' },
+  'user-management': { name: 'Users', href: '/dashboard/users', addonSlug: 'user-management' },
+  'product-catalog': { name: 'Products', href: '/dashboard/products', addonSlug: 'product-catalog' },
 }
 
 interface SubNavItem {
@@ -328,9 +363,11 @@ const adminItem: NavItem = {
   ),
 }
 
-export default function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, isAdmin: isAdminProp }: SidebarProps) {
   const pathname = usePathname()
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const role = useRole()
+  const isAdmin = isAdminProp || role.isAdmin
 
   const toggleExpand = (name: string) => {
     setExpandedItems(prev => {
@@ -370,9 +407,26 @@ export default function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
         {/* Nav */}
         <div className="jp-sidebar-body">
           {navGroups.map((group, gi) => {
-            const items = group.label === 'Account' && isAdmin
+            let items = group.label === 'Account' && isAdmin
               ? [...group.items, agencyItem, adminItem]
-              : group.items
+              : [...group.items]
+
+            // Filter items based on role + installed add-ons
+            if (!role.loading) {
+              items = items.filter(item => {
+                // Find if this nav item maps to an add-on
+                const addonEntry = Object.values(ADDON_NAV_MAP).find(a => a.href === item.href)
+                if (!addonEntry) return true // Not an add-on item — always show
+
+                // VIP/Admin: show everything unless manually hidden
+                if (role.isVip || role.isAdmin) {
+                  return !role.hiddenFeatures.includes(addonEntry.addonSlug)
+                }
+
+                // Standard: only show if add-on is purchased
+                return role.hasAddon(addonEntry.addonSlug)
+              })
+            }
             const catColor = group.color || CATEGORY_COLORS[group.label] || '#8b95a5'
             return (
               <div className="jp-menu-group" key={gi}>
@@ -468,10 +522,20 @@ export default function Sidebar({ isOpen, onClose, isAdmin }: SidebarProps) {
 
         {/* Footer */}
         <div className="jp-sidebar-footer">
+          {role.isAdmin && (
+            <div style={{ fontSize: 9, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 4 }}>
+              Admin
+            </div>
+          )}
+          {role.isVip && !role.isAdmin && (
+            <div style={{ fontSize: 9, color: '#7ed957', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 4 }}>
+              VIP / Unlimited
+            </div>
+          )}
           <div className="jp-sidebar-footer-label">Powered by</div>
           <div className="jp-sidebar-footer-value">
             <span className="jp-sidebar-footer-dot" />
-            0nMCP v2.5.0
+            0nMCP v3.2.2
           </div>
         </div>
       </aside>
