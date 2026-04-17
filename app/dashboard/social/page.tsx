@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 type Tab = 'compose' | 'scheduled' | 'analytics' | 'accounts'
 type Tone = 'professional' | 'casual' | 'thought-leader'
@@ -39,17 +40,25 @@ interface SocialAccount {
   icon: string
 }
 
-// ── Platform definitions ──────────────────────────────────────
-const PLATFORMS: SocialAccount[] = [
+// ── Platform definitions — CRM OAuth platforms + direct integrations ──
+const CRM_PLATFORMS: SocialAccount[] = [
+  { platform: 'Google Business', key: 'google', connected: false, color: '#4285F4', icon: 'G' },
+  { platform: 'Facebook', key: 'facebook', connected: false, color: '#1877F2', icon: 'f' },
+  { platform: 'Instagram', key: 'instagram', connected: false, color: '#E4405F', icon: 'ig' },
+  { platform: 'LinkedIn', key: 'linkedin', connected: false, color: '#0A66C2', icon: 'in' },
   { platform: 'X / Twitter', key: 'twitter', connected: false, color: '#000000', icon: 'X' },
-  { platform: 'LinkedIn', key: 'linkedin', connected: true, handle: '@rocketopp', color: '#0A66C2', icon: 'in' },
-  { platform: 'Reddit', key: 'reddit', connected: true, handle: 'u/0nork', color: '#FF4500', icon: 'r/' },
-  { platform: 'Dev.to', key: 'devto', connected: true, handle: '@0nmcp', color: '#0a0a0a', icon: '</>' },
-  { platform: 'Facebook', key: 'facebook', connected: false, comingSoon: true, color: '#1877F2', icon: 'f' },
-  { platform: 'Instagram', key: 'instagram', connected: false, comingSoon: true, color: '#E4405F', icon: 'ig' },
-  { platform: 'Hacker News', key: 'hackernews', connected: false, comingSoon: true, color: '#FF6600', icon: 'Y' },
-  { platform: 'GitHub Discussions', key: 'github', connected: true, handle: '0nork', color: '#24292e', icon: 'GH' },
+  { platform: 'TikTok', key: 'tiktok', connected: false, color: '#000000', icon: 'TT' },
+  { platform: 'TikTok Business', key: 'tiktok_business', connected: false, color: '#00F2EA', icon: 'TB' },
 ]
+
+const DIRECT_PLATFORMS: SocialAccount[] = [
+  { platform: 'Reddit', key: 'reddit', connected: false, color: '#FF4500', icon: 'r/' },
+  { platform: 'Dev.to', key: 'devto', connected: false, color: '#0a0a0a', icon: '</>' },
+  { platform: 'GitHub Discussions', key: 'github', connected: false, color: '#24292e', icon: 'GH' },
+  { platform: 'Hacker News', key: 'hackernews', connected: false, comingSoon: true, color: '#FF6600', icon: 'Y' },
+]
+
+const PLATFORMS: SocialAccount[] = [...CRM_PLATFORMS, ...DIRECT_PLATFORMS]
 
 const CHAR_LIMITS: Record<string, number> = {
   twitter: 280,
@@ -79,6 +88,43 @@ const TOP_POSTS: { content: string; platform: string; reach: string; engagement:
 const CHART_BARS = Array(30).fill(0)
 
 export default function SocialPage() {
+  const supabase = createClient()
+  const [connectedAccounts, setConnectedAccounts] = useState<Record<string, boolean>>({})
+  const [connecting, setConnecting] = useState<string | null>(null)
+
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/social/accounts', { headers: { Authorization: `Bearer ${session.access_token}` } })
+      if (res.ok) {
+        const data = await res.json()
+        const connected: Record<string, boolean> = {}
+        for (const acc of (data.accounts || [])) {
+          const platform = acc.type || acc.platform || acc.provider || ''
+          connected[platform.toLowerCase()] = true
+        }
+        setConnectedAccounts(connected)
+      }
+    })()
+  }, [supabase])
+
+  async function connectPlatform(key: string) {
+    setConnecting(key)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setConnecting(null); return }
+    const res = await fetch('/api/social/connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ platform: key }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      if (data.url) window.open(data.url, '_blank', 'width=600,height=700')
+    }
+    setConnecting(null)
+  }
+
   const [activeTab, setActiveTab] = useState<Tab>('compose')
   const [topic, setTopic] = useState('')
   const [tone, setTone] = useState<Tone>('professional')
@@ -1117,81 +1163,80 @@ export default function SocialPage() {
 
       {/* ═══════════════ ACCOUNTS TAB ═══════════════ */}
       {activeTab === 'accounts' && (
-        <div className="jp-card">
-          <div className="jp-card-header">
-            <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>Connected Accounts</h4>
-            <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
-              {PLATFORMS.filter((p) => p.connected).length} / {PLATFORMS.length} connected
-            </span>
-          </div>
-          <div>
-            {PLATFORMS.map((account) => (
-              <div
-                key={account.key}
-                style={{
-                  padding: '16px 20px',
-                  borderBottom: '1px solid var(--jp-border)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                }}
-              >
-                <div style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 'var(--jp-radius-sm)',
-                  background: account.color,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.8125rem',
-                  fontWeight: 700,
-                  color: '#fff',
-                  flexShrink: 0,
-                }}>
-                  {account.icon}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--jp-text)' }}>
-                      {account.platform}
-                    </span>
-                    {account.comingSoon && (
-                      <span style={{
-                        fontSize: '0.6875rem',
-                        fontWeight: 500,
-                        padding: '2px 8px',
-                        borderRadius: 6,
-                        background: 'rgba(251, 191, 36, 0.12)',
-                        color: 'var(--jp-amber)',
-                      }}>
-                        Coming Soon
-                      </span>
-                    )}
+        <div>
+          {/* CRM OAuth Platforms */}
+          <div className="jp-card" style={{ marginBottom: 16 }}>
+            <div className="jp-card-header">
+              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>Social Accounts (CRM OAuth)</h4>
+              <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
+                Connect via CRM SDK — accounts sync to your sub-location
+              </span>
+            </div>
+            <div>
+              {CRM_PLATFORMS.map((account) => {
+                const isConnected = connectedAccounts[account.key] || false
+                return (
+                  <div key={account.key} style={{ padding: '16px 20px', borderBottom: '1px solid var(--jp-border)', display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 'var(--jp-radius-sm)', background: account.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8125rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                      {account.icon}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--jp-text)' }}>{account.platform}</span>
+                      {isConnected && <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginTop: 2 }}>Connected via CRM</div>}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {isConnected && (
+                        <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '3px 10px', borderRadius: 6, background: 'var(--jp-green-glow)', color: 'var(--jp-green)' }}>
+                          Connected
+                        </span>
+                      )}
+                      <button
+                        onClick={() => !isConnected && connectPlatform(account.key)}
+                        disabled={connecting === account.key}
+                        style={{
+                          padding: '7px 16px',
+                          background: isConnected ? 'transparent' : 'var(--jp-green)',
+                          color: isConnected ? 'var(--jp-red)' : '#000',
+                          border: isConnected ? '1px solid var(--jp-border)' : 'none',
+                          borderRadius: 'var(--jp-radius-sm)',
+                          fontSize: '0.8125rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          opacity: connecting === account.key ? 0.5 : 1,
+                        }}
+                      >
+                        {connecting === account.key ? 'Connecting...' : isConnected ? 'Reconnect' : 'Connect'}
+                      </button>
+                    </div>
                   </div>
-                  {account.handle && (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginTop: 2 }}>{account.handle}</div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {account.connected && (
-                    <span style={{
-                      fontSize: '0.6875rem',
-                      fontWeight: 600,
-                      padding: '3px 10px',
-                      borderRadius: 6,
-                      background: 'var(--jp-green-glow)',
-                      color: 'var(--jp-green)',
-                    }}>
-                      Connected
-                    </span>
-                  )}
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Direct Platforms */}
+          <div className="jp-card">
+            <div className="jp-card-header">
+              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>Direct Integrations</h4>
+              <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
+                Connected via API keys in Settings
+              </span>
+            </div>
+            <div>
+              {DIRECT_PLATFORMS.map((account) => (
+                <div key={account.key} style={{ padding: '16px 20px', borderBottom: '1px solid var(--jp-border)', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 'var(--jp-radius-sm)', background: account.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8125rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                    {account.icon}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--jp-text)' }}>{account.platform}</span>
+                  </div>
                   <button
                     style={{
                       padding: '7px 16px',
-                      background: account.connected ? 'transparent' : account.comingSoon ? 'var(--jp-border)' : 'var(--jp-green)',
-                      color: account.connected ? 'var(--jp-red)' : account.comingSoon ? 'var(--jp-text-muted)' : '#000',
-                      border: account.connected ? '1px solid var(--jp-border)' : 'none',
+                      background: account.comingSoon ? 'var(--jp-border)' : 'var(--jp-green)',
+                      color: account.comingSoon ? 'var(--jp-text-muted)' : '#000',
+                      border: 'none',
                       borderRadius: 'var(--jp-radius-sm)',
                       fontSize: '0.8125rem',
                       fontWeight: 600,
@@ -1199,12 +1244,13 @@ export default function SocialPage() {
                       opacity: account.comingSoon ? 0.5 : 1,
                     }}
                     disabled={account.comingSoon}
+                    onClick={() => !account.comingSoon && (window.location.href = '/dashboard/integrations')}
                   >
-                    {account.connected ? 'Disconnect' : account.comingSoon ? 'Unavailable' : 'Connect'}
+                    {account.comingSoon ? 'Coming Soon' : 'Configure'}
                   </button>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
