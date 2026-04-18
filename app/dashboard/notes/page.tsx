@@ -23,6 +23,7 @@ import {
   useOnSelectionChange,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { StrikeSettingsDialog, DEFAULT_CONFIG, type StrikeConfig, type StrikeSection } from '@/components/strike-settings-dialog'
 
 /* ────────────────────────────────────────────
    Constants
@@ -1559,22 +1560,13 @@ interface StrikeTask {
   created: string
 }
 
-type StrikeSection = 'tasks' | 'notes' | 'clock' | 'focus'
-
-const SECTION_META: Record<StrikeSection, { label: string; icon: string }> = {
-  tasks: { label: 'Tasks', icon: 'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11' },
-  notes: { label: 'Quick Notes', icon: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6' },
-  clock: { label: 'Clock', icon: 'M12 2a10 10 0 100 20 10 10 0 000-20z M12 6v6l4 2' },
-  focus: { label: 'Focus Timer', icon: 'M13 2L3 14h9l-1 8 10-12h-9l1-8' },
-}
-
-const STRIKE_SETTINGS_KEY = '0n_strike_settings'
+const STRIKE_CONFIG_KEY = '0n_strike_config'
 const STRIKE_TASKS_KEY = '0n_strike_tasks'
 
 function StrikeMenu() {
   const [isOpen, setIsOpen] = useState(false)
-  const [sections, setSections] = useState<StrikeSection[]>(['tasks', 'notes'])
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [config, setConfig] = useState<StrikeConfig>(DEFAULT_CONFIG)
+  const sections = config.sections
 
   // Notes state
   const [notes, setNotes] = useState<QuickNote[]>([])
@@ -1598,7 +1590,7 @@ function StrikeMenu() {
   useEffect(() => {
     try { const s = localStorage.getItem('0n_quick_notes'); if (s) setNotes(JSON.parse(s)) } catch {}
     try { const s = localStorage.getItem(STRIKE_TASKS_KEY); if (s) setTasks(JSON.parse(s)) } catch {}
-    try { const s = localStorage.getItem(STRIKE_SETTINGS_KEY); if (s) setSections(JSON.parse(s)) } catch {}
+    try { const s = localStorage.getItem(STRIKE_CONFIG_KEY); if (s) setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(s) }) } catch {}
   }, [])
 
   // Focus timer interval
@@ -1614,7 +1606,7 @@ function StrikeMenu() {
 
   function persistNotes(n: QuickNote[]) { setNotes(n); localStorage.setItem('0n_quick_notes', JSON.stringify(n)) }
   function persistTasks(t: StrikeTask[]) { setTasks(t); localStorage.setItem(STRIKE_TASKS_KEY, JSON.stringify(t)) }
-  function persistSections(s: StrikeSection[]) { setSections(s); localStorage.setItem(STRIKE_SETTINGS_KEY, JSON.stringify(s)) }
+  function persistConfig(c: StrikeConfig) { setConfig(c); localStorage.setItem(STRIKE_CONFIG_KEY, JSON.stringify(c)) }
 
   // Note functions
   function saveNote() {
@@ -1652,12 +1644,6 @@ function StrikeMenu() {
 
   function toggleTask(id: string) { persistTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)) }
   function removeTask(id: string) { persistTasks(tasks.filter(t => t.id !== id)) }
-
-  // Section toggle
-  function toggleSection(s: StrikeSection) {
-    const next = sections.includes(s) ? sections.filter(x => x !== s) : [...sections, s]
-    persistSections(next)
-  }
 
   const priorityColor = { low: '#6b7280', med: '#f59e0b', high: '#ef4444' }
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
@@ -1718,18 +1704,7 @@ function StrikeMenu() {
             }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: '#f0f4f8', letterSpacing: '0.04em' }}>Strike Menu</span>
           </div>
-          <button
-            onClick={() => setSettingsOpen(true)}
-            style={{
-              background: 'transparent', border: 'none', color: '#4b5563',
-              cursor: 'pointer', padding: 4, borderRadius: 4,
-              display: 'flex', alignItems: 'center',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-            </svg>
-          </button>
+          <StrikeSettingsDialog config={config} onConfigChange={persistConfig} />
         </div>
 
         {/* Scrollable content */}
@@ -2019,76 +1994,6 @@ function StrikeMenu() {
           </button>
         </div>
       </div>
-
-      {/* ═══ Settings Modal ═══ */}
-      {settingsOpen && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 300,
-            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-          onClick={e => { if (e.target === e.currentTarget) setSettingsOpen(false) }}
-        >
-          <div style={{
-            background: '#000', border: '1px solid #1e293b', borderRadius: 16,
-            width: 360, padding: 24, animation: 'strikeModalIn 0.25s ease',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#f0f4f8' }}>Strike Menu Settings</span>
-              <button
-                onClick={() => setSettingsOpen(false)}
-                style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', fontSize: 16 }}
-              >
-                ✕
-              </button>
-            </div>
-            <p style={{ fontSize: 11, color: '#4b5563', marginBottom: 16, lineHeight: 1.5 }}>
-              Choose which sections appear in your Strike Menu. Toggle what you need right now.
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {(Object.keys(SECTION_META) as StrikeSection[]).map(key => {
-                const meta = SECTION_META[key]
-                const active = sections.includes(key)
-                return (
-                  <button
-                    key={key}
-                    onClick={() => toggleSection(key)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '10px 12px', borderRadius: 8,
-                      background: active ? 'rgba(126,217,87,0.06)' : '#0a0a0a',
-                      border: `1px solid ${active ? '#7ed957' : '#1e293b'}`,
-                      cursor: 'pointer', transition: 'all 0.15s',
-                    }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={active ? '#7ed957' : '#4b5563'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d={meta.icon} />
-                    </svg>
-                    <span style={{ flex: 1, textAlign: 'left', fontSize: 13, fontWeight: 600, color: active ? '#f0f4f8' : '#4b5563' }}>
-                      {meta.label}
-                    </span>
-                    <div style={{
-                      width: 32, height: 18, borderRadius: 9, position: 'relative',
-                      background: active ? '#7ed957' : '#1e293b',
-                      transition: 'background 0.2s',
-                    }}>
-                      <div style={{
-                        width: 14, height: 14, borderRadius: 7,
-                        background: active ? '#000' : '#4b5563',
-                        position: 'absolute', top: 2,
-                        left: active ? 16 : 2,
-                        transition: 'left 0.2s, background 0.2s',
-                      }} />
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ═══ Note Input Modal ═══ */}
       {noteModalOpen && (
