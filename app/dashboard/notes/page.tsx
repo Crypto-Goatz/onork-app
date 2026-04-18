@@ -1540,7 +1540,7 @@ function BoardInner() {
    ──────────────────────────────────────────── */
 
 /* ────────────────────────────────────────────
-   Quick Note Overlay
+   Strike Menu — Right Sidebar
    ──────────────────────────────────────────── */
 
 interface QuickNote {
@@ -1551,95 +1551,626 @@ interface QuickNote {
   done: boolean
 }
 
-function QuickNotePanel() {
-  const [open, setOpen] = useState(false)
+interface StrikeTask {
+  id: string
+  text: string
+  done: boolean
+  priority: 'low' | 'med' | 'high'
+  created: string
+}
+
+type StrikeSection = 'tasks' | 'notes' | 'clock' | 'focus'
+
+const SECTION_META: Record<StrikeSection, { label: string; icon: string }> = {
+  tasks: { label: 'Tasks', icon: 'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11' },
+  notes: { label: 'Quick Notes', icon: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6' },
+  clock: { label: 'Clock', icon: 'M12 2a10 10 0 100 20 10 10 0 000-20z M12 6v6l4 2' },
+  focus: { label: 'Focus Timer', icon: 'M13 2L3 14h9l-1 8 10-12h-9l1-8' },
+}
+
+const STRIKE_SETTINGS_KEY = '0n_strike_settings'
+const STRIKE_TASKS_KEY = '0n_strike_tasks'
+
+function StrikeMenu() {
+  const [isOpen, setIsOpen] = useState(false)
+  const [sections, setSections] = useState<StrikeSection[]>(['tasks', 'notes'])
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // Notes state
   const [notes, setNotes] = useState<QuickNote[]>([])
-  const [input, setInput] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [noteInput, setNoteInput] = useState('')
+  const [noteModalOpen, setNoteModalOpen] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
 
+  // Tasks state
+  const [tasks, setTasks] = useState<StrikeTask[]>([])
+  const [taskInput, setTaskInput] = useState('')
+  const [taskPriority, setTaskPriority] = useState<'low' | 'med' | 'high'>('med')
+
+  // Focus timer state
+  const [focusTime, setFocusTime] = useState(25 * 60) // 25 min default
+  const [focusRunning, setFocusRunning] = useState(false)
+  const [focusLeft, setFocusLeft] = useState(25 * 60)
+  const focusRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Load persisted state
   useEffect(() => {
     try { const s = localStorage.getItem('0n_quick_notes'); if (s) setNotes(JSON.parse(s)) } catch {}
+    try { const s = localStorage.getItem(STRIKE_TASKS_KEY); if (s) setTasks(JSON.parse(s)) } catch {}
+    try { const s = localStorage.getItem(STRIKE_SETTINGS_KEY); if (s) setSections(JSON.parse(s)) } catch {}
   }, [])
 
-  function persist(n: QuickNote[]) { setNotes(n); localStorage.setItem('0n_quick_notes', JSON.stringify(n)) }
+  // Focus timer interval
+  useEffect(() => {
+    if (focusRunning && focusLeft > 0) {
+      focusRef.current = setInterval(() => setFocusLeft(p => {
+        if (p <= 1) { setFocusRunning(false); return 0 }
+        return p - 1
+      }), 1000)
+    }
+    return () => { if (focusRef.current) clearInterval(focusRef.current) }
+  }, [focusRunning, focusLeft])
 
-  async function save() {
-    if (!input.trim()) return
-    setSaving(true)
-    const summary = input.length > 80 ? input.slice(0, 77) + '...' : input
+  function persistNotes(n: QuickNote[]) { setNotes(n); localStorage.setItem('0n_quick_notes', JSON.stringify(n)) }
+  function persistTasks(t: StrikeTask[]) { setTasks(t); localStorage.setItem(STRIKE_TASKS_KEY, JSON.stringify(t)) }
+  function persistSections(s: StrikeSection[]) { setSections(s); localStorage.setItem(STRIKE_SETTINGS_KEY, JSON.stringify(s)) }
+
+  // Note functions
+  function saveNote() {
+    if (!noteInput.trim()) return
     const note: QuickNote = {
       id: Date.now().toString(),
-      text: input.trim(),
-      summary,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      text: noteInput.trim(),
+      summary: noteInput.length > 80 ? noteInput.slice(0, 77) + '...' : noteInput,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       done: false,
     }
-    persist([note, ...notes])
-    setInput('')
-    setSaving(false)
-    setOpen(false)
+    persistNotes([note, ...notes])
+    setNoteInput('')
+    setNoteModalOpen(false)
   }
 
-  function toggle(id: string) { persist(notes.map(n => n.id === id ? { ...n, done: !n.done } : n)) }
-  function remove(id: string) { persist(notes.filter(n => n.id !== id)); if (expanded === id) setExpanded(null) }
-  function expand(n: QuickNote) { setExpanded(n.id); setEditText(n.text) }
-  function saveEdit() { if (expanded) { persist(notes.map(n => n.id === expanded ? { ...n, text: editText, summary: editText.length > 80 ? editText.slice(0, 77) + '...' : editText } : n)); setExpanded(null) } }
-  function copyNote(text: string) { navigator.clipboard.writeText(text) }
-  async function paste() { try { const t = await navigator.clipboard.readText(); setInput(t) } catch {} }
+  function toggleNote(id: string) { persistNotes(notes.map(n => n.id === id ? { ...n, done: !n.done } : n)) }
+  function removeNote(id: string) { persistNotes(notes.filter(n => n.id !== id)); if (expanded === id) setExpanded(null) }
+  function expandNote(n: QuickNote) { setExpanded(n.id); setEditText(n.text) }
+  function saveEdit() { if (expanded) { persistNotes(notes.map(n => n.id === expanded ? { ...n, text: editText, summary: editText.length > 80 ? editText.slice(0, 77) + '...' : editText } : n)); setExpanded(null) } }
+
+  // Task functions
+  function addTask() {
+    if (!taskInput.trim()) return
+    const task: StrikeTask = {
+      id: Date.now().toString(),
+      text: taskInput.trim(),
+      done: false,
+      priority: taskPriority,
+      created: new Date().toISOString(),
+    }
+    persistTasks([task, ...tasks])
+    setTaskInput('')
+  }
+
+  function toggleTask(id: string) { persistTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)) }
+  function removeTask(id: string) { persistTasks(tasks.filter(t => t.id !== id)) }
+
+  // Section toggle
+  function toggleSection(s: StrikeSection) {
+    const next = sections.includes(s) ? sections.filter(x => x !== s) : [...sections, s]
+    persistSections(next)
+  }
+
+  const priorityColor = { low: '#6b7280', med: '#f59e0b', high: '#ef4444' }
+  const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
+
+  const SIDEBAR_W = 280
 
   return (
     <>
-      {/* Quick Note button */}
-      <button onClick={() => setOpen(true)} style={{ position: 'fixed', top: 14, right: 20, zIndex: 60, background: '#000', color: '#7ed957', border: '1px solid #1e293b', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 14 }}>+</span> Quick Note
+      {/* Toggle pill — fixed right edge */}
+      <button
+        onClick={() => setIsOpen(p => !p)}
+        style={{
+          position: 'fixed', top: 12, right: isOpen ? SIDEBAR_W + 8 : 12,
+          zIndex: 70, background: '#000', border: '1px solid #1e293b',
+          borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 8,
+          transition: 'right 0.3s cubic-bezier(0.4,0,0.2,1)',
+        }}
+      >
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#7ed957', letterSpacing: '0.06em' }}>STRIKE</span>
+        <div style={{
+          width: 32, height: 18, borderRadius: 9, position: 'relative',
+          background: isOpen ? '#7ed957' : '#1e293b',
+          transition: 'background 0.2s',
+        }}>
+          <div style={{
+            width: 14, height: 14, borderRadius: 7,
+            background: isOpen ? '#000' : '#4b5563',
+            position: 'absolute', top: 2,
+            left: isOpen ? 16 : 2,
+            transition: 'left 0.2s, background 0.2s',
+          }} />
+        </div>
       </button>
 
-      {/* Input modal */}
-      {open && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}>
-          <div style={{ background: '#000', border: '1px solid #1e293b', borderRadius: 16, width: 400, padding: 24, animation: 'yhl-modalIn 0.3s ease' }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#7ed957', marginBottom: 12 }}>Quick Note</div>
-            <textarea value={input} onChange={e => setInput(e.target.value)} placeholder="Paste or type anything..." style={{ width: '100%', minHeight: 120, background: '#0a0a0a', border: '1px solid #1e293b', borderRadius: 8, padding: 12, color: '#7ed957', fontSize: 13, resize: 'vertical', outline: 'none', fontFamily: 'inherit' }} autoFocus />
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button onClick={paste} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Paste</button>
-              <button onClick={() => setInput('')} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Clear</button>
-              <button onClick={save} disabled={saving || !input.trim()} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #7ed957', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: input.trim() ? 1 : 0.3 }}>Save</button>
+      {/* Sidebar panel */}
+      <div style={{
+        position: 'fixed', top: 0, right: 0, bottom: 0,
+        width: SIDEBAR_W, zIndex: 60,
+        background: 'rgba(0,0,0,0.95)',
+        borderLeft: '1px solid #1e293b',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        transform: isOpen ? 'translateX(0)' : `translateX(${SIDEBAR_W}px)`,
+        transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
+        display: 'flex', flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '14px 16px 10px', borderBottom: '1px solid #1e293b',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 6, height: 6, borderRadius: 3,
+              background: '#7ed957', boxShadow: '0 0 8px #7ed957',
+            }} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#f0f4f8', letterSpacing: '0.04em' }}>Strike Menu</span>
+          </div>
+          <button
+            onClick={() => setSettingsOpen(true)}
+            style={{
+              background: 'transparent', border: 'none', color: '#4b5563',
+              cursor: 'pointer', padding: 4, borderRadius: 4,
+              display: 'flex', alignItems: 'center',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Scrollable content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 80px' }}>
+          {/* ─── Tasks Section ─── */}
+          {sections.includes('tasks') && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: '#4b5563', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
+                Tasks ({tasks.filter(t => !t.done).length})
+              </div>
+
+              {/* Add task inline */}
+              <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                <input
+                  value={taskInput}
+                  onChange={e => setTaskInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') addTask() }}
+                  placeholder="Add task..."
+                  style={{
+                    flex: 1, padding: '7px 10px', background: '#0a0a0a',
+                    border: '1px solid #1e293b', borderRadius: 6,
+                    color: '#f0f4f8', fontSize: 12, outline: 'none',
+                    fontFamily: 'inherit',
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    const next = taskPriority === 'low' ? 'med' : taskPriority === 'med' ? 'high' : 'low'
+                    setTaskPriority(next)
+                  }}
+                  style={{
+                    width: 28, height: 28, borderRadius: 6, border: '1px solid #1e293b',
+                    background: '#0a0a0a', cursor: 'pointer', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}
+                  title={`Priority: ${taskPriority}`}
+                >
+                  <div style={{ width: 8, height: 8, borderRadius: 4, background: priorityColor[taskPriority] }} />
+                </button>
+              </div>
+
+              {/* Task list */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {tasks.map(t => (
+                  <div
+                    key={t.id}
+                    className="strike-task"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '6px 8px', borderRadius: 6,
+                      background: 'transparent',
+                      transition: 'background 0.1s',
+                      opacity: t.done ? 0.4 : 1,
+                    }}
+                  >
+                    <button
+                      onClick={() => toggleTask(t.id)}
+                      style={{
+                        width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+                        border: t.done ? '2px solid #7ed957' : '2px solid #30363d',
+                        background: t.done ? '#7ed957' : 'transparent',
+                        cursor: 'pointer', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {t.done && (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </button>
+                    <div style={{
+                      width: 4, height: 4, borderRadius: 2, flexShrink: 0,
+                      background: priorityColor[t.priority],
+                    }} />
+                    <span style={{
+                      flex: 1, fontSize: 12, color: '#d1d5db',
+                      textDecoration: t.done ? 'line-through' : 'none',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {t.text}
+                    </span>
+                    <button
+                      onClick={() => removeTask(t.id)}
+                      className="strike-task-x"
+                      style={{
+                        background: 'none', border: 'none', color: '#30363d',
+                        cursor: 'pointer', fontSize: 11, padding: '0 2px',
+                        opacity: 0, transition: 'opacity 0.15s',
+                      }}
+                    >
+                      x
+                    </button>
+                  </div>
+                ))}
+                {tasks.length === 0 && (
+                  <div style={{ fontSize: 11, color: '#30363d', textAlign: 'center', padding: 12 }}>
+                    No tasks yet
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ─── Notes Section ─── */}
+          {sections.includes('notes') && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: '#4b5563', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  Notes ({notes.length})
+                </div>
+                <button
+                  onClick={() => setNoteModalOpen(true)}
+                  style={{
+                    background: 'transparent', border: '1px solid #1e293b',
+                    borderRadius: 4, color: '#7ed957', fontSize: 11,
+                    padding: '2px 8px', cursor: 'pointer', fontWeight: 600,
+                  }}
+                >
+                  + New
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {notes.map(n => (
+                  <div
+                    key={n.id}
+                    className="strike-note"
+                    onClick={() => expandNote(n)}
+                    style={{
+                      padding: '8px 10px', borderRadius: 6,
+                      background: '#0a0a0a', border: '1px solid #1e293b',
+                      cursor: 'pointer', transition: 'border-color 0.15s',
+                      opacity: n.done ? 0.4 : 1,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                      <span style={{ fontSize: 9, color: '#7ed957', fontWeight: 600, letterSpacing: '0.03em' }}>{n.date}</span>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button
+                          onClick={e => { e.stopPropagation(); toggleNote(n.id) }}
+                          style={{ background: 'none', border: 'none', color: n.done ? '#7ed957' : '#30363d', cursor: 'pointer', fontSize: 11, padding: 0 }}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); removeNote(n.id) }}
+                          style={{ background: 'none', border: 'none', color: '#30363d', cursor: 'pointer', fontSize: 11, padding: 0 }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{
+                      fontSize: 11, color: '#94a3b8', lineHeight: 1.4,
+                      overflow: 'hidden', display: '-webkit-box',
+                      WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const,
+                    }}>
+                      {n.summary}
+                    </div>
+                  </div>
+                ))}
+                {notes.length === 0 && (
+                  <div style={{ fontSize: 11, color: '#30363d', textAlign: 'center', padding: 12 }}>
+                    No notes yet
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ─── Clock Section ─── */}
+          {sections.includes('clock') && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: '#4b5563', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
+                Clock
+              </div>
+              <div style={{
+                textAlign: 'center', padding: '12px 0',
+                fontFamily: 'monospace', fontSize: 28, fontWeight: 700,
+                color: '#7ed957', letterSpacing: '0.05em',
+                textShadow: '0 0 20px rgba(126,217,87,0.3)',
+              }}>
+                <ClockDisplay />
+              </div>
+            </div>
+          )}
+
+          {/* ─── Focus Timer Section ─── */}
+          {sections.includes('focus') && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: '#4b5563', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
+                Focus Timer
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontFamily: 'monospace', fontSize: 36, fontWeight: 700,
+                  color: focusRunning ? '#7ed957' : '#4b5563',
+                  letterSpacing: '0.05em', marginBottom: 10,
+                  textShadow: focusRunning ? '0 0 20px rgba(126,217,87,0.3)' : 'none',
+                  transition: 'color 0.3s, text-shadow 0.3s',
+                }}>
+                  {formatTime(focusLeft)}
+                </div>
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                  <button
+                    onClick={() => { if (!focusRunning) { setFocusLeft(focusTime) } setFocusRunning(p => !p) }}
+                    style={{
+                      padding: '5px 14px', borderRadius: 6, fontSize: 11, fontWeight: 700,
+                      background: focusRunning ? 'rgba(239,68,68,0.15)' : 'rgba(126,217,87,0.1)',
+                      border: `1px solid ${focusRunning ? '#ef4444' : '#7ed957'}`,
+                      color: focusRunning ? '#ef4444' : '#7ed957',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {focusRunning ? 'Stop' : 'Start'}
+                  </button>
+                  {!focusRunning && (
+                    <button
+                      onClick={() => { setFocusLeft(focusTime) }}
+                      style={{
+                        padding: '5px 14px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                        background: 'transparent', border: '1px solid #1e293b',
+                        color: '#4b5563', cursor: 'pointer',
+                      }}
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+                {!focusRunning && (
+                  <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginTop: 8 }}>
+                    {[15, 25, 45, 60].map(m => (
+                      <button
+                        key={m}
+                        onClick={() => { setFocusTime(m * 60); setFocusLeft(m * 60) }}
+                        style={{
+                          padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600,
+                          background: focusTime === m * 60 ? 'rgba(126,217,87,0.1)' : 'transparent',
+                          border: `1px solid ${focusTime === m * 60 ? '#7ed957' : '#1e293b'}`,
+                          color: focusTime === m * 60 ? '#7ed957' : '#4b5563',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {m}m
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom bar — quick actions */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          padding: '8px 12px', borderTop: '1px solid #1e293b',
+          background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)',
+          display: 'flex', gap: 6,
+        }}>
+          <button
+            onClick={() => setNoteModalOpen(true)}
+            style={{
+              flex: 1, padding: '8px 0', borderRadius: 6,
+              background: '#7ed957', border: 'none',
+              color: '#000', fontSize: 11, fontWeight: 700,
+              cursor: 'pointer', letterSpacing: '0.02em',
+            }}
+          >
+            + Quick Note
+          </button>
+          <button
+            onClick={() => {
+              const cleared = tasks.filter(t => !t.done)
+              persistTasks(cleared)
+            }}
+            style={{
+              padding: '8px 12px', borderRadius: 6,
+              background: 'transparent', border: '1px solid #1e293b',
+              color: '#4b5563', fontSize: 11, fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Clear done
+          </button>
+        </div>
+      </div>
+
+      {/* ═══ Settings Modal ═══ */}
+      {settingsOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 300,
+            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setSettingsOpen(false) }}
+        >
+          <div style={{
+            background: '#000', border: '1px solid #1e293b', borderRadius: 16,
+            width: 360, padding: 24, animation: 'strikeModalIn 0.25s ease',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#f0f4f8' }}>Strike Menu Settings</span>
+              <button
+                onClick={() => setSettingsOpen(false)}
+                style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', fontSize: 16 }}
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ fontSize: 11, color: '#4b5563', marginBottom: 16, lineHeight: 1.5 }}>
+              Choose which sections appear in your Strike Menu. Toggle what you need right now.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {(Object.keys(SECTION_META) as StrikeSection[]).map(key => {
+                const meta = SECTION_META[key]
+                const active = sections.includes(key)
+                return (
+                  <button
+                    key={key}
+                    onClick={() => toggleSection(key)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '10px 12px', borderRadius: 8,
+                      background: active ? 'rgba(126,217,87,0.06)' : '#0a0a0a',
+                      border: `1px solid ${active ? '#7ed957' : '#1e293b'}`,
+                      cursor: 'pointer', transition: 'all 0.15s',
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={active ? '#7ed957' : '#4b5563'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d={meta.icon} />
+                    </svg>
+                    <span style={{ flex: 1, textAlign: 'left', fontSize: 13, fontWeight: 600, color: active ? '#f0f4f8' : '#4b5563' }}>
+                      {meta.label}
+                    </span>
+                    <div style={{
+                      width: 32, height: 18, borderRadius: 9, position: 'relative',
+                      background: active ? '#7ed957' : '#1e293b',
+                      transition: 'background 0.2s',
+                    }}>
+                      <div style={{
+                        width: 14, height: 14, borderRadius: 7,
+                        background: active ? '#000' : '#4b5563',
+                        position: 'absolute', top: 2,
+                        left: active ? 16 : 2,
+                        transition: 'left 0.2s, background 0.2s',
+                      }} />
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>
       )}
 
-      {/* Notes sidebar */}
-      {notes.length > 0 && (
-        <div style={{ position: 'fixed', top: 56, right: 12, bottom: 12, width: 212, zIndex: 50, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' }}>
-          {notes.map(n => (
-            <div key={n.id} style={{ position: 'relative', width: 200, aspectRatio: '3/2', background: '#0a0a0a', border: `1px solid ${n.done ? '#1e293b' : '#1e293b'}`, borderRadius: 10, padding: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.15s', opacity: n.done ? 0.5 : 1 }} className="qn-card" onClick={() => expand(n)}>
-              <div style={{ fontSize: 9, color: '#7ed957', fontWeight: 600, marginBottom: 4, letterSpacing: '0.04em' }}>{n.date}</div>
-              <div style={{ fontSize: 11, color: '#cbd5e1', lineHeight: 1.4, flex: 1, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' as const }}>{n.summary}</div>
-              <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
-                <button onClick={e => { e.stopPropagation(); toggle(n.id) }} style={{ flex: 1, padding: '4px 0', background: 'transparent', border: '1px solid #1e293b', borderRadius: 4, color: n.done ? '#7ed957' : '#4b5563', fontSize: 12, cursor: 'pointer' }}>✓</button>
-                <button onClick={e => { e.stopPropagation(); remove(n.id) }} style={{ flex: 1, padding: '4px 0', background: 'transparent', border: '1px solid #1e293b', borderRadius: 4, color: '#4b5563', fontSize: 12, cursor: 'pointer' }}>✕</button>
-              </div>
-              {/* Hover overlay */}
-              <div className="qn-hover" style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)', borderRadius: 10, display: 'none', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7ed957" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </div>
+      {/* ═══ Note Input Modal ═══ */}
+      {noteModalOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 300,
+            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setNoteModalOpen(false) }}
+        >
+          <div style={{
+            background: '#000', border: '1px solid #1e293b', borderRadius: 16,
+            width: 400, padding: 24, animation: 'strikeModalIn 0.25s ease',
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#7ed957', marginBottom: 12 }}>Quick Note</div>
+            <textarea
+              value={noteInput}
+              onChange={e => setNoteInput(e.target.value)}
+              placeholder="Paste or type anything..."
+              style={{
+                width: '100%', minHeight: 120, background: '#0a0a0a',
+                border: '1px solid #1e293b', borderRadius: 8, padding: 12,
+                color: '#7ed957', fontSize: 13, resize: 'vertical',
+                outline: 'none', fontFamily: 'inherit',
+              }}
+              autoFocus
+              onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) saveNote() }}
+            />
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button
+                onClick={async () => { try { const t = await navigator.clipboard.readText(); setNoteInput(t) } catch {} }}
+                style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Paste
+              </button>
+              <button
+                onClick={() => setNoteInput('')}
+                style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Clear
+              </button>
+              <button
+                onClick={saveNote}
+                disabled={!noteInput.trim()}
+                style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #7ed957', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: noteInput.trim() ? 1 : 0.3 }}
+              >
+                Save
+              </button>
             </div>
-          ))}
+          </div>
         </div>
       )}
 
-      {/* Expanded edit modal */}
+      {/* ═══ Expanded Note Edit Modal ═══ */}
       {expanded && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) setExpanded(null) }}>
-          <div style={{ background: '#000', border: '1px solid #1e293b', borderRadius: 16, width: 440, padding: 24 }}>
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 300,
+            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setExpanded(null) }}
+        >
+          <div style={{
+            background: '#000', border: '1px solid #1e293b', borderRadius: 16,
+            width: 440, padding: 24, animation: 'strikeModalIn 0.25s ease',
+          }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#7ed957', marginBottom: 4 }}>Edit Note</div>
             <div style={{ fontSize: 10, color: '#4b5563', marginBottom: 12 }}>{notes.find(n => n.id === expanded)?.date}</div>
-            <textarea value={editText} onChange={e => setEditText(e.target.value)} style={{ width: '100%', minHeight: 160, background: '#0a0a0a', border: '1px solid #1e293b', borderRadius: 8, padding: 12, color: '#7ed957', fontSize: 13, resize: 'vertical', outline: 'none', fontFamily: 'inherit' }} />
+            <textarea
+              value={editText}
+              onChange={e => setEditText(e.target.value)}
+              style={{
+                width: '100%', minHeight: 160, background: '#0a0a0a',
+                border: '1px solid #1e293b', borderRadius: 8, padding: 12,
+                color: '#7ed957', fontSize: 13, resize: 'vertical',
+                outline: 'none', fontFamily: 'inherit',
+              }}
+            />
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button onClick={() => copyNote(editText)} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Copy</button>
+              <button onClick={() => navigator.clipboard.writeText(editText)} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Copy</button>
               <button onClick={() => setExpanded(null)} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
               <button onClick={saveEdit} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #7ed957', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Save</button>
             </div>
@@ -1648,19 +2179,32 @@ function QuickNotePanel() {
       )}
 
       <style>{`
-        .qn-card:hover .qn-hover { display: flex !important; }
-        .qn-card:hover { border-color: #7ed957 !important; }
-        @keyframes yhl-modalIn { from { opacity:0; transform:scale(0.95) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
+        .strike-task:hover { background: rgba(126,217,87,0.04) !important; }
+        .strike-task:hover .strike-task-x { opacity: 1 !important; }
+        .strike-note:hover { border-color: #7ed957 !important; }
+        @keyframes strikeModalIn { from { opacity:0; transform:scale(0.95) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
       `}</style>
     </>
   )
+}
+
+/* ── Live Clock Display ── */
+function ClockDisplay() {
+  const [time, setTime] = useState('')
+  useEffect(() => {
+    const tick = () => setTime(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+    tick()
+    const i = setInterval(tick, 1000)
+    return () => clearInterval(i)
+  }, [])
+  return <>{time}</>
 }
 
 export default function NotesBoard() {
   return (
     <ReactFlowProvider>
       <BoardInner />
-      <QuickNotePanel />
+      <StrikeMenu />
     </ReactFlowProvider>
   )
 }
