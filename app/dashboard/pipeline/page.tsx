@@ -1,16 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Plus, GripVertical, RefreshCw, Search } from 'lucide-react'
 
 interface Deal {
   id: string
   name: string
   company: string
   value: number
-  assignee: string
+  urgency: number
   daysInStage: number
-  priority: 'high' | 'medium' | 'low'
-  tags: string[]
   stageId: string
 }
 
@@ -21,321 +23,257 @@ interface Stage {
   deals: Deal[]
 }
 
-const STAGE_COLORS = [
-  'var(--jp-text-muted)',
-  'var(--jp-cyan)',
-  'var(--jp-green)',
-  'var(--jp-purple)',
-  'var(--jp-amber)',
-  'var(--jp-red)',
-]
-
-const mockStages: Stage[] = [
-  {
-    id: 'free',
-    name: 'Free',
-    color: 'var(--jp-text-muted)',
-    deals: [],
-  },
-  {
-    id: 'supporter',
-    name: 'Supporter',
-    color: 'var(--jp-cyan)',
-    deals: [],
-  },
-  {
-    id: 'builder',
-    name: 'Builder',
-    color: 'var(--jp-green)',
-    deals: [],
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    color: 'var(--jp-purple)',
-    deals: [],
-  },
-]
-
-function formatCurrency(val: number) {
-  return val === 0 ? 'Free' : `$${val.toLocaleString()}/mo`
-}
-
-function priorityColor(p: string) {
-  switch (p) {
-    case 'high': return 'var(--jp-red)'
-    case 'medium': return 'var(--jp-amber)'
-    case 'low': return 'var(--jp-green)'
-    default: return 'var(--jp-text-muted)'
-  }
-}
+const STAGE_COLORS = ['#6b7280', '#00d4ff', '#7ed957', '#a78bfa', '#f59e0b', '#ef4444']
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapCrmToStages(pipelines: any[]): Stage[] {
-  if (!pipelines || pipelines.length === 0) return []
+  if (!pipelines?.length) return []
+  const pipeline = pipelines[0]
+  return (pipeline.stages || []).map((stage: { id: string; name: string }, idx: number) => ({
+    id: stage.id,
+    name: stage.name,
+    color: STAGE_COLORS[idx % STAGE_COLORS.length],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    deals: (pipeline.opportunities || []).filter((o: any) => o.pipelineStageId === stage.id || o.stageId === stage.id).map((o: any) => ({
+      id: o.id,
+      name: o.name || o.contact?.name || 'Unnamed',
+      company: o.contact?.companyName || '',
+      value: o.monetaryValue || 0,
+      urgency: (o.monetaryValue || 0) >= 500 ? 80 : (o.monetaryValue || 0) >= 100 ? 50 : 20,
+      daysInStage: Math.floor((Date.now() - new Date(o.lastStageChangeAt || o.createdAt || Date.now()).getTime()) / 86400000),
+      stageId: stage.id,
+    })),
+  }))
+}
 
-  const pipeline = pipelines[0] // Use the first pipeline
-  const pipelineStages = pipeline.stages || []
-  const opportunities = pipeline.opportunities || []
-
-  return pipelineStages.map((stage: { id: string; name: string }, idx: number) => {
-    const stageDeals = opportunities
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((opp: any) => opp.pipelineStageId === stage.id || opp.stageId === stage.id)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((opp: any) => {
-        const createdAt = opp.createdAt ? new Date(opp.createdAt) : new Date()
-        const lastStageChange = opp.lastStageChangeAt ? new Date(opp.lastStageChangeAt) : createdAt
-        const daysInStage = Math.floor((Date.now() - lastStageChange.getTime()) / (1000 * 60 * 60 * 24))
-
-        return {
-          id: opp.id,
-          name: opp.name || opp.contact?.name || 'Unnamed',
-          company: opp.contact?.companyName || opp.companyName || '',
-          value: opp.monetaryValue || 0,
-          assignee: opp.assignedTo ? (opp.assignedTo.substring(0, 2).toUpperCase()) : 'NA',
-          daysInStage,
-          priority: (opp.monetaryValue || 0) >= 500 ? 'high' as const : (opp.monetaryValue || 0) >= 100 ? 'medium' as const : 'low' as const,
-          tags: opp.tags || [],
-          stageId: stage.id,
-        }
-      })
-
-    return {
-      id: stage.id,
-      name: stage.name,
-      color: STAGE_COLORS[idx % STAGE_COLORS.length],
-      deals: stageDeals,
-    }
-  })
+function urgencyColor(v: number) {
+  if (v >= 70) return '#ef4444'
+  if (v >= 40) return '#f59e0b'
+  return '#7ed957'
 }
 
 export default function PipelinePage() {
-  const [stages, setStages] = useState<Stage[]>(mockStages)
+  const [stages, setStages] = useState<Stage[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+  const [showAdd, setShowAdd] = useState(false)
+  const [addTitle, setAddTitle] = useState('')
+  const [addDesc, setAddDesc] = useState('')
+  const [addUrgency, setAddUrgency] = useState(30)
+  const [addStageId, setAddStageId] = useState('')
   const [draggedDeal, setDraggedDeal] = useState<{ dealId: string; fromStageId: string } | null>(null)
   const [dragOverStage, setDragOverStage] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [pipelineId, setPipelineId] = useState<string | null>(null)
+  const titleRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    fetchPipeline()
-  }, [])
+  useEffect(() => { load() }, [])
 
-  async function fetchPipeline() {
+  async function load() {
     setLoading(true)
-    setError('')
     try {
       const res = await fetch('/api/crm/pipeline')
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch pipeline')
+      const mapped = mapCrmToStages(data.pipelines || [])
+      setStages(mapped.length > 0 ? mapped : [
+        { id: 'new', name: 'New', color: '#6b7280', deals: [] },
+        { id: 'contacted', name: 'Contacted', color: '#00d4ff', deals: [] },
+        { id: 'qualified', name: 'Qualified', color: '#7ed957', deals: [] },
+        { id: 'closed', name: 'Closed', color: '#a78bfa', deals: [] },
+      ])
+      if (mapped.length > 0) setAddStageId(mapped[0].id)
+    } catch {}
+    setLoading(false)
+  }
 
-      const pipelines = data.pipelines || []
-      if (pipelines.length > 0) {
-        setPipelineId(pipelines[0].id)
-        const mapped = mapCrmToStages(pipelines)
-        if (mapped.length > 0) {
-          setStages(mapped)
-        }
-        // If mapped is empty, keep empty stages as fallback
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load pipeline')
-      // Keep empty stages on error
-    } finally {
-      setLoading(false)
+  function openAdd(stageId?: string) {
+    setAddTitle('')
+    setAddDesc('')
+    setAddUrgency(30)
+    setAddStageId(stageId || stages[0]?.id || '')
+    setShowAdd(true)
+    setTimeout(() => titleRef.current?.focus(), 100)
+  }
+
+  function submitAdd() {
+    if (!addTitle.trim()) return
+    const newDeal: Deal = {
+      id: `local-${Date.now()}`,
+      name: addTitle.trim(),
+      company: addDesc.trim(),
+      value: 0,
+      urgency: addUrgency,
+      daysInStage: 0,
+      stageId: addStageId,
+    }
+    setStages(prev => prev.map(s => s.id === addStageId ? { ...s, deals: [...s.deals, newDeal] } : s))
+    // Reset for next quick add
+    setAddTitle('')
+    setAddDesc('')
+    setAddUrgency(30)
+    setTimeout(() => titleRef.current?.focus(), 50)
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && addTitle.trim()) {
+      e.preventDefault()
+      submitAdd()
     }
   }
 
-  const totalValue = stages.reduce((sum, s) => sum + s.deals.reduce((ds, d) => ds + d.value, 0), 0)
-  const totalDeals = stages.reduce((sum, s) => sum + s.deals.length, 0)
-
-  function handleDragStart(dealId: string, fromStageId: string) {
-    setDraggedDeal({ dealId, fromStageId })
-  }
-
-  function handleDragOver(e: React.DragEvent, stageId: string) {
-    e.preventDefault()
-    setDragOverStage(stageId)
-  }
-
-  function handleDragLeave() {
-    setDragOverStage(null)
-  }
-
-  async function handleDrop(targetStageId: string) {
-    if (!draggedDeal || draggedDeal.fromStageId === targetStageId) {
-      setDraggedDeal(null)
-      setDragOverStage(null)
-      return
-    }
-
-    const dealId = draggedDeal.dealId
-    const fromStageId = draggedDeal.fromStageId
-
-    // Optimistic update
+  function handleDragStart(dealId: string, fromStageId: string) { setDraggedDeal({ dealId, fromStageId }) }
+  function handleDragOver(e: React.DragEvent, stageId: string) { e.preventDefault(); setDragOverStage(stageId) }
+  function handleDragLeave() { setDragOverStage(null) }
+  function handleDrop(toStageId: string) {
+    if (!draggedDeal || draggedDeal.fromStageId === toStageId) { setDraggedDeal(null); setDragOverStage(null); return }
     setStages(prev => {
-      const newStages = prev.map(s => ({ ...s, deals: [...s.deals] }))
-      const fromStage = newStages.find(s => s.id === fromStageId)
-      const toStage = newStages.find(s => s.id === targetStageId)
-      if (!fromStage || !toStage) return prev
-
-      const dealIndex = fromStage.deals.findIndex(d => d.id === dealId)
-      if (dealIndex === -1) return prev
-
-      const [deal] = fromStage.deals.splice(dealIndex, 1)
-      toStage.deals.push({ ...deal, daysInStage: 0, stageId: targetStageId })
-      return newStages
+      const deal = prev.find(s => s.id === draggedDeal.fromStageId)?.deals.find(d => d.id === draggedDeal.dealId)
+      if (!deal) return prev
+      return prev.map(s => {
+        if (s.id === draggedDeal.fromStageId) return { ...s, deals: s.deals.filter(d => d.id !== draggedDeal.dealId) }
+        if (s.id === toStageId) return { ...s, deals: [...s.deals, { ...deal, stageId: toStageId }] }
+        return s
+      })
     })
-
     setDraggedDeal(null)
     setDragOverStage(null)
-
-    // Persist to CRM
-    if (pipelineId) {
-      try {
-        await fetch('/api/crm/pipeline', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            opportunityId: dealId,
-            stageId: targetStageId,
-            pipelineId,
-          }),
-        })
-      } catch {
-        // Revert on error — refetch
-        fetchPipeline()
-      }
-    }
   }
 
-  const filteredStages = stages.map(stage => ({
-    ...stage,
-    deals: stage.deals.filter(d =>
-      !searchQuery ||
-      d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
-    ),
-  }))
+  const totalDeals = stages.reduce((s, st) => s + st.deals.length, 0)
+
+  if (loading) return <div className="flex min-h-[60vh] items-center justify-center text-sm text-text-muted animate-pulse">Loading pipeline...</div>
 
   return (
-    <div>
-      {/* Page Header */}
-      <div className="jp-pipeline-header">
-        <div>
-          <h1 className="jp-page-title">Sales Pipeline</h1>
-          <p className="jp-page-subtitle">
-            {loading ? 'Loading pipeline data...' : error ? 'No pipeline data yet' : 'Drag deals between stages to update their status'}
-          </p>
+    <div style={{ margin: '-24px -24px 0', padding: '16px 20px' }}>
+      {/* Header — compressed */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0 }}>Pipeline</h1>
+          <Badge variant="outline" className="text-[10px] h-5">{totalDeals} deals</Badge>
         </div>
-        <div className="jp-pipeline-stats">
-          <div className="jp-pipeline-stat">
-            <span className="jp-pipeline-stat-label">Pipeline Value</span>
-            <span className="jp-pipeline-stat-value">${totalValue.toLocaleString()}/mo</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ position: 'relative' }}>
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." className="rounded-lg border border-border/50 bg-bg-card/50 pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-text-muted w-40" />
           </div>
-          <div className="jp-pipeline-stat-divider" />
-          <div className="jp-pipeline-stat">
-            <span className="jp-pipeline-stat-label">Total Deals</span>
-            <span className="jp-pipeline-stat-value">{totalDeals}</span>
-          </div>
+          <Button variant="outline" size="sm" onClick={load} className="h-7 w-7 p-0"><RefreshCw className="h-3 w-3" /></Button>
+          <Button size="sm" onClick={() => openAdd()} className="h-7 bg-accent text-cta-text hover:bg-accent-action gap-1 text-xs"><Plus className="h-3 w-3" /> Add</Button>
         </div>
       </div>
 
-      {error && (
-        <div style={{ marginBottom: 16, padding: '8px 14px', borderRadius: 8, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', fontSize: '0.8125rem', color: 'var(--jp-red)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>{error} — no pipeline data yet</span>
-          <button onClick={fetchPipeline} style={{ background: 'none', border: 'none', color: 'var(--jp-cyan)', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>Retry</button>
-        </div>
-      )}
-
-      {/* Search */}
-      <div style={{ marginBottom: 20 }}>
-        <input
-          type="text"
-          className="jp-search-input"
-          placeholder="Search deals..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          style={{ maxWidth: 320, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)' }}
-        />
-      </div>
-
-      {/* Loading */}
-      {loading && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-          <div style={{ width: 32, height: 32, border: '2px solid var(--jp-green)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-        </div>
-      )}
-
-      {/* Kanban Board */}
-      {!loading && (
-        <div className="jp-pipeline-board">
-          {filteredStages.map(stage => (
+      {/* Kanban — full width, horizontal scroll */}
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 16, minHeight: 'calc(100vh - 140px)' }}>
+        {stages.map(stage => {
+          const filtered = search ? stage.deals.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.company.toLowerCase().includes(search.toLowerCase())) : stage.deals
+          return (
             <div
               key={stage.id}
-              className={`jp-pipeline-column ${dragOverStage === stage.id ? 'drag-over' : ''}`}
               onDragOver={e => handleDragOver(e, stage.id)}
               onDragLeave={handleDragLeave}
               onDrop={() => handleDrop(stage.id)}
+              style={{
+                flex: '1 0 220px',
+                minWidth: 220,
+                maxWidth: 320,
+                display: 'flex',
+                flexDirection: 'column',
+                borderRadius: 12,
+                background: dragOverStage === stage.id ? 'rgba(126,217,87,0.04)' : 'rgba(255,255,255,0.015)',
+                border: `1px solid ${dragOverStage === stage.id ? 'rgba(126,217,87,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                transition: 'all 0.15s',
+              }}
             >
-              {/* Column Header */}
-              <div className="jp-pipeline-column-header">
-                <div className="jp-pipeline-column-title">
-                  <span className="jp-pipeline-column-dot" style={{ background: stage.color }} />
-                  <span>{stage.name}</span>
-                  <span className="jp-pipeline-column-count">{stage.deals.length}</span>
+              {/* Stage header */}
+              <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 4, background: stage.color }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{stage.name}</span>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{filtered.length}</span>
                 </div>
-                <div className="jp-pipeline-column-value">
-                  {stage.deals.reduce((s, d) => s + d.value, 0) === 0
-                    ? 'Free tier'
-                    : `$${stage.deals.reduce((s, d) => s + d.value, 0).toLocaleString()}/mo`}
-                </div>
+                <button onClick={() => openAdd(stage.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', padding: 2 }}>
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
               </div>
 
-              {/* Cards */}
-              <div className="jp-pipeline-cards">
-                {stage.deals.map(deal => (
+              {/* Deals */}
+              <div style={{ flex: 1, padding: 6, display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto' }}>
+                {filtered.map(deal => (
                   <div
                     key={deal.id}
-                    className="jp-pipeline-card"
                     draggable
                     onDragStart={() => handleDragStart(deal.id, stage.id)}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      cursor: 'grab',
+                      transition: 'border-color 0.15s',
+                    }}
                   >
-                    <div className="jp-pipeline-card-top">
-                      <span className="jp-pipeline-card-name">{deal.name}</span>
-                      <span className="jp-pipeline-card-priority" style={{ background: priorityColor(deal.priority) }} />
-                    </div>
-                    <div className="jp-pipeline-card-company">{deal.company}</div>
-                    <div className="jp-pipeline-card-meta">
-                      <span className="jp-pipeline-card-value">{formatCurrency(deal.value)}</span>
-                      <span className="jp-pipeline-card-days">{deal.daysInStage}d</span>
-                    </div>
-                    <div className="jp-pipeline-card-footer">
-                      <div className="jp-pipeline-card-tags">
-                        {deal.tags.map(tag => (
-                          <span key={tag} className="jp-pipeline-card-tag">{tag}</span>
-                        ))}
-                      </div>
-                      <div className="jp-pipeline-card-assignee" style={{ background: stage.color }}>
-                        {deal.assignee}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                      <GripVertical className="h-3 w-3 text-text-muted mt-0.5 shrink-0 opacity-30" />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', lineHeight: 1.3, marginBottom: 2 }}>{deal.name}</div>
+                        {deal.company && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{deal.company}</div>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                          <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${deal.urgency}%`, background: urgencyColor(deal.urgency), borderRadius: 2, transition: 'width 0.3s' }} />
+                          </div>
+                          <span style={{ fontSize: 9, color: urgencyColor(deal.urgency), fontWeight: 600 }}>{deal.urgency}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
-
-                {stage.deals.length === 0 && (
-                  <div className="jp-pipeline-empty">
-                    {searchQuery ? 'No matching deals' : 'No deals in this stage'}
-                  </div>
-                )}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          )
+        })}
+      </div>
+
+      {/* Quick Add Dialog */}
+      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+        <DialogContent className="sm:max-w-sm bg-bg-secondary border-border" onKeyDown={handleKeyDown}>
+          <DialogHeader>
+            <DialogTitle className="text-white text-base">Add Deal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-[10px] text-text-muted uppercase tracking-wider mb-1 block">Title</label>
+              <input ref={titleRef} value={addTitle} onChange={e => setAddTitle(e.target.value)} placeholder="Deal name..." className="w-full rounded-lg border border-border/50 bg-bg-card/50 px-3 py-2 text-sm text-white placeholder:text-text-muted" autoFocus />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted uppercase tracking-wider mb-1 block">Description</label>
+              <input value={addDesc} onChange={e => setAddDesc(e.target.value)} placeholder="Company or notes..." className="w-full rounded-lg border border-border/50 bg-bg-card/50 px-3 py-2 text-sm text-white placeholder:text-text-muted" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10px] text-text-muted uppercase tracking-wider">Urgency</label>
+                <span style={{ fontSize: 12, fontWeight: 700, color: urgencyColor(addUrgency) }}>{addUrgency}</span>
+              </div>
+              <div style={{ position: 'relative', height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.06)' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${addUrgency}%`, borderRadius: 4, background: `linear-gradient(90deg, #7ed957, #f59e0b ${50}%, #ef4444)`, opacity: 0.7 }} />
+                <input type="range" min={0} max={100} value={addUrgency} onChange={e => setAddUrgency(parseInt(e.target.value))} style={{ position: 'absolute', inset: 0, width: '100%', opacity: 0, cursor: 'pointer' }} />
+              </div>
+            </div>
+            {stages.length > 0 && (
+              <div>
+                <label className="text-[10px] text-text-muted uppercase tracking-wider mb-1 block">Stage</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {stages.map(s => (
+                    <button key={s.id} onClick={() => setAddStageId(s.id)} className="px-2.5 py-1 rounded-md text-xs font-medium transition-colors" style={{ background: addStageId === s.id ? `${s.color}15` : 'transparent', color: addStageId === s.id ? s.color : 'rgba(255,255,255,0.4)', border: `1px solid ${addStageId === s.id ? s.color + '40' : 'rgba(255,255,255,0.06)'}` }}>
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <p className="text-[10px] text-text-muted flex-1">Press Enter to add another</p>
+            <Button size="sm" onClick={() => { submitAdd(); setShowAdd(false) }} className="bg-accent text-cta-text hover:bg-accent-action">Add Deal</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
