@@ -1,717 +1,230 @@
 'use client'
 
 import { useState } from 'react'
+import {
+  MessageSquare, FileText, Mail, Hash, Megaphone, BarChart3,
+  TrendingUp, Users, CalendarDays,
+} from 'lucide-react'
+
+const SECTIONS = [
+  { key: 'linkedin', label: 'LinkedIn Comments', icon: <MessageSquare className="h-4 w-4" />, color: '#00d4ff' },
+  { key: 'composer', label: 'Post Composer', icon: <FileText className="h-4 w-4" />, color: '#a78bfa' },
+  { key: 'email', label: 'Email Templates', icon: <Mail className="h-4 w-4" />, color: '#7ed957' },
+  { key: 'hashtags', label: 'Hashtag Generator', icon: <Hash className="h-4 w-4" />, color: '#fbbf24' },
+  { key: 'campaigns', label: 'Campaign Stats', icon: <Megaphone className="h-4 w-4" />, color: '#f97316' },
+  { key: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" />, color: '#14b8a6' },
+  { key: 'audience', label: 'Audience', icon: <Users className="h-4 w-4" />, color: '#ec4899' },
+  { key: 'schedule', label: 'Schedule', icon: <CalendarDays className="h-4 w-4" />, color: '#6b7280' },
+] as const
+
+type SectionKey = typeof SECTIONS[number]['key']
 
 export default function MarketingToolsPage() {
-  return (
-    <div style={{ padding: '0 0 40px' }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--jp-green)', margin: 0, letterSpacing: -0.5 }}>
-          Marketing Tools
-        </h1>
-        <p style={{ color: 'var(--jp-text-muted)', fontSize: 13, margin: '4px 0 0' }}>
-          AI-powered content generation for LinkedIn, email, and social media
-        </p>
-      </div>
+  const [active, setActive] = useState<SectionKey>('linkedin')
+  const [linkedinInput, setLinkedinInput] = useState('')
+  const [linkedinLoading, setLinkedinLoading] = useState(false)
+  const [linkedinComments, setLinkedinComments] = useState<{ style: string; comment: string }[]>([])
+  const [composerTopic, setComposerTopic] = useState('')
+  const [composerStyle, setComposerStyle] = useState('insight')
+  const [composerLoading, setComposerLoading] = useState(false)
+  const [composerPosts, setComposerPosts] = useState<{ hook: string; body: string; cta: string; hashtags: string[] }[]>([])
+  const [emailAudience, setEmailAudience] = useState('free-tier')
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailResults, setEmailResults] = useState<{ contact_name: string; message: { subject: string; body: string; type: string } }[]>([])
+  const [hashtagTopic, setHashtagTopic] = useState('')
+  const [hashtags, setHashtags] = useState<string[]>([])
+  const [copied, setCopied] = useState<string | null>(null)
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: 20 }}>
-        <LinkedInCommentGenerator />
-        <PostComposer />
-        <EmailTemplateGenerator />
-        <HashtagGenerator />
-      </div>
-    </div>
-  )
-}
-
-function LinkedInCommentGenerator() {
-  const [postContent, setPostContent] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [comments, setComments] = useState<{ style: string; comment: string; topic: string }[]>([])
-  const [copied, setCopied] = useState<number | null>(null)
-
-  async function generate() {
-    setLoading(true)
-    setComments([])
-    try {
-      const res = await fetch('/api/admin/workflows', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'linkedin_comment_bot',
-          input: { postContent, topics: postContent.split(',').map(t => t.trim()).filter(Boolean) },
-        }),
-      })
-      const data = await res.json()
-      setComments(data.comments || [])
-    } catch {
-      // Silent fail
-    }
-    setLoading(false)
-  }
-
-  function copy(text: string, idx: number) {
+  function copy(text: string, key: string) {
     navigator.clipboard.writeText(text)
-    setCopied(idx)
+    setCopied(key)
     setTimeout(() => setCopied(null), 2000)
   }
 
-  return (
-    <div style={{
-      background: 'var(--jp-bg-card)',
-      border: '1px solid var(--jp-border)',
-      borderRadius: 'var(--jp-radius)',
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        padding: '14px 20px',
-        borderBottom: '1px solid var(--jp-border)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-      }}>
-        <div style={{
-          width: 32,
-          height: 32,
-          borderRadius: 'var(--jp-radius-xs)',
-          background: 'rgba(0, 212, 255, 0.1)',
-          border: '1px solid rgba(0, 212, 255, 0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <svg width={16} height={16} fill="none" stroke="var(--jp-cyan)" viewBox="0 0 24 24" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z M4 4a2 2 0 100 4 2 2 0 000-4z" />
-          </svg>
-        </div>
-        <h3 style={{ color: 'var(--jp-text)', fontSize: 15, fontWeight: 700, margin: 0 }}>LinkedIn Comment Generator</h3>
-      </div>
-
-      <div style={{ padding: 20 }}>
-        <label style={{ color: 'var(--jp-text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>
-          Post Content or Topics
-        </label>
-        <textarea
-          value={postContent}
-          onChange={e => setPostContent(e.target.value)}
-          placeholder="Paste a LinkedIn post or enter topics (comma-separated)..."
-          style={{
-            width: '100%',
-            minHeight: 80,
-            padding: '10px 12px',
-            background: 'var(--jp-bg-input)',
-            border: '1px solid var(--jp-border)',
-            borderRadius: 'var(--jp-radius-xs)',
-            color: 'var(--jp-text)',
-            fontSize: 13,
-            resize: 'vertical',
-            outline: 'none',
-            fontFamily: 'inherit',
-            marginBottom: 12,
-          }}
-        />
-        <button
-          onClick={generate}
-          disabled={loading}
-          style={{
-            padding: '10px 24px',
-            background: loading ? 'var(--jp-bg)' : 'linear-gradient(135deg, #00d4ff, #00a8cc)',
-            color: loading ? 'var(--jp-text-muted)' : '#000',
-            border: loading ? '1px solid var(--jp-border)' : 'none',
-            borderRadius: 'var(--jp-radius-xs)',
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: loading ? 'default' : 'pointer',
-          }}
-        >
-          {loading ? 'Generating...' : 'Generate Comments'}
-        </button>
-
-        {comments.length > 0 && (
-          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {comments.map((c, i) => (
-              <div key={i} style={{
-                background: 'var(--jp-bg)',
-                border: '1px solid var(--jp-border)',
-                borderRadius: 'var(--jp-radius-sm)',
-                padding: 12,
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{
-                    padding: '2px 8px',
-                    background: i === 0 ? 'rgba(0, 212, 255, 0.1)' : i === 1 ? 'rgba(126, 217, 87, 0.1)' : 'rgba(167, 139, 250, 0.1)',
-                    borderRadius: 4,
-                    color: i === 0 ? 'var(--jp-cyan)' : i === 1 ? 'var(--jp-green)' : 'var(--jp-purple)',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                  }}>
-                    {c.style}
-                  </span>
-                  <button
-                    onClick={() => copy(c.comment, i)}
-                    style={{
-                      padding: '4px 10px',
-                      background: copied === i ? 'rgba(126, 217, 87, 0.1)' : 'var(--jp-bg-card)',
-                      border: `1px solid ${copied === i ? 'var(--jp-green)' : 'var(--jp-border)'}`,
-                      borderRadius: 4,
-                      color: copied === i ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-                      fontSize: 11,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {copied === i ? 'Copied!' : 'Copy'}
-                  </button>
-                </div>
-                <p style={{ color: 'var(--jp-text-secondary)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>{c.comment}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function PostComposer() {
-  const [topic, setTopic] = useState('')
-  const [style, setStyle] = useState<'insight' | 'story' | 'list' | 'question'>('insight')
-  const [loading, setLoading] = useState(false)
-  const [posts, setPosts] = useState<{ hook: string; body: string; cta: string; hashtags: string[] }[]>([])
-  const [copied, setCopied] = useState(false)
-
-  async function generate() {
-    setLoading(true)
-    setPosts([])
+  async function generateLinkedin() {
+    setLinkedinLoading(true)
     try {
-      const res = await fetch('/api/admin/workflows', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'content_pipeline', input: { topic: `${topic} (${style} style)` } }),
-      })
+      const res = await fetch('/api/admin/workflows', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'linkedin_comment_bot', input: { postContent: linkedinInput, topics: linkedinInput.split(',').map(t => t.trim()) } }) })
       const data = await res.json()
-      setPosts(data.linkedin_posts || [])
-    } catch {
-      // Silent fail
-    }
-    setLoading(false)
+      setLinkedinComments(data.comments || [])
+    } catch {}
+    setLinkedinLoading(false)
   }
 
-  function copyPost(post: { hook: string; body: string; cta: string; hashtags: string[] }) {
-    navigator.clipboard.writeText(`${post.hook}\n\n${post.body}\n\n${post.cta}\n\n${post.hashtags.join(' ')}`)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const styles = [
-    { key: 'insight' as const, label: 'Insight' },
-    { key: 'story' as const, label: 'Story' },
-    { key: 'list' as const, label: 'List' },
-    { key: 'question' as const, label: 'Question' },
-  ]
-
-  return (
-    <div style={{
-      background: 'var(--jp-bg-card)',
-      border: '1px solid var(--jp-border)',
-      borderRadius: 'var(--jp-radius)',
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        padding: '14px 20px',
-        borderBottom: '1px solid var(--jp-border)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-      }}>
-        <div style={{
-          width: 32,
-          height: 32,
-          borderRadius: 'var(--jp-radius-xs)',
-          background: 'rgba(167, 139, 250, 0.1)',
-          border: '1px solid rgba(167, 139, 250, 0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <svg width={16} height={16} fill="none" stroke="var(--jp-purple)" viewBox="0 0 24 24" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-          </svg>
-        </div>
-        <h3 style={{ color: 'var(--jp-text)', fontSize: 15, fontWeight: 700, margin: 0 }}>Post Composer</h3>
-      </div>
-
-      <div style={{ padding: 20 }}>
-        <label style={{ color: 'var(--jp-text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>
-          Topic
-        </label>
-        <input
-          type="text"
-          value={topic}
-          onChange={e => setTopic(e.target.value)}
-          placeholder="e.g., AI workflow automation, MCP tools..."
-          style={{
-            width: '100%',
-            padding: '10px 12px',
-            background: 'var(--jp-bg-input)',
-            border: '1px solid var(--jp-border)',
-            borderRadius: 'var(--jp-radius-xs)',
-            color: 'var(--jp-text)',
-            fontSize: 13,
-            outline: 'none',
-            marginBottom: 12,
-          }}
-        />
-
-        <label style={{ color: 'var(--jp-text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>
-          Style
-        </label>
-        <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-          {styles.map(s => (
-            <button
-              key={s.key}
-              onClick={() => setStyle(s.key)}
-              style={{
-                padding: '6px 14px',
-                background: style === s.key ? 'rgba(167, 139, 250, 0.12)' : 'var(--jp-bg)',
-                border: `1px solid ${style === s.key ? 'var(--jp-purple)' : 'var(--jp-border)'}`,
-                borderRadius: 20,
-                color: style === s.key ? 'var(--jp-purple)' : 'var(--jp-text-secondary)',
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-
-        <button
-          onClick={generate}
-          disabled={loading}
-          style={{
-            padding: '10px 24px',
-            background: loading ? 'var(--jp-bg)' : 'linear-gradient(135deg, #a78bfa, #7c3aed)',
-            color: loading ? 'var(--jp-text-muted)' : '#fff',
-            border: loading ? '1px solid var(--jp-border)' : 'none',
-            borderRadius: 'var(--jp-radius-xs)',
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: loading ? 'default' : 'pointer',
-          }}
-        >
-          {loading ? 'Generating...' : 'Generate Posts'}
-        </button>
-
-        {posts.length > 0 && (
-          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {posts.map((post, i) => (
-              <div key={i} style={{
-                background: 'var(--jp-bg)',
-                border: '1px solid var(--jp-border)',
-                borderRadius: 'var(--jp-radius-sm)',
-                padding: 14,
-              }}>
-                <div style={{ color: 'var(--jp-text)', fontSize: 15, fontWeight: 700, marginBottom: 8 }}>{post.hook}</div>
-                <pre style={{
-                  color: 'var(--jp-text-secondary)',
-                  fontSize: 12,
-                  margin: '0 0 8px',
-                  whiteSpace: 'pre-wrap',
-                  fontFamily: 'inherit',
-                  lineHeight: 1.6,
-                }}>
-                  {post.body}
-                </pre>
-                <div style={{ color: 'var(--jp-green)', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{post.cta}</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
-                  {post.hashtags.map((h, j) => (
-                    <span key={j} style={{
-                      padding: '2px 6px',
-                      background: 'rgba(0, 212, 255, 0.08)',
-                      borderRadius: 4,
-                      color: 'var(--jp-cyan)',
-                      fontSize: 10,
-                    }}>{h}</span>
-                  ))}
-                </div>
-                <button
-                  onClick={() => copyPost(post)}
-                  style={{
-                    padding: '6px 14px',
-                    background: copied ? 'rgba(126, 217, 87, 0.1)' : 'var(--jp-bg-card)',
-                    border: `1px solid ${copied ? 'var(--jp-green)' : 'var(--jp-border)'}`,
-                    borderRadius: 'var(--jp-radius-xs)',
-                    color: copied ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {copied ? 'Copied to Clipboard!' : 'Copy to Clipboard'}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function EmailTemplateGenerator() {
-  const [audience, setAudience] = useState('free-tier')
-  const [purpose, setPurpose] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<{ contact_name: string; message: { subject: string; body: string; type: string } }[] | null>(null)
-  const [copied, setCopied] = useState(false)
-
-  const audiences = ['free-tier', 'trial', 'paying', 'churned', 'leads', 'partners']
-
-  async function generate() {
-    setLoading(true)
-    setResult(null)
+  async function generatePosts() {
+    setComposerLoading(true)
     try {
-      const res = await fetch('/api/admin/workflows', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'lead_nurture_sequence' }),
-      })
+      const res = await fetch('/api/admin/workflows', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'content_pipeline', input: { topic: `${composerTopic} (${composerStyle} style)` } }) })
       const data = await res.json()
-      setResult(data.messages || [])
-    } catch {
-      // Silent fail
-    }
-    setLoading(false)
+      setComposerPosts(data.linkedin_posts || [])
+    } catch {}
+    setComposerLoading(false)
   }
 
-  function copyEmail(msg: { subject: string; body: string }) {
-    navigator.clipboard.writeText(`Subject: ${msg.subject}\n\n${msg.body}`)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  async function generateEmails() {
+    setEmailLoading(true)
+    try {
+      const res = await fetch('/api/admin/workflows', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'lead_nurture_sequence' }) })
+      const data = await res.json()
+      setEmailResults(data.messages || [])
+    } catch {}
+    setEmailLoading(false)
   }
+
+  function generateHashtags() {
+    if (!hashtagTopic.trim()) return
+    const map: Record<string, string[]> = {
+      ai: ['#AI', '#ArtificialIntelligence', '#AITools', '#GenerativeAI', '#LLM'],
+      automation: ['#Automation', '#WorkflowAutomation', '#NoCode', '#ProcessAutomation'],
+      mcp: ['#MCP', '#ModelContextProtocol', '#MCPServer', '#AIProtocol'],
+      saas: ['#SaaS', '#B2BSaaS', '#CloudSoftware', '#SaaSGrowth'],
+      crm: ['#CRM', '#SalesAutomation', '#LeadGeneration'],
+      marketing: ['#DigitalMarketing', '#ContentMarketing', '#GrowthHacking'],
+    }
+    const base = ['#0nMCP', '#0nork']
+    const t = hashtagTopic.toLowerCase()
+    for (const [k, v] of Object.entries(map)) { if (t.includes(k)) base.push(...v) }
+    if (base.length <= 2) base.push('#Tech', '#Innovation', '#Software', '#Cloud', '#FutureOfWork')
+    setHashtags([...new Set(base)].slice(0, 10))
+  }
+
+  const activeSection = SECTIONS.find(s => s.key === active)
 
   return (
-    <div style={{
-      background: 'var(--jp-bg-card)',
-      border: '1px solid var(--jp-border)',
-      borderRadius: 'var(--jp-radius)',
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        padding: '14px 20px',
-        borderBottom: '1px solid var(--jp-border)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-      }}>
-        <div style={{
-          width: 32,
-          height: 32,
-          borderRadius: 'var(--jp-radius-xs)',
-          background: 'rgba(126, 217, 87, 0.1)',
-          border: '1px solid rgba(126, 217, 87, 0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <svg width={16} height={16} fill="none" stroke="var(--jp-green)" viewBox="0 0 24 24" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
+    <div style={{ display: 'flex', gap: 0, minHeight: 'calc(100vh - 80px)' }}>
+      {/* Main content */}
+      <div style={{ flex: 1, padding: '0 24px 40px 0' }}>
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: 0 }}>Marketing Tools</h1>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, margin: '4px 0 0' }}>
+            AI-powered content generation and campaign management
+          </p>
         </div>
-        <h3 style={{ color: 'var(--jp-text)', fontSize: 15, fontWeight: 700, margin: 0 }}>Email Template Generator</h3>
-      </div>
 
-      <div style={{ padding: 20 }}>
-        <label style={{ color: 'var(--jp-text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>
-          Audience
-        </label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-          {audiences.map(a => (
-            <button
-              key={a}
-              onClick={() => setAudience(a)}
-              style={{
-                padding: '5px 12px',
-                background: audience === a ? 'rgba(126, 217, 87, 0.12)' : 'var(--jp-bg)',
-                border: `1px solid ${audience === a ? 'var(--jp-green)' : 'var(--jp-border)'}`,
-                borderRadius: 20,
-                color: audience === a ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-            >
-              {a}
+        {/* LinkedIn Comments */}
+        {active === 'linkedin' && (
+          <div className="rounded-xl border border-border/50 bg-bg-card/50 p-6">
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 16 }}>LinkedIn Comment Generator</h2>
+            <textarea value={linkedinInput} onChange={e => setLinkedinInput(e.target.value)} placeholder="Paste a LinkedIn post or enter topics..." className="w-full rounded-lg border border-border/50 bg-bg-secondary p-3 text-sm text-white placeholder:text-text-muted resize-y" style={{ minHeight: 80 }} />
+            <button onClick={generateLinkedin} disabled={linkedinLoading} className="mt-3 px-5 py-2.5 rounded-lg text-sm font-semibold" style={{ background: linkedinLoading ? 'transparent' : 'linear-gradient(135deg, #00d4ff, #00a8cc)', color: linkedinLoading ? 'rgba(255,255,255,0.4)' : '#000', border: linkedinLoading ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+              {linkedinLoading ? 'Generating...' : 'Generate Comments'}
             </button>
-          ))}
-        </div>
-
-        <label style={{ color: 'var(--jp-text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>
-          Purpose (optional)
-        </label>
-        <input
-          type="text"
-          value={purpose}
-          onChange={e => setPurpose(e.target.value)}
-          placeholder="e.g., onboarding, re-engagement, feature announcement..."
-          style={{
-            width: '100%',
-            padding: '10px 12px',
-            background: 'var(--jp-bg-input)',
-            border: '1px solid var(--jp-border)',
-            borderRadius: 'var(--jp-radius-xs)',
-            color: 'var(--jp-text)',
-            fontSize: 13,
-            outline: 'none',
-            marginBottom: 14,
-          }}
-        />
-
-        <button
-          onClick={generate}
-          disabled={loading}
-          style={{
-            padding: '10px 24px',
-            background: loading ? 'var(--jp-bg)' : 'linear-gradient(135deg, #7ed957, #5cb83a)',
-            color: loading ? 'var(--jp-text-muted)' : '#000',
-            border: loading ? '1px solid var(--jp-border)' : 'none',
-            borderRadius: 'var(--jp-radius-xs)',
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: loading ? 'default' : 'pointer',
-          }}
-        >
-          {loading ? 'Generating...' : 'Generate Emails'}
-        </button>
-
-        {result && result.length > 0 && (
-          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {result.slice(0, 3).map((m, i) => (
-              <div key={i} style={{
-                background: 'var(--jp-bg)',
-                border: '1px solid var(--jp-border)',
-                borderRadius: 'var(--jp-radius-sm)',
-                padding: 14,
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ color: 'var(--jp-text)', fontSize: 13, fontWeight: 600 }}>{m.contact_name}</span>
-                  <span style={{
-                    padding: '2px 8px',
-                    background: 'rgba(126, 217, 87, 0.1)',
-                    borderRadius: 4,
-                    color: 'var(--jp-green)',
-                    fontSize: 10,
-                    fontWeight: 600,
-                  }}>
-                    {m.message.type}
-                  </span>
+            {linkedinComments.map((c, i) => (
+              <div key={i} className="mt-3 rounded-lg border border-border/50 bg-bg-secondary p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: '#00d4ff', background: 'rgba(0,212,255,0.1)', padding: '2px 8px', borderRadius: 4 }}>{c.style}</span>
+                  <button onClick={() => copy(c.comment, `li-${i}`)} className="text-xs px-2 py-1 rounded border border-border/50 text-text-muted hover:text-white">{copied === `li-${i}` ? 'Copied!' : 'Copy'}</button>
                 </div>
-                <div style={{ color: 'var(--jp-cyan)', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-                  {m.message.subject}
-                </div>
-                <pre style={{
-                  color: 'var(--jp-text-secondary)',
-                  fontSize: 12,
-                  margin: '0 0 10px',
-                  whiteSpace: 'pre-wrap',
-                  fontFamily: 'inherit',
-                  lineHeight: 1.6,
-                }}>
-                  {m.message.body}
-                </pre>
-                <button
-                  onClick={() => copyEmail(m.message)}
-                  style={{
-                    padding: '4px 10px',
-                    background: copied ? 'rgba(126, 217, 87, 0.1)' : 'var(--jp-bg-card)',
-                    border: `1px solid ${copied ? 'var(--jp-green)' : 'var(--jp-border)'}`,
-                    borderRadius: 4,
-                    color: copied ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-                    fontSize: 11,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {copied ? 'Copied!' : 'Copy Email'}
-                </button>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, margin: 0 }}>{c.comment}</p>
               </div>
             ))}
           </div>
         )}
 
-        {result && result.length === 0 && (
-          <div style={{ marginTop: 16, padding: 20, textAlign: 'center', color: 'var(--jp-text-muted)', fontSize: 13 }}>
-            No contacts found. Tag contacts as &quot;needs-onboarding&quot; or &quot;free-tier&quot; in CRM first.
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function HashtagGenerator() {
-  const [topic, setTopic] = useState('')
-  const [hashtags, setHashtags] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
-  const [copied, setCopied] = useState(false)
-
-  function generate() {
-    if (!topic.trim()) return
-    setLoading(true)
-
-    // Generate relevant hashtags based on topic
-    const topicLower = topic.toLowerCase()
-    const base: string[] = []
-
-    // Always include brand hashtags
-    base.push('#0nMCP', '#0nork')
-
-    // Topic-specific hashtags
-    const hashtagMap: Record<string, string[]> = {
-      ai: ['#AI', '#ArtificialIntelligence', '#MachineLearning', '#AITools', '#GenerativeAI', '#AIAutomation', '#LLM'],
-      automation: ['#Automation', '#WorkflowAutomation', '#NoCode', '#LowCode', '#ProcessAutomation', '#RPA'],
-      mcp: ['#MCP', '#ModelContextProtocol', '#AIProtocol', '#MCPServer', '#MCPTools'],
-      api: ['#API', '#APIIntegration', '#REST', '#WebhookAutomation', '#APIDevelopment'],
-      saas: ['#SaaS', '#B2BSaaS', '#SaaSStartup', '#CloudSoftware', '#SaaSGrowth'],
-      crm: ['#CRM', '#CustomerSuccess', '#SalesAutomation', '#LeadGeneration'],
-      devtools: ['#DevTools', '#DeveloperExperience', '#DevOps', '#OpenSource', '#GitHub'],
-      marketing: ['#DigitalMarketing', '#ContentMarketing', '#GrowthHacking', '#MarketingAutomation'],
-      startup: ['#Startup', '#Entrepreneurship', '#TechStartup', '#Founder', '#BuildInPublic'],
-      linkedin: ['#LinkedIn', '#PersonalBranding', '#LinkedInTips', '#Networking', '#ThoughtLeadership'],
-      orchestration: ['#Orchestration', '#APIOrchestration', '#ServiceMesh', '#Microservices'],
-      workflow: ['#Workflow', '#WorkflowBuilder', '#BusinessProcess', '#Productivity'],
-    }
-
-    for (const [key, tags] of Object.entries(hashtagMap)) {
-      if (topicLower.includes(key)) {
-        base.push(...tags)
-      }
-    }
-
-    // If no specific matches, add generic tech hashtags
-    if (base.length <= 2) {
-      base.push('#Tech', '#Innovation', '#Technology', '#Digital', '#Software', '#Cloud', '#FutureOfWork', '#TechTrends')
-    }
-
-    // Deduplicate and limit to 10
-    const unique = [...new Set(base)].slice(0, 10)
-    setHashtags(unique)
-    setLoading(false)
-  }
-
-  function copyAll() {
-    navigator.clipboard.writeText(hashtags.join(' '))
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  return (
-    <div style={{
-      background: 'var(--jp-bg-card)',
-      border: '1px solid var(--jp-border)',
-      borderRadius: 'var(--jp-radius)',
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        padding: '14px 20px',
-        borderBottom: '1px solid var(--jp-border)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-      }}>
-        <div style={{
-          width: 32,
-          height: 32,
-          borderRadius: 'var(--jp-radius-xs)',
-          background: 'rgba(251, 191, 36, 0.1)',
-          border: '1px solid rgba(251, 191, 36, 0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <svg width={16} height={16} fill="none" stroke="var(--jp-amber)" viewBox="0 0 24 24" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-          </svg>
-        </div>
-        <h3 style={{ color: 'var(--jp-text)', fontSize: 15, fontWeight: 700, margin: 0 }}>Hashtag Generator</h3>
-      </div>
-
-      <div style={{ padding: 20 }}>
-        <label style={{ color: 'var(--jp-text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>
-          Topic
-        </label>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-          <input
-            type="text"
-            value={topic}
-            onChange={e => setTopic(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && generate()}
-            placeholder="e.g., AI automation, MCP tools, SaaS marketing..."
-            style={{
-              flex: 1,
-              padding: '10px 12px',
-              background: 'var(--jp-bg-input)',
-              border: '1px solid var(--jp-border)',
-              borderRadius: 'var(--jp-radius-xs)',
-              color: 'var(--jp-text)',
-              fontSize: 13,
-              outline: 'none',
-            }}
-          />
-          <button
-            onClick={generate}
-            disabled={loading || !topic.trim()}
-            style={{
-              padding: '10px 20px',
-              background: loading ? 'var(--jp-bg)' : 'linear-gradient(135deg, #fbbf24, #d97706)',
-              color: loading ? 'var(--jp-text-muted)' : '#000',
-              border: loading ? '1px solid var(--jp-border)' : 'none',
-              borderRadius: 'var(--jp-radius-xs)',
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: loading || !topic.trim() ? 'default' : 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Generate
-          </button>
-        </div>
-
-        {hashtags.length > 0 && (
-          <div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-              {hashtags.map((h, i) => (
-                <span key={i} style={{
-                  padding: '6px 12px',
-                  background: 'rgba(251, 191, 36, 0.08)',
-                  border: '1px solid rgba(251, 191, 36, 0.2)',
-                  borderRadius: 20,
-                  color: 'var(--jp-amber)',
-                  fontSize: 13,
-                  fontWeight: 500,
-                }}>
-                  {h}
-                </span>
+        {/* Post Composer */}
+        {active === 'composer' && (
+          <div className="rounded-xl border border-border/50 bg-bg-card/50 p-6">
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Post Composer</h2>
+            <input value={composerTopic} onChange={e => setComposerTopic(e.target.value)} placeholder="Topic..." className="w-full rounded-lg border border-border/50 bg-bg-secondary px-3 py-2.5 text-sm text-white placeholder:text-text-muted mb-3" />
+            <div className="flex gap-2 mb-4">
+              {['insight', 'story', 'list', 'question'].map(s => (
+                <button key={s} onClick={() => setComposerStyle(s)} className="px-3 py-1.5 rounded-full text-xs font-medium" style={{ background: composerStyle === s ? 'rgba(167,139,250,0.12)' : 'transparent', color: composerStyle === s ? '#a78bfa' : 'rgba(255,255,255,0.4)', border: `1px solid ${composerStyle === s ? '#a78bfa' : 'rgba(255,255,255,0.08)'}` }}>{s}</button>
               ))}
             </div>
-            <button
-              onClick={copyAll}
-              style={{
-                padding: '6px 14px',
-                background: copied ? 'rgba(126, 217, 87, 0.1)' : 'var(--jp-bg)',
-                border: `1px solid ${copied ? 'var(--jp-green)' : 'var(--jp-border)'}`,
-                borderRadius: 'var(--jp-radius-xs)',
-                color: copied ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-                fontSize: 11,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {copied ? 'Copied All!' : 'Copy All Hashtags'}
+            <button onClick={generatePosts} disabled={composerLoading} className="px-5 py-2.5 rounded-lg text-sm font-semibold" style={{ background: composerLoading ? 'transparent' : 'linear-gradient(135deg, #a78bfa, #7c3aed)', color: composerLoading ? 'rgba(255,255,255,0.4)' : '#fff', border: composerLoading ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+              {composerLoading ? 'Generating...' : 'Generate Posts'}
             </button>
+            {composerPosts.map((p, i) => (
+              <div key={i} className="mt-3 rounded-lg border border-border/50 bg-bg-secondary p-4">
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 8 }}>{p.hook}</div>
+                <pre style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.6, margin: '0 0 8px' }}>{p.body}</pre>
+                <div style={{ color: '#7ed957', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{p.cta}</div>
+                <div className="flex flex-wrap gap-1 mb-3">{p.hashtags.map((h, j) => <span key={j} style={{ fontSize: 10, color: '#00d4ff', background: 'rgba(0,212,255,0.08)', padding: '2px 6px', borderRadius: 4 }}>{h}</span>)}</div>
+                <button onClick={() => copy(`${p.hook}\n\n${p.body}\n\n${p.cta}\n\n${p.hashtags.join(' ')}`, `post-${i}`)} className="text-xs px-3 py-1.5 rounded border border-border/50 text-text-muted hover:text-white">{copied === `post-${i}` ? 'Copied!' : 'Copy'}</button>
+              </div>
+            ))}
           </div>
         )}
+
+        {/* Email Templates */}
+        {active === 'email' && (
+          <div className="rounded-xl border border-border/50 bg-bg-card/50 p-6">
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Email Template Generator</h2>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {['free-tier', 'trial', 'paying', 'churned', 'leads', 'partners'].map(a => (
+                <button key={a} onClick={() => setEmailAudience(a)} className="px-3 py-1.5 rounded-full text-xs font-medium" style={{ background: emailAudience === a ? 'rgba(126,217,87,0.12)' : 'transparent', color: emailAudience === a ? '#7ed957' : 'rgba(255,255,255,0.4)', border: `1px solid ${emailAudience === a ? '#7ed957' : 'rgba(255,255,255,0.08)'}` }}>{a}</button>
+              ))}
+            </div>
+            <button onClick={generateEmails} disabled={emailLoading} className="px-5 py-2.5 rounded-lg text-sm font-semibold" style={{ background: emailLoading ? 'transparent' : 'linear-gradient(135deg, #7ed957, #5cb83a)', color: emailLoading ? 'rgba(255,255,255,0.4)' : '#000', border: emailLoading ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+              {emailLoading ? 'Generating...' : 'Generate Emails'}
+            </button>
+            {emailResults.slice(0, 3).map((m, i) => (
+              <div key={i} className="mt-3 rounded-lg border border-border/50 bg-bg-secondary p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{m.contact_name}</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#7ed957', background: 'rgba(126,217,87,0.1)', padding: '2px 8px', borderRadius: 4 }}>{m.message.type}</span>
+                </div>
+                <div style={{ color: '#00d4ff', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{m.message.subject}</div>
+                <pre style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.6, margin: '0 0 8px' }}>{m.message.body}</pre>
+                <button onClick={() => copy(`Subject: ${m.message.subject}\n\n${m.message.body}`, `email-${i}`)} className="text-xs px-3 py-1.5 rounded border border-border/50 text-text-muted hover:text-white">{copied === `email-${i}` ? 'Copied!' : 'Copy'}</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Hashtags */}
+        {active === 'hashtags' && (
+          <div className="rounded-xl border border-border/50 bg-bg-card/50 p-6">
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Hashtag Generator</h2>
+            <div className="flex gap-2 mb-4">
+              <input value={hashtagTopic} onChange={e => setHashtagTopic(e.target.value)} onKeyDown={e => e.key === 'Enter' && generateHashtags()} placeholder="Topic..." className="flex-1 rounded-lg border border-border/50 bg-bg-secondary px-3 py-2.5 text-sm text-white placeholder:text-text-muted" />
+              <button onClick={generateHashtags} className="px-5 py-2.5 rounded-lg text-sm font-semibold" style={{ background: 'linear-gradient(135deg, #fbbf24, #d97706)', color: '#000' }}>Generate</button>
+            </div>
+            {hashtags.length > 0 && (
+              <>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {hashtags.map((h, i) => <span key={i} style={{ padding: '6px 12px', background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 20, color: '#fbbf24', fontSize: 13 }}>{h}</span>)}
+                </div>
+                <button onClick={() => copy(hashtags.join(' '), 'all-hash')} className="text-xs px-3 py-1.5 rounded border border-border/50 text-text-muted hover:text-white">{copied === 'all-hash' ? 'Copied!' : 'Copy All'}</button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Placeholder for other sections */}
+        {['campaigns', 'analytics', 'audience', 'schedule'].includes(active) && (
+          <div className="rounded-xl border border-border/50 bg-bg-card/50 p-12 text-center">
+            <div style={{ color: activeSection?.color }} className="mb-3">{activeSection?.icon && <span style={{ display: 'inline-block', transform: 'scale(2.5)' }}>{activeSection.icon}</span>}</div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 6 }}>{activeSection?.label}</h2>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Coming soon — connect your CRM to unlock {activeSection?.label?.toLowerCase()} features.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Right sub-nav */}
+      <div style={{ width: 220, borderLeft: '1px solid rgba(255,255,255,0.04)', paddingLeft: 20, flexShrink: 0 }}>
+        <div style={{ position: 'sticky', top: 80 }}>
+          <p style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Tools</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {SECTIONS.map(s => (
+              <button
+                key={s.key}
+                onClick={() => setActive(s.key)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '8px 12px', borderRadius: 8,
+                  background: active === s.key ? 'rgba(255,255,255,0.04)' : 'transparent',
+                  border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+                  transition: 'background 0.15s',
+                }}
+              >
+                <span style={{ color: active === s.key ? s.color : 'rgba(255,255,255,0.3)', transition: 'color 0.15s' }}>{s.icon}</span>
+                <span style={{ fontSize: 13, fontWeight: active === s.key ? 600 : 400, color: active === s.key ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'color 0.15s' }}>{s.label}</span>
+                {active === s.key && <div style={{ marginLeft: 'auto', width: 4, height: 4, borderRadius: 2, background: s.color }} />}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )
