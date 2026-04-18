@@ -241,6 +241,7 @@ const navGroups: NavGroup[] = [
         ),
         children: [
           { name: 'Inbox', href: '/dashboard/email' },
+          { name: 'Builder', href: '/dashboard/email/builder' },
           { name: 'Compose', href: '/dashboard/email?compose=true' },
           { name: 'Templates', href: '/dashboard/email/templates' },
         ],
