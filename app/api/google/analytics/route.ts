@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
                 { name: 'averageSessionDuration' },
               ],
               orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
-              limit: 20 as unknown as string,
+              limit: '20',
             },
           }),
           // Traffic sources
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
                 { name: 'conversions' },
               ],
               orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
-              limit: 10 as unknown as string,
+              limit: '10',
             },
           }),
           // Devices
@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
               { name: 'conversions' },
             ],
             orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
-            limit: 30 as unknown as string,
+            limit: '30',
           },
         })
         return NextResponse.json({ landingPages: landing.data })
@@ -175,7 +175,7 @@ export async function GET(req: NextRequest) {
             dimensions: [{ name: 'country' }, { name: 'region' }],
             metrics: [{ name: 'activeUsers' }, { name: 'sessions' }],
             orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }],
-            limit: 30 as unknown as string,
+            limit: '30',
           },
         })
         return NextResponse.json({ geo: geo.data })

@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
             { name: 'activeUsers' },
           ],
           orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
-          limit: 30 as unknown as string,
+          limit: '30',
         },
       }),
 

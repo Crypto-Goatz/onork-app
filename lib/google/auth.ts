@@ -1,7 +1,7 @@
 import { google } from 'googleapis'
 import { JWT } from 'google-auth-library'
-import path from 'path'
-import fs from 'fs'
+import * as path from 'path'
+import * as fs from 'fs'
 
 // Service account for server-side API access (Analytics, Search Console, etc.)
 let _jwtClient: JWT | null = null
