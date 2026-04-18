@@ -255,7 +255,7 @@ export default function FileManagerPage() {
 
       {/* New Folder Dialog */}
       <Dialog open={showNewFolder} onOpenChange={setShowNewFolder}>
-        <DialogContent className="sm:max-w-sm bg-bg-secondary border-border">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle className="text-white">New Folder</DialogTitle></DialogHeader>
           <input className="w-full rounded-lg border border-border/50 bg-bg-card/50 px-3 py-2.5 text-sm text-white placeholder:text-text-muted" placeholder="Folder name" value={folderName} onChange={e => setFolderName(e.target.value)} autoFocus />
           <DialogFooter><Button onClick={createFolder} className="bg-accent text-cta-text hover:bg-accent-action">Create Folder</Button></DialogFooter>
@@ -264,7 +264,7 @@ export default function FileManagerPage() {
 
       {/* Upload Dialog */}
       <Dialog open={showUpload} onOpenChange={setShowUpload}>
-        <DialogContent className="sm:max-w-md bg-bg-secondary border-border">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle className="text-white">Upload File</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
@@ -283,7 +283,7 @@ export default function FileManagerPage() {
       {/* File Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
         {selected && (
-          <DialogContent className="sm:max-w-md bg-bg-secondary border-border">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <div className="flex items-center gap-3">
                 {getIcon(selected)}

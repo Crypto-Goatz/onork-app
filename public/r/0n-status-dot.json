@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "0n-status-dot",
+  "description": "Colored status indicator dot with label",
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/0n/status-dot.tsx",
+      "content": "import { cn } from '@/lib/utils'\n\nconst COLORS = {\n  success: 'bg-green-500',\n  warning: 'bg-amber-500',\n  danger: 'bg-red-500',\n  info: 'bg-cyan-500',\n  muted: 'bg-muted-foreground',\n} as const\n\nexport function StatusDot({ status = 'muted', size = 8, className }: { status?: keyof typeof COLORS; size?: number; className?: string }) {\n  return <div className={cn('rounded-full shrink-0', COLORS[status], className)} style={{ width: size, height: size }} />\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

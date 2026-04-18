@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "0n-card",
+  "description": "0nTask-style card — minimal, rounded-xl, subtle border, hover state",
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/0n/card.tsx",
+      "content": "import { cn } from '@/lib/utils'\n\nexport function OnCard({ className, children, onClick, ...props }: React.HTMLAttributes<HTMLDivElement> & { onClick?: () => void }) {\n  return (\n    <div\n      className={cn(\n        'rounded-xl border border-border/50 bg-card/50 p-5 transition-colors hover:border-border cursor-pointer',\n        className\n      )}\n      onClick={onClick}\n      {...props}\n    >\n      {children}\n    </div>\n  )\n}\n\nexport function OnCardHeader({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {\n  return <div className={cn('mb-3 flex items-center justify-between', className)} {...props}>{children}</div>\n}\n\nexport function OnCardTitle({ className, children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {\n  return <h3 className={cn('text-sm font-semibold text-foreground', className)} {...props}>{children}</h3>\n}\n\nexport function OnCardDescription({ className, children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {\n  return <p className={cn('text-xs text-muted-foreground leading-relaxed line-clamp-2', className)} {...props}>{children}</p>\n}\n\nexport function OnCardFooter({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {\n  return <div className={cn('mt-4 pt-3 border-t border-border/30 flex items-center justify-between', className)} {...props}>{children}</div>\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

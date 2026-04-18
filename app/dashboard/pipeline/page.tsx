@@ -232,7 +232,7 @@ export default function PipelinePage() {
 
       {/* Quick Add Dialog */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="sm:max-w-sm bg-bg-secondary border-border" onKeyDown={handleKeyDown}>
+        <DialogContent className="sm:max-w-sm" onKeyDown={handleKeyDown}>
           <DialogHeader>
             <DialogTitle className="text-white text-base">Add Deal</DialogTitle>
           </DialogHeader>

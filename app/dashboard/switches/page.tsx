@@ -216,7 +216,7 @@ export default function SwitchesPage() {
       {/* Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
         {selected && (
-          <DialogContent className="sm:max-w-lg bg-bg-secondary border-border">
+          <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <div className="flex items-center gap-3">
                 <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${

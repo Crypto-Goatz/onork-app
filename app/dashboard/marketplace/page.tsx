@@ -204,7 +204,7 @@ function MarketplaceInner() {
       {/* Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
         {selected && (
-          <DialogContent className="sm:max-w-md bg-bg-secondary border-border">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <div className="flex items-center gap-3">
                 <div className="text-text-muted">{selected.icon}</div>

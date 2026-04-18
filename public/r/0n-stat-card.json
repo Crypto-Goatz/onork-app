@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "0n-stat-card",
+  "description": "Dashboard stat card with icon, label, and large value",
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/0n/stat-card.tsx",
+      "content": "import { cn } from '@/lib/utils'\n\nexport function StatCard({ label, value, icon, color = 'text-foreground', className }: { label: string; value: string | number; icon: React.ReactNode; color?: string; className?: string }) {\n  return (\n    <div className={cn('rounded-xl border border-border/50 bg-card/50 p-4', className)}>\n      <div className='flex items-center gap-2 mb-1'>\n        <span className={color}>{icon}</span>\n        <span className='text-[11px] text-muted-foreground uppercase tracking-wider'>{label}</span>\n      </div>\n      <div className='text-2xl font-bold text-foreground'>{value}</div>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}

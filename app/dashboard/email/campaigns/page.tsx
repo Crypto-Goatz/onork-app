@@ -243,7 +243,7 @@ export default function CampaignsPage() {
       {/* Template Preview Dialog */}
       <Dialog open={!!selectedTemplate} onOpenChange={() => setSelectedTemplate(null)}>
         {selectedTemplate && (
-          <DialogContent className="sm:max-w-2xl bg-bg-secondary border-border">
+          <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-white">{selectedTemplate.name}</DialogTitle>
               <DialogDescription>Template ID: {selectedTemplate.id}</DialogDescription>

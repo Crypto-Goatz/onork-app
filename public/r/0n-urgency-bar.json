@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "0n-urgency-bar",
+  "description": "Gradient urgency bar (green→amber→red) with value label",
+  "dependencies": [],
+  "files": [
+    {
+      "path": "components/0n/urgency-bar.tsx",
+      "content": "export function urgencyColor(v: number) {\n  if (v >= 70) return '#ef4444'\n  if (v >= 40) return '#f59e0b'\n  return '#7ed957'\n}\n\nexport function UrgencyBar({ value, height = 3 }: { value: number; height?: number }) {\n  return (\n    <div className='flex items-center gap-2'>\n      <div className='flex-1 rounded-full overflow-hidden' style={{ height, background: 'rgba(255,255,255,0.06)' }}>\n        <div style={{ height: '100%', width: `${value}%`, background: urgencyColor(value), borderRadius: height, transition: 'width 0.3s' }} />\n      </div>\n      <span style={{ fontSize: 9, fontWeight: 600, color: urgencyColor(value) }}>{value}</span>\n    </div>\n  )\n}\n",
+      "type": "registry:component"
+    }
+  ],
+  "type": "registry:component"
+}
