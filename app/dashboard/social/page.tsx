@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-type Tab = 'compose' | 'scheduled' | 'analytics' | 'accounts'
+type Tab = 'compose' | 'bulk' | 'scheduled' | 'analytics' | 'accounts'
 type Tone = 'professional' | 'casual' | 'thought-leader'
 
 interface PlatformContent {
@@ -151,8 +151,100 @@ export default function SocialPage() {
     )
   }
 
+  // Bulk state
+  const [bulkTopics, setBulkTopics] = useState('')
+  const [bulkTone, setBulkTone] = useState<string>('professional')
+  const [bulkPerTopic, setBulkPerTopic] = useState(5)
+  const [bulkInterval, setBulkInterval] = useState(8)
+  const [bulkStartDate, setBulkStartDate] = useState('')
+  const [bulkGenerating, setBulkGenerating] = useState(false)
+  const [bulkPosts, setBulkPosts] = useState<{ topic: string; content: string; angle: string; scheduleDate: string }[]>([])
+  const [bulkCsv, setBulkCsv] = useState('')
+  const [bulkUploading, setBulkUploading] = useState(false)
+  const [bulkResult, setBulkResult] = useState<{ success: number; failed: number; total: number } | null>(null)
+  const [csvFile, setCsvFile] = useState<File | null>(null)
+
+  const handleBulkGenerate = useCallback(async () => {
+    const topics = bulkTopics.split('\n').map(t => t.trim()).filter(Boolean)
+    if (!topics.length) return
+    setBulkGenerating(true)
+    setBulkPosts([])
+    setBulkCsv('')
+    setBulkResult(null)
+
+    try {
+      const res = await fetch('/api/social/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topics,
+          tone: bulkTone,
+          postsPerTopic: bulkPerTopic,
+          startDate: bulkStartDate || undefined,
+          intervalHours: bulkInterval,
+          hashtags: selectedHashtags,
+        }),
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      setBulkPosts(data.posts || [])
+      setBulkCsv(data.csv || '')
+    } catch (err) {
+      console.error('Bulk generation error:', err)
+    } finally {
+      setBulkGenerating(false)
+    }
+  }, [bulkTopics, bulkTone, bulkPerTopic, bulkInterval, bulkStartDate, selectedHashtags])
+
+  const handleBulkUpload = useCallback(async () => {
+    setBulkUploading(true)
+    setBulkResult(null)
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setBulkUploading(false); return }
+
+    try {
+      if (csvFile) {
+        // Upload CSV file
+        const formData = new FormData()
+        formData.append('file', csvFile)
+        const res = await fetch('/api/social/csv', {
+          method: 'POST',
+          body: formData,
+        })
+        const data = await res.json()
+        setBulkResult({ success: data.imported || 0, failed: data.failed || 0, total: (data.imported || 0) + (data.failed || 0) })
+      } else if (bulkPosts.length > 0) {
+        // Upload generated posts as JSON
+        const res = await fetch('/api/social/csv', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ posts: bulkPosts.map(p => ({ content: p.content, scheduleDate: p.scheduleDate })) }),
+        })
+        const data = await res.json()
+        setBulkResult({ success: data.success || 0, failed: data.failed || 0, total: data.total || 0 })
+      }
+    } catch (err) {
+      console.error('Bulk upload error:', err)
+    } finally {
+      setBulkUploading(false)
+    }
+  }, [csvFile, bulkPosts, supabase])
+
+  const downloadCsv = useCallback(() => {
+    if (!bulkCsv) return
+    const blob = new Blob([bulkCsv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `social-posts-bulk-${Date.now()}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [bulkCsv])
+
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: 'compose', label: 'Compose', icon: 'M' },
+    { key: 'bulk', label: 'Bulk', icon: 'B' },
     { key: 'scheduled', label: 'Scheduled', icon: 'S' },
     { key: 'analytics', label: 'Analytics', icon: 'A' },
     { key: 'accounts', label: 'Accounts', icon: 'C' },
@@ -770,6 +862,355 @@ export default function SocialPage() {
                     <span style={{ color: 'var(--jp-text-muted)' }}>Tone</span>
                     <span style={{ color: 'var(--jp-text)', fontWeight: 600, textTransform: 'capitalize' }}>{tone.replace('-', ' ')}</span>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════ BULK TAB ═══════════════ */}
+      {activeTab === 'bulk' && (
+        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+          {/* Left: Config */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="jp-card">
+              <div className="jp-card-header" style={{ padding: '14px 20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--jp-text)', margin: 0 }}>Bulk Post Generator</h4>
+                  <span style={{ fontSize: '0.625rem', fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(239,68,68,0.12)', color: '#ef4444' }}>NEW</span>
+                </div>
+              </div>
+              <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* Topics */}
+                <div>
+                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 8, display: 'block' }}>
+                    Topics <span style={{ fontWeight: 400, color: 'var(--jp-text-muted)' }}>(one per line)</span>
+                  </label>
+                  <textarea
+                    value={bulkTopics}
+                    onChange={e => setBulkTopics(e.target.value)}
+                    placeholder={"AI orchestration and MCP servers\nWorkflow automation tips\nHow 0nMCP saves developer time\nAPI integration best practices\nThe future of no-code AI tools"}
+                    rows={6}
+                    style={{
+                      width: '100%', padding: 14, background: 'var(--jp-bg-input)',
+                      border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius-sm)',
+                      color: 'var(--jp-text)', fontSize: '0.875rem', resize: 'vertical',
+                      outline: 'none', fontFamily: 'inherit', lineHeight: 1.8,
+                    }}
+                  />
+                </div>
+
+                {/* Config row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--jp-text-muted)', marginBottom: 6, display: 'block' }}>Posts per topic</label>
+                    <select
+                      value={bulkPerTopic}
+                      onChange={e => setBulkPerTopic(Number(e.target.value))}
+                      style={{
+                        width: '100%', padding: '8px 10px', background: 'var(--jp-bg-input)',
+                        border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius-xs)',
+                        color: 'var(--jp-text)', fontSize: '0.8125rem', outline: 'none',
+                      }}
+                    >
+                      {[3, 5, 7, 10, 15, 20].map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--jp-text-muted)', marginBottom: 6, display: 'block' }}>Hours between posts</label>
+                    <select
+                      value={bulkInterval}
+                      onChange={e => setBulkInterval(Number(e.target.value))}
+                      style={{
+                        width: '100%', padding: '8px 10px', background: 'var(--jp-bg-input)',
+                        border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius-xs)',
+                        color: 'var(--jp-text)', fontSize: '0.8125rem', outline: 'none',
+                      }}
+                    >
+                      {[4, 6, 8, 12, 24, 48].map(n => <option key={n} value={n}>{n}h</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--jp-text-muted)', marginBottom: 6, display: 'block' }}>Tone</label>
+                    <select
+                      value={bulkTone}
+                      onChange={e => setBulkTone(e.target.value)}
+                      style={{
+                        width: '100%', padding: '8px 10px', background: 'var(--jp-bg-input)',
+                        border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius-xs)',
+                        color: 'var(--jp-text)', fontSize: '0.8125rem', outline: 'none',
+                      }}
+                    >
+                      <option value="professional">Professional</option>
+                      <option value="casual">Casual</option>
+                      <option value="thought-leader">Thought Leader</option>
+                      <option value="hype">Hype</option>
+                      <option value="educational">Educational</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--jp-text-muted)', marginBottom: 6, display: 'block' }}>Start date</label>
+                    <input
+                      type="datetime-local"
+                      value={bulkStartDate}
+                      onChange={e => setBulkStartDate(e.target.value)}
+                      style={{
+                        width: '100%', padding: '8px 10px', background: 'var(--jp-bg-input)',
+                        border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius-xs)',
+                        color: 'var(--jp-text)', fontSize: '0.75rem', outline: 'none',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Generate button */}
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', paddingTop: 4 }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
+                    {bulkTopics.split('\n').filter(t => t.trim()).length} topics × {bulkPerTopic} posts = <strong style={{ color: 'var(--jp-green)' }}>{bulkTopics.split('\n').filter(t => t.trim()).length * bulkPerTopic} posts</strong>
+                  </div>
+                  <button
+                    onClick={handleBulkGenerate}
+                    disabled={bulkGenerating || !bulkTopics.trim()}
+                    style={{
+                      padding: '12px 28px',
+                      background: bulkGenerating ? 'var(--jp-border)' : 'var(--jp-green)',
+                      color: bulkGenerating ? 'var(--jp-text-muted)' : '#000',
+                      border: 'none', borderRadius: 'var(--jp-radius-sm)',
+                      fontSize: '0.875rem', fontWeight: 700,
+                      cursor: bulkGenerating ? 'default' : 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                    }}
+                  >
+                    {bulkGenerating ? (
+                      <>
+                        <span style={{ width: 14, height: 14, border: '2px solid var(--jp-text-muted)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                        Generating {bulkTopics.split('\n').filter(t => t.trim()).length * bulkPerTopic} posts...
+                      </>
+                    ) : 'Generate Bulk Posts'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* CSV Upload */}
+            <div className="jp-card">
+              <div className="jp-card-header" style={{ padding: '14px 20px' }}>
+                <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--jp-text)', margin: 0 }}>CSV Import</h4>
+              </div>
+              <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{
+                  padding: 20, border: '2px dashed var(--jp-border)', borderRadius: 'var(--jp-radius-sm)',
+                  textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.15s',
+                }}
+                  onClick={() => document.getElementById('csv-upload')?.click()}
+                  onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--jp-green)' }}
+                  onDragLeave={e => { e.currentTarget.style.borderColor = 'var(--jp-border)' }}
+                  onDrop={e => {
+                    e.preventDefault()
+                    e.currentTarget.style.borderColor = 'var(--jp-border)'
+                    const file = e.dataTransfer.files[0]
+                    if (file?.name.endsWith('.csv')) setCsvFile(file)
+                  }}
+                >
+                  <input
+                    id="csv-upload"
+                    type="file"
+                    accept=".csv"
+                    style={{ display: 'none' }}
+                    onChange={e => { if (e.target.files?.[0]) setCsvFile(e.target.files[0]) }}
+                  />
+                  {csvFile ? (
+                    <div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-green)' }}>{csvFile.name}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginTop: 4 }}>{(csvFile.size / 1024).toFixed(1)} KB</div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ fontSize: '0.8125rem', color: 'var(--jp-text-muted)', marginBottom: 4 }}>Drop CSV file here or click to browse</div>
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)', opacity: 0.6 }}>Columns: summary, scheduleDate, accountIds, mediaUrl, mediaType, followUpComment, status</div>
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <a
+                    href="/api/social/csv?action=template"
+                    download
+                    style={{
+                      padding: '8px 16px', borderRadius: 'var(--jp-radius-xs)',
+                      border: '1px solid var(--jp-border)', background: 'transparent',
+                      color: 'var(--jp-text-secondary)', fontSize: '0.75rem', fontWeight: 600,
+                      textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4,
+                    }}
+                  >
+                    Download Template
+                  </a>
+                  <a
+                    href="/api/social/csv?action=export"
+                    download
+                    style={{
+                      padding: '8px 16px', borderRadius: 'var(--jp-radius-xs)',
+                      border: '1px solid var(--jp-border)', background: 'transparent',
+                      color: 'var(--jp-text-secondary)', fontSize: '0.75rem', fontWeight: 600,
+                      textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4,
+                    }}
+                  >
+                    Export Existing
+                  </a>
+                  {csvFile && (
+                    <button
+                      onClick={handleBulkUpload}
+                      disabled={bulkUploading}
+                      style={{
+                        padding: '8px 16px', borderRadius: 'var(--jp-radius-xs)',
+                        background: 'var(--jp-green)', border: 'none',
+                        color: '#000', fontSize: '0.75rem', fontWeight: 700,
+                        cursor: bulkUploading ? 'default' : 'pointer', marginLeft: 'auto',
+                      }}
+                    >
+                      {bulkUploading ? 'Uploading...' : 'Upload CSV to CRM'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Generated posts preview */}
+            {bulkPosts.length > 0 && (
+              <div className="jp-card">
+                <div className="jp-card-header" style={{ padding: '14px 20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--jp-text)', margin: 0 }}>
+                        Generated — {bulkPosts.length} Posts
+                      </h4>
+                      {bulkResult && (
+                        <span style={{
+                          fontSize: '0.6875rem', fontWeight: 600, padding: '2px 8px', borderRadius: 6,
+                          background: bulkResult.failed === 0 ? 'var(--jp-green-glow)' : 'rgba(248,113,113,0.12)',
+                          color: bulkResult.failed === 0 ? 'var(--jp-green)' : '#ef4444',
+                        }}>
+                          {bulkResult.success}/{bulkResult.total} uploaded
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={downloadCsv} style={{
+                        padding: '6px 14px', borderRadius: 'var(--jp-radius-xs)',
+                        border: '1px solid var(--jp-border)', background: 'transparent',
+                        color: 'var(--jp-text-secondary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                      }}>
+                        Download CSV
+                      </button>
+                      <button
+                        onClick={handleBulkUpload}
+                        disabled={bulkUploading}
+                        style={{
+                          padding: '6px 14px', borderRadius: 'var(--jp-radius-xs)',
+                          background: 'var(--jp-green)', border: 'none',
+                          color: '#000', fontSize: '0.75rem', fontWeight: 700,
+                          cursor: bulkUploading ? 'default' : 'pointer',
+                        }}
+                      >
+                        {bulkUploading ? 'Uploading...' : 'Upload All to CRM'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="jp-card-body" style={{ padding: '0 20px 20px', maxHeight: 500, overflowY: 'auto' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {bulkPosts.map((post, i) => (
+                      <div key={i} style={{
+                        display: 'flex', gap: 12, padding: '10px 0',
+                        borderBottom: i < bulkPosts.length - 1 ? '1px solid var(--jp-border)' : 'none',
+                      }}>
+                        <div style={{
+                          width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+                          background: 'var(--jp-bg-input)', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center',
+                          fontSize: '0.6875rem', fontWeight: 700, color: 'var(--jp-text-muted)',
+                        }}>
+                          {i + 1}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '0.8125rem', color: 'var(--jp-text)', lineHeight: 1.5 }}>
+                            {post.content}
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                            <span style={{ fontSize: '0.625rem', color: 'var(--jp-text-muted)' }}>
+                              {new Date(post.scheduleDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <span style={{
+                              fontSize: '0.625rem', padding: '0 6px', borderRadius: 4,
+                              background: 'rgba(167,139,250,0.12)', color: 'var(--jp-purple)',
+                            }}>
+                              {post.angle}
+                            </span>
+                            <span style={{
+                              fontSize: '0.625rem', padding: '0 6px', borderRadius: 4,
+                              background: 'var(--jp-bg-input)', color: 'var(--jp-text-muted)',
+                            }}>
+                              {post.topic.slice(0, 30)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Stats sidebar */}
+          <div style={{ width: 280, flexShrink: 0 }}>
+            <div className="jp-card" style={{ position: 'sticky', top: 88 }}>
+              <div className="jp-card-header">
+                <h4 style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>Bulk Stats</h4>
+              </div>
+              <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div style={{ padding: 12, borderRadius: 'var(--jp-radius-xs)', background: 'var(--jp-bg-input)', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--jp-green)' }}>
+                      {bulkPosts.length}
+                    </div>
+                    <div style={{ fontSize: '0.625rem', color: 'var(--jp-text-muted)', fontWeight: 600 }}>Generated</div>
+                  </div>
+                  <div style={{ padding: 12, borderRadius: 'var(--jp-radius-xs)', background: 'var(--jp-bg-input)', textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--jp-cyan)' }}>
+                      {bulkResult?.success || 0}
+                    </div>
+                    <div style={{ fontSize: '0.625rem', color: 'var(--jp-text-muted)', fontWeight: 600 }}>Uploaded</div>
+                  </div>
+                </div>
+
+                {bulkPosts.length > 0 && (
+                  <>
+                    <div style={{ height: 1, background: 'var(--jp-border)' }} />
+                    <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span>First post</span>
+                        <span style={{ color: 'var(--jp-text)', fontWeight: 600 }}>
+                          {new Date(bulkPosts[0].scheduleDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span>Last post</span>
+                        <span style={{ color: 'var(--jp-text)', fontWeight: 600 }}>
+                          {new Date(bulkPosts[bulkPosts.length - 1].scheduleDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Interval</span>
+                        <span style={{ color: 'var(--jp-text)', fontWeight: 600 }}>{bulkInterval}h</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div style={{ height: 1, background: 'var(--jp-border)' }} />
+                <div style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)', lineHeight: 1.6 }}>
+                  AI generates varied posts per topic — hooks, questions, hot takes, tips, stats. Posts are scheduled at your chosen interval across all connected accounts.
                 </div>
               </div>
             </div>
