@@ -31,6 +31,11 @@ yarn-error.log*
 # env files
 .env*.local
 
+# google credentials
+google-sa.json
+*-sa.json
+*.p12
+
 # vercel
 .vercel
 
