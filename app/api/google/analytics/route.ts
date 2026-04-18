@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
             dimensions: [
               { name: 'pagePath' },
             ],
-            limit: 20,
+            limit: '20',
           },
         })
         return NextResponse.json({ realtime: realtime.data })
