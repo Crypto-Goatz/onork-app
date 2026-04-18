@@ -1539,10 +1539,128 @@ function BoardInner() {
    Page Export (wrapped in Provider)
    ──────────────────────────────────────────── */
 
+/* ────────────────────────────────────────────
+   Quick Note Overlay
+   ──────────────────────────────────────────── */
+
+interface QuickNote {
+  id: string
+  text: string
+  summary: string
+  date: string
+  done: boolean
+}
+
+function QuickNotePanel() {
+  const [open, setOpen] = useState(false)
+  const [notes, setNotes] = useState<QuickNote[]>([])
+  const [input, setInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+
+  useEffect(() => {
+    try { const s = localStorage.getItem('0n_quick_notes'); if (s) setNotes(JSON.parse(s)) } catch {}
+  }, [])
+
+  function persist(n: QuickNote[]) { setNotes(n); localStorage.setItem('0n_quick_notes', JSON.stringify(n)) }
+
+  async function save() {
+    if (!input.trim()) return
+    setSaving(true)
+    const summary = input.length > 80 ? input.slice(0, 77) + '...' : input
+    const note: QuickNote = {
+      id: Date.now().toString(),
+      text: input.trim(),
+      summary,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      done: false,
+    }
+    persist([note, ...notes])
+    setInput('')
+    setSaving(false)
+    setOpen(false)
+  }
+
+  function toggle(id: string) { persist(notes.map(n => n.id === id ? { ...n, done: !n.done } : n)) }
+  function remove(id: string) { persist(notes.filter(n => n.id !== id)); if (expanded === id) setExpanded(null) }
+  function expand(n: QuickNote) { setExpanded(n.id); setEditText(n.text) }
+  function saveEdit() { if (expanded) { persist(notes.map(n => n.id === expanded ? { ...n, text: editText, summary: editText.length > 80 ? editText.slice(0, 77) + '...' : editText } : n)); setExpanded(null) } }
+  function copyNote(text: string) { navigator.clipboard.writeText(text) }
+  async function paste() { try { const t = await navigator.clipboard.readText(); setInput(t) } catch {} }
+
+  return (
+    <>
+      {/* Quick Note button */}
+      <button onClick={() => setOpen(true)} style={{ position: 'fixed', top: 14, right: 20, zIndex: 60, background: '#000', color: '#7ed957', border: '1px solid #1e293b', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 14 }}>+</span> Quick Note
+      </button>
+
+      {/* Input modal */}
+      {open && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}>
+          <div style={{ background: '#000', border: '1px solid #1e293b', borderRadius: 16, width: 400, padding: 24, animation: 'yhl-modalIn 0.3s ease' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#7ed957', marginBottom: 12 }}>Quick Note</div>
+            <textarea value={input} onChange={e => setInput(e.target.value)} placeholder="Paste or type anything..." style={{ width: '100%', minHeight: 120, background: '#0a0a0a', border: '1px solid #1e293b', borderRadius: 8, padding: 12, color: '#7ed957', fontSize: 13, resize: 'vertical', outline: 'none', fontFamily: 'inherit' }} autoFocus />
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button onClick={paste} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Paste</button>
+              <button onClick={() => setInput('')} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Clear</button>
+              <button onClick={save} disabled={saving || !input.trim()} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #7ed957', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: input.trim() ? 1 : 0.3 }}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notes sidebar */}
+      {notes.length > 0 && (
+        <div style={{ position: 'fixed', top: 56, right: 12, bottom: 12, width: 212, zIndex: 50, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' }}>
+          {notes.map(n => (
+            <div key={n.id} style={{ position: 'relative', width: 200, aspectRatio: '3/2', background: '#0a0a0a', border: `1px solid ${n.done ? '#1e293b' : '#1e293b'}`, borderRadius: 10, padding: 10, display: 'flex', flexDirection: 'column', overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.15s', opacity: n.done ? 0.5 : 1 }} className="qn-card" onClick={() => expand(n)}>
+              <div style={{ fontSize: 9, color: '#7ed957', fontWeight: 600, marginBottom: 4, letterSpacing: '0.04em' }}>{n.date}</div>
+              <div style={{ fontSize: 11, color: '#cbd5e1', lineHeight: 1.4, flex: 1, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' as const }}>{n.summary}</div>
+              <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+                <button onClick={e => { e.stopPropagation(); toggle(n.id) }} style={{ flex: 1, padding: '4px 0', background: 'transparent', border: '1px solid #1e293b', borderRadius: 4, color: n.done ? '#7ed957' : '#4b5563', fontSize: 12, cursor: 'pointer' }}>✓</button>
+                <button onClick={e => { e.stopPropagation(); remove(n.id) }} style={{ flex: 1, padding: '4px 0', background: 'transparent', border: '1px solid #1e293b', borderRadius: 4, color: '#4b5563', fontSize: 12, cursor: 'pointer' }}>✕</button>
+              </div>
+              {/* Hover overlay */}
+              <div className="qn-hover" style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)', borderRadius: 10, display: 'none', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7ed957" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Expanded edit modal */}
+      {expanded && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) setExpanded(null) }}>
+          <div style={{ background: '#000', border: '1px solid #1e293b', borderRadius: 16, width: 440, padding: 24 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#7ed957', marginBottom: 4 }}>Edit Note</div>
+            <div style={{ fontSize: 10, color: '#4b5563', marginBottom: 12 }}>{notes.find(n => n.id === expanded)?.date}</div>
+            <textarea value={editText} onChange={e => setEditText(e.target.value)} style={{ width: '100%', minHeight: 160, background: '#0a0a0a', border: '1px solid #1e293b', borderRadius: 8, padding: 12, color: '#7ed957', fontSize: 13, resize: 'vertical', outline: 'none', fontFamily: 'inherit' }} />
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button onClick={() => copyNote(editText)} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Copy</button>
+              <button onClick={() => setExpanded(null)} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={saveEdit} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #7ed957', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .qn-card:hover .qn-hover { display: flex !important; }
+        .qn-card:hover { border-color: #7ed957 !important; }
+        @keyframes yhl-modalIn { from { opacity:0; transform:scale(0.95) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
+      `}</style>
+    </>
+  )
+}
+
 export default function NotesBoard() {
   return (
     <ReactFlowProvider>
       <BoardInner />
+      <QuickNotePanel />
     </ReactFlowProvider>
   )
 }
