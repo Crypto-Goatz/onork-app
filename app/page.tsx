@@ -6,7 +6,16 @@ export const metadata: Metadata = {
   description: '0nCore connects your CRM to 96+ services with 1,554 AI-powered tools. Security vault, 2-second flows, codeless integrations. Request early access.',
 }
 
-const PARTNERS = ['GitHub', 'Slack', 'Stripe', 'Linear', 'Google', 'Supabase', 'Vercel', 'Shopify']
+const PARTNERS = [
+  { name: 'GitHub', logo: '/logos/github.svg' },
+  { name: 'Slack', logo: '/logos/slack.svg' },
+  { name: 'Stripe', logo: '/logos/stripe.svg' },
+  { name: 'Linear', logo: '/logos/linear.svg' },
+  { name: 'Google', logo: '/logos/gcal.svg' },
+  { name: 'Supabase', logo: '/logos/supabase.svg' },
+  { name: 'Vercel', logo: '/logos/vercel.svg' },
+  { name: 'Shopify', logo: '/logos/shopify.svg' },
+]
 
 const FEATURES = [
   { num: '01', title: 'Security Vault', desc: 'AES-256 encrypted credential storage with hardware fingerprinting. Your API keys never leave the vault.', icon: '🔒' },
@@ -16,18 +25,30 @@ const FEATURES = [
 ]
 
 const INTEGRATIONS = [
-  { name: 'GitHub', color: '#24292e' }, { name: 'Google', color: '#4285F4' },
-  { name: 'Stripe', color: '#6772e5' }, { name: 'Slack', color: '#4A154B' },
-  { name: 'Supabase', color: '#3ECF8E' }, { name: 'Vercel', color: '#000' },
-  { name: 'Shopify', color: '#96BF48' }, { name: 'HubSpot', color: '#FF7A59' },
-  { name: 'Notion', color: '#000' }, { name: 'Airtable', color: '#18BFFF' },
-  { name: 'Discord', color: '#5865F2' }, { name: 'Twilio', color: '#F22F46' },
-  { name: 'SendGrid', color: '#1A82E2' }, { name: 'Calendly', color: '#006BFF' },
-  { name: 'Zoom', color: '#2D8CFF' }, { name: 'Linear', color: '#5E6AD2' },
-  { name: 'Jira', color: '#0052CC' }, { name: 'OpenAI', color: '#10A37F' },
-  { name: 'CRM', color: '#FF6B35' }, { name: 'Anthropic', color: '#D4A574' },
-  { name: 'MongoDB', color: '#47A248' }, { name: 'Cloudflare', color: '#F48120' },
-  { name: 'GoDaddy', color: '#1BDBDB' }, { name: 'Mailchimp', color: '#FFE01B' },
+  { name: 'GitHub', logo: '/logos/github.svg' },
+  { name: 'Google', logo: '/logos/gcal.svg' },
+  { name: 'Stripe', logo: '/logos/stripe.svg' },
+  { name: 'Slack', logo: '/logos/slack.svg' },
+  { name: 'Supabase', logo: '/logos/supabase.svg' },
+  { name: 'Vercel', logo: '/logos/vercel.svg' },
+  { name: 'Shopify', logo: '/logos/shopify.svg' },
+  { name: 'HubSpot', logo: '/logos/hubspot.svg' },
+  { name: 'Notion', logo: '/logos/notion.svg' },
+  { name: 'Airtable', logo: '/logos/airtable.svg' },
+  { name: 'Discord', logo: '/logos/discord.svg' },
+  { name: 'Twilio', logo: '/logos/twilio.svg' },
+  { name: 'SendGrid', logo: '/logos/sendgrid.svg' },
+  { name: 'Calendly', logo: '/logos/calendly.svg' },
+  { name: 'Zoom', logo: '/logos/zoom.svg' },
+  { name: 'Linear', logo: '/logos/linear.svg' },
+  { name: 'Jira', logo: '/logos/jira.svg' },
+  { name: 'OpenAI', logo: '/logos/openai.svg' },
+  { name: 'GoHighLevel', logo: '/logos/gohighlevel.svg' },
+  { name: 'Anthropic', logo: '/logos/anthropic.svg' },
+  { name: 'MongoDB', logo: '/logos/mongodb.svg' },
+  { name: 'Cloudflare', logo: '/logos/cloudflare.svg' },
+  { name: 'Mailchimp', logo: '/logos/mailchimp.svg' },
+  { name: 'Figma', logo: '/logos/figma.svg' },
 ]
 
 const COMMUNITY = [
@@ -142,9 +163,12 @@ export default function HomePage() {
 
       {/* ═══ PARTNER LOGOS ═══ */}
       <section style={{ padding: '0 24px 60px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 40, flexWrap: 'wrap', maxWidth: 900, margin: '0 auto', opacity: 0.4 }}>
-          {PARTNERS.map(name => (
-            <span key={name} style={{ fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>{name}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 36, flexWrap: 'wrap', maxWidth: 900, margin: '0 auto' }}>
+          {PARTNERS.map(p => (
+            <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.5 }}>
+              <img src={p.logo} alt={p.name} style={{ height: 22, filter: 'brightness(0) invert(1)', objectFit: 'contain' }} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>{p.name}</span>
+            </div>
           ))}
         </div>
       </section>
@@ -181,15 +205,9 @@ export default function HomePage() {
                 padding: '16px 12px', borderRadius: 12, textAlign: 'center',
                 background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                transition: 'border-color 0.2s, background 0.2s',
               }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 8,
-                  background: i.color, opacity: 0.8,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 14, fontWeight: 700, color: '#fff',
-                }}>
-                  {i.name.slice(0, 2)}
-                </div>
+                <img src={i.logo} alt={i.name} style={{ width: 36, height: 36, objectFit: 'contain' }} />
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{i.name}</span>
               </div>
             ))}
