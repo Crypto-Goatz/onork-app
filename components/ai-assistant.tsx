@@ -1,153 +1,255 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { detectData, type DetectedData } from '@/lib/smart-capture'
+import { useState, useRef, useEffect, useCallback } from 'react'
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
+  intent?: {
+    detected: boolean
+    action?: string
+    confidence?: number
+  }
 }
 
-interface CapturePrompt {
-  messageId: string
-  items: DetectedData[]
-  saving: boolean
-  saved: string[]
-  dismissed: boolean
+type Persona = 'engine' | 'writer' | 'social' | 'sales' | 'support' | 'custom'
+type SecurityLevel = 'low' | 'default' | 'strict'
+
+const PERSONA_LABELS: Record<Persona, string> = {
+  engine: 'Engine',
+  writer: 'Writer',
+  social: 'Social',
+  sales: 'Sales',
+  support: 'Support',
+  custom: 'Custom',
 }
 
-// Patterns that indicate agent bridge intent
-const BRIDGE_PATTERNS = [
-  /\b(set\s*up|create|build|configure|deploy|make|generate)\b.*\b(agent|workflow|sequence|bot|voice|form|funnel|automation|chatbot|drip|campaign|website|site|landing\s+page)\b/i,
-  /\b(automate|automation\s+for)\b/i,
-  /\b(voice\s+ai|voice\s+agent|phone\s+bot|call\s+handler)\b/i,
-  /\b(follow[\s-]?up\s+(sequence|automation|workflow))\b/i,
-  /\b(email\s+(sequence|drip|campaign|automation))\b/i,
-  /\b(missed\s+call\s+text)/i,
-  /\b(review\s+request|reputation\s+management)\b/i,
-  /\b(onboarding\s+(sequence|flow|automation))\b/i,
-  /\b(win[\s-]?back\s+(campaign|sequence))\b/i,
-  /\b(lead\s+follow)/i,
-  /\b(blog\s+to\s+social|content\s+distribution)\b/i,
-  /\b(full\s+setup|complete\s+setup)\b/i,
-  /\b(build\s+(me\s+)?(a\s+)?website|build\s+(me\s+)?(a\s+)?site)\b/i,
-  /\b(wordpress\s+(site|website|pages?))\b/i,
-  /\b(landing\s+page\s+for)\b/i,
-  /\b(5[\s-]?page\s+(site|website))\b/i,
-]
-
-function isBridgeIntent(text: string): boolean {
-  return BRIDGE_PATTERNS.some((p) => p.test(text))
+const PERSONA_DESCRIPTIONS: Record<Persona, string> = {
+  engine: 'Full K-layer access — can do everything',
+  writer: 'Content creation — blogs, emails, social',
+  social: 'Social media management',
+  sales: 'Pipeline, follow-ups, proposals',
+  support: 'Customer support using company knowledge',
+  custom: 'User-defined persona',
 }
+
+// ---------------------------------------------------------------------------
+// Markdown-lite renderer (bold, lists, code)
+// ---------------------------------------------------------------------------
+
+function renderMarkdown(text: string) {
+  const lines = text.split('\n')
+  const elements: React.ReactNode[] = []
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // Numbered list
+    if (/^\d+\.\s/.test(line)) {
+      elements.push(
+        <div key={i} style={{ paddingLeft: 12, marginBottom: 2 }}>
+          {formatInline(line)}
+        </div>
+      )
+      continue
+    }
+
+    // Bullet list
+    if (/^[-*]\s/.test(line.trim())) {
+      elements.push(
+        <div key={i} style={{ paddingLeft: 12, marginBottom: 2 }}>
+          {formatInline(line.trim())}
+        </div>
+      )
+      continue
+    }
+
+    // Header (##)
+    if (/^#{1,3}\s/.test(line)) {
+      const level = line.match(/^(#+)/)?.[1].length || 1
+      const headerText = line.replace(/^#+\s*/, '')
+      elements.push(
+        <div key={i} style={{
+          fontWeight: 700,
+          fontSize: level === 1 ? 15 : level === 2 ? 14 : 13,
+          marginTop: 8,
+          marginBottom: 4,
+          color: '#f0f4f8',
+        }}>
+          {headerText}
+        </div>
+      )
+      continue
+    }
+
+    // Empty line
+    if (!line.trim()) {
+      elements.push(<div key={i} style={{ height: 6 }} />)
+      continue
+    }
+
+    // Normal paragraph
+    elements.push(
+      <div key={i} style={{ marginBottom: 2 }}>
+        {formatInline(line)}
+      </div>
+    )
+  }
+
+  return <>{elements}</>
+}
+
+function formatInline(text: string): React.ReactNode {
+  // Bold **text**
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} style={{ color: '#f0f4f8', fontWeight: 600 }}>{part.slice(2, -2)}</strong>
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return <code key={i} style={{
+        background: 'rgba(126,217,87,0.1)',
+        padding: '1px 5px',
+        borderRadius: 3,
+        fontSize: '0.9em',
+        color: '#7ed957',
+      }}>{part.slice(1, -1)}</code>
+    }
+    return <span key={i}>{part}</span>
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export function AIAssistant() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
-  const [captures, setCaptures] = useState<CapturePrompt[]>([])
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [persona, setPersona] = useState<Persona>('engine')
+  const [securityLevel, setSecurityLevel] = useState<SecurityLevel>('default')
+  const [suggestions, setSuggestions] = useState<string[]>([
+    'What can you do?',
+    'Show me my pipeline',
+    'Help me build something',
+  ])
+  const [showPersonaDropdown, setShowPersonaDropdown] = useState(false)
 
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Auto-scroll on new messages
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages, captures])
+  }, [messages, thinking])
 
-  async function send() {
-    if (!input.trim() || thinking) return
-    const text = input.trim()
-    setInput('')
-    const userMsgId = Date.now().toString()
-    setMessages(prev => [...prev, { id: userMsgId, role: 'user', content: text }])
-    setThinking(true)
-
-    // Smart capture detection on user input
-    const detected = detectData(text)
-    if (detected.length > 0) {
-      // Check which fields are actionable (high confidence, not URLs in normal chat)
-      const actionable = detected.filter(d => d.confidence >= 0.85 && d.type !== 'url' && d.type !== 'price')
-      if (actionable.length > 0) {
-        setCaptures(prev => [...prev, {
-          messageId: userMsgId,
-          items: actionable,
-          saving: false,
-          saved: [],
-          dismissed: false,
-        }])
-      }
+  // Focus input when panel opens
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 100)
     }
+  }, [open])
+
+  // Load settings on mount
+  useEffect(() => {
+    fetch('/api/engine/settings')
+      .then(r => r.json())
+      .then(data => {
+        if (data.security_level) setSecurityLevel(data.security_level)
+        if (data.default_persona) setPersona(data.default_persona)
+      })
+      .catch(() => {})
+  }, [])
+
+  // -------------------------------------------------------------------
+  // Send message
+  // -------------------------------------------------------------------
+
+  const send = useCallback(async (text?: string) => {
+    const msg = text || input.trim()
+    if (!msg || thinking) return
+    setInput('')
+
+    const userMsgId = crypto.randomUUID()
+    setMessages(prev => [...prev, { id: userMsgId, role: 'user', content: msg }])
+    setThinking(true)
+    setSuggestions([])
 
     try {
-      // Route through Agent Bridge if the message matches automation intent patterns
-      if (isBridgeIntent(text)) {
-        const res = await fetch('/api/agent-bridge', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ intent: text }),
-        })
-        const data = await res.json()
+      const res = await fetch('/api/engine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: msg,
+          conversationId,
+          persona,
+          securityLevel,
+        }),
+      })
 
-        let reply = data.summary || data.error || 'No response from Agent Bridge'
-        if (data.created?.length > 0) {
-          reply += '\n\n**Created:**\n' + data.created.map((c: { type: string; name: string; detail?: string }) =>
-            `- ${c.type}: ${c.name}${c.detail ? ` (${c.detail})` : ''}`
-          ).join('\n')
-        }
+      const data = await res.json()
 
+      if (!res.ok) {
         setMessages(prev => [...prev, {
-          id: (Date.now() + 1).toString(),
+          id: crypto.randomUUID(),
           role: 'assistant',
-          content: reply,
+          content: data.error || 'Something went wrong. Try again.',
         }])
+        setThinking(false)
+        return
+      }
+
+      // Update conversation ID for multi-turn
+      if (data.conversationId) {
+        setConversationId(data.conversationId)
+      }
+
+      // Add assistant message
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: data.reply || 'No response.',
+        intent: data.intent,
+      }])
+
+      // Update suggestions
+      if (data.suggestions?.length) {
+        setSuggestions(data.suggestions)
       } else {
-        const res = await fetch('/api/tasks/ai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: text,
-            tasks: [],
-            context: { page: typeof window !== 'undefined' ? window.location.pathname : '' },
-          }),
-        })
-        const data = await res.json()
-        setMessages(prev => [...prev, {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: data.reply || data.error || 'No response',
-        }])
+        setSuggestions(['Tell me more', 'What else can you do?', 'Help me build something'])
       }
     } catch {
       setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
+        id: crypto.randomUUID(),
         role: 'assistant',
-        content: 'Connection error. Try again.',
+        content: 'Connection error. Check your network and try again.',
       }])
     }
+
     setThinking(false)
-  }
+  }, [input, thinking, conversationId, persona, securityLevel])
 
-  async function saveCapturedData(captureIdx: number, item: DetectedData) {
-    setCaptures(prev => prev.map((c, i) => i === captureIdx ? { ...c, saving: true } : c))
-    try {
-      const res = await fetch('/api/profile/smart-capture', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ field: item.field, value: item.value }),
-      })
-      const data = await res.json()
-      if (res.ok && data.success) {
-        setCaptures(prev => prev.map((c, i) => i === captureIdx ? { ...c, saving: false, saved: [...c.saved, item.field] } : c))
-      } else {
-        setCaptures(prev => prev.map((c, i) => i === captureIdx ? { ...c, saving: false } : c))
-      }
-    } catch {
-      setCaptures(prev => prev.map((c, i) => i === captureIdx ? { ...c, saving: false } : c))
-    }
-  }
+  // -------------------------------------------------------------------
+  // New conversation
+  // -------------------------------------------------------------------
 
-  function dismissCapture(captureIdx: number) {
-    setCaptures(prev => prev.map((c, i) => i === captureIdx ? { ...c, dismissed: true } : c))
-  }
+  const newConversation = useCallback(() => {
+    setMessages([])
+    setConversationId(null)
+    setSuggestions(['What can you do?', 'Show me my pipeline', 'Help me build something'])
+  }, [])
+
+  // -------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------
 
   return (
     <>
@@ -191,107 +293,161 @@ export function AIAssistant() {
         }}>
           {/* Header */}
           <div style={{
-            padding: '14px 16px',
+            padding: '10px 14px',
             borderBottom: '1px solid #1e293b',
-            display: 'flex', alignItems: 'center', gap: 10,
             background: 'linear-gradient(135deg, rgba(126,217,87,0.06) 0%, rgba(0,212,255,0.03) 100%)',
           }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: 8,
-              background: 'linear-gradient(135deg, #7ed957, #00d4ff)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 10, fontWeight: 900, color: '#000',
-            }}>0n</div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f4f8' }}>0nCore AI</div>
-              <div style={{ fontSize: 10, color: '#4b5563' }}>Personal assistant — always here</div>
+            {/* Top row: Title + Persona + New */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 26, height: 26, borderRadius: 7,
+                background: 'linear-gradient(135deg, #7ed957, #00d4ff)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 9, fontWeight: 900, color: '#000', flexShrink: 0,
+              }}>0n</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f4f8', lineHeight: 1.2 }}>
+                  0nAI Engine
+                </div>
+              </div>
+
+              {/* Persona dropdown */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setShowPersonaDropdown(!showPersonaDropdown)}
+                  style={{
+                    padding: '3px 10px', borderRadius: 6,
+                    background: 'rgba(126,217,87,0.1)', border: '1px solid rgba(126,217,87,0.2)',
+                    color: '#7ed957', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                  }}
+                >
+                  {PERSONA_LABELS[persona]}
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                {showPersonaDropdown && (
+                  <div style={{
+                    position: 'absolute', top: '100%', right: 0, marginTop: 4,
+                    width: 220, background: '#161b22', border: '1px solid #1e293b',
+                    borderRadius: 10, overflow: 'hidden', zIndex: 100,
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+                  }}>
+                    {(Object.keys(PERSONA_LABELS) as Persona[]).map(p => (
+                      <button
+                        key={p}
+                        onClick={() => { setPersona(p); setShowPersonaDropdown(false) }}
+                        style={{
+                          width: '100%', padding: '8px 12px', border: 'none',
+                          background: p === persona ? 'rgba(126,217,87,0.08)' : 'transparent',
+                          cursor: 'pointer', textAlign: 'left',
+                          borderLeft: p === persona ? '2px solid #7ed957' : '2px solid transparent',
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: 600, color: p === persona ? '#7ed957' : '#d1d5db' }}>
+                          {PERSONA_LABELS[p]}
+                        </div>
+                        <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>
+                          {PERSONA_DESCRIPTIONS[p]}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* New conversation */}
+              <button
+                onClick={newConversation}
+                title="New conversation"
+                style={{
+                  width: 26, height: 26, borderRadius: 6,
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid #1e293b',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+
+              {/* Green dot */}
+              <div style={{ width: 6, height: 6, borderRadius: 3, background: '#7ed957', boxShadow: '0 0 8px #7ed957', flexShrink: 0 }} />
             </div>
-            <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: 3, background: '#7ed957', boxShadow: '0 0 8px #7ed957' }} />
+
+            {/* Security level pills */}
+            <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+              {(['low', 'default', 'strict'] as SecurityLevel[]).map(level => (
+                <button
+                  key={level}
+                  onClick={() => setSecurityLevel(level)}
+                  style={{
+                    padding: '2px 8px', borderRadius: 4, border: 'none',
+                    background: level === securityLevel ? 'rgba(126,217,87,0.12)' : 'transparent',
+                    color: level === securityLevel ? '#7ed957' : '#4b5563',
+                    fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Messages */}
           <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {messages.length === 0 && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 20 }}>
-                <div style={{ fontSize: 28, marginBottom: 12 }}>&#10022;</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f4f8', marginBottom: 4 }}>How can I help?</div>
-                <div style={{ fontSize: 12, color: '#4b5563', lineHeight: 1.5 }}>Ask me anything about your dashboard, tasks, contacts, or workflows.</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 16, width: '100%' }}>
-                  {['What should I focus on today?', 'Show me my pipeline summary', 'Help me write an email'].map(q => (
-                    <button key={q} onClick={() => { setInput(q); setTimeout(send, 50) }} style={{
-                      padding: '8px 14px', borderRadius: 8,
-                      background: 'rgba(255,255,255,0.02)', border: '1px solid #1e293b',
-                      color: '#8b95a5', fontSize: 12, textAlign: 'left', cursor: 'pointer',
-                      transition: 'border-color 0.15s',
-                    }}>
-                      {q}
-                    </button>
-                  ))}
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12, marginBottom: 14,
+                  background: 'linear-gradient(135deg, rgba(126,217,87,0.15), rgba(0,212,255,0.1))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 20,
+                }}>&#10022;</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#f0f4f8', marginBottom: 4 }}>
+                  0nAI Engine
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.5, maxWidth: 260 }}>
+                  Your complete AI brain. I can build workflows, manage contacts, create content, and automate your business.
                 </div>
               </div>
             )}
 
-            {messages.map((m, msgIdx) => (
-              <div key={m.id}>
-                <div style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                  <div style={{
-                    maxWidth: '85%', padding: '10px 14px', borderRadius: 12, fontSize: 13, lineHeight: 1.6,
-                    background: m.role === 'user' ? 'linear-gradient(135deg, #7ed957, #5cb83a)' : 'rgba(255,255,255,0.04)',
-                    color: m.role === 'user' ? '#000' : '#d1d5db',
-                    border: m.role === 'assistant' ? '1px solid #1e293b' : 'none',
-                    borderBottomRightRadius: m.role === 'user' ? 4 : 12,
-                    borderBottomLeftRadius: m.role === 'assistant' ? 4 : 12,
-                  }}>
-                    <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.content}</p>
-                  </div>
-                </div>
-
-                {/* Smart capture prompt — shown after user messages */}
-                {m.role === 'user' && captures.map((cap, capIdx) => {
-                  if (cap.messageId !== m.id || cap.dismissed) return null
-                  const unsaved = cap.items.filter(i => !cap.saved.includes(i.field))
-                  if (unsaved.length === 0) return null
-                  return (
-                    <div key={capIdx} style={{
-                      margin: '6px 0', padding: '8px 12px', borderRadius: 8,
-                      background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.12)',
-                      fontSize: 11,
-                    }}>
-                      {unsaved.map((item, iIdx) => (
-                        <div key={iIdx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: unsaved.length > 1 && iIdx < unsaved.length - 1 ? 6 : 0 }}>
-                          <div style={{ flex: 1, color: '#9ca3af' }}>
-                            I noticed a <span style={{ color: '#00d4ff', fontWeight: 600 }}>{item.label}</span>. Save to your account?
-                          </div>
-                          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                            <button
-                              onClick={() => saveCapturedData(capIdx, item)}
-                              disabled={cap.saving}
-                              style={{
-                                padding: '3px 10px', borderRadius: 4, border: 'none',
-                                background: 'rgba(126,217,87,0.15)', color: '#7ed957',
-                                fontSize: 10, fontWeight: 700, cursor: 'pointer',
-                                opacity: cap.saving ? 0.5 : 1,
-                              }}
-                            >{cap.saving ? '...' : 'Save'}</button>
-                            <button
-                              onClick={() => dismissCapture(capIdx)}
-                              style={{
-                                padding: '3px 8px', borderRadius: 4, border: 'none',
-                                background: 'transparent', color: '#6b7280',
-                                fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                              }}
-                            >Skip</button>
-                          </div>
-                        </div>
-                      ))}
-                      {cap.saved.length > 0 && (
-                        <div style={{ fontSize: 10, color: '#7ed957', marginTop: 4 }}>
-                          Saved {cap.saved.length} item{cap.saved.length > 1 ? 's' : ''} to your profile
+            {messages.map(m => (
+              <div key={m.id} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                <div style={{
+                  maxWidth: '88%', padding: '10px 14px', borderRadius: 12, fontSize: 13, lineHeight: 1.6,
+                  background: m.role === 'user' ? 'linear-gradient(135deg, #7ed957, #5cb83a)' : 'rgba(255,255,255,0.04)',
+                  color: m.role === 'user' ? '#000' : '#d1d5db',
+                  border: m.role === 'assistant' ? '1px solid #1e293b' : 'none',
+                  borderBottomRightRadius: m.role === 'user' ? 4 : 12,
+                  borderBottomLeftRadius: m.role === 'assistant' ? 4 : 12,
+                }}>
+                  {m.role === 'assistant' ? (
+                    <div style={{ margin: 0 }}>
+                      {/* Bridge intent indicator */}
+                      {m.intent?.detected && (
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          padding: '2px 8px', borderRadius: 4, marginBottom: 6,
+                          background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.15)',
+                          fontSize: 10, color: '#00d4ff', fontWeight: 600,
+                        }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                          </svg>
+                          {m.intent.action || 'Action detected'}
                         </div>
                       )}
+                      {renderMarkdown(m.content)}
                     </div>
-                  )
-                })}
+                  ) : (
+                    <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.content}</p>
+                  )}
+                </div>
               </div>
             ))}
 
@@ -308,13 +464,51 @@ export function AIAssistant() {
             )}
           </div>
 
+          {/* Suggestions */}
+          {suggestions.length > 0 && !thinking && messages.length > 0 && (
+            <div style={{ padding: '0 12px 6px', display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => send(s)}
+                  style={{
+                    padding: '4px 10px', borderRadius: 6,
+                    background: 'rgba(255,255,255,0.02)', border: '1px solid #1e293b',
+                    color: '#8b95a5', fontSize: 11, cursor: 'pointer',
+                    transition: 'border-color 0.15s',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Empty state suggestions */}
+          {messages.length === 0 && (
+            <div style={{ padding: '0 12px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {suggestions.map((q, i) => (
+                <button key={i} onClick={() => send(q)} style={{
+                  padding: '8px 14px', borderRadius: 8,
+                  background: 'rgba(255,255,255,0.02)', border: '1px solid #1e293b',
+                  color: '#8b95a5', fontSize: 12, textAlign: 'left', cursor: 'pointer',
+                  transition: 'border-color 0.15s',
+                }}>
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Input */}
-          <div style={{ padding: '10px 12px', borderTop: '1px solid #1e293b', background: '#0a0e17' }}>
+          <div style={{ padding: '8px 12px', borderTop: '1px solid #1e293b', background: '#0a0e17' }}>
             <form onSubmit={e => { e.preventDefault(); send() }} style={{ display: 'flex', gap: 8 }}>
               <input
+                ref={inputRef}
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                placeholder="Ask anything..."
+                placeholder={`Ask ${PERSONA_LABELS[persona]}...`}
                 disabled={thinking}
                 style={{
                   flex: 1, padding: '10px 14px', borderRadius: 10,
