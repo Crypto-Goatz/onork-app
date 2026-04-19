@@ -17,6 +17,26 @@ interface CapturePrompt {
   dismissed: boolean
 }
 
+// Patterns that indicate agent bridge intent
+const BRIDGE_PATTERNS = [
+  /\b(set\s*up|create|build|configure|deploy|make)\b.*\b(agent|workflow|sequence|bot|voice|form|funnel|automation|chatbot|drip|campaign)\b/i,
+  /\b(automate|automation\s+for)\b/i,
+  /\b(voice\s+ai|voice\s+agent|phone\s+bot|call\s+handler)\b/i,
+  /\b(follow[\s-]?up\s+(sequence|automation|workflow))\b/i,
+  /\b(email\s+(sequence|drip|campaign|automation))\b/i,
+  /\b(missed\s+call\s+text)/i,
+  /\b(review\s+request|reputation\s+management)\b/i,
+  /\b(onboarding\s+(sequence|flow|automation))\b/i,
+  /\b(win[\s-]?back\s+(campaign|sequence))\b/i,
+  /\b(lead\s+follow)/i,
+  /\b(blog\s+to\s+social|content\s+distribution)\b/i,
+  /\b(full\s+setup|complete\s+setup)\b/i,
+]
+
+function isBridgeIntent(text: string): boolean {
+  return BRIDGE_PATTERNS.some((p) => p.test(text))
+}
+
 export function AIAssistant() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
@@ -54,21 +74,44 @@ export function AIAssistant() {
     }
 
     try {
-      const res = await fetch('/api/tasks/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: text,
-          tasks: [],
-          context: { page: typeof window !== 'undefined' ? window.location.pathname : '' },
-        }),
-      })
-      const data = await res.json()
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.reply || data.error || 'No response',
-      }])
+      // Route through Agent Bridge if the message matches automation intent patterns
+      if (isBridgeIntent(text)) {
+        const res = await fetch('/api/agent-bridge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ intent: text }),
+        })
+        const data = await res.json()
+
+        let reply = data.summary || data.error || 'No response from Agent Bridge'
+        if (data.created?.length > 0) {
+          reply += '\n\n**Created:**\n' + data.created.map((c: { type: string; name: string; detail?: string }) =>
+            `- ${c.type}: ${c.name}${c.detail ? ` (${c.detail})` : ''}`
+          ).join('\n')
+        }
+
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: reply,
+        }])
+      } else {
+        const res = await fetch('/api/tasks/ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            tasks: [],
+            context: { page: typeof window !== 'undefined' ? window.location.pathname : '' },
+          }),
+        })
+        const data = await res.json()
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.reply || data.error || 'No response',
+        }])
+      }
     } catch {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
