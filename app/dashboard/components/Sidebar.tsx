@@ -24,6 +24,7 @@ const ADDON_NAV_MAP: Record<string, { name: string; href: string; addonSlug: str
   'phone-system': { name: 'Phone System', href: '/dashboard/phone', addonSlug: 'phone-system' },
   'snapshot-manager': { name: 'Snapshots', href: '/dashboard/snapshots', addonSlug: 'snapshot-manager' },
   'workflow-reader': { name: 'Workflows', href: '/dashboard/workflows', addonSlug: 'workflow-reader' },
+  'blog-to-social': { name: 'Blog to Social', href: '/dashboard/workflows/blog-social', addonSlug: 'blog-to-social' },
   'affiliate-manager': { name: 'Affiliates', href: '/dashboard/affiliates', addonSlug: 'affiliate-manager' },
   'contact-manager': { name: 'Contacts', href: '/dashboard/contacts', addonSlug: 'contact-manager' },
   'opportunity-pipeline': { name: 'Pipeline', href: '/dashboard/pipeline', addonSlug: 'opportunity-pipeline' },
