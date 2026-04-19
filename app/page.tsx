@@ -2,108 +2,294 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: '0nCore — AI That Runs Your Business | 335 Tools, 96 Services',
-  description: '0nCore is an AI-powered business automation platform. 335 tools across 96 services. Course builder, Voice AI, Social Planner, Agent Studio, and 27 more add-ons. Starts at $9/mo.',
+  title: '0nCore — Scale Your Platform 10x with AI Connectivity',
+  description: '0nCore connects your CRM to 96+ services with 1,554 AI-powered tools. Security vault, 2-second flows, codeless integrations. Request early access.',
 }
 
-const INTEGRATIONS = ['Stripe', 'Slack', 'GitHub', 'Supabase', 'SendGrid', 'Twilio', 'Shopify', 'HubSpot', 'Notion', 'Airtable', 'Discord', 'Calendly', 'Zoom', 'Gmail', 'Google Sheets', 'Linear', 'Jira', 'Zapier']
+const PARTNERS = ['GitHub', 'Slack', 'Stripe', 'Linear', 'Google', 'Supabase', 'Vercel', 'Shopify']
 
 const FEATURES = [
-  { title: 'AI Course Builder', desc: 'Generate full courses and import into your CRM.', price: '$49/mo', color: '#7ed957' },
-  { title: 'Voice AI Agent', desc: 'Deploy phone agents with knowledge bases.', price: '$99/mo', color: '#00d4ff' },
-  { title: 'Agent Studio Pro', desc: 'Build AI agents with 335+ MCP tool access.', price: '$99/mo', color: '#a78bfa' },
-  { title: 'Social Planner', desc: 'Connect accounts and publish AI content.', price: '$29/mo', color: '#f97316' },
-  { title: 'Email Builder', desc: 'AI email campaigns with IP warm-up.', price: '$19/mo', color: '#ec4899' },
-  { title: 'Snapshot Manager', desc: 'Clone and deploy CRM configurations.', price: '$99/mo', color: '#14b8a6' },
+  { num: '01', title: 'Security Vault', desc: 'AES-256 encrypted credential storage with hardware fingerprinting. Your API keys never leave the vault.', icon: '🔒' },
+  { num: '02', title: '2s Flow', desc: 'Describe what you want in plain English. 0nMCP executes across 96 services in under 2 seconds.', icon: '⚡' },
+  { num: '03', title: 'Integrations', desc: '1,554 tools across 96 services. CRM, email, social, payments, analytics — all connected through one brain.', icon: '🔗' },
+  { num: '04', title: 'Codeless', desc: 'Build AI workflows without writing code. Drag, connect, deploy. Your entire business on autopilot.', icon: '✨' },
+]
+
+const INTEGRATIONS = [
+  { name: 'GitHub', color: '#24292e' }, { name: 'Google', color: '#4285F4' },
+  { name: 'Stripe', color: '#6772e5' }, { name: 'Slack', color: '#4A154B' },
+  { name: 'Supabase', color: '#3ECF8E' }, { name: 'Vercel', color: '#000' },
+  { name: 'Shopify', color: '#96BF48' }, { name: 'HubSpot', color: '#FF7A59' },
+  { name: 'Notion', color: '#000' }, { name: 'Airtable', color: '#18BFFF' },
+  { name: 'Discord', color: '#5865F2' }, { name: 'Twilio', color: '#F22F46' },
+  { name: 'SendGrid', color: '#1A82E2' }, { name: 'Calendly', color: '#006BFF' },
+  { name: 'Zoom', color: '#2D8CFF' }, { name: 'Linear', color: '#5E6AD2' },
+  { name: 'Jira', color: '#0052CC' }, { name: 'OpenAI', color: '#10A37F' },
+  { name: 'CRM', color: '#FF6B35' }, { name: 'Anthropic', color: '#D4A574' },
+  { name: 'MongoDB', color: '#47A248' }, { name: 'Cloudflare', color: '#F48120' },
+  { name: 'GoDaddy', color: '#1BDBDB' }, { name: 'Mailchimp', color: '#FFE01B' },
+]
+
+const COMMUNITY = [
+  { name: 'Alex Thompson', role: 'CTO, ScaleAI', text: 'We connected 14 services in our first week. The vault system means I actually sleep at night knowing our API keys are safe.' },
+  { name: 'Sarah Chen', role: 'Founder, NexusOps', text: 'Replaced 6 different integration tools with one 0nCore instance. The 2-second execution time is not marketing — it is real.' },
+  { name: 'Marcus Rivera', role: 'DevOps Lead', text: 'The codeless workflow builder saved our team 40+ hours per week. We went from idea to production automation in minutes.' },
 ]
 
 export default function HomePage() {
   return (
-    <div style={{ background: '#020810', color: '#fff', minHeight: '100vh' }}>
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 32px', background: 'rgba(2,8,16,0.8)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <img src="/brand/0ncore-icon.png" alt="0nCore" style={{ height: 26 }} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}><span style={{ color: '#7ed957' }}>0n</span>Core</span>
+    <div style={{ background: '#020810', color: '#fff', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      {/* ═══ NAV ═══ */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '12px 32px',
+        background: 'rgba(2,8,16,0.85)', backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+      }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          <img src="/brand/0n-anim-logo.svg" alt="0nCore" style={{ height: 32 }} />
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+            <span style={{ color: '#7ed957' }}>0n</span>CORE
+          </span>
         </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          <Link href="/connections" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Connections</Link>
+          <a href="https://0nmcp.com/docs" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Documentation</a>
+          <Link href="/launch-party" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Launch Party</Link>
           <Link href="/pricing" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Pricing</Link>
-          <Link href="/integrations" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Integrations</Link>
-          <a href="https://0nmcp.com/docs" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Docs</a>
-          <Link href="/login" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Sign In</Link>
-          <Link href="/signup" style={{ fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Get Started Free</Link>
+          <Link href="/login" style={{
+            fontSize: 13, fontWeight: 600, color: '#020810',
+            background: '#7ed957', padding: '8px 20px', borderRadius: 8,
+            textDecoration: 'none',
+          }}>VIP Access</Link>
         </div>
       </nav>
 
-      <section style={{ textAlign: 'center', padding: '80px 24px 80px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translate(-50%,-50%)', width: 800, height: 800, background: 'radial-gradient(circle, rgba(126,217,87,0.06) 0%, transparent 60%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 720, margin: '0 auto' }}>
-          {/* Animated Logo */}
-          <div style={{ margin: '0 auto 24px', width: 'clamp(80px, 15vw, 120px)', height: 'clamp(80px, 15vw, 120px)', filter: 'drop-shadow(0 0 40px rgba(126,217,87,0.3))' }}>
-            <img src="/brand/0n-anim-logo.svg" alt="0nCore" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          </div>
-          <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '5px 16px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 24, letterSpacing: '0.08em', textTransform: 'uppercase' }}>1,554 Tools · 96 Services · 5 Patents Pending</div>
-          <h1 style={{ fontSize: 'clamp(36px, 6vw, 60px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.08, margin: '0 0 20px' }}>AI that <span style={{ color: '#7ed957' }}>runs</span> your business.</h1>
-          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 560, margin: '0 auto 36px' }}>Connect your CRM. Install add-ons. Build AI workflows that execute across every channel — dashboard, Slack, API, voice, and MCP.</p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/signup" style={{ padding: '14px 32px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15 }}>Start Free</Link>
-            <Link href="/pricing" style={{ padding: '14px 32px', background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 15, border: '1px solid rgba(255,255,255,0.08)' }}>View Pricing</Link>
-          </div>
-        </div>
-      </section>
+      {/* ═══ HERO ═══ */}
+      <section style={{
+        position: 'relative', padding: '140px 24px 80px', overflow: 'hidden',
+        minHeight: '85vh', display: 'flex', alignItems: 'center',
+      }}>
+        {/* Background glow */}
+        <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translate(-50%,-30%)', width: 900, height: 900, background: 'radial-gradient(circle, rgba(126,217,87,0.08) 0%, transparent 60%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '30%', right: '10%', width: 400, height: 400, background: 'radial-gradient(circle, rgba(0,212,255,0.05) 0%, transparent 60%)', pointerEvents: 'none' }} />
 
-      <section style={{ padding: '0 24px 60px', overflow: 'hidden' }}>
-        <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>Connected to 96+ services</p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', maxWidth: 800, margin: '0 auto' }}>
-          {INTEGRATIONS.map(n => <span key={n} style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', padding: '6px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>{n}</span>)}
-        </div>
-      </section>
-
-      <section style={{ padding: '60px 24px', maxWidth: 900, margin: '0 auto' }}>
-        <h2 style={{ fontSize: 28, fontWeight: 800, textAlign: 'center', marginBottom: 48 }}>Three steps to automation</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
-          {[
-            { n: '01', t: 'Connect', d: 'Install the marketplace app on your CRM. OAuth handles auth.' },
-            { n: '02', t: 'Choose', d: 'Pick the add-ons you need. Pay only for what you use.' },
-            { n: '03', t: 'Automate', d: 'Build switches, run AI workflows, and scale.' },
-          ].map(s => (
-            <div key={s.n} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 32, fontWeight: 800, color: '#7ed957', marginBottom: 12, opacity: 0.3 }}>{s.n}</div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{s.t}</h3>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>{s.d}</p>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
+          {/* Left: Copy */}
+          <div>
+            <div style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '5px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 24, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              1,554 Tools · 96 Services · 5 Patents
             </div>
+            <h1 style={{ fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.08, margin: '0 0 20px' }}>
+              Scale Your Platform<br />
+              10x with <span style={{ color: '#7ed957' }}>0nCore</span><br />
+              Connectivity.
+            </h1>
+            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 480, margin: '0 0 32px' }}>
+              Unifying digital connectivity. Connect your CRM to every service, automate every workflow, and let AI handle the rest.
+            </p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <Link href="/request" style={{
+                padding: '14px 32px', background: '#7ed957', color: '#020810',
+                fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15,
+                boxShadow: '0 0 30px rgba(126,217,87,0.3)',
+              }}>Request Access</Link>
+              <Link href="/launch-party" style={{
+                padding: '14px 32px', background: 'rgba(255,255,255,0.06)', color: '#fff',
+                fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 15,
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}>Launch Party — May 1st</Link>
+            </div>
+          </div>
+
+          {/* Right: Video placeholder / Hero image */}
+          <div style={{
+            position: 'relative', borderRadius: 20, overflow: 'hidden',
+            border: '1px solid rgba(126,217,87,0.15)',
+            boxShadow: '0 20px 80px rgba(0,0,0,0.5), 0 0 40px rgba(126,217,87,0.08)',
+            aspectRatio: '16/10',
+          }}>
+            <img src="/brand/oncore-hero.jpg" alt="0nCore Platform" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(135deg, rgba(2,8,16,0.6) 0%, transparent 50%, rgba(2,8,16,0.4) 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {/* Play button placeholder */}
+              <div style={{
+                width: 72, height: 72, borderRadius: '50%',
+                background: 'rgba(126,217,87,0.9)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 40px rgba(126,217,87,0.5)',
+                cursor: 'pointer',
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="#020810">
+                  <polygon points="8,5 19,12 8,19" />
+                </svg>
+              </div>
+            </div>
+            <div style={{
+              position: 'absolute', bottom: 16, left: 16, right: 16,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>Watch the demo — 2 min</span>
+              <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 6, background: 'rgba(126,217,87,0.15)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.25)' }}>COMING SOON</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ PARTNER LOGOS ═══ */}
+      <section style={{ padding: '0 24px 60px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 40, flexWrap: 'wrap', maxWidth: 900, margin: '0 auto', opacity: 0.4 }}>
+          {PARTNERS.map(name => (
+            <span key={name} style={{ fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>{name}</span>
           ))}
         </div>
       </section>
 
-      <section style={{ padding: '60px 24px 80px', maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Add-ons that do the work</h2>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>31 modules. Install what you need. <Link href="/pricing" style={{ color: '#7ed957', textDecoration: 'none' }}>See all →</Link></p>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+      {/* ═══ 4 FEATURES ═══ */}
+      <section style={{ padding: '80px 24px', maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
           {FEATURES.map(f => (
-            <div key={f.title} style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', padding: 24 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: f.color, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{f.price}</div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{f.title}</h3>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>{f.desc}</p>
+            <div key={f.num} style={{
+              padding: 28, borderRadius: 16,
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#7ed957', marginBottom: 16, letterSpacing: '0.1em' }}>{f.num}</div>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>{f.icon}</div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{f.title}</h3>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>{f.desc}</p>
             </div>
           ))}
         </div>
-        <div style={{ textAlign: 'center', marginTop: 32 }}>
-          <Link href="/pricing" style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 14, border: '1px solid rgba(255,255,255,0.08)' }}>View all 31 add-ons →</Link>
+      </section>
+
+      {/* ═══ INTEGRATION GRID ═══ */}
+      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Integration Grid</h2>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>Connect to All Modern Platforms.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12 }}>
+            {INTEGRATIONS.map(i => (
+              <div key={i.name} style={{
+                padding: '16px 12px', borderRadius: 12, textAlign: 'center',
+                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+              }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 8,
+                  background: i.color, opacity: 0.8,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 14, fontWeight: 700, color: '#fff',
+                }}>
+                  {i.name.slice(0, 2)}
+                </div>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{i.name}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 32 }}>
+            <Link href="/connections" style={{ fontSize: 13, color: '#7ed957', textDecoration: 'none', fontWeight: 600 }}>View all 96 connections →</Link>
+          </div>
         </div>
       </section>
 
-      <section style={{ textAlign: 'center', padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <h2 style={{ fontSize: 32, fontWeight: 800, marginBottom: 12 }}>Ready to automate?</h2>
-        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 28 }}>Free account. No credit card. Start in 30 seconds.</p>
-        <Link href="/signup" style={{ padding: '14px 36px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 16 }}>Create Free Account</Link>
+      {/* ═══ DOCUMENTATION + BLOG PREVIEW ═══ */}
+      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
+          {/* Documentation */}
+          <div style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', padding: 28 }}>
+            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Developer Documentation</h3>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20, lineHeight: 1.6 }}>Full API reference, tutorials, and guides for building on 0nCore.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {['Getting Started', 'API Reference', 'MCP Server Setup', 'Webhook Configuration'].map(doc => (
+                <a key={doc} href="https://0nmcp.com/docs" style={{
+                  padding: '10px 14px', borderRadius: 8,
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+                  color: 'rgba(255,255,255,0.6)', fontSize: 13, textDecoration: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
+                  {doc}
+                  <span style={{ color: 'rgba(255,255,255,0.2)' }}>→</span>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Blog Preview */}
+          <div style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', padding: 28 }}>
+            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Blog</h3>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20, lineHeight: 1.6 }}>Insights on AI orchestration, MCP servers, and the future of automation.</p>
+            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 16 }}>
+              <div style={{ height: 140, background: 'linear-gradient(135deg, rgba(126,217,87,0.1) 0%, rgba(0,212,255,0.05) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Featured Post</span>
+              </div>
+              <div style={{ padding: 16 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Optimizing Your MCP Server with Production-Grade Extensibility</h4>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>How to build MCP servers that scale to 1,500+ tools without sacrificing performance.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
+      {/* ═══ COMMUNITY ═══ */}
+      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 28, fontWeight: 800, textAlign: 'center', marginBottom: 48 }}>Community</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+            {COMMUNITY.map((c, i) => (
+              <div key={i} style={{
+                padding: 24, borderRadius: 16,
+                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(126,217,87,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#7ed957' }}>
+                    {c.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{c.name}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{c.role}</div>
+                  </div>
+                </div>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>&ldquo;{c.text}&rdquo;</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ LAUNCH PARTY CTA ═══ */}
+      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#7ed957', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>May 1st · 9 PM EST</div>
+          <h2 style={{ fontSize: 36, fontWeight: 800, marginBottom: 12 }}>Launch Party</h2>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 28, lineHeight: 1.7 }}>
+            Join us for the official 0nCore launch. Live demo, exclusive early access, and a behind-the-scenes look at the future of AI orchestration.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <Link href="/launch-party" style={{
+              padding: '14px 36px', background: '#7ed957', color: '#020810',
+              fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 16,
+              boxShadow: '0 0 30px rgba(126,217,87,0.3)',
+            }}>Get Your Invite</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ FOOTER ═══ */}
       <footer style={{ padding: '24px 32px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>© 2026 RocketOpp LLC. Powered by 0nMCP.</span>
         <div style={{ display: 'flex', gap: 20 }}>
-          <Link href="/pricing" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Pricing</Link>
+          <Link href="/connections" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Connections</Link>
+          <Link href="/request" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Request Access</Link>
+          <Link href="/launch-party" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Launch Party</Link>
           <a href="https://0nmcp.com/docs" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Docs</a>
           <a href="https://0nmcp.com" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>0nMCP</a>
           <a href="mailto:mike@rocketopp.com" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Contact</a>
