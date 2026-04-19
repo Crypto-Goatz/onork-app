@@ -18,11 +18,14 @@ export async function POST(req: NextRequest) {
   const clientSecret = params.get('client_secret')
   const refreshToken = params.get('refresh_token')
 
-  // Validate client credentials
-  const expectedClientId = process.env.CRM_MARKETPLACE_CLIENT_ID
-  const expectedClientSecret = process.env.CRM_MARKETPLACE_CLIENT_SECRET
+  // Validate client credentials — check both main app AND external auth credentials
+  const validClients = [
+    { id: process.env.CRM_MARKETPLACE_CLIENT_ID, secret: process.env.CRM_MARKETPLACE_CLIENT_SECRET },
+    { id: process.env.CRM_EXTERNAL_AUTH_CLIENT_ID, secret: process.env.CRM_EXTERNAL_AUTH_CLIENT_SECRET },
+  ]
 
-  if (clientId !== expectedClientId || clientSecret !== expectedClientSecret) {
+  const isValid = validClients.some(c => c.id && c.secret && clientId === c.id && clientSecret === c.secret)
+  if (!isValid) {
     return NextResponse.json({ error: 'invalid_client' }, { status: 401 })
   }
 
