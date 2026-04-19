@@ -3,6 +3,7 @@ import "./globals.css";
 import "./jampack.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { Providers } from "@/components/providers";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -55,7 +56,9 @@ export default function RootLayout({
         <script src="https://api.rocketclients.com/js/external-tracking.js" data-tracking-id="tk_f9c5376df66c45e69941dd3f3bbe22a2" async />
       </head>
       <body className="antialiased min-h-screen">
+        <Providers>
         {children}
+        </Providers>
         {/* 0nAI Voice Chat Widget — site-wide */}
         {process.env.NEXT_PUBLIC_VOICE_AGENT_ID && (
           <script
