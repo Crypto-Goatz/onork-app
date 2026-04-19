@@ -206,13 +206,13 @@ const DOWNLOADS: Download[] = [
   {
     id: 'wp-0ncore',
     name: '0nCore WordPress Plugin',
-    description: 'Connect your WordPress site to 0nCore. Sync contacts, forms, and analytics.',
+    description: 'Connect your WordPress site to 0nCore. CRM integration, AI forms, Meta Pixel + GA4 tracking, booking embeds, SXO landing pages, and schema.org SEO. Requires API token.',
     Icon: Plug,
     category: 'wordpress',
     action: 'link',
-    actionLabel: 'Coming Soon',
-    actionData: '#',
-    badge: 'SOON',
+    actionLabel: 'Download v1.5.0',
+    actionData: '/downloads/0ncore-wp-v1.5.0.zip',
+    badge: 'LIVE',
   },
 
   // CRM
