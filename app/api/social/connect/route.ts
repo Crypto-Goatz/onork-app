@@ -5,6 +5,7 @@ const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
+// CRM social OAuth start endpoints
 const OAUTH_PATHS: Record<string, string> = {
   google: '/social-media-posting/oauth/google/start',
   facebook: '/social-media-posting/oauth/facebook/start',
@@ -24,32 +25,81 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await supabase.from('profiles').select('crm_location_id').eq('id', user.id).single()
   const locationId = profile?.crm_location_id
-  if (!locationId) return NextResponse.json({ error: 'No CRM location linked' }, { status: 400 })
+  if (!locationId) return NextResponse.json({ error: 'No CRM location linked. Go to Settings to connect your CRM.' }, { status: 400 })
 
   const { platform, reconnect } = await req.json()
   const oauthPath = OAUTH_PATHS[platform]
   if (!oauthPath) return NextResponse.json({ error: `Unknown platform: ${platform}` }, { status: 400 })
 
-  const pit = process.env.CRM_PIT_RAW || process.env.CRM_PIT || ''
-  const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'
+  // Try multiple PIT tokens in priority order
+  const pitTokens = [
+    process.env.CRM_PIT_RAW,
+    process.env.CRM_PIT,
+    process.env.CRM_AGENCY_PIT,
+    process.env.CRM_AGENCY_PIT_NEW,
+  ].filter(Boolean)
 
-  const res = await fetch(`${CRM_API}${oauthPath}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${pit}`, Version: CRM_VERSION, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      locationId,
-      userId: user.id,
-      page: 'social-planner',
-      reconnect: reconnect ? 'true' : 'false',
-    }),
-  })
+  let lastError = ''
 
-  if (!res.ok) {
-    const err = await res.text()
-    console.error(`[social/connect] ${platform} OAuth failed:`, res.status, err)
-    return NextResponse.json({ error: 'OAuth initialization failed' }, { status: 502 })
+  for (const pit of pitTokens) {
+    try {
+      // Try POST method first (newer API)
+      const postRes = await fetch(`${CRM_API}${oauthPath}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${pit}`,
+          Version: CRM_VERSION,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          locationId,
+          userId: user.id,
+          page: 'social-planner',
+          reconnect: reconnect ? 'true' : 'false',
+        }),
+      })
+
+      if (postRes.ok) {
+        const data = await postRes.json()
+        const url = data.url || data.authUrl || data.oauthUrl || data.redirectUrl
+        if (url) {
+          return NextResponse.json({ url, platform })
+        }
+        // If no URL in response, return the raw data for debugging
+        return NextResponse.json({ url: null, platform, raw: data, method: 'POST' })
+      }
+
+      const postErr = await postRes.text()
+      lastError = `POST ${postRes.status}: ${postErr.slice(0, 200)}`
+
+      // Try GET method with query params (older API)
+      const getUrl = `${CRM_API}${oauthPath}?locationId=${locationId}&userId=${user.id}&page=social-planner${reconnect ? '&reconnect=true' : ''}`
+      const getRes = await fetch(getUrl, {
+        headers: {
+          Authorization: `Bearer ${pit}`,
+          Version: CRM_VERSION,
+        },
+      })
+
+      if (getRes.ok) {
+        const data = await getRes.json()
+        const url = data.url || data.authUrl || data.oauthUrl || data.redirectUrl
+        if (url) {
+          return NextResponse.json({ url, platform })
+        }
+        return NextResponse.json({ url: null, platform, raw: data, method: 'GET' })
+      }
+
+      const getErr = await getRes.text()
+      lastError = `GET ${getRes.status}: ${getErr.slice(0, 200)}`
+    } catch (err) {
+      lastError = `Error: ${err instanceof Error ? err.message : 'Unknown'}`
+    }
   }
 
-  const data = await res.json()
-  return NextResponse.json({ url: data.url || data.authUrl || data.oauthUrl || data, platform })
+  console.error(`[social/connect] All PIT tokens failed for ${platform}:`, lastError)
+  return NextResponse.json({
+    error: `Social connect failed for ${platform}. The CRM social OAuth requires the platform to be configured in your CRM location settings first. Go to your CRM → Social Planner → Connect Account.`,
+    debug: lastError,
+  }, { status: 502 })
 }

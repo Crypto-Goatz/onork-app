@@ -109,18 +109,27 @@ export default function SocialPage() {
     })()
   }, [supabase])
 
+  const [connectError, setConnectError] = useState('')
+
   async function connectPlatform(key: string) {
     setConnecting(key)
+    setConnectError('')
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setConnecting(null); return }
-    const res = await fetch('/api/social/connect', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ platform: key }),
-    })
-    if (res.ok) {
+    if (!session) { setConnecting(null); setConnectError('Please log in'); return }
+    try {
+      const res = await fetch('/api/social/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ platform: key }),
+      })
       const data = await res.json()
-      if (data.url) window.open(data.url, '_blank', 'width=600,height=700')
+      if (res.ok && data.url) {
+        window.open(data.url, '_blank', 'width=600,height=700')
+      } else {
+        setConnectError(data.error || `Failed to connect ${key}`)
+      }
+    } catch (err) {
+      setConnectError('Connection failed — check your network')
     }
     setConnecting(null)
   }
@@ -1605,12 +1614,27 @@ export default function SocialPage() {
       {/* ═══════════════ ACCOUNTS TAB ═══════════════ */}
       {activeTab === 'accounts' && (
         <div>
+          {/* Error display */}
+          {connectError && (
+            <div style={{ padding: '12px 16px', marginBottom: 16, borderRadius: 8, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', color: '#f87171', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>{connectError}</span>
+              <button onClick={() => setConnectError('')} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 16 }}>×</button>
+            </div>
+          )}
+
+          {/* Quick tip */}
+          <div style={{ padding: '12px 16px', marginBottom: 16, borderRadius: 8, background: 'rgba(126,217,87,0.06)', border: '1px solid rgba(126,217,87,0.12)', fontSize: 12, color: 'var(--jp-text-secondary)', lineHeight: 1.6 }}>
+            <strong style={{ color: '#7ed957' }}>Tip:</strong> Social accounts are connected through your CRM. If the connect button doesn't work, you can connect directly in your{' '}
+            <a href="https://app.gohighlevel.com" target="_blank" rel="noopener noreferrer" style={{ color: '#7ed957', textDecoration: 'none', fontWeight: 600 }}>CRM Dashboard → Social Planner → Settings</a>
+            {' '}and it will sync here automatically.
+          </div>
+
           {/* CRM OAuth Platforms */}
           <div className="jp-card" style={{ marginBottom: 16 }}>
             <div className="jp-card-header">
               <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>Social Accounts (CRM OAuth)</h4>
               <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
-                Connect via CRM SDK — accounts sync to your sub-location
+                Connect via CRM — accounts sync to your location
               </span>
             </div>
             <div>
