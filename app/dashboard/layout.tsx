@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 import Sidebar from './components/Sidebar'
@@ -21,6 +21,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const roleState = useRoleLoader()
   const router = useRouter()
   const supabase = createClient()
+  const searchParams = useSearchParams()
+
+  // Detect CRM iframe embed mode
+  const isEmbed = searchParams.get('embed') === 'true'
+  const embedLocationId = searchParams.get('locationId')
+
+  // Embed mode effects
+  useEffect(() => {
+    if (!isEmbed) return
+    // Disable right-click in embed mode
+    const handler = (e: MouseEvent) => { e.preventDefault() }
+    document.addEventListener('contextmenu', handler)
+    // Store embed location for API calls
+    if (embedLocationId) {
+      sessionStorage.setItem('0ncore_embed_location', embedLocationId)
+    }
+    return () => document.removeEventListener('contextmenu', handler)
+  }, [isEmbed, embedLocationId])
 
   useEffect(() => {
     // Load layout preference
@@ -107,6 +125,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     onLogout: handleLogout,
     layoutMode,
     onLayoutChange: handleLayoutChange,
+  }
+
+  // Embed layout (CRM iframe) — no sidebar, minimal header
+  if (isEmbed) {
+    return (
+      <RoleContext.Provider value={roleState}>
+        <div style={{ minHeight: '100vh', background: 'var(--bg-primary, #0d1117)' }}>
+          {/* Minimal embed header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '8px 16px', borderBottom: '1px solid var(--border, #1e293b)',
+            background: 'var(--bg-card, #161b22)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 24, height: 24, borderRadius: 6, background: '#7ed957', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#000' }}>0n</div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)' }}>
+                <span style={{ color: '#7ed957' }}>0n</span>Core
+              </span>
+              {embedLocationId && (
+                <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: 'rgba(126,217,87,0.1)', color: '#7ed957', fontFamily: 'monospace' }}>
+                  {embedLocationId.slice(0, 8)}...
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <a href="https://0ncore.com/dashboard" target="_blank" rel="noopener noreferrer" style={{
+                fontSize: 11, fontWeight: 600, color: '#7ed957', textDecoration: 'none',
+                padding: '4px 10px', borderRadius: 4, background: 'rgba(126,217,87,0.08)',
+                border: '1px solid rgba(126,217,87,0.15)',
+              }}>Open Full Dashboard</a>
+            </div>
+          </div>
+          <main style={{ padding: 16 }}>
+            {children}
+          </main>
+        </div>
+      </RoleContext.Provider>
+    )
   }
 
   // Horizontal layout
