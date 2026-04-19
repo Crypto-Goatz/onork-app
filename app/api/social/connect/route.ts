@@ -31,13 +31,22 @@ export async function POST(req: NextRequest) {
   const oauthPath = OAUTH_PATHS[platform]
   if (!oauthPath) return NextResponse.json({ error: `Unknown platform: ${platform}` }, { status: 400 })
 
-  // Try multiple PIT tokens in priority order
+  // Check for installed OAuth token first (has social scopes)
+  const { data: installation } = await supabase
+    .from('crm_installations')
+    .select('access_token, expires_at')
+    .eq('location_id', locationId)
+    .eq('status', 'active')
+    .single()
+
+  // Build token list — OAuth token first (has social scopes), then PITs as fallback
   const pitTokens = [
+    installation?.access_token,
     process.env.CRM_PIT_RAW,
     process.env.CRM_PIT,
     process.env.CRM_AGENCY_PIT,
     process.env.CRM_AGENCY_PIT_NEW,
-  ].filter(Boolean)
+  ].filter(Boolean) as string[]
 
   let lastError = ''
 
