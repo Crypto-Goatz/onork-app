@@ -76,6 +76,23 @@ export default function TasksPage() {
   const [modalProcessing, setModalProcessing] = useState(false)
   const [socialContent, setSocialContent] = useState<string | undefined>()
 
+  // Clock + session timer
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [sessionStart] = useState(Date.now())
+  const [sessionElapsed, setSessionElapsed] = useState('0:00')
+
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setCurrentTime(new Date())
+      const elapsed = Math.floor((Date.now() - sessionStart) / 1000)
+      const h = Math.floor(elapsed / 3600)
+      const m = Math.floor((elapsed % 3600) / 60)
+      const s = elapsed % 60
+      setSessionElapsed(h > 0 ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}` : `${m}:${s.toString().padStart(2, '0')}`)
+    }, 1000)
+    return () => clearInterval(tick)
+  }, [sessionStart])
+
   useEffect(() => {
     setMounted(true)
     setTasks(loadJson(STORAGE_KEY, []))
@@ -294,6 +311,27 @@ export default function TasksPage() {
           }}>UNLIMITED</span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* Clock + Session Timer */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginRight: 8 }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace', color: '#f0f4f8', letterSpacing: '0.03em', lineHeight: 1 }}>
+                {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </div>
+              <div style={{ fontSize: 10, color: '#4b5563', lineHeight: 1, marginTop: 2 }}>
+                {currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </div>
+            </div>
+            <div style={{ width: 1, height: 28, background: '#1e293b' }} />
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'monospace', color: '#7ed957', lineHeight: 1 }}>
+                {sessionElapsed}
+              </div>
+              <div style={{ fontSize: 9, color: '#4b5563', lineHeight: 1, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                session
+              </div>
+            </div>
+            <div style={{ width: 1, height: 28, background: '#1e293b' }} />
+          </div>
           {/* Toolbar buttons */}
           <button
             onClick={() => setShowAutoPlan(true)}
