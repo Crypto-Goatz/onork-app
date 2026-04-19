@@ -23,21 +23,21 @@ interface KLayer {
 }
 
 const DEFAULT_LAYERS: KLayer[] = [
-  { slot: 1, name: '0nCore System', description: 'Platform AI', status: 'locked', badge: 'System', documentCount: 48, lastUpdated: 'Built-in' },
-  { slot: 2, name: '0nMCP Tools', description: 'Tool Catalog', status: 'locked', badge: '1,554 tools', documentCount: 96, lastUpdated: 'Built-in' },
-  { slot: 3, name: 'Brand & Design', description: 'Syncs from Brand Board', status: 'auto', badge: 'Auto-sync', documentCount: 12, lastUpdated: 'Auto' },
-  { slot: 4, name: 'Company', description: 'Your business knowledge', status: 'available', badge: 'FREE', documentCount: 0, lastUpdated: 'Not configured' },
-  { slot: 5, name: 'Personal', description: 'Adapts to you', status: 'auto', badge: 'Auto-learn', documentCount: 0, lastUpdated: 'Auto' },
-  { slot: 6, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
-  { slot: 7, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
-  { slot: 8, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
-  { slot: 9, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
-  { slot: 10, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
-  { slot: 11, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
-  { slot: 12, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
-  { slot: 13, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
-  { slot: 14, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
-  { slot: 15, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 1, name: 'Platform', description: 'System + Tools (merged)', status: 'locked', badge: 'System', documentCount: 144, lastUpdated: 'Built-in' },
+  { slot: 2, name: 'Brand & Design', description: 'Syncs from Brand Board', status: 'auto', badge: 'Auto-sync', documentCount: 12, lastUpdated: 'Auto' },
+  { slot: 3, name: 'Company', description: 'Your business knowledge', status: 'available', badge: 'FREE', documentCount: 0, lastUpdated: 'Not configured' },
+  { slot: 4, name: '0nAI Security', description: 'Behavioral auth & trust scoring', status: 'locked', badge: 'Security', documentCount: 6, lastUpdated: 'Built-in' },
+  { slot: 5, name: 'Available', description: 'Purchasable layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 6, name: 'Available', description: 'Purchasable layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 7, name: 'Available', description: 'Purchasable layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 8, name: 'Available', description: 'Purchasable layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 9, name: 'Available', description: 'Purchasable layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 10, name: 'Available', description: 'Purchasable layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 11, name: 'Available', description: 'Purchasable layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 12, name: 'Available', description: 'Purchasable layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 13, name: 'Available', description: 'Purchasable layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 14, name: 'Available', description: 'Purchasable layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 15, name: 'Reserved', description: 'System reserved', status: 'locked', badge: 'Reserved', documentCount: 0, lastUpdated: '' },
 ]
 
 export default function TrainingPage() {
