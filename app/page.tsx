@@ -34,10 +34,14 @@ export default function HomePage() {
         </div>
       </nav>
 
-      <section style={{ textAlign: 'center', padding: '100px 24px 80px', position: 'relative', overflow: 'hidden' }}>
+      <section style={{ textAlign: 'center', padding: '80px 24px 80px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translate(-50%,-50%)', width: 800, height: 800, background: 'radial-gradient(circle, rgba(126,217,87,0.06) 0%, transparent 60%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 720, margin: '0 auto' }}>
-          <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '5px 16px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 24, letterSpacing: '0.08em', textTransform: 'uppercase' }}>335 Tools · 96 Services · 5 Patents Pending</div>
+          {/* Animated Logo */}
+          <div style={{ margin: '0 auto 24px', width: 'clamp(80px, 15vw, 120px)', height: 'clamp(80px, 15vw, 120px)', filter: 'drop-shadow(0 0 40px rgba(126,217,87,0.3))' }}>
+            <img src="/brand/0n-anim-logo.svg" alt="0nCore" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          </div>
+          <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '5px 16px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 24, letterSpacing: '0.08em', textTransform: 'uppercase' }}>1,554 Tools · 96 Services · 5 Patents Pending</div>
           <h1 style={{ fontSize: 'clamp(36px, 6vw, 60px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.08, margin: '0 0 20px' }}>AI that <span style={{ color: '#7ed957' }}>runs</span> your business.</h1>
           <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 560, margin: '0 auto 36px' }}>Connect your CRM. Install add-ons. Build AI workflows that execute across every channel — dashboard, Slack, API, voice, and MCP.</p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
