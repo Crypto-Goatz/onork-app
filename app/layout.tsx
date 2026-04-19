@@ -54,6 +54,8 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-BE81T6STW6');` }} />
         <script dangerouslySetInnerHTML={{ __html: `document.documentElement.setAttribute('data-theme','dark')` }} />
         <script src="https://api.rocketclients.com/js/external-tracking.js" data-tracking-id="tk_f9c5376df66c45e69941dd3f3bbe22a2" async />
+        {/* Quora Conversion Pixel */}
+        <script dangerouslySetInnerHTML={{ __html: `!function(q,e,v,n,t,s){if(q.qp)return;n=q.qp=function(){n.qp?n.qp.apply(n,arguments):n.queue.push(arguments)};n.queue=[];t=document.createElement(e);t.async=!0;t.src=v;s=document.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,'script','https://a.quora.com/qevents.js');qp('init','ec66803919f947b8368908ed792c882b');qp('track','ViewContent');` }} />
       </head>
       <body className="antialiased min-h-screen">
         <Providers>

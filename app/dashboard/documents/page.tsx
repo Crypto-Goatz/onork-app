@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface Document {
   id: string
@@ -12,12 +12,74 @@ interface Document {
   signedAt?: string
 }
 
+interface Template {
+  id: string
+  name: string
+  type: string
+}
+
 export default function DocumentsPage() {
-  const [documents] = useState<Document[]>([])
+  const [documents, setDocuments] = useState<Document[]>([])
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [showCreate, setShowCreate] = useState(false)
+  const [showSend, setShowSend] = useState<{ id: string; name: string; isTemplate: boolean } | null>(null)
+  const [sendForm, setSendForm] = useState({ email: '', name: '' })
+  const [sending, setSending] = useState(false)
   const [form, setForm] = useState({ name: '', type: 'contract', recipient: '' })
+
+  useEffect(() => {
+    loadDocuments()
+  }, [])
+
+  async function loadDocuments() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/crm/documents')
+      const data = await res.json()
+      if (data.documents && Array.isArray(data.documents)) {
+        setDocuments(data.documents.map((d: any) => ({
+          id: d.id,
+          name: d.name || d.title || 'Untitled',
+          type: d.type || 'document',
+          status: d.status || 'draft',
+          recipient: d.recipientEmail || d.recipient || '',
+          createdAt: d.createdAt || d.created_at || new Date().toISOString(),
+          signedAt: d.signedAt || d.signed_at,
+        })))
+      }
+      if (data.templates && Array.isArray(data.templates)) {
+        setTemplates(data.templates.map((t: any) => ({
+          id: t.id,
+          name: t.name || t.title || 'Untitled Template',
+          type: t.type || 'template',
+        })))
+      }
+    } catch {}
+    setLoading(false)
+  }
+
+  async function sendDocument() {
+    if (!showSend) return
+    setSending(true)
+    try {
+      await fetch('/api/crm/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: showSend.isTemplate ? 'sendTemplate' : 'send',
+          ...(showSend.isTemplate ? { templateId: showSend.id } : { documentId: showSend.id }),
+          email: sendForm.email,
+          name: sendForm.name,
+        }),
+      })
+      setShowSend(null)
+      setSendForm({ email: '', name: '' })
+    } catch {}
+    setSending(false)
+  }
 
   const filtered = documents.filter(d => {
     if (search && !d.name.toLowerCase().includes(search.toLowerCase())) return false
@@ -32,8 +94,53 @@ export default function DocumentsPage() {
     return '#f87171'
   }
 
+  const inp: React.CSSProperties = {
+    width: '100%', padding: '10px 12px', borderRadius: 8,
+    border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
+    color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box',
+  }
+
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 8px' }}>
+      {/* Send Modal */}
+      {showSend && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+        }} onClick={() => setShowSend(null)}>
+          <div style={{
+            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
+            borderRadius: 16, padding: 28, maxWidth: 460, width: '100%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+          }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 8px' }}>
+              Send {showSend.isTemplate ? 'Template' : 'Document'}
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', marginBottom: 20 }}>{showSend.name}</p>
+            <label style={{ display: 'block', marginBottom: 12 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipient Email</span>
+              <input type="email" value={sendForm.email} onChange={e => setSendForm(f => ({ ...f, email: e.target.value }))} placeholder="client@company.com" style={inp} />
+            </label>
+            <label style={{ display: 'block', marginBottom: 20 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipient Name</span>
+              <input type="text" value={sendForm.name} onChange={e => setSendForm(f => ({ ...f, name: e.target.value }))} placeholder="John Doe" style={inp} />
+            </label>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={sendDocument} disabled={sending || !sendForm.email} style={{
+                flex: 1, padding: 12, background: sending ? '#374151' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
+                color: '#0c1220', fontWeight: 700, fontSize: 14, borderRadius: 10, border: 'none', cursor: sending ? 'wait' : 'pointer', fontFamily: 'inherit',
+                opacity: !sendForm.email ? 0.5 : 1,
+              }}>{sending ? 'Sending...' : 'Send Link'}</button>
+              <button onClick={() => setShowSend(null)} style={{
+                padding: '12px 20px', borderRadius: 10, border: '1px solid #1c2b42',
+                background: 'transparent', color: 'var(--text-muted, #6b7280)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
+              }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Create Modal */}
       {showCreate && (
         <div style={{
@@ -46,18 +153,14 @@ export default function DocumentsPage() {
             borderRadius: 16, padding: 28, maxWidth: 460, width: '100%',
             boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
           }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 20px' }}>
-              New Document
-            </h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 20px' }}>New Document</h2>
             <label style={{ display: 'block', marginBottom: 12 }}>
               <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Document Name</span>
-              <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Service Agreement"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)', color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+              <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Service Agreement" style={inp} />
             </label>
             <label style={{ display: 'block', marginBottom: 12 }}>
               <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</span>
-              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)', color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}>
+              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} style={inp}>
                 <option value="contract">Contract</option>
                 <option value="proposal">Proposal</option>
                 <option value="invoice">Invoice</option>
@@ -66,8 +169,7 @@ export default function DocumentsPage() {
             </label>
             <label style={{ display: 'block', marginBottom: 20 }}>
               <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipient Email</span>
-              <input type="email" value={form.recipient} onChange={e => setForm(f => ({ ...f, recipient: e.target.value }))} placeholder="client@company.com"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)', color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+              <input type="email" value={form.recipient} onChange={e => setForm(f => ({ ...f, recipient: e.target.value }))} placeholder="client@company.com" style={inp} />
             </label>
             <div style={{ display: 'flex', gap: 10 }}>
               <button style={{
@@ -93,7 +195,7 @@ export default function DocumentsPage() {
           <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', marginTop: 4 }}>Create, send, and track documents</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#7ed957' }}>Activated</span>
+          {loading && <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>Loading...</span>}
           <button onClick={() => setShowCreate(true)} style={{
             padding: '10px 20px', background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
             color: '#0c1220', fontWeight: 700, fontSize: 13, borderRadius: 10, border: 'none', cursor: 'pointer',
@@ -126,7 +228,7 @@ export default function DocumentsPage() {
           { label: 'Total', value: documents.length },
           { label: 'Pending', value: documents.filter(d => d.status === 'sent' || d.status === 'pending').length },
           { label: 'Signed', value: documents.filter(d => d.status === 'signed' || d.status === 'completed').length },
-          { label: 'Drafts', value: documents.filter(d => d.status === 'draft').length },
+          { label: 'Templates', value: templates.length },
         ].map(s => (
           <div key={s.label} style={{
             background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
@@ -138,11 +240,32 @@ export default function DocumentsPage() {
         ))}
       </div>
 
-      {/* Content */}
+      {/* Templates Section */}
+      {templates.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: 12 }}>Templates</h3>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {templates.map(t => (
+              <div key={t.id} style={{
+                background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
+                borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>{t.name}</span>
+                <button onClick={() => setShowSend({ id: t.id, name: t.name, isTemplate: true })} style={{
+                  padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                  background: 'rgba(126,217,87,0.1)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)', cursor: 'pointer',
+                }}>Send</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Documents Table */}
       {filtered.length === 0 ? (
         <div style={{ background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 14, padding: '60px 40px', textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>&#128196;</div>
-          <p style={{ color: 'var(--text-secondary, #9ca3af)', fontSize: 14, marginBottom: 8 }}>No documents yet.</p>
+          <p style={{ color: 'var(--text-secondary, #9ca3af)', fontSize: 14, marginBottom: 8 }}>{loading ? 'Loading documents...' : 'No documents yet.'}</p>
           <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: 13, marginBottom: 16 }}>
             Create contracts, proposals, and agreements to send for e-signature.
           </p>
@@ -156,7 +279,7 @@ export default function DocumentsPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #1c2b42' }}>
-                {['Document', 'Type', 'Recipient', 'Status', 'Created'].map(h => (
+                {['Document', 'Type', 'Recipient', 'Status', 'Created', ''].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: '12px 20px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
                 ))}
               </tr>
@@ -170,11 +293,17 @@ export default function DocumentsPage() {
                   <td style={{ padding: '14px 20px' }}>
                     <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(45,212,191,0.1)', color: 'var(--color-cyan, #14b8a6)' }}>{d.type}</span>
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--text-secondary, #9ca3af)' }}>{d.recipient || '—'}</td>
+                  <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--text-secondary, #9ca3af)' }}>{d.recipient || '--'}</td>
                   <td style={{ padding: '14px 20px' }}>
                     <span style={{ fontSize: 11, fontWeight: 600, color: statusColor(d.status) }}>{d.status}</span>
                   </td>
                   <td style={{ padding: '14px 20px', fontSize: 12, color: 'var(--text-muted, #6b7280)' }}>{new Date(d.createdAt).toLocaleDateString()}</td>
+                  <td style={{ padding: '14px 20px' }}>
+                    <button onClick={() => setShowSend({ id: d.id, name: d.name, isTemplate: false })} style={{
+                      padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                      background: 'rgba(126,217,87,0.1)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)', cursor: 'pointer',
+                    }}>Send</button>
+                  </td>
                 </tr>
               ))}
             </tbody>

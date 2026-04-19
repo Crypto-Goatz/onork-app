@@ -23,7 +23,7 @@ const PROJECTS_KEY = '0ncore_projects'
 const EMAILS_KEY = '0ncore_emails'
 const EVENTS_KEY = '0ncore_events'
 
-type ViewTab = 'dashboard' | 'clients' | 'projects' | 'inbox' | 'calendar'
+type ViewTab = 'dashboard' | 'clients' | 'projects' | 'inbox' | 'calendar' | 'recurring'
 
 interface ChatMessage {
   id: string
@@ -45,6 +45,173 @@ function loadJson<T>(key: string, fallback: T): T {
 function saveJson(key: string, data: unknown) {
   if (typeof window === 'undefined') return
   localStorage.setItem(key, JSON.stringify(data))
+}
+
+interface RecurringTask {
+  id: string
+  title: string
+  description?: string
+  frequency?: string
+  assignedTo?: string
+  status?: string
+}
+
+function RecurringTasksPanel() {
+  const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showCreate, setShowCreate] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [form, setForm] = useState({ title: '', description: '', frequency: 'weekly' })
+
+  useEffect(() => {
+    loadRecurring()
+  }, [])
+
+  async function loadRecurring() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/crm/recurring-tasks')
+      const data = await res.json()
+      if (data.tasks && Array.isArray(data.tasks)) {
+        setRecurringTasks(data.tasks)
+      }
+    } catch {}
+    setLoading(false)
+  }
+
+  async function createTask() {
+    if (!form.title.trim()) return
+    setCreating(true)
+    try {
+      const res = await fetch('/api/crm/recurring-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const data = await res.json()
+      if (data.task) {
+        setRecurringTasks(prev => [...prev, data.task])
+      }
+      setShowCreate(false)
+      setForm({ title: '', description: '', frequency: 'weekly' })
+    } catch {}
+    setCreating(false)
+  }
+
+  async function deleteTask(id: string) {
+    try {
+      await fetch('/api/crm/recurring-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id }),
+      })
+      setRecurringTasks(prev => prev.filter(t => t.id !== id))
+    } catch {}
+  }
+
+  const inp: React.CSSProperties = {
+    width: '100%', padding: '10px 12px', borderRadius: 8,
+    border: '1px solid #1e293b', background: '#0d1117',
+    color: '#f0f4f8', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
+  }
+
+  return (
+    <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+      {/* Create Modal */}
+      {showCreate && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+        }} onClick={() => setShowCreate(false)}>
+          <div style={{
+            background: '#161b22', border: '1px solid #1e293b',
+            borderRadius: 16, padding: 28, maxWidth: 460, width: '100%',
+          }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#f0f4f8', margin: '0 0 20px' }}>New Recurring Task</h2>
+            <label style={{ display: 'block', marginBottom: 12 }}>
+              <span style={{ fontSize: 11, color: '#4b5563', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>Title *</span>
+              <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Weekly report" style={inp} />
+            </label>
+            <label style={{ display: 'block', marginBottom: 12 }}>
+              <span style={{ fontSize: 11, color: '#4b5563', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>Description</span>
+              <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Optional details..." rows={2} style={{ ...inp, resize: 'vertical' }} />
+            </label>
+            <label style={{ display: 'block', marginBottom: 20 }}>
+              <span style={{ fontSize: 11, color: '#4b5563', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>Frequency</span>
+              <select value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} style={inp}>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="biweekly">Bi-weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+              </select>
+            </label>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={createTask} disabled={creating || !form.title.trim()} style={{
+                flex: 1, padding: 12, background: creating ? '#374151' : '#7ed957',
+                color: '#0d1117', fontWeight: 700, fontSize: 14, borderRadius: 10, border: 'none', cursor: creating ? 'wait' : 'pointer',
+                opacity: !form.title.trim() ? 0.5 : 1, fontFamily: 'inherit',
+              }}>{creating ? 'Creating...' : 'Create'}</button>
+              <button onClick={() => setShowCreate(false)} style={{
+                padding: '12px 20px', borderRadius: 10, border: '1px solid #1e293b',
+                background: 'transparent', color: '#4b5563', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
+              }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Recurring Tasks</h2>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#7ed957', opacity: 0.8 }}>CRM recurring task automation</p>
+        </div>
+        <button onClick={() => setShowCreate(true)} style={{
+          width: 36, height: 36, borderRadius: 8, background: '#7ed957', color: '#0d1117',
+          border: 'none', cursor: 'pointer', fontSize: 20, fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>+</button>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 60, color: '#3d4654' }}>Loading recurring tasks...</div>
+      ) : recurringTasks.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 60, color: '#3d4654' }}>
+          <p>No recurring tasks. Create one to automate repetitive work.</p>
+          <button onClick={() => setShowCreate(true)} style={{
+            marginTop: 12, padding: '10px 20px', background: '#7ed957', color: '#0d1117',
+            fontWeight: 700, fontSize: 13, borderRadius: 10, border: 'none', cursor: 'pointer',
+          }}>+ New Recurring Task</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {recurringTasks.map(t => (
+            <div key={t.id} style={{
+              background: '#161b22', border: '1px solid #1e293b', borderRadius: 12,
+              padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f4f8' }}>{t.title}</div>
+                <div style={{ fontSize: 11, color: '#4b5563', marginTop: 2 }}>
+                  {t.frequency && <span style={{
+                    padding: '1px 6px', borderRadius: 4, fontSize: 10, fontWeight: 700,
+                    background: 'rgba(126,217,87,0.1)', color: '#7ed957', marginRight: 8,
+                  }}>{t.frequency}</span>}
+                  {t.description && <span>{t.description}</span>}
+                </div>
+              </div>
+              <button onClick={() => deleteTask(t.id)} style={{
+                padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                background: 'rgba(248,113,113,0.1)', color: '#f87171',
+                border: '1px solid rgba(248,113,113,0.2)', cursor: 'pointer',
+              }}>Delete</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function TasksPage() {
@@ -294,6 +461,7 @@ export default function TasksPage() {
     { key: 'projects', label: 'Projects' },
     { key: 'inbox', label: 'Inbox' },
     { key: 'calendar', label: 'Calendar' },
+    { key: 'recurring', label: 'Recurring' },
   ]
 
   return (
@@ -500,6 +668,10 @@ export default function TasksPage() {
               onDeleteEvent={id => setEvents(prev => prev.filter(e => e.id !== id))}
             />
           </div>
+        )}
+
+        {activeView === 'recurring' && (
+          <RecurringTasksPanel />
         )}
       </div>
 

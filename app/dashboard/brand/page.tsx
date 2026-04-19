@@ -118,6 +118,8 @@ export default function BrandBuilder() {
   const [importing, setImporting] = useState(false)
   const [importError, setImportError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [synced, setSynced] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Load saved brand on mount
@@ -151,6 +153,30 @@ export default function BrandBuilder() {
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  // Sync to CRM Brand Board
+  async function syncToCRM() {
+    setSyncing(true)
+    setSynced(false)
+    try {
+      await fetch('/api/crm/brand-board', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: brand.business.name,
+          colors: brand.identity.colors,
+          fonts: {
+            heading: brand.identity.fonts.display.family,
+            body: brand.identity.fonts.body.family,
+          },
+          logos: brand.identity.logos,
+        }),
+      })
+      setSynced(true)
+      setTimeout(() => setSynced(false), 3000)
+    } catch {}
+    setSyncing(false)
   }
 
   // AI import from URL
@@ -341,6 +367,17 @@ export default function BrandBuilder() {
           transition: 'all 0.2s',
         }}>
           {saving ? 'Saving...' : saved ? 'Saved' : 'Save Brand'}
+        </button>
+        <button onClick={syncToCRM} disabled={syncing} style={{
+          padding: '8px 20px', borderRadius: 8,
+          background: synced ? 'rgba(45,212,191,0.15)' : 'rgba(45,212,191,0.1)',
+          color: synced ? '#14b8a6' : 'var(--jp-cyan, #14b8a6)',
+          border: `1px solid ${synced ? 'rgba(45,212,191,0.3)' : 'rgba(45,212,191,0.2)'}`,
+          fontSize: '0.8125rem', fontWeight: 700,
+          cursor: syncing ? 'wait' : 'pointer', fontFamily: 'inherit',
+          transition: 'all 0.2s',
+        }}>
+          {syncing ? 'Syncing...' : synced ? 'Synced to CRM' : 'Sync to CRM'}
         </button>
       </div>
 
