@@ -4,16 +4,17 @@ import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import {
   Zap, MessageSquare, ListTodo, Clock, Bookmark,
-  Settings, X, ChevronRight, Plus, Search
+  Settings, X, ChevronRight, Plus, Search, Phone
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type DockTab = 'actions' | 'tasks' | 'notes' | 'timer' | 'search' | 'settings'
+type DockTab = 'actions' | 'tasks' | 'notes' | 'phone' | 'timer' | 'search' | 'settings'
 
 const TABS: { key: DockTab; icon: typeof Zap; label: string }[] = [
   { key: 'actions', icon: Zap, label: 'Quick Actions' },
   { key: 'tasks', icon: ListTodo, label: 'Tasks' },
   { key: 'notes', icon: Bookmark, label: 'Notes' },
+  { key: 'phone', icon: Phone, label: 'Dialer' },
   { key: 'timer', icon: Clock, label: 'Timer' },
   { key: 'search', icon: Search, label: 'Search' },
   { key: 'settings', icon: Settings, label: 'Settings' },
@@ -46,6 +47,11 @@ export function ActionDock() {
   const [timerSeconds, setTimerSeconds] = useState(25 * 60)
   const [timerPreset, setTimerPreset] = useState(25)
   const [searchQuery, setSearchQuery] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [recentCalls, setRecentCalls] = useState<{ number: string; date: string }[]>(() => {
+    if (typeof window === 'undefined') return []
+    try { return JSON.parse(localStorage.getItem('0n_recent_calls') || '[]') } catch { return [] }
+  })
 
   // Load persisted data
   useEffect(() => {
@@ -289,6 +295,67 @@ export function ActionDock() {
                       )}
                     >
                       {m}m
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Phone/Dialer ── */}
+          {activeTab === 'phone' && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <input
+                  value={phoneNumber}
+                  onChange={e => setPhoneNumber(e.target.value)}
+                  placeholder="+1 (555) 123-4567"
+                  className="w-full h-10 px-3 text-center text-lg font-mono rounded-lg bg-input/30 border border-input text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none tracking-wider"
+                />
+                <div className="grid grid-cols-3 gap-1.5">
+                  {['1','2','3','4','5','6','7','8','9','*','0','#'].map(key => (
+                    <button
+                      key={key}
+                      onClick={() => setPhoneNumber(p => p + key)}
+                      className="h-10 rounded-lg border border-border/50 bg-card/30 hover:bg-card/60 text-foreground text-sm font-semibold transition-colors"
+                    >
+                      {key}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (!phoneNumber.trim()) return
+                      const updated = [{ number: phoneNumber, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }, ...recentCalls].slice(0, 10)
+                      setRecentCalls(updated)
+                      localStorage.setItem('0n_recent_calls', JSON.stringify(updated))
+                      fetch('/api/crm/phone/call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: phoneNumber }) }).catch(() => {})
+                    }}
+                    disabled={!phoneNumber.trim()}
+                    className="flex-1 h-10 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-30 flex items-center justify-center gap-2"
+                  >
+                    <Phone className="size-4" /> Call
+                  </button>
+                  <button
+                    onClick={() => setPhoneNumber('')}
+                    className="h-10 px-4 rounded-lg border border-border text-muted-foreground hover:text-foreground text-sm transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              {recentCalls.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Recent</p>
+                  {recentCalls.map((call, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setPhoneNumber(call.number)}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/30 text-xs transition-colors"
+                    >
+                      <span className="font-mono text-foreground">{call.number}</span>
+                      <span className="text-muted-foreground">{call.date}</span>
                     </button>
                   ))}
                 </div>
