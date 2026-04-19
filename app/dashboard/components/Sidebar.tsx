@@ -97,12 +97,6 @@ const navGroups: NavGroup[] = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
           </svg>
         ),
-        children: [
-          { name: 'Overview', href: '/dashboard/analytics' },
-          { name: 'Pages', href: '/dashboard/analytics?tab=pages' },
-          { name: 'Search Console', href: '/dashboard/analytics?tab=search' },
-          { name: 'CRO9 Engine', href: '/dashboard/analytics?tab=cro' },
-        ],
       },
     ],
   },
@@ -158,12 +152,6 @@ const navGroups: NavGroup[] = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
           </svg>
         ),
-        children: [
-          { name: 'Orbit View', href: '/console/exec' },
-          { name: 'Formulas', href: '/console/exec/formulas' },
-          { name: 'Orbits', href: '/console/exec/orbits' },
-          { name: 'AI Insights', href: '/console/exec/insights' },
-        ],
       },
     ],
   },
@@ -180,11 +168,6 @@ const navGroups: NavGroup[] = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
           </svg>
         ),
-        children: [
-          { name: 'K-Layers', href: '/dashboard/training' },
-          { name: 'Documents', href: '/dashboard/training?tab=docs' },
-          { name: 'Train AI', href: '/dashboard/training?tab=train' },
-        ],
       },
       {
         name: 'Task Manager',
@@ -210,11 +193,6 @@ const navGroups: NavGroup[] = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         ),
-        children: [
-          { name: 'All Contacts', href: '/dashboard/contacts' },
-          { name: 'Import Contacts', href: '/dashboard/contacts/import' },
-          { name: 'Segments', href: '/dashboard/contacts/segments' },
-        ],
       },
       {
         name: 'Pipeline',
@@ -224,10 +202,6 @@ const navGroups: NavGroup[] = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
           </svg>
         ),
-        children: [
-          { name: 'Board View', href: '/dashboard/pipeline' },
-          { name: 'List View', href: '/dashboard/pipeline/list' },
-        ],
       },
       {
         name: 'Web Tools',
@@ -281,12 +255,6 @@ const navGroups: NavGroup[] = [
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         ),
-        children: [
-          { name: 'Inbox', href: '/dashboard/email' },
-          { name: 'Builder', href: '/dashboard/email/builder' },
-          { name: 'Compose', href: '/dashboard/email?compose=true' },
-          { name: 'Templates', href: '/dashboard/email/templates' },
-        ],
       },
       {
         name: 'Social',

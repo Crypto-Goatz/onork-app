@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 type Tab = 'overview' | 'pages' | 'search' | 'cro'
 type DateRange = '7d' | '14d' | '30d' | '90d'
@@ -64,7 +65,9 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
 }
 
 export default function AnalyticsPage() {
-  const [tab, setTab] = useState<Tab>('overview')
+  const searchParams = useSearchParams()
+  const initialTab = (['overview', 'pages', 'search', 'cro'].includes(searchParams.get('tab') || '') ? searchParams.get('tab') : 'overview') as Tab
+  const [tab, setTab] = useState<Tab>(initialTab)
   const [range, setRange] = useState<DateRange>('30d')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -246,13 +249,21 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'var(--jp-bg-card)', padding: 3, borderRadius: 8, width: 'fit-content' }}>
+      {/* Tabs — Glowing gradient style */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
-            padding: '8px 20px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: tab === t.key ? 700 : 500, cursor: 'pointer',
-            background: tab === t.key ? '#7ed957' : 'transparent',
-            color: tab === t.key ? '#000' : 'var(--jp-text-muted)',
+            padding: '10px 24px', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            position: 'relative', overflow: 'hidden',
+            background: tab === t.key
+              ? 'linear-gradient(135deg, rgba(126,217,87,0.15) 0%, rgba(0,212,255,0.1) 100%)'
+              : 'rgba(255,255,255,0.02)',
+            color: tab === t.key ? '#7ed957' : 'var(--jp-text-muted)',
+            boxShadow: tab === t.key
+              ? '0 0 20px rgba(126,217,87,0.15), inset 0 0 0 1px rgba(126,217,87,0.3)'
+              : 'inset 0 0 0 1px rgba(255,255,255,0.04)',
+            transition: 'all 0.2s ease',
+            letterSpacing: '0.01em',
           }}>{t.label}</button>
         ))}
       </div>
