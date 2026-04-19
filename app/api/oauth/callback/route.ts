@@ -143,9 +143,13 @@ export async function GET(req: NextRequest) {
         },
       })
 
-      // If token was generated, pass prefix in redirect so dashboard can show it once
+      // Redirect to dashboard with location context
+      const dashUrl = new URL('/dashboard', req.url)
+      dashUrl.searchParams.set('crm', 'connected')
+      if (locationId) dashUrl.searchParams.set('locationId', locationId)
+
       if (onToken) {
-        const response = NextResponse.redirect(new URL('/dashboard?crm=connected', req.url))
+        const response = NextResponse.redirect(dashUrl)
         response.cookies.set('0n_token_once', onToken, {
           httpOnly: true,
           secure: true,
@@ -157,7 +161,10 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.redirect(new URL('/dashboard?crm=connected', req.url))
+    const dashUrl = new URL('/dashboard', req.url)
+    dashUrl.searchParams.set('crm', 'connected')
+    if (tokenData.locationId) dashUrl.searchParams.set('locationId', tokenData.locationId)
+    return NextResponse.redirect(dashUrl)
   } catch (error) {
     console.error('[oauth/callback] Error:', error)
     return NextResponse.redirect(new URL('/dashboard?error=oauth_failed', req.url))
