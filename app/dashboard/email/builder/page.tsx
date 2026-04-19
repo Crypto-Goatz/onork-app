@@ -194,7 +194,7 @@ export default function EmailBuilderPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', margin: '-24px', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', margin: '-24px', overflow: 'hidden', position: 'fixed', top: 0, left: 'var(--jp-sidebar-width, 220px)', right: 0, bottom: 0, zIndex: 40, background: 'var(--jp-bg, #0d1117)' }}>
       {/* Top Toolbar */}
       <div style={{
         display: 'flex',
