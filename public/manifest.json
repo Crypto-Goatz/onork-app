@@ -1,0 +1,27 @@
+{
+  "name": "0nCore",
+  "short_name": "0nCore",
+  "description": "AI Business Operating System — 1,554 tools, 96 services",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#020810",
+  "theme_color": "#7ed957",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/brand/0n-anim-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

@@ -708,8 +708,7 @@ Respond with JSON: { "pages": [{ "name": "Page Name", "slug": "page-name", "html
           const pages = parsed.pages || []
 
           // Create funnel in CRM
-          const token = await getAuthForLocation(locationId)
-          const funnelRes = await crmPost(`/funnels/?locationId=${locationId}`, {
+          const funnelRes = await crmPost(`/funnels/`, locationId, {
             name: `${businessName} Website`,
             locationId,
             type: 'website',
@@ -718,9 +717,10 @@ Respond with JSON: { "pages": [{ "name": "Page Name", "slug": "page-name", "html
               url: `/${p.slug}`,
               order: i,
             })),
-          }, token)
+          })
 
-          const funnelId = funnelRes?.id || funnelRes?.funnel?.id
+          const funnelData = funnelRes.ok ? await funnelRes.json().catch(() => ({})) : {}
+          const funnelId = funnelData?.id || funnelData?.funnel?.id
 
           if (funnelId) {
             created.push({
@@ -733,13 +733,13 @@ Respond with JSON: { "pages": [{ "name": "Page Name", "slug": "page-name", "html
             // Create individual pages
             for (const page of pages) {
               try {
-                await crmPost(`/funnels/page`, {
+                await crmPost(`/funnels/page`, locationId, {
                   funnelId,
                   locationId,
                   name: page.name,
                   url: `/${page.slug}`,
                   content: page.html,
-                }, token)
+                })
 
                 created.push({
                   type: 'page',
