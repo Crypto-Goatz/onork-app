@@ -194,7 +194,7 @@ export default function EmailBuilderPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', margin: '-24px -24px 0', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', margin: '-24px', overflow: 'hidden', position: 'relative' }}>
       {/* Top Toolbar */}
       <div style={{
         display: 'flex',
@@ -313,7 +313,7 @@ export default function EmailBuilderPage() {
       {/* Main Content Area */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* Unlayer Editor */}
-        <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
           <EmailEditor
             onReady={onEditorReady}
             appearance={{
@@ -329,7 +329,7 @@ export default function EmailBuilderPage() {
                 },
               },
             }}
-            style={{ height: '100%' }}
+            style={{ height: '100%', minHeight: '100%' }}
           />
           {!editorReady && (
             <div style={{
