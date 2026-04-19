@@ -19,7 +19,7 @@ interface CapturePrompt {
 
 // Patterns that indicate agent bridge intent
 const BRIDGE_PATTERNS = [
-  /\b(set\s*up|create|build|configure|deploy|make)\b.*\b(agent|workflow|sequence|bot|voice|form|funnel|automation|chatbot|drip|campaign)\b/i,
+  /\b(set\s*up|create|build|configure|deploy|make|generate)\b.*\b(agent|workflow|sequence|bot|voice|form|funnel|automation|chatbot|drip|campaign|website|site|landing\s+page)\b/i,
   /\b(automate|automation\s+for)\b/i,
   /\b(voice\s+ai|voice\s+agent|phone\s+bot|call\s+handler)\b/i,
   /\b(follow[\s-]?up\s+(sequence|automation|workflow))\b/i,
@@ -31,6 +31,10 @@ const BRIDGE_PATTERNS = [
   /\b(lead\s+follow)/i,
   /\b(blog\s+to\s+social|content\s+distribution)\b/i,
   /\b(full\s+setup|complete\s+setup)\b/i,
+  /\b(build\s+(me\s+)?(a\s+)?website|build\s+(me\s+)?(a\s+)?site)\b/i,
+  /\b(wordpress\s+(site|website|pages?))\b/i,
+  /\b(landing\s+page\s+for)\b/i,
+  /\b(5[\s-]?page\s+(site|website))\b/i,
 ]
 
 function isBridgeIntent(text: string): boolean {

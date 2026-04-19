@@ -26,6 +26,8 @@ export type BridgeAction =
   | 'full-setup'
   | 'create-contact'
   | 'send-message'
+  | 'build-website'
+  | 'build-wordpress'
   | 'unknown'
 
 export interface BridgeRequest {
@@ -121,6 +123,8 @@ Available actions:
 - create-email-sequence: Set up email automation, newsletter sequence, email drip
 - blog-to-social: Content creation and distribution, blog post, social media posting
 - setup-tracking: Configure analytics, pixels, tracking codes
+- build-website: Build a website, multi-page site, business website using CRM hosted pages
+- build-wordpress: Build a WordPress website, WP site, WordPress pages
 - full-setup: Complete business setup that involves multiple actions
 - create-contact: Create or update a contact record
 - send-message: Send a specific message (SMS, email) to someone
@@ -679,11 +683,203 @@ export async function executeBridge(request: BridgeRequest): Promise<BridgeResul
         )
         break
 
+      case 'build-website': {
+        // Generate multi-page website via CRM funnels
+        const siteParams = params as { name?: string; pages?: string[]; industry?: string; description?: string }
+        const pageList = siteParams.pages || ['Home', 'About', 'Services', 'Contact', 'Testimonials']
+        const businessName = siteParams.name || 'My Business'
+        const industry = siteParams.industry || 'general'
+
+        // Generate page content for each page
+        const pagePrompt = `Generate a complete website for a ${industry} business called "${businessName}".
+Description: ${siteParams.description || intent}
+
+Create ${pageList.length} pages: ${pageList.join(', ')}
+
+For each page, provide clean responsive HTML with inline CSS. Dark modern theme with accent color #7ed957.
+Include: header with nav, hero section, content sections, footer.
+Make it professional and conversion-optimized.
+
+Respond with JSON: { "pages": [{ "name": "Page Name", "slug": "page-name", "html": "<full HTML>" }] }`
+
+        try {
+          const siteContent = await groqChat('You are a professional web designer. Generate complete HTML pages.', pagePrompt)
+          const parsed = JSON.parse(siteContent)
+          const pages = parsed.pages || []
+
+          // Create funnel in CRM
+          const token = await getAuthForLocation(locationId)
+          const funnelRes = await crmPost(`/funnels/?locationId=${locationId}`, {
+            name: `${businessName} Website`,
+            locationId,
+            type: 'website',
+            steps: pages.map((p: { name: string; slug: string }, i: number) => ({
+              name: p.name,
+              url: `/${p.slug}`,
+              order: i,
+            })),
+          }, token)
+
+          const funnelId = funnelRes?.id || funnelRes?.funnel?.id
+
+          if (funnelId) {
+            created.push({
+              type: 'website',
+              id: funnelId,
+              name: `${businessName} Website`,
+              detail: `${pages.length} pages: ${pages.map((p: { name: string }) => p.name).join(', ')}`,
+            })
+
+            // Create individual pages
+            for (const page of pages) {
+              try {
+                await crmPost(`/funnels/page`, {
+                  funnelId,
+                  locationId,
+                  name: page.name,
+                  url: `/${page.slug}`,
+                  content: page.html,
+                }, token)
+
+                created.push({
+                  type: 'page',
+                  name: page.name,
+                  detail: `/${page.slug}`,
+                })
+              } catch (pageErr) {
+                errors.push(`Failed to create page ${page.name}: ${pageErr}`)
+              }
+            }
+          } else {
+            // Store config for manual creation
+            await admin.from('bridge_workflows').insert({
+              location_id: locationId,
+              name: `${businessName} Website`,
+              trigger: 'build-website',
+              definition: { pages, businessName, industry },
+              status: 'pending-setup',
+              created_by: userId,
+            })
+            created.push({
+              type: 'website-config',
+              name: `${businessName} Website`,
+              detail: `${pages.length} pages generated — deploy from CRM dashboard`,
+            })
+          }
+        } catch (err) {
+          errors.push(`Website generation failed: ${err}`)
+        }
+        break
+      }
+
+      case 'build-wordpress': {
+        // Generate WordPress pages and push via WP REST API
+        const wpParams = params as { name?: string; pages?: string[]; industry?: string; description?: string; wpUrl?: string }
+        const wpPages = wpParams.pages || ['Home', 'About', 'Services', 'Contact', 'Testimonials']
+        const wpName = wpParams.name || 'My Business'
+        const wpIndustry = wpParams.industry || 'general'
+
+        // Get user's WordPress connection (API token)
+        const { data: profile } = await admin
+          .from('profiles')
+          .select('google_tokens')
+          .eq('crm_location_id', locationId)
+          .single()
+
+        // Check for WP token in user_tokens
+        const { data: wpTokens } = await admin
+          .from('user_tokens')
+          .select('id, token_hash')
+          .eq('label', 'WordPress Plugin')
+          .eq('revoked', false)
+          .limit(1)
+
+        // Generate page content
+        const wpPrompt = `Generate a complete WordPress website for a ${wpIndustry} business called "${wpName}".
+Description: ${wpParams.description || intent}
+
+Create ${wpPages.length} pages: ${wpPages.join(', ')}
+
+For each page, provide WordPress Gutenberg block content (HTML with wp:paragraph, wp:heading, wp:image blocks).
+Make it professional, SEO-optimized, with proper heading hierarchy.
+
+Respond with JSON: { "pages": [{ "title": "Page Title", "slug": "page-slug", "content": "WordPress block HTML", "excerpt": "Meta description", "status": "publish" }] }`
+
+        try {
+          const wpContent = await groqChat('You are a WordPress developer. Generate Gutenberg block content for pages.', wpPrompt)
+          const parsed = JSON.parse(wpContent)
+          const pages = parsed.pages || []
+
+          const wpUrl = wpParams.wpUrl
+
+          if (wpUrl && wpTokens?.length) {
+            // Push to WordPress via REST API
+            for (const page of pages) {
+              try {
+                const wpRes = await fetch(`${wpUrl}/wp-json/wp/v2/pages`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${wpTokens[0].token_hash}`,
+                  },
+                  body: JSON.stringify({
+                    title: page.title,
+                    slug: page.slug,
+                    content: page.content,
+                    excerpt: page.excerpt,
+                    status: page.status || 'draft',
+                  }),
+                })
+
+                if (wpRes.ok) {
+                  const wpData = await wpRes.json()
+                  created.push({
+                    type: 'wordpress-page',
+                    id: String(wpData.id),
+                    name: page.title,
+                    detail: `${wpUrl}/${page.slug}`,
+                  })
+                } else {
+                  errors.push(`WP page "${page.title}" failed: ${wpRes.status}`)
+                }
+              } catch (wpErr) {
+                errors.push(`WP page "${page.title}" error: ${wpErr}`)
+              }
+            }
+
+            if (created.length > 0) {
+              created.unshift({
+                type: 'wordpress-site',
+                name: `${wpName} WordPress Site`,
+                detail: `${pages.length} pages pushed to ${wpUrl}`,
+              })
+            }
+          } else {
+            // No WP connection — save pages for download/manual setup
+            await admin.from('bridge_workflows').insert({
+              location_id: locationId,
+              name: `${wpName} WordPress Site`,
+              trigger: 'build-wordpress',
+              definition: { pages, wpName, wpIndustry, wpUrl: wpUrl || 'not-connected' },
+              status: 'pending-setup',
+              created_by: userId,
+            })
+
+            created.push({
+              type: 'wordpress-config',
+              name: `${wpName} WordPress Site`,
+              detail: `${pages.length} pages generated. ${!wpUrl ? 'Connect your WordPress site URL and install the 0nCore plugin to deploy.' : 'Connect your API token to deploy.'}`,
+            })
+          }
+        } catch (err) {
+          errors.push(`WordPress generation failed: ${err}`)
+        }
+        break
+      }
+
       case 'create-form':
-      case 'create-funnel':
-      case 'setup-tracking':
-        // These require listing existing resources and cannot be fully created via API
-        // Store the config for manual setup or future API support
+      case 'setup-tracking': {
+        // Store config for manual setup
         const { data: stored } = await admin
           .from('bridge_workflows')
           .insert({
@@ -706,6 +902,7 @@ export async function executeBridge(request: BridgeRequest): Promise<BridgeResul
           })
         }
         break
+      }
 
       case 'full-setup': {
         // Decompose into multiple actions and execute sequentially
