@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useLocation } from '@/lib/location-context'
 
 type Tab = 'compose' | 'bulk' | 'scheduled' | 'analytics' | 'accounts'
 type Tone = 'professional' | 'casual' | 'thought-leader'
@@ -91,6 +92,7 @@ export default function SocialPage() {
   const supabase = createClient()
   const [connectedAccounts, setConnectedAccounts] = useState<Record<string, boolean>>({})
   const [connecting, setConnecting] = useState<string | null>(null)
+  const { locationId, refreshKey } = useLocation()
 
   useEffect(() => {
     (async () => {
@@ -107,7 +109,7 @@ export default function SocialPage() {
         setConnectedAccounts(connected)
       }
     })()
-  }, [supabase])
+  }, [supabase, refreshKey])
 
   const [connectError, setConnectError] = useState('')
 

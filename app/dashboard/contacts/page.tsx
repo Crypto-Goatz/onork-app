@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useLocation } from '@/lib/location-context'
 
 interface Contact {
   id: string
@@ -23,8 +24,9 @@ export default function ContactsPage() {
   const [addSuccess, setAddSuccess] = useState('')
   const [addError, setAddError] = useState('')
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', tags: '' })
+  const { locationId, refreshKey } = useLocation()
 
-  useEffect(() => { fetchContacts() }, [])
+  useEffect(() => { fetchContacts() }, [refreshKey])
 
   async function fetchContacts() {
     setLoading(true)

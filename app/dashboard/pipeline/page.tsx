@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Plus, GripVertical, RefreshCw, Search } from 'lucide-react'
+import { useLocation } from '@/lib/location-context'
 
 interface Deal {
   id: string
@@ -64,8 +65,9 @@ export default function PipelinePage() {
   const [draggedDeal, setDraggedDeal] = useState<{ dealId: string; fromStageId: string } | null>(null)
   const [dragOverStage, setDragOverStage] = useState<string | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
+  const { locationId, refreshKey } = useLocation()
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [refreshKey])
 
   async function load() {
     setLoading(true)
