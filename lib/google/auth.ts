@@ -6,7 +6,39 @@ import * as fs from 'fs'
 // Service account for server-side API access (Analytics, Search Console, etc.)
 let _jwtClient: JWT | null = null
 
-export function getServiceAccountAuth(): JWT {
+const SA_SCOPES = [
+  'https://www.googleapis.com/auth/analytics.readonly',
+  'https://www.googleapis.com/auth/analytics',
+  'https://www.googleapis.com/auth/webmasters.readonly',
+  'https://www.googleapis.com/auth/webmasters',
+  'https://www.googleapis.com/auth/business.manage',
+]
+
+/**
+ * Build a JWT client from a user-specific SA key (stored in profile).
+ * Returns a fresh JWT each time — do NOT cache, since it varies per user.
+ */
+export function getServiceAccountAuthFromKey(saKey: { client_email: string; private_key: string }): JWT {
+  return new JWT({
+    email: saKey.client_email,
+    key: saKey.private_key,
+    scopes: SA_SCOPES,
+  })
+}
+
+/**
+ * Default (global) service account auth.
+ * 1. First check for a user-specific SA key if userSaKey is provided
+ * 2. Fall back to GOOGLE_SA_KEY env var
+ * 3. Fall back to local google-sa.json file
+ */
+export function getServiceAccountAuth(userSaKey?: { client_email: string; private_key: string } | null): JWT {
+  // Per-user SA key takes priority
+  if (userSaKey && userSaKey.client_email && userSaKey.private_key) {
+    return getServiceAccountAuthFromKey(userSaKey)
+  }
+
+  // Global cached client
   if (_jwtClient) return _jwtClient
 
   // Try env var first (for Vercel), then local file
@@ -21,13 +53,7 @@ export function getServiceAccountAuth(): JWT {
   _jwtClient = new JWT({
     email: saKey.client_email,
     key: saKey.private_key,
-    scopes: [
-      'https://www.googleapis.com/auth/analytics.readonly',
-      'https://www.googleapis.com/auth/analytics',
-      'https://www.googleapis.com/auth/webmasters.readonly',
-      'https://www.googleapis.com/auth/webmasters',
-      'https://www.googleapis.com/auth/business.manage',
-    ],
+    scopes: SA_SCOPES,
   })
 
   return _jwtClient

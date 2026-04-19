@@ -12,6 +12,7 @@ import { RoleContext, useRoleLoader } from '@/lib/use-role'
 import { AIAssistant } from '@/components/ai-assistant'
 import { LocationProvider } from '@/lib/location-context'
 import { GlobalStrikeMenu } from '@/components/global-strike-menu'
+import { DialerButton } from '@/components/dialer-button'
 
 const LAYOUT_KEY = '0ncore_layout'
 
@@ -21,6 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <LocationProvider>
         <DashboardLayoutInner>{children}</DashboardLayoutInner>
         <GlobalStrikeMenu />
+        <DialerButton />
         <AIAssistant />
       </LocationProvider>
     </Suspense>

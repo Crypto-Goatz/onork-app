@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { detectData, type DetectedData } from '@/lib/smart-capture'
 
 interface Message {
   id: string
@@ -8,23 +9,49 @@ interface Message {
   content: string
 }
 
+interface CapturePrompt {
+  messageId: string
+  items: DetectedData[]
+  saving: boolean
+  saved: string[]
+  dismissed: boolean
+}
+
 export function AIAssistant() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
+  const [captures, setCaptures] = useState<CapturePrompt[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages])
+  }, [messages, captures])
 
   async function send() {
     if (!input.trim() || thinking) return
     const text = input.trim()
     setInput('')
-    setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content: text }])
+    const userMsgId = Date.now().toString()
+    setMessages(prev => [...prev, { id: userMsgId, role: 'user', content: text }])
     setThinking(true)
+
+    // Smart capture detection on user input
+    const detected = detectData(text)
+    if (detected.length > 0) {
+      // Check which fields are actionable (high confidence, not URLs in normal chat)
+      const actionable = detected.filter(d => d.confidence >= 0.85 && d.type !== 'url' && d.type !== 'price')
+      if (actionable.length > 0) {
+        setCaptures(prev => [...prev, {
+          messageId: userMsgId,
+          items: actionable,
+          saving: false,
+          saved: [],
+          dismissed: false,
+        }])
+      }
+    }
 
     try {
       const res = await fetch('/api/tasks/ai', {
@@ -50,6 +77,29 @@ export function AIAssistant() {
       }])
     }
     setThinking(false)
+  }
+
+  async function saveCapturedData(captureIdx: number, item: DetectedData) {
+    setCaptures(prev => prev.map((c, i) => i === captureIdx ? { ...c, saving: true } : c))
+    try {
+      const res = await fetch('/api/profile/smart-capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ field: item.field, value: item.value }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setCaptures(prev => prev.map((c, i) => i === captureIdx ? { ...c, saving: false, saved: [...c.saved, item.field] } : c))
+      } else {
+        setCaptures(prev => prev.map((c, i) => i === captureIdx ? { ...c, saving: false } : c))
+      }
+    } catch {
+      setCaptures(prev => prev.map((c, i) => i === captureIdx ? { ...c, saving: false } : c))
+    }
+  }
+
+  function dismissCapture(captureIdx: number) {
+    setCaptures(prev => prev.map((c, i) => i === captureIdx ? { ...c, dismissed: true } : c))
   }
 
   return (
@@ -116,7 +166,7 @@ export function AIAssistant() {
           <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {messages.length === 0 && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 20 }}>
-                <div style={{ fontSize: 28, marginBottom: 12 }}>✦</div>
+                <div style={{ fontSize: 28, marginBottom: 12 }}>&#10022;</div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f4f8', marginBottom: 4 }}>How can I help?</div>
                 <div style={{ fontSize: 12, color: '#4b5563', lineHeight: 1.5 }}>Ask me anything about your dashboard, tasks, contacts, or workflows.</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 16, width: '100%' }}>
@@ -134,18 +184,67 @@ export function AIAssistant() {
               </div>
             )}
 
-            {messages.map(m => (
-              <div key={m.id} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                <div style={{
-                  maxWidth: '85%', padding: '10px 14px', borderRadius: 12, fontSize: 13, lineHeight: 1.6,
-                  background: m.role === 'user' ? 'linear-gradient(135deg, #7ed957, #5cb83a)' : 'rgba(255,255,255,0.04)',
-                  color: m.role === 'user' ? '#000' : '#d1d5db',
-                  border: m.role === 'assistant' ? '1px solid #1e293b' : 'none',
-                  borderBottomRightRadius: m.role === 'user' ? 4 : 12,
-                  borderBottomLeftRadius: m.role === 'assistant' ? 4 : 12,
-                }}>
-                  <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.content}</p>
+            {messages.map((m, msgIdx) => (
+              <div key={m.id}>
+                <div style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{
+                    maxWidth: '85%', padding: '10px 14px', borderRadius: 12, fontSize: 13, lineHeight: 1.6,
+                    background: m.role === 'user' ? 'linear-gradient(135deg, #7ed957, #5cb83a)' : 'rgba(255,255,255,0.04)',
+                    color: m.role === 'user' ? '#000' : '#d1d5db',
+                    border: m.role === 'assistant' ? '1px solid #1e293b' : 'none',
+                    borderBottomRightRadius: m.role === 'user' ? 4 : 12,
+                    borderBottomLeftRadius: m.role === 'assistant' ? 4 : 12,
+                  }}>
+                    <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.content}</p>
+                  </div>
                 </div>
+
+                {/* Smart capture prompt — shown after user messages */}
+                {m.role === 'user' && captures.map((cap, capIdx) => {
+                  if (cap.messageId !== m.id || cap.dismissed) return null
+                  const unsaved = cap.items.filter(i => !cap.saved.includes(i.field))
+                  if (unsaved.length === 0) return null
+                  return (
+                    <div key={capIdx} style={{
+                      margin: '6px 0', padding: '8px 12px', borderRadius: 8,
+                      background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.12)',
+                      fontSize: 11,
+                    }}>
+                      {unsaved.map((item, iIdx) => (
+                        <div key={iIdx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: unsaved.length > 1 && iIdx < unsaved.length - 1 ? 6 : 0 }}>
+                          <div style={{ flex: 1, color: '#9ca3af' }}>
+                            I noticed a <span style={{ color: '#00d4ff', fontWeight: 600 }}>{item.label}</span>. Save to your account?
+                          </div>
+                          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                            <button
+                              onClick={() => saveCapturedData(capIdx, item)}
+                              disabled={cap.saving}
+                              style={{
+                                padding: '3px 10px', borderRadius: 4, border: 'none',
+                                background: 'rgba(126,217,87,0.15)', color: '#7ed957',
+                                fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                                opacity: cap.saving ? 0.5 : 1,
+                              }}
+                            >{cap.saving ? '...' : 'Save'}</button>
+                            <button
+                              onClick={() => dismissCapture(capIdx)}
+                              style={{
+                                padding: '3px 8px', borderRadius: 4, border: 'none',
+                                background: 'transparent', color: '#6b7280',
+                                fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                              }}
+                            >Skip</button>
+                          </div>
+                        </div>
+                      ))}
+                      {cap.saved.length > 0 && (
+                        <div style={{ fontSize: 10, color: '#7ed957', marginTop: 4 }}>
+                          Saved {cap.saved.length} item{cap.saved.length > 1 ? 's' : ''} to your profile
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             ))}
 
