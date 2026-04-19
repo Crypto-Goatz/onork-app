@@ -27,35 +27,14 @@ export function LoadingScreen() {
         pointerEvents: fadeOut ? 'none' : 'auto',
       }}
     >
-      {/* Animated logo */}
       <img
-        src="/brand/0n-anim-logo.svg"
+        src="/brand/loading.gif"
         alt="Loading"
         style={{
-          width: 64, height: 64, marginBottom: 20,
-          filter: 'drop-shadow(0 0 30px rgba(126,217,87,0.4))',
+          width: 120, height: 120,
+          filter: 'drop-shadow(0 0 40px rgba(126,217,87,0.3))',
         }}
       />
-
-      {/* Spinner */}
-      <div style={{
-        width: 24, height: 24, marginBottom: 12,
-        border: '2px solid rgba(126,217,87,0.15)',
-        borderTopColor: '#7ed957',
-        borderRadius: '50%',
-        animation: 'onLoadSpin 0.8s linear infinite',
-      }} />
-
-      <span style={{
-        fontSize: 12, fontWeight: 600, color: 'rgba(126,217,87,0.5)',
-        letterSpacing: '0.15em', textTransform: 'uppercase',
-      }}>
-        Loading
-      </span>
-
-      <style>{`
-        @keyframes onLoadSpin { to { transform: rotate(360deg) } }
-      `}</style>
     </div>
   )
 }
