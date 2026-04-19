@@ -33,7 +33,7 @@ export default function IntegrationsPage() {
     <div style={{ background: '#020810', color: '#fff', minHeight: '100vh' }}>
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 32px', background: 'rgba(2,8,16,0.8)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
         <Link href="/home" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <img src="/brand/0ncore-icon.png" alt="0nCore" style={{ height: 26 }} onError={(e) => { (e.target as HTMLImageElement).src = '/logo.png' }} />
+          <img src="/brand/0ncore-icon.png" alt="0nCore" style={{ height: 26 }} />
           <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}><span style={{ color: '#7ed957' }}>0n</span>Core</span>
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>

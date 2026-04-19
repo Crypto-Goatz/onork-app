@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY
+  if (!key) throw new Error('STRIPE_SECRET_KEY not configured')
+  return new Stripe(key)
+}
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 const ADDON_PRICES: Record<string, { name: string; cents: number; capabilities: string[] }> = {
   'ai-course-builder': { name: 'AI Course Builder', cents: 4900, capabilities: ['course_create', 'course_import', 'course_list', 'lesson_generate'] },
@@ -46,19 +53,20 @@ export async function POST(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: { user } } = await supabase.auth.getUser(token)
+  const sb = getSupabase()
+  const { data: { user } } = await sb.auth.getUser(token)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { productSlug } = await req.json()
   const addon = ADDON_PRICES[productSlug]
   if (!addon) return NextResponse.json({ error: 'Unknown product' }, { status: 400 })
 
-  const profile = await supabase.from('profiles').select('crm_location_id').eq('id', user.id).single()
+  const profile = await sb.from('profiles').select('crm_location_id').eq('id', user.id).single()
   const locationId = profile.data?.crm_location_id || ''
 
   const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     mode: 'payment',
     line_items: [{
       price_data: {

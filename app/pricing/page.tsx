@@ -58,7 +58,7 @@ export default function PricingPage() {
       {/* Nav */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', background: 'rgba(2,8,16,0.8)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
         <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <img src="/brand/0ncore-icon.png" alt="0nCore" style={{ height: 28 }} onError={(e) => { (e.target as HTMLImageElement).src = '/logo.png' }} />
+          <img src="/brand/0ncore-icon.png" alt="0nCore" style={{ height: 28 }} />
           <span style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}><span style={{ color: '#7ed957' }}>0n</span>Core</span>
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
