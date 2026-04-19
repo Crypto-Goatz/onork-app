@@ -1,523 +1,442 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useLocation } from '@/lib/location-context'
 
-interface Source {
-  id: string
-  title: string
-  source_type: string
-  status: string
-  token_count: number
-  tags: string[]
-  created_at: string
-}
-
-interface Pair {
-  id: string
-  user_input: string
-  assistant_output: string
-  domain: string
-  quality_score: number | null
-  approved: boolean
-  human_reviewed: boolean
-  created_at: string
-}
-
-interface Dataset {
+interface KBEntry {
   id: string
   name: string
+  description?: string
+  documentCount?: number
+  updatedAt?: string
+}
+
+interface KLayer {
+  slot: number
+  name: string
   description: string
-  pair_count: number
-  avg_quality: number
-  status: string
-  target_model: string
-  created_at: string
+  status: 'active' | 'locked' | 'available' | 'auto'
+  badge?: string
+  kbId?: string
+  documentCount: number
+  lastUpdated: string
 }
 
-interface Stats {
-  sources: { total: number; by_type: Record<string, number>; total_tokens: number }
-  pairs: { total: number; by_domain: Record<string, number>; approved: number; scored: number; avg_quality: number }
-  datasets: { total: number; list: { id: string; name: string; pairs: number; status: string }[] }
-  exports: { total: number }
-  council: { training_runs: number; knowledge_entries: number; avg_score: number }
-}
-
-type Tab = 'overview' | 'sources' | 'pairs' | 'datasets' | 'feed'
+const DEFAULT_LAYERS: KLayer[] = [
+  { slot: 1, name: '0nCore System', description: 'Platform AI', status: 'locked', badge: 'System', documentCount: 48, lastUpdated: 'Built-in' },
+  { slot: 2, name: '0nMCP Tools', description: 'Tool Catalog', status: 'locked', badge: '1,554 tools', documentCount: 96, lastUpdated: 'Built-in' },
+  { slot: 3, name: 'Brand & Design', description: 'Syncs from Brand Board', status: 'auto', badge: 'Auto-sync', documentCount: 12, lastUpdated: 'Auto' },
+  { slot: 4, name: 'Company', description: 'Your business knowledge', status: 'available', badge: 'FREE', documentCount: 0, lastUpdated: 'Not configured' },
+  { slot: 5, name: 'Personal', description: 'Adapts to you', status: 'auto', badge: 'Auto-learn', documentCount: 0, lastUpdated: 'Auto' },
+  { slot: 6, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 7, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 8, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 9, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 10, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 11, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 12, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 13, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 14, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
+  { slot: 15, name: 'Available', description: 'Configure this layer', status: 'available', documentCount: 0, lastUpdated: '' },
+]
 
 export default function TrainingPage() {
-  const [tab, setTab] = useState<Tab>('overview')
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [sources, setSources] = useState<Source[]>([])
-  const [pairs, setPairs] = useState<Pair[]>([])
-  const [datasets, setDatasets] = useState<Dataset[]>([])
+  const { locationId, refreshKey } = useLocation()
+  const [layers, setLayers] = useState<KLayer[]>(DEFAULT_LAYERS)
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null)
+  const [kbs, setKbs] = useState<KBEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [feedRunning, setFeedRunning] = useState(false)
-  const [feedResult, setFeedResult] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [detailName, setDetailName] = useState('')
+  const [detailDesc, setDetailDesc] = useState('')
+  const [pasteContent, setPasteContent] = useState('')
+  const [scrapeUrl, setScrapeUrl] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [createMsg, setCreateMsg] = useState('')
 
-  // New pair form
-  const [showNewPair, setShowNewPair] = useState(false)
-  const [newPairInput, setNewPairInput] = useState('')
-  const [newPairOutput, setNewPairOutput] = useState('')
-  const [newPairDomain, setNewPairDomain] = useState('general')
-  const [saving, setSaving] = useState(false)
-
-  const loadStats = useCallback(async () => {
+  const fetchKBs = useCallback(async () => {
+    setLoading(true)
     try {
-      const res = await fetch('/api/training?action=stats')
+      const params = locationId ? `?locationId=${locationId}` : ''
+      const res = await fetch(`/api/kb${params}`)
       if (res.ok) {
         const data = await res.json()
-        setStats(data.training_center)
+        setKbs(data.knowledgeBases || [])
       }
     } catch { /* silent */ }
-  }, [])
+    setLoading(false)
+  }, [locationId])
 
-  const loadSources = useCallback(async () => {
+  useEffect(() => { fetchKBs() }, [fetchKBs, refreshKey])
+
+  async function createKB() {
+    if (!detailName.trim()) return
+    setCreating(true)
+    setCreateMsg('')
     try {
-      const url = searchQuery
-        ? `/api/training?action=search&table=sources&query=${encodeURIComponent(searchQuery)}`
-        : '/api/training?action=sources'
-      const res = await fetch(url)
-      if (res.ok) {
-        const data = await res.json()
-        setSources(data.sources || data.results?.sources || [])
-      }
-    } catch { /* silent */ }
-  }, [searchQuery])
-
-  const loadPairs = useCallback(async () => {
-    try {
-      const url = searchQuery
-        ? `/api/training?action=search&table=pairs&query=${encodeURIComponent(searchQuery)}`
-        : '/api/training?action=pairs'
-      const res = await fetch(url)
-      if (res.ok) {
-        const data = await res.json()
-        setPairs(data.pairs || data.results?.pairs || [])
-      }
-    } catch { /* silent */ }
-  }, [searchQuery])
-
-  const loadDatasets = useCallback(async () => {
-    try {
-      const res = await fetch('/api/training?action=datasets')
-      if (res.ok) {
-        const data = await res.json()
-        setDatasets(data.datasets || [])
-      }
-    } catch { /* silent */ }
-  }, [])
-
-  useEffect(() => {
-    Promise.all([loadStats(), loadSources(), loadPairs(), loadDatasets()])
-      .finally(() => setLoading(false))
-  }, [loadStats, loadSources, loadPairs, loadDatasets])
-
-  async function runFeed() {
-    setFeedRunning(true)
-    setFeedResult(null)
-    try {
-      const res = await fetch('/api/training', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'feed' }),
-      })
-      const data = await res.json()
-      setFeedResult(`Fetched from ${data.sources_checked || 0} sources — ${data.stats?.ingested || 0} new items ingested`)
-      await loadStats()
-      await loadSources()
-    } catch {
-      setFeedResult('Feed fetch failed')
-    }
-    setFeedRunning(false)
-  }
-
-  async function savePair() {
-    if (!newPairInput.trim() || !newPairOutput.trim()) return
-    setSaving(true)
-    try {
-      await fetch('/api/training', {
+      const res = await fetch('/api/kb', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'add_pair',
-          user_input: newPairInput,
-          assistant_output: newPairOutput,
-          domain: newPairDomain,
+          name: detailName,
+          description: detailDesc,
+          locationId,
         }),
       })
-      setNewPairInput('')
-      setNewPairOutput('')
-      setShowNewPair(false)
-      await loadPairs()
-      await loadStats()
-    } catch { /* silent */ }
-    setSaving(false)
+      if (res.ok) {
+        setCreateMsg('Knowledge base created')
+        await fetchKBs()
+        // Update the layer name
+        if (selectedSlot) {
+          setLayers(prev => prev.map(l =>
+            l.slot === selectedSlot
+              ? { ...l, name: detailName, description: detailDesc || l.description, status: 'active' as const }
+              : l
+          ))
+        }
+      } else {
+        const data = await res.json()
+        setCreateMsg(data.error || 'Failed to create')
+      }
+    } catch {
+      setCreateMsg('Error creating KB')
+    }
+    setCreating(false)
   }
 
-  async function approvePair(id: string) {
-    await fetch('/api/training', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'approve', pair_id: id }),
-    })
-    await loadPairs()
+  function openLayer(slot: number) {
+    const layer = layers.find(l => l.slot === slot)
+    if (!layer || layer.status === 'locked') return
+    setSelectedSlot(slot)
+    setDetailName(layer.name === 'Available' ? '' : layer.name)
+    setDetailDesc(layer.description === 'Configure this layer' ? '' : layer.description)
+    setPasteContent('')
+    setScrapeUrl('')
+    setCreateMsg('')
   }
 
-  async function rejectPair(id: string) {
-    await fetch('/api/training', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'reject', pair_id: id }),
-    })
-    await loadPairs()
+  const statusColor: Record<string, string> = {
+    active: '#7ed957',
+    locked: '#6b7280',
+    available: '#00d4ff',
+    auto: '#a78bfa',
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-6 h-6 border-2 border-core-green border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
+  const statusLabel: Record<string, string> = {
+    active: 'Active',
+    locked: 'Locked',
+    available: 'Available',
+    auto: 'Auto',
   }
 
-  const TABS: { key: Tab; label: string }[] = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'sources', label: `Sources (${stats?.sources.total || 0})` },
-    { key: 'pairs', label: `Pairs (${stats?.pairs.total || 0})` },
-    { key: 'datasets', label: `Datasets (${stats?.datasets.total || 0})` },
-    { key: 'feed', label: 'Live Feed' },
-  ]
-
-  const DOMAINS = ['general', 'crm', 'code', 'architecture', 'workflow', 'brand', 'support', 'api_pattern']
+  const selectedLayer = selectedSlot ? layers.find(l => l.slot === selectedSlot) : null
+  const activeLayers = layers.filter(l => l.status === 'active' || l.status === 'locked' || l.status === 'auto').length
 
   return (
-    <div>
-      <div className="jp-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 8px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 className="jp-page-title">0nAI Training Center</h1>
-          <p className="jp-page-subtitle">
-            Train the model. Ingest sources. Build datasets. Export for fine-tuning.
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#f0f4f8', margin: 0 }}>Knowledge Base</h1>
+            <span style={{
+              padding: '3px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700,
+              background: 'rgba(126,217,87,0.1)', color: '#7ed957',
+              border: '1px solid rgba(126,217,87,0.2)', letterSpacing: '0.06em',
+            }}>
+              UNLIMITED
+            </span>
+          </div>
+          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+            15 Layers Available — {activeLayers} active
           </p>
         </div>
-        <button
-          onClick={runFeed}
-          disabled={feedRunning}
-          className={feedRunning ? 'jp-btn jp-btn-outline' : 'jp-btn jp-btn-outline'}
-          style={{
-            opacity: feedRunning ? 0.5 : 1,
-            cursor: feedRunning ? 'not-allowed' : 'pointer',
-            borderColor: feedRunning ? 'var(--jp-border)' : 'rgba(126,217,87,0.3)',
-            color: feedRunning ? 'var(--jp-text-muted)' : 'var(--jp-green)',
-            background: feedRunning ? 'transparent' : 'var(--jp-green-glow)',
-          }}
-        >
-          {feedRunning ? 'Fetching...' : 'Run Feed Now'}
-        </button>
-      </div>
-
-      {feedResult && (
-        <div className="jp-card" style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: 'var(--jp-green-glow)', borderColor: 'rgba(126,217,87,0.15)', color: 'var(--jp-green)', fontSize: '0.875rem' }}>
-          {feedResult}
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="jp-tabs" style={{ borderBottom: 'none', background: 'var(--jp-bg-elevated)', borderRadius: 'var(--jp-radius-sm)', padding: '4px', marginBottom: '1.5rem', gap: '4px' }}>
-        {TABS.map(t => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 12, color: '#6b7280' }}>{kbs.length} CRM Knowledge Bases</span>
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`jp-tab ${tab === t.key ? 'active' : ''}`}
+            onClick={fetchKBs}
             style={{
-              borderBottom: 'none',
-              borderRadius: 'var(--jp-radius-xs)',
-              background: tab === t.key ? 'var(--jp-bg-card-hover)' : 'transparent',
-              border: tab === t.key ? '1px solid var(--jp-border-hi)' : '1px solid transparent',
+              padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+              background: 'rgba(126,217,87,0.08)', border: '1px solid rgba(126,217,87,0.2)',
+              color: '#7ed957', cursor: 'pointer',
             }}
           >
-            {t.label}
+            Refresh
           </button>
-        ))}
+        </div>
       </div>
 
-      {/* -- OVERVIEW TAB -- */}
-      {tab === 'overview' && stats && (
-        <div>
-          {/* Stat cards */}
-          <div className="jp-stat-grid" style={{ marginBottom: '1.5rem' }}>
-            {[
-              { label: 'Sources', value: stats.sources.total, sub: `${(stats.sources.total_tokens / 1000).toFixed(1)}k tokens`, accent: 'green' },
-              { label: 'Training Pairs', value: stats.pairs.total, sub: `${stats.pairs.approved} approved`, accent: 'cyan' },
-              { label: 'Avg Quality', value: stats.pairs.avg_quality ? `${(stats.pairs.avg_quality * 100).toFixed(0)}%` : '\u2014', sub: `${stats.pairs.scored} scored`, accent: 'purple' },
-              { label: 'Knowledge', value: stats.council.knowledge_entries, sub: `${stats.council.training_runs} runs`, accent: 'amber' },
-            ].map(s => (
-              <div key={s.label} className={`jp-stat-card ${s.accent}`}>
-                <div className="jp-stat-label">{s.label}</div>
-                <div className="jp-stat-value" style={{ color: `var(--jp-${s.accent})` }}>{s.value}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginTop: '4px' }}>{s.sub}</div>
-              </div>
-            ))}
-          </div>
+      <div style={{ display: 'flex', gap: 20 }}>
+        {/* K-Layer Grid */}
+        <div style={{ flex: 1 }}>
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+              <div style={{
+                width: 32, height: 32, border: '3px solid #1e293b',
+                borderTopColor: '#7ed957', borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite',
+              }} />
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+              {layers.map(layer => {
+                const isSelected = selectedSlot === layer.slot
+                const isLocked = layer.status === 'locked'
+                const color = statusColor[layer.status]
+                return (
+                  <div
+                    key={layer.slot}
+                    onClick={() => openLayer(layer.slot)}
+                    style={{
+                      background: isSelected ? 'rgba(126,217,87,0.04)' : '#161b22',
+                      border: `1px solid ${isSelected ? 'rgba(126,217,87,0.3)' : '#1e293b'}`,
+                      borderRadius: 12, padding: '16px',
+                      cursor: isLocked ? 'not-allowed' : 'pointer',
+                      opacity: isLocked ? 0.6 : 1,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {/* Top row: slot + status */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 800, color: color,
+                        background: `${color}15`, padding: '2px 8px', borderRadius: 4,
+                        letterSpacing: '0.05em',
+                      }}>
+                        K{layer.slot}
+                      </span>
+                      <span style={{
+                        fontSize: 9, fontWeight: 600, color: color,
+                        textTransform: 'uppercase', letterSpacing: '0.06em',
+                      }}>
+                        {statusLabel[layer.status]}
+                      </span>
+                    </div>
 
-          {/* Source breakdown */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-            <div className="jp-card">
-              <div className="jp-card-header">
-                <h3>Sources by Category</h3>
-              </div>
-              <div className="jp-card-body" style={{ padding: 0 }}>
-                {Object.entries(stats.sources.by_type).map(([type, count]) => (
-                  <div key={type} className="jp-activity-item" style={{ padding: '10px 20px' }}>
-                    <span style={{ fontSize: '0.875rem', color: 'var(--jp-text)', flex: 1 }}>{type}</span>
-                    <span style={{ fontSize: '0.875rem', fontFamily: 'monospace', color: 'var(--jp-green)' }}>{count}</span>
+                    {/* Name */}
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f4f8', marginBottom: 4 }}>
+                      {layer.name}
+                    </div>
+
+                    {/* Description */}
+                    <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 10 }}>
+                      {layer.description}
+                    </div>
+
+                    {/* Badge */}
+                    {layer.badge && (
+                      <span style={{
+                        display: 'inline-block', fontSize: 9, fontWeight: 700,
+                        padding: '2px 8px', borderRadius: 4, marginBottom: 8,
+                        background: 'rgba(126,217,87,0.08)', color: '#7ed957',
+                        border: '1px solid rgba(126,217,87,0.15)',
+                      }}>
+                        {layer.badge}
+                      </span>
+                    )}
+
+                    {/* Stats */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#4b5563' }}>
+                      <span>{layer.documentCount} docs</span>
+                      <span>{layer.lastUpdated}</span>
+                    </div>
+
+                    {/* Action button for configurable layers */}
+                    {(layer.status === 'available') && (
+                      <button
+                        style={{
+                          width: '100%', marginTop: 10, padding: '7px 0',
+                          borderRadius: 6, fontSize: 11, fontWeight: 600,
+                          background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)',
+                          color: '#00d4ff', cursor: 'pointer',
+                        }}
+                      >
+                        {layer.name === 'Available' ? 'Activate' : 'Configure'}
+                      </button>
+                    )}
                   </div>
-                ))}
-              </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Detail Panel */}
+        {selectedLayer && (
+          <div style={{
+            width: 360, flexShrink: 0,
+            background: '#161b22', border: '1px solid #1e293b', borderRadius: 14,
+            padding: '20px', position: 'sticky', top: 80,
+            maxHeight: 'calc(100vh - 120px)', overflowY: 'auto',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <span style={{
+                fontSize: 11, fontWeight: 800, color: statusColor[selectedLayer.status],
+                background: `${statusColor[selectedLayer.status]}15`,
+                padding: '3px 10px', borderRadius: 5,
+              }}>
+                K{selectedLayer.slot}
+              </span>
+              <button
+                onClick={() => setSelectedSlot(null)}
+                style={{
+                  background: 'none', border: 'none', color: '#4b5563',
+                  cursor: 'pointer', fontSize: 16, padding: '0 4px',
+                }}
+              >
+                x
+              </button>
             </div>
 
-            <div className="jp-card">
-              <div className="jp-card-header">
-                <h3>Pairs by Domain</h3>
-              </div>
-              <div className="jp-card-body" style={{ padding: 0 }}>
-                {Object.entries(stats.pairs.by_domain).length > 0 ? Object.entries(stats.pairs.by_domain).map(([domain, count]) => (
-                  <div key={domain} className="jp-activity-item" style={{ padding: '10px 20px' }}>
-                    <span style={{ fontSize: '0.875rem', color: 'var(--jp-text)', flex: 1 }}>{domain}</span>
-                    <span style={{ fontSize: '0.875rem', fontFamily: 'monospace', color: 'var(--jp-cyan)' }}>{count}</span>
+            {/* Name input */}
+            <label style={{ display: 'block', marginBottom: 12 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Name
+              </span>
+              <input
+                value={detailName}
+                onChange={e => setDetailName(e.target.value)}
+                placeholder="Layer name..."
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 8,
+                  background: '#0d1117', border: '1px solid #1e293b',
+                  color: '#f0f4f8', fontSize: 13, outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </label>
+
+            {/* Description */}
+            <label style={{ display: 'block', marginBottom: 16 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Description
+              </span>
+              <textarea
+                value={detailDesc}
+                onChange={e => setDetailDesc(e.target.value)}
+                placeholder="What this layer does..."
+                rows={2}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 8,
+                  background: '#0d1117', border: '1px solid #1e293b',
+                  color: '#f0f4f8', fontSize: 13, outline: 'none', resize: 'vertical',
+                  boxSizing: 'border-box', fontFamily: 'inherit',
+                }}
+              />
+            </label>
+
+            {/* Documents from CRM KB */}
+            <div style={{ marginBottom: 16 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Documents ({kbs.length} knowledge bases)
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {kbs.length > 0 ? kbs.map(kb => (
+                  <div key={kb.id} style={{
+                    padding: '8px 12px', borderRadius: 8,
+                    background: '#0d1117', border: '1px solid #1e293b',
+                    fontSize: 12, color: '#d1d5db',
+                  }}>
+                    <div style={{ fontWeight: 600 }}>{kb.name}</div>
+                    {kb.description && (
+                      <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>{kb.description}</div>
+                    )}
                   </div>
                 )) : (
-                  <div className="jp-empty-state" style={{ padding: '2rem' }}>
-                    <p className="jp-empty-state-text">No pairs yet. Add training pairs to get started.</p>
+                  <div style={{ fontSize: 11, color: '#4b5563', textAlign: 'center', padding: 12 }}>
+                    No knowledge bases linked
                   </div>
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* -- SOURCES TAB -- */}
-      {tab === 'sources' && (
-        <div>
-          <div style={{ marginBottom: '1rem' }}>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && loadSources()}
-              placeholder="Search sources..."
-              className="jp-input"
-            />
-          </div>
+            {/* Upload Document placeholder */}
+            <button style={{
+              width: '100%', padding: '10px 0', borderRadius: 8,
+              background: 'rgba(126,217,87,0.06)', border: '1px solid rgba(126,217,87,0.15)',
+              color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              marginBottom: 12,
+            }}>
+              Upload Document
+            </button>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {sources.map(s => (
-              <div key={s.id} className="jp-card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <span className="jp-badge cyan" style={{ flexShrink: 0 }}>
-                  {s.source_type}
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--jp-text)' }} className="truncate">{s.title}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginTop: '4px' }}>
-                    {s.token_count} tokens · {s.tags?.join(', ')} · {new Date(s.created_at).toLocaleDateString()}
-                  </div>
-                </div>
-                <span className={`jp-badge ${s.status === 'raw' ? 'amber' : 'green'}`}>
-                  {s.status}
-                </span>
+            {/* Paste Content */}
+            <label style={{ display: 'block', marginBottom: 12 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Paste Content
+              </span>
+              <textarea
+                value={pasteContent}
+                onChange={e => setPasteContent(e.target.value)}
+                placeholder="Paste knowledge content here..."
+                rows={4}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 8,
+                  background: '#0d1117', border: '1px solid #1e293b',
+                  color: '#f0f4f8', fontSize: 12, outline: 'none', resize: 'vertical',
+                  boxSizing: 'border-box', fontFamily: 'inherit',
+                }}
+              />
+            </label>
+
+            {/* Scrape URL */}
+            <label style={{ display: 'block', marginBottom: 16 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Scrape URL
+              </span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  value={scrapeUrl}
+                  onChange={e => setScrapeUrl(e.target.value)}
+                  placeholder="https://..."
+                  style={{
+                    flex: 1, padding: '9px 12px', borderRadius: 8,
+                    background: '#0d1117', border: '1px solid #1e293b',
+                    color: '#f0f4f8', fontSize: 12, outline: 'none',
+                  }}
+                />
+                <button style={{
+                  padding: '9px 14px', borderRadius: 8,
+                  background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)',
+                  color: '#00d4ff', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}>
+                  Scrape
+                </button>
               </div>
-            ))}
-            {sources.length === 0 && (
-              <div className="jp-empty-state">
-                <p className="jp-empty-state-text">No sources yet. Run the feed or ingest data.</p>
+            </label>
+
+            {/* Create/Save button */}
+            {createMsg && (
+              <div style={{
+                padding: '8px 12px', borderRadius: 8, marginBottom: 10,
+                background: createMsg.includes('Error') || createMsg.includes('Failed')
+                  ? 'rgba(239,68,68,0.08)' : 'rgba(126,217,87,0.08)',
+                border: `1px solid ${createMsg.includes('Error') || createMsg.includes('Failed')
+                  ? 'rgba(239,68,68,0.2)' : 'rgba(126,217,87,0.2)'}`,
+                color: createMsg.includes('Error') || createMsg.includes('Failed') ? '#f87171' : '#7ed957',
+                fontSize: 12,
+              }}>
+                {createMsg}
               </div>
             )}
-          </div>
-        </div>
-      )}
 
-      {/* -- PAIRS TAB -- */}
-      {tab === 'pairs' && (
-        <div>
-          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && loadPairs()}
-              placeholder="Search pairs..."
-              className="jp-input"
-              style={{ flex: 1 }}
-            />
             <button
-              onClick={() => setShowNewPair(!showNewPair)}
-              className="jp-btn jp-btn-outline"
-              style={{ borderColor: 'rgba(126,217,87,0.3)', color: 'var(--jp-green)', background: 'var(--jp-green-glow)' }}
+              onClick={createKB}
+              disabled={creating || !detailName.trim()}
+              style={{
+                width: '100%', padding: '12px 0', borderRadius: 8,
+                background: creating || !detailName.trim() ? '#1e293b' : '#7ed957',
+                border: 'none',
+                color: creating || !detailName.trim() ? '#4b5563' : '#000',
+                fontSize: 13, fontWeight: 700, cursor: creating ? 'not-allowed' : 'pointer',
+              }}
             >
-              + New Pair
+              {creating ? 'Creating...' : 'Create Knowledge Base'}
             </button>
           </div>
-
-          {/* New pair form */}
-          {showNewPair && (
-            <div className="jp-card" style={{ marginBottom: '1rem', padding: '1rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--jp-text-secondary)', display: 'block', marginBottom: '4px' }}>User Input (question)</label>
-                  <textarea
-                    value={newPairInput}
-                    onChange={e => setNewPairInput(e.target.value)}
-                    rows={2}
-                    placeholder="How do I create a contact in the CRM?"
-                    className="jp-textarea"
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--jp-text-secondary)', display: 'block', marginBottom: '4px' }}>Assistant Output (ideal response)</label>
-                  <textarea
-                    value={newPairOutput}
-                    onChange={e => setNewPairOutput(e.target.value)}
-                    rows={4}
-                    placeholder="To create a contact, use the CRM API..."
-                    className="jp-textarea"
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--jp-text-secondary)', display: 'block', marginBottom: '4px' }}>Domain</label>
-                    <select
-                      value={newPairDomain}
-                      onChange={e => setNewPairDomain(e.target.value)}
-                      className="jp-select"
-                    >
-                      {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </div>
-                  <button
-                    onClick={savePair}
-                    disabled={saving || !newPairInput.trim() || !newPairOutput.trim()}
-                    className="jp-btn jp-btn-primary"
-                    style={{ opacity: saving ? 0.5 : 1 }}
-                  >
-                    {saving ? 'Saving...' : 'Save Pair'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Pairs list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {pairs.map(p => (
-              <div key={p.id} className="jp-card" style={{ padding: '12px 16px', borderColor: p.approved ? 'rgba(126,217,87,0.2)' : undefined }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className="jp-badge cyan">{p.domain}</span>
-                    {p.quality_score !== null && (
-                      <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: p.quality_score >= 0.7 ? 'var(--jp-green)' : p.quality_score >= 0.5 ? 'var(--jp-amber)' : 'var(--jp-red)' }}>
-                        {(p.quality_score * 100).toFixed(0)}%
-                      </span>
-                    )}
-                    {p.approved && <span className="jp-badge green">Approved</span>}
-                  </div>
-                  {!p.human_reviewed && (
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      <button onClick={() => approvePair(p.id)} className="jp-btn jp-btn-outline" style={{ padding: '2px 8px', fontSize: '0.75rem', borderColor: 'rgba(126,217,87,0.2)', color: 'var(--jp-green)' }}>Approve</button>
-                      <button onClick={() => rejectPair(p.id)} className="jp-btn jp-btn-outline" style={{ padding: '2px 8px', fontSize: '0.75rem', borderColor: 'rgba(248,113,113,0.2)', color: 'var(--jp-red)' }}>Reject</button>
-                    </div>
-                  )}
-                </div>
-                <div style={{ fontSize: '0.875rem', color: 'var(--jp-text-secondary)', marginBottom: '4px' }}><strong style={{ color: 'var(--jp-text)' }}>Q:</strong> {p.user_input.slice(0, 200)}</div>
-                <div style={{ fontSize: '0.875rem', color: 'var(--jp-text-secondary)' }}><strong style={{ color: 'var(--jp-text)' }}>A:</strong> {p.assistant_output.slice(0, 300)}{p.assistant_output.length > 300 ? '...' : ''}</div>
-              </div>
-            ))}
-            {pairs.length === 0 && (
-              <div className="jp-empty-state">
-                <p className="jp-empty-state-text">No training pairs yet. Click &quot;+ New Pair&quot; to start teaching the model.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* -- DATASETS TAB -- */}
-      {tab === 'datasets' && (
-        <div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {datasets.map(d => (
-              <div key={d.id} className="jp-card" style={{ padding: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>{d.name}</h3>
-                  <span className={`jp-badge ${d.status === 'exported' ? 'green' : 'cyan'}`}>{d.status}</span>
-                </div>
-                {d.description && <p style={{ fontSize: '0.875rem', color: 'var(--jp-text-secondary)', margin: '0 0 8px' }}>{d.description}</p>}
-                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
-                  <span>{d.pair_count} pairs</span>
-                  <span>Quality: {d.avg_quality ? `${(d.avg_quality * 100).toFixed(0)}%` : '\u2014'}</span>
-                  <span>Target: {d.target_model}</span>
-                  <span>{new Date(d.created_at).toLocaleDateString()}</span>
-                </div>
-              </div>
-            ))}
-            {datasets.length === 0 && (
-              <div className="jp-empty-state">
-                <p className="jp-empty-state-text">No datasets yet. Create one via the MCP tools to organize your training pairs.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* -- FEED TAB -- */}
-      {tab === 'feed' && (
-        <div>
-          <div className="jp-card" style={{ marginBottom: '1rem' }}>
-            <div className="jp-card-header">
-              <h3>Live Data Sources</h3>
-              <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>11 verified sources · Zero cost</span>
-            </div>
-            <div className="jp-card-body">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.5rem' }}>
-                {[
-                  { name: 'Hacker News \u2014 AI', interval: '10 min', category: 'ai_industry' },
-                  { name: 'arXiv \u2014 AI Papers', interval: '1 hour', category: 'ai_research' },
-                  { name: 'Dev.to \u2014 AI', interval: '15 min', category: 'ai_industry' },
-                  { name: 'Dev.to \u2014 MCP', interval: '15 min', category: 'ai_industry' },
-                  { name: 'Hacker News \u2014 Top', interval: '10 min', category: 'tech' },
-                  { name: 'GitHub \u2014 Trending', interval: '1 hour', category: 'open_source' },
-                  { name: 'npm \u2014 MCP Packages', interval: '1 hour', category: 'open_source' },
-                  { name: 'Dev.to \u2014 API', interval: '30 min', category: 'saas' },
-                  { name: 'Dev.to \u2014 Automation', interval: '30 min', category: 'automation' },
-                  { name: 'CoinGecko \u2014 Market', interval: '10 min', category: 'crypto' },
-                  { name: 'Wikipedia \u2014 Featured', interval: 'daily', category: 'general' },
-                ].map(s => (
-                  <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: 'var(--jp-radius-xs)', background: 'var(--jp-bg)' }}>
-                    <div className="jp-activity-dot green" style={{ width: 8, height: 8 }} />
-                    <span style={{ fontSize: '0.875rem', color: 'var(--jp-text)', flex: 1 }}>{s.name}</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>{s.interval}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={runFeed}
-            disabled={feedRunning}
-            className={feedRunning ? 'jp-btn jp-btn-outline' : 'jp-btn jp-btn-primary'}
-            style={{
-              width: '100%',
-              justifyContent: 'center',
-              padding: '0.75rem',
-              cursor: feedRunning ? 'not-allowed' : 'pointer',
-              opacity: feedRunning ? 0.5 : 1,
-            }}
-          >
-            {feedRunning ? 'Fetching from all sources...' : 'Fetch Now'}
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
