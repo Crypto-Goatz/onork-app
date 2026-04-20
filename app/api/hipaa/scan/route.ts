@@ -21,13 +21,22 @@ function getAdmin() {
 
 export async function POST(req: NextRequest) {
   try {
-    // Auth: either Supabase session or webhook secret
+    const body = await req.json()
+    const isPublic = body.public === true
+
+    // Auth: public mode (limited results), webhook secret, or admin session
     const authHeader = req.headers.get('authorization') || ''
     const webhookKey = req.headers.get('x-hipaa-webhook-secret') || ''
     let authenticated = false
+    let fullAccess = false
 
-    if (webhookKey && webhookKey === WEBHOOK_SECRET) {
+    if (isPublic) {
+      // Public lead-magnet mode — limited results returned below
       authenticated = true
+      fullAccess = false
+    } else if (webhookKey && webhookKey === WEBHOOK_SECRET) {
+      authenticated = true
+      fullAccess = true
     } else if (authHeader.startsWith('Bearer ')) {
       const token = authHeader.replace('Bearer ', '')
       const supabase = getAdmin()
@@ -39,7 +48,10 @@ export async function POST(req: NextRequest) {
           .select('is_admin')
           .eq('id', user.id)
           .single()
-        if (profile?.is_admin) authenticated = true
+        if (profile?.is_admin) {
+          authenticated = true
+          fullAccess = true
+        }
       }
     }
 
@@ -47,15 +59,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized — admin access required' }, { status: 401 })
     }
 
-    const body: HIPAAInput = await req.json()
+    // Map public form fields to HIPAAInput
+    const scanInput: HIPAAInput = {
+      publicUrl: body.publicUrl,
+      dashboardUrl: body.dashboardUrl,
+      companyName: body.companyName || 'Unknown',
+      contactEmail: body.contactEmail || '',
+      entityType: body.entityType || 'unsure',
+      employeeCount: body.employeeCount || '',
+      primaryState: body.primaryState || '',
+      locationId: body.locationId,
+    }
 
     // Validate required fields
-    if (!body.publicUrl || !body.dashboardUrl || !body.companyName) {
-      return NextResponse.json({ error: 'publicUrl, dashboardUrl, and companyName are required' }, { status: 400 })
+    if (!scanInput.publicUrl || !scanInput.dashboardUrl) {
+      return NextResponse.json({ error: 'publicUrl and dashboardUrl are required' }, { status: 400 })
     }
 
     // Run the scanner
-    const result = await runHIPAAScan(body)
+    const result = await runHIPAAScan(scanInput)
 
     // Save to Supabase
     const supabase = getAdmin()
@@ -63,12 +85,12 @@ export async function POST(req: NextRequest) {
       .from('hipaa_assessments')
       .insert({
         company_name: result.companyName,
-        contact_email: body.contactEmail || null,
+        contact_email: scanInput.contactEmail || null,
         public_url: result.publicUrl,
         dashboard_url: result.dashboardUrl,
-        entity_type: body.entityType || 'unsure',
-        employee_count: body.employeeCount || null,
-        primary_state: body.primaryState || null,
+        entity_type: scanInput.entityType || 'unsure',
+        employee_count: scanInput.employeeCount || null,
+        primary_state: scanInput.primaryState || null,
         current_rule_score: result.currentRuleScore,
         nprm_2026_score: result.nprm2026Score,
         current_grade: result.currentGrade,
@@ -86,7 +108,7 @@ export async function POST(req: NextRequest) {
           failCount: result.failCount,
         },
         remediation: result.remediationPriority,
-        location_id: body.locationId || ROCKETOPP_LOCATION,
+        location_id: scanInput.locationId || ROCKETOPP_LOCATION,
         status: 'completed',
       })
       .select('id')
@@ -100,19 +122,19 @@ export async function POST(req: NextRequest) {
 
     // Create CRM contact for the prospect
     let crmContactId: string | null = null
-    if (body.contactEmail) {
+    if (scanInput.contactEmail) {
       try {
         const crmRes = await crmPost('/contacts/', ROCKETOPP_LOCATION, {
-          email: body.contactEmail,
-          name: body.companyName,
-          tags: ['hipaa-scan', `hipaa-grade-${result.currentGrade.toLowerCase()}`],
+          email: scanInput.contactEmail,
+          name: scanInput.companyName,
+          tags: ['hipaa-scan', `hipaa-grade-${result.currentGrade.toLowerCase()}`, ...(isPublic ? ['hipaa-public-scan'] : [])],
           customFields: [
             { key: 'hipaa_current_score', value: String(result.currentRuleScore) },
             { key: 'hipaa_nprm_score', value: String(result.nprm2026Score) },
             { key: 'hipaa_critical_findings', value: String(result.criticalFindings) },
             { key: 'hipaa_scan_date', value: result.scanDate },
           ],
-          source: 'HIPAA Scanner',
+          source: isPublic ? 'HIPAA Public Scanner' : 'HIPAA Scanner',
         })
         if (crmRes.ok) {
           const crmData = await crmRes.json()
@@ -129,6 +151,39 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         console.error('[HIPAA] CRM contact creation error:', err)
       }
+    }
+
+    // Public mode: return limited results (scores + grade + critical count + top 5 findings)
+    if (!fullAccess) {
+      const allChecks = [
+        ...(result.publicChecks || []),
+        ...(result.dashboardChecks || []),
+        ...(result.universalChecks || []),
+      ]
+      const failed = allChecks
+        .filter(c => c.status === 'fail')
+        .sort((a, b) => {
+          const sev: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 }
+          return (sev[b.severity] || 0) - (sev[a.severity] || 0)
+        })
+        .slice(0, 5)
+
+      return NextResponse.json({
+        result: {
+          currentRuleScore: result.currentRuleScore,
+          nprm2026Score: result.nprm2026Score,
+          currentGrade: result.currentGrade,
+          nprmGrade: result.nprmGrade,
+          criticalFindings: result.criticalFindings,
+          highFindings: result.highFindings,
+        },
+        topFindings: failed.map(f => ({
+          name: f.name,
+          severity: f.severity,
+          detail: f.detail,
+        })),
+        assessmentId: assessment?.id || null,
+      })
     }
 
     return NextResponse.json({
