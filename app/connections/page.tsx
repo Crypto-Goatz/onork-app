@@ -54,32 +54,32 @@ const CATEGORIES = [...new Set(CONNECTIONS.map(c => c.category))]
 export default function ConnectionsPage() {
   return (
     <div style={{ background: '#020810', color: '#fff', minHeight: '100vh' }}>
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 32px', background: 'rgba(2,8,16,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+      <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(10px, 2vw, 14px) clamp(16px, 4vw, 32px)', background: 'rgba(2,8,16,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
           <img src="/brand/0n-anim-logo.svg" alt="0nCore" style={{ height: 28 }} />
           <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}><span style={{ color: '#7ed957' }}>0n</span>CORE</span>
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Link href="/request" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Request Access</Link>
+          <Link href="/request" className="connections-nav-extra" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Request Access</Link>
           <Link href="/login" style={{ fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>VIP Access</Link>
         </div>
       </nav>
 
-      <section style={{ textAlign: 'center', padding: '80px 24px 48px', position: 'relative' }}>
+      <section style={{ textAlign: 'center', padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 24px) clamp(32px, 4vw, 48px)', position: 'relative' }}>
         <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', width: 600, height: 600, background: 'radial-gradient(circle, rgba(126,217,87,0.05) 0%, transparent 60%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 2 }}>
-          <h1 style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12 }}>Connected to <span style={{ color: '#7ed957' }}>96+</span> Services</h1>
+          <h1 style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12 }}>Connected to <span style={{ color: '#7ed957' }}>96+</span> Services</h1>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', maxWidth: 560, margin: '0 auto', lineHeight: 1.7 }}>
             Every integration is powered by 0nMCP — the universal AI orchestration engine. 1,554 tools, one API.
           </p>
         </div>
       </section>
 
-      <section style={{ padding: '0 24px 80px', maxWidth: 1100, margin: '0 auto' }}>
+      <section style={{ padding: '0 clamp(16px, 4vw, 24px) clamp(40px, 6vw, 80px)', maxWidth: 1100, margin: '0 auto' }}>
         {CATEGORIES.map(cat => (
           <div key={cat} style={{ marginBottom: 48 }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: 'rgba(255,255,255,0.8)' }}>{cat}</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
               {CONNECTIONS.filter(c => c.category === cat).map(c => (
                 <div key={c.name} style={{
                   padding: '18px 20px', borderRadius: 12,
@@ -105,7 +105,7 @@ export default function ConnectionsPage() {
         ))}
       </section>
 
-      <footer style={{ padding: '24px 32px', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
+      <footer style={{ padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 32px)', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
         <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>© 2026 RocketOpp LLC. Powered by 0nMCP.</span>
       </footer>
     </div>

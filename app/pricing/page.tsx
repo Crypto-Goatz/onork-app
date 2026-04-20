@@ -56,20 +56,21 @@ export default function PricingPage() {
   return (
     <div style={{ background: '#020810', color: '#fff', minHeight: '100vh' }}>
       {/* Nav */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', background: 'rgba(2,8,16,0.8)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+      <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(12px, 2vw, 16px) clamp(16px, 4vw, 32px)', background: 'rgba(2,8,16,0.8)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
         <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
           <img src="/brand/0ncore-icon.png" alt="0nCore" style={{ height: 28 }} />
           <span style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}><span style={{ color: '#7ed957' }}>0n</span>Core</span>
         </a>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+        <div className="pricing-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           <a href="https://0nmcp.com" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Integrations</a>
           <a href="https://0nmcp.com/docs" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Documentation</a>
           <a href="/login" style={{ fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Get Started</a>
         </div>
+        <a href="/login" className="pricing-mobile-cta" style={{ display: 'none', fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Get Started</a>
       </nav>
 
       {/* Hero */}
-      <section style={{ textAlign: 'center', padding: '80px 24px 60px', maxWidth: 800, margin: '0 auto' }}>
+      <section style={{ textAlign: 'center', padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 24px) clamp(36px, 5vw, 60px)', maxWidth: 800, margin: '0 auto' }}>
         <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 20, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           335 Tools · 96 Services · 31 Add-ons
         </div>
@@ -86,7 +87,7 @@ export default function PricingPage() {
       </section>
 
       {/* Category pills */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 32px' }}>
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 clamp(16px, 4vw, 24px) 32px' }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
           {CATEGORIES.map(cat => (
             <span key={cat} style={{ fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 20, background: `${CAT_COLORS[cat]}10`, color: CAT_COLORS[cat], border: `1px solid ${CAT_COLORS[cat]}20`, letterSpacing: '0.04em' }}>
@@ -97,7 +98,7 @@ export default function PricingPage() {
       </section>
 
       {/* Grid */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 80px' }}>
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 clamp(16px, 4vw, 24px) clamp(40px, 6vw, 80px)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
           {ADDONS.map(addon => (
             <div key={addon.slug} style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', padding: 24, display: 'flex', flexDirection: 'column', transition: 'border-color 0.2s' }}>
@@ -126,21 +127,28 @@ export default function PricingPage() {
       </section>
 
       {/* Bottom CTA */}
-      <section style={{ textAlign: 'center', padding: '60px 24px 80px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>Need everything?</h2>
+      <section style={{ textAlign: 'center', padding: 'clamp(36px, 5vw, 60px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 80px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <h2 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 800, marginBottom: 12 }}>Need everything?</h2>
         <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 24 }}>
           All 31 add-ons. $1,169/mo. Or contact us for custom enterprise pricing.
         </p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <a href="/login" style={{ padding: '12px 28px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15 }}>Start Free</a>
           <a href="mailto:mike@rocketopp.com" style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 15, border: '1px solid rgba(255,255,255,0.08)' }}>Contact Sales</a>
         </div>
       </section>
 
       {/* Footer */}
-      <footer style={{ textAlign: 'center', padding: '24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <footer style={{ textAlign: 'center', padding: 'clamp(16px, 3vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>© 2026 RocketOpp LLC. All rights reserved. 0nCore is powered by 0nMCP.</p>
       </footer>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .pricing-nav-links { display: none !important; }
+          .pricing-mobile-cta { display: flex !important; }
+        }
+      `}</style>
     </div>
   )
 }

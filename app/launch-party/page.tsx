@@ -26,14 +26,14 @@ export default function LaunchPartyPage() {
 
   return (
     <div style={{ background: '#020810', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 32px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(10px, 2vw, 14px) clamp(16px, 4vw, 32px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
           <img src="/brand/0n-anim-logo.svg" alt="0nCore" style={{ height: 28 }} />
           <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}><span style={{ color: '#7ed957' }}>0n</span>CORE</span>
         </Link>
       </nav>
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(16px, 4vw, 24px)', position: 'relative' }}>
         {/* Background effects */}
         <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translate(-50%,-50%)', width: 800, height: 800, background: 'radial-gradient(circle, rgba(126,217,87,0.06) 0%, transparent 60%)', pointerEvents: 'none' }} />
 
@@ -51,7 +51,7 @@ export default function LaunchPartyPage() {
             Live demo. Exclusive early access. Behind-the-scenes look at the future of AI orchestration.
           </p>
 
-          <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginBottom: 40 }}>
+          <div style={{ display: 'flex', gap: 'clamp(12px, 3vw, 20px)', justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
             {[
               { label: 'Live Demo', desc: 'See 0nCore in action' },
               { label: 'Early Access', desc: 'First 50 attendees' },

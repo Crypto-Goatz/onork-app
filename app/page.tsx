@@ -60,11 +60,29 @@ const COMMUNITY = [
 export default function HomePage() {
   return (
     <div style={{ background: '#020810', color: '#fff', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'SoftwareApplication',
+            name: '0nCore',
+            applicationCategory: 'BusinessApplication',
+            operatingSystem: 'Web',
+            offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free to start' },
+            description: 'AI Business Operating System with 1,554 tools across 96 services',
+            url: 'https://0ncore.com',
+            author: { '@type': 'Organization', name: 'RocketOpp LLC', url: 'https://rocketopp.com' },
+          })
+        }}
+      />
+
       {/* ═══ NAV ═══ */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 32px',
+        padding: 'clamp(10px, 2vw, 12px) clamp(16px, 4vw, 32px)',
         background: 'rgba(2,8,16,0.85)', backdropFilter: 'blur(20px)',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
       }}>
@@ -74,7 +92,7 @@ export default function HomePage() {
             <span style={{ color: '#7ed957' }}>0n</span>CORE
           </span>
         </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+        <div className="oncore-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           <Link href="/platform" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Platform</Link>
           <Link href="/connections" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Connections</Link>
           <Link href="/launch-party" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Launch Party</Link>
@@ -85,18 +103,23 @@ export default function HomePage() {
             textDecoration: 'none',
           }}>VIP Access</Link>
         </div>
+        <Link href="/login" className="oncore-mobile-menu" style={{
+          display: 'none', fontSize: 13, fontWeight: 600, color: '#020810',
+          background: '#7ed957', padding: '8px 20px', borderRadius: 8,
+          textDecoration: 'none',
+        }}>VIP Access</Link>
       </nav>
 
       {/* ═══ HERO ═══ */}
       <section style={{
-        position: 'relative', padding: '140px 24px 80px', overflow: 'hidden',
+        position: 'relative', padding: 'clamp(100px, 15vw, 140px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 80px)', overflow: 'hidden',
         minHeight: '85vh', display: 'flex', alignItems: 'center',
       }}>
         {/* Background glow */}
         <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translate(-50%,-30%)', width: 900, height: 900, background: 'radial-gradient(circle, rgba(126,217,87,0.08) 0%, transparent 60%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', top: '30%', right: '10%', width: 400, height: 400, background: 'radial-gradient(circle, rgba(0,212,255,0.05) 0%, transparent 60%)', pointerEvents: 'none' }} />
 
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'clamp(24px, 4vw, 60px)', alignItems: 'center' }}>
           {/* Left: Copy */}
           <div>
             <div style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '5px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 24, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -162,8 +185,8 @@ export default function HomePage() {
       </section>
 
       {/* ═══ PARTNER LOGOS ═══ */}
-      <section style={{ padding: '0 24px 60px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 36, flexWrap: 'wrap', maxWidth: 900, margin: '0 auto' }}>
+      <section style={{ padding: '0 clamp(16px, 4vw, 24px) 60px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(16px, 3vw, 36px)', flexWrap: 'wrap', maxWidth: 900, margin: '0 auto' }}>
           {PARTNERS.map(p => (
             <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.5 }}>
               <img src={p.logo} alt={p.name} style={{ height: 22, filter: 'brightness(0) invert(1)', objectFit: 'contain' }} />
@@ -174,8 +197,8 @@ export default function HomePage() {
       </section>
 
       {/* ═══ 4 FEATURES ═══ */}
-      <section style={{ padding: '80px 24px', maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
           {FEATURES.map(f => (
             <div key={f.num} style={{
               padding: 28, borderRadius: 16,
@@ -193,13 +216,13 @@ export default function HomePage() {
       </section>
 
       {/* ═══ INTEGRATION GRID ═══ */}
-      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Integration Grid</h2>
+            <h2 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 800, marginBottom: 8 }}>Integration Grid</h2>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>Connect to All Modern Platforms.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 12 }}>
             {INTEGRATIONS.map(i => (
               <div key={i.name} style={{
                 padding: '16px 12px', borderRadius: 12, textAlign: 'center',
@@ -219,8 +242,8 @@ export default function HomePage() {
       </section>
 
       {/* ═══ DOCUMENTATION + BLOG PREVIEW ═══ */}
-      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
+      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 32 }}>
           {/* Documentation */}
           <div style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', padding: 28 }}>
             <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Developer Documentation</h3>
@@ -258,10 +281,10 @@ export default function HomePage() {
       </section>
 
       {/* ═══ COMMUNITY ═══ */}
-      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 28, fontWeight: 800, textAlign: 'center', marginBottom: 48 }}>Community</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          <h2 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 800, textAlign: 'center', marginBottom: 48 }}>Community</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
             {COMMUNITY.map((c, i) => (
               <div key={i} style={{
                 padding: 24, borderRadius: 16,
@@ -284,14 +307,14 @@ export default function HomePage() {
       </section>
 
       {/* ═══ LAUNCH PARTY CTA ═══ */}
-      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
+      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#7ed957', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>May 1st · 9 PM EST</div>
-          <h2 style={{ fontSize: 36, fontWeight: 800, marginBottom: 12 }}>Launch Party</h2>
+          <h2 style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: 800, marginBottom: 12 }}>Launch Party</h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 28, lineHeight: 1.7 }}>
             Join us for the official 0nCore launch. Live demo, exclusive early access, and a behind-the-scenes look at the future of AI orchestration.
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href="/launch-party" style={{
               padding: '14px 36px', background: '#7ed957', color: '#020810',
               fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 16,
@@ -302,9 +325,9 @@ export default function HomePage() {
       </section>
 
       {/* ═══ FOOTER ═══ */}
-      <footer style={{ padding: '24px 32px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+      <footer style={{ padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 32px)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>© 2026 RocketOpp LLC. Powered by 0nMCP.</span>
-        <div style={{ display: 'flex', gap: 20 }}>
+        <div style={{ display: 'flex', gap: 'clamp(12px, 2vw, 20px)', flexWrap: 'wrap' }}>
           <Link href="/platform" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Platform</Link>
           <Link href="/connections" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Connections</Link>
           <Link href="/request" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Request Access</Link>
@@ -313,6 +336,13 @@ export default function HomePage() {
           <a href="mailto:mike@rocketopp.com" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Contact</a>
         </div>
       </footer>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .oncore-nav-links { display: none !important; }
+          .oncore-mobile-menu { display: flex !important; }
+        }
+      `}</style>
     </div>
   )
 }

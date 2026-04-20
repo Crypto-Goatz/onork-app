@@ -189,11 +189,11 @@ export default function LoginPage() {
                 <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Request Access</h2>
                 <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginBottom: 20 }}>Join the waitlist for your personal AI agent.</p>
                 <form onSubmit={handleRequestAccess}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div className="modal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                     <div><label className="login-label">Name</label><input value={requestForm.name} onChange={e => setRequestForm(p => ({ ...p, name: e.target.value }))} required placeholder="Your name" className="login-input" /></div>
                     <div><label className="login-label">Email</label><input type="email" value={requestForm.email} onChange={e => setRequestForm(p => ({ ...p, email: e.target.value }))} required placeholder="you@company.com" className="login-input" /></div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
+                  <div className="modal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
                     <div><label className="login-label">Company</label><input value={requestForm.company} onChange={e => setRequestForm(p => ({ ...p, company: e.target.value }))} placeholder="Company" className="login-input" /></div>
                     <div><label className="login-label">Role</label><input value={requestForm.role} onChange={e => setRequestForm(p => ({ ...p, role: e.target.value }))} placeholder="Your role" className="login-input" /></div>
                   </div>
@@ -248,7 +248,12 @@ export default function LoginPage() {
 
         @media (max-width: 900px) {
           .login-split { flex-direction: column; }
-          .login-right { border-left: none; border-top: 1px solid rgba(255,255,255,0.04); }
+          .login-right { border-left: none; border-top: 1px solid rgba(255,255,255,0.04); padding: 24px 16px; }
+          .login-left { padding: 24px 16px; }
+        }
+        @media (max-width: 480px) {
+          .glass-login-card { padding: 20px; }
+          .modal-form-grid { grid-template-columns: 1fr !important; }
         }
 
         .glass-login-card {

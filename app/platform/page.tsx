@@ -36,7 +36,7 @@ export default function PlatformPage() {
       <nav style={{
         position: 'sticky', top: 0, zIndex: 50,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '14px 32px',
+        padding: 'clamp(10px, 2vw, 14px) clamp(16px, 4vw, 32px)',
         background: 'rgba(2,8,16,0.85)', backdropFilter: 'blur(16px)',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
       }}>
@@ -44,15 +44,16 @@ export default function PlatformPage() {
           <img src="/brand/0n-anim-logo.svg" alt="0nCore" style={{ height: 28 }} />
           <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}><span style={{ color: '#7ed957' }}>0n</span>CORE</span>
         </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+        <div className="platform-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/connections" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Connections</Link>
           <Link href="/pricing" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Pricing</Link>
           <Link href="/request" style={{ fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Request Access</Link>
         </div>
+        <Link href="/request" className="platform-mobile-cta" style={{ display: 'none', fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Request Access</Link>
       </nav>
 
       {/* ═══ HERO ═══ */}
-      <section style={{ textAlign: 'center', padding: '100px 24px 60px', position: 'relative' }}>
+      <section style={{ textAlign: 'center', padding: 'clamp(60px, 10vw, 100px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 60px)', position: 'relative' }}>
         <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translate(-50%,-50%)', width: 800, height: 800, background: 'radial-gradient(circle, rgba(126,217,87,0.06) 0%, transparent 60%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 720, margin: '0 auto' }}>
           <div style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '5px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 24, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -69,7 +70,7 @@ export default function PlatformPage() {
       </section>
 
       {/* ═══ REAL-TIME SYNC ═══ */}
-      <section style={{ padding: '40px 24px 80px' }}>
+      <section style={{ padding: 'clamp(24px, 4vw, 40px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 80px)' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 24 }}>Syncs with everything you already use</h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
@@ -90,9 +91,9 @@ export default function PlatformPage() {
       </section>
 
       {/* ═══ HOW IT WORKS ═══ */}
-      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 28, fontWeight: 800, textAlign: 'center', marginBottom: 12 }}>How it actually works</h2>
+          <h2 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 800, textAlign: 'center', marginBottom: 12 }}>How it actually works</h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', textAlign: 'center', maxWidth: 560, margin: '0 auto 48px', lineHeight: 1.7 }}>
             Every piece of information in 0nCore lives in one place. When you connect a tool — Slack, your calendar, your email — that tool becomes a window into the same data. Not a copy. Not a sync that runs every 15 minutes. The same data, viewed from wherever you are.
           </p>
@@ -141,15 +142,15 @@ export default function PlatformPage() {
       </section>
 
       {/* ═══ CAPABILITIES ═══ */}
-      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>What you can do</h2>
+            <h2 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 800, marginBottom: 8 }}>What you can do</h2>
             <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', maxWidth: 560, margin: '0 auto', lineHeight: 1.7 }}>
               Not features. Not apps. Capabilities. Things you can actually do, right now, from one place.
             </p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
             {CAPABILITIES.map((c, i) => (
               <div key={i} style={{
                 padding: '20px 22px', borderRadius: 14,
@@ -164,14 +165,14 @@ export default function PlatformPage() {
       </section>
 
       {/* ═══ THE AI ═══ */}
-      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>Your AI learns you</h2>
+          <h2 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 800, marginBottom: 12 }}>Your AI learns you</h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', lineHeight: 1.8, maxWidth: 580, margin: '0 auto 40px' }}>
             Every 0nCore account includes a personal AI that adapts to how you work. It learns your communication style, your priorities, your schedule patterns, and your preferences. The more you use it, the less you have to tell it.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16 }}>
             {[
               { title: 'Brand Intelligence', desc: 'Knows your colors, fonts, voice, and messaging. Every AI-generated output matches your brand automatically.' },
               { title: 'Company Knowledge', desc: 'Trained on your products, services, pricing, and FAQs. Answers customer questions accurately without scripting.' },
@@ -191,9 +192,9 @@ export default function PlatformPage() {
       </section>
 
       {/* ═══ NOT AN APP — AN OS ═══ */}
-      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>This is not another app</h2>
+          <h2 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 800, marginBottom: 12 }}>This is not another app</h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', lineHeight: 1.8, maxWidth: 580, margin: '0 auto 32px' }}>
             You do not need another dashboard to check. Another login to remember. Another place to update. 0nCore is the operating system underneath all of your tools. It connects them, syncs them, and makes them smarter — without replacing any of them.
           </p>
@@ -208,13 +209,13 @@ export default function PlatformPage() {
       </section>
 
       {/* ═══ CTA ═══ */}
-      <section style={{ padding: '80px 24px', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
+      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
         <div style={{ maxWidth: 500, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 800, marginBottom: 12 }}>Ready?</h2>
+          <h2 style={{ fontSize: 'clamp(26px, 4vw, 32px)', fontWeight: 800, marginBottom: 12 }}>Ready?</h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 28, lineHeight: 1.7 }}>
             Early access is open. No credit card. No commitment. Just connect your tools and watch everything sync.
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href="/request" style={{ padding: '14px 36px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 16, boxShadow: '0 0 30px rgba(126,217,87,0.3)' }}>
               Request Access
             </Link>
@@ -226,14 +227,21 @@ export default function PlatformPage() {
       </section>
 
       {/* Footer */}
-      <footer style={{ padding: '24px 32px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+      <footer style={{ padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 32px)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>© 2026 RocketOpp LLC. Powered by 0nMCP — 1,554 tools, 96 services, 5 patents pending.</span>
-        <div style={{ display: 'flex', gap: 20 }}>
+        <div style={{ display: 'flex', gap: 'clamp(12px, 2vw, 20px)', flexWrap: 'wrap' }}>
           <Link href="/connections" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Connections</Link>
           <Link href="/request" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Request Access</Link>
           <a href="https://0nmcp.com" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>0nMCP</a>
         </div>
       </footer>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .platform-nav-links { display: none !important; }
+          .platform-mobile-cta { display: flex !important; }
+        }
+      `}</style>
     </div>
   )
 }

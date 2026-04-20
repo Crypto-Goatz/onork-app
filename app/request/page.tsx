@@ -29,14 +29,14 @@ export default function RequestPage() {
 
   return (
     <div style={{ background: '#020810', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 32px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(10px, 2vw, 14px) clamp(16px, 4vw, 32px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
           <img src="/brand/0n-anim-logo.svg" alt="0nCore" style={{ height: 28 }} />
           <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}><span style={{ color: '#7ed957' }}>0n</span>CORE</span>
         </Link>
       </nav>
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(16px, 4vw, 24px)' }}>
         {submitted ? (
           <div style={{ textAlign: 'center', maxWidth: 480 }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
