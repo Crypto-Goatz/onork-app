@@ -96,6 +96,7 @@ export const MASTER_SNAPSHOT: Snapshot = {
     workflows: [
       { name: 'Lead Follow-up', trigger: 'contact.created', webhookUrl: 'https://0ncore.com/api/agent-bridge' },
       { name: 'Content Engine', trigger: 'manual', webhookUrl: 'https://0ncore.com/api/workflows/blog-to-social' },
+      { name: 'HIPAA Assessment', trigger: 'manual', webhookUrl: 'https://0ncore.com/api/hipaa/scan' },
     ],
     knowledgeBases: [
       { slot: 'K1', name: 'Platform', description: '0nCore platform knowledge' },
