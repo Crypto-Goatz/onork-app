@@ -619,9 +619,12 @@ export default function Sidebar({ isOpen, onClose, isAdmin: isAdminProp }: Sideb
             </div>
           )}
           <div className="jp-sidebar-footer-label">Powered by</div>
-          <div className="jp-sidebar-footer-value">
+          <div className="jp-sidebar-footer-value" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span className="jp-sidebar-footer-dot" />
             0nMCP v4.5.0
+            <a href="https://www.youtube.com/@0ncoreAI" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', opacity: 0.4, marginLeft: 'auto' }} className="sidebar-yt">
+              <img src="/logos/youtube.svg" alt="YouTube" style={{ width: 14, height: 14, filter: 'brightness(0) invert(1)' }} />
+            </a>
           </div>
         </div>
       </aside>

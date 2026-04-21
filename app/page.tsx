@@ -326,18 +326,26 @@ export default function HomePage() {
 
       {/* ═══ FOOTER ═══ */}
       <footer style={{ padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 32px)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>© 2026 RocketOpp LLC. Powered by 0nMCP.</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>© 2026 RocketOpp LLC. Powered by 0nMCP.</span>
+          <a href="https://www.youtube.com/@0ncoreAI" target="_blank" rel="noopener noreferrer" className="footer-yt-icon">
+            <img src="/logos/youtube.svg" alt="YouTube" style={{ width: 18, height: 18, filter: 'brightness(0) invert(1)' }} />
+          </a>
+        </div>
         <div style={{ display: 'flex', gap: 'clamp(12px, 2vw, 20px)', flexWrap: 'wrap' }}>
           <Link href="/platform" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Platform</Link>
           <Link href="/connections" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Connections</Link>
           <Link href="/request" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Request Access</Link>
           <Link href="/launch-party" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Launch Party</Link>
           <a href="https://0nmcp.com" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>0nMCP</a>
+          <a href="https://www.youtube.com/@0ncoreAI" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }} target="_blank" rel="noopener noreferrer">YouTube</a>
           <a href="mailto:mike@rocketopp.com" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Contact</a>
         </div>
       </footer>
 
       <style>{`
+        .footer-yt-icon { display: flex; opacity: 0.3; transition: opacity 0.2s; }
+        .footer-yt-icon:hover { opacity: 0.8; }
         @media (max-width: 768px) {
           .oncore-nav-links { display: none !important; }
           .oncore-mobile-menu { display: flex !important; }
