@@ -147,39 +147,20 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right: Video placeholder / Hero image */}
+          {/* Right: Hero Video */}
           <div style={{
             position: 'relative', borderRadius: 20, overflow: 'hidden',
             border: '1px solid rgba(126,217,87,0.15)',
             boxShadow: '0 20px 80px rgba(0,0,0,0.5), 0 0 40px rgba(126,217,87,0.08)',
-            aspectRatio: '16/10',
+            aspectRatio: '16/9',
           }}>
-            <img src="/brand/oncore-hero.jpg" alt="0nCore Platform" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
-            <div style={{
-              position: 'absolute', inset: 0,
-              background: 'linear-gradient(135deg, rgba(2,8,16,0.6) 0%, transparent 50%, rgba(2,8,16,0.4) 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {/* Play button placeholder */}
-              <div style={{
-                width: 72, height: 72, borderRadius: '50%',
-                background: 'rgba(126,217,87,0.9)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 0 40px rgba(126,217,87,0.5)',
-                cursor: 'pointer',
-              }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="#020810">
-                  <polygon points="8,5 19,12 8,19" />
-                </svg>
-              </div>
-            </div>
-            <div style={{
-              position: 'absolute', bottom: 16, left: 16, right: 16,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>Watch the demo — 2 min</span>
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 6, background: 'rgba(126,217,87,0.15)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.25)' }}>COMING SOON</span>
-            </div>
+            <iframe
+              src="https://www.youtube.com/embed/D91C8EPRixM?rel=0&modestbranding=1&playsinline=1"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title="Integrate any MCP with AI — 0nCore"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+            />
           </div>
         </div>
       </section>
