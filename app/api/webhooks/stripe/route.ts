@@ -39,6 +39,33 @@ export async function POST(req: Request) {
           current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
           cancel_at_period_end: sub.cancel_at_period_end,
         }, { onConflict: 'user_id,product_id' })
+
+        // Addon subscriptions — unlock the product_key and promote any
+        // existing trial CRO9 sites to active status.
+        if (session.metadata?.type === 'addon_purchase') {
+          const productSlug = session.metadata.product_slug
+          const locationId = session.metadata.location_id
+          const capabilities = JSON.parse(session.metadata.capabilities || '[]')
+
+          await supabase.from('product_keys').upsert({
+            user_id: userId,
+            location_id: locationId || '',
+            product_slug: productSlug,
+            product_name: session.metadata.product_name || productSlug,
+            status: 'active',
+            capabilities,
+            stripe_payment_id: sub.id,
+            price_cents: typeof sub.items?.data?.[0]?.price?.unit_amount === 'number' ? sub.items.data[0].price.unit_amount : 0,
+            activated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id,location_id,product_slug' })
+
+          if (productSlug === 'cro9-neuro-engine') {
+            await supabase.from('cro9_sites')
+              .update({ status: 'active', stripe_subscription_id: sub.id, updated_at: new Date().toISOString() })
+              .eq('user_id', userId)
+              .in('status', ['trial', 'expired'])
+          }
+        }
       }
 
       if (session.mode === 'payment') {

@@ -13,7 +13,7 @@ import {
   Users, Receipt, Mail, Brain, Zap, Bot, Check, ArrowRight, X, Phone,
   Calendar, Contact, TrendingUp, CreditCard, ShoppingBag, ClipboardList,
   Layers, Image, Database, Megaphone, FileSignature, Store, Link,
-  UserCog, Globe, Building, Settings, Palette,
+  UserCog, Globe, Building, Settings, Palette, LineChart as LineChartIcon,
 } from 'lucide-react'
 
 interface Addon {
@@ -61,6 +61,7 @@ const ADDONS: Addon[] = [
   { slug: 'location-settings', name: 'Location Settings', category: 'admin', priceCents: 1900, icon: <Settings className="h-5 w-5" />, description: 'Manage location config, custom fields, tags, and templates.', details: 'Manage location configuration, custom fields, custom values, tags, and templates.', features: ['Location settings', 'Custom field CRUD', 'Custom value management', 'Tag management', 'Template listing'] },
   { slug: 'brand-board', name: 'Brand Board', category: 'content', priceCents: 900, icon: <Palette className="h-5 w-5" />, description: 'Manage brand design kits — colors, fonts, and logos.', details: 'Manage brand design kits — colors, fonts, logos, and brand assets.', features: ['Brand kit reading', 'Brand kit updates', 'Color management', 'Font management'] },
   { slug: 'blog-to-social', name: 'Blog to Social + Email', category: 'marketing', priceCents: 4900, badge: 'New', icon: <Zap className="h-5 w-5" />, description: 'AI writes a blog, posts to social, and emails contacts — one click.', details: 'Full automated content workflow: AI generates an SEO blog post, creates platform-specific social posts, publishes to connected accounts, generates an email campaign, and sends to your contact segment. Trigger from the dashboard or via CRM Agent Studio webhook.', features: ['AI blog generation (Groq)', 'Multi-platform social posting', 'Email campaign generation', 'CRM Agent Studio webhook', 'Contact segment targeting', 'Live execution tracking'] },
+  { slug: 'cro9-neuro-engine', name: 'CRO9 Neuro Engine', category: 'marketing', priceCents: 2900, badge: '7-day free trial', icon: <LineChartIcon className="h-5 w-5" />, description: 'Daily AI ranking engine. GSC + SerpAPI + adaptive scoring. Learns your site.', details: 'Connect Google Search Console, drop in your SerpAPI key, and the engine runs nightly: pulls fresh GSC data, crawls your top pages, fetches competitor SERPs, scores every URL against five adaptive factors, generates a content brief, and tracks the rank delta after you apply. Weights self-tune per site.', features: ['Daily GSC + GA4 + SerpAPI pull', 'Opportunity scoring per URL', 'Competitor top-10 gap analysis', 'AI content briefs (word count, schema stack, entities)', 'Action history + adaptive weights', 'JS snippet / WordPress / briefs-only apply modes'] },
 ]
 
 function MarketplaceInner() {

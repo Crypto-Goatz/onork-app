@@ -15,7 +15,14 @@ function getSupabase() {
   )
 }
 
-const ADDON_PRICES: Record<string, { name: string; cents: number; capabilities: string[] }> = {
+interface AddonDef {
+  name: string
+  cents: number
+  capabilities: string[]
+  subscription?: { interval: 'month' | 'year'; trial_days?: number }
+}
+
+const ADDON_PRICES: Record<string, AddonDef> = {
   'ai-course-builder': { name: 'AI Course Builder', cents: 4900, capabilities: ['course_create', 'course_import', 'course_list', 'lesson_generate'] },
   'voice-ai-agent': { name: 'Voice AI Agent', cents: 9900, capabilities: ['voice_agent_create', 'voice_agent_configure', 'voice_action_create', 'voice_call_logs'] },
   'conversation-ai': { name: 'Conversation AI', cents: 4900, capabilities: ['convo_ai_configure', 'convo_ai_manage', 'convo_message_send'] },
@@ -47,6 +54,12 @@ const ADDON_PRICES: Record<string, { name: string; cents: number; capabilities: 
   'saas-manager': { name: 'SaaS & White-Label', cents: 9900, capabilities: ['saas_location_manage', 'company_settings', 'whitelabel_config', 'location_provision'] },
   'location-settings': { name: 'Location Settings', cents: 1900, capabilities: ['location_settings', 'custom_field_crud', 'custom_value_crud', 'tag_manage', 'template_list'] },
   'brand-board': { name: 'Brand Board', cents: 900, capabilities: ['brand_kit_read', 'brand_kit_update'] },
+  'cro9-neuro-engine': {
+    name: 'CRO9 Neuro Engine',
+    cents: 2900,
+    capabilities: ['cro9_analyze', 'cro9_brief', 'cro9_apply', 'cro9_history'],
+    subscription: { interval: 'month', trial_days: 7 },
+  },
 }
 
 export async function POST(req: NextRequest) {
@@ -66,28 +79,53 @@ export async function POST(req: NextRequest) {
 
   const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'
 
-  const session = await getStripe().checkout.sessions.create({
-    mode: 'payment',
-    line_items: [{
-      price_data: {
-        currency: 'usd',
-        unit_amount: addon.cents,
-        product_data: { name: `0nCore Add-on: ${addon.name}` },
-      },
-      quantity: 1,
-    }],
-    metadata: {
-      type: 'addon_purchase',
-      product_slug: productSlug,
-      product_name: addon.name,
-      user_id: user.id,
-      location_id: locationId,
-      capabilities: JSON.stringify(addon.capabilities),
-    },
+  const metadata = {
+    type: 'addon_purchase',
+    product_slug: productSlug,
+    product_name: addon.name,
+    user_id: user.id,
+    location_id: locationId,
+    capabilities: JSON.stringify(addon.capabilities),
+  }
+
+  const sharedSessionOptions = {
     customer_email: user.email || undefined,
     success_url: `${origin}/dashboard/marketplace?success=${productSlug}`,
     cancel_url: `${origin}/dashboard/marketplace`,
-  })
+  }
+
+  const session = addon.subscription
+    ? await getStripe().checkout.sessions.create({
+        mode: 'subscription',
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            unit_amount: addon.cents,
+            recurring: { interval: addon.subscription.interval },
+            product_data: { name: `0nCore Add-on: ${addon.name}` },
+          },
+          quantity: 1,
+        }],
+        subscription_data: {
+          metadata,
+          trial_period_days: addon.subscription.trial_days || undefined,
+        },
+        metadata,
+        ...sharedSessionOptions,
+      })
+    : await getStripe().checkout.sessions.create({
+        mode: 'payment',
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            unit_amount: addon.cents,
+            product_data: { name: `0nCore Add-on: ${addon.name}` },
+          },
+          quantity: 1,
+        }],
+        metadata,
+        ...sharedSessionOptions,
+      })
 
   return NextResponse.json({ url: session.url })
 }
