@@ -15,9 +15,9 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/brand/0n-anim-logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/brand/0ncore-logo.png",
+      "sizes": "350x50",
+      "type": "image/png"
     }
   ],
   "categories": ["business", "productivity"],
