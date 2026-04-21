@@ -621,7 +621,7 @@ export default function Sidebar({ isOpen, onClose, isAdmin: isAdminProp }: Sideb
           <div className="jp-sidebar-footer-label">Powered by</div>
           <div className="jp-sidebar-footer-value">
             <span className="jp-sidebar-footer-dot" />
-            0nMCP v3.2.2
+            0nMCP v4.5.0
           </div>
         </div>
       </aside>

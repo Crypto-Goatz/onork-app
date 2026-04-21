@@ -536,7 +536,7 @@ export default function AgencyCommandCenter() {
             <div className="jp-card-header"><h6>Ecosystem Products</h6></div>
             <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
-                { name: '0nMCP', desc: 'Universal AI API Orchestrator', status: 'v2.9.0', color: 'var(--jp-green)' },
+                { name: '0nMCP', desc: 'Universal AI API Orchestrator', status: 'v4.5.0', color: 'var(--jp-green)' },
                 { name: '0nCore', desc: 'AI-Powered CRM', status: 'Live', color: 'var(--jp-cyan)' },
                 { name: '0nAI', desc: 'Command Center', status: 'Live', color: 'var(--jp-purple)' },
                 { name: '0nmcp.com', desc: 'Marketing + Community', status: '824+ pages', color: 'var(--jp-amber)' },

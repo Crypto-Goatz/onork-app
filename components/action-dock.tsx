@@ -149,9 +149,7 @@ export function ActionDock() {
           isOpen ? 'translate-x-0' : 'translate-x-full'
         )}
         style={{
-          background: 'rgba(0, 0, 0, 0.85)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
+          background: 'hsl(var(--card))',
           borderColor: 'hsl(var(--border))',
         }}
       >

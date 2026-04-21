@@ -47,7 +47,7 @@ export async function GET() {
 
   return NextResponse.json({
     status: allOnline ? 'online' : 'offline',
-    version: '3.2.2',
+    version: '4.5.0',
     services: servicesOnline,
     checks,
     mode: 'cloud',
