@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { VideoBg } from '@/components/video-bg'
 
 export const metadata: Metadata = {
   title: '0nCore — Scale Your Platform 10x with AI Connectivity',
@@ -112,9 +113,11 @@ export default function HomePage() {
         position: 'relative', padding: 'clamp(100px, 15vw, 140px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 80px)', overflow: 'hidden',
         minHeight: '85vh', display: 'flex', alignItems: 'center',
       }}>
+        {/* Video background */}
+        <VideoBg opacity={0.12} />
         {/* Background glow */}
-        <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translate(-50%,-30%)', width: 900, height: 900, background: 'radial-gradient(circle, rgba(126,217,87,0.08) 0%, transparent 60%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: '30%', right: '10%', width: 400, height: 400, background: 'radial-gradient(circle, rgba(0,212,255,0.05) 0%, transparent 60%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translate(-50%,-30%)', width: 900, height: 900, background: 'radial-gradient(circle, rgba(126,217,87,0.08) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 1 }} />
+        <div style={{ position: 'absolute', top: '30%', right: '10%', width: 400, height: 400, background: 'radial-gradient(circle, rgba(0,212,255,0.05) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 1 }} />
 
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'clamp(24px, 4vw, 60px)', alignItems: 'center' }}>
           {/* Left: Copy */}

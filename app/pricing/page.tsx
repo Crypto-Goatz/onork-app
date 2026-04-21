@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { VideoBg } from '@/components/video-bg'
 
 export const metadata: Metadata = {
   title: '0nCore Pricing — AI Add-ons for CRM Automation',
@@ -58,8 +59,7 @@ export default function PricingPage() {
       {/* Nav */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(12px, 2vw, 16px) clamp(16px, 4vw, 32px)', background: 'rgba(2,8,16,0.8)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
         <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <img src="/brand/0ncore-icon.png" alt="0nCore" style={{ height: 28 }} />
-          <span style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}><span style={{ color: '#7ed957' }}>0n</span>Core</span>
+          <img src="/brand/0ncore-logo.png" alt="0nCore" style={{ height: 28, objectFit: 'contain' }} />
         </a>
         <div className="pricing-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           <a href="https://0nmcp.com" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Integrations</a>
@@ -70,19 +70,22 @@ export default function PricingPage() {
       </nav>
 
       {/* Hero */}
-      <section style={{ textAlign: 'center', padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 24px) clamp(36px, 5vw, 60px)', maxWidth: 800, margin: '0 auto' }}>
-        <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 20, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-          335 Tools · 96 Services · 31 Add-ons
-        </div>
-        <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 0 16px' }}>
-          Pay for what you <span style={{ color: '#7ed957' }}>use</span>.
-        </h1>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 560, margin: '0 auto 32px' }}>
-          Each add-on unlocks a CRM capability powered by the 0nMCP SDK. Install what you need. Cancel anytime. No contracts.
-        </p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href="/login" style={{ padding: '12px 28px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15 }}>Start Free</a>
-          <a href="https://0nmcp.com" style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 15, border: '1px solid rgba(255,255,255,0.08)' }}>View Integrations</a>
+      <section style={{ textAlign: 'center', padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 24px) clamp(36px, 5vw, 60px)', maxWidth: 800, margin: '0 auto', position: 'relative', overflow: 'hidden' }}>
+        <VideoBg opacity={0.1} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 20, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            335 Tools · 96 Services · 31 Add-ons
+          </div>
+          <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 0 16px' }}>
+            Pay for what you <span style={{ color: '#7ed957' }}>use</span>.
+          </h1>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 560, margin: '0 auto 32px' }}>
+            Each add-on unlocks a CRM capability powered by the 0nMCP SDK. Install what you need. Cancel anytime. No contracts.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a href="/login" style={{ padding: '12px 28px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15 }}>Start Free</a>
+            <a href="https://0nmcp.com" style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 15, border: '1px solid rgba(255,255,255,0.08)' }}>View Integrations</a>
+          </div>
         </div>
       </section>
 

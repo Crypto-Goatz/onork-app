@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { VideoBg } from '@/components/video-bg'
 
 const FEATURES = [
   '1,554+ AI tools across 96 services',
@@ -58,11 +59,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-split">
-      {/* Animated fog background */}
-      <div className="fog-layer fog-1" />
-      <div className="fog-layer fog-2" />
-      <div className="fog-layer fog-3" />
+    <div className="login-split" style={{ position: 'relative' }}>
+      {/* Video background */}
+      <VideoBg opacity={0.08} />
 
       {/* LEFT — Login */}
       <div className="login-left">
