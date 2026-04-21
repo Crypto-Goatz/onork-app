@@ -51,6 +51,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Common typo redirects
+  if (request.nextUrl.pathname === '/hippa' || request.nextUrl.pathname.startsWith('/hippa/')) {
+    const url = request.nextUrl.clone()
+    url.pathname = request.nextUrl.pathname.replace('/hippa', '/hipaa')
+    return NextResponse.redirect(url, 301)
+  }
+
   // If logged in and visiting login/signup, redirect to dashboard
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
     const url = request.nextUrl.clone()
@@ -62,5 +69,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/console/:path*', '/login', '/signup'],
+  matcher: ['/dashboard/:path*', '/console/:path*', '/login', '/signup', '/hippa', '/hippa/:path*'],
 }
