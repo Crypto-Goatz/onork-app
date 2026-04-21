@@ -3,7 +3,7 @@
  * PRIVATE add-on — RocketOpp sub-location only (6MSqx0trfxgLxeHBJE1k)
  *
  * Passive-only scanning: HTTP GET/HEAD requests, no auth attempts, no form submissions.
- * 51 checks across public URL, dashboard URL, and universal categories.
+ * 63 checks across public URL, dashboard URL, and universal categories.
  */
 
 // ---------------------------------------------------------------------------
@@ -176,6 +176,11 @@ const PUBLIC_CHECKS: CheckDef[] = [
   { id: 'PUB-21', name: 'Third-party tracker assessment', ruleSection: '164.502(a)', severity: 'high', category: 'organizational', currentRule: 'addressable', nprm2026: 'required', effort: 'medium', impact: 'high' },
   { id: 'PUB-22', name: 'No mixed content (HTTP on HTTPS)', ruleSection: '164.312(e)(1)', severity: 'high', category: 'technical', currentRule: 'addressable', nprm2026: 'required', effort: 'low', impact: 'high' },
   { id: 'PUB-23', name: 'No ePHI in URL structure', ruleSection: '164.312(e)(1)', severity: 'high', category: 'technical', currentRule: 'required', nprm2026: 'required', effort: 'low', impact: 'high' },
+  { id: 'PUB-24', name: 'No CMS version disclosure', ruleSection: '164.312(a)(1)', severity: 'medium', category: 'technical', currentRule: 'addressable', nprm2026: 'required', effort: 'low', impact: 'medium' },
+  { id: 'PUB-25', name: 'No WordPress XML-RPC', ruleSection: '164.312(a)(1)', severity: 'high', category: 'technical', currentRule: 'addressable', nprm2026: 'required', effort: 'low', impact: 'high' },
+  { id: 'PUB-26', name: 'No exposed /wp-admin', ruleSection: '164.312(a)(1)', severity: 'medium', category: 'technical', currentRule: 'addressable', nprm2026: 'required', effort: 'low', impact: 'medium' },
+  { id: 'PUB-27', name: 'Homepage returns 200 OK', ruleSection: '164.308(a)(8)', severity: 'medium', category: 'technical', currentRule: 'addressable', nprm2026: 'required', effort: 'medium', impact: 'medium' },
+  { id: 'PUB-28', name: 'Content updated within 12 months', ruleSection: '164.308(a)(8)', severity: 'low', category: 'organizational', currentRule: 'addressable', nprm2026: 'required', effort: 'medium', impact: 'low' },
 ]
 
 // ----- DASHBOARD URL CHECKS (DASH-01..DASH-21) -----
@@ -206,6 +211,13 @@ const DASHBOARD_CHECKS: CheckDef[] = [
   { id: 'DASH-19', name: 'Dashboard no exposed /.git', ruleSection: '164.312(a)(1)', severity: 'critical', category: 'technical', currentRule: 'required', nprm2026: 'required', effort: 'low', impact: 'critical' },
   { id: 'DASH-20', name: 'Dashboard no ePHI in URL', ruleSection: '164.312(e)(1)', severity: 'high', category: 'technical', currentRule: 'required', nprm2026: 'required', effort: 'low', impact: 'high' },
   { id: 'DASH-21', name: 'Dashboard no mixed content', ruleSection: '164.312(e)(1)', severity: 'high', category: 'technical', currentRule: 'addressable', nprm2026: 'required', effort: 'low', impact: 'high' },
+  { id: 'DASH-22', name: 'No exposed /phpinfo.php on dashboard', ruleSection: '164.312(a)(1)', severity: 'critical', category: 'technical', currentRule: 'required', nprm2026: 'required', effort: 'low', impact: 'critical' },
+  { id: 'DASH-23', name: 'No exposed /test.php on dashboard', ruleSection: '164.312(a)(1)', severity: 'high', category: 'technical', currentRule: 'required', nprm2026: 'required', effort: 'low', impact: 'high' },
+  { id: 'DASH-24', name: 'No open self-registration', ruleSection: '164.312(a)(1)', severity: 'critical', category: 'technical', currentRule: 'required', nprm2026: 'required', effort: 'low', impact: 'critical' },
+  { id: 'DASH-25', name: 'No wildcard CORS origin', ruleSection: '164.312(e)(2)', severity: 'critical', category: 'technical', currentRule: 'required', nprm2026: 'required', effort: 'low', impact: 'critical' },
+  { id: 'DASH-26', name: 'No EOL software detected', ruleSection: '164.308(a)(5)(ii)(B)', severity: 'critical', category: 'technical', currentRule: 'addressable', nprm2026: 'required', effort: 'high', impact: 'critical' },
+  { id: 'DASH-27', name: 'No exposed /composer.json', ruleSection: '164.312(a)(1)', severity: 'high', category: 'technical', currentRule: 'required', nprm2026: 'required', effort: 'low', impact: 'high' },
+  { id: 'DASH-28', name: 'No exposed /storage/logs', ruleSection: '164.312(a)(1)', severity: 'high', category: 'technical', currentRule: 'required', nprm2026: 'required', effort: 'low', impact: 'high' },
 ]
 
 // ----- UNIVERSAL CHECKS (UNI-01..UNI-07) -----
@@ -401,6 +413,43 @@ async function runPublicChecks(publicUrl: string): Promise<HIPAACheck[]> {
     hasPhiUrl ? 'Potential ePHI identifiers found in URL structure.' : 'No ePHI patterns detected in URL.',
     hasPhiUrl ? 'Remove ePHI from URL paths and query parameters; use opaque IDs.' : undefined)
 
+  // PUB-24: CMS version disclosure (WordPress generator tag)
+  const cmsVersionMatch = html.match(/content=["'](?:WordPress|Joomla|Drupal)\s+([\d.]+)/i)
+  push(PUBLIC_CHECKS[23], cmsVersionMatch ? 'fail' : 'pass',
+    cmsVersionMatch ? `CMS version disclosed: ${cmsVersionMatch[0]}.` : 'No CMS version disclosure found in page source.',
+    cmsVersionMatch ? 'Remove the generator meta tag from your CMS. In WordPress: add remove_action("wp_head", "wp_generator") to functions.php.' : undefined)
+
+  // PUB-25: WordPress XML-RPC
+  const xmlrpcStatus = await checkForExposedPath(url, '/xmlrpc.php')
+  push(PUBLIC_CHECKS[24], xmlrpcStatus === 'pass' ? 'pass' : xmlrpcStatus === 'fail' ? 'fail' : 'warning',
+    xmlrpcStatus === 'pass' ? '/xmlrpc.php is not exposed.' : xmlrpcStatus === 'fail' ? '/xmlrpc.php is publicly accessible — attack surface for brute force and DDoS amplification.' : '/xmlrpc.php returned 403 (exists but blocked).',
+    xmlrpcStatus !== 'pass' ? 'Disable XML-RPC via plugin or block in .htaccess / Cloudflare.' : undefined)
+
+  // PUB-26: WordPress admin exposure
+  const wpAdminStatus = await checkForExposedPath(url, '/wp-admin/')
+  push(PUBLIC_CHECKS[25], wpAdminStatus === 'pass' ? 'pass' : wpAdminStatus === 'fail' ? 'warning' : 'pass',
+    wpAdminStatus === 'fail' ? '/wp-admin/ is publicly accessible (should redirect to login or be blocked).' : '/wp-admin/ is properly restricted.',
+    wpAdminStatus === 'fail' ? 'Restrict /wp-admin/ access by IP or implement a WAF rule.' : undefined)
+
+  // PUB-27: Homepage returns 200
+  push(PUBLIC_CHECKS[26], (res && res.status === 200) ? 'pass' : 'fail',
+    (res && res.status === 200) ? 'Homepage returns HTTP 200 OK.' : `Homepage returns HTTP ${res?.status || 'unreachable'} — site may be broken or misconfigured.`,
+    (res && res.status === 200) ? undefined : 'Investigate and fix the root cause of the non-200 response. A broken website indicates no operational monitoring.')
+
+  // PUB-28: Content freshness (look for dates in meta/content)
+  const datePatterns = html.match(/\b20(2[0-6]|1\d)[-\/](0[1-9]|1[0-2])[-\/](0[1-9]|[12]\d|3[01])\b/g) || []
+  const wpModified = html.match(/modified["']?\s*:\s*["'](\d{4}-\d{2}-\d{2})/i)
+  let contentFresh = false
+  const now = Date.now()
+  const oneYear = 365 * 24 * 60 * 60 * 1000
+  for (const d of [...datePatterns, ...(wpModified ? [wpModified[1]] : [])]) {
+    const parsed = new Date(d)
+    if (!isNaN(parsed.getTime()) && (now - parsed.getTime()) < oneYear) { contentFresh = true; break }
+  }
+  push(PUBLIC_CHECKS[27], contentFresh ? 'pass' : 'warning',
+    contentFresh ? 'Content appears to have been updated within the last 12 months.' : 'No evidence of content updates within the last 12 months — may indicate abandoned site.',
+    contentFresh ? undefined : 'Review and update website content regularly. Stale sites suggest no operational oversight.')
+
   return checks
 }
 
@@ -542,6 +591,65 @@ async function runDashboardChecks(dashboardUrl: string): Promise<HIPAACheck[]> {
     mixedContent ? 'Dashboard has mixed content.' : 'No mixed content on dashboard.',
     mixedContent ? 'Update all dashboard resource URLs to HTTPS.' : undefined)
 
+  // DASH-22: phpinfo on dashboard
+  const phpinfoStatus = await checkForExposedPath(url, '/phpinfo.php')
+  push(DASHBOARD_CHECKS[21], phpinfoStatus === 'pass' ? 'pass' : phpinfoStatus === 'fail' ? 'fail' : 'warning',
+    phpinfoStatus === 'pass' ? 'Dashboard /phpinfo.php is not exposed.' : phpinfoStatus === 'fail' ? 'CRITICAL: /phpinfo.php is publicly accessible on dashboard — full server config exposed!' : '/phpinfo.php returned 403 on dashboard (may exist).',
+    phpinfoStatus !== 'pass' ? 'Delete phpinfo.php from the server immediately: rm /path/to/public/phpinfo.php' : undefined)
+
+  // DASH-23: test.php on dashboard
+  const testPhpStatus = await checkForExposedPath(url, '/test.php')
+  push(DASHBOARD_CHECKS[22], testPhpStatus === 'pass' ? 'pass' : testPhpStatus === 'fail' ? 'fail' : 'warning',
+    testPhpStatus === 'pass' ? 'No /test.php found on dashboard.' : testPhpStatus === 'fail' ? '/test.php is publicly accessible — debug file on production.' : '/test.php returned 403 on dashboard.',
+    testPhpStatus !== 'pass' ? 'Remove all test/debug files from production servers.' : undefined)
+
+  // DASH-24: Open self-registration
+  const registerRes = await safeFetch(`${url}/register`, 'GET')
+  const registerHtml = registerRes ? await registerRes.text().catch(() => '') : ''
+  const hasRegForm = registerRes?.status === 200 && (/type=["']password/i.test(registerHtml) || /name=["']email/i.test(registerHtml))
+  push(DASHBOARD_CHECKS[23], hasRegForm ? 'fail' : 'pass',
+    hasRegForm ? 'Open self-registration found at /register — anyone can create an account without authorization.' : 'No open self-registration detected.',
+    hasRegForm ? 'Disable public registration. In Laravel: Auth::routes(["register" => false]). Require invitation-only account creation.' : undefined)
+
+  // DASH-25: CORS wildcard
+  const corsOrigin = headers ? getHeader(headers, 'access-control-allow-origin') : ''
+  const corsHeaders = headers ? getHeader(headers, 'access-control-allow-headers') : ''
+  const wildcardCors = corsOrigin === '*' && /authorization/i.test(corsHeaders)
+  push(DASHBOARD_CHECKS[24], wildcardCors ? 'fail' : corsOrigin === '*' ? 'warning' : 'pass',
+    wildcardCors ? 'CRITICAL: Wildcard CORS (Access-Control-Allow-Origin: *) with Authorization header allowed. Any website can make authenticated API calls.' : corsOrigin === '*' ? 'Wildcard CORS detected but without Authorization header exposure.' : 'CORS is properly restricted.',
+    wildcardCors || corsOrigin === '*' ? 'Restrict Access-Control-Allow-Origin to specific trusted domains. Never use wildcard with Authorization headers.' : undefined)
+
+  // DASH-26: EOL software detection
+  const serverHeader = headers ? getHeader(headers, 'server') : ''
+  const poweredBy = headers ? getHeader(headers, 'x-powered-by') : ''
+  const combined = `${serverHeader} ${poweredBy}`.toLowerCase()
+  const eolPatterns = [
+    { pattern: /php\/(5\.|7\.[0-4])/i, name: 'PHP', match: '' },
+    { pattern: /openssl\/(0\.|1\.0\.[0-2])/i, name: 'OpenSSL', match: '' },
+    { pattern: /apache\/2\.[0-3]\./i, name: 'Apache', match: '' },
+    { pattern: /nginx\/1\.(1[0-9]|[0-9])\./i, name: 'nginx', match: '' },
+  ]
+  const eolFound: string[] = []
+  for (const ep of eolPatterns) {
+    const m = combined.match(ep.pattern)
+    if (m) eolFound.push(`${ep.name} ${m[0]}`)
+  }
+  push(DASHBOARD_CHECKS[25], eolFound.length > 0 ? 'fail' : 'pass',
+    eolFound.length > 0 ? `End-of-life software detected: ${eolFound.join(', ')}. Known CVEs may exist with published exploits.` : 'No EOL software versions detected in response headers.',
+    eolFound.length > 0 ? 'Upgrade all server software to currently supported versions. EOL software cannot be patched and represents an ongoing vulnerability.' : undefined)
+
+  // DASH-27: composer.json
+  const composerStatus = await checkForExposedPath(url, '/composer.json')
+  push(DASHBOARD_CHECKS[26], composerStatus === 'pass' ? 'pass' : composerStatus === 'fail' ? 'fail' : 'warning',
+    composerStatus === 'pass' ? 'Dashboard /composer.json is not exposed.' : composerStatus === 'fail' ? '/composer.json publicly accessible — reveals all PHP dependencies and versions.' : '/composer.json returned 403.',
+    composerStatus !== 'pass' ? 'Block access to /composer.json in server configuration.' : undefined)
+
+  // DASH-28: storage/logs
+  const logsStatus = await checkForExposedPath(url, '/storage/logs/laravel.log')
+  push(DASHBOARD_CHECKS[27], logsStatus === 'pass' ? 'pass' : logsStatus === 'fail' ? 'fail' : 'warning',
+    logsStatus === 'pass' ? 'Application logs are not publicly exposed.' : logsStatus === 'fail' ? 'Application logs are publicly accessible — may contain stack traces, credentials, and ePHI.' : 'Log path returned 403.',
+    logsStatus !== 'pass' ? 'Block access to /storage/logs/ directory. Move logs outside the web root.' : undefined)
+
   return checks
 }
 
@@ -565,17 +673,36 @@ function computeScore(checks: HIPAACheck[], useNprm: boolean): number {
 
   for (const c of checks) {
     const w = SEVERITY_WEIGHT[c.severity] || 2
-    // Determine if this check counts
     const rule = useNprm ? c.nprm2026 : c.currentRule
-    if (rule === 'not-specified' && !useNprm) continue // Skip for current rule
-    // Attestation counts as half credit
+    if (rule === 'not-specified' && !useNprm) continue
     total += w
     if (c.status === 'pass') earned += w
     else if (c.status === 'warning') earned += w * 0.5
     else if (c.status === 'attestation-required') earned += w * 0.5
   }
 
-  return total === 0 ? 100 : Math.round((earned / total) * 100)
+  let rawScore = total === 0 ? 100 : Math.round((earned / total) * 100)
+
+  // ── Hard Score Caps (from EMC methodology) ──
+  // These override the weighted score when catastrophic findings exist
+  const phpinfoExposed = checks.some(c => (c.id === 'PUB-15' || c.id === 'DASH-22') && c.status === 'fail')
+  const eolSoftware = checks.some(c => c.id === 'DASH-26' && c.status === 'fail')
+  const criticalCount = checks.filter(c => c.severity === 'critical' && c.status === 'fail').length
+  const noMfa = checks.some(c => c.id === 'DASH-05' && (c.status === 'fail' || c.status === 'warning'))
+
+  if (useNprm) {
+    // 2026 NPRM caps (stricter)
+    if (phpinfoExposed) rawScore = Math.min(rawScore, 20)
+    if (eolSoftware) rawScore = Math.min(rawScore, 30)
+    if (criticalCount >= 3) rawScore = Math.min(rawScore, 45)
+    if (noMfa) rawScore = Math.min(rawScore, 50)
+  } else {
+    // Current rule caps
+    if (phpinfoExposed) rawScore = Math.min(rawScore, 40)
+    if (eolSoftware) rawScore = Math.min(rawScore, 55)
+  }
+
+  return rawScore
 }
 
 // ---------------------------------------------------------------------------
@@ -622,7 +749,7 @@ export async function runHIPAAScan(input: HIPAAInput): Promise<HIPAAResult> {
     publicUrl: input.publicUrl,
     dashboardUrl: input.dashboardUrl,
     scanDate: new Date().toISOString(),
-    auditor: '0nCore HIPAA Scanner v1.0',
+    auditor: '0nCore HIPAA Scanner v2.0',
 
     currentRuleScore,
     nprm2026Score,
