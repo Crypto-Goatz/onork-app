@@ -71,23 +71,19 @@ export async function generateReport(args: GenerateArgs): Promise<FullReport> {
   // 1) Executive summary — fast Groq call, always
   const executiveSummary = await writeExecSummary(args, actionableFindings)
 
-  // 2) Per-finding content, bounded to top 14 by priority
+  // 2) Per-finding content, bounded to top 14 by priority. Run the 4 AI
+  // calls per finding in parallel; findings themselves processed serially to
+  // avoid hammering Groq's rate limit.
   const top = actionableFindings.slice(0, 14)
   const enriched: ReportFinding[] = []
   let tokens = 0
   for (const f of top) {
-    const explanation = await writeExplanation(args.tier, args.assessment, f)
-    const whyItFails  = await writeWhyItFails(args.assessment, f)
-
-    let devFix: DeveloperFix | undefined
-    if (meta.includesDevCode) {
-      devFix = await writeDevFix(args.assessment, f)
-    }
-
-    let nprmAnalysis: NprmAnalysis | undefined
-    if (meta.includesNprmOverlay) {
-      nprmAnalysis = await writeNprmAnalysis(args.assessment, f)
-    }
+    const [explanation, whyItFails, devFix, nprmAnalysis] = await Promise.all([
+      writeExplanation(args.tier, args.assessment, f),
+      writeWhyItFails(args.assessment, f),
+      meta.includesDevCode    ? writeDevFix(args.assessment, f)       : Promise.resolve(undefined),
+      meta.includesNprmOverlay ? writeNprmAnalysis(args.assessment, f) : Promise.resolve(undefined),
+    ])
 
     enriched.push({
       checkId: f.id, name: f.name,
@@ -185,7 +181,9 @@ Findings:       ${findings.length} actionable
 
 Write 2–3 short paragraphs. Plain English. No hedging. Lead with the verdict ("your site is in X shape today but..." or "you're in reasonable shape but..."). Mention the NPRM delta if grades diverge by more than 10 points. No bullet lists. Max 180 words.`
 
-  return (await groq(prompt, { max_tokens: 500 })).trim()
+  const out = (await groq(prompt, { max_tokens: 500 })).trim()
+  if (out) return out
+  return `${args.assessment.company_name}: your site currently scores ${args.assessment.current_rule_score}/100 (grade ${args.assessment.current_grade}) against the existing HIPAA rule and ${args.assessment.nprm_2026_score}/100 (grade ${args.assessment.nprm_grade}) against the 2026 NPRM. We found ${findings.length} actionable findings; the ones below are ordered by severity so you can work top-to-bottom.`
 }
 
 async function writeExplanation(tier: Tier, a: AssessmentRow, c: RawCheck): Promise<string> {
@@ -194,11 +192,15 @@ async function writeExplanation(tier: Tier, a: AssessmentRow, c: RawCheck): Prom
 Organisation: ${a.company_name}
 Finding: ${c.name}
 Severity: ${c.severity}
+Status: ${c.status}
 Rule: 45 CFR §${c.ruleSection}
 Scanner detail: ${c.detail}
 
-Write 2–4 sentences. Address the reader directly ("your site", "you"). Explain what was found without using technical jargon. Be direct; don't hedge. No filler phrases like "it is important to note". Don't describe what HIPAA is — the reader already knows. Max 90 words.`
-  return (await groq(prompt, { max_tokens: 250 })).trim()
+Write 2–4 sentences. Address the reader directly ("your site", "you"). Explain what was found without technical jargon. Be direct; don't hedge. No filler phrases like "it is important to note". Don't describe what HIPAA is — the reader already knows. Max 90 words.`
+  const out = (await groq(prompt, { max_tokens: 250 })).trim()
+  if (out) return out
+  // Deterministic fallback — useful text, not an empty string.
+  return `${c.name}: ${c.detail || 'This finding needs attention.'} The scanner classified it as ${c.severity} under 45 CFR §${c.ruleSection}.`
 }
 
 async function writeWhyItFails(a: AssessmentRow, c: RawCheck): Promise<string> {
@@ -210,7 +212,9 @@ Rule: 45 CFR §${c.ruleSection}
 Current rule status: ${c.currentRule}
 
 Write ONE paragraph (3–5 sentences). Cite the rule section by name. Reference OCR enforcement patterns where relevant. No hedging. Max 100 words.`
-  return (await groq(prompt, { max_tokens: 280 })).trim()
+  const out = (await groq(prompt, { max_tokens: 280 })).trim()
+  if (out) return out
+  return `Under 45 CFR §${c.ruleSection}, covered entities are expected to address "${c.name}". OCR has historically pursued enforcement on similar ${c.severity}-severity gaps, especially when left unresolved across audits.`
 }
 
 async function writeNprmAnalysis(a: AssessmentRow, c: RawCheck): Promise<NprmAnalysis> {
@@ -241,7 +245,7 @@ Each paragraph: 2–3 sentences. Be specific. Plain English.`
 }
 
 async function writeDevFix(a: AssessmentRow, c: RawCheck): Promise<DeveloperFix> {
-  const prompt = `You are a senior full-stack engineer writing production-grade remediation steps for a HIPAA finding. Output STRICT JSON only.
+  const prompt = `You are a senior full-stack engineer writing production-grade remediation steps for a HIPAA finding. Output STRICT JSON only. No prose before or after the JSON.
 
 Organisation: ${a.company_name}
 Site:         ${a.public_url}
@@ -251,30 +255,52 @@ Rule:         45 CFR §${c.ruleSection}
 Scanner detail: ${c.detail}
 Scanner-suggested remediation: ${c.remediation || '(not specified)'}
 
-Respond with:
+Return exactly this JSON shape (no extra keys, no explanation):
 {
-  "stackDetected":  "best-guess tech stack based on context, e.g. 'Next.js on Vercel'",
+  "stackDetected":  "best-guess tech stack, e.g. 'Next.js on Vercel' or 'Apache / PHP on shared hosting'",
   "steps": [
-    { "index": 1, "title": "...", "body": "markdown with code fences where needed" },
-    ...
+    { "index": 1, "title": "Short imperative title", "body": "markdown with fenced code blocks (\\\`\\\`\\\`ts, \\\`\\\`\\\`bash, \\\`\\\`\\\`nginx, etc.) and real file paths" }
   ],
-  "verificationCommand": "exact shell command to confirm the fix",
-  "expectedOutput":      "what a successful run prints",
-  "estimatedMinutes":    <int>
+  "verificationCommand": "exact shell command a developer can paste to verify the fix",
+  "expectedOutput":      "what a successful run prints (one line is fine)",
+  "estimatedMinutes":    30
 }
 
 Rules:
-- 3 to 5 steps.
-- Every step's body is complete markdown — include code fences (\`\`\`ts, \`\`\`bash) as needed.
-- Code must be directly pasteable, not pseudo-code.
-- Prefer real file paths (\`next.config.mjs\`, \`middleware.ts\`, etc.).
-- Include the exact curl / shell command to verify success.`
-  const raw = await sonnet(prompt, { max_tokens: 1800, json: true })
-  return safeParse<DeveloperFix>(raw) || {
+- EXACTLY 3 to 5 steps. NEVER 1 or 2. If the fix is simple, break it into setup / change / verify.
+- Every step's "body" MUST include at least one fenced code block with directly pasteable code.
+- Prefer real file paths: next.config.mjs, middleware.ts, .htaccess, nginx.conf, docker-compose.yml.
+- "verificationCommand" must be a real command (curl -I, openssl, grep, etc.) — not placeholder text.
+- No pseudo-code, no "do X". Show the actual code.`
+
+  // Try Sonnet first (best at code). Fall back to Groq (llama-3.3-70b) if
+  // Anthropic is down / out of credits / times out. Structured JSON both ways.
+  let raw = await sonnet(prompt, { max_tokens: 1800, json: true })
+  let parsed = safeParse<DeveloperFix>(raw)
+  if (!parsed || !Array.isArray(parsed.steps) || parsed.steps.length < 2) {
+    console.warn('[HIPAA] devFix: Sonnet failed or returned weak output, falling back to Groq')
+    raw = await groq(prompt, { max_tokens: 2500, json: true })
+    parsed = safeParse<DeveloperFix>(raw)
+  }
+  if (parsed && Array.isArray(parsed.steps) && parsed.steps.length) {
+    // Ensure index is present + monotonic.
+    parsed.steps = parsed.steps.map((s, i) => ({ index: i + 1, title: s.title || `Step ${i + 1}`, body: s.body || '' }))
+    return parsed
+  }
+
+  // Last-resort structured fallback — at least 3 steps with the scanner's
+  // remediation text plus a real verify command. Never return a single
+  // placeholder step.
+  const remediation = c.remediation || `Address the "${c.name}" finding per 45 CFR §${c.ruleSection}.`
+  return {
     stackDetected: 'Unknown',
-    steps: [{ index: 1, title: 'Follow the HIPAA remediation recommendation', body: c.remediation || 'Consult a qualified engineer.' }],
-    verificationCommand: '',
-    expectedOutput: '',
+    steps: [
+      { index: 1, title: 'Review the finding', body: `**Finding:** ${c.name}\n\n**Scanner detail:** ${c.detail}\n\n**Severity:** ${c.severity}` },
+      { index: 2, title: 'Apply the remediation', body: `${remediation}\n\n\`\`\`bash\n# Replace with the real fix for your stack\n\`\`\`` },
+      { index: 3, title: 'Verify the fix', body: `Re-run the HIPAA scan or use the verification command below.\n\n\`\`\`bash\ncurl -I ${a.public_url}\n\`\`\`` },
+    ],
+    verificationCommand: `curl -I ${a.public_url}`,
+    expectedOutput: 'HTTP response headers showing the remediation in place.',
     estimatedMinutes: 60,
   }
 }
@@ -283,51 +309,76 @@ Rules:
 // LLM wrappers
 // ---------------------------------------------------------------------------
 async function groq(prompt: string, opts: { max_tokens?: number; json?: boolean } = {}): Promise<string> {
-  if (!GROQ_KEY) return ''
-  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: { authorization: `Bearer ${GROQ_KEY}`, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      temperature: 0.2,
-      max_tokens: opts.max_tokens || 600,
-      response_format: opts.json ? { type: 'json_object' } : undefined,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-    signal: AbortSignal.timeout(25000),
-  })
-  if (!r.ok) return ''
-  const j = await r.json()
-  return j?.choices?.[0]?.message?.content || ''
+  if (!GROQ_KEY) { console.warn('[HIPAA] groq: missing GROQ_API_KEY'); return '' }
+  // Retry once on 429/5xx or network blip — Groq can flake under load.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${GROQ_KEY}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          temperature: 0.2,
+          max_tokens: opts.max_tokens || 600,
+          response_format: opts.json ? { type: 'json_object' } : undefined,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+        signal: AbortSignal.timeout(30000),
+      })
+      if (!r.ok) {
+        const err = await r.text().catch(() => '')
+        console.warn(`[HIPAA] groq ${r.status}:`, err.slice(0, 200))
+        if (r.status >= 500 || r.status === 429) continue
+        return ''
+      }
+      const j = await r.json()
+      const content = j?.choices?.[0]?.message?.content || ''
+      if (opts.json) {
+        const m = content.match(/```(?:json)?\s*([\s\S]*?)```/)
+        return (m ? m[1] : content).trim()
+      }
+      return content
+    } catch (e) {
+      console.warn('[HIPAA] groq attempt', attempt, 'exception:', (e as Error).message)
+    }
+  }
+  return ''
 }
 
 async function sonnet(prompt: string, opts: { max_tokens?: number; json?: boolean } = {}): Promise<string> {
-  if (!ANTHROPIC_KEY) return ''
-  const body: Record<string, unknown> = {
-    model: CLAUDE_MODEL,
-    max_tokens: opts.max_tokens || 1500,
-    temperature: 0.2,
-    messages: [{ role: 'user', content: prompt }],
+  if (!ANTHROPIC_KEY) { console.warn('[HIPAA] sonnet: missing ANTHROPIC_API_KEY'); return '' }
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: opts.max_tokens || 1500,
+        temperature: 0.2,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+      signal: AbortSignal.timeout(45000),
+    })
+    if (!r.ok) {
+      const err = await r.text().catch(() => '')
+      console.warn(`[HIPAA] sonnet ${r.status}:`, err.slice(0, 200))
+      return ''
+    }
+    const j = await r.json()
+    const content = j?.content?.[0]?.text || ''
+    if (opts.json) {
+      const m = content.match(/```(?:json)?\s*([\s\S]*?)```/)
+      return (m ? m[1] : content).trim()
+    }
+    return content
+  } catch (e) {
+    console.warn('[HIPAA] sonnet exception:', (e as Error).message)
+    return ''
   }
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(45000),
-  })
-  if (!r.ok) return ''
-  const j = await r.json()
-  const content = j?.content?.[0]?.text || ''
-  // Strip common markdown code fences around JSON responses
-  if (opts.json) {
-    const m = content.match(/```(?:json)?\s*([\s\S]*?)```/)
-    return (m ? m[1] : content).trim()
-  }
-  return content
 }
 
 function safeParse<T>(raw: string): T | null {
