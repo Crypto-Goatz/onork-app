@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ChevronRight, ChevronDown, ExternalLink } from 'lucide-react'
 
 type TaskStatus = 'done' | 'active' | 'blocked' | 'todo'
 
@@ -266,11 +267,18 @@ const TASKS: Task[] = [
 
 const SECTIONS = ['DATABASE', 'PART 1 — BILLING', 'PART 2 — WEEK 1 CORE']
 
-const STATUS_COLORS: Record<TaskStatus, string> = {
-  done: '#6EE05A',
-  active: '#F59E0B',
-  blocked: '#EF4444',
-  todo: 'transparent',
+const STATUS_DOT: Record<TaskStatus, string> = {
+  done: 'bg-[#6EE05A]',
+  active: 'bg-[#f59e0b]',
+  blocked: 'bg-[#ef4444]',
+  todo: 'bg-transparent border-2 border-[#30363d]',
+}
+
+const STATUS_BADGE: Record<TaskStatus, string> = {
+  done: 'bg-[#6EE05A]/10 text-[#6EE05A]',
+  active: 'bg-[#f59e0b]/10 text-[#f59e0b]',
+  blocked: 'bg-[#ef4444]/10 text-[#ef4444]',
+  todo: 'bg-transparent text-[#6b7280] border border-[#30363d]',
 }
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
@@ -286,10 +294,10 @@ const ASSIGNED_LABELS: Record<string, string> = {
   both: 'BOTH',
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  backend: '#6EE05A',
-  frontend: '#F59E0B',
-  'zero-code': '#6B6B6B',
+const TYPE_BADGE: Record<string, string> = {
+  backend: 'bg-[#6EE05A]/10 text-[#6EE05A]',
+  frontend: 'bg-[#f59e0b]/10 text-[#f59e0b]',
+  'zero-code': 'bg-[#6b7280]/10 text-[#6b7280]',
 }
 
 export default function CommandCenterPage() {
@@ -322,92 +330,51 @@ export default function CommandCenterPage() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#000000',
-      color: '#D4D4D4',
-      fontFamily: "'JetBrains Mono', monospace",
-      padding: '24px',
-    }}>
-      {/* Google Font */}
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');`}</style>
+    <div className="min-h-screen bg-[#0d1117] text-[#9ca3af] font-mono p-6">
 
       {/* Header */}
-      <header style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '24px',
-        flexWrap: 'wrap',
-        gap: '12px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <h1 style={{
-            color: '#FFFFFF',
-            fontSize: '20px',
-            fontWeight: 700,
-            margin: 0,
-            letterSpacing: '-0.5px',
-          }}>
-            COMMAND<span style={{ color: '#6EE05A' }}>.0NCORE</span>.COM
+      <header className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div className="flex items-center gap-4">
+          <h1 className="text-[#f0f4f8] text-xl font-bold m-0 tracking-tight">
+            COMMAND<span className="text-[#6EE05A]">.0NCORE</span>.COM
           </h1>
-          <span style={{
-            background: activeCount > 0 ? '#F59E0B' : blockedCount > 0 ? '#EF4444' : '#6EE05A',
-            color: '#000000',
-            padding: '2px 10px',
-            borderRadius: '4px',
-            fontSize: '11px',
-            fontWeight: 600,
-          }}>
+          <span
+            className={`px-2.5 py-0.5 rounded text-[11px] font-semibold text-[#0d1117] ${
+              activeCount > 0 ? 'bg-[#f59e0b]' : blockedCount > 0 ? 'bg-[#ef4444]' : 'bg-[#6EE05A]'
+            }`}
+          >
             {activeCount > 0 ? 'IN PROGRESS' : blockedCount > 0 ? 'BLOCKED' : 'ALL CLEAR'}
           </span>
         </div>
-        <span style={{ color: '#6B6B6B', fontSize: '13px' }}>
+        <span className="text-[#6b7280] text-[13px]">
           April 10, 2026
         </span>
       </header>
 
       {/* Progress bar */}
-      <div style={{
-        height: '4px',
-        background: '#1A1A1A',
-        borderRadius: '2px',
-        marginBottom: '24px',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          height: '100%',
-          width: `${progressPct}%`,
-          background: '#6EE05A',
-          borderRadius: '2px',
-          transition: 'width 0.3s ease',
-        }} />
+      <div className="h-1 bg-[#161b22] rounded overflow-hidden mb-6">
+        <div
+          className="h-full bg-[#6EE05A] rounded transition-all duration-300"
+          style={{ width: `${progressPct}%` }}
+        />
       </div>
 
       {/* Stat cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '12px',
-        marginBottom: '24px',
-      }}>
+      <div className="grid grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'DONE', value: doneCount, color: '#6EE05A' },
-          { label: 'ACTIVE', value: activeCount, color: '#F59E0B' },
-          { label: 'BLOCKED', value: blockedCount, color: '#EF4444' },
-          { label: 'TOTAL', value: totalCount, color: '#FFFFFF' },
+          { label: 'DONE', value: doneCount, color: 'text-[#6EE05A]' },
+          { label: 'ACTIVE', value: activeCount, color: 'text-[#f59e0b]' },
+          { label: 'BLOCKED', value: blockedCount, color: 'text-[#ef4444]' },
+          { label: 'TOTAL', value: totalCount, color: 'text-[#f0f4f8]' },
         ].map(stat => (
-          <div key={stat.label} style={{
-            background: '#111111',
-            border: '1px solid #2A2A2A',
-            borderRadius: '8px',
-            padding: '16px',
-            textAlign: 'center',
-          }}>
-            <div style={{ color: stat.color, fontSize: '28px', fontWeight: 700 }}>
+          <div
+            key={stat.label}
+            className="bg-[#161b22] border border-[#30363d] rounded-lg p-4 text-center"
+          >
+            <div className={`text-[28px] font-bold ${stat.color}`}>
               {stat.value}
             </div>
-            <div style={{ color: '#6B6B6B', fontSize: '11px', fontWeight: 600, marginTop: '4px' }}>
+            <div className="text-[#6b7280] text-[11px] font-semibold mt-1">
               {stat.label}
             </div>
           </div>
@@ -416,18 +383,9 @@ export default function CommandCenterPage() {
 
       {/* Priority banner */}
       {getActivePriority() && (
-        <div style={{
-          background: '#1A1A1A',
-          border: '1px solid #F59E0B',
-          borderRadius: '8px',
-          padding: '12px 16px',
-          marginBottom: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-        }}>
-          <span style={{ color: '#F59E0B', fontSize: '11px', fontWeight: 700 }}>CURRENT PRIORITY</span>
-          <span style={{ color: '#FFFFFF', fontSize: '13px' }}>{getActivePriority()}</span>
+        <div className="bg-[#161b22] border border-[#f59e0b]/50 rounded-lg px-4 py-3 mb-6 flex items-center gap-3">
+          <span className="text-[#f59e0b] text-[11px] font-bold shrink-0">CURRENT PRIORITY</span>
+          <span className="text-[#f0f4f8] text-[13px]">{getActivePriority()}</span>
         </div>
       )}
 
@@ -438,31 +396,22 @@ export default function CommandCenterPage() {
         const collapsed = collapsedSections.has(section)
 
         return (
-          <div key={section} style={{ marginBottom: '20px' }}>
+          <div key={section} className="mb-5">
             {/* Section header */}
             <button
               onClick={() => toggleSection(section)}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: '#111111',
-                border: '1px solid #2A2A2A',
-                borderRadius: '8px 8px' + (collapsed ? ' 8px 8px' : ' 0 0'),
-                padding: '12px 16px',
-                cursor: 'pointer',
-                color: '#FFFFFF',
-                fontFamily: "'JetBrains Mono', monospace",
-              }}
+              className={`w-full flex items-center justify-between bg-[#161b22] border border-[#30363d] px-4 py-3 cursor-pointer text-[#f0f4f8] font-mono ${
+                collapsed ? 'rounded-lg' : 'rounded-t-lg rounded-b-none'
+              }`}
             >
-              <span style={{ fontSize: '13px', fontWeight: 700 }}>
-                {collapsed ? '▸' : '▾'} {section}
+              <span className="text-[13px] font-bold flex items-center gap-1.5">
+                {collapsed
+                  ? <ChevronRight size={14} className="text-[#6b7280]" />
+                  : <ChevronDown size={14} className="text-[#6b7280]" />
+                }
+                {section}
               </span>
-              <span style={{
-                fontSize: '12px',
-                color: sectionDone === sectionTasks.length ? '#6EE05A' : '#6B6B6B',
-              }}>
+              <span className={`text-[12px] ${sectionDone === sectionTasks.length ? 'text-[#6EE05A]' : 'text-[#6b7280]'}`}>
                 {sectionDone}/{sectionTasks.length}
               </span>
             </button>
@@ -473,167 +422,85 @@ export default function CommandCenterPage() {
               const isLast = i === sectionTasks.length - 1
 
               return (
-                <div key={task.id} style={{
-                  background: '#111111',
-                  borderLeft: '1px solid #2A2A2A',
-                  borderRight: '1px solid #2A2A2A',
-                  borderBottom: '1px solid #2A2A2A',
-                  borderRadius: isLast ? '0 0 8px 8px' : '0',
-                }}>
+                <div
+                  key={task.id}
+                  className={`bg-[#161b22] border-l border-r border-b border-[#30363d] ${isLast ? 'rounded-b-lg' : ''}`}
+                >
                   {/* Task row */}
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : task.id)}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '12px',
-                      padding: '12px 16px',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontFamily: "'JetBrains Mono', monospace",
-                    }}
+                    className="w-full flex items-start gap-3 px-4 py-3 bg-transparent border-none cursor-pointer text-left font-mono hover:bg-[#1c2333] transition-colors"
                   >
-                    {/* Status indicator */}
-                    <div style={{
-                      width: '10px',
-                      height: '10px',
-                      borderRadius: '50%',
-                      background: STATUS_COLORS[task.status],
-                      border: task.status === 'todo' ? '2px solid #2A2A2A' : 'none',
-                      flexShrink: 0,
-                      marginTop: '4px',
-                    }} />
+                    {/* Status dot */}
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${STATUS_DOT[task.status]}`}
+                    />
 
                     {/* Content */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        color: '#FFFFFF',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        textDecoration: task.status === 'done' ? 'line-through' : 'none',
-                        opacity: task.status === 'done' ? 0.6 : 1,
-                      }}>
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={`text-[#f0f4f8] text-[13px] font-semibold ${
+                          task.status === 'done' ? 'line-through opacity-60' : ''
+                        }`}
+                      >
                         {task.title}
                       </div>
-                      <div style={{
-                        color: '#6B6B6B',
-                        fontSize: '11px',
-                        marginTop: '4px',
-                        lineHeight: '1.4',
-                      }}>
+                      <div className="text-[#6b7280] text-[11px] mt-1 leading-snug">
                         {task.sub}
                       </div>
 
                       {/* Badge row */}
-                      <div style={{
-                        display: 'flex',
-                        gap: '8px',
-                        marginTop: '8px',
-                        flexWrap: 'wrap',
-                      }}>
-                        <span style={{
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          background: `${STATUS_COLORS[task.status]}20`,
-                          color: STATUS_COLORS[task.status] === 'transparent' ? '#6B6B6B' : STATUS_COLORS[task.status],
-                          border: task.status === 'todo' ? '1px solid #2A2A2A' : 'none',
-                        }}>
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${STATUS_BADGE[task.status]}`}>
                           {STATUS_LABELS[task.status]}
                         </span>
-                        <span style={{
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          background: '#1A1A1A',
-                          color: '#D4D4D4',
-                        }}>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#30363d]/50 text-[#9ca3af]">
                           {ASSIGNED_LABELS[task.assigned] || task.assigned.toUpperCase()}
                         </span>
-                        <span style={{
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          background: `${TYPE_COLORS[task.type] || '#6B6B6B'}15`,
-                          color: TYPE_COLORS[task.type] || '#6B6B6B',
-                        }}>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${TYPE_BADGE[task.type] || 'bg-[#6b7280]/10 text-[#6b7280]'}`}>
                           {task.type.toUpperCase()}
                         </span>
                       </div>
                     </div>
 
                     {/* Expand indicator */}
-                    <span style={{
-                      color: '#6B6B6B',
-                      fontSize: '12px',
-                      flexShrink: 0,
-                      marginTop: '2px',
-                    }}>
-                      {isExpanded ? '▾' : '▸'}
-                    </span>
+                    {isExpanded
+                      ? <ChevronDown size={14} className="text-[#6b7280] shrink-0 mt-0.5" />
+                      : <ChevronRight size={14} className="text-[#6b7280] shrink-0 mt-0.5" />
+                    }
                   </button>
 
                   {/* Expanded panel */}
                   {isExpanded && (
-                    <div style={{
-                      padding: '0 16px 16px 38px',
-                    }}>
+                    <div className="px-4 pb-4 pl-9">
                       {/* URL */}
                       {task.url && (
-                        <div style={{ marginBottom: '12px' }}>
+                        <div className="mb-3">
                           <a
                             href={task.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{
-                              color: '#6EE05A',
-                              fontSize: '12px',
-                              textDecoration: 'none',
-                            }}
+                            className="text-[#6EE05A] text-[12px] no-underline hover:underline flex items-center gap-1"
                           >
-                            {task.urlLabel || task.url} ↗
+                            {task.urlLabel || task.url}
+                            <ExternalLink size={11} />
                           </a>
                         </div>
                       )}
 
                       {/* Proof required */}
-                      <div style={{ marginBottom: '16px' }}>
-                        <div style={{
-                          color: '#F59E0B',
-                          fontSize: '10px',
-                          fontWeight: 700,
-                          marginBottom: '8px',
-                          letterSpacing: '0.5px',
-                        }}>
+                      <div className="mb-4">
+                        <div className="text-[#f59e0b] text-[10px] font-bold mb-2 tracking-wider">
                           PROOF REQUIRED
                         </div>
                         {task.proof.map((p, pi) => (
-                          <div key={pi} style={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '8px',
-                            marginBottom: '6px',
-                          }}>
-                            <div style={{
-                              width: '6px',
-                              height: '6px',
-                              borderRadius: '50%',
-                              background: task.status === 'done' ? '#6EE05A' : '#2A2A2A',
-                              border: task.status !== 'done' ? '1px solid #6B6B6B' : 'none',
-                              flexShrink: 0,
-                              marginTop: '5px',
-                            }} />
-                            <span style={{
-                              color: '#D4D4D4',
-                              fontSize: '11px',
-                              lineHeight: '1.5',
-                            }}>
+                          <div key={pi} className="flex items-start gap-2 mb-1.5">
+                            <div
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${
+                                task.status === 'done' ? 'bg-[#6EE05A]' : 'bg-transparent border border-[#6b7280]'
+                              }`}
+                            />
+                            <span className="text-[#9ca3af] text-[11px] leading-relaxed">
                               {p}
                             </span>
                           </div>
@@ -641,25 +508,11 @@ export default function CommandCenterPage() {
                       </div>
 
                       {/* Status buttons */}
-                      <div style={{
-                        display: 'flex',
-                        gap: '8px',
-                        flexWrap: 'wrap',
-                      }}>
+                      <div className="flex gap-2 flex-wrap">
                         {task.status !== 'done' && (
                           <button
                             onClick={(e) => { e.stopPropagation(); setStatus(task.id, 'done') }}
-                            style={{
-                              background: '#6EE05A',
-                              color: '#000000',
-                              border: 'none',
-                              borderRadius: '4px',
-                              padding: '6px 12px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              fontFamily: "'JetBrains Mono', monospace",
-                            }}
+                            className="bg-[#6EE05A] text-[#0d1117] border-none rounded px-3 py-1.5 text-[11px] font-semibold cursor-pointer font-mono hover:bg-[#6EE05A]/90 transition-colors"
                           >
                             Mark Done
                           </button>
@@ -667,17 +520,7 @@ export default function CommandCenterPage() {
                         {task.status !== 'active' && (
                           <button
                             onClick={(e) => { e.stopPropagation(); setStatus(task.id, 'active') }}
-                            style={{
-                              background: 'transparent',
-                              color: '#F59E0B',
-                              border: '1px solid #F59E0B',
-                              borderRadius: '4px',
-                              padding: '6px 12px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              fontFamily: "'JetBrains Mono', monospace",
-                            }}
+                            className="bg-transparent text-[#f59e0b] border border-[#f59e0b] rounded px-3 py-1.5 text-[11px] font-semibold cursor-pointer font-mono hover:bg-[#f59e0b]/10 transition-colors"
                           >
                             Set Active
                           </button>
@@ -685,17 +528,7 @@ export default function CommandCenterPage() {
                         {task.status !== 'blocked' && (
                           <button
                             onClick={(e) => { e.stopPropagation(); setStatus(task.id, 'blocked') }}
-                            style={{
-                              background: 'transparent',
-                              color: '#EF4444',
-                              border: '1px solid #EF4444',
-                              borderRadius: '4px',
-                              padding: '6px 12px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              fontFamily: "'JetBrains Mono', monospace",
-                            }}
+                            className="bg-transparent text-[#ef4444] border border-[#ef4444] rounded px-3 py-1.5 text-[11px] font-semibold cursor-pointer font-mono hover:bg-[#ef4444]/10 transition-colors"
                           >
                             Blocked
                           </button>
@@ -703,17 +536,7 @@ export default function CommandCenterPage() {
                         {task.status !== 'todo' && (
                           <button
                             onClick={(e) => { e.stopPropagation(); setStatus(task.id, 'todo') }}
-                            style={{
-                              background: 'transparent',
-                              color: '#6B6B6B',
-                              border: '1px solid #2A2A2A',
-                              borderRadius: '4px',
-                              padding: '6px 12px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              fontFamily: "'JetBrains Mono', monospace",
-                            }}
+                            className="bg-transparent text-[#6b7280] border border-[#30363d] rounded px-3 py-1.5 text-[11px] font-semibold cursor-pointer font-mono hover:bg-[#1c2333] transition-colors"
                           >
                             Reset
                           </button>
@@ -729,18 +552,11 @@ export default function CommandCenterPage() {
       })}
 
       {/* Footer */}
-      <div style={{
-        marginTop: '32px',
-        padding: '16px 0',
-        borderTop: '1px solid #2A2A2A',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}>
-        <span style={{ color: '#6B6B6B', fontSize: '11px' }}>
+      <div className="mt-8 pt-4 border-t border-[#30363d] flex justify-between items-center">
+        <span className="text-[#6b7280] text-[11px]">
           0nCore Command Center — {progressPct}% complete
         </span>
-        <span style={{ color: '#6B6B6B', fontSize: '11px' }}>
+        <span className="text-[#6b7280] text-[11px]">
           {doneCount} done · {activeCount} active · {blockedCount} blocked · {totalCount - doneCount - activeCount - blockedCount} todo
         </span>
       </div>
