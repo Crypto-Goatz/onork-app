@@ -277,17 +277,29 @@ Rules:
   // Anthropic is down / out of credits / times out. Structured JSON both ways.
   let raw = await sonnet(prompt, { max_tokens: 1800, json: true })
   let parsed = safeParse<DeveloperFix>(raw)
-  const weak = (p: DeveloperFix | null) =>
-    !p || !Array.isArray(p.steps) || p.steps.length < 3 ||
-    !p.steps.some((s) => /```/.test(s.body || ''))
-  if (weak(parsed)) {
+  // "Usable" means: >=1 step AND at least one step has a fenced code block.
+  // If weaker than that, try the other model.
+  const usable = (p: DeveloperFix | null) =>
+    !!p && Array.isArray(p.steps) && p.steps.length >= 1 &&
+    p.steps.some((s) => /```/.test(s.body || ''))
+  if (!usable(parsed)) {
     console.warn('[HIPAA] devFix: Sonnet weak/failed, falling back to Groq')
     raw = await groq(prompt, { max_tokens: 2500, json: true })
     parsed = safeParse<DeveloperFix>(raw)
   }
-  if (parsed && Array.isArray(parsed.steps) && parsed.steps.length) {
-    // Ensure index is present + monotonic.
-    parsed.steps = parsed.steps.map((s, i) => ({ index: i + 1, title: s.title || `Step ${i + 1}`, body: s.body || '' }))
+  if (usable(parsed) && parsed) {
+    // Pad out to 3 steps if the model returned 1-2 — tack on a verification
+    // step using its own verificationCommand so the reader always gets a
+    // review → fix → verify arc.
+    const steps = parsed.steps.slice()
+    if (steps.length < 3 && parsed.verificationCommand) {
+      steps.push({
+        index: steps.length + 1,
+        title: 'Verify the fix',
+        body: `Run the command below to confirm the change is in place.\n\n\`\`\`bash\n${parsed.verificationCommand}\n\`\`\`${parsed.expectedOutput ? `\n\nExpected output:\n\n\`\`\`\n${parsed.expectedOutput}\n\`\`\`` : ''}`,
+      })
+    }
+    parsed.steps = steps.map((s, i) => ({ index: i + 1, title: s.title || `Step ${i + 1}`, body: s.body || '' }))
     return parsed
   }
 
