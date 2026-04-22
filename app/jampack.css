@@ -482,18 +482,21 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  transition: margin-left var(--jp-transition);
+  min-width: 0;
+  overflow-x: hidden;
+  transition: margin-left 0.15s ease;
 }
 
 .jp-content {
   flex: 1;
-  padding: 24px;
+  padding: 16px 20px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* ======= Page Header ======= */
 .jp-page-header {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .jp-page-title {
@@ -511,16 +514,15 @@
 
 /* ======= Cards ======= */
 .jp-card {
-  background: var(--jp-bg-card);
-  border: none;
-  border-radius: var(--jp-radius);
+  background: var(--card, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 12px;
   overflow: hidden;
-  transition: all var(--jp-transition);
-  box-shadow: var(--jp-shadow);
+  transition: border-color 0.15s;
 }
 
 .jp-card:hover {
-  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.08);
+  border-color: rgba(110, 224, 90, 0.15);
 }
 
 .jp-card-header {
@@ -1368,7 +1370,7 @@
   }
 
   .jp-content {
-    padding: 16px;
+    padding: 12px;
   }
 
   .jp-chat-wrapper {
