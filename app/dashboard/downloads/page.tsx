@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type ComponentType, type SVGProps } from 'react'
+import { Check } from 'lucide-react'
 import {
   Bot,
   Code2,
@@ -56,8 +57,16 @@ const CATEGORY_COLORS: Record<Download['category'], { fg: string; bg: string; bo
   browser:   { fg: '#f97316', bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.25)' },
   wordpress: { fg: '#3b82f6', bg: 'rgba(59,130,246,0.10)', border: 'rgba(59,130,246,0.25)' },
   crm:       { fg: '#7ed957', bg: 'rgba(126,217,87,0.10)', border: 'rgba(126,217,87,0.30)' },
-  dev:       { fg: '#a78bfa', bg: 'rgba(167,139,250,0.10)',border: 'rgba(167,139,250,0.25)' },
+  dev:       { fg: '#a78bfa', bg: 'rgba(167,139,250,0.10)', border: 'rgba(167,139,250,0.25)' },
   mobile:    { fg: '#ec4899', bg: 'rgba(236,72,153,0.10)', border: 'rgba(236,72,153,0.25)' },
+}
+
+const BADGE_STYLES: Record<string, { bg: string; color: string }> = {
+  LIVE:    { bg: 'rgba(126,217,87,0.14)',  color: '#7ed957' },
+  NEW:     { bg: 'rgba(0,212,255,0.12)',   color: '#00d4ff' },
+  POPULAR: { bg: 'rgba(167,139,250,0.14)', color: '#a78bfa' },
+  PWA:     { bg: 'rgba(236,72,153,0.12)',  color: '#ec4899' },
+  SOON:    { bg: 'rgba(85,104,128,0.14)',  color: '#6b7280' },
 }
 
 const MCP_CONFIG = JSON.stringify({
@@ -315,6 +324,14 @@ const DOWNLOADS: Download[] = [
   },
 ]
 
+const STATS = [
+  { value: '1,554', label: 'Tools' },
+  { value: '96', label: 'Services' },
+  { value: '8', label: 'AI Platforms' },
+  { value: '2', label: 'WP Plugins' },
+  { value: '1', label: 'CRM App' },
+]
+
 export default function DownloadsPage() {
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const [copied, setCopied] = useState<string | null>(null)
@@ -337,113 +354,96 @@ export default function DownloadsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px' }}>Downloads & Integrations</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)' }}>Connect 0nCore to every platform. One ecosystem, everywhere.</p>
+    <div className="max-w-[900px] mx-auto">
+      <div className="mb-8">
+        <h1 className="text-xl font-bold text-core-text m-0 mb-1">Downloads & Integrations</h1>
+        <p className="text-[13px] text-core-text-muted">Connect 0nCore to every platform. One ecosystem, everywhere.</p>
       </div>
 
-      {/* Category Tabs */}
-      <div style={{
-        display: 'flex', gap: 4, marginBottom: 28,
-        background: 'var(--bg-secondary, #161b22)', borderRadius: 10, padding: 4, width: 'fit-content',
-        border: '1px solid #1c2b42',
-      }}>
+      {/* Category tabs */}
+      <div className="flex gap-1 mb-7 bg-core-surface rounded-xl p-1 w-fit border border-core-border">
         {CATEGORIES.map(c => (
-          <button key={c.id} onClick={() => setActiveCategory(c.id)} style={{
-            padding: '7px 14px', borderRadius: 7, border: 'none',
-            background: activeCategory === c.id ? 'var(--border, #30363d)' : 'transparent',
-            color: activeCategory === c.id ? '#7ed957' : 'var(--text-muted, #6b7280)',
-            fontSize: 12, fontWeight: 600, cursor: 'pointer',
-            transition: 'all 0.15s',
-          }}>{c.label}</button>
+          <button
+            key={c.id}
+            onClick={() => setActiveCategory(c.id)}
+            className={[
+              'px-3.5 py-1.5 rounded-lg border-0 text-xs font-semibold cursor-pointer transition-all duration-150',
+              activeCategory === c.id
+                ? 'bg-core-border text-core-green'
+                : 'bg-transparent text-core-text-muted hover:text-core-text-dim',
+            ].join(' ')}
+          >
+            {c.label}
+          </button>
         ))}
       </div>
 
-      {/* Downloads Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+      {/* Downloads grid */}
+      <div className="grid grid-cols-2 gap-3">
         {filtered.map(d => {
           const c = CATEGORY_COLORS[d.category]
           const disabled = d.actionData === '#'
+          const badgeStyle = d.badge ? BADGE_STYLES[d.badge] : null
           return (
-            <div key={d.id} style={{
-              background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-              borderRadius: 14, padding: 20,
-              transition: 'all 0.2s', cursor: 'pointer',
-              position: 'relative', overflow: 'hidden',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = c.border; e.currentTarget.style.transform = 'translateY(-2px)' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#1c2b42'; e.currentTarget.style.transform = 'none' }}
+            <div
+              key={d.id}
+              className="bg-core-card border border-core-border rounded-2xl p-5 transition-all duration-200 cursor-pointer relative overflow-hidden hover:-translate-y-0.5"
+              onMouseEnter={e => { e.currentTarget.style.borderColor = c.border }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '' }}
             >
-              {d.badge && (
-                <span style={{
-                  position: 'absolute', top: 12, right: 12,
-                  padding: '2px 8px', borderRadius: 4,
-                  fontSize: 9, fontWeight: 800, letterSpacing: '0.08em',
-                  background: d.badge === 'LIVE' ? 'rgba(126,217,87,0.14)' :
-                    d.badge === 'NEW' ? 'rgba(0,212,255,0.12)' :
-                    d.badge === 'POPULAR' ? 'rgba(167,139,250,0.14)' :
-                    d.badge === 'PWA' ? 'rgba(236,72,153,0.12)' :
-                    'rgba(85,104,128,0.14)',
-                  color: d.badge === 'LIVE' ? '#7ed957' :
-                    d.badge === 'NEW' ? '#00d4ff' :
-                    d.badge === 'POPULAR' ? '#a78bfa' :
-                    d.badge === 'PWA' ? '#ec4899' :
-                    'var(--text-muted, #6b7280)',
-                }}>{d.badge}</span>
+              {d.badge && badgeStyle && (
+                <span
+                  className="absolute top-3 right-3 px-2 py-0.5 rounded text-[9px] font-extrabold tracking-widest"
+                  style={{ background: badgeStyle.bg, color: badgeStyle.color }}
+                >
+                  {d.badge}
+                </span>
               )}
 
               {/* Icon + Name */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10,
-                  background: c.bg, border: `1px solid ${c.border}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
+              <div className="flex items-center gap-3 mb-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border"
+                  style={{ background: c.bg, borderColor: c.border }}
+                >
                   <d.Icon size={20} color={c.fg} strokeWidth={2} />
                 </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.name}</div>
-                  {d.size && <div style={{ fontSize: 10, color: 'var(--text-muted, #6b7280)' }}>{d.size}</div>}
+                <div className="min-w-0">
+                  <div className="text-[15px] font-bold text-core-text truncate">{d.name}</div>
+                  {d.size && <div className="text-[10px] text-core-text-muted">{d.size}</div>}
                 </div>
               </div>
 
-              <p style={{ fontSize: 12, color: 'var(--text-secondary, #9ca3af)', lineHeight: 1.6, marginBottom: 14 }}>{d.description}</p>
+              <p className="text-xs text-core-text-dim leading-relaxed mb-3.5">{d.description}</p>
 
-              <button onClick={() => handleAction(d)} disabled={disabled} style={{
-                width: '100%', padding: '9px 16px',
-                background: disabled ? 'var(--border, #30363d)' : c.bg,
-                border: `1px solid ${disabled ? 'var(--border, #30363d)' : c.border}`,
-                borderRadius: 8,
-                color: disabled ? 'var(--text-muted, #6b7280)' : c.fg,
-                fontSize: 12, fontWeight: 600, cursor: disabled ? 'default' : 'pointer',
-                transition: 'all 0.15s',
-              }}>
-                {copied === d.id ? '✓ Copied!' : d.actionLabel}
+              <button
+                onClick={() => handleAction(d)}
+                disabled={disabled}
+                className="w-full py-2.5 px-4 rounded-lg text-xs font-semibold transition-all duration-150 border"
+                style={{
+                  background: disabled ? '' : c.bg,
+                  borderColor: disabled ? '' : c.border,
+                  color: disabled ? '' : c.fg,
+                  cursor: disabled ? 'default' : 'pointer',
+                }}
+              >
+                {copied === d.id ? (
+                  <span className="flex items-center justify-center gap-1">
+                    <Check className="w-3 h-3" /> Copied!
+                  </span>
+                ) : d.actionLabel}
               </button>
             </div>
           )
         })}
       </div>
 
-      {/* Stats Footer */}
-      <div style={{
-        marginTop: 32, padding: '20px 24px',
-        background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-        borderRadius: 14, display: 'flex', justifyContent: 'space-around',
-        textAlign: 'center',
-      }}>
-        {[
-          { value: '1,554', label: 'Tools' },
-          { value: '96', label: 'Services' },
-          { value: '8', label: 'AI Platforms' },
-          { value: '2', label: 'WP Plugins' },
-          { value: '1', label: 'CRM App' },
-        ].map(s => (
+      {/* Stats footer */}
+      <div className="mt-8 px-6 py-5 bg-core-card border border-core-border rounded-2xl flex justify-around text-center">
+        {STATS.map(s => (
           <div key={s.label}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#7ed957' }}>{s.value}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted, #6b7280)', marginTop: 2 }}>{s.label}</div>
+            <div className="text-xl font-extrabold text-core-green">{s.value}</div>
+            <div className="text-[10px] text-core-text-muted mt-0.5">{s.label}</div>
           </div>
         ))}
       </div>

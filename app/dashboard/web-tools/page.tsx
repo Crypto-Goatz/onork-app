@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -136,170 +137,6 @@ const INITIAL_SERVICES: Omit<ServiceConnection, 'value' | 'connected'>[] = [
   { id: 'gtm', name: 'Google Tag Manager', initials: 'TM', placeholder: 'GTM-XXXXXXX', prefix: 'GTM-', storageKey: '0ncore-webtools-gtm' },
 ]
 
-// ── Styles ─────────────────────────────────────────────────
-
-const S = {
-  page: {
-    minHeight: '100vh',
-    background: 'var(--jp-bg, #0d1117)',
-    color: 'var(--jp-text, #f0f4f8)',
-    fontFamily: 'var(--jp-font-mono, "JetBrains Mono", monospace)',
-    padding: '32px 24px',
-    maxWidth: 1280,
-    margin: '0 auto',
-  } as React.CSSProperties,
-  h1: {
-    fontSize: 28,
-    fontWeight: 700,
-    margin: 0,
-    letterSpacing: '-0.02em',
-  } as React.CSSProperties,
-  subtitle: {
-    fontSize: 13,
-    color: 'var(--jp-text-muted, #8b95a5)',
-    marginTop: 4,
-  } as React.CSSProperties,
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: 600,
-    color: 'var(--jp-text-secondary, #c4cad4)',
-    marginBottom: 12,
-    marginTop: 32,
-  } as React.CSSProperties,
-  grid4: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-    gap: 16,
-    marginTop: 20,
-  } as React.CSSProperties,
-  grid6: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))',
-    gap: 12,
-    marginTop: 12,
-  } as React.CSSProperties,
-  grid2: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
-    gap: 20,
-    marginTop: 12,
-  } as React.CSSProperties,
-  card: (glow: boolean): React.CSSProperties => ({
-    background: 'rgba(255,255,255,0.02)',
-    border: glow ? '1px solid rgba(110,224,90,0.4)' : '1px solid rgba(255,255,255,0.06)',
-    borderRadius: 12,
-    padding: 20,
-    boxShadow: glow ? '0 0 20px rgba(110,224,90,0.08)' : 'none',
-    transition: 'border-color 0.3s, box-shadow 0.3s',
-  }),
-  statCard: {
-    background: 'rgba(255,255,255,0.02)',
-    border: '1px solid rgba(255,255,255,0.06)',
-    borderRadius: 12,
-    padding: '16px 18px',
-  } as React.CSSProperties,
-  pillRow: {
-    display: 'flex',
-    gap: 6,
-    flexWrap: 'wrap' as const,
-  } as React.CSSProperties,
-  pill: (active: boolean): React.CSSProperties => ({
-    padding: '6px 14px',
-    borderRadius: 8,
-    fontSize: 12,
-    fontWeight: 600,
-    fontFamily: 'inherit',
-    cursor: 'pointer',
-    border: 'none',
-    background: active ? '#6EE05A' : 'rgba(255,255,255,0.04)',
-    color: active ? '#0d1117' : 'var(--jp-text-secondary, #c4cad4)',
-    transition: 'all 0.2s',
-  }),
-  badge: (connected: boolean): React.CSSProperties => ({
-    display: 'inline-block',
-    fontSize: 10,
-    fontWeight: 700,
-    padding: '2px 8px',
-    borderRadius: 6,
-    background: connected ? 'rgba(110,224,90,0.15)' : 'rgba(255,255,255,0.06)',
-    color: connected ? '#6EE05A' : 'var(--jp-text-muted, #8b95a5)',
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.06em',
-  }),
-  initials: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: 800,
-    fontSize: 14,
-    background: 'rgba(110,224,90,0.1)',
-    color: '#6EE05A',
-    flexShrink: 0,
-  } as React.CSSProperties,
-  input: {
-    width: '100%',
-    padding: '8px 12px',
-    borderRadius: 8,
-    border: '1px solid rgba(255,255,255,0.1)',
-    background: 'rgba(0,0,0,0.3)',
-    color: 'var(--jp-text, #f0f4f8)',
-    fontFamily: 'inherit',
-    fontSize: 12,
-    outline: 'none',
-    marginTop: 8,
-  } as React.CSSProperties,
-  btn: (variant: 'primary' | 'secondary'): React.CSSProperties => ({
-    padding: '6px 14px',
-    borderRadius: 8,
-    fontSize: 11,
-    fontWeight: 700,
-    fontFamily: 'inherit',
-    cursor: 'pointer',
-    border: 'none',
-    background: variant === 'primary' ? '#6EE05A' : 'rgba(255,255,255,0.06)',
-    color: variant === 'primary' ? '#0d1117' : 'var(--jp-text-secondary, #c4cad4)',
-    transition: 'opacity 0.2s',
-  }),
-  chartWrap: {
-    background: 'rgba(255,255,255,0.02)',
-    border: '1px solid rgba(255,255,255,0.06)',
-    borderRadius: 12,
-    padding: 20,
-    marginTop: 16,
-  } as React.CSSProperties,
-  trendUp: {
-    color: '#6EE05A',
-    fontSize: 11,
-    fontWeight: 600,
-  } as React.CSSProperties,
-  trendDown: {
-    color: '#ef4444',
-    fontSize: 11,
-    fontWeight: 600,
-  } as React.CSSProperties,
-  listItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '10px 0',
-    borderBottom: '1px solid rgba(255,255,255,0.04)',
-    fontSize: 13,
-  } as React.CSSProperties,
-  barBg: {
-    height: 6,
-    borderRadius: 3,
-    background: 'rgba(255,255,255,0.04)',
-    flex: 1,
-    marginLeft: 12,
-    marginRight: 12,
-    position: 'relative' as const,
-    overflow: 'hidden' as const,
-  } as React.CSSProperties,
-} as const
-
 // ── Chart Drawing ──────────────────────────────────────────
 
 function drawChart(
@@ -335,7 +172,6 @@ function drawChart(
   const minVal = Math.min(0, Math.min(...data) * 0.9)
   const range = maxVal - minVal || 1
 
-  // Grid lines
   ctx.strokeStyle = 'rgba(255,255,255,0.04)'
   ctx.lineWidth = 1
   const gridLines = 5
@@ -361,7 +197,6 @@ function drawChart(
     ctx.fillText(label, padLeft - 8, y + 4)
   }
 
-  // X axis labels
   ctx.textAlign = 'center'
   const labelCount = Math.min(data.length, 8)
   for (let i = 0; i < labelCount; i++) {
@@ -371,9 +206,7 @@ function drawChart(
     ctx.fillText(formatDate(idx, data.length, timeframe), x, y)
   }
 
-  // Data
   const accent = '#6EE05A'
-
   const toX = (i: number) => padLeft + (i / (data.length - 1)) * chartW
   const toY = (v: number) => padTop + chartH - ((v - minVal) / range) * chartH
 
@@ -391,7 +224,6 @@ function drawChart(
     }
     ctx.globalAlpha = 1
   } else {
-    // Area fill
     if (chartType === 'area') {
       ctx.beginPath()
       ctx.moveTo(toX(0), toY(data[0]))
@@ -408,7 +240,6 @@ function drawChart(
       ctx.fill()
     }
 
-    // Line
     ctx.beginPath()
     ctx.moveTo(toX(0), toY(data[0]))
     for (let i = 1; i < data.length; i++) {
@@ -420,7 +251,6 @@ function drawChart(
     ctx.lineCap = 'round'
     ctx.stroke()
 
-    // Dots on line for small datasets
     if (data.length <= 30) {
       for (let i = 0; i < data.length; i++) {
         ctx.beginPath()
@@ -444,7 +274,6 @@ export default function WebToolsPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Load connections from localStorage
   useEffect(() => {
     const loaded: ServiceConnection[] = INITIAL_SERVICES.map((s) => {
       let stored: string | null = null
@@ -453,37 +282,27 @@ export default function WebToolsPage() {
       } catch {
         // ignore
       }
-      return {
-        ...s,
-        value: stored || '',
-        connected: !!stored,
-      }
+      return { ...s, value: stored || '', connected: !!stored }
     })
     setServices(loaded)
   }, [])
 
-  // Generate chart data
   const chartData = generateDemoData(timeframe, metric)
 
-  // Draw chart
   const redrawChart = useCallback(() => {
     if (canvasRef.current) {
       drawChart(canvasRef.current, chartData, chartType, timeframe, metric)
     }
   }, [chartData, chartType, timeframe, metric])
 
-  useEffect(() => {
-    redrawChart()
-  }, [redrawChart])
+  useEffect(() => { redrawChart() }, [redrawChart])
 
-  // Resize handler
   useEffect(() => {
     const onResize = () => redrawChart()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [redrawChart])
 
-  // Stats
   const connectedCount = services.filter((s) => s.connected).length
 
   const stats: StatCard[] = [
@@ -500,72 +319,71 @@ export default function WebToolsPage() {
     if (!val || !val.trim()) return
     try {
       const svc = INITIAL_SERVICES.find((s) => s.id === serviceId)
-      if (svc) {
-        localStorage.setItem(svc.storageKey, val.trim())
-      }
-    } catch {
-      // ignore
-    }
-    setServices((prev) =>
-      prev.map((s) => (s.id === serviceId ? { ...s, value: val.trim(), connected: true } : s))
-    )
+      if (svc) localStorage.setItem(svc.storageKey, val.trim())
+    } catch { /* ignore */ }
+    setServices((prev) => prev.map((s) => (s.id === serviceId ? { ...s, value: val.trim(), connected: true } : s)))
     setEditingService(null)
-    setInputValues((prev) => {
-      const next = { ...prev }
-      delete next[serviceId]
-      return next
-    })
+    setInputValues((prev) => { const next = { ...prev }; delete next[serviceId]; return next })
   }
 
   const handleDisconnect = (serviceId: string) => {
     const svc = INITIAL_SERVICES.find((s) => s.id === serviceId)
-    if (svc) {
-      try {
-        localStorage.removeItem(svc.storageKey)
-      } catch {
-        // ignore
-      }
-    }
-    setServices((prev) =>
-      prev.map((s) => (s.id === serviceId ? { ...s, value: '', connected: false } : s))
-    )
+    if (svc) { try { localStorage.removeItem(svc.storageKey) } catch { /* ignore */ } }
+    setServices((prev) => prev.map((s) => (s.id === serviceId ? { ...s, value: '', connected: false } : s)))
   }
 
   const maxTrafficSessions = Math.max(...TRAFFIC_SOURCES.map((t) => t.sessions))
 
   return (
-    <div style={S.page}>
+    <div className="min-h-screen bg-core-bg text-core-text font-mono py-8 px-6 max-w-[1280px] mx-auto">
       {/* Header */}
       <div>
-        <h1 style={S.h1}>Web Tools</h1>
-        <p style={S.subtitle}>
+        <h1 className="text-3xl font-bold m-0 tracking-tight">Web Tools</h1>
+        <p className="text-[13px] text-core-text-muted mt-1">
           {connectedCount} of {services.length} tools connected
         </p>
       </div>
 
-      {/* Connection CTAs */}
-      <div style={S.grid4}>
+      {/* Connection cards */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4 mt-5">
         {services.map((svc) => (
-          <div key={svc.id} style={S.card(svc.connected)}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-              <div style={S.initials}>{svc.initials}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{svc.name}</div>
-                <span style={S.badge(svc.connected)}>
+          <div
+            key={svc.id}
+            className={[
+              'rounded-xl p-5 transition-all duration-300',
+              svc.connected
+                ? 'bg-white/[0.02] border border-core-green/40 shadow-[0_0_20px_rgba(110,224,90,0.08)]'
+                : 'bg-white/[0.02] border border-white/[0.06]',
+            ].join(' ')}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm bg-core-green/10 text-core-green shrink-0">
+                {svc.initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold">{svc.name}</div>
+                <span
+                  className={[
+                    'inline-block text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider',
+                    svc.connected
+                      ? 'bg-core-green/15 text-core-green'
+                      : 'bg-white/[0.06] text-core-text-muted',
+                  ].join(' ')}
+                >
                   {svc.connected ? 'Connected' : 'Not connected'}
                 </span>
               </div>
             </div>
 
             {svc.connected && editingService !== svc.id ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-core-text-muted flex-1 truncate">
                   {svc.value.slice(0, 4)}{'****'}
                 </span>
                 <button
                   type="button"
-                  style={S.btn('secondary')}
                   onClick={() => handleDisconnect(svc.id)}
+                  className="px-3.5 py-1.5 rounded-lg text-[11px] font-bold bg-white/[0.06] text-core-text-dim hover:opacity-80 transition-opacity border-0 cursor-pointer"
                 >
                   Disconnect
                 </button>
@@ -573,18 +391,26 @@ export default function WebToolsPage() {
             ) : editingService === svc.id ? (
               <div>
                 <input
-                  style={S.input}
+                  className="w-full px-3 py-2 rounded-lg border border-white/10 bg-black/30 text-core-text font-mono text-xs outline-none mt-2"
                   placeholder={svc.placeholder}
                   value={inputValues[svc.id] || ''}
                   onChange={(e) => setInputValues((prev) => ({ ...prev, [svc.id]: e.target.value }))}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleConnect(svc.id) }}
                   autoFocus
                 />
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button type="button" style={S.btn('primary')} onClick={() => handleConnect(svc.id)}>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleConnect(svc.id)}
+                    className="px-3.5 py-1.5 rounded-lg text-[11px] font-bold bg-core-green text-core-bg border-0 cursor-pointer hover:opacity-90"
+                  >
                     Save
                   </button>
-                  <button type="button" style={S.btn('secondary')} onClick={() => setEditingService(null)}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingService(null)}
+                    className="px-3.5 py-1.5 rounded-lg text-[11px] font-bold bg-white/[0.06] text-core-text-dim border-0 cursor-pointer hover:opacity-80"
+                  >
                     Cancel
                   </button>
                 </div>
@@ -592,8 +418,8 @@ export default function WebToolsPage() {
             ) : (
               <button
                 type="button"
-                style={{ ...S.btn('primary'), width: '100%', padding: '8px 14px' }}
                 onClick={() => setEditingService(svc.id)}
+                className="w-full py-2 px-3.5 rounded-lg text-[11px] font-bold bg-core-green text-core-bg border-0 cursor-pointer hover:opacity-90 transition-opacity"
               >
                 Connect
               </button>
@@ -602,34 +428,42 @@ export default function WebToolsPage() {
         ))}
       </div>
 
-      {/* Time Frame Selector */}
-      <div style={{ ...S.sectionTitle, marginBottom: 0 }}>Time Frame</div>
-      <div style={{ ...S.pillRow, marginTop: 8 }}>
+      {/* Timeframe selector */}
+      <div className="text-sm font-semibold text-core-text-dim mt-8 mb-0">Time Frame</div>
+      <div className="flex gap-1.5 flex-wrap mt-2">
         {TIMEFRAMES.map((tf) => (
           <button
             key={tf.key}
             type="button"
-            style={S.pill(timeframe === tf.key)}
             onClick={() => setTimeframe(tf.key)}
+            className={[
+              'px-3.5 py-1.5 rounded-lg text-xs font-semibold font-mono cursor-pointer border-0 transition-all duration-200',
+              timeframe === tf.key
+                ? 'bg-core-green text-core-bg'
+                : 'bg-white/[0.04] text-core-text-dim hover:bg-white/[0.07]',
+            ].join(' ')}
           >
             {tf.label}
           </button>
         ))}
       </div>
 
-      {/* Chart Type Toggle + Metric Selector row */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 24, marginTop: 20 }}>
+      {/* Chart type + metric row */}
+      <div className="flex flex-wrap items-center gap-6 mt-5">
         <div>
-          <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Chart Type
-          </div>
-          <div style={S.pillRow}>
+          <div className="text-[11px] text-core-text-muted mb-1.5 font-semibold uppercase tracking-widest">Chart Type</div>
+          <div className="flex gap-1.5 flex-wrap">
             {CHART_TYPES.map((ct) => (
               <button
                 key={ct.key}
                 type="button"
-                style={S.pill(chartType === ct.key)}
                 onClick={() => setChartType(ct.key)}
+                className={[
+                  'px-3.5 py-1.5 rounded-lg text-xs font-semibold font-mono cursor-pointer border-0 transition-all duration-200',
+                  chartType === ct.key
+                    ? 'bg-core-green text-core-bg'
+                    : 'bg-white/[0.04] text-core-text-dim hover:bg-white/[0.07]',
+                ].join(' ')}
               >
                 {ct.label}
               </button>
@@ -637,16 +471,19 @@ export default function WebToolsPage() {
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Metric
-          </div>
-          <div style={S.pillRow}>
+          <div className="text-[11px] text-core-text-muted mb-1.5 font-semibold uppercase tracking-widest">Metric</div>
+          <div className="flex gap-1.5 flex-wrap">
             {METRICS.map((m) => (
               <button
                 key={m.key}
                 type="button"
-                style={S.pill(metric === m.key)}
                 onClick={() => setMetric(m.key)}
+                className={[
+                  'px-3.5 py-1.5 rounded-lg text-xs font-semibold font-mono cursor-pointer border-0 transition-all duration-200',
+                  metric === m.key
+                    ? 'bg-core-green text-core-bg'
+                    : 'bg-white/[0.04] text-core-text-dim hover:bg-white/[0.07]',
+                ].join(' ')}
               >
                 {m.label}
               </button>
@@ -655,46 +492,39 @@ export default function WebToolsPage() {
         </div>
       </div>
 
-      {/* Main Chart */}
-      <div ref={containerRef} style={S.chartWrap}>
-        <canvas
-          ref={canvasRef}
-          style={{ width: '100%', height: 340, display: 'block' }}
-        />
+      {/* Main chart */}
+      <div ref={containerRef} className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 mt-4">
+        <canvas ref={canvasRef} className="w-full block" style={{ height: 340 }} />
       </div>
 
-      {/* Stats Row */}
-      <div style={S.grid6}>
+      {/* Stats row */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3 mt-3">
         {stats.map((stat) => (
-          <div key={stat.label} style={S.statCard}>
-            <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
-              {stat.value}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', marginTop: 2 }}>
-              {stat.label}
-            </div>
-            <div style={stat.up ? S.trendUp : S.trendDown}>
-              {stat.up ? '\u2191' : '\u2193'} {stat.trend}%
+          <div key={stat.label} className="bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-4">
+            <div className="text-[22px] font-bold tracking-tight">{stat.value}</div>
+            <div className="text-[11px] text-core-text-muted mt-0.5">{stat.label}</div>
+            <div className={`flex items-center gap-0.5 text-[11px] font-semibold mt-0.5 ${stat.up ? 'text-core-green' : 'text-core-red'}`}>
+              {stat.up
+                ? <TrendingUp className="w-3 h-3" />
+                : <TrendingDown className="w-3 h-3" />
+              }
+              {stat.trend}%
             </div>
           </div>
         ))}
       </div>
 
-      {/* Bottom Section */}
-      <div style={S.grid2}>
+      {/* Bottom section */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(400px,1fr))] gap-5 mt-3">
         {/* Top Pages */}
-        <div style={{ ...S.card(false), marginTop: 24 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Top Pages</div>
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 mt-6">
+          <div className="text-sm font-semibold mb-2">Top Pages</div>
           <div>
             {TOP_PAGES.map((page, i) => (
-              <div key={page.path} style={S.listItem}>
-                <span style={{ color: 'var(--jp-text-muted, #8b95a5)', width: 20, fontSize: 12, flexShrink: 0 }}>
-                  {i + 1}.
-                </span>
-                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {page.path}
-                </span>
-                <span style={{ fontWeight: 600, marginLeft: 12, color: '#6EE05A', fontSize: 13 }}>
+              <div key={page.path} className="flex justify-between items-center py-2.5 border-b border-white/[0.04] text-sm last:border-0">
+                <span className="text-core-text-muted w-5 text-xs shrink-0">{i + 1}.</span>
+                <span className="flex-1 truncate">{page.path}</span>
+                <span className="font-semibold ml-3 text-core-green text-[13px]">
                   {page.views.toLocaleString()}
                 </span>
               </div>
@@ -703,27 +533,22 @@ export default function WebToolsPage() {
         </div>
 
         {/* Traffic Sources */}
-        <div style={{ ...S.card(false), marginTop: 24 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Traffic Sources</div>
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 mt-6">
+          <div className="text-sm font-semibold mb-2">Traffic Sources</div>
           <div>
             {TRAFFIC_SOURCES.map((src) => (
-              <div key={src.name} style={S.listItem}>
-                <span style={{ minWidth: 110, fontSize: 12 }}>{src.name}</span>
-                <div style={S.barBg}>
+              <div key={src.name} className="flex items-center justify-between py-2.5 border-b border-white/[0.04] text-sm last:border-0">
+                <span className="min-w-[110px] text-xs">{src.name}</span>
+                <div className="flex-1 h-1.5 rounded bg-white/[0.04] mx-3 relative overflow-hidden">
                   <div
+                    className="absolute top-0 left-0 h-full rounded opacity-70"
                     style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      height: '100%',
                       width: `${(src.sessions / maxTrafficSessions) * 100}%`,
-                      borderRadius: 3,
                       background: src.color,
-                      opacity: 0.7,
                     }}
                   />
                 </div>
-                <span style={{ fontWeight: 600, fontSize: 12, minWidth: 50, textAlign: 'right' }}>
+                <span className="font-semibold text-xs min-w-[50px] text-right">
                   {src.sessions.toLocaleString()}
                 </span>
               </div>

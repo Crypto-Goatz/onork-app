@@ -1,17 +1,30 @@
 'use client'
 
 import { useState } from 'react'
+import {
+  Rocket,
+  Cpu,
+  BookOpen,
+  Webhook,
+  Plug,
+  CreditCard,
+  ShieldCheck,
+  ExternalLink,
+} from 'lucide-react'
+import type { ComponentType, SVGProps } from 'react'
+
+type LucideIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>
 
 type DocSection = 'getting-started' | 'api' | 'mcp' | 'webhooks' | 'integrations' | 'billing' | 'security'
 
-const SECTIONS: { key: DocSection; title: string; description: string; icon: string }[] = [
-  { key: 'getting-started', title: 'Getting Started', description: 'Connect your CRM, install add-ons, and set up your first automation.', icon: '🚀' },
-  { key: 'api', title: 'API Reference', description: 'Full REST API documentation for all 0nCore endpoints.', icon: '📡' },
-  { key: 'mcp', title: 'MCP Server', description: 'Set up the 0nMCP server for Claude, Cursor, and other AI tools.', icon: '🧠' },
-  { key: 'webhooks', title: 'Webhooks', description: 'Configure webhook receivers for Stripe, CRM, and custom events.', icon: '🔗' },
-  { key: 'integrations', title: 'Integrations', description: 'Connect to 96+ services — Slack, Gmail, Stripe, GitHub, and more.', icon: '⚡' },
-  { key: 'billing', title: 'Billing & Rebilling', description: 'Sub-location billing, Stripe checkout, metered usage, and markup.', icon: '💳' },
-  { key: 'security', title: 'Security & Vault', description: 'AES-256 encryption, credential vault, and API key management.', icon: '🔒' },
+const SECTIONS: { key: DocSection; title: string; description: string; Icon: LucideIcon }[] = [
+  { key: 'getting-started', title: 'Getting Started', description: 'Connect your CRM, install add-ons, and set up your first automation.', Icon: Rocket },
+  { key: 'api', title: 'API Reference', description: 'Full REST API documentation for all 0nCore endpoints.', Icon: Cpu },
+  { key: 'mcp', title: 'MCP Server', description: 'Set up the 0nMCP server for Claude, Cursor, and other AI tools.', Icon: BookOpen },
+  { key: 'webhooks', title: 'Webhooks', description: 'Configure webhook receivers for Stripe, CRM, and custom events.', Icon: Webhook },
+  { key: 'integrations', title: 'Integrations', description: 'Connect to 96+ services — Slack, Gmail, Stripe, GitHub, and more.', Icon: Plug },
+  { key: 'billing', title: 'Billing & Rebilling', description: 'Sub-location billing, Stripe checkout, metered usage, and markup.', Icon: CreditCard },
+  { key: 'security', title: 'Security & Vault', description: 'AES-256 encryption, credential vault, and API key management.', Icon: ShieldCheck },
 ]
 
 const DOCS: Record<DocSection, { title: string; content: string }[]> = {
@@ -45,7 +58,7 @@ const DOCS: Record<DocSection, { title: string; content: string }[]> = {
     { title: 'Custom Webhooks', content: 'All webhook routes verify HMAC signatures. Supported: Stripe, CRM, Slack, GitHub, Twilio, Shopify. Generic HMAC verification available for custom sources.' },
   ],
   'integrations': [
-    { title: 'CRM (GoHighLevel)', content: '289 tools — contacts, pipelines, calendars, social posting, email, phone, invoices, workflows, forms, funnels, products, custom objects. Full API access via PIT token.' },
+    { title: 'CRM', content: '289 tools — contacts, pipelines, calendars, social posting, email, phone, invoices, workflows, forms, funnels, products, custom objects. Full API access via PIT token.' },
     { title: 'Google Workspace', content: 'Gmail, Drive, Sheets, Calendar, Docs, Slides, Tasks, Analytics, Search Console. Service account for server-side access, OAuth for user-facing flows.' },
     { title: 'Stripe', content: 'Payments, subscriptions, invoicing, billing portal. Inline price_data for checkout — no pre-created products needed.' },
     { title: 'Communication', content: 'Slack (bot + channels), Discord, Twilio (SMS + voice), SendGrid, Gmail, Telegram.' },
@@ -69,64 +82,79 @@ const DOCS: Record<DocSection, { title: string; content: string }[]> = {
 export default function DocsPage() {
   const [activeSection, setActiveSection] = useState<DocSection>('getting-started')
 
+  const activeData = SECTIONS.find(s => s.key === activeSection)!
+
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 800 }}>Documentation</h1>
-        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(126,217,87,0.12)', color: '#7ed957' }}>INTERNAL</span>
+      {/* Header */}
+      <div className="flex items-center gap-2.5 mb-5">
+        <h1 className="text-xl font-extrabold text-core-text m-0">Documentation</h1>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-core-green/[0.12] text-core-green">
+          INTERNAL
+        </span>
       </div>
 
-      <div style={{ display: 'flex', gap: 20 }}>
+      <div className="flex gap-5">
         {/* Sidebar nav */}
-        <div style={{ width: 240, flexShrink: 0 }}>
-          <div style={{ position: 'sticky', top: 88, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {SECTIONS.map(s => (
-              <button
-                key={s.key}
-                onClick={() => setActiveSection(s.key)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '10px 14px', borderRadius: 8, border: 'none',
-                  background: activeSection === s.key ? 'rgba(126,217,87,0.08)' : 'transparent',
-                  color: activeSection === s.key ? '#7ed957' : 'var(--jp-text-secondary)',
-                  fontSize: 13, fontWeight: activeSection === s.key ? 600 : 400,
-                  cursor: 'pointer', textAlign: 'left', width: '100%',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <span style={{ fontSize: 16 }}>{s.icon}</span>
-                {s.title}
-              </button>
-            ))}
+        <div className="w-60 shrink-0">
+          <div className="sticky top-[88px] flex flex-col gap-1">
+            {SECTIONS.map(s => {
+              const active = activeSection === s.key
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => setActiveSection(s.key)}
+                  className={[
+                    'flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border-0 text-sm cursor-pointer text-left w-full transition-all duration-150',
+                    active
+                      ? 'bg-core-green/[0.08] text-core-green font-semibold'
+                      : 'bg-transparent text-core-text-dim font-normal hover:bg-core-card',
+                  ].join(' ')}
+                >
+                  <s.Icon
+                    size={15}
+                    className={active ? 'text-core-green' : 'text-core-text-muted'}
+                  />
+                  {s.title}
+                </button>
+              )
+            })}
 
-            <div style={{ marginTop: 16, padding: '12px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid var(--jp-border)' }}>
-              <div style={{ fontSize: 11, color: 'var(--jp-text-muted)', marginBottom: 4 }}>Full API docs</div>
-              <a href="https://0nmcp.com/docs" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#7ed957', textDecoration: 'none', fontWeight: 600 }}>
-                0nmcp.com/docs →
+            <div className="mt-4 p-3.5 rounded-lg bg-white/[0.02] border border-core-border">
+              <div className="text-[11px] text-core-text-muted mb-1">Full API docs</div>
+              <a
+                href="https://0nmcp.com/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-xs text-core-green no-underline font-semibold hover:opacity-80 transition-opacity"
+              >
+                0nmcp.com/docs
+                <ExternalLink className="w-3 h-3" />
               </a>
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1 }}>
-          <div style={{ marginBottom: 24 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>
-              {SECTIONS.find(s => s.key === activeSection)?.icon} {SECTIONS.find(s => s.key === activeSection)?.title}
+        <div className="flex-1">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-2xl font-extrabold text-core-text mb-1">
+              <activeData.Icon size={20} className="text-core-green" />
+              {activeData.title}
             </h2>
-            <p style={{ fontSize: 14, color: 'var(--jp-text-muted)' }}>
-              {SECTIONS.find(s => s.key === activeSection)?.description}
-            </p>
+            <p className="text-sm text-core-text-muted">{activeData.description}</p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="flex flex-col gap-3">
             {DOCS[activeSection].map((doc, i) => (
-              <div key={i} style={{
-                padding: '18px 20px', borderRadius: 12,
-                background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)',
-              }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, color: 'var(--jp-text)' }}>{doc.title}</h3>
-                <p style={{ fontSize: 13, color: 'var(--jp-text-secondary)', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' }}>{doc.content}</p>
+              <div
+                key={i}
+                className="px-5 py-4.5 rounded-xl bg-core-card border border-core-border"
+              >
+                <h3 className="text-sm font-bold text-core-text mb-2">{doc.title}</h3>
+                <p className="text-[13px] text-core-text-dim leading-relaxed m-0 whitespace-pre-wrap">
+                  {doc.content}
+                </p>
               </div>
             ))}
           </div>

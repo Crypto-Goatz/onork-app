@@ -18,7 +18,11 @@ const LAYOUT_KEY = '0ncore_layout'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0d1117', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ width: 24, height: 24, border: '2px solid #7ed957', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /><style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style></div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-core-bg flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-core-green border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
       <LocationProvider>
         <DashboardLayoutInner>{children}</DashboardLayoutInner>
         <ActionDock />
@@ -114,22 +118,8 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'var(--bg-primary, #f1f2f7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        <div style={{
-          width: 36,
-          height: 36,
-          border: '2px solid var(--border, #e2e8f0)',
-          borderTopColor: 'var(--accent, #7ed957)',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-        }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="min-h-screen bg-core-bg flex items-center justify-center">
+        <div className="w-9 h-9 border-2 border-core-border border-t-core-green rounded-full animate-spin" />
       </div>
     )
   }
@@ -147,33 +137,32 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   if (isEmbed) {
     return (
       <RoleContext.Provider value={roleState}>
-        <div style={{ minHeight: '100vh', background: 'var(--bg-primary, #0d1117)' }}>
+        <div className="min-h-screen bg-core-bg">
           {/* Minimal embed header */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '8px 16px', borderBottom: '1px solid var(--border, #1e293b)',
-            background: 'var(--bg-card, #161b22)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 24, height: 24, borderRadius: 6, background: '#7ed957', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#000' }}>0n</div>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)' }}>
-                <span style={{ color: '#7ed957' }}>0n</span>Core
+          <div className="flex items-center justify-between px-4 py-2 border-b border-core-border bg-core-card">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-core-green flex items-center justify-center text-[9px] font-black text-black">0n</div>
+              <span className="text-[13px] font-bold text-core-text">
+                <span className="text-core-green">0n</span>Core
               </span>
               {embedLocationId && (
-                <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: 'rgba(126,217,87,0.1)', color: '#7ed957', fontFamily: 'monospace' }}>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-core-green/10 text-core-green font-mono">
                   {embedLocationId.slice(0, 8)}...
                 </span>
               )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <a href="https://0ncore.com/dashboard" target="_blank" rel="noopener noreferrer" style={{
-                fontSize: 11, fontWeight: 600, color: '#7ed957', textDecoration: 'none',
-                padding: '4px 10px', borderRadius: 4, background: 'rgba(126,217,87,0.08)',
-                border: '1px solid rgba(126,217,87,0.15)',
-              }}>Open Full Dashboard</a>
+            <div className="flex items-center gap-1.5">
+              <a
+                href="https://0ncore.com/dashboard"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] font-semibold text-core-green no-underline px-2.5 py-1 rounded bg-core-green/[0.08] border border-core-green/[0.15]"
+              >
+                Open Full Dashboard
+              </a>
             </div>
           </div>
-          <main style={{ padding: 16 }}>
+          <main className="p-4">
             {children}
           </main>
         </div>

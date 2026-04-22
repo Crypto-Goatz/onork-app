@@ -147,7 +147,10 @@ export function StrikeSettingsDialog({ config, onConfigChange, trigger }: Strike
 
             <div className="mt-auto px-2 pt-3 border-t border-border">
               <div className="flex items-center gap-2">
-                <div className="size-2 rounded-full bg-primary" style={{ boxShadow: `0 0 8px ${draft.accentColor}` }} />
+                <div
+                  className="size-2 rounded-full bg-primary"
+                  style={{ ['--glow-color' as string]: draft.accentColor, boxShadow: '0 0 8px var(--glow-color)' }}
+                />
                 <span className="text-[10px] text-muted-foreground font-mono">
                   {draft.sections.length} active
                 </span>
@@ -228,13 +231,11 @@ export function StrikeSettingsDialog({ config, onConfigChange, trigger }: Strike
                           }`}
                         >
                           <div
-                            className="size-4 rounded-full shrink-0"
-                            style={{
-                              background: preset.color,
-                              boxShadow: draft.accentColor === preset.color
-                                ? `0 0 10px ${preset.color}40`
-                                : 'none',
-                            }}
+                            className={cn(
+                              'size-4 rounded-full shrink-0',
+                              draft.accentColor === preset.color && 'ring-2 ring-offset-1 ring-offset-core-card ring-white/20'
+                            )}
+                            style={{ background: preset.color }}
                           />
                           <span className="text-[11px] text-muted-foreground truncate">
                             {preset.label}
@@ -258,6 +259,7 @@ export function StrikeSettingsDialog({ config, onConfigChange, trigger }: Strike
                         className="size-5 rounded-md border border-border shrink-0"
                         style={{ background: draft.accentColor }}
                       />
+                      {/* background is a dynamic user-selected hex — set via inline style intentionally */}
                     </div>
                   </div>
 

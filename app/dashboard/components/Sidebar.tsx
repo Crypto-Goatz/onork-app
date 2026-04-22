@@ -484,9 +484,9 @@ export default function Sidebar({ isOpen, onClose, isAdmin: isAdminProp }: Sideb
       {/* Sidebar */}
       <aside className={`jp-sidebar ${isOpen ? 'open' : ''}`}>
         {/* Header */}
-        <div className="jp-sidebar-header" style={{ padding: '16px 20px 12px' }}>
-          <Link href="/dashboard" className="jp-sidebar-brand" onClick={onClose} style={{ display: 'block' }}>
-            <img src="/brand/0ncore-logo.png" alt="0nCore" style={{ width: '100%', maxHeight: 36, objectFit: 'contain', objectPosition: 'left' }} />
+        <div className="jp-sidebar-header px-5 pt-4 pb-3">
+          <Link href="/dashboard" className="jp-sidebar-brand block" onClick={onClose}>
+            <img src="/brand/0ncore-logo.png" alt="0nCore" className="w-full max-h-9 object-contain object-left" />
           </Link>
         </div>
 
@@ -528,24 +528,19 @@ export default function Sidebar({ isOpen, onClose, isAdmin: isAdminProp }: Sideb
                       ? pathname === '/dashboard'
                       : pathname.startsWith(item.href)
 
-                  const navStyle: React.CSSProperties = isActive
-                    ? { background: '#000000', color: '#ffffff', borderRadius: 8 }
-                    : {}
-                  const iconStyle: React.CSSProperties = isActive
-                    ? { color: '#ffffff' }
-                    : { color: catColor }
+                  const childActive = isChildActive(item.children)
 
                   return (
                     <div key={item.href}>
                       {hasChildren ? (
                         <button
                           onClick={() => toggleExpand(item.name)}
-                          className={`jp-nav-item jp-nav-parent ${isChildActive(item.children) ? 'active' : ''}`}
-                          style={isChildActive(item.children) ? { background: '#000000', color: '#ffffff', borderRadius: 8 } : {}}
-                          onMouseEnter={e => { if (!isChildActive(item.children)) { e.currentTarget.style.background = catColor; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.borderRadius = '8px' } }}
-                          onMouseLeave={e => { if (!isChildActive(item.children)) { e.currentTarget.style.background = ''; e.currentTarget.style.color = '' } }}
+                          className={`jp-nav-item jp-nav-parent ${childActive ? 'active' : ''}`}
+                          style={childActive ? { background: '#000000', color: '#ffffff', borderRadius: 8 } : {}}
+                          onMouseEnter={e => { if (!childActive) { e.currentTarget.style.background = catColor; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.borderRadius = '8px' } }}
+                          onMouseLeave={e => { if (!childActive) { e.currentTarget.style.background = ''; e.currentTarget.style.color = '' } }}
                         >
-                          <span className="jp-nav-icon" style={isChildActive(item.children) ? { color: '#ffffff' } : { color: catColor }}>{item.icon}</span>
+                          <span className="jp-nav-icon" style={childActive ? { color: '#ffffff' } : { color: catColor }}>{item.icon}</span>
                           <span>{item.name}</span>
                           {item.badge && (
                             <span className="jp-nav-badge" style={{ background: `${catColor}20`, color: catColor }}>{item.badge}</span>
@@ -564,11 +559,11 @@ export default function Sidebar({ isOpen, onClose, isAdmin: isAdminProp }: Sideb
                           href={item.href}
                           onClick={onClose}
                           className={`jp-nav-item ${isActive ? 'active' : ''}`}
-                          style={navStyle}
+                          style={isActive ? { background: '#000000', color: '#ffffff', borderRadius: 8 } : {}}
                           onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = catColor; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.borderRadius = '8px'; const icon = e.currentTarget.querySelector('.jp-nav-icon') as HTMLElement; if (icon) icon.style.color = '#ffffff' } }}
                           onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = ''; e.currentTarget.style.color = ''; const icon = e.currentTarget.querySelector('.jp-nav-icon') as HTMLElement; if (icon) icon.style.color = catColor } }}
                         >
-                          <span className="jp-nav-icon" style={iconStyle}>{item.icon}</span>
+                          <span className="jp-nav-icon" style={isActive ? { color: '#ffffff' } : { color: catColor }}>{item.icon}</span>
                           <span>{item.name}</span>
                           {item.badge && (
                             <span className="jp-nav-badge" style={{ background: `${catColor}20`, color: catColor }}>{item.badge}</span>
@@ -609,21 +604,21 @@ export default function Sidebar({ isOpen, onClose, isAdmin: isAdminProp }: Sideb
         {/* Footer */}
         <div className="jp-sidebar-footer">
           {role.isAdmin && (
-            <div style={{ fontSize: 9, color: '#f97316', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 4 }}>
+            <div className="text-[9px] text-core-amber uppercase tracking-widest font-bold mb-1">
               Admin
             </div>
           )}
           {role.isVip && !role.isAdmin && (
-            <div style={{ fontSize: 9, color: '#7ed957', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 4 }}>
+            <div className="text-[9px] text-core-green uppercase tracking-widest font-bold mb-1">
               VIP / Unlimited
             </div>
           )}
           <div className="jp-sidebar-footer-label">Powered by</div>
-          <div className="jp-sidebar-footer-value" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="jp-sidebar-footer-value flex items-center gap-2">
             <span className="jp-sidebar-footer-dot" />
             0nMCP v4.5.0
-            <a href="https://www.youtube.com/@0ncoreAI" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', opacity: 0.4, marginLeft: 'auto' }} className="sidebar-yt">
-              <img src="/logos/youtube.svg" alt="YouTube" style={{ width: 14, height: 14, filter: 'brightness(0) invert(1)' }} />
+            <a href="https://www.youtube.com/@0ncoreAI" target="_blank" rel="noopener noreferrer" className="flex opacity-40 ml-auto sidebar-yt">
+              <img src="/logos/youtube.svg" alt="YouTube" className="w-3.5 h-3.5 brightness-0 invert" />
             </a>
           </div>
         </div>

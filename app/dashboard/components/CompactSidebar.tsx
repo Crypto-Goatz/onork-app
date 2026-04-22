@@ -282,9 +282,9 @@ export default function CompactSidebar({ isOpen, onClose, isAdmin }: CompactSide
         onMouseLeave={() => { setExpanded(false); setHoveredItem(null) }}
       >
         {/* Header */}
-        <div className="jp-compact-sidebar-header" style={{ padding: '14px 0', display: 'flex', justifyContent: 'center' }}>
+        <div className="jp-compact-sidebar-header py-3.5 flex justify-center">
           <Link href="/dashboard" className="jp-compact-sidebar-brand" onClick={onClose}>
-            <img src="/brand/0ncore-logo.png" alt="0nCore" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+            <img src="/brand/0ncore-logo.png" alt="0nCore" className="w-8 h-8 object-contain" />
           </Link>
         </div>
 
@@ -415,7 +415,7 @@ export default function CompactSidebar({ isOpen, onClose, isAdmin }: CompactSide
               </div>
             </>
           ) : (
-            <div className="jp-sidebar-footer-value" style={{ justifyContent: 'center' }}>
+            <div className="jp-sidebar-footer-value justify-center">
               <span className="jp-sidebar-footer-dot" />
             </div>
           )}
