@@ -1,10 +1,8 @@
 /**
  * AI personalization engine for tiered HIPAA reports.
  *
- * Tier 1 → Groq llama-3.3-70b, plain-English explanations only
- * Tier 2 → Sonnet 4.6, explanations + developer fixes with code
- * Tier 3 → Groq, explanations + NPRM 2026 delta
- * Tier 4 → Hybrid: Sonnet for dev fixes, Groq for everything else
+ * GROQ-ONLY. Every AI call in this file goes through Groq llama-3.3-70b.
+ * No Anthropic, no OpenAI, no anything else — per owner directive.
  *
  * Public entry point: generateReport(order, assessment) — returns FullReport.
  * Caller persists to hipaa_reports and updates hipaa_orders.report_status.
@@ -16,8 +14,6 @@ import type {
 import { TIER_META } from './report-types'
 
 const GROQ_KEY = process.env.GROQ_API_KEY || ''
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || ''
-const CLAUDE_MODEL = 'claude-sonnet-4-6-20250514'
 
 interface RawCheck {
   id: string
@@ -273,20 +269,13 @@ Rules:
 - "verificationCommand" must be a real command (curl -I, openssl, grep, etc.) — not placeholder text.
 - No pseudo-code, no "do X". Show the actual code.`
 
-  // Try Sonnet first (best at code). Fall back to Groq (llama-3.3-70b) if
-  // Anthropic is down / out of credits / times out. Structured JSON both ways.
-  let raw = await sonnet(prompt, { max_tokens: 1800, json: true })
-  let parsed = safeParse<DeveloperFix>(raw)
+  // GROQ ONLY. One call; retry loop + backoff are inside groq().
+  const raw = await groq(prompt, { max_tokens: 2500, json: true })
+  const parsed = safeParse<DeveloperFix>(raw)
   // "Usable" means: >=1 step AND at least one step has a fenced code block.
-  // If weaker than that, try the other model.
   const usable = (p: DeveloperFix | null) =>
     !!p && Array.isArray(p.steps) && p.steps.length >= 1 &&
     p.steps.some((s) => /```/.test(s.body || ''))
-  if (!usable(parsed)) {
-    console.warn('[HIPAA] devFix: Sonnet weak/failed, falling back to Groq')
-    raw = await groq(prompt, { max_tokens: 2500, json: true })
-    parsed = safeParse<DeveloperFix>(raw)
-  }
   if (usable(parsed) && parsed) {
     // Pad out to 3 steps if the model returned 1-2 — tack on a verification
     // step using its own verificationCommand so the reader always gets a
@@ -361,38 +350,6 @@ async function groq(prompt: string, opts: { max_tokens?: number; json?: boolean 
     }
   }
   return ''
-}
-
-async function sonnet(prompt: string, opts: { max_tokens?: number; json?: boolean } = {}): Promise<string> {
-  if (!ANTHROPIC_KEY) { console.warn('[HIPAA] sonnet: missing ANTHROPIC_API_KEY'); return '' }
-  try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: CLAUDE_MODEL,
-        max_tokens: opts.max_tokens || 1500,
-        temperature: 0.2,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-      signal: AbortSignal.timeout(45000),
-    })
-    if (!r.ok) {
-      const err = await r.text().catch(() => '')
-      console.warn(`[HIPAA] sonnet ${r.status}:`, err.slice(0, 200))
-      return ''
-    }
-    const j = await r.json()
-    const content = j?.content?.[0]?.text || ''
-    return opts.json ? stripOuterCodeFence(content) : content
-  } catch (e) {
-    console.warn('[HIPAA] sonnet exception:', (e as Error).message)
-    return ''
-  }
 }
 
 /**
