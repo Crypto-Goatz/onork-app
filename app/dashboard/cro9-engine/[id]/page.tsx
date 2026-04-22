@@ -279,7 +279,10 @@ export default function Cro9SitePage({ params }: { params: Promise<{ id: string 
                           <span className="tabular-nums font-semibold">{(w.value * 100).toFixed(1)}%</span>
                         </div>
                         <div className="h-2 rounded-full bg-muted overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-orange-500 to-red-500" style={{ width: `${Math.min(100, w.value * 100)}%` }} />
+                          <div
+                            className="h-full bg-gradient-to-r from-orange-500 to-red-500"
+                            style={{ width: `${Math.min(100, w.value * 100)}%` }}
+                          />
                         </div>
                         <div className="text-[10px] text-muted-foreground mt-1">
                           {w.update_count} updates · last {new Date(w.last_updated).toLocaleDateString()}

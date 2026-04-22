@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { Check } from 'lucide-react'
 
 interface WhiteLabelConfig {
   enabled: boolean
@@ -27,6 +28,87 @@ const DEFAULT_CONFIG: WhiteLabelConfig = {
   hideFooterBranding: false,
   customEmailFrom: '',
   customSupportEmail: '',
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block text-[11px] text-core-text-muted mb-1.5 font-semibold uppercase tracking-[0.06em]">
+      {children}
+    </label>
+  )
+}
+
+function TextInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  return (
+    <input
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full px-3.5 py-[11px] bg-core-surface border border-core-border rounded-lg text-core-text text-[14px] outline-none focus:border-core-cyan transition-colors"
+    />
+  )
+}
+
+function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      className={[
+        'relative w-12 h-[26px] rounded-full border-none cursor-pointer transition-colors duration-200 shrink-0',
+        on ? 'bg-core-cyan' : 'bg-core-border',
+      ].join(' ')}
+    >
+      <div
+        className={[
+          'absolute top-[3px] w-5 h-5 rounded-full bg-white transition-[left] duration-200',
+          on ? 'left-[25px]' : 'left-[3px]',
+        ].join(' ')}
+      />
+    </button>
+  )
+}
+
+function SmallToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      className={[
+        'relative w-10 h-[22px] rounded-full border-none cursor-pointer transition-colors duration-200 shrink-0',
+        on ? 'bg-core-cyan' : 'bg-core-border',
+      ].join(' ')}
+    >
+      <div
+        className={[
+          'absolute top-[3px] w-4 h-4 rounded-full bg-white transition-[left] duration-200',
+          on ? 'left-[21px]' : 'left-[3px]',
+        ].join(' ')}
+      />
+    </button>
+  )
+}
+
+function SectionCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-core-card border border-core-border rounded-[14px] p-6 mb-4">
+      {children}
+    </div>
+  )
+}
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-[11px] font-bold text-core-cyan mb-4 uppercase tracking-[0.06em]">
+      {children}
+    </h3>
+  )
 }
 
 export default function WhiteLabelPage() {
@@ -56,14 +138,11 @@ export default function WhiteLabelPage() {
     await supabase.auth.updateUser({
       data: { white_label: config }
     })
-
-    // Also save to API for server-side rendering
     await fetch('/api/settings/white-label', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config),
     }).catch(() => {})
-
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
@@ -72,221 +151,164 @@ export default function WhiteLabelPage() {
   const isAgency = tier === 'agency'
 
   return (
-    <div style={{ maxWidth: 700, margin: '0 auto' }}>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px' }}>White Label</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)' }}>
+    <div className="max-w-[700px] mx-auto">
+      <div className="mb-8">
+        <h1 className="text-[22px] font-bold text-core-text m-0 mb-1">White Label</h1>
+        <p className="text-[13px] text-core-text-muted">
           {isAgency ? 'Customize the platform with your brand.' : 'Available on the Agency plan ($380/mo).'}
         </p>
       </div>
 
       {!isAgency && (
-        <div style={{
-          background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)',
-          borderRadius: 14, padding: '24px', marginBottom: 24, textAlign: 'center',
-        }}>
-          <p style={{ color: '#8b5cf6', fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Agency Plan Required</p>
-          <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: 13, marginBottom: 16 }}>
+        <div className="bg-core-purple/5 border border-core-purple/20 rounded-[14px] p-6 mb-6 text-center">
+          <p className="text-core-purple text-[14px] font-semibold mb-2">Agency Plan Required</p>
+          <p className="text-core-text-muted text-[13px] mb-4">
             Full white-label branding is available on the Agency plan.
           </p>
-          <a href="/dashboard/settings" style={{
-            display: 'inline-block', padding: '10px 24px',
-            background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-            color: '#fff', fontWeight: 700, fontSize: 13,
-            borderRadius: 8, textDecoration: 'none',
-          }}>Upgrade to Agency</a>
+          <a
+            href="/dashboard/settings"
+            className="inline-block px-6 py-2.5 bg-gradient-to-br from-core-purple to-[#7c3aed] text-white font-bold text-[13px] rounded-lg no-underline"
+          >
+            Upgrade to Agency
+          </a>
         </div>
       )}
 
-      <div style={{ opacity: isAgency ? 1 : 0.4, pointerEvents: isAgency ? 'auto' : 'none' }}>
+      <div className={isAgency ? 'opacity-100 pointer-events-auto' : 'opacity-40 pointer-events-none'}>
         {/* Enable toggle */}
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: '20px 24px', marginBottom: 16,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>Enable White Label</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)', marginTop: 2 }}>Replace all 0nCore branding with yours</div>
+        <SectionCard>
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="text-[15px] font-semibold text-core-text">Enable White Label</div>
+              <div className="text-[12px] text-core-text-muted mt-0.5">Replace all 0nCore branding with yours</div>
+            </div>
+            <Toggle on={config.enabled} onToggle={() => update('enabled', !config.enabled)} />
           </div>
-          <button onClick={() => update('enabled', !config.enabled)} style={{
-            width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
-            background: config.enabled ? 'var(--color-cyan, #14b8a6)' : 'var(--border, #30363d)',
-            position: 'relative', transition: 'background 0.2s',
-          }}>
-            <div style={{
-              width: 20, height: 20, borderRadius: 10, background: '#fff',
-              position: 'absolute', top: 3,
-              left: config.enabled ? 25 : 3,
-              transition: 'left 0.2s',
-            }} />
-          </button>
-        </div>
+        </SectionCard>
 
         {/* Branding */}
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: '24px', marginBottom: 16,
-        }}>
-          <h3 style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-cyan, #14b8a6)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Branding</h3>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <SectionCard>
+          <SectionHeading>Branding</SectionHeading>
+          <div className="flex flex-col gap-3.5">
             <div>
-              <label style={labelStyle}>App Name</label>
-              <input value={config.appName} onChange={e => update('appName', e.target.value)}
-                placeholder="Your Brand Name" style={inputStyle}
-                onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'} />
+              <FieldLabel>App Name</FieldLabel>
+              <TextInput value={config.appName} onChange={v => update('appName', v)} placeholder="Your Brand Name" />
             </div>
             <div>
-              <label style={labelStyle}>Logo URL</label>
-              <input value={config.logoUrl} onChange={e => update('logoUrl', e.target.value)}
-                placeholder="https://yourbrand.com/logo.png" style={inputStyle}
-                onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'} />
+              <FieldLabel>Logo URL</FieldLabel>
+              <TextInput value={config.logoUrl} onChange={v => update('logoUrl', v)} placeholder="https://yourbrand.com/logo.png" />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label style={labelStyle}>Primary Color</label>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input type="color" value={config.primaryColor} onChange={e => update('primaryColor', e.target.value)}
-                    style={{ width: 40, height: 36, border: 'none', borderRadius: 6, cursor: 'pointer', background: 'none' }} />
-                  <input value={config.primaryColor} onChange={e => update('primaryColor', e.target.value)}
-                    style={{ ...inputStyle, flex: 1 }}
-                    onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-                    onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'} />
+                <FieldLabel>Primary Color</FieldLabel>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    value={config.primaryColor}
+                    onChange={e => update('primaryColor', e.target.value)}
+                    className="w-10 h-9 border-none rounded-md cursor-pointer bg-transparent shrink-0"
+                  />
+                  <input
+                    value={config.primaryColor}
+                    onChange={e => update('primaryColor', e.target.value)}
+                    className="flex-1 px-3.5 py-[11px] bg-core-surface border border-core-border rounded-lg text-core-text text-[14px] outline-none focus:border-core-cyan transition-colors"
+                  />
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>Accent Color</label>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input type="color" value={config.accentColor} onChange={e => update('accentColor', e.target.value)}
-                    style={{ width: 40, height: 36, border: 'none', borderRadius: 6, cursor: 'pointer', background: 'none' }} />
-                  <input value={config.accentColor} onChange={e => update('accentColor', e.target.value)}
-                    style={{ ...inputStyle, flex: 1 }}
-                    onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-                    onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'} />
+                <FieldLabel>Accent Color</FieldLabel>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    value={config.accentColor}
+                    onChange={e => update('accentColor', e.target.value)}
+                    className="w-10 h-9 border-none rounded-md cursor-pointer bg-transparent shrink-0"
+                  />
+                  <input
+                    value={config.accentColor}
+                    onChange={e => update('accentColor', e.target.value)}
+                    className="flex-1 px-3.5 py-[11px] bg-core-surface border border-core-border rounded-lg text-core-text text-[14px] outline-none focus:border-core-cyan transition-colors"
+                  />
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </SectionCard>
 
         {/* Domain */}
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: '24px', marginBottom: 16,
-        }}>
-          <h3 style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-cyan, #14b8a6)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Custom Domain</h3>
+        <SectionCard>
+          <SectionHeading>Custom Domain</SectionHeading>
           <div>
-            <label style={labelStyle}>Dashboard Domain</label>
-            <input value={config.customDomain} onChange={e => update('customDomain', e.target.value)}
-              placeholder="app.yourbrand.com" style={inputStyle}
-              onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'} />
-            <p style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', marginTop: 6 }}>
-              Point a CNAME record to <code style={{ background: 'var(--bg-secondary, #161b22)', padding: '2px 6px', borderRadius: 4 }}>cname.vercel-dns.com</code>
+            <FieldLabel>Dashboard Domain</FieldLabel>
+            <TextInput value={config.customDomain} onChange={v => update('customDomain', v)} placeholder="app.yourbrand.com" />
+            <p className="text-[11px] text-core-text-muted mt-1.5">
+              Point a CNAME record to{' '}
+              <code className="bg-core-surface px-1.5 py-0.5 rounded">cname.vercel-dns.com</code>
             </p>
           </div>
-        </div>
+        </SectionCard>
 
         {/* Email */}
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: '24px', marginBottom: 16,
-        }}>
-          <h3 style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-cyan, #14b8a6)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Email</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <SectionCard>
+          <SectionHeading>Email</SectionHeading>
+          <div className="flex flex-col gap-3.5">
             <div>
-              <label style={labelStyle}>From Email</label>
-              <input value={config.customEmailFrom} onChange={e => update('customEmailFrom', e.target.value)}
-                placeholder="noreply@yourbrand.com" style={inputStyle}
-                onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'} />
+              <FieldLabel>From Email</FieldLabel>
+              <TextInput value={config.customEmailFrom} onChange={v => update('customEmailFrom', v)} placeholder="noreply@yourbrand.com" />
             </div>
             <div>
-              <label style={labelStyle}>Support Email</label>
-              <input value={config.customSupportEmail} onChange={e => update('customSupportEmail', e.target.value)}
-                placeholder="support@yourbrand.com" style={inputStyle}
-                onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'} />
+              <FieldLabel>Support Email</FieldLabel>
+              <TextInput value={config.customSupportEmail} onChange={v => update('customSupportEmail', v)} placeholder="support@yourbrand.com" />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <button onClick={() => update('hideFooterBranding', !config.hideFooterBranding)} style={{
-                width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer',
-                background: config.hideFooterBranding ? 'var(--color-cyan, #14b8a6)' : 'var(--border, #30363d)',
-                position: 'relative', transition: 'background 0.2s',
-              }}>
-                <div style={{
-                  width: 16, height: 16, borderRadius: 8, background: '#fff',
-                  position: 'absolute', top: 3,
-                  left: config.hideFooterBranding ? 21 : 3,
-                  transition: 'left 0.2s',
-                }} />
-              </button>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary, #9ca3af)' }}>Hide "Powered by 0nMCP" footer</span>
+            <div className="flex items-center gap-2.5">
+              <SmallToggle on={config.hideFooterBranding} onToggle={() => update('hideFooterBranding', !config.hideFooterBranding)} />
+              <span className="text-[13px] text-core-text-dim">Hide &quot;Powered by 0nMCP&quot; footer</span>
             </div>
           </div>
-        </div>
+        </SectionCard>
 
         {/* Preview */}
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: '24px', marginBottom: 24,
-        }}>
-          <h3 style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-cyan, #14b8a6)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Preview</h3>
-          <div style={{
-            background: 'var(--bg-primary, #0d1117)', borderRadius: 10, padding: '20px',
-            border: '1px solid #1c2b42',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <SectionCard>
+          <SectionHeading>Preview</SectionHeading>
+          <div className="bg-core-bg rounded-[10px] p-5 border border-core-border">
+            <div className="flex items-center gap-2.5 mb-3">
               {config.logoUrl ? (
-                <img src={config.logoUrl} alt="" style={{ height: 28, objectFit: 'contain' }} />
+                <img src={config.logoUrl} alt="" className="h-7 object-contain" />
               ) : (
-                <div style={{
-                  width: 28, height: 28, borderRadius: 6,
-                  background: `linear-gradient(135deg, ${config.primaryColor}, ${config.accentColor})`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 900, color: '#fff',
-                }}>{config.appName.slice(0, 2).toUpperCase()}</div>
+                <div
+                  className="w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-black text-white shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${config.primaryColor}, ${config.accentColor})` }}
+                >
+                  {config.appName.slice(0, 2).toUpperCase()}
+                </div>
               )}
-              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)' }}>{config.appName}</span>
+              <span className="text-[14px] font-bold text-core-text">{config.appName}</span>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <div style={{ width: 60, height: 8, borderRadius: 4, background: config.primaryColor }} />
-              <div style={{ width: 40, height: 8, borderRadius: 4, background: config.accentColor }} />
-              <div style={{ width: 50, height: 8, borderRadius: 4, background: 'var(--border, #30363d)' }} />
+            <div className="flex gap-2">
+              <div className="h-2 w-[60px] rounded-sm" style={{ background: config.primaryColor }} />
+              <div className="h-2 w-10 rounded-sm" style={{ background: config.accentColor }} />
+              <div className="h-2 w-[50px] rounded-sm bg-core-border" />
             </div>
             {!config.hideFooterBranding && (
-              <p style={{ fontSize: 9, color: 'var(--text-muted, #6b7280)', marginTop: 12 }}>Powered by 0nMCP</p>
+              <p className="text-[9px] text-core-text-muted mt-3">Powered by 0nMCP</p>
             )}
           </div>
-        </div>
+        </SectionCard>
 
         {/* Save */}
-        <button onClick={handleSave} disabled={saving} style={{
-          width: '100%', padding: '14px',
-          background: saving ? 'var(--border, #30363d)' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-          color: saving ? 'var(--text-muted, #6b7280)' : '#0c1220',
-          fontWeight: 700, fontSize: 15, borderRadius: 10,
-          border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
-        }}>
-          {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save White Label Settings'}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className={[
+            'w-full py-3.5 font-bold text-[15px] rounded-[10px] border-none cursor-pointer',
+            saving
+              ? 'bg-core-border text-core-text-muted cursor-not-allowed'
+              : 'bg-gradient-to-br from-[#2dd4bf] to-core-cyan text-core-bg',
+          ].join(' ')}
+        >
+          {saving ? 'Saving...' : saved ? 'Saved' : 'Save White Label Settings'}
         </button>
       </div>
     </div>
   )
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '11px 14px',
-  background: 'var(--bg-secondary, #161b22)', border: '1px solid #1c2b42',
-  borderRadius: 8, color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
-  transition: 'border-color 0.2s',
-}
-
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: 11, color: 'var(--text-muted, #6b7280)',
-  marginBottom: 6, fontWeight: 600, textTransform: 'uppercase',
-  letterSpacing: '0.06em',
 }

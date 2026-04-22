@@ -1,15 +1,30 @@
 'use client'
 
 import { useState } from 'react'
+import { ChevronLeft, ChevronRight, Plus, X, Trash2, CalendarDays } from 'lucide-react'
 import type { CalendarEvent } from '../types'
 
 const uid = () => Math.random().toString(36).substr(2, 9)
 
-const TYPE_COLORS: Record<string, string> = {
-  meeting: '#3b82f6',
-  deadline: '#ef4444',
-  reminder: '#f59e0b',
-  personal: '#a855f7',
+const TYPE_BADGE: Record<string, string> = {
+  meeting: 'bg-blue-500/20 text-blue-400',
+  deadline: 'bg-core-red/20 text-core-red',
+  reminder: 'bg-core-amber/20 text-core-amber',
+  personal: 'bg-core-purple/20 text-core-purple',
+}
+
+const TYPE_BAR: Record<string, string> = {
+  meeting: 'bg-blue-500',
+  deadline: 'bg-core-red',
+  reminder: 'bg-core-amber',
+  personal: 'bg-core-purple',
+}
+
+const TYPE_ACTIVE: Record<string, string> = {
+  meeting: 'bg-blue-500 text-white',
+  deadline: 'bg-core-red text-white',
+  reminder: 'bg-core-amber text-white',
+  personal: 'bg-core-purple text-white',
 }
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -86,54 +101,58 @@ export default function CalendarView({ events, onAddEvent, onDeleteEvent }: Cale
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0d1117', color: '#f0f4f8' }}>
+    <div className="h-full flex flex-col bg-core-bg text-core-text">
       {/* Header */}
-      <div style={{ padding: '20px 24px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="px-6 py-5 border-b border-core-border flex justify-between items-center">
         <div>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ color: '#7ed957' }}>{'\uD83D\uDCC5'}</span> Calendar
+          <h2 className="m-0 text-[22px] font-extrabold flex items-center gap-2.5">
+            <CalendarDays size={22} className="text-core-green" />
+            Calendar
           </h2>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#7ed957', opacity: 0.8 }}>Your scheduled events and meetings.</p>
+          <p className="m-0 mt-1 text-[13px] text-core-green opacity-80">Your scheduled events and meetings.</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div style={{ display: 'flex', background: '#161b22', borderRadius: 8, overflow: 'hidden', border: '1px solid #1e293b' }}>
+        <div className="flex gap-2">
+          <div className="flex bg-core-card rounded-lg overflow-hidden border border-core-border">
             {(['month', 'week'] as const).map(m => (
               <button
                 key={m}
                 onClick={() => setViewMode(m)}
-                style={{
-                  padding: '6px 14px', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  background: viewMode === m ? '#7ed957' : 'transparent',
-                  color: viewMode === m ? '#0d1117' : '#8b95a5',
-                  textTransform: 'uppercase', letterSpacing: 0.5,
-                }}
+                className={`px-3.5 py-1.5 border-0 text-xs font-bold cursor-pointer uppercase tracking-[0.5px] transition-colors ${
+                  viewMode === m ? 'bg-core-green text-core-bg' : 'bg-transparent text-core-text-dim'
+                }`}
               >{m}</button>
             ))}
           </div>
           <button
             onClick={() => { setShowAddModal(true); setNewDate(todayStr) }}
-            style={{ padding: '6px 14px', background: '#7ed957', color: '#0d1117', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
-          >+ Event</button>
+            className="flex items-center gap-1 px-3.5 py-1.5 bg-core-green text-core-bg border-0 rounded-lg text-xs font-bold cursor-pointer"
+          >
+            <Plus size={14} /> Event
+          </button>
         </div>
       </div>
 
       {/* Month nav */}
-      <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button onClick={prevMonth} style={{ background: 'none', border: 'none', color: '#8b95a5', cursor: 'pointer', fontSize: 18 }}>&lsaquo;</button>
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{MONTHS[month]} {year}</h3>
-        <button onClick={nextMonth} style={{ background: 'none', border: 'none', color: '#8b95a5', cursor: 'pointer', fontSize: 18 }}>&rsaquo;</button>
+      <div className="px-6 py-3 flex items-center justify-between">
+        <button onClick={prevMonth} className="bg-transparent border-0 text-core-text-dim cursor-pointer p-1 hover:text-core-text transition-colors">
+          <ChevronLeft size={20} />
+        </button>
+        <h3 className="m-0 text-base font-bold">{MONTHS[month]} {year}</h3>
+        <button onClick={nextMonth} className="bg-transparent border-0 text-core-text-dim cursor-pointer p-1 hover:text-core-text transition-colors">
+          <ChevronRight size={20} />
+        </button>
       </div>
 
       {/* Calendar Grid */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '0 24px 24px' }}>
+      <div className="flex-1 overflow-auto px-6 pb-6">
         {/* Day headers */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1 }}>
+        <div className="grid grid-cols-7 gap-px">
           {DAYS.map(d => (
-            <div key={d} style={{ padding: '8px 0', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#3d4654', textTransform: 'uppercase', letterSpacing: 1 }}>{d}</div>
+            <div key={d} className="py-2 text-center text-[11px] font-bold text-core-text-muted uppercase tracking-widest">{d}</div>
           ))}
         </div>
         {/* Date cells */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1 }}>
+        <div className="grid grid-cols-7 gap-px">
           {cells.map((cell, i) => {
             const dayEvents = getEventsForDate(cell.dateStr)
             const isToday = cell.dateStr === todayStr
@@ -142,27 +161,22 @@ export default function CalendarView({ events, onAddEvent, onDeleteEvent }: Cale
               <div
                 key={i}
                 onClick={() => setSelectedDate(cell.dateStr === selectedDate ? null : cell.dateStr)}
-                style={{
-                  minHeight: 80, padding: 6, background: isSelected ? 'rgba(126,217,87,0.08)' : '#161b22',
-                  border: `1px solid ${isSelected ? '#7ed957' : '#1e293b'}`,
-                  borderRadius: 6, cursor: 'pointer', opacity: cell.isCurrentMonth ? 1 : 0.35,
-                  transition: 'border-color 0.15s',
-                }}
+                className={`min-h-[80px] p-1.5 rounded-[6px] cursor-pointer transition-colors border ${
+                  isSelected
+                    ? 'bg-core-green/8 border-core-green'
+                    : 'bg-core-card border-core-border'
+                } ${!cell.isCurrentMonth ? 'opacity-35' : ''}`}
               >
-                <div style={{ fontSize: 12, fontWeight: isToday ? 800 : 500, color: isToday ? '#7ed957' : '#8b95a5', marginBottom: 4 }}>
+                <div className={`text-xs mb-1 ${isToday ? 'font-extrabold text-core-green' : 'font-medium text-core-text-dim'}`}>
                   {cell.date}
                 </div>
                 {dayEvents.slice(0, 3).map(ev => (
-                  <div key={ev.id} style={{
-                    fontSize: 9, padding: '2px 4px', borderRadius: 3, marginBottom: 2,
-                    background: TYPE_COLORS[ev.type] + '22', color: TYPE_COLORS[ev.type],
-                    fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
+                  <div key={ev.id} className={`text-[9px] px-1 py-0.5 rounded-[3px] mb-0.5 font-semibold overflow-hidden text-ellipsis whitespace-nowrap ${TYPE_BADGE[ev.type]}`}>
                     {ev.summary}
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
-                  <div style={{ fontSize: 9, color: '#3d4654' }}>+{dayEvents.length - 3} more</div>
+                  <div className="text-[9px] text-core-text-muted">+{dayEvents.length - 3} more</div>
                 )}
               </div>
             )
@@ -172,26 +186,30 @@ export default function CalendarView({ events, onAddEvent, onDeleteEvent }: Cale
 
       {/* Date detail panel */}
       {selectedDate && (
-        <div style={{ borderTop: '1px solid #1e293b', background: '#161b22', padding: 16, maxHeight: 220, overflow: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>{selectedDate}</h4>
+        <div className="border-t border-core-border bg-core-card p-4 max-h-[220px] overflow-auto">
+          <div className="flex justify-between items-center mb-2.5">
+            <h4 className="m-0 text-sm font-bold">{selectedDate}</h4>
             <button
               onClick={() => { setShowAddModal(true); setNewDate(selectedDate) }}
-              style={{ background: 'rgba(126,217,87,0.15)', color: '#7ed957', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
-            >+ Add</button>
+              className="flex items-center gap-1 bg-core-green/15 text-core-green border-0 rounded-[6px] px-2.5 py-1 text-[11px] font-semibold cursor-pointer"
+            >
+              <Plus size={11} /> Add
+            </button>
           </div>
           {dateDetail.length === 0 ? (
-            <div style={{ color: '#3d4654', fontSize: 12 }}>No events.</div>
+            <div className="text-core-text-muted text-xs">No events.</div>
           ) : dateDetail.map(ev => (
-            <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #1e293b' }}>
-              <div style={{ width: 4, height: 28, borderRadius: 2, background: TYPE_COLORS[ev.type] }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{ev.summary}</div>
-                <div style={{ fontSize: 11, color: '#8b95a5' }}>
-                  {ev.startTime} - {ev.endTime} {ev.description ? ` | ${ev.description}` : ''}
+            <div key={ev.id} className="flex items-center gap-2.5 py-2 border-b border-core-border">
+              <div className={`w-1 h-7 rounded-sm ${TYPE_BAR[ev.type]}`} />
+              <div className="flex-1">
+                <div className="text-[13px] font-semibold">{ev.summary}</div>
+                <div className="text-[11px] text-core-text-dim">
+                  {ev.startTime} - {ev.endTime}{ev.description ? ` | ${ev.description}` : ''}
                 </div>
               </div>
-              <button onClick={() => onDeleteEvent(ev.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 14 }}>x</button>
+              <button onClick={() => onDeleteEvent(ev.id)} className="bg-transparent border-0 text-core-red cursor-pointer p-1 hover:opacity-80 transition-opacity">
+                <Trash2 size={14} />
+              </button>
             </div>
           ))}
         </div>
@@ -199,53 +217,73 @@ export default function CalendarView({ events, onAddEvent, onDeleteEvent }: Cale
 
       {/* Add Event Modal */}
       {showAddModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div style={{ background: '#161b22', border: '1px solid #1e293b', borderRadius: 14, padding: 24, width: 400 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>New Event</h3>
-              <button onClick={() => setShowAddModal(false)} style={{ background: 'none', border: 'none', color: '#8b95a5', cursor: 'pointer', fontSize: 18 }}>x</button>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100]">
+          <div className="bg-core-card border border-core-border rounded-2xl p-6 w-[400px]">
+            <div className="flex justify-between mb-4">
+              <h3 className="m-0 text-base font-extrabold">New Event</h3>
+              <button onClick={() => setShowAddModal(false)} className="bg-transparent border-0 text-core-text-dim cursor-pointer hover:text-core-text">
+                <X size={20} />
+              </button>
             </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2, color: '#8b95a5', marginBottom: 4 }}>Event Name</label>
-              <input value={newSummary} onChange={e => setNewSummary(e.target.value)} placeholder="Meeting with team" style={{ width: '100%', padding: '8px 12px', background: '#0d1117', border: '1px solid #1e293b', borderRadius: 8, color: '#f0f4f8', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+            <div className="mb-3.5">
+              <label className="block text-[10px] font-extrabold uppercase tracking-[1.2px] text-core-text-dim mb-1">Event Name</label>
+              <input
+                value={newSummary}
+                onChange={e => setNewSummary(e.target.value)}
+                placeholder="Meeting with team"
+                className="w-full px-3 py-2 bg-core-bg border border-core-border rounded-lg text-core-text text-[13px] outline-none box-border"
+              />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 14 }}>
+            <div className="grid grid-cols-3 gap-2.5 mb-3.5">
               <div>
-                <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2, color: '#8b95a5', marginBottom: 4 }}>Date</label>
-                <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} style={{ width: '100%', padding: '8px 8px', background: '#0d1117', border: '1px solid #1e293b', borderRadius: 8, color: '#f0f4f8', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+                <label className="block text-[10px] font-extrabold uppercase tracking-[1.2px] text-core-text-dim mb-1">Date</label>
+                <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full px-2 py-2 bg-core-bg border border-core-border rounded-lg text-core-text text-xs outline-none box-border" />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2, color: '#8b95a5', marginBottom: 4 }}>Start</label>
-                <input type="time" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} style={{ width: '100%', padding: '8px 8px', background: '#0d1117', border: '1px solid #1e293b', borderRadius: 8, color: '#f0f4f8', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+                <label className="block text-[10px] font-extrabold uppercase tracking-[1.2px] text-core-text-dim mb-1">Start</label>
+                <input type="time" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} className="w-full px-2 py-2 bg-core-bg border border-core-border rounded-lg text-core-text text-xs outline-none box-border" />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2, color: '#8b95a5', marginBottom: 4 }}>End</label>
-                <input type="time" value={newEndTime} onChange={e => setNewEndTime(e.target.value)} style={{ width: '100%', padding: '8px 8px', background: '#0d1117', border: '1px solid #1e293b', borderRadius: 8, color: '#f0f4f8', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+                <label className="block text-[10px] font-extrabold uppercase tracking-[1.2px] text-core-text-dim mb-1">End</label>
+                <input type="time" value={newEndTime} onChange={e => setNewEndTime(e.target.value)} className="w-full px-2 py-2 bg-core-bg border border-core-border rounded-lg text-core-text text-xs outline-none box-border" />
               </div>
             </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2, color: '#8b95a5', marginBottom: 4 }}>Type</label>
-              <div style={{ display: 'flex', gap: 6 }}>
+            <div className="mb-3.5">
+              <label className="block text-[10px] font-extrabold uppercase tracking-[1.2px] text-core-text-dim mb-1">Type</label>
+              <div className="flex gap-1.5">
                 {(['meeting', 'deadline', 'reminder', 'personal'] as const).map(t => (
                   <button
                     key={t}
                     onClick={() => setNewType(t)}
-                    style={{
-                      padding: '5px 12px', borderRadius: 6, border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer', textTransform: 'capitalize',
-                      background: newType === t ? TYPE_COLORS[t] : 'rgba(255,255,255,0.05)',
-                      color: newType === t ? '#fff' : '#8b95a5',
-                    }}
+                    className={`px-3 py-1 rounded-[6px] border-0 text-[11px] font-bold cursor-pointer capitalize transition-colors ${
+                      newType === t ? TYPE_ACTIVE[t] : 'bg-white/5 text-core-text-dim'
+                    }`}
                   >{t}</button>
                 ))}
               </div>
             </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2, color: '#8b95a5', marginBottom: 4 }}>Description (optional)</label>
-              <input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Notes..." style={{ width: '100%', padding: '8px 12px', background: '#0d1117', border: '1px solid #1e293b', borderRadius: 8, color: '#f0f4f8', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+            <div className="mb-3.5">
+              <label className="block text-[10px] font-extrabold uppercase tracking-[1.2px] text-core-text-dim mb-1">Description (optional)</label>
+              <input
+                value={newDesc}
+                onChange={e => setNewDesc(e.target.value)}
+                placeholder="Notes..."
+                className="w-full px-3 py-2 bg-core-bg border border-core-border rounded-lg text-core-text text-[13px] outline-none box-border"
+              />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setShowAddModal(false)} style={{ padding: '8px 16px', background: 'none', border: '1px solid #1e293b', borderRadius: 8, color: '#8b95a5', cursor: 'pointer', fontSize: 12 }}>Cancel</button>
-              <button onClick={handleAdd} disabled={!newSummary.trim() || !newDate} style={{ padding: '8px 16px', background: newSummary.trim() && newDate ? '#7ed957' : '#1e293b', color: '#0d1117', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: newSummary.trim() && newDate ? 'pointer' : 'not-allowed' }}>Create Event</button>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-transparent border border-core-border rounded-lg text-core-text-dim cursor-pointer text-xs">Cancel</button>
+              <button
+                onClick={handleAdd}
+                disabled={!newSummary.trim() || !newDate}
+                className={`px-4 py-2 border-0 rounded-lg text-xs font-bold transition-colors ${
+                  newSummary.trim() && newDate
+                    ? 'bg-core-green text-core-bg cursor-pointer'
+                    : 'bg-core-border text-core-text-muted cursor-not-allowed'
+                }`}
+              >
+                Create Event
+              </button>
             </div>
           </div>
         </div>

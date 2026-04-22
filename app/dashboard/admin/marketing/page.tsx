@@ -3,19 +3,31 @@
 import { useState } from 'react'
 import {
   MessageSquare, FileText, Mail, Hash, Megaphone, BarChart3,
-  TrendingUp, Users, CalendarDays,
+  TrendingUp, Users, CalendarDays, Copy, Check,
 } from 'lucide-react'
 
 const SECTIONS = [
-  { key: 'linkedin', label: 'LinkedIn Comments', icon: <MessageSquare className="h-4 w-4" />, color: '#00d4ff' },
-  { key: 'composer', label: 'Post Composer', icon: <FileText className="h-4 w-4" />, color: '#a78bfa' },
-  { key: 'email', label: 'Email Templates', icon: <Mail className="h-4 w-4" />, color: '#7ed957' },
-  { key: 'hashtags', label: 'Hashtag Generator', icon: <Hash className="h-4 w-4" />, color: '#fbbf24' },
-  { key: 'campaigns', label: 'Campaign Stats', icon: <Megaphone className="h-4 w-4" />, color: '#f97316' },
-  { key: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" />, color: '#14b8a6' },
-  { key: 'audience', label: 'Audience', icon: <Users className="h-4 w-4" />, color: '#ec4899' },
-  { key: 'schedule', label: 'Schedule', icon: <CalendarDays className="h-4 w-4" />, color: '#6b7280' },
+  { key: 'linkedin', label: 'LinkedIn Comments', icon: MessageSquare, color: 'text-core-cyan' },
+  { key: 'composer', label: 'Post Composer', icon: FileText, color: 'text-core-purple' },
+  { key: 'email', label: 'Email Templates', icon: Mail, color: 'text-core-green' },
+  { key: 'hashtags', label: 'Hashtag Generator', icon: Hash, color: 'text-core-amber' },
+  { key: 'campaigns', label: 'Campaign Stats', icon: Megaphone, color: 'text-orange-400' },
+  { key: 'analytics', label: 'Analytics', icon: BarChart3, color: 'text-teal-400' },
+  { key: 'audience', label: 'Audience', icon: Users, color: 'text-pink-400' },
+  { key: 'schedule', label: 'Schedule', icon: CalendarDays, color: 'text-core-text-dim' },
 ] as const
+
+// hex values for dynamic color props
+const SECTION_HEX: Record<string, string> = {
+  linkedin: '#00d4ff',
+  composer: '#a78bfa',
+  email: '#7ed957',
+  hashtags: '#fbbf24',
+  campaigns: '#f97316',
+  analytics: '#14b8a6',
+  audience: '#ec4899',
+  schedule: '#6b7280',
+}
 
 type SectionKey = typeof SECTIONS[number]['key']
 
@@ -89,33 +101,56 @@ export default function MarketingToolsPage() {
   }
 
   const activeSection = SECTIONS.find(s => s.key === active)
+  const ActiveIcon = activeSection?.icon
 
   return (
-    <div style={{ display: 'flex', gap: 0, minHeight: 'calc(100vh - 80px)' }}>
+    <div className="flex gap-0 min-h-[calc(100vh-80px)]">
       {/* Main content */}
-      <div style={{ flex: 1, padding: '0 24px 40px 0' }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: 0 }}>Marketing Tools</h1>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, margin: '4px 0 0' }}>
+      <div className="flex-1 pr-6 pb-10">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-core-text m-0">Marketing Tools</h1>
+          <p className="text-core-text-muted text-[13px] mt-1 mb-0">
             AI-powered content generation and campaign management
           </p>
         </div>
 
         {/* LinkedIn Comments */}
         {active === 'linkedin' && (
-          <div className="rounded-xl border border-border/50 bg-bg-card/50 p-6">
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 16 }}>LinkedIn Comment Generator</h2>
-            <textarea value={linkedinInput} onChange={e => setLinkedinInput(e.target.value)} placeholder="Paste a LinkedIn post or enter topics..." className="w-full rounded-lg border border-border/50 bg-bg-secondary p-3 text-sm text-white placeholder:text-text-muted resize-y" style={{ minHeight: 80 }} />
-            <button onClick={generateLinkedin} disabled={linkedinLoading} className="mt-3 px-5 py-2.5 rounded-lg text-sm font-semibold" style={{ background: linkedinLoading ? 'transparent' : 'linear-gradient(135deg, #00d4ff, #00a8cc)', color: linkedinLoading ? 'rgba(255,255,255,0.4)' : '#000', border: linkedinLoading ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+          <div className="rounded-xl border border-core-border/50 bg-core-card/50 p-6">
+            <h2 className="text-base font-bold text-core-text mb-4">LinkedIn Comment Generator</h2>
+            <textarea
+              value={linkedinInput}
+              onChange={e => setLinkedinInput(e.target.value)}
+              placeholder="Paste a LinkedIn post or enter topics..."
+              className="w-full rounded-lg border border-core-border/50 bg-core-surface p-3 text-sm text-core-text placeholder:text-core-text-muted resize-y min-h-20 outline-none"
+            />
+            <button
+              onClick={generateLinkedin}
+              disabled={linkedinLoading}
+              className={[
+                'mt-3 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150',
+                linkedinLoading
+                  ? 'bg-transparent text-core-text-muted border border-core-border/20'
+                  : 'bg-gradient-to-br from-core-cyan to-[#00a8cc] text-black border-0',
+              ].join(' ')}
+            >
               {linkedinLoading ? 'Generating...' : 'Generate Comments'}
             </button>
             {linkedinComments.map((c, i) => (
-              <div key={i} className="mt-3 rounded-lg border border-border/50 bg-bg-secondary p-4">
+              <div key={i} className="mt-3 rounded-lg border border-core-border/50 bg-core-surface p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: '#00d4ff', background: 'rgba(0,212,255,0.1)', padding: '2px 8px', borderRadius: 4 }}>{c.style}</span>
-                  <button onClick={() => copy(c.comment, `li-${i}`)} className="text-xs px-2 py-1 rounded border border-border/50 text-text-muted hover:text-white">{copied === `li-${i}` ? 'Copied!' : 'Copy'}</button>
+                  <span className="text-[10px] font-semibold uppercase text-core-cyan bg-core-cyan/10 px-2 py-0.5 rounded">
+                    {c.style}
+                  </span>
+                  <button
+                    onClick={() => copy(c.comment, `li-${i}`)}
+                    className="flex items-center gap-1 text-xs px-2 py-1 rounded border border-core-border/50 text-core-text-muted hover:text-core-text transition-colors"
+                  >
+                    {copied === `li-${i}` ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    {copied === `li-${i}` ? 'Copied!' : 'Copy'}
+                  </button>
                 </div>
-                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, margin: 0 }}>{c.comment}</p>
+                <p className="text-[13px] text-core-text-dim leading-relaxed m-0">{c.comment}</p>
               </div>
             ))}
           </div>
@@ -123,24 +158,61 @@ export default function MarketingToolsPage() {
 
         {/* Post Composer */}
         {active === 'composer' && (
-          <div className="rounded-xl border border-border/50 bg-bg-card/50 p-6">
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Post Composer</h2>
-            <input value={composerTopic} onChange={e => setComposerTopic(e.target.value)} placeholder="Topic..." className="w-full rounded-lg border border-border/50 bg-bg-secondary px-3 py-2.5 text-sm text-white placeholder:text-text-muted mb-3" />
+          <div className="rounded-xl border border-core-border/50 bg-core-card/50 p-6">
+            <h2 className="text-base font-bold text-core-text mb-4">Post Composer</h2>
+            <input
+              value={composerTopic}
+              onChange={e => setComposerTopic(e.target.value)}
+              placeholder="Topic..."
+              className="w-full rounded-lg border border-core-border/50 bg-core-surface px-3 py-2.5 text-sm text-core-text placeholder:text-core-text-muted mb-3 outline-none"
+            />
             <div className="flex gap-2 mb-4">
               {['insight', 'story', 'list', 'question'].map(s => (
-                <button key={s} onClick={() => setComposerStyle(s)} className="px-3 py-1.5 rounded-full text-xs font-medium" style={{ background: composerStyle === s ? 'rgba(167,139,250,0.12)' : 'transparent', color: composerStyle === s ? '#a78bfa' : 'rgba(255,255,255,0.4)', border: `1px solid ${composerStyle === s ? '#a78bfa' : 'rgba(255,255,255,0.08)'}` }}>{s}</button>
+                <button
+                  key={s}
+                  onClick={() => setComposerStyle(s)}
+                  className={[
+                    'px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150',
+                    composerStyle === s
+                      ? 'bg-core-purple/12 text-core-purple border border-core-purple'
+                      : 'bg-transparent text-core-text-muted border border-core-border/20 hover:text-core-text',
+                  ].join(' ')}
+                >
+                  {s}
+                </button>
               ))}
             </div>
-            <button onClick={generatePosts} disabled={composerLoading} className="px-5 py-2.5 rounded-lg text-sm font-semibold" style={{ background: composerLoading ? 'transparent' : 'linear-gradient(135deg, #a78bfa, #7c3aed)', color: composerLoading ? 'rgba(255,255,255,0.4)' : '#fff', border: composerLoading ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+            <button
+              onClick={generatePosts}
+              disabled={composerLoading}
+              className={[
+                'px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150',
+                composerLoading
+                  ? 'bg-transparent text-core-text-muted border border-core-border/20'
+                  : 'bg-gradient-to-br from-core-purple to-[#7c3aed] text-white border-0',
+              ].join(' ')}
+            >
               {composerLoading ? 'Generating...' : 'Generate Posts'}
             </button>
             {composerPosts.map((p, i) => (
-              <div key={i} className="mt-3 rounded-lg border border-border/50 bg-bg-secondary p-4">
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 8 }}>{p.hook}</div>
-                <pre style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.6, margin: '0 0 8px' }}>{p.body}</pre>
-                <div style={{ color: '#7ed957', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{p.cta}</div>
-                <div className="flex flex-wrap gap-1 mb-3">{p.hashtags.map((h, j) => <span key={j} style={{ fontSize: 10, color: '#00d4ff', background: 'rgba(0,212,255,0.08)', padding: '2px 6px', borderRadius: 4 }}>{h}</span>)}</div>
-                <button onClick={() => copy(`${p.hook}\n\n${p.body}\n\n${p.cta}\n\n${p.hashtags.join(' ')}`, `post-${i}`)} className="text-xs px-3 py-1.5 rounded border border-border/50 text-text-muted hover:text-white">{copied === `post-${i}` ? 'Copied!' : 'Copy'}</button>
+              <div key={i} className="mt-3 rounded-lg border border-core-border/50 bg-core-surface p-4">
+                <div className="text-[15px] font-bold text-core-text mb-2">{p.hook}</div>
+                <pre className="text-xs text-core-text-muted whitespace-pre-wrap font-sans leading-relaxed m-0 mb-2">{p.body}</pre>
+                <div className="text-core-green text-xs font-semibold mb-2">{p.cta}</div>
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {p.hashtags.map((h, j) => (
+                    <span key={j} className="text-[10px] text-core-cyan bg-core-cyan/[0.08] px-1.5 py-0.5 rounded">
+                      {h}
+                    </span>
+                  ))}
+                </div>
+                <button
+                  onClick={() => copy(`${p.hook}\n\n${p.body}\n\n${p.cta}\n\n${p.hashtags.join(' ')}`, `post-${i}`)}
+                  className="flex items-center gap-1 text-xs px-3 py-1.5 rounded border border-core-border/50 text-core-text-muted hover:text-core-text transition-colors"
+                >
+                  {copied === `post-${i}` ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {copied === `post-${i}` ? 'Copied!' : 'Copy'}
+                </button>
               </div>
             ))}
           </div>
@@ -148,25 +220,53 @@ export default function MarketingToolsPage() {
 
         {/* Email Templates */}
         {active === 'email' && (
-          <div className="rounded-xl border border-border/50 bg-bg-card/50 p-6">
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Email Template Generator</h2>
+          <div className="rounded-xl border border-core-border/50 bg-core-card/50 p-6">
+            <h2 className="text-base font-bold text-core-text mb-4">Email Template Generator</h2>
             <div className="flex flex-wrap gap-2 mb-4">
               {['free-tier', 'trial', 'paying', 'churned', 'leads', 'partners'].map(a => (
-                <button key={a} onClick={() => setEmailAudience(a)} className="px-3 py-1.5 rounded-full text-xs font-medium" style={{ background: emailAudience === a ? 'rgba(126,217,87,0.12)' : 'transparent', color: emailAudience === a ? '#7ed957' : 'rgba(255,255,255,0.4)', border: `1px solid ${emailAudience === a ? '#7ed957' : 'rgba(255,255,255,0.08)'}` }}>{a}</button>
+                <button
+                  key={a}
+                  onClick={() => setEmailAudience(a)}
+                  className={[
+                    'px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150',
+                    emailAudience === a
+                      ? 'bg-core-green/12 text-core-green border border-core-green'
+                      : 'bg-transparent text-core-text-muted border border-core-border/20 hover:text-core-text',
+                  ].join(' ')}
+                >
+                  {a}
+                </button>
               ))}
             </div>
-            <button onClick={generateEmails} disabled={emailLoading} className="px-5 py-2.5 rounded-lg text-sm font-semibold" style={{ background: emailLoading ? 'transparent' : 'linear-gradient(135deg, #7ed957, #5cb83a)', color: emailLoading ? 'rgba(255,255,255,0.4)' : '#000', border: emailLoading ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+            <button
+              onClick={generateEmails}
+              disabled={emailLoading}
+              className={[
+                'px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150',
+                emailLoading
+                  ? 'bg-transparent text-core-text-muted border border-core-border/20'
+                  : 'bg-gradient-to-br from-core-green to-[#5cb83a] text-black border-0',
+              ].join(' ')}
+            >
               {emailLoading ? 'Generating...' : 'Generate Emails'}
             </button>
             {emailResults.slice(0, 3).map((m, i) => (
-              <div key={i} className="mt-3 rounded-lg border border-border/50 bg-bg-secondary p-4">
+              <div key={i} className="mt-3 rounded-lg border border-core-border/50 bg-core-surface p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{m.contact_name}</span>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: '#7ed957', background: 'rgba(126,217,87,0.1)', padding: '2px 8px', borderRadius: 4 }}>{m.message.type}</span>
+                  <span className="text-[13px] font-semibold text-core-text">{m.contact_name}</span>
+                  <span className="text-[10px] font-semibold text-core-green bg-core-green/10 px-2 py-0.5 rounded">
+                    {m.message.type}
+                  </span>
                 </div>
-                <div style={{ color: '#00d4ff', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{m.message.subject}</div>
-                <pre style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.6, margin: '0 0 8px' }}>{m.message.body}</pre>
-                <button onClick={() => copy(`Subject: ${m.message.subject}\n\n${m.message.body}`, `email-${i}`)} className="text-xs px-3 py-1.5 rounded border border-border/50 text-text-muted hover:text-white">{copied === `email-${i}` ? 'Copied!' : 'Copy'}</button>
+                <div className="text-core-cyan text-[13px] font-semibold mb-1.5">{m.message.subject}</div>
+                <pre className="text-xs text-core-text-muted whitespace-pre-wrap font-sans leading-relaxed m-0 mb-2">{m.message.body}</pre>
+                <button
+                  onClick={() => copy(`Subject: ${m.message.subject}\n\n${m.message.body}`, `email-${i}`)}
+                  className="flex items-center gap-1 text-xs px-3 py-1.5 rounded border border-core-border/50 text-core-text-muted hover:text-core-text transition-colors"
+                >
+                  {copied === `email-${i}` ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {copied === `email-${i}` ? 'Copied!' : 'Copy'}
+                </button>
               </div>
             ))}
           </div>
@@ -174,18 +274,42 @@ export default function MarketingToolsPage() {
 
         {/* Hashtags */}
         {active === 'hashtags' && (
-          <div className="rounded-xl border border-border/50 bg-bg-card/50 p-6">
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Hashtag Generator</h2>
+          <div className="rounded-xl border border-core-border/50 bg-core-card/50 p-6">
+            <h2 className="text-base font-bold text-core-text mb-4">Hashtag Generator</h2>
             <div className="flex gap-2 mb-4">
-              <input value={hashtagTopic} onChange={e => setHashtagTopic(e.target.value)} onKeyDown={e => e.key === 'Enter' && generateHashtags()} placeholder="Topic..." className="flex-1 rounded-lg border border-border/50 bg-bg-secondary px-3 py-2.5 text-sm text-white placeholder:text-text-muted" />
-              <button onClick={generateHashtags} className="px-5 py-2.5 rounded-lg text-sm font-semibold" style={{ background: 'linear-gradient(135deg, #fbbf24, #d97706)', color: '#000' }}>Generate</button>
+              <input
+                value={hashtagTopic}
+                onChange={e => setHashtagTopic(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && generateHashtags()}
+                placeholder="Topic..."
+                className="flex-1 rounded-lg border border-core-border/50 bg-core-surface px-3 py-2.5 text-sm text-core-text placeholder:text-core-text-muted outline-none"
+              />
+              <button
+                onClick={generateHashtags}
+                className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-gradient-to-br from-core-amber to-[#d97706] text-black"
+              >
+                Generate
+              </button>
             </div>
             {hashtags.length > 0 && (
               <>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {hashtags.map((h, i) => <span key={i} style={{ padding: '6px 12px', background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 20, color: '#fbbf24', fontSize: 13 }}>{h}</span>)}
+                  {hashtags.map((h, i) => (
+                    <span
+                      key={i}
+                      className="px-3 py-1.5 bg-core-amber/[0.08] border border-core-amber/20 rounded-full text-core-amber text-[13px]"
+                    >
+                      {h}
+                    </span>
+                  ))}
                 </div>
-                <button onClick={() => copy(hashtags.join(' '), 'all-hash')} className="text-xs px-3 py-1.5 rounded border border-border/50 text-text-muted hover:text-white">{copied === 'all-hash' ? 'Copied!' : 'Copy All'}</button>
+                <button
+                  onClick={() => copy(hashtags.join(' '), 'all-hash')}
+                  className="flex items-center gap-1 text-xs px-3 py-1.5 rounded border border-core-border/50 text-core-text-muted hover:text-core-text transition-colors"
+                >
+                  {copied === 'all-hash' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {copied === 'all-hash' ? 'Copied!' : 'Copy All'}
+                </button>
               </>
             )}
           </div>
@@ -193,36 +317,62 @@ export default function MarketingToolsPage() {
 
         {/* Placeholder for other sections */}
         {['campaigns', 'analytics', 'audience', 'schedule'].includes(active) && (
-          <div className="rounded-xl border border-border/50 bg-bg-card/50 p-12 text-center">
-            <div style={{ color: activeSection?.color }} className="mb-3">{activeSection?.icon && <span style={{ display: 'inline-block', transform: 'scale(2.5)' }}>{activeSection.icon}</span>}</div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 6 }}>{activeSection?.label}</h2>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Coming soon — connect your CRM to unlock {activeSection?.label?.toLowerCase()} features.</p>
+          <div className="rounded-xl border border-core-border/50 bg-core-card/50 p-12 text-center">
+            {ActiveIcon && (
+              <div className={[activeSection?.color, 'mb-3 flex justify-center'].join(' ')}>
+                <ActiveIcon className="w-10 h-10" />
+              </div>
+            )}
+            <h2 className="text-lg font-bold text-core-text mb-1.5">{activeSection?.label}</h2>
+            <p className="text-[13px] text-core-text-muted">
+              Coming soon — connect your CRM to unlock {activeSection?.label?.toLowerCase()} features.
+            </p>
           </div>
         )}
       </div>
 
       {/* Right sub-nav */}
-      <div style={{ width: 220, borderLeft: '1px solid rgba(255,255,255,0.04)', paddingLeft: 20, flexShrink: 0 }}>
-        <div style={{ position: 'sticky', top: 80 }}>
-          <p style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Tools</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {SECTIONS.map(s => (
-              <button
-                key={s.key}
-                onClick={() => setActive(s.key)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '8px 12px', borderRadius: 8,
-                  background: active === s.key ? 'rgba(255,255,255,0.04)' : 'transparent',
-                  border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
-                  transition: 'background 0.15s',
-                }}
-              >
-                <span style={{ color: active === s.key ? s.color : 'rgba(255,255,255,0.3)', transition: 'color 0.15s' }}>{s.icon}</span>
-                <span style={{ fontSize: 13, fontWeight: active === s.key ? 600 : 400, color: active === s.key ? '#fff' : 'rgba(255,255,255,0.4)', transition: 'color 0.15s' }}>{s.label}</span>
-                {active === s.key && <div style={{ marginLeft: 'auto', width: 4, height: 4, borderRadius: 2, background: s.color }} />}
-              </button>
-            ))}
+      <div className="w-[220px] border-l border-core-border/[0.04] pl-5 shrink-0">
+        <div className="sticky top-20">
+          <p className="text-[10px] font-semibold text-core-text-muted/25 uppercase tracking-[0.08em] mb-3">
+            Tools
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {SECTIONS.map(s => {
+              const Icon = s.icon
+              const isActive = active === s.key
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => setActive(s.key)}
+                  className={[
+                    'flex items-center gap-2.5 px-3 py-2 rounded-lg border-0 cursor-pointer text-left w-full transition-colors duration-150',
+                    isActive ? 'bg-core-bg/[0.04]' : 'bg-transparent hover:bg-core-bg/[0.02]',
+                  ].join(' ')}
+                >
+                  <Icon
+                    className={[
+                      'w-4 h-4 transition-colors duration-150',
+                      isActive ? s.color : 'text-core-text-muted/30',
+                    ].join(' ')}
+                  />
+                  <span
+                    className={[
+                      'text-[13px] transition-colors duration-150',
+                      isActive ? 'font-semibold text-core-text' : 'font-normal text-core-text-muted/40',
+                    ].join(' ')}
+                  >
+                    {s.label}
+                  </span>
+                  {isActive && (
+                    <div
+                      className="ml-auto w-1 h-1 rounded-[2px]"
+                      style={{ background: SECTION_HEX[s.key] }}
+                    />
+                  )}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>

@@ -23,7 +23,19 @@ import {
   useOnSelectionChange,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-/* StrikeSettingsDialog import removed — Strike Menu is now global */
+import {
+  MousePointer2,
+  StickyNote,
+  Type,
+  Square,
+  ArrowUpRight,
+  Palette,
+  Star,
+  Copy,
+  Bookmark,
+  Trash2,
+  X,
+} from 'lucide-react'
 
 /* ────────────────────────────────────────────
    Constants
@@ -51,7 +63,7 @@ interface SavedNote {
 }
 
 /* ────────────────────────────────────────────
-   Shared handle style
+   Shared handle style (must stay inline — ReactFlow API)
    ──────────────────────────────────────────── */
 
 const handleStyle: React.CSSProperties = {
@@ -62,7 +74,7 @@ const handleStyle: React.CSSProperties = {
 }
 
 /* ────────────────────────────────────────────
-   Shape style helpers
+   Shape style helpers (must stay inline — dynamic SVG clip-paths)
    ──────────────────────────────────────────── */
 
 function getShapeStyle(shapeType: ShapeType, borderColor: string, selected: boolean): React.CSSProperties {
@@ -89,11 +101,7 @@ function getShapeStyle(shapeType: ShapeType, borderColor: string, selected: bool
     case 'circle':
       return { ...base, borderRadius: '50%' }
     case 'diamond':
-      return {
-        ...base,
-        borderRadius: 4,
-        transform: 'rotate(45deg)',
-      }
+      return { ...base, borderRadius: 4, transform: 'rotate(45deg)' }
     case 'triangle':
       return {
         ...base,
@@ -116,7 +124,7 @@ function getShapeStyle(shapeType: ShapeType, borderColor: string, selected: bool
 }
 
 /* ────────────────────────────────────────────
-   Shared resize handle style (10x10 green)
+   Shared resize handle style (ReactFlow API — must stay inline)
    ──────────────────────────────────────────── */
 
 const resizerHandleStyle: React.CSSProperties = {
@@ -179,7 +187,6 @@ const StickyNoteNode = memo(({ id, data, selected }: NodeProps) => {
 
   function autoResize() {
     const text = (data.text as string) || ''
-    // Measure with a max-width to allow wrapping (use current width or 300 as default)
     const measured = measureText(text, 13, 500, 1.5, 300, 'pre-wrap')
     const newWidth = Math.max(120, measured.width + STICKY_PAD_H * 2)
     const newHeight = Math.max(80, measured.height + STICKY_TOP_BAR + STICKY_PAD_V * 2)
@@ -204,19 +211,13 @@ const StickyNoteNode = memo(({ id, data, selected }: NodeProps) => {
       onMouseLeave={() => setHovered(false)}
       onDoubleClick={() => setEditing(true)}
       onContextMenu={(e) => { e.preventDefault(); handleDelete(e) }}
+      className="relative min-w-[120px] min-h-[80px] w-full h-full rounded-xl transition-shadow duration-150"
       style={{
-        width: '100%',
-        height: '100%',
-        minWidth: 120,
-        minHeight: 80,
         background: bgColor,
-        borderRadius: 12,
         padding: `${STICKY_TOP_BAR}px ${STICKY_PAD_H}px ${STICKY_PAD_V}px`,
-        position: 'relative',
         boxShadow: selected
           ? '0 0 0 2px #6EE05A, 0 4px 20px rgba(0,0,0,0.4)'
           : '0 2px 12px rgba(0,0,0,0.3)',
-        transition: 'box-shadow 0.15s',
         cursor: editing ? 'text' : 'grab',
       }}
     >
@@ -230,25 +231,15 @@ const StickyNoteNode = memo(({ id, data, selected }: NodeProps) => {
       />
 
       {/* Grab handle */}
-      <div style={{
-        position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
-        width: 40, height: 4, borderRadius: 2, background: 'rgba(0,0,0,0.15)',
-      }} />
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-black/15" />
 
       {/* Delete button */}
       {hovered && (
         <button
           onClick={handleDelete}
-          style={{
-            position: 'absolute', top: 6, right: 8,
-            width: 20, height: 20, borderRadius: 4,
-            background: 'rgba(0,0,0,0.12)', border: 'none',
-            color: 'rgba(0,0,0,0.5)', fontSize: 12, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 700, lineHeight: 1,
-          }}
+          className="absolute top-1.5 right-2 w-5 h-5 rounded flex items-center justify-center bg-black/12 border-none text-black/50 cursor-pointer hover:bg-black/20 transition-colors"
         >
-          x
+          <X size={10} />
         </button>
       )}
 
@@ -260,21 +251,11 @@ const StickyNoteNode = memo(({ id, data, selected }: NodeProps) => {
           onChange={e => updateText(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={e => { if (e.key === 'Escape') handleBlur() }}
-          style={{
-            width: '100%', height: `calc(100% - ${STICKY_TOP_BAR}px)`, background: 'transparent',
-            border: 'none', outline: 'none', resize: 'none',
-            color: '#1a1a1a', fontSize: 13, fontFamily: 'inherit',
-            lineHeight: 1.5, fontWeight: 500,
-          }}
+          className="w-full bg-transparent border-none outline-none resize-none text-[#1a1a1a] text-[13px] leading-[1.5] font-medium"
+          style={{ height: `calc(100% - ${STICKY_TOP_BAR}px)` }}
         />
       ) : (
-        <div style={{
-          color: '#1a1a1a', fontSize: 13, lineHeight: 1.5,
-          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-          fontWeight: 500, minHeight: 40,
-          userSelect: 'none', overflow: 'hidden',
-          width: '100%',
-        }}>
+        <div className="text-[#1a1a1a] text-[13px] leading-[1.5] whitespace-pre-wrap break-words font-medium min-h-[40px] select-none overflow-hidden w-full">
           {(data.text as string) || 'Double-click to edit'}
         </div>
       )}
@@ -337,12 +318,10 @@ const TextNode = memo(({ id, data, selected }: NodeProps) => {
         e.preventDefault()
         setNodes(nds => nds.filter(n => n.id !== id))
       }}
+      className="w-full h-full flex items-center rounded min-w-[60px] min-h-[32px]"
       style={{
-        width: '100%', height: '100%',
         padding: `${TEXT_PAD_V}px ${TEXT_PAD_H}px`,
         cursor: editing ? 'text' : 'grab',
-        borderRadius: 4, minWidth: 60, minHeight: 32,
-        display: 'flex', alignItems: 'center',
       }}
     >
       <NodeResizer
@@ -364,23 +343,14 @@ const TextNode = memo(({ id, data, selected }: NodeProps) => {
             if (e.key === 'Escape') handleBlur()
             if (e.key === 'Tab') { e.preventDefault(); cycleSize() }
           }}
-          style={{
-            background: 'transparent', border: 'none', outline: 'none',
-            color: '#f0f4f8', fontSize, fontWeight: 700,
-            fontFamily: 'inherit', width: '100%', height: '100%',
-            resize: 'none', lineHeight: 1.4,
-            wordBreak: 'break-word',
-          }}
+          className="bg-transparent border-none outline-none resize-none w-full h-full break-words leading-[1.4] font-bold"
+          style={{ color: '#f0f4f8', fontSize, fontFamily: 'inherit' }}
         />
       ) : (
         <div
           onClick={cycleSize}
-          style={{
-            color: '#f0f4f8', fontSize, fontWeight: 700,
-            whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-            userSelect: 'none', width: '100%',
-            lineHeight: 1.4, overflow: 'hidden',
-          }}
+          className="whitespace-pre-wrap break-words select-none w-full overflow-hidden leading-[1.4] font-bold"
+          style={{ color: '#f0f4f8', fontSize }}
         >
           {(data.text as string) || 'Text'}
         </div>
@@ -426,7 +396,6 @@ const ShapeNode = memo(({ id, data, selected }: NodeProps) => {
   function autoResize() {
     const text = (data.text as string) || ''
     const measured = measureText(text, 13, 600, 1.4, undefined, 'nowrap')
-    // For diamond/circle, keep aspect ratio roughly square
     const isSquarish = shapeType === 'circle' || shapeType === 'diamond'
     let newWidth = Math.max(mins.width, measured.width + SHAPE_PAD_H * 2)
     let newHeight = Math.max(mins.height, measured.height + SHAPE_PAD_V * 2)
@@ -450,7 +419,8 @@ const ShapeNode = memo(({ id, data, selected }: NodeProps) => {
 
   return (
     <div
-      style={{ width: '100%', height: '100%', position: 'relative', minWidth: mins.width, minHeight: mins.height }}
+      className="relative w-full h-full"
+      style={{ minWidth: mins.width, minHeight: mins.height }}
       onContextMenu={(e) => {
         e.preventDefault()
         setNodes(nds => nds.filter(n => n.id !== id))
@@ -480,19 +450,12 @@ const ShapeNode = memo(({ id, data, selected }: NodeProps) => {
               onChange={e => updateText(e.target.value)}
               onBlur={handleBlur}
               onKeyDown={e => { if (e.key === 'Escape' || e.key === 'Enter') handleBlur() }}
-              style={{
-                background: 'transparent', border: 'none', outline: 'none',
-                color: '#f0f4f8', fontSize: 13, fontWeight: 600,
-                textAlign: 'center', width: '100%', fontFamily: 'inherit',
-              }}
+              className="bg-transparent border-none outline-none text-center w-full text-[13px] font-semibold"
+              style={{ color: '#f0f4f8', fontFamily: 'inherit' }}
             />
           ) : (
-            <div style={{
-              color: '#f0f4f8', fontSize: 13, fontWeight: 600,
-              textAlign: 'center', userSelect: 'none', padding: '0 8px',
-              overflow: 'hidden', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-              width: '100%', lineHeight: 1.4,
-            }}>
+            <div className="text-center select-none px-2 overflow-hidden whitespace-pre-wrap break-words w-full leading-[1.4] text-[13px] font-semibold"
+              style={{ color: '#f0f4f8' }}>
               {(data.text as string) || 'Label'}
             </div>
           )}
@@ -516,75 +479,6 @@ const nodeTypes: NodeTypes = {
   stickyNote: StickyNoteNode,
   textNode: TextNode,
   shapeNode: ShapeNode,
-}
-
-/* ────────────────────────────────────────────
-   Toolbar Icons (inline SVG)
-   ──────────────────────────────────────────── */
-
-function IconCursor() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
-    </svg>
-  )
-}
-
-function IconStickyNote() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z" />
-      <path d="M14 3v6h6" />
-    </svg>
-  )
-}
-
-function IconText() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="4 7 4 4 20 4 20 7" />
-      <line x1="9" y1="20" x2="15" y2="20" />
-      <line x1="12" y1="4" x2="12" y2="20" />
-    </svg>
-  )
-}
-
-function IconShape() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="3" />
-    </svg>
-  )
-}
-
-function IconConnect() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-      <polyline points="15 3 21 3 21 9" />
-      <line x1="10" y1="14" x2="21" y2="3" />
-    </svg>
-  )
-}
-
-function IconPalette() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="13.5" cy="6.5" r="2.5" />
-      <circle cx="17.5" cy="10.5" r="2.5" />
-      <circle cx="8.5" cy="7.5" r="2.5" />
-      <circle cx="6.5" cy="12.5" r="2.5" />
-      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
-    </svg>
-  )
-}
-
-function IconStar() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
-  )
 }
 
 /* ────────────────────────────────────────────
@@ -673,13 +567,6 @@ function FloatingToolbar({
   const isText = node.type === 'textNode'
   const isNote = node.type === 'stickyNote'
 
-  const btnStyle: React.CSSProperties = {
-    background: 'none', border: 'none', color: '#d1d5db',
-    cursor: 'pointer', padding: '6px 8px', borderRadius: 6,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 14, transition: 'background 0.1s, color 0.1s',
-  }
-
   function cycleFontSize() {
     if (!isText) return
     const sizes = ['small', 'medium', 'large']
@@ -700,92 +587,83 @@ function FloatingToolbar({
   }
 
   return (
-    <div style={{
-      position: 'absolute',
-      left: pos.x, top: pos.y,
-      transform: 'translateX(-50%)',
-      zIndex: 40,
-      display: 'flex', alignItems: 'center', gap: 2,
-      background: '#1e2330',
-      border: '1px solid #30363d',
-      borderRadius: 10,
-      padding: '4px 6px',
-      boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-    }}>
+    <div
+      className="absolute z-40 flex items-center gap-0.5 bg-[#1e2330] border border-[#30363d] rounded-[10px] px-1.5 py-1 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
+      style={{ left: pos.x, top: pos.y, transform: 'translateX(-50%)' }}
+    >
       {/* Font size (text nodes only) */}
       {isText && (
-        <button onClick={cycleFontSize} style={btnStyle} title="Cycle font size (Tab)"
-          onMouseEnter={e => { e.currentTarget.style.background = '#2d3548'; e.currentTarget.style.color = '#f0f4f8' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#d1d5db' }}
+        <button
+          onClick={cycleFontSize}
+          title="Cycle font size (Tab)"
+          className="flex items-center justify-center p-1.5 rounded-md text-[#d1d5db] hover:bg-[#2d3548] hover:text-[#f0f4f8] transition-colors border-none bg-transparent cursor-pointer"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="4 7 4 4 20 4 20 7" /><line x1="9" y1="20" x2="15" y2="20" /><line x1="12" y1="4" x2="12" y2="20" />
-          </svg>
+          <Type size={16} />
         </button>
       )}
 
       {/* Color picker */}
-      <div style={{ position: 'relative' }}>
-        <button onClick={() => setShowColorPicker(p => !p)} style={btnStyle} title="Color"
-          onMouseEnter={e => { e.currentTarget.style.background = '#2d3548'; e.currentTarget.style.color = '#f0f4f8' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#d1d5db' }}
+      <div className="relative">
+        <button
+          onClick={() => setShowColorPicker(p => !p)}
+          title="Color"
+          className="flex items-center justify-center p-1.5 rounded-md text-[#d1d5db] hover:bg-[#2d3548] hover:text-[#f0f4f8] transition-colors border-none bg-transparent cursor-pointer"
         >
-          <div style={{ width: 16, height: 16, borderRadius: 4, background: (node.data.color as string) || selectedColor, border: '2px solid #555' }} />
+          <div
+            className="w-4 h-4 rounded border-2 border-[#555]"
+            style={{ background: (node.data.color as string) || selectedColor }}
+          />
         </button>
         {showColorPicker && (
-          <div style={{
-            position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
-            marginTop: 8, background: '#1e2330', border: '1px solid #30363d', borderRadius: 10,
-            padding: 10, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.5)', zIndex: 50,
-          }}>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-[#1e2330] border border-[#30363d] rounded-[10px] p-2.5 grid grid-cols-4 gap-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.5)] z-50">
             {TOOLBAR_COLORS.map(c => (
-              <button key={c} onClick={() => applyColor(c)} style={{
-                width: 24, height: 24, borderRadius: 6, background: c,
-                border: c === ((node.data.color as string) || selectedColor) ? '2px solid #6EE05A' : '2px solid transparent',
-                cursor: 'pointer',
-              }} />
+              <button
+                key={c}
+                onClick={() => applyColor(c)}
+                className="w-6 h-6 rounded-md cursor-pointer transition-colors"
+                style={{
+                  background: c,
+                  border: c === ((node.data.color as string) || selectedColor) ? '2px solid #6EE05A' : '2px solid transparent',
+                }}
+              />
             ))}
           </div>
         )}
       </div>
 
       {/* Separator */}
-      <div style={{ width: 1, height: 20, background: '#30363d', margin: '0 4px' }} />
+      <div className="w-px h-5 bg-[#30363d] mx-1" />
 
       {/* Duplicate */}
-      <button onClick={onDuplicate} style={btnStyle} title="Duplicate"
-        onMouseEnter={e => { e.currentTarget.style.background = '#2d3548'; e.currentTarget.style.color = '#f0f4f8' }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#d1d5db' }}
+      <button
+        onClick={onDuplicate}
+        title="Duplicate"
+        className="flex items-center justify-center p-1.5 rounded-md text-[#d1d5db] hover:bg-[#2d3548] hover:text-[#f0f4f8] transition-colors border-none bg-transparent cursor-pointer"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-        </svg>
+        <Copy size={16} />
       </button>
 
       {/* Save/Bookmark */}
       {(isNote || isText) && (
-        <button onClick={onSave} style={btnStyle} title="Save to bookmarks"
-          onMouseEnter={e => { e.currentTarget.style.background = '#2d3548'; e.currentTarget.style.color = '#f0f4f8' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#d1d5db' }}
+        <button
+          onClick={onSave}
+          title="Save to bookmarks"
+          className="flex items-center justify-center p-1.5 rounded-md text-[#d1d5db] hover:bg-[#2d3548] hover:text-[#f0f4f8] transition-colors border-none bg-transparent cursor-pointer"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-          </svg>
+          <Bookmark size={16} />
         </button>
       )}
 
       {/* Separator */}
-      <div style={{ width: 1, height: 20, background: '#30363d', margin: '0 4px' }} />
+      <div className="w-px h-5 bg-[#30363d] mx-1" />
 
       {/* Delete */}
-      <button onClick={onDelete} style={{ ...btnStyle, color: '#f87171' }} title="Delete"
-        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.12)' }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+      <button
+        onClick={onDelete}
+        title="Delete"
+        className="flex items-center justify-center p-1.5 rounded-md text-[#f87171] hover:bg-[#f87171]/10 transition-colors border-none bg-transparent cursor-pointer"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        </svg>
+        <Trash2 size={16} />
       </button>
     </div>
   )
@@ -841,7 +719,6 @@ function Sidebar({
   customHex, setCustomHex, connectorType, setConnectorType,
 }: SidebarProps) {
   const expanded = panel !== 'none'
-  const panelWidth = expanded ? 240 : 48
 
   function handleToolClick(mode: ToolMode, associatedPanel?: SidebarPanel) {
     if (associatedPanel) {
@@ -868,106 +745,86 @@ function Sidebar({
   }
 
   const toolButtons: { mode: ToolMode; icon: React.ReactNode; label: string; panelKey?: SidebarPanel }[] = [
-    { mode: 'select', icon: <IconCursor />, label: 'Select (V)' },
-    { mode: 'shape', icon: <IconShape />, label: 'Shapes (S)', panelKey: 'shapes' },
-    { mode: 'text', icon: <IconText />, label: 'Text (T)' },
-    { mode: 'connect', icon: <IconConnect />, label: 'Connectors (C)', panelKey: 'connectors' },
-    { mode: 'note', icon: <IconStickyNote />, label: 'Sticky Note (N)' },
+    { mode: 'select', icon: <MousePointer2 size={18} />, label: 'Select (V)' },
+    { mode: 'shape', icon: <Square size={18} />, label: 'Shapes (S)', panelKey: 'shapes' },
+    { mode: 'text', icon: <Type size={18} />, label: 'Text (T)' },
+    { mode: 'connect', icon: <ArrowUpRight size={18} />, label: 'Connectors (C)', panelKey: 'connectors' },
+    { mode: 'note', icon: <StickyNote size={18} />, label: 'Sticky Note (N)' },
   ]
 
+  const isToolActive = (t: typeof toolButtons[0]) =>
+    (t.mode === tool && !t.panelKey) || (t.panelKey && panel === t.panelKey)
+
   return (
-    <div style={{
-      position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
-      zIndex: 50, display: 'flex', flexDirection: 'row',
-      transition: 'width 0.2s ease',
-      width: panelWidth,
-      height: 'auto',
-      maxHeight: 'calc(100vh - 128px)',
-    }}>
+    <div
+      className="absolute left-3 top-1/2 -translate-y-1/2 z-50 flex flex-row transition-all duration-200"
+      style={{ maxHeight: 'calc(100vh - 128px)' }}
+    >
       {/* Collapsed icon strip */}
-      <div style={{
-        width: 48, display: 'flex', flexDirection: 'column', gap: 2,
-        background: 'rgba(15,17,23,0.95)', borderRadius: expanded ? '14px 0 0 14px' : 14,
-        padding: '6px 6px', border: '1px solid #30363d',
-        borderRight: expanded ? '1px solid #30363d' : undefined,
-        boxShadow: expanded ? 'none' : '0 8px 32px rgba(0,0,0,0.5)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        flexShrink: 0,
-      }}>
+      <div
+        className={`w-12 flex flex-col gap-0.5 bg-[rgba(15,17,23,0.95)] border border-[#30363d] py-1.5 px-1.5 flex-shrink-0 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.5)] ${
+          expanded ? 'rounded-l-[14px] border-r-[#30363d]' : 'rounded-[14px]'
+        }`}
+      >
         {toolButtons.map(t => (
           <button
             key={t.mode}
             onClick={() => handleToolClick(t.mode, t.panelKey)}
             title={t.label}
-            style={{
-              width: 36, height: 36, borderRadius: 8, border: 'none',
-              background: (tool === t.mode && !t.panelKey) || (t.panelKey && panel === t.panelKey)
-                ? 'rgba(110,224,90,0.15)' : 'transparent',
-              color: (tool === t.mode && !t.panelKey) || (t.panelKey && panel === t.panelKey)
-                ? '#6EE05A' : '#6b7280',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'all 0.15s',
-            }}
+            className={`w-9 h-9 rounded-lg border-none flex items-center justify-center cursor-pointer transition-all duration-150 ${
+              isToolActive(t)
+                ? 'bg-[rgba(110,224,90,0.15)] text-[#6EE05A]'
+                : 'bg-transparent text-[#6b7280] hover:text-[#d1d5db] hover:bg-[rgba(255,255,255,0.05)]'
+            }`}
           >
             {t.icon}
           </button>
         ))}
 
         {/* Separator */}
-        <div style={{ width: 24, height: 1, background: '#30363d', margin: '4px auto' }} />
+        <div className="w-6 h-px bg-[#30363d] mx-auto my-1" />
 
         {/* Color button */}
         <button
           onClick={() => setPanel(panel === 'color' ? 'none' : 'color')}
           title="Color (K)"
-          style={{
-            width: 36, height: 36, borderRadius: 8, border: 'none',
-            background: panel === 'color' ? 'rgba(110,224,90,0.15)' : 'transparent',
-            color: panel === 'color' ? '#6EE05A' : '#6b7280',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', position: 'relative', transition: 'all 0.15s',
-          }}
+          className={`w-9 h-9 rounded-lg border-none flex items-center justify-center cursor-pointer relative transition-all duration-150 ${
+            panel === 'color'
+              ? 'bg-[rgba(110,224,90,0.15)] text-[#6EE05A]'
+              : 'bg-transparent text-[#6b7280] hover:text-[#d1d5db] hover:bg-[rgba(255,255,255,0.05)]'
+          }`}
         >
-          <div style={{
-            width: 16, height: 16, borderRadius: '50%',
-            background: selectedColor, border: '2px solid #30363d',
-          }} />
+          <div
+            className="w-4 h-4 rounded-full border-2 border-[#30363d]"
+            style={{ background: selectedColor }}
+          />
         </button>
 
         {/* Saved notes button */}
         <button
           onClick={() => setPanel(panel === 'saved' ? 'none' : 'saved')}
           title="Saved Notes"
-          style={{
-            width: 36, height: 36, borderRadius: 8, border: 'none',
-            background: panel === 'saved' ? 'rgba(110,224,90,0.15)' : 'transparent',
-            color: panel === 'saved' ? '#6EE05A' : '#6b7280',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.15s',
-          }}
+          className={`w-9 h-9 rounded-lg border-none flex items-center justify-center cursor-pointer transition-all duration-150 ${
+            panel === 'saved'
+              ? 'bg-[rgba(110,224,90,0.15)] text-[#6EE05A]'
+              : 'bg-transparent text-[#6b7280] hover:text-[#d1d5db] hover:bg-[rgba(255,255,255,0.05)]'
+          }`}
         >
-          <IconStar />
+          <Star size={18} />
         </button>
       </div>
 
       {/* Expanded panel */}
       {expanded && (
-        <div style={{
-          width: 192, background: 'rgba(15,17,23,0.95)', borderRadius: '0 14px 14px 0',
-          border: '1px solid #30363d', borderLeft: 'none',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          overflow: 'auto',
-          maxHeight: 'calc(100vh - 128px)',
-          padding: '12px 10px',
-        }}>
+        <div
+          className="w-48 bg-[rgba(15,17,23,0.95)] rounded-r-[14px] border border-[#30363d] border-l-0 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-md overflow-auto p-3"
+          style={{ maxHeight: 'calc(100vh - 128px)' }}
+        >
           {/* Shapes panel */}
           {panel === 'shapes' && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Basic</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginBottom: 16 }}>
+              <div className="text-[10px] font-bold text-[#6b7280] mb-2 tracking-[0.08em] uppercase">Basic</div>
+              <div className="grid grid-cols-3 gap-1 mb-4">
                 {[
                   { id: 'rectangle', label: 'Rect' },
                   { id: 'rounded', label: 'Rounded' },
@@ -980,20 +837,19 @@ function Sidebar({
                     key={s.id}
                     onClick={() => handleShapeSelect(s.id)}
                     title={s.label}
-                    style={{
-                      width: '100%', aspectRatio: '1', borderRadius: 6, border: '1px solid #30363d',
-                      background: selectedShapeType === (shapeButtonToShapeType[s.id] || s.id) ? 'rgba(110,224,90,0.1)' : 'transparent',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.1s',
-                    }}
+                    className={`w-full aspect-square rounded-md border cursor-pointer flex items-center justify-center transition-all duration-100 ${
+                      selectedShapeType === (shapeButtonToShapeType[s.id] || s.id)
+                        ? 'bg-[rgba(110,224,90,0.1)] border-[#6EE05A]'
+                        : 'bg-transparent border-[#30363d] hover:border-[#6b7280]'
+                    }`}
                   >
                     <ShapePreview shape={s.id} />
                   </button>
                 ))}
               </div>
 
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Flowchart</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
+              <div className="text-[10px] font-bold text-[#6b7280] mb-2 tracking-[0.08em] uppercase">Flowchart</div>
+              <div className="grid grid-cols-3 gap-1">
                 {[
                   { id: 'process', label: 'Process' },
                   { id: 'decision', label: 'Decision' },
@@ -1005,12 +861,7 @@ function Sidebar({
                     key={s.id}
                     onClick={() => handleShapeSelect(s.id)}
                     title={s.label}
-                    style={{
-                      width: '100%', aspectRatio: '1', borderRadius: 6, border: '1px solid #30363d',
-                      background: 'transparent',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.1s',
-                    }}
+                    className="w-full aspect-square rounded-md border border-[#30363d] bg-transparent cursor-pointer flex items-center justify-center transition-all duration-100 hover:border-[#6b7280]"
                   >
                     <ShapePreview shape={s.id} />
                   </button>
@@ -1022,8 +873,8 @@ function Sidebar({
           {/* Connectors panel */}
           {panel === 'connectors' && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Connectors</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div className="text-[10px] font-bold text-[#6b7280] mb-2 tracking-[0.08em] uppercase">Connectors</div>
+              <div className="flex flex-col gap-1">
                 {[
                   { id: 'arrow', label: 'Arrow' },
                   { id: 'dashed', label: 'Dashed' },
@@ -1033,14 +884,11 @@ function Sidebar({
                     key={c.id}
                     onClick={() => handleConnectorSelect(c.id)}
                     title={c.label}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      width: '100%', padding: '8px 8px', borderRadius: 6,
-                      border: `1px solid ${connectorType === c.id ? '#6EE05A' : '#30363d'}`,
-                      background: connectorType === c.id ? 'rgba(110,224,90,0.1)' : 'transparent',
-                      cursor: 'pointer', color: '#d1d5db', fontSize: 12,
-                      transition: 'all 0.1s',
-                    }}
+                    className={`flex items-center gap-2.5 w-full px-2 py-2 rounded-md border cursor-pointer text-[#d1d5db] text-xs transition-all duration-100 ${
+                      connectorType === c.id
+                        ? 'border-[#6EE05A] bg-[rgba(110,224,90,0.1)]'
+                        : 'border-[#30363d] bg-transparent hover:border-[#6b7280]'
+                    }`}
                   >
                     <ShapePreview shape={c.id} size={28} />
                     <span>{c.label}</span>
@@ -1053,34 +901,28 @@ function Sidebar({
           {/* Color panel */}
           {panel === 'color' && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Colors</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 12 }}>
+              <div className="text-[10px] font-bold text-[#6b7280] mb-2 tracking-[0.08em] uppercase">Colors</div>
+              <div className="grid grid-cols-4 gap-1.5 mb-3">
                 {PASTEL_COLORS.map(c => (
                   <button
                     key={c}
                     onClick={() => setSelectedColor(c)}
+                    className="w-full aspect-square rounded-md cursor-pointer transition-all duration-100"
                     style={{
-                      width: '100%', aspectRatio: '1', borderRadius: 6,
                       background: c,
                       border: selectedColor === c ? '2px solid #6EE05A' : '2px solid transparent',
-                      cursor: 'pointer', transition: 'all 0.1s',
                     }}
                   />
                 ))}
               </div>
 
-              <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+              <div className="flex gap-1 mb-2">
                 <input
                   type="text"
                   value={customHex}
                   onChange={e => setCustomHex(e.target.value)}
                   placeholder="#hex"
-                  style={{
-                    flex: 1, padding: '6px 8px', borderRadius: 6,
-                    background: '#161b22', border: '1px solid #30363d',
-                    color: '#f0f4f8', fontSize: 12, fontFamily: 'monospace',
-                    outline: 'none',
-                  }}
+                  className="flex-1 px-2 py-1.5 rounded-md bg-[#161b22] border border-[#30363d] text-[#f0f4f8] text-xs font-mono outline-none focus:border-[#6b7280]"
                   onKeyDown={e => {
                     if (e.key === 'Enter' && /^#[0-9a-fA-F]{3,8}$/.test(customHex)) {
                       setSelectedColor(customHex)
@@ -1091,12 +933,7 @@ function Sidebar({
                   onClick={() => {
                     if (/^#[0-9a-fA-F]{3,8}$/.test(customHex)) setSelectedColor(customHex)
                   }}
-                  style={{
-                    padding: '6px 8px', borderRadius: 6,
-                    background: '#161b22', border: '1px solid #30363d',
-                    color: '#6EE05A', fontSize: 11, cursor: 'pointer',
-                    fontWeight: 600,
-                  }}
+                  className="px-2 py-1.5 rounded-md bg-[#161b22] border border-[#30363d] text-[#6EE05A] text-[11px] font-semibold cursor-pointer hover:border-[#6EE05A] transition-colors"
                 >
                   Set
                 </button>
@@ -1105,12 +942,7 @@ function Sidebar({
               {selectedNodeIds.length > 0 && (
                 <button
                   onClick={onApplyColorToSelected}
-                  style={{
-                    width: '100%', padding: '8px', borderRadius: 6,
-                    background: 'rgba(110,224,90,0.1)', border: '1px solid #6EE05A',
-                    color: '#6EE05A', fontSize: 12, cursor: 'pointer',
-                    fontWeight: 600,
-                  }}
+                  className="w-full py-2 rounded-md bg-[rgba(110,224,90,0.1)] border border-[#6EE05A] text-[#6EE05A] text-xs font-semibold cursor-pointer hover:bg-[rgba(110,224,90,0.2)] transition-colors"
                 >
                   Apply to selected ({selectedNodeIds.length})
                 </button>
@@ -1121,64 +953,46 @@ function Sidebar({
           {/* Saved notes panel */}
           {panel === 'saved' && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Saved Notes</div>
+              <div className="text-[10px] font-bold text-[#6b7280] mb-2 tracking-[0.08em] uppercase">Saved Notes</div>
 
               {selectedNodeIds.length > 0 && (
                 <button
                   onClick={onSaveSelectedNote}
-                  style={{
-                    width: '100%', padding: '8px', borderRadius: 6, marginBottom: 8,
-                    background: 'rgba(110,224,90,0.1)', border: '1px solid #6EE05A',
-                    color: '#6EE05A', fontSize: 12, cursor: 'pointer',
-                    fontWeight: 600,
-                  }}
+                  className="w-full py-2 rounded-md mb-2 bg-[rgba(110,224,90,0.1)] border border-[#6EE05A] text-[#6EE05A] text-xs font-semibold cursor-pointer hover:bg-[rgba(110,224,90,0.2)] transition-colors"
                 >
                   Save Selected
                 </button>
               )}
 
               {savedNotes.length === 0 ? (
-                <div style={{ color: '#6b7280', fontSize: 12, textAlign: 'center', padding: 16 }}>
+                <div className="text-[#6b7280] text-xs text-center py-4">
                   No saved notes yet
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div className="flex flex-col gap-1">
                   {savedNotes.map(note => (
                     <div
                       key={note.id}
                       onClick={() => onJumpToNote(note.nodeId)}
-                      style={{
-                        padding: '8px', borderRadius: 6,
-                        background: '#161b22', border: '1px solid #30363d',
-                        cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: 8,
-                        transition: 'background 0.1s',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#1c2333')}
-                      onMouseLeave={e => (e.currentTarget.style.background = '#161b22')}
+                      className="p-2 rounded-md bg-[#161b22] border border-[#30363d] cursor-pointer flex items-start gap-2 hover:bg-[#1c2333] transition-colors"
                     >
-                      <div style={{
-                        width: 8, height: 8, borderRadius: '50%', background: note.color,
-                        marginTop: 4, flexShrink: 0,
-                      }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ color: '#d1d5db', fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div
+                        className="w-2 h-2 rounded-full mt-1 flex-shrink-0"
+                        style={{ background: note.color }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[#d1d5db] text-xs font-semibold overflow-hidden text-ellipsis whitespace-nowrap">
                           {note.text.slice(0, 30) || 'Empty note'}
                         </div>
-                        <div style={{ color: '#6b7280', fontSize: 10, marginTop: 2 }}>
+                        <div className="text-[#6b7280] text-[10px] mt-0.5">
                           {new Date(note.date).toLocaleDateString()}
                         </div>
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); onDeleteSavedNote(note.id) }}
-                        style={{
-                          width: 18, height: 18, borderRadius: 4,
-                          background: 'transparent', border: 'none',
-                          color: '#6b7280', fontSize: 11, cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          flexShrink: 0,
-                        }}
+                        className="w-4 h-4 rounded flex-shrink-0 bg-transparent border-none text-[#6b7280] cursor-pointer flex items-center justify-center hover:text-[#d1d5db] transition-colors"
                       >
-                        x
+                        <X size={10} />
                       </button>
                     </div>
                   ))}
@@ -1418,18 +1232,14 @@ function BoardInner() {
 
   if (!loaded) {
     return (
-      <div style={{
-        height: 'calc(100vh - 64px)', display: 'flex',
-        alignItems: 'center', justifyContent: 'center',
-        color: 'var(--text-muted, #6b7280)', background: 'var(--bg-primary, #0d1117)',
-      }}>
+      <div className="flex items-center justify-center text-[var(--core-text-muted,#6b7280)] bg-[var(--core-bg,#0d1117)]" style={{ height: 'calc(100vh - 64px)' }}>
         Loading board...
       </div>
     )
   }
 
   return (
-    <div style={{ height: 'calc(100vh - 64px)', position: 'relative' }}>
+    <div className="relative" style={{ height: 'calc(100vh - 64px)' }}>
       <style>{`
         .react-flow__handle { opacity: 0; transition: opacity 0.15s; }
         .react-flow__node:hover .react-flow__handle { opacity: 1; }
@@ -1468,7 +1278,7 @@ function BoardInner() {
         setConnectorType={setConnectorType}
       />
 
-      {/* ═══ Floating Element Toolbar (Whimsical-style) ═══ */}
+      {/* Floating Element Toolbar (Whimsical-style) */}
       <FloatingToolbar
         selectedNodeIds={selectedNodeIds}
         nodes={nodes}
@@ -1508,7 +1318,7 @@ function BoardInner() {
         panOnDrag={tool === 'select' || tool === 'connect'}
         selectionOnDrag={false}
         deleteKeyCode={null}
-        style={{ background: 'var(--bg-primary, #0d1117)' }}
+        style={{ background: 'var(--core-bg, #0d1117)' }}
         proOptions={{ hideAttribution: true }}
       >
         <Background

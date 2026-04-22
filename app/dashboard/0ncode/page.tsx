@@ -533,8 +533,8 @@ Return ONLY RAW HTML. No markdown fences.
             <div className={`stage-container ${focusedArtifactIndex !== null ? 'mode-focus' : 'mode-split'}`}>
                  <div className={`empty-state ${hasStarted ? 'fade-out' : ''}`}>
                      <div className="empty-content">
-                         <img src="/logo.png" alt="0nCode Logo" style={{ maxWidth: '400px', width: '100%', height: 'auto', filter: 'drop-shadow(0 0 20px rgba(0, 255, 0, 0.2))' }} />
-                         <h2 style={{ fontSize: '1.2rem', letterSpacing: '0.2em', color: 'var(--text-secondary)', textTransform: 'uppercase', marginTop: '-10px', textAlign: 'center' }}>
+                         <img src="/logo.png" alt="0nCode Logo" className="max-w-[400px] w-full h-auto drop-shadow-[0_0_20px_rgba(0,255,0,0.2)]" />
+                         <h2 className="text-[1.2rem] tracking-[0.2em] text-core-text-dim uppercase -mt-[10px] text-center">
                              AGENTIC DESIGN SUPREMACY.
                          </h2>
                      </div>

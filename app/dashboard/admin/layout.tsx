@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { ShieldOff } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<'loading' | 'allowed' | 'denied'>('loading')
@@ -35,52 +36,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (status === 'loading') {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '60vh',
-        color: 'var(--jp-text-muted)',
-        fontSize: 14,
-      }}>
-        <div style={{
-          width: 36,
-          height: 36,
-          border: '2px solid var(--jp-border)',
-          borderTopColor: 'var(--jp-green)',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-        }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex items-center justify-center min-h-[60vh] text-core-text-muted text-sm">
+        <div className="w-9 h-9 rounded-full border-2 border-core-border border-t-core-green animate-spin" />
       </div>
     )
   }
 
   if (status === 'denied') {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '60vh',
-        gap: 16,
-      }}>
-        <div style={{
-          width: 64,
-          height: 64,
-          borderRadius: '50%',
-          background: 'rgba(248, 113, 113, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <svg width="32" height="32" fill="none" stroke="#f87171" viewBox="0 0 24 24" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-          </svg>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="w-16 h-16 rounded-full bg-core-red/10 flex items-center justify-center">
+          <ShieldOff className="w-8 h-8 text-core-red" strokeWidth={1.5} />
         </div>
-        <h2 style={{ color: 'var(--jp-red)', fontSize: 20, fontWeight: 600 }}>Access Denied</h2>
-        <p style={{ color: 'var(--jp-text-muted)', fontSize: 14 }}>Admin privileges required. Redirecting...</p>
+        <h2 className="text-core-red text-xl font-semibold">Access Denied</h2>
+        <p className="text-core-text-muted text-sm">Admin privileges required. Redirecting...</p>
       </div>
     )
   }

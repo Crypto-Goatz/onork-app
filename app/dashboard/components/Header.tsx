@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { NotificationBell } from '@/components/NotificationBell'
 import { TokenButton } from '@/components/token-modal'
@@ -9,7 +9,7 @@ import {
   CreditCard, Tag, Mail, Share2, FileText, Link2, ClipboardList, Megaphone,
   Mic, Bot, Brain, Zap, RefreshCw, Phone, FolderOpen, FileCheck, Globe,
   GraduationCap, Palette, User, CheckSquare, Settings, Shield, Plug,
-  Building2, ShoppingCart, Download, UserPlus, PenLine, HeartPulse, type LucideIcon,
+  Building2, ShoppingCart, Download, UserPlus, PenLine, HeartPulse, ChevronDown, Check, type LucideIcon,
 } from 'lucide-react'
 
 export type LayoutMode = 'classic' | 'compact' | 'horizontal'
@@ -152,26 +152,21 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
 
   // ── Rotating "Did you know" tips ──
   const TIPS = [
-    { text: 'Press / to search anything', color: '#6EE05A' },
-    { text: 'Cmd+K opens smart navigation', color: '#00B4FF' },
-    { text: 'Switch locations from the header', color: '#8b5cf6' },
-    { text: 'Ask Jaxx to create contacts for you', color: '#6EE05A' },
-    { text: 'Voice AI can handle intake calls', color: '#f59e0b' },
-    { text: 'Blog Engine writes SEO content with AI', color: '#00B4FF' },
-    { text: 'Connect Google in Settings → Analytics', color: '#6EE05A' },
-    { text: 'HIPAA Scanner checks 63 compliance points', color: '#ef4444' },
-    { text: 'Workflows automate your entire pipeline', color: '#8b5cf6' },
-    { text: 'Brand Board stores your design identity', color: '#f59e0b' },
+    { text: 'Press / to search anything', colorClass: 'text-core-green' },
+    { text: 'Cmd+K opens smart navigation', colorClass: 'text-core-cyan' },
+    { text: 'Switch locations from the header', colorClass: 'text-core-purple' },
+    { text: 'Ask Jaxx to create contacts for you', colorClass: 'text-core-green' },
+    { text: 'Voice AI can handle intake calls', colorClass: 'text-core-amber' },
+    { text: 'Blog Engine writes SEO content with AI', colorClass: 'text-core-cyan' },
+    { text: 'Connect Google in Settings → Analytics', colorClass: 'text-core-green' },
+    { text: 'HIPAA Scanner checks 63 compliance points', colorClass: 'text-core-red' },
+    { text: 'Workflows automate your entire pipeline', colorClass: 'text-core-purple' },
+    { text: 'Brand Board stores your design identity', colorClass: 'text-core-amber' },
   ]
   const [tipIdx, setTipIdx] = useState(0)
   const [tipVisible, setTipVisible] = useState(false)
 
   useEffect(() => {
-    // Detect platform for shortcut display
-    const isMac = typeof navigator !== 'undefined' && navigator.platform?.includes('Mac')
-    if (isMac) TIPS[1] = { text: '⌘K opens smart navigation', color: '#00B4FF' }
-    else TIPS[1] = { text: 'Ctrl+K opens smart navigation', color: '#00B4FF' }
-
     const interval = setInterval(() => {
       setTipVisible(true)
       setTimeout(() => setTipVisible(false), 4000)
@@ -206,73 +201,50 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
           )}
 
           {layoutMode === 'horizontal' && (
-            <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', marginRight: 16, textDecoration: 'none' }}>
-              <img src="/brand/0ncore-logo.png" alt="0nCore" style={{ height: 28, objectFit: 'contain' }} />
+            <a href="/dashboard" className="flex items-center mr-4 no-underline">
+              <img src="/brand/0ncore-logo.png" alt="0nCore" className="h-7 object-contain" />
             </a>
           )}
 
-          {/* ═══ Location Switcher — Clean ═══ */}
-          <div style={{ position: 'relative', marginRight: 8 }}>
+          {/* ═══ Location Switcher ═══ */}
+          <div className="relative mr-2">
             <button
               onClick={() => { setShowLocations(!showLocations); setShowUserMenu(false); setShowLayoutMenu(false) }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '6px 12px', height: 34,
-                background: 'transparent',
-                border: '1px solid var(--border, #30363d)',
-                borderRadius: 8, color: 'var(--foreground, #f0f4f8)', fontSize: 13, fontWeight: 500,
-                cursor: 'pointer', maxWidth: 180, transition: 'border-color 0.15s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary, #6EE05A)'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border, #30363d)'}
+              className="flex items-center gap-2 px-3 h-[34px] bg-transparent border border-core-border rounded-lg text-core-text text-[13px] font-medium cursor-pointer max-w-[180px] transition-colors duration-150 hover:border-core-green"
             >
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--primary, #6EE05A)', flexShrink: 0 }} />
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeName}</span>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0, opacity: 0.4 }}>
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+              <div className="w-1.5 h-1.5 rounded-full bg-core-green shrink-0" />
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap">{activeName}</span>
+              <ChevronDown className="w-2.5 h-2.5 shrink-0 opacity-40" />
             </button>
             {showLocations && (
               <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowLocations(false)} />
-                <div style={{
-                  position: 'absolute', top: '100%', left: 0, marginTop: 4,
-                  width: 280, background: 'var(--card, #161b22)', border: '1px solid var(--border, #30363d)',
-                  borderRadius: 10, overflow: 'hidden', zIndex: 100,
-                  boxShadow: '0 12px 40px rgba(0,0,0,0.5)', maxHeight: 320, overflowY: 'auto',
-                }}>
-                  <div style={{ padding: '10px 14px', fontSize: 10, fontWeight: 700, color: 'var(--muted-foreground, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid var(--border, #30363d)' }}>
+                <div className="fixed inset-0 z-[99]" onClick={() => setShowLocations(false)} />
+                <div className="absolute top-full left-0 mt-1 w-[280px] bg-core-card border border-core-border rounded-[10px] overflow-hidden z-[100] shadow-[0_12px_40px_rgba(0,0,0,0.5)] max-h-80 overflow-y-auto">
+                  <div className="px-3.5 py-2.5 text-[10px] font-bold text-core-text-muted uppercase tracking-widest border-b border-core-border">
                     Locations
                   </div>
                   {locations.map(loc => (
-                    <button key={loc.id} onClick={() => switchLocation(loc.id)} style={{
-                      width: '100%', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10,
-                      background: 'transparent', border: 'none', borderBottom: '1px solid var(--border, #30363d)',
-                      color: 'var(--foreground, #f0f4f8)', fontSize: 13, cursor: 'pointer', textAlign: 'left',
-                      fontFamily: 'inherit', transition: 'background 0.15s',
-                    }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    <button
+                      key={loc.id}
+                      onClick={() => switchLocation(loc.id)}
+                      className="w-full px-3.5 py-2.5 flex items-center gap-2.5 bg-transparent border-none border-b border-core-border text-core-text text-[13px] cursor-pointer text-left font-[inherit] transition-colors duration-150 hover:bg-white/[0.03]"
                     >
-                      <div style={{
-                        width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                        background: loc.id === activeLocation ? 'var(--primary, #6EE05A)' : 'var(--border, #30363d)',
-                      }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: loc.id === activeLocation ? 600 : 400, color: loc.id === activeLocation ? 'var(--primary, #6EE05A)' : 'inherit' }}>
+                      <div className={`w-2 h-2 rounded-full shrink-0 ${loc.id === activeLocation ? 'bg-core-green' : 'bg-core-border'}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className={`${loc.id === activeLocation ? 'font-semibold text-core-green' : 'font-normal'}`}>
                           {loc.name}
                         </div>
-                        <div style={{ fontSize: 10, color: 'var(--muted-foreground, #6b7280)', fontFamily: 'monospace', marginTop: 1 }}>
+                        <div className="text-[10px] text-core-text-muted font-mono mt-px">
                           {loc.id.substring(0, 20)}
                         </div>
                       </div>
                       {loc.id === activeLocation && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary, #6EE05A)" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
+                        <Check className="w-3.5 h-3.5 text-core-green" />
                       )}
                     </button>
                   ))}
                   {locations.length === 0 && (
-                    <div style={{ padding: '20px 14px', fontSize: 12, color: 'var(--muted-foreground)', textAlign: 'center' }}>No locations linked</div>
+                    <div className="px-3.5 py-5 text-[12px] text-core-text-muted text-center">No locations linked</div>
                   )}
                 </div>
               </>
@@ -282,39 +254,19 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
           {/* ═══ Search Trigger ═══ */}
           <button
             onClick={() => setSearchOpen(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              height: 34, padding: '0 12px',
-              background: 'transparent',
-              border: '1px solid var(--border, #30363d)',
-              borderRadius: 8, cursor: 'pointer',
-              color: 'var(--muted-foreground, #6b7280)',
-              fontSize: 13, fontFamily: 'inherit',
-              transition: 'border-color 0.15s',
-              minWidth: 200,
-            }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary, #6EE05A)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border, #30363d)'}
+            className="flex items-center gap-2 h-[34px] px-3 bg-transparent border border-core-border rounded-lg cursor-pointer text-core-text-muted text-[13px] font-[inherit] transition-colors duration-150 min-w-[200px] hover:border-core-green"
           >
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} style={{ flexShrink: 0, opacity: 0.5 }}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} className="shrink-0 opacity-50">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <span style={{ opacity: 0.5, whiteSpace: 'nowrap' }}>Search or navigate...</span>
-            <kbd style={{ marginLeft: 'auto', padding: '1px 5px', fontSize: 10, borderRadius: 3, border: '1px solid var(--border, #30363d)', fontFamily: 'monospace', opacity: 0.5 }}>/</kbd>
+            <span className="opacity-50 whitespace-nowrap">Search or navigate...</span>
+            <kbd className="ml-auto px-[5px] py-px text-[10px] rounded border border-core-border font-mono opacity-50">/</kbd>
           </button>
         </div>
 
         {/* ═══ Did You Know Tips ═══ */}
         {tipVisible && (
-          <div style={{
-            position: 'absolute', left: '50%', transform: 'translateX(-50%)',
-            fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap',
-            color: TIPS[tipIdx].color,
-            opacity: tipVisible ? 1 : 0,
-            transition: 'opacity 0.6s ease',
-            pointerEvents: 'none',
-          }}>
-            <span style={{ opacity: 0.5, marginRight: 6 }}>💡</span>
+          <div className={`absolute left-1/2 -translate-x-1/2 text-[11px] font-medium whitespace-nowrap pointer-events-none transition-opacity duration-600 ${TIPS[tipIdx].colorClass} ${tipVisible ? 'opacity-100' : 'opacity-0'}`}>
             {TIPS[tipIdx].text}
           </div>
         )}
@@ -323,8 +275,8 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
           <TokenButton />
           <NotificationBell />
 
-          {/* Layout */}
-          <div style={{ position: 'relative' }}>
+          {/* Layout switcher */}
+          <div className="relative">
             <button className="jp-header-btn" onClick={() => { setShowLayoutMenu(!showLayoutMenu); setShowUserMenu(false) }} title="Layout">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zm10-3a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1v-6z" />
@@ -332,16 +284,16 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
             </button>
             {showLayoutMenu && (
               <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowLayoutMenu(false)} />
-                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, width: 160, background: 'var(--card, #161b22)', border: '1px solid var(--border, #30363d)', borderRadius: 8, padding: 4, zIndex: 100, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+                <div className="fixed inset-0 z-[99]" onClick={() => setShowLayoutMenu(false)} />
+                <div className="absolute top-full right-0 mt-1.5 w-40 bg-core-card border border-core-border rounded-lg p-1 z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
                   {layoutOptions.map(opt => (
-                    <button key={opt.mode} onClick={() => { onLayoutChange?.(opt.mode); setShowLayoutMenu(false) }}
-                      style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', fontSize: 13, fontWeight: 500, color: layoutMode === opt.mode ? 'var(--primary, #6EE05A)' : 'var(--foreground, #f0f4f8)', background: layoutMode === opt.mode ? 'rgba(110,224,90,0.06)' : 'transparent', border: 'none', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.1s' }}
-                      onMouseEnter={e => { if (layoutMode !== opt.mode) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
-                      onMouseLeave={e => { if (layoutMode !== opt.mode) e.currentTarget.style.background = 'transparent' }}
+                    <button
+                      key={opt.mode}
+                      onClick={() => { onLayoutChange?.(opt.mode); setShowLayoutMenu(false) }}
+                      className={`w-full flex items-center justify-between px-2.5 py-2 text-[13px] font-medium rounded-md border-none cursor-pointer font-[inherit] transition-colors duration-100 ${layoutMode === opt.mode ? 'text-core-green bg-core-green/[0.06]' : 'text-core-text bg-transparent hover:bg-white/[0.03]'}`}
                     >
                       {opt.label}
-                      {layoutMode === opt.mode && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>}
+                      {layoutMode === opt.mode && <Check className="w-3.5 h-3.5" />}
                     </button>
                   ))}
                 </div>
@@ -349,8 +301,8 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
             )}
           </div>
 
-          {/* User */}
-          <div className="jp-header-user" onClick={() => { setShowUserMenu(!showUserMenu); setShowLayoutMenu(false) }} style={{ position: 'relative' }}>
+          {/* User menu */}
+          <div className="jp-header-user relative" onClick={() => { setShowUserMenu(!showUserMenu); setShowLayoutMenu(false) }}>
             <div className="jp-header-user-info">
               <div className="jp-header-user-name">{userName || userEmail?.split('@')[0] || 'User'}</div>
               <div className="jp-header-user-role">Administrator</div>
@@ -358,15 +310,21 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
             <div className="jp-avatar">{initials}</div>
             {showUserMenu && (
               <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowUserMenu(false)} />
-                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, width: 200, background: 'var(--card, #161b22)', border: '1px solid var(--border, #30363d)', borderRadius: 8, padding: 4, zIndex: 100, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-                  <div style={{ padding: '8px 10px', fontSize: 11, color: 'var(--muted-foreground, #6b7280)', borderBottom: '1px solid var(--border, #30363d)', marginBottom: 4, fontFamily: 'monospace' }}>{userEmail}</div>
-                  <a href="/dashboard/settings" style={{ display: 'block', padding: '8px 10px', fontSize: 13, color: 'var(--foreground, #f0f4f8)', textDecoration: 'none', borderRadius: 6, transition: 'background 0.1s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Settings</a>
-                  <button onClick={onLogout} style={{ width: '100%', padding: '8px 10px', fontSize: 13, color: '#ef4444', background: 'none', border: 'none', borderRadius: 6, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', transition: 'background 0.1s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.06)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Sign Out</button>
+                <div className="fixed inset-0 z-[99]" onClick={() => setShowUserMenu(false)} />
+                <div className="absolute top-full right-0 mt-1.5 w-[200px] bg-core-card border border-core-border rounded-lg p-1 z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                  <div className="px-2.5 py-2 text-[11px] text-core-text-muted border-b border-core-border mb-1 font-mono">{userEmail}</div>
+                  <a
+                    href="/dashboard/settings"
+                    className="block px-2.5 py-2 text-[13px] text-core-text no-underline rounded-md transition-colors duration-100 hover:bg-white/[0.03]"
+                  >
+                    Settings
+                  </a>
+                  <button
+                    onClick={onLogout}
+                    className="w-full px-2.5 py-2 text-[13px] text-core-red bg-transparent border-none rounded-md cursor-pointer text-left font-[inherit] transition-colors duration-100 hover:bg-core-red/[0.06]"
+                  >
+                    Sign Out
+                  </button>
                 </div>
               </>
             )}
@@ -377,18 +335,14 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
       {/* ═══ Smart Search Command Palette ═══ */}
       {searchOpen && (
         <>
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9000, backdropFilter: 'blur(4px)' }} onClick={() => { setSearchOpen(false); setSearchQuery('') }} />
-          <div style={{
-            position: 'fixed', top: '18%', left: '50%', transform: 'translateX(-50%)',
-            width: '100%', maxWidth: 520, zIndex: 9001,
-            background: 'var(--card, #161b22)', border: '1px solid var(--border, #30363d)',
-            borderRadius: 14, overflow: 'hidden',
-            boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
-            animation: 'searchIn 0.15s ease-out',
-          }}>
+          <div
+            className="fixed inset-0 bg-black/60 z-[9000] backdrop-blur-[4px]"
+            onClick={() => { setSearchOpen(false); setSearchQuery('') }}
+          />
+          <div className="fixed top-[18%] left-1/2 -translate-x-1/2 w-full max-w-[520px] z-[9001] bg-core-card border border-core-border rounded-[14px] overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.6)] animate-[searchIn_0.15s_ease-out]">
             {/* Search input */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid var(--border, #30363d)' }}>
-              <svg width="18" height="18" fill="none" stroke="var(--muted-foreground, #6b7280)" viewBox="0 0 24 24" strokeWidth={2}>
+            <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-core-border">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} className="text-core-text-muted">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -398,21 +352,18 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
                 onChange={e => { setSearchQuery(e.target.value); setSelectedIdx(0) }}
                 onKeyDown={handleSearchKeyDown}
                 placeholder="Search pages, tools, or actions..."
-                style={{
-                  flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                  color: 'var(--foreground, #f0f4f8)', fontSize: 15, fontFamily: 'inherit',
-                }}
+                className="flex-1 bg-transparent border-none outline-none text-core-text text-[15px] font-[inherit] placeholder:text-core-text-muted"
               />
-              <kbd style={{ padding: '2px 6px', fontSize: 10, borderRadius: 4, border: '1px solid var(--border, #30363d)', color: 'var(--muted-foreground, #6b7280)', fontFamily: 'monospace' }}>ESC</kbd>
+              <kbd className="px-1.5 py-0.5 text-[10px] rounded border border-core-border text-core-text-muted font-mono">ESC</kbd>
             </div>
 
             {/* Results */}
-            <div style={{ maxHeight: 360, overflowY: 'auto', padding: '4px 0' }}>
+            <div className="max-h-[360px] overflow-y-auto py-1">
               {!searchQuery && (
-                <div style={{ padding: '6px 16px', fontSize: 10, fontWeight: 700, color: 'var(--muted-foreground, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Quick Navigation</div>
+                <div className="px-4 py-1.5 text-[10px] font-bold text-core-text-muted uppercase tracking-widest">Quick Navigation</div>
               )}
               {filtered.length === 0 && (
-                <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--muted-foreground, #6b7280)', fontSize: 13 }}>No results for &ldquo;{searchQuery}&rdquo;</div>
+                <div className="px-4 py-6 text-center text-core-text-muted text-[13px]">No results for &ldquo;{searchQuery}&rdquo;</div>
               )}
               {filtered.map((item, i) => {
                 const ItemIcon = item.Icon
@@ -421,20 +372,12 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
                     key={item.href}
                     onClick={() => handleSearchNav(item.href)}
                     onMouseEnter={() => setSelectedIdx(i)}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '10px 16px', border: 'none', cursor: 'pointer',
-                      background: i === selectedIdx ? 'rgba(110,224,90,0.06)' : 'transparent',
-                      color: i === selectedIdx ? 'var(--foreground, #f0f4f8)' : 'var(--muted-foreground, #9ca3af)',
-                      fontSize: 13, fontFamily: 'inherit', textAlign: 'left',
-                      transition: 'background 0.1s',
-                      borderLeft: i === selectedIdx ? '2px solid var(--primary, #6EE05A)' : '2px solid transparent',
-                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 border-none cursor-pointer text-[13px] font-[inherit] text-left transition-colors duration-100 border-l-2 ${i === selectedIdx ? 'bg-core-green/[0.06] text-core-text border-l-core-green' : 'bg-transparent text-core-text-dim border-l-transparent'}`}
                   >
-                    <ItemIcon style={{ width: 16, height: 16, flexShrink: 0, opacity: i === selectedIdx ? 1 : 0.5 }} />
-                    <span style={{ fontWeight: i === selectedIdx ? 600 : 400 }}>{item.label}</span>
+                    <ItemIcon className={`w-4 h-4 shrink-0 ${i === selectedIdx ? 'opacity-100' : 'opacity-50'}`} />
+                    <span className={i === selectedIdx ? 'font-semibold' : 'font-normal'}>{item.label}</span>
                     {i === selectedIdx && (
-                      <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--muted-foreground)', fontFamily: 'monospace' }}>Enter ↵</span>
+                      <span className="ml-auto text-[10px] text-core-text-muted font-mono">Enter ↵</span>
                     )}
                   </button>
                 )
@@ -442,10 +385,10 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
             </div>
 
             {/* Footer hint */}
-            <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border, #30363d)', display: 'flex', gap: 12, justifyContent: 'center' }}>
-              <span style={{ fontSize: 10, color: 'var(--muted-foreground, #6b7280)' }}>↑↓ navigate</span>
-              <span style={{ fontSize: 10, color: 'var(--muted-foreground, #6b7280)' }}>↵ open</span>
-              <span style={{ fontSize: 10, color: 'var(--muted-foreground, #6b7280)' }}>esc close</span>
+            <div className="px-4 py-2 border-t border-core-border flex gap-3 justify-center">
+              <span className="text-[10px] text-core-text-muted">↑↓ navigate</span>
+              <span className="text-[10px] text-core-text-muted">↵ open</span>
+              <span className="text-[10px] text-core-text-muted">esc close</span>
             </div>
           </div>
 
@@ -457,11 +400,6 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
           `}</style>
         </>
       )}
-
-      {/* Tip fade CSS */}
-      <style>{`
-        @keyframes tipFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(2px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-      `}</style>
     </>
   )
 }

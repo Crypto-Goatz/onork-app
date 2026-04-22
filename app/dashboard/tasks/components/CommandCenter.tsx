@@ -20,6 +20,7 @@ interface CommandCenterProps {
 export default function CommandCenter({ tasks, onCreateTask, onFocusTask, onSendChat }: CommandCenterProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -64,89 +65,64 @@ export default function CommandCenter({ tasks, onCreateTask, onFocusTask, onSend
   if (!isOpen) return null
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '15vh' }}>
+    <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh]">
       {/* Backdrop */}
       <div
         onClick={() => setIsOpen(false)}
-        style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+        className="absolute inset-0 bg-black/60 backdrop-blur-[4px]"
       />
 
       {/* Palette */}
-      <div style={{
-        position: 'relative', zIndex: 10,
-        width: '100%', maxWidth: 520,
-        background: '#161b22', border: '1px solid #1e293b', borderRadius: 16,
-        overflow: 'hidden', margin: '0 16px',
-        boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
-      }}>
+      <div className="relative z-10 w-full max-w-[520px] bg-core-surface border border-core-border rounded-2xl overflow-hidden mx-4 shadow-[0_25px_50px_rgba(0,0,0,0.5)]">
+
         {/* Search */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: 16, borderBottom: '1px solid #1e293b',
-        }}>
-          <Search size={18} style={{ color: '#7ed957' }} />
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-core-border">
+          <Search size={18} className="text-core-green shrink-0" />
           <input
             ref={inputRef}
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search tasks or commands..."
-            style={{
-              flex: 1, background: 'transparent', border: 'none', outline: 'none',
-              color: '#f0f4f8', fontSize: 15,
-            }}
+            className="flex-1 bg-transparent border-none outline-none text-core-text text-[15px]"
           />
           <button
             onClick={() => setIsOpen(false)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3d4654', padding: 4 }}
+            className="bg-transparent border-none cursor-pointer text-core-text-muted p-1 hover:text-core-text transition-colors"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Results */}
-        <div style={{ maxHeight: '50vh', overflowY: 'auto', padding: 8 }}>
+        <div className="max-h-[50vh] overflow-y-auto p-2">
           {categories.length === 0 ? (
-            <div style={{ padding: 32, textAlign: 'center', color: '#3d4654', fontSize: 13, fontStyle: 'italic' }}>
+            <div className="py-8 text-center text-core-text-muted text-[13px] italic">
               No results for &quot;{query}&quot;
             </div>
           ) : (
             categories.map(cat => (
-              <div key={cat} style={{ marginBottom: 8 }}>
-                <div style={{
-                  padding: '4px 12px', fontSize: 10, fontWeight: 700,
-                  textTransform: 'uppercase', letterSpacing: 1.5, color: '#3d4654',
-                }}>
+              <div key={cat} className="mb-2">
+                <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-[1.5px] text-core-text-muted">
                   {cat}
                 </div>
                 {filtered.filter(i => i.category === cat).map(item => (
                   <button
                     key={item.id}
                     onClick={item.action}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '10px 12px', borderRadius: 10,
-                      background: 'transparent', border: 'none',
-                      color: '#8b95a5', cursor: 'pointer', textAlign: 'left',
-                      transition: 'all 0.1s',
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.background = 'rgba(126,217,87,0.08)'
-                      e.currentTarget.style.color = '#7ed957'
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.background = 'transparent'
-                      e.currentTarget.style.color = '#8b95a5'
-                    }}
+                    onMouseEnter={() => setHoveredId(item.id)}
+                    onMouseLeave={() => setHoveredId(null)}
+                    className={[
+                      'w-full flex items-center gap-3 px-3 py-[10px] rounded-[10px] border-none text-left cursor-pointer transition-all duration-100',
+                      hoveredId === item.id
+                        ? 'bg-core-green/[0.08] text-core-green'
+                        : 'bg-transparent text-core-text-dim',
+                    ].join(' ')}
                   >
-                    <div style={{
-                      width: 32, height: 32, borderRadius: 8,
-                      background: 'rgba(255,255,255,0.03)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.03] flex items-center justify-center shrink-0">
                       {item.icon}
                     </div>
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{item.label}</span>
-                    <ChevronRight size={14} style={{ opacity: 0.3 }} />
+                    <span className="flex-1 text-[13px] font-semibold">{item.label}</span>
+                    <ChevronRight size={14} className="opacity-30" />
                   </button>
                 ))}
               </div>
@@ -155,22 +131,18 @@ export default function CommandCenter({ tasks, onCreateTask, onFocusTask, onSend
         </div>
 
         {/* Footer */}
-        <div style={{
-          padding: '10px 16px', borderTop: '1px solid #1e293b',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          fontSize: 10, color: '#3d4654', fontWeight: 600,
-        }}>
-          <div style={{ display: 'flex', gap: 12 }}>
+        <div className="px-4 py-[10px] border-t border-core-border flex justify-between items-center text-[10px] text-core-text-muted font-semibold">
+          <div className="flex gap-3">
             <span>
-              <kbd style={{ padding: '2px 4px', background: 'rgba(255,255,255,0.05)', borderRadius: 4, border: '1px solid #1e293b', marginRight: 4 }}>Esc</kbd>
+              <kbd className="px-1 py-0.5 bg-white/5 rounded border border-core-border mr-1">Esc</kbd>
               close
             </span>
             <span>
-              <kbd style={{ padding: '2px 4px', background: 'rgba(255,255,255,0.05)', borderRadius: 4, border: '1px solid #1e293b', marginRight: 4 }}>Enter</kbd>
+              <kbd className="px-1 py-0.5 bg-white/5 rounded border border-core-border mr-1">Enter</kbd>
               select
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div className="flex items-center gap-1">
             <Command size={10} /> Navigator
           </div>
         </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { Zap, X, FolderOpen } from 'lucide-react'
 
 interface OptimizationModalProps {
   isOpen: boolean
@@ -26,72 +27,91 @@ export default function OptimizationModal({ isOpen, onClose, onSubmit, isProcess
     reader.readAsDataURL(file)
   }
 
+  const canSubmit = image && !isProcessing
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-    }}>
-      <div style={{
-        background: '#161b22', border: '1px solid #1e293b', borderRadius: 14,
-        width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-      }}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60">
+      <div className="bg-core-surface border border-core-border rounded-[14px] w-full max-w-[480px] flex flex-col overflow-hidden">
+
         {/* Header */}
-        <div style={{ padding: '18px 20px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 8, background: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16 }}>{'\u26A1'}</div>
+        <div className="px-5 py-[18px] border-b border-core-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-[34px] h-[34px] rounded-lg bg-core-purple flex items-center justify-center text-white shrink-0">
+              <Zap size={16} />
+            </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#f0f4f8' }}>Optimize Performance</h3>
-              <p style={{ margin: 0, fontSize: 11, color: '#8b95a5' }}>Upload a report screenshot for AI analysis.</p>
+              <h3 className="m-0 text-base font-extrabold text-core-text">Optimize Performance</h3>
+              <p className="m-0 text-[11px] text-core-text-muted">Upload a report screenshot for AI analysis.</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#8b95a5', cursor: 'pointer', fontSize: 18 }}>x</button>
+          <button
+            onClick={onClose}
+            className="bg-transparent border-none text-core-text-dim cursor-pointer p-1 hover:text-core-text transition-colors"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* Body */}
-        <div style={{ padding: 20 }}>
+        <div className="p-5">
           {!image ? (
             <div
               onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={e => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0]) }}
               onClick={() => fileInputRef.current?.click()}
-              style={{
-                border: `2px dashed ${isDragging ? '#7ed957' : '#1e293b'}`, borderRadius: 12, padding: '40px 20px',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', textAlign: 'center', background: isDragging ? 'rgba(126,217,87,0.05)' : 'transparent',
-                transition: 'all 0.2s',
-              }}
+              className={[
+                'border-2 border-dashed rounded-xl px-5 py-10 flex flex-col items-center justify-center cursor-pointer text-center transition-all duration-200',
+                isDragging
+                  ? 'border-core-green bg-core-green/5'
+                  : 'border-core-border bg-transparent hover:border-core-border/70',
+              ].join(' ')}
             >
-              <div style={{ fontSize: 28, marginBottom: 8 }}>{'\uD83D\uDCC2'}</div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#f0f4f8' }}>Click to upload screenshot</p>
-              <p style={{ margin: '4px 0 0', fontSize: 11, color: '#3d4654' }}>or drag and drop here</p>
-              <input type="file" ref={fileInputRef} accept="image/*" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} style={{ display: 'none' }} />
+              <FolderOpen size={28} className="text-core-text-muted mb-2" />
+              <p className="m-0 text-[13px] font-semibold text-core-text">Click to upload screenshot</p>
+              <p className="m-0 mt-1 text-[11px] text-core-text-muted">or drag and drop here</p>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+                className="hidden"
+              />
             </div>
           ) : (
-            <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid #1e293b' }}>
-              <img src={image.preview} alt="Preview" style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'top', display: 'block' }} />
+            <div className="relative rounded-[10px] overflow-hidden border border-core-border">
+              <img
+                src={image.preview}
+                alt="Preview"
+                className="w-full h-[220px] object-cover object-top block"
+              />
               <button
                 onClick={() => setImage(null)}
-                style={{
-                  position: 'absolute', top: 8, right: 8, padding: '4px 10px', background: 'rgba(0,0,0,0.7)',
-                  color: '#ef4444', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                }}
-              >Change</button>
+                className="absolute top-2 right-2 px-[10px] py-1 bg-black/70 text-core-red border-none rounded-md text-[11px] font-bold cursor-pointer hover:bg-black/90 transition-colors"
+              >
+                Change
+              </button>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '14px 20px', borderTop: '1px solid #1e293b', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button onClick={onClose} style={{ padding: '8px 16px', background: 'none', border: '1px solid #1e293b', borderRadius: 8, color: '#8b95a5', cursor: 'pointer', fontSize: 12 }}>Cancel</button>
+        <div className="px-5 py-[14px] border-t border-core-border flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-transparent border border-core-border rounded-lg text-core-text-dim cursor-pointer text-xs hover:text-core-text transition-colors"
+          >
+            Cancel
+          </button>
           <button
             onClick={() => image && onSubmit(image)}
-            disabled={!image || isProcessing}
-            style={{
-              padding: '8px 18px', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: !image || isProcessing ? 'not-allowed' : 'pointer',
-              background: !image || isProcessing ? '#1e293b' : '#6366f1', color: !image || isProcessing ? '#3d4654' : '#fff',
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}
+            disabled={!canSubmit}
+            className={[
+              'px-[18px] py-2 border-none rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all',
+              canSubmit
+                ? 'bg-core-purple text-white cursor-pointer hover:opacity-90'
+                : 'bg-core-card text-core-text-muted cursor-not-allowed',
+            ].join(' ')}
           >
             {isProcessing ? 'Analyzing...' : 'Analyze & Optimize'}
           </button>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ChevronUp, ChevronDown } from 'lucide-react'
 
 interface Deal {
   id: number
@@ -17,14 +18,14 @@ interface Deal {
 }
 
 const mockDeals: Deal[] = [
-  { id: 1, name: 'Enterprise SaaS Migration', contact: 'Sarah Chen', stage: 'Proposal', stageColor: 'var(--jp-cyan)', value: 48000, probability: 75, lastActivity: '2 hours ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--jp-green)' },
-  { id: 2, name: 'Marketing Automation Setup', contact: 'James Wilson', stage: 'Negotiation', stageColor: 'var(--jp-purple)', value: 24000, probability: 60, lastActivity: '1 day ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--jp-green)' },
-  { id: 3, name: 'CRM Integration Package', contact: 'Emily Davis', stage: 'Qualified', stageColor: 'var(--jp-green)', value: 12000, probability: 40, lastActivity: '3 days ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--jp-green)' },
-  { id: 4, name: 'Website Redesign + SEO', contact: 'Marcus Lee', stage: 'Proposal', stageColor: 'var(--jp-cyan)', value: 18500, probability: 65, lastActivity: '5 hours ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--jp-green)' },
-  { id: 5, name: 'Social Media Management', contact: 'Priya Patel', stage: 'Discovery', stageColor: 'var(--jp-amber)', value: 6000, probability: 25, lastActivity: '2 days ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--jp-green)' },
-  { id: 6, name: 'API Development Sprint', contact: 'Alex Rivera', stage: 'Closed Won', stageColor: 'var(--jp-green)', value: 36000, probability: 100, lastActivity: '1 week ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--jp-green)' },
-  { id: 7, name: 'Data Analytics Dashboard', contact: 'Lisa Thompson', stage: 'Qualified', stageColor: 'var(--jp-green)', value: 15000, probability: 35, lastActivity: '4 days ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--jp-green)' },
-  { id: 8, name: 'E-commerce Platform', contact: 'Derek Johnson', stage: 'Negotiation', stageColor: 'var(--jp-purple)', value: 52000, probability: 55, lastActivity: '6 hours ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--jp-green)' },
+  { id: 1, name: 'Enterprise SaaS Migration', contact: 'Sarah Chen', stage: 'Proposal', stageColor: 'var(--color-core-cyan)', value: 48000, probability: 75, lastActivity: '2 hours ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--color-core-green)' },
+  { id: 2, name: 'Marketing Automation Setup', contact: 'James Wilson', stage: 'Negotiation', stageColor: 'var(--color-core-purple)', value: 24000, probability: 60, lastActivity: '1 day ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--color-core-green)' },
+  { id: 3, name: 'CRM Integration Package', contact: 'Emily Davis', stage: 'Qualified', stageColor: 'var(--color-core-green)', value: 12000, probability: 40, lastActivity: '3 days ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--color-core-green)' },
+  { id: 4, name: 'Website Redesign + SEO', contact: 'Marcus Lee', stage: 'Proposal', stageColor: 'var(--color-core-cyan)', value: 18500, probability: 65, lastActivity: '5 hours ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--color-core-green)' },
+  { id: 5, name: 'Social Media Management', contact: 'Priya Patel', stage: 'Discovery', stageColor: 'var(--color-core-amber)', value: 6000, probability: 25, lastActivity: '2 days ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--color-core-green)' },
+  { id: 6, name: 'API Development Sprint', contact: 'Alex Rivera', stage: 'Closed Won', stageColor: 'var(--color-core-green)', value: 36000, probability: 100, lastActivity: '1 week ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--color-core-green)' },
+  { id: 7, name: 'Data Analytics Dashboard', contact: 'Lisa Thompson', stage: 'Qualified', stageColor: 'var(--color-core-green)', value: 15000, probability: 35, lastActivity: '4 days ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--color-core-green)' },
+  { id: 8, name: 'E-commerce Platform', contact: 'Derek Johnson', stage: 'Negotiation', stageColor: 'var(--color-core-purple)', value: 52000, probability: 55, lastActivity: '6 hours ago', assignee: 'Mike', assigneeInitials: 'MM', assigneeColor: 'var(--color-core-green)' },
 ]
 
 type SortKey = 'name' | 'contact' | 'stage' | 'value' | 'probability' | 'lastActivity'
@@ -59,140 +60,127 @@ export default function PipelineListPage() {
   const weightedValue = mockDeals.reduce((sum, d) => sum + (d.value * d.probability / 100), 0)
 
   const SortIcon = ({ active, asc }: { active: boolean; asc: boolean }) => (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 4, opacity: active ? 1 : 0.3 }}>
-      <path d="M6 2L9 5H3L6 2Z" fill={active && asc ? 'var(--jp-green)' : 'var(--jp-text-muted)'} />
-      <path d="M6 10L3 7H9L6 10Z" fill={active && !asc ? 'var(--jp-green)' : 'var(--jp-text-muted)'} />
-    </svg>
+    <span className={`inline-flex flex-col ml-1 ${active ? 'opacity-100' : 'opacity-30'}`}>
+      <ChevronUp className={`h-2.5 w-2.5 -mb-1 ${active && asc ? 'text-core-green' : 'text-core-text-muted'}`} />
+      <ChevronDown className={`h-2.5 w-2.5 ${active && !asc ? 'text-core-green' : 'text-core-text-muted'}`} />
+    </span>
   )
 
   return (
     <div>
-      <div className="jp-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="jp-page-title">Pipeline — List View</h1>
-          <p className="jp-page-subtitle">{mockDeals.length} deals in pipeline</p>
+          <h1 className="text-xl font-bold text-core-text">Pipeline — List View</h1>
+          <p className="text-sm text-core-text-muted mt-1">{mockDeals.length} deals in pipeline</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <a href="/dashboard/pipeline" className="jp-btn jp-btn-outline" style={{ textDecoration: 'none' }}>Board View</a>
-          <button className="jp-btn jp-btn-primary">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
+        <div className="flex gap-2">
+          <a
+            href="/dashboard/pipeline"
+            className="inline-flex items-center px-3 py-1.5 rounded-lg border border-core-border text-xs font-semibold text-core-text-dim hover:border-core-border-hi transition-colors no-underline"
+          >
+            Board View
+          </a>
+          <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-core-green text-core-bg text-xs font-semibold hover:opacity-90 transition-opacity">
+            <ChevronUp className="h-3.5 w-3.5 rotate-90" />
             Add Deal
           </button>
         </div>
       </div>
 
       {/* Summary Stats */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-        <div className="jp-pipeline-stats">
-          <div className="jp-pipeline-stat">
-            <span className="jp-pipeline-stat-label">Total Value</span>
-            <span className="jp-pipeline-stat-value">${totalValue.toLocaleString()}</span>
+      <div className="flex gap-4 mb-6">
+        <div className="flex items-center gap-0 rounded-xl border border-core-border bg-core-card px-4 py-3">
+          <div className="flex flex-col px-4 first:pl-0">
+            <span className="text-[10px] uppercase tracking-wider text-core-text-muted font-semibold">Total Value</span>
+            <span className="text-lg font-bold text-core-text">${totalValue.toLocaleString()}</span>
           </div>
-          <div className="jp-pipeline-stat-divider" />
-          <div className="jp-pipeline-stat">
-            <span className="jp-pipeline-stat-label">Weighted</span>
-            <span className="jp-pipeline-stat-value" style={{ color: 'var(--jp-green)' }}>${Math.round(weightedValue).toLocaleString()}</span>
+          <div className="w-px h-8 bg-core-border mx-2" />
+          <div className="flex flex-col px-4">
+            <span className="text-[10px] uppercase tracking-wider text-core-text-muted font-semibold">Weighted</span>
+            <span className="text-lg font-bold text-core-green">${Math.round(weightedValue).toLocaleString()}</span>
           </div>
-          <div className="jp-pipeline-stat-divider" />
-          <div className="jp-pipeline-stat">
-            <span className="jp-pipeline-stat-label">Deals</span>
-            <span className="jp-pipeline-stat-value">{mockDeals.length}</span>
+          <div className="w-px h-8 bg-core-border mx-2" />
+          <div className="flex flex-col px-4">
+            <span className="text-[10px] uppercase tracking-wider text-core-text-muted font-semibold">Deals</span>
+            <span className="text-lg font-bold text-core-text">{mockDeals.length}</span>
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="jp-card" style={{ overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="jp-table">
+      <div className="rounded-xl border border-core-border bg-core-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
             <thead>
-              <tr>
-                <th onClick={() => handleSort('name')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  <span style={{ display: 'flex', alignItems: 'center' }}>
-                    Deal Name <SortIcon active={sortKey === 'name'} asc={sortAsc} />
-                  </span>
-                </th>
-                <th onClick={() => handleSort('contact')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  <span style={{ display: 'flex', alignItems: 'center' }}>
-                    Contact <SortIcon active={sortKey === 'contact'} asc={sortAsc} />
-                  </span>
-                </th>
-                <th onClick={() => handleSort('stage')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  <span style={{ display: 'flex', alignItems: 'center' }}>
-                    Stage <SortIcon active={sortKey === 'stage'} asc={sortAsc} />
-                  </span>
-                </th>
-                <th onClick={() => handleSort('value')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  <span style={{ display: 'flex', alignItems: 'center' }}>
-                    Value <SortIcon active={sortKey === 'value'} asc={sortAsc} />
-                  </span>
-                </th>
-                <th onClick={() => handleSort('probability')} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                  <span style={{ display: 'flex', alignItems: 'center' }}>
-                    Probability <SortIcon active={sortKey === 'probability'} asc={sortAsc} />
-                  </span>
-                </th>
-                <th>Last Activity</th>
-                <th>Assigned To</th>
+              <tr className="border-b border-core-border">
+                {([
+                  { key: 'name', label: 'Deal Name' },
+                  { key: 'contact', label: 'Contact' },
+                  { key: 'stage', label: 'Stage' },
+                  { key: 'value', label: 'Value' },
+                  { key: 'probability', label: 'Probability' },
+                ] as { key: SortKey; label: string }[]).map(col => (
+                  <th
+                    key={col.key}
+                    onClick={() => handleSort(col.key)}
+                    className="px-4 py-3 text-left text-[11px] font-semibold text-core-text-muted uppercase tracking-wider cursor-pointer select-none hover:text-core-text transition-colors"
+                  >
+                    <span className="flex items-center">
+                      {col.label}
+                      <SortIcon active={sortKey === col.key} asc={sortAsc} />
+                    </span>
+                  </th>
+                ))}
+                <th className="px-4 py-3 text-left text-[11px] font-semibold text-core-text-muted uppercase tracking-wider">Last Activity</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold text-core-text-muted uppercase tracking-wider">Assigned To</th>
               </tr>
             </thead>
             <tbody>
               {sortedDeals.map(deal => (
-                <tr key={deal.id} style={{ cursor: 'pointer' }}>
-                  <td>
-                    <span style={{ fontWeight: 600, color: 'var(--jp-text)' }}>{deal.name}</span>
+                <tr key={deal.id} className="border-b border-core-border/50 hover:bg-core-card-hover transition-colors cursor-pointer">
+                  <td className="px-4 py-3">
+                    <span className="font-semibold text-core-text">{deal.name}</span>
                   </td>
-                  <td>{deal.contact}</td>
-                  <td>
-                    <span style={{
-                      fontSize: '0.6875rem',
-                      fontWeight: 600,
-                      padding: '3px 10px',
-                      borderRadius: 20,
-                      background: `color-mix(in srgb, ${deal.stageColor} 12%, transparent)`,
-                      color: deal.stageColor,
-                      whiteSpace: 'nowrap',
-                    }}>
+                  <td className="px-4 py-3 text-core-text-dim">{deal.contact}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap"
+                      style={{
+                        background: `color-mix(in srgb, ${deal.stageColor} 12%, transparent)`,
+                        color: deal.stageColor,
+                      }}
+                    >
                       {deal.stage}
                     </span>
                   </td>
-                  <td>
-                    <span style={{ fontWeight: 600, color: 'var(--jp-green)' }}>
-                      ${deal.value.toLocaleString()}
-                    </span>
+                  <td className="px-4 py-3">
+                    <span className="font-semibold text-core-green">${deal.value.toLocaleString()}</span>
                   </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div className="jp-progress" style={{ flex: 1, maxWidth: 80 }}>
-                        <div className="jp-progress-bar green" style={{ width: `${deal.probability}%` }} />
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 max-w-[80px] h-1.5 rounded bg-white/[0.04] overflow-hidden">
+                        <div
+                          className="h-full rounded bg-core-green"
+                          style={{ width: `${deal.probability}%` }}
+                        />
                       </div>
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--jp-text-secondary)', minWidth: 32 }}>
+                      <span className="text-[13px] font-medium text-core-text-dim min-w-[32px]">
                         {deal.probability}%
                       </span>
                     </div>
                   </td>
-                  <td>
-                    <span style={{ fontSize: '0.8125rem', color: 'var(--jp-text-muted)' }}>{deal.lastActivity}</span>
+                  <td className="px-4 py-3">
+                    <span className="text-[13px] text-core-text-muted">{deal.lastActivity}</span>
                   </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        background: deal.assigneeColor,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.5625rem',
-                        fontWeight: 700,
-                        color: '#000',
-                      }}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-core-bg"
+                        style={{ background: deal.assigneeColor }}
+                      >
                         {deal.assigneeInitials}
                       </div>
-                      <span style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)' }}>{deal.assignee}</span>
+                      <span className="text-[13px] text-core-text-dim">{deal.assignee}</span>
                     </div>
                   </td>
                 </tr>

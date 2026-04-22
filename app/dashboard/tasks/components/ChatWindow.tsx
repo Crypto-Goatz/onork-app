@@ -38,23 +38,18 @@ export default function ChatWindow({ messages, onSendMessage, isThinking, sugges
     }
   }
 
+  const canSend = input.trim() && !isThinking
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="flex flex-col h-full">
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
         {messages.length === 0 && (
-          <div style={{
-            flex: 1, display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: 12,
-          }}>
-            <div style={{
-              width: 48, height: 48, borderRadius: 12,
-              background: 'rgba(126,217,87,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Bot size={24} style={{ color: '#7ed957' }} />
+          <div className="flex-1 flex flex-col items-center justify-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-core-green/15 flex items-center justify-center">
+              <Bot size={24} className="text-core-green" />
             </div>
-            <p style={{ fontSize: 14, color: '#8b95a5', textAlign: 'center', maxWidth: 280, lineHeight: 1.5 }}>
+            <p className="text-[14px] text-core-text-muted text-center max-w-[280px] leading-relaxed">
               I am your personal AI assistant. Ask me to help plan your day, prioritize tasks, or create new ones.
             </p>
           </div>
@@ -63,30 +58,21 @@ export default function ChatWindow({ messages, onSendMessage, isThinking, sugges
         {messages.map(msg => {
           const isBot = msg.sender === 'bot'
           return (
-            <div key={msg.id} style={{ display: 'flex', justifyContent: isBot ? 'flex-start' : 'flex-end' }}>
-              <div style={{ display: 'flex', flexDirection: isBot ? 'row' : 'row-reverse', gap: 8, maxWidth: '85%' }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: '50%', flexShrink: 0, marginTop: 2,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: isBot ? 'rgba(126,217,87,0.2)' : 'rgba(0,212,255,0.15)',
-                }}>
-                  {isBot ? <Bot size={14} style={{ color: '#7ed957' }} /> : <User size={14} style={{ color: '#00d4ff' }} />}
+            <div key={msg.id} className={`flex ${isBot ? 'justify-start' : 'justify-end'}`}>
+              <div className={`flex gap-2 max-w-[85%] ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
+                <div className={`w-7 h-7 rounded-full shrink-0 mt-0.5 flex items-center justify-center ${isBot ? 'bg-core-green/20' : 'bg-core-cyan/15'}`}>
+                  {isBot
+                    ? <Bot size={14} className="text-core-green" />
+                    : <User size={14} className="text-core-cyan" />
+                  }
                 </div>
-                <div style={{
-                  padding: '10px 14px', borderRadius: 14, fontSize: 13, lineHeight: 1.5,
-                  ...(isBot ? {
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid #1e293b',
-                    color: '#f0f4f8',
-                    borderTopLeftRadius: 4,
-                  } : {
-                    background: 'rgba(126,217,87,0.15)',
-                    border: '1px solid rgba(126,217,87,0.25)',
-                    color: '#f0f4f8',
-                    borderTopRightRadius: 4,
-                  }),
-                  whiteSpace: 'pre-wrap',
-                }}>
+                <div
+                  className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed text-core-text whitespace-pre-wrap ${
+                    isBot
+                      ? 'bg-white/[0.04] border border-core-border rounded-tl-sm'
+                      : 'bg-core-green/15 border border-core-green/25 rounded-tr-sm'
+                  }`}
+                >
                   {msg.text}
                 </div>
               </div>
@@ -95,24 +81,15 @@ export default function ChatWindow({ messages, onSendMessage, isThinking, sugges
         })}
 
         {isThinking && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(126,217,87,0.2)',
-              }}>
-                <Sparkles size={14} style={{ color: '#7ed957' }} />
+          <div className="flex justify-start">
+            <div className="flex gap-2 items-center">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center bg-core-green/20">
+                <Sparkles size={14} className="text-core-green" />
               </div>
-              <div style={{
-                padding: '10px 14px', borderRadius: 14, borderTopLeftRadius: 4,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid #1e293b',
-                display: 'flex', gap: 6, alignItems: 'center',
-              }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#7ed957', opacity: 0.6, animation: 'pulse 1.4s ease-in-out infinite' }} />
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#7ed957', opacity: 0.6, animation: 'pulse 1.4s ease-in-out 0.2s infinite' }} />
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#7ed957', opacity: 0.6, animation: 'pulse 1.4s ease-in-out 0.4s infinite' }} />
+              <div className="px-3.5 py-2.5 rounded-2xl rounded-tl-sm bg-white/[0.04] border border-core-border flex gap-1.5 items-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-core-green opacity-60 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-core-green opacity-60 animate-pulse [animation-delay:0.2s]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-core-green opacity-60 animate-pulse [animation-delay:0.4s]" />
               </div>
             </div>
           </div>
@@ -122,31 +99,12 @@ export default function ChatWindow({ messages, onSendMessage, isThinking, sugges
 
       {/* Suggested Replies */}
       {!isThinking && suggestedReplies.length > 0 && (
-        <div style={{
-          padding: '0 16px 8px', display: 'flex', gap: 8, overflowX: 'auto',
-          scrollbarWidth: 'none',
-        }}>
+        <div className="px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-none">
           {suggestedReplies.map((reply, idx) => (
             <button
               key={idx}
               onClick={() => handleSend(reply)}
-              style={{
-                whiteSpace: 'nowrap',
-                padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid #1e293b',
-                color: '#8b95a5',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'rgba(126,217,87,0.4)'
-                e.currentTarget.style.color = '#7ed957'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = '#1e293b'
-                e.currentTarget.style.color = '#8b95a5'
-              }}
+              className="whitespace-nowrap px-3 py-1.5 rounded-full text-[12px] font-semibold bg-white/[0.04] border border-core-border text-core-text-muted cursor-pointer transition-all hover:border-core-green/40 hover:text-core-green"
             >
               {reply}
             </button>
@@ -155,15 +113,8 @@ export default function ChatWindow({ messages, onSendMessage, isThinking, sugges
       )}
 
       {/* Input */}
-      <div style={{
-        padding: 12, borderTop: '1px solid #1e293b',
-      }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid #1e293b',
-          borderRadius: 12, padding: '4px 8px',
-        }}>
+      <div className="p-3 border-t border-core-border">
+        <div className="flex items-center gap-2 bg-white/[0.03] border border-core-border rounded-xl px-2 py-1">
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -171,23 +122,16 @@ export default function ChatWindow({ messages, onSendMessage, isThinking, sugges
             placeholder="Ask your AI assistant..."
             disabled={isThinking}
             rows={1}
-            style={{
-              flex: 1, background: 'transparent', border: 'none', outline: 'none',
-              resize: 'none', maxHeight: 80, padding: '8px 4px',
-              color: '#f0f4f8', fontSize: 13,
-            }}
+            className="flex-1 bg-transparent border-none outline-none resize-none max-h-20 px-1 py-2 text-core-text text-[13px] placeholder:text-core-text-muted disabled:opacity-50"
           />
           <button
             onClick={() => handleSend()}
-            disabled={!input.trim() || isThinking}
-            style={{
-              width: 32, height: 32, borderRadius: 8,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: input.trim() && !isThinking ? '#7ed957' : 'rgba(255,255,255,0.05)',
-              color: input.trim() && !isThinking ? '#0d1117' : '#3d4654',
-              border: 'none', cursor: input.trim() && !isThinking ? 'pointer' : 'not-allowed',
-              transition: 'all 0.15s',
-            }}
+            disabled={!canSend}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center border-none transition-all ${
+              canSend
+                ? 'bg-core-green text-core-bg cursor-pointer hover:opacity-90'
+                : 'bg-white/[0.05] text-core-text-muted cursor-not-allowed'
+            }`}
           >
             <Send size={16} />
           </button>

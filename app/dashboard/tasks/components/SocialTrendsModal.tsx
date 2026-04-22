@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { TrendingUp, X, Plus, Info, Copy, Check } from 'lucide-react'
 
 const DEFAULT_TOPICS = ['AI', 'Marketing', 'SEO', 'MCP', 'Automation', 'Future of Work']
 
@@ -39,68 +40,87 @@ export default function SocialTrendsModal({ isOpen, onClose, onSubmit, isProcess
     }
   }
 
+  const canGenerate = selectedTopics.length > 0 && !isProcessing
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-    }}>
-      <div style={{
-        background: '#161b22', border: '1px solid #1e293b', borderRadius: 14,
-        width: '100%', maxWidth: 660, display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflow: 'hidden',
-      }}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60">
+      <div className="bg-core-surface border border-core-border rounded-[14px] w-full max-w-[660px] flex flex-col max-h-[90vh] overflow-hidden">
+
         {/* Header */}
-        <div style={{ padding: '18px 20px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 8, background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16 }}>{'\uD83D\uDCC8'}</div>
+        <div className="px-5 py-[18px] border-b border-core-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-[34px] h-[34px] rounded-lg bg-blue-500 flex items-center justify-center text-white shrink-0">
+              <TrendingUp size={16} />
+            </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#f0f4f8' }}>Social Viral Engine</h3>
-              <p style={{ margin: 0, fontSize: 11, color: '#8b95a5' }}>Identify trends and generate algorithm-optimized posts.</p>
+              <h3 className="m-0 text-base font-extrabold text-core-text">Social Viral Engine</h3>
+              <p className="m-0 text-[11px] text-core-text-muted">Identify trends and generate algorithm-optimized posts.</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#8b95a5', cursor: 'pointer', fontSize: 18 }}>x</button>
+          <button
+            onClick={onClose}
+            className="bg-transparent border-none text-core-text-dim cursor-pointer p-1 hover:text-core-text transition-colors"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflow: 'auto' }}>
+        <div className="flex-1 overflow-auto">
           {!generatedContent ? (
-            <div style={{ padding: 20 }}>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2, color: '#8b95a5', marginBottom: 10 }}>Select Trending Topics</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
-                {DEFAULT_TOPICS.map(topic => (
-                  <button
-                    key={topic}
-                    onClick={() => toggleTopic(topic)}
-                    style={{
-                      padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                      border: `1px solid ${selectedTopics.includes(topic) ? '#3b82f6' : '#1e293b'}`,
-                      background: selectedTopics.includes(topic) ? '#3b82f6' : 'transparent',
-                      color: selectedTopics.includes(topic) ? '#fff' : '#8b95a5',
-                      transition: 'all 0.15s',
-                    }}
-                  >{topic}</button>
-                ))}
+            <div className="p-5">
+              <label className="block text-[10px] font-extrabold uppercase tracking-[1.2px] text-core-text-dim mb-[10px]">
+                Select Trending Topics
+              </label>
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {DEFAULT_TOPICS.map(topic => {
+                  const active = selectedTopics.includes(topic)
+                  return (
+                    <button
+                      key={topic}
+                      onClick={() => toggleTopic(topic)}
+                      className={[
+                        'px-[14px] py-1.5 rounded-full text-xs font-semibold cursor-pointer border transition-all duration-150',
+                        active
+                          ? 'border-blue-500 bg-blue-500 text-white'
+                          : 'border-core-border bg-transparent text-core-text-dim hover:border-blue-500/50',
+                      ].join(' ')}
+                    >
+                      {topic}
+                    </button>
+                  )
+                })}
               </div>
 
-              <form onSubmit={addCustom} style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+              <form onSubmit={addCustom} className="flex gap-2 mb-5">
                 <input
                   value={customTopic}
                   onChange={e => setCustomTopic(e.target.value)}
                   placeholder="Add custom topic..."
-                  style={{ flex: 1, padding: '8px 12px', background: '#0d1117', border: '1px solid #1e293b', borderRadius: 8, color: '#f0f4f8', fontSize: 13, outline: 'none' }}
+                  className="flex-1 px-3 py-2 bg-core-bg border border-core-border rounded-lg text-core-text text-[13px] outline-none focus:border-blue-500/50 transition-colors"
                 />
-                <button type="submit" disabled={!customTopic.trim()} style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.05)', color: '#8b95a5', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>+</button>
+                <button
+                  type="submit"
+                  disabled={!customTopic.trim()}
+                  className="px-[14px] py-2 bg-white/5 text-core-text-dim border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center"
+                >
+                  <Plus size={14} />
+                </button>
               </form>
 
-              <div style={{ background: 'rgba(59,130,246,0.1)', padding: '12px 16px', borderRadius: 10, border: '1px solid rgba(59,130,246,0.2)' }}>
-                <h4 style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#3b82f6', display: 'flex', alignItems: 'center', gap: 6 }}>{'\uD83D\uDCC8'} How it works</h4>
-                <p style={{ margin: 0, fontSize: 11, color: '#3b82f6', lineHeight: 1.5, opacity: 0.8 }}>
+              <div className="bg-blue-500/10 px-4 py-3 rounded-[10px] border border-blue-500/20">
+                <h4 className="m-0 mb-1 text-[13px] font-bold text-blue-400 flex items-center gap-1.5">
+                  <Info size={13} />
+                  How it works
+                </h4>
+                <p className="m-0 text-[11px] text-blue-400/80 leading-relaxed">
                   AI will scan for the latest viral conversations on your selected topics. It will then generate distinct post drafts optimized for maximum organic reach.
                 </p>
               </div>
             </div>
           ) : (
-            <div style={{ padding: 20, background: '#0d1117' }}>
-              <div style={{ background: '#161b22', padding: 20, borderRadius: 10, border: '1px solid #1e293b', whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.7, color: '#f0f4f8' }}>
+            <div className="p-5 bg-core-bg">
+              <div className="bg-core-surface p-5 rounded-[10px] border border-core-border whitespace-pre-wrap text-[13px] leading-[1.7] text-core-text">
                 {generatedContent}
               </div>
             </div>
@@ -108,30 +128,43 @@ export default function SocialTrendsModal({ isOpen, onClose, onSubmit, isProcess
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '14px 20px', borderTop: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="px-5 py-[14px] border-t border-core-border flex justify-between items-center">
           {generatedContent ? (
             <>
-              <button onClick={() => onSubmit([])} style={{ background: 'none', border: 'none', color: '#8b95a5', cursor: 'pointer', fontSize: 12, textDecoration: 'underline' }}>Start Over</button>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={handleCopy} style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid #1e293b', borderRadius: 8, color: '#f0f4f8', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              <button
+                onClick={() => onSubmit([])}
+                className="bg-transparent border-none text-core-text-dim cursor-pointer text-xs underline hover:text-core-text transition-colors"
+              >
+                Start Over
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCopy}
+                  className="px-[14px] py-2 bg-white/5 border border-core-border rounded-lg text-core-text text-xs font-semibold cursor-pointer hover:bg-white/10 transition-colors flex items-center gap-1.5"
+                >
+                  {copied ? <Check size={13} className="text-core-green" /> : <Copy size={13} />}
                   {copied ? 'Copied!' : 'Copy All'}
                 </button>
-                <button onClick={onClose} style={{ padding: '8px 14px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Done</button>
+                <button
+                  onClick={onClose}
+                  className="px-[14px] py-2 bg-blue-500 text-white border-none rounded-lg text-xs font-bold cursor-pointer hover:bg-blue-600 transition-colors"
+                >
+                  Done
+                </button>
               </div>
             </>
           ) : (
             <>
-              <span style={{ fontSize: 11, color: '#3d4654' }}>{selectedTopics.length} topics selected</span>
+              <span className="text-[11px] text-core-text-muted">{selectedTopics.length} topics selected</span>
               <button
                 onClick={() => onSubmit(selectedTopics)}
-                disabled={selectedTopics.length === 0 || isProcessing}
-                style={{
-                  padding: '8px 20px', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700,
-                  cursor: selectedTopics.length === 0 || isProcessing ? 'not-allowed' : 'pointer',
-                  background: selectedTopics.length === 0 || isProcessing ? '#1e293b' : 'linear-gradient(135deg, #3b82f6, #6366f1)',
-                  color: selectedTopics.length === 0 || isProcessing ? '#3d4654' : '#fff',
-                  display: 'flex', alignItems: 'center', gap: 6,
-                }}
+                disabled={!canGenerate}
+                className={[
+                  'px-5 py-2 border-none rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all',
+                  canGenerate
+                    ? 'bg-gradient-to-br from-blue-500 to-core-purple text-white cursor-pointer hover:opacity-90'
+                    : 'bg-core-card text-core-text-muted cursor-not-allowed',
+                ].join(' ')}
               >
                 {isProcessing ? 'Scanning & Writing...' : 'Scan Trends & Generate'}
               </button>

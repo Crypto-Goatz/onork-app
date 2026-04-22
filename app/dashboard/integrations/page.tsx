@@ -1,6 +1,20 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import {
+  Search,
+  Download,
+  Upload,
+  Terminal,
+  CheckCircle2,
+  XCircle,
+  Shield,
+  ExternalLink,
+  X,
+  Loader2,
+  PlugZap,
+  Layers,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getLogoSrc } from '@/lib/logo-map'
 
@@ -178,9 +192,8 @@ export default function IntegrationsPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
-        <div style={{ width: 36, height: 36, border: '2px solid var(--jp-border, #30363d)', borderTopColor: '#7ed957', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex items-center justify-center h-[300px]">
+        <Loader2 className="w-9 h-9 text-core-green animate-spin" />
       </div>
     )
   }
@@ -188,134 +201,121 @@ export default function IntegrationsPage() {
   return (
     <div>
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes modalSlideIn { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes cardHover { from { box-shadow: 0 2px 12px rgba(0,0,0,0.2); } to { box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(126,217,87,0.06); } }
+        .integration-card { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        .integration-card:hover { transform: translateY(-4px); }
+        .action-btn { transition: all 0.15s; }
+        .tool-btn:hover { background: rgba(255,255,255,0.06) !important; }
+        .connect-input:focus { border-color: var(--focus-color, rgba(255,255,255,0.2)) !important; }
       `}</style>
 
       {/* Toast */}
       {toast && (
-        <div style={{
-          position: 'fixed', top: 24, right: 24, zIndex: 10000,
-          padding: '12px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
-          background: toast.type === 'success' ? 'rgba(126,217,87,0.12)' : 'rgba(248,113,113,0.12)',
-          border: `1px solid ${toast.type === 'success' ? 'rgba(126,217,87,0.3)' : 'rgba(248,113,113,0.3)'}`,
-          color: toast.type === 'success' ? '#7ed957' : '#f87171',
-          backdropFilter: 'blur(12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-          animation: 'toastIn 0.3s ease-out', display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          {toast.type === 'success' ? '✓' : '✕'} {toast.text}
+        <div
+          className={[
+            'fixed top-6 right-6 z-[10000] flex items-center gap-2',
+            'px-5 py-3 rounded-xl text-[13px] font-semibold',
+            'backdrop-blur-xl shadow-2xl',
+            toast.type === 'success'
+              ? 'bg-core-green/10 border border-core-green/30 text-core-green'
+              : 'bg-core-red/10 border border-core-red/30 text-core-red',
+          ].join(' ')}
+          style={{ animation: 'toastIn 0.3s ease-out' }}
+        >
+          {toast.type === 'success'
+            ? <CheckCircle2 className="w-4 h-4 shrink-0" />
+            : <XCircle className="w-4 h-4 shrink-0" />
+          }
+          {toast.text}
         </div>
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', margin: '0 0 4px' }}>Integrations</h1>
-          <p style={{ fontSize: 13, color: 'var(--jp-text-muted, #8b95a5)', margin: 0 }}>
+          <h1 className="text-[22px] font-bold text-core-text m-0 mb-1">Integrations</h1>
+          <p className="text-[13px] text-core-text-muted m-0">
             {connectedCount} connected — {totalTools}+ tools across {services.length} services
           </p>
         </div>
-        <div style={{ position: 'relative', width: 220 }}>
+        <div className="relative w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[14px] h-[14px] text-core-text-muted pointer-events-none" />
           <input
-            type="text" placeholder="Search services..." value={searchQuery}
+            type="text"
+            placeholder="Search services..."
+            value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%', padding: '9px 14px 9px 36px', borderRadius: 8,
-              background: 'var(--jp-bg-card, #161b22)', border: '1px solid var(--jp-border, #30363d)',
-              color: 'var(--jp-text, #f0f4f8)', fontSize: 13, outline: 'none',
-            }}
+            className="w-full pl-9 pr-4 py-[9px] rounded-lg bg-core-card border border-core-border text-core-text text-[13px] outline-none focus:border-core-border-hi"
           />
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--jp-text-muted, #6b7280)" strokeWidth="2" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>
-            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-          </svg>
         </div>
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+      <div className="grid grid-cols-3 gap-4 mb-7">
         {[
-          { label: 'Connected', value: connectedCount, color: '#7ed957', tag: 'Active' },
-          { label: 'Available', value: services.length - connectedCount, color: '#00d4ff', tag: 'Ready' },
-          { label: 'Total Tools', value: `${totalTools}+`, color: '#a78bfa', tag: '0nMCP' },
+          { label: 'Connected', value: connectedCount, colorClass: 'text-core-green', barClass: 'from-core-green', badgeBg: 'bg-core-green/10', badgeText: 'text-core-green', tag: 'Active' },
+          { label: 'Available', value: services.length - connectedCount, colorClass: 'text-core-cyan', barClass: 'from-core-cyan', badgeBg: 'bg-core-cyan/10', badgeText: 'text-core-cyan', tag: 'Ready' },
+          { label: 'Total Tools', value: `${totalTools}+`, colorClass: 'text-core-purple', barClass: 'from-core-purple', badgeBg: 'bg-core-purple/10', badgeText: 'text-core-purple', tag: '0nMCP' },
         ].map(s => (
-          <div key={s.label} style={{
-            background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14,
-            padding: '18px 20px', position: 'relative', overflow: 'hidden',
-          }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${s.color}, transparent)` }} />
-            <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', fontWeight: 600, letterSpacing: '0.04em' }}>{s.label}</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--jp-text, #f0f4f8)', margin: '6px 0 4px', fontFamily: 'var(--jp-font-mono, monospace)' }}>{s.value}</div>
-            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: `${s.color}15`, color: s.color, fontWeight: 600 }}>{s.tag}</span>
+          <div key={s.label} className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl px-5 py-[18px]">
+            <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${s.barClass} to-transparent`} />
+            <div className="text-[11px] text-core-text-muted font-semibold tracking-[0.04em] uppercase">{s.label}</div>
+            <div className={`text-[28px] font-extrabold ${s.colorClass} my-[6px] font-mono`}>{s.value}</div>
+            <span className={`text-[10px] px-2 py-[2px] rounded font-semibold ${s.badgeBg} ${s.badgeText}`}>{s.tag}</span>
           </div>
         ))}
       </div>
 
-      {/* ═══ .0n File — Export / Import / Claude Code ═══ */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24,
-      }}>
+      {/* Action Cards — Export / Import / Claude Code */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
         {/* Export */}
-        <button onClick={async () => {
-          setExporting(true)
-          try {
-            const res = await fetch('/api/export?format=download')
-            const blob = await res.blob()
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url; a.download = '0n-setup.0n'; a.click()
-            URL.revokeObjectURL(url)
-            setToast({ type: 'success', text: '.0n file downloaded!' })
-          } catch { setToast({ type: 'error', text: 'Export failed' }) }
-          setExporting(false)
-        }} style={{
-          background: 'rgba(126,217,87,0.06)', border: '1px solid rgba(126,217,87,0.2)',
-          borderRadius: 12, padding: '16px 14px', cursor: 'pointer', textAlign: 'left',
-          transition: 'all 0.2s',
-        }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(126,217,87,0.4)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(126,217,87,0.2)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
+        <button
+          onClick={async () => {
+            setExporting(true)
+            try {
+              const res = await fetch('/api/export?format=download')
+              const blob = await res.blob()
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url; a.download = '0n-setup.0n'; a.click()
+              URL.revokeObjectURL(url)
+              setToast({ type: 'success', text: '.0n file downloaded!' })
+            } catch { setToast({ type: 'error', text: 'Export failed' }) }
+            setExporting(false)
+          }}
+          className="group rounded-xl p-4 text-left cursor-pointer transition-all duration-200 bg-core-green/[0.06] border border-core-green/20 hover:border-core-green/40 hover:-translate-y-[2px] hover:shadow-xl"
         >
-          <div style={{ fontSize: 20, marginBottom: 8 }}>📤</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#7ed957', marginBottom: 4 }}>
+          <Download className="w-5 h-5 text-core-green mb-2" />
+          <div className="text-[13px] font-bold text-core-green mb-1">
             {exporting ? 'Exporting...' : 'Export .0n File'}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', lineHeight: 1.4 }}>
+          <div className="text-[11px] text-core-text-muted leading-relaxed">
             Download your connections as a portable .0n file
           </div>
         </button>
 
         {/* Import */}
-        <button onClick={() => setShowImport(!showImport)} style={{
-          background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.2)',
-          borderRadius: 12, padding: '16px 14px', cursor: 'pointer', textAlign: 'left',
-          transition: 'all 0.2s',
-        }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.4)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.2)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
+        <button
+          onClick={() => setShowImport(!showImport)}
+          className="group rounded-xl p-4 text-left cursor-pointer transition-all duration-200 bg-core-cyan/[0.06] border border-core-cyan/20 hover:border-core-cyan/40 hover:-translate-y-[2px] hover:shadow-xl"
         >
-          <div style={{ fontSize: 20, marginBottom: 8 }}>📥</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#00d4ff', marginBottom: 4 }}>Import .0n File</div>
-          <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', lineHeight: 1.4 }}>
+          <Upload className="w-5 h-5 text-core-cyan mb-2" />
+          <div className="text-[13px] font-bold text-core-cyan mb-1">Import .0n File</div>
+          <div className="text-[11px] text-core-text-muted leading-relaxed">
             Paste a .0n file to auto-connect services
           </div>
         </button>
 
         {/* Claude Code */}
-        <button onClick={() => setShowClaudeCode(!showClaudeCode)} style={{
-          background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.2)',
-          borderRadius: 12, padding: '16px 14px', cursor: 'pointer', textAlign: 'left',
-          transition: 'all 0.2s',
-        }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.4)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(167,139,250,0.2)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
+        <button
+          onClick={() => setShowClaudeCode(!showClaudeCode)}
+          className="group rounded-xl p-4 text-left cursor-pointer transition-all duration-200 bg-core-purple/[0.06] border border-core-purple/20 hover:border-core-purple/40 hover:-translate-y-[2px] hover:shadow-xl"
         >
-          <div style={{ fontSize: 20, marginBottom: 8 }}>🤖</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#a78bfa', marginBottom: 4 }}>Claude Code Setup</div>
-          <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', lineHeight: 1.4 }}>
+          <Terminal className="w-5 h-5 text-core-purple mb-2" />
+          <div className="text-[13px] font-bold text-core-purple mb-1">Claude Code Setup</div>
+          <div className="text-[11px] text-core-text-muted leading-relaxed">
             Copy-paste config for Claude Desktop
           </div>
         </button>
@@ -323,23 +323,15 @@ export default function IntegrationsPage() {
 
       {/* Import Panel */}
       {showImport && (
-        <div style={{
-          background: 'rgba(0,212,255,0.03)', border: '1px solid rgba(0,212,255,0.15)',
-          borderRadius: 14, padding: 20, marginBottom: 24,
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#00d4ff', marginBottom: 8 }}>Paste your .0n file</div>
+        <div className="rounded-2xl border border-core-cyan/15 bg-core-cyan/[0.03] p-5 mb-6">
+          <div className="text-[13px] font-bold text-core-cyan mb-2">Paste your .0n file</div>
           <textarea
             value={importText}
             onChange={e => setImportText(e.target.value)}
             placeholder={'{\n  "$0n": { "type": "config", "version": "1.0.0" },\n  "connections": [...]\n}'}
-            style={{
-              width: '100%', minHeight: 120, padding: 14, borderRadius: 10,
-              background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)',
-              color: 'var(--jp-text, #f0f4f8)', fontSize: 12,
-              fontFamily: 'var(--jp-font-mono, monospace)', resize: 'vertical', outline: 'none',
-            }}
+            className="w-full min-h-[120px] p-4 rounded-xl bg-black/30 border border-white/[0.08] text-core-text text-[12px] font-mono resize-y outline-none focus:border-core-border-hi"
           />
-          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          <div className="flex gap-2 mt-[10px]">
             <button
               onClick={async () => {
                 if (!importText.trim()) return
@@ -359,56 +351,54 @@ export default function IntegrationsPage() {
                 setImporting(false)
               }}
               disabled={importing || !importText.trim()}
-              style={{
-                padding: '10px 20px', borderRadius: 8, border: 'none',
-                background: importText.trim() ? '#00d4ff' : '#1a2332',
-                color: importText.trim() ? '#0a0a0a' : 'var(--jp-text-muted)',
-                fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              }}
-            >{importing ? 'Importing...' : 'Import & Connect'}</button>
-            <button onClick={() => { setShowImport(false); setImportText('') }} style={{
-              padding: '10px 20px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
-              background: 'transparent', color: 'var(--jp-text-muted, #8b95a5)',
-              fontSize: 13, cursor: 'pointer',
-            }}>Cancel</button>
+              className={[
+                'px-5 py-[10px] rounded-lg text-[13px] font-bold cursor-pointer border-none transition-all',
+                importText.trim()
+                  ? 'bg-core-cyan text-[#0a0a0a]'
+                  : 'bg-core-card text-core-text-muted cursor-not-allowed opacity-50',
+              ].join(' ')}
+            >
+              {importing ? 'Importing...' : 'Import & Connect'}
+            </button>
+            <button
+              onClick={() => { setShowImport(false); setImportText('') }}
+              className="px-5 py-[10px] rounded-lg border border-white/10 bg-transparent text-core-text-muted text-[13px] cursor-pointer hover:bg-white/[0.04] transition-all"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
 
       {/* Claude Code Panel */}
       {showClaudeCode && (
-        <div style={{
-          background: 'rgba(167,139,250,0.03)', border: '1px solid rgba(167,139,250,0.15)',
-          borderRadius: 14, padding: 20, marginBottom: 24,
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#a78bfa', marginBottom: 4 }}>Claude Desktop / Claude Code Setup</div>
-          <div style={{ fontSize: 12, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 12, lineHeight: 1.5 }}>
+        <div className="rounded-2xl border border-core-purple/15 bg-core-purple/[0.03] p-5 mb-6">
+          <div className="text-[13px] font-bold text-core-purple mb-1">Claude Desktop / Claude Code Setup</div>
+          <div className="text-[12px] text-core-text-muted mb-3 leading-relaxed">
             Copy this config and paste it into your Claude Desktop settings.json or run the CLI command in Claude Code.
           </div>
 
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 6 }}>Option 1: Claude Code (Terminal)</div>
-          <div style={{
-            background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: 12, marginBottom: 14,
-            fontFamily: 'var(--jp-font-mono, monospace)', fontSize: 12, color: '#a78bfa',
-            cursor: 'pointer', position: 'relative',
-          }} onClick={() => {
-            navigator.clipboard.writeText('claude mcp add --scope user 0nMCP -- npx -y 0nmcp@latest')
-            setToast({ type: 'success', text: 'CLI command copied!' })
-          }}>
-            <span style={{ position: 'absolute', top: 8, right: 10, fontSize: 10, color: 'var(--jp-text-muted)' }}>click to copy</span>
+          <div className="text-[11px] font-semibold text-core-text-muted mb-[6px]">Option 1: Claude Code (Terminal)</div>
+          <div
+            className="relative rounded-lg bg-black/30 p-3 mb-[14px] font-mono text-[12px] text-core-purple cursor-pointer hover:bg-black/40 transition-all"
+            onClick={() => {
+              navigator.clipboard.writeText('claude mcp add --scope user 0nMCP -- npx -y 0nmcp@latest')
+              setToast({ type: 'success', text: 'CLI command copied!' })
+            }}
+          >
+            <span className="absolute top-2 right-2.5 text-[10px] text-core-text-muted">click to copy</span>
             claude mcp add --scope user 0nMCP -- npx -y 0nmcp@latest
           </div>
 
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 6 }}>Option 2: Claude Desktop settings.json</div>
-          <div style={{
-            background: 'rgba(0,0,0,0.3)', borderRadius: 8, padding: 12, marginBottom: 14,
-            fontFamily: 'var(--jp-font-mono, monospace)', fontSize: 11, color: '#7ed957',
-            cursor: 'pointer', whiteSpace: 'pre', overflowX: 'auto', position: 'relative',
-          }} onClick={() => {
-            navigator.clipboard.writeText(JSON.stringify({ mcpServers: { '0nMCP': { command: 'npx', args: ['-y', '0nmcp@latest'] } } }, null, 2))
-            setToast({ type: 'success', text: 'Config copied!' })
-          }}>
-            <span style={{ position: 'absolute', top: 8, right: 10, fontSize: 10, color: 'var(--jp-text-muted)' }}>click to copy</span>
+          <div className="text-[11px] font-semibold text-core-text-muted mb-[6px]">Option 2: Claude Desktop settings.json</div>
+          <div
+            className="relative rounded-lg bg-black/30 p-3 mb-[14px] font-mono text-[11px] text-core-green cursor-pointer whitespace-pre overflow-x-auto hover:bg-black/40 transition-all"
+            onClick={() => {
+              navigator.clipboard.writeText(JSON.stringify({ mcpServers: { '0nMCP': { command: 'npx', args: ['-y', '0nmcp@latest'] } } }, null, 2))
+              setToast({ type: 'success', text: 'Config copied!' })
+            }}
+          >
+            <span className="absolute top-2 right-2.5 text-[10px] text-core-text-muted">click to copy</span>
 {`{
   "mcpServers": {
     "0nMCP": {
@@ -419,126 +409,127 @@ export default function IntegrationsPage() {
 }`}
           </div>
 
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 6 }}>Option 3: Export your full .0n setup file</div>
-          <div style={{ fontSize: 12, color: 'var(--jp-text-muted, #8b95a5)', lineHeight: 1.5 }}>
-            Click <strong style={{ color: '#7ed957' }}>Export .0n File</strong> above to download a portable config with all your connected services. Then paste the contents into Claude Code when prompted for credentials.
+          <div className="text-[11px] font-semibold text-core-text-muted mb-[6px]">Option 3: Export your full .0n setup file</div>
+          <div className="text-[12px] text-core-text-muted leading-relaxed">
+            Click <strong className="text-core-green">Export .0n File</strong> above to download a portable config with all your connected services. Then paste the contents into Claude Code when prompted for credentials.
           </div>
         </div>
       )}
 
       {/* Category Tabs */}
-      <div style={{
-        display: 'flex', gap: 6, marginBottom: 28, flexWrap: 'wrap',
-        background: 'var(--jp-bg-card, #161b22)', borderRadius: 10, padding: 4,
-        border: '1px solid rgba(255,255,255,0.04)', width: 'fit-content',
-      }}>
+      <div className="flex gap-[6px] mb-7 flex-wrap bg-core-card rounded-[10px] p-1 border border-white/[0.04] w-fit">
         {usedCategories.map(cat => (
-          <button key={cat} onClick={() => setActiveCategory(cat)} style={{
-            padding: '7px 14px', borderRadius: 7, border: 'none',
-            background: activeCategory === cat ? 'rgba(126,217,87,0.1)' : 'transparent',
-            color: activeCategory === cat ? '#7ed957' : 'var(--jp-text-muted, #6b7280)',
-            fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-            whiteSpace: 'nowrap',
-          }}>{cat}</button>
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
+            className={[
+              'px-[14px] py-[7px] rounded-[7px] border-none text-[12px] font-semibold cursor-pointer transition-all whitespace-nowrap',
+              activeCategory === cat
+                ? 'bg-core-green/10 text-core-green'
+                : 'bg-transparent text-core-text-muted hover:text-core-text-dim',
+            ].join(' ')}
+          >
+            {cat}
+          </button>
         ))}
       </div>
 
       {/* Integration Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
         {filtered.map(svc => {
           const logoSrc = getLogoSrc(svc.id)
           return (
             <div
               key={svc.id}
+              className="integration-card relative overflow-hidden rounded-2xl p-[22px] cursor-pointer bg-white/[0.02] backdrop-blur-xl shadow-[0_2px_12px_rgba(0,0,0,0.15)]"
               style={{
-                background: 'rgba(255,255,255,0.02)',
-                backdropFilter: 'blur(12px)',
-                border: `1px solid ${svc.connected ? 'rgba(126,217,87,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                borderRadius: 16, padding: 22,
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+                border: `1px solid ${svc.connected ? 'rgba(110,224,90,0.2)' : 'rgba(255,255,255,0.06)'}`,
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-4px)'
-                e.currentTarget.style.boxShadow = `0 16px 48px rgba(0,0,0,0.35), 0 0 30px ${svc.color}18`
-                e.currentTarget.style.borderColor = `${svc.color}60`
-                e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+                const el = e.currentTarget
+                el.style.boxShadow = `0 16px 48px rgba(0,0,0,0.35), 0 0 30px ${svc.color}18`
+                el.style.borderColor = `${svc.color}60`
+                el.style.background = 'rgba(255,255,255,0.05)'
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.15)'
-                e.currentTarget.style.borderColor = svc.connected ? 'rgba(126,217,87,0.2)' : 'rgba(255,255,255,0.06)'
-                e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
+                const el = e.currentTarget
+                el.style.boxShadow = '0 2px 12px rgba(0,0,0,0.15)'
+                el.style.borderColor = svc.connected ? 'rgba(110,224,90,0.2)' : 'rgba(255,255,255,0.06)'
+                el.style.background = 'rgba(255,255,255,0.02)'
               }}
               onClick={() => { if (!svc.connected) { setConnectingService(svc); setCredentials({}) } }}
             >
               {/* Top accent line */}
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${svc.color}, ${svc.color}40)`, opacity: svc.connected ? 1 : 0.4 }} />
+              <div
+                className="absolute top-0 left-0 right-0 h-[2px]"
+                style={{
+                  background: `linear-gradient(90deg, ${svc.color}, ${svc.color}40)`,
+                  opacity: svc.connected ? 1 : 0.4,
+                }}
+              />
 
-              {/* Header: icon + status */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <div style={{
-                  width: 42, height: 42, borderRadius: 12,
-                  background: `${svc.color}12`, border: `1px solid ${svc.color}20`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
+              {/* Header: icon + status badge */}
+              <div className="flex items-center justify-between mb-[14px]">
+                <div
+                  className="w-[42px] h-[42px] rounded-xl flex items-center justify-center"
+                  style={{ background: `${svc.color}12`, border: `1px solid ${svc.color}20` }}
+                >
                   {logoSrc ? (
-                    <img src={logoSrc} alt={svc.name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                    <img src={logoSrc} alt={svc.name} className="w-6 h-6 object-contain" />
                   ) : (
-                    <span style={{ color: svc.color, fontSize: 13, fontWeight: 800, fontFamily: 'var(--jp-font-mono, monospace)' }}>{svc.icon}</span>
+                    <span className="text-[13px] font-extrabold font-mono" style={{ color: svc.color }}>{svc.icon}</span>
                   )}
                 </div>
-                <span style={{
-                  fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 6,
-                  background: svc.connected ? 'rgba(126,217,87,0.1)' : 'rgba(255,255,255,0.04)',
-                  color: svc.connected ? '#7ed957' : 'var(--jp-text-muted, #6b7280)',
-                  border: `1px solid ${svc.connected ? 'rgba(126,217,87,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                  letterSpacing: '0.04em',
-                }}>
+                <span
+                  className="text-[10px] font-bold px-[10px] py-[3px] rounded-md tracking-[0.04em]"
+                  style={{
+                    background: svc.connected ? 'rgba(110,224,90,0.1)' : 'rgba(255,255,255,0.04)',
+                    color: svc.connected ? '#6EE05A' : '#6b7280',
+                    border: `1px solid ${svc.connected ? 'rgba(110,224,90,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                  }}
+                >
                   {svc.connected ? 'CONNECTED' : 'AVAILABLE'}
                 </span>
               </div>
 
               {/* Name + description */}
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', marginBottom: 6 }}>{svc.name}</div>
-              <div style={{ fontSize: 12, color: 'var(--jp-text-muted, #8b95a5)', lineHeight: 1.5, marginBottom: 16, minHeight: 36 }}>{svc.description}</div>
+              <div className="text-[15px] font-bold text-core-text mb-[6px]">{svc.name}</div>
+              <div className="text-[12px] text-core-text-muted leading-relaxed mb-4 min-h-9">{svc.description}</div>
 
-              {/* Footer: tools + actions */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', fontFamily: 'var(--jp-font-mono, monospace)' }}>
+              {/* Footer: tools count + actions */}
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-core-text-muted font-mono flex items-center gap-1">
+                  <Layers className="w-3 h-3" />
                   {svc.tools} tools
                 </span>
                 {svc.connected ? (
-                  <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
-                    <button onClick={() => handleTest(svc)} disabled={testing === svc.id} style={{
-                      padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)',
-                      background: 'rgba(255,255,255,0.03)', color: 'var(--jp-text-muted, #8b95a5)',
-                      fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-                    }}>
-                      {testing === svc.id ? '...' : 'Test'}
+                  <div className="flex gap-[6px]" onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => handleTest(svc)}
+                      disabled={testing === svc.id}
+                      className="action-btn tool-btn px-3 py-[5px] rounded-md border border-white/[0.08] bg-white/[0.03] text-core-text-muted text-[11px] font-semibold cursor-pointer"
+                    >
+                      {testing === svc.id ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Test'}
                     </button>
-                    <button onClick={() => { setConnectingService(svc); setCredentials({}) }} style={{
-                      padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)',
-                      background: 'rgba(255,255,255,0.03)', color: 'var(--jp-text-muted, #8b95a5)',
-                      fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                    }}>
+                    <button
+                      onClick={() => { setConnectingService(svc); setCredentials({}) }}
+                      className="action-btn tool-btn px-3 py-[5px] rounded-md border border-white/[0.08] bg-white/[0.03] text-core-text-muted text-[11px] font-semibold cursor-pointer"
+                    >
                       Configure
                     </button>
-                    <button onClick={() => handleDisconnect(svc.id)} style={{
-                      padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(248,113,113,0.15)',
-                      background: 'rgba(248,113,113,0.05)', color: '#f87171',
-                      fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                    }}>
-                      ×
+                    <button
+                      onClick={() => handleDisconnect(svc.id)}
+                      className="action-btn px-3 py-[5px] rounded-md border border-core-red/15 bg-core-red/[0.05] text-core-red text-[11px] font-semibold cursor-pointer hover:bg-core-red/10 transition-all"
+                    >
+                      <X className="w-3 h-3" />
                     </button>
                   </div>
                 ) : (
-                  <button onClick={e => { e.stopPropagation(); setConnectingService(svc); setCredentials({}) }} style={{
-                    padding: '5px 14px', borderRadius: 6, border: 'none',
-                    background: `${svc.color}15`, color: svc.color,
-                    fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-                  }}>
+                  <button
+                    onClick={e => { e.stopPropagation(); setConnectingService(svc); setCredentials({}) }}
+                    className="action-btn px-[14px] py-[5px] rounded-md border-none text-[11px] font-semibold cursor-pointer transition-all hover:opacity-80"
+                    style={{ background: `${svc.color}15`, color: svc.color }}
+                  >
                     Connect
                   </button>
                 )}
@@ -549,92 +540,89 @@ export default function IntegrationsPage() {
       </div>
 
       {filtered.length === 0 && (
-        <div style={{ textAlign: 'center', padding: 60, color: 'var(--jp-text-muted, #8b95a5)' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🔍</div>
-          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>No integrations found</div>
-          <div style={{ fontSize: 13 }}>Try a different search or category</div>
+        <div className="text-center py-16 text-core-text-muted">
+          <Search className="w-10 h-10 mx-auto mb-3 opacity-40" />
+          <div className="text-[15px] font-semibold mb-1">No integrations found</div>
+          <div className="text-[13px]">Try a different search or category</div>
         </div>
       )}
 
-      {/* ═══ CONNECT MODAL ═══ */}
+      {/* Connect Modal */}
       {connectingService && (
         <div
           onClick={() => { setConnectingService(null); setCredentials({}) }}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-            backdropFilter: 'blur(8px)', zIndex: 9000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            animation: 'modalFadeIn 0.2s ease-out',
-          }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-lg z-[9000] flex items-center justify-center"
+          style={{ animation: 'modalFadeIn 0.2s ease-out' }}
         >
-          <div style={{
-            position: 'absolute', width: 600, height: 600, borderRadius: '50%',
-            background: `radial-gradient(circle, ${connectingService.color}15 0%, transparent 70%)`,
-            pointerEvents: 'none',
-          }} />
+          {/* glow orb */}
+          <div
+            className="absolute w-[600px] h-[600px] rounded-full pointer-events-none"
+            style={{ background: `radial-gradient(circle, ${connectingService.color}15 0%, transparent 70%)` }}
+          />
+
           <div
             onClick={e => e.stopPropagation()}
+            className="relative w-full max-w-[520px] bg-[rgba(15,17,23,0.9)] backdrop-blur-3xl rounded-[20px] overflow-hidden"
             style={{
-              position: 'relative', width: '100%', maxWidth: 520,
-              background: 'rgba(15,17,23,0.9)', backdropFilter: 'blur(24px)',
               border: `1px solid ${connectingService.color}30`,
-              borderRadius: 20, overflow: 'hidden',
-              animation: 'modalSlideIn 0.25s ease-out',
               boxShadow: `0 24px 80px rgba(0,0,0,0.6), 0 0 40px ${connectingService.color}08`,
+              animation: 'modalSlideIn 0.25s ease-out',
             }}
           >
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: `${connectingService.color}12`, border: `1px solid ${connectingService.color}20`,
-                }}>
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.06]">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: `${connectingService.color}12`, border: `1px solid ${connectingService.color}20` }}
+                >
                   {(() => {
                     const src = getLogoSrc(connectingService.id)
-                    return src ? <img src={src} alt="" style={{ width: 24, height: 24, objectFit: 'contain' }} /> :
-                      <span style={{ color: connectingService.color, fontSize: 13, fontWeight: 800 }}>{connectingService.icon}</span>
+                    return src
+                      ? <img src={src} alt="" className="w-6 h-6 object-contain" />
+                      : <span className="text-[13px] font-extrabold" style={{ color: connectingService.color }}>{connectingService.icon}</span>
                   })()}
                 </div>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)' }}>Connect {connectingService.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)' }}>{connectingService.tools} tools unlocked</div>
+                  <div className="text-[16px] font-bold text-core-text">Connect {connectingService.name}</div>
+                  <div className="text-[11px] text-core-text-muted">{connectingService.tools} tools unlocked</div>
                 </div>
               </div>
-              <button onClick={() => { setConnectingService(null); setCredentials({}) }} style={{
-                background: 'none', border: 'none', color: 'var(--jp-text-muted, #8b95a5)',
-                cursor: 'pointer', fontSize: 18, padding: '4px 8px', borderRadius: 6,
-              }}>✕</button>
+              <button
+                onClick={() => { setConnectingService(null); setCredentials({}) }}
+                className="p-2 rounded-md border-none bg-transparent text-core-text-muted cursor-pointer hover:bg-white/[0.06] hover:text-core-text transition-all"
+              >
+                <X className="w-[18px] h-[18px]" />
+              </button>
             </div>
 
-            <div style={{ padding: 24 }}>
+            <div className="p-6">
               {/* Setup Note */}
               {connectingService.setupNote && (
-                <div style={{
-                  padding: '10px 14px', borderRadius: 10, marginBottom: 16,
-                  background: `${connectingService.color}06`, border: `1px solid ${connectingService.color}15`,
-                  fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5,
-                }}>
+                <div
+                  className="px-[14px] py-[10px] rounded-xl mb-4 text-[12px] text-white/50 leading-relaxed"
+                  style={{ background: `${connectingService.color}06`, border: `1px solid ${connectingService.color}15` }}
+                >
                   {connectingService.setupNote}
                 </div>
               )}
 
               {/* Step-by-step Guide */}
               {connectingService.guide.length > 0 && (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                <div className="mb-5">
+                  <div className="text-[10px] font-bold text-core-text-muted uppercase tracking-[0.08em] mb-[10px]">
                     How to get your key
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div className="flex flex-col gap-[6px]">
                     {connectingService.guide.map((step, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                        <span style={{
-                          width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: `${connectingService.color}12`, color: connectingService.color,
-                          fontSize: 10, fontWeight: 800,
-                        }}>{i + 1}</span>
-                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, paddingTop: 2 }}>{step}</span>
+                      <div key={i} className="flex items-start gap-[10px]">
+                        <span
+                          className="w-[22px] h-[22px] rounded-md shrink-0 flex items-center justify-center text-[10px] font-extrabold"
+                          style={{ background: `${connectingService.color}12`, color: connectingService.color }}
+                        >
+                          {i + 1}
+                        </span>
+                        <span className="text-[12px] text-white/60 leading-relaxed pt-[2px]">{step}</span>
                       </div>
                     ))}
                   </div>
@@ -643,40 +631,44 @@ export default function IntegrationsPage() {
 
               {/* Get Key Button */}
               {connectingService.keyUrl && (
-                <a href={connectingService.affiliateUrl || connectingService.keyUrl} target="_blank" rel="noopener noreferrer" style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  width: '100%', padding: 12, borderRadius: 10, marginBottom: 20,
-                  background: connectingService.color, color: '#fff', fontSize: 13, fontWeight: 700,
-                  textDecoration: 'none', transition: 'opacity 0.15s',
-                }}>
-                  ↗ {connectingService.keyLabel}
+                <a
+                  href={connectingService.affiliateUrl || connectingService.keyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl mb-5 text-[13px] font-bold text-white no-underline hover:opacity-90 transition-opacity"
+                  style={{ background: connectingService.color }}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  {connectingService.keyLabel}
                 </a>
               )}
 
-              {/* Capability tags */}
+              {/* Capabilities */}
               {connectingService.capabilities.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                <div className="mb-4">
+                  <div className="text-[10px] font-bold text-core-text-muted uppercase tracking-[0.08em] mb-2">
                     Capabilities
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  <div className="flex flex-wrap gap-1">
                     {connectingService.capabilities.map(cap => (
-                      <span key={cap} style={{
-                        fontSize: 10, padding: '3px 8px', borderRadius: 6,
-                        background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-                        color: 'rgba(255,255,255,0.55)',
-                      }}>{cap}</span>
+                      <span
+                        key={cap}
+                        className="text-[10px] px-2 py-[3px] rounded-md bg-white/[0.04] border border-white/[0.06] text-white/55"
+                      >
+                        {cap}
+                      </span>
                     ))}
                   </div>
                 </div>
               )}
 
               {/* Credential fields */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+              <div className="flex flex-col gap-[14px] mb-5">
                 {connectingService.fields.map(field => (
                   <div key={field.key}>
-                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
-                      {field.label} {field.required && <span style={{ color: connectingService.color }}>*</span>}
+                    <label className="text-[10px] font-bold text-core-text-muted uppercase tracking-[0.06em] block mb-[6px]">
+                      {field.label}{' '}
+                      {field.required && <span style={{ color: connectingService.color }}>*</span>}
                     </label>
                     <input
                       type={field.type === 'password' ? 'password' : 'text'}
@@ -684,13 +676,8 @@ export default function IntegrationsPage() {
                       onChange={e => setCredentials(prev => ({ ...prev, [field.key]: e.target.value }))}
                       placeholder={field.placeholder}
                       autoComplete="off"
-                      style={{
-                        width: '100%', padding: '11px 14px', borderRadius: 10,
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        background: 'rgba(0,0,0,0.3)', color: 'var(--jp-text, #f0f4f8)',
-                        fontSize: 13, fontFamily: 'var(--jp-font-mono, monospace)',
-                        outline: 'none', transition: 'border-color 0.15s', boxSizing: 'border-box',
-                      }}
+                      className="connect-input w-full px-[14px] py-[11px] rounded-xl border border-white/[0.08] bg-black/30 text-core-text text-[13px] font-mono outline-none transition-all box-border"
+                      style={{ '--focus-color': `${connectingService.color}50` } as React.CSSProperties}
                       onFocus={e => (e.currentTarget.style.borderColor = `${connectingService.color}50`)}
                       onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
                     />
@@ -702,27 +689,28 @@ export default function IntegrationsPage() {
               <button
                 onClick={handleConnect}
                 disabled={saving || connectingService.fields.filter(f => f.required).some(f => !credentials[f.key])}
-                style={{
-                  width: '100%', padding: 13, borderRadius: 10, border: 'none',
-                  background: '#7ed957', color: '#0a0a0a', fontSize: 14, fontWeight: 700,
-                  cursor: saving ? 'wait' : 'pointer', fontFamily: 'inherit',
-                  opacity: saving || connectingService.fields.filter(f => f.required).some(f => !credentials[f.key]) ? 0.5 : 1,
-                  transition: 'opacity 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                }}
+                className="w-full py-[13px] rounded-xl border-none bg-core-green text-[#0a0a0a] text-[14px] font-bold cursor-pointer flex items-center justify-center gap-2 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
               >
-                {saving && <div style={{ width: 16, height: 16, border: '2px solid rgba(10,10,10,0.3)', borderTopColor: '#0a0a0a', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />}
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                <PlugZap className="w-4 h-4" />
                 {saving ? 'Connecting...' : 'Connect & Verify'}
               </button>
 
               {/* Doc link + security note */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
+              <div className="flex justify-between items-center mt-[14px]">
                 {connectingService.docUrl && (
-                  <a href={connectingService.docUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>
-                    Documentation ↗
+                  <a
+                    href={connectingService.docUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] text-white/50 no-underline hover:text-white/70 transition-colors flex items-center gap-1"
+                  >
+                    Documentation
+                    <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
-                <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="#7ed957"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" /></svg>
+                <div className="flex items-center gap-1 text-[11px] text-core-text-muted ml-auto">
+                  <Shield className="w-3 h-3 text-core-green" />
                   Encrypted in vault
                 </div>
               </div>

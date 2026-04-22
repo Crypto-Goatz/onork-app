@@ -1,15 +1,16 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { ArrowLeft, Minus, Plus, Copy, Trash2 } from 'lucide-react'
 import type { Project, CanvasNode, CanvasLink } from '../types'
 
 const uid = () => Math.random().toString(36).substr(2, 9)
 
-const NODE_DEFS: Record<string, { label: string; icon: string; color: string }> = {
-  task: { label: 'Task', icon: '\u2611', color: '#3b82f6' },
-  note: { label: 'Note', icon: '\uD83D\uDCDD', color: '#fbbf24' },
-  milestone: { label: 'Milestone', icon: '\u2B50', color: '#a855f7' },
-  trigger: { label: 'Trigger', icon: '\u26A1', color: '#f59e0b' },
+const NODE_DEFS: Record<string, { label: string; color: string }> = {
+  task: { label: 'Task', color: '#3b82f6' },
+  note: { label: 'Note', color: '#fbbf24' },
+  milestone: { label: 'Milestone', color: '#a855f7' },
+  trigger: { label: 'Trigger', color: '#f59e0b' },
 }
 
 interface ProjectCanvasProps {
@@ -151,50 +152,76 @@ export default function ProjectCanvas({ project, onUpdateProject, onBack }: Proj
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0d1117', color: '#f0f4f8', overflow: 'hidden' }}>
+    <div className="h-full flex flex-col bg-core-bg text-core-text overflow-hidden">
       {/* Toolbar */}
-      <div style={{ height: 52, borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', background: '#161b22', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#7ed957', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>&larr; Back</button>
-          <div style={{ width: 1, height: 24, background: '#1e293b' }} />
-          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>{project.title}</h2>
-          <span style={{ fontSize: 10, color: '#3d4654', fontFamily: 'monospace' }}>Canvas</span>
+      <div className="h-[52px] border-b border-core-border flex items-center justify-between px-4 bg-core-surface shrink-0">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 bg-transparent border-none text-core-green cursor-pointer text-[14px] font-semibold hover:opacity-80 transition-opacity"
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+          <div className="w-px h-6 bg-core-border" />
+          <h2 className="m-0 text-[14px] font-bold text-core-text">{project.title}</h2>
+          <span className="text-[10px] text-core-text-muted font-mono">Canvas</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ display: 'flex', background: '#0d1117', borderRadius: 8, padding: 2, gap: 2 }}>
-            <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))} style={{ padding: '4px 8px', background: 'none', border: 'none', color: '#8b95a5', cursor: 'pointer', fontSize: 12 }}>-</button>
-            <span style={{ fontSize: 11, fontFamily: 'monospace', padding: '4px 6px', color: '#8b95a5', minWidth: 40, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
-            <button onClick={() => setZoom(z => Math.min(4, z + 0.1))} style={{ padding: '4px 8px', background: 'none', border: 'none', color: '#8b95a5', cursor: 'pointer', fontSize: 12 }}>+</button>
+        <div className="flex items-center gap-2">
+          <div className="flex bg-core-bg rounded-lg p-0.5 gap-0.5">
+            <button
+              onClick={() => setZoom(z => Math.max(0.2, z - 0.1))}
+              className="px-2 py-1 bg-transparent border-none text-core-text-muted cursor-pointer text-[12px] hover:text-core-text transition-colors"
+            >
+              <Minus size={12} />
+            </button>
+            <span className="text-[11px] font-mono px-1.5 py-1 text-core-text-muted min-w-[40px] text-center">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button
+              onClick={() => setZoom(z => Math.min(4, z + 0.1))}
+              className="px-2 py-1 bg-transparent border-none text-core-text-muted cursor-pointer text-[12px] hover:text-core-text transition-colors"
+            >
+              <Plus size={12} />
+            </button>
           </div>
           {selectedId && (
             <>
-              <button onClick={duplicateNode} style={{ padding: '4px 10px', background: 'rgba(126,217,87,0.15)', color: '#7ed957', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Dup</button>
-              <button onClick={deleteSelected} style={{ padding: '4px 10px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: 'none', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Del</button>
+              <button
+                onClick={duplicateNode}
+                className="flex items-center gap-1 px-2.5 py-1 bg-core-green/15 text-core-green border-none rounded-md text-[11px] font-semibold cursor-pointer hover:bg-core-green/25 transition-colors"
+              >
+                <Copy size={11} /> Dup
+              </button>
+              <button
+                onClick={deleteSelected}
+                className="flex items-center gap-1 px-2.5 py-1 bg-core-red/15 text-core-red border-none rounded-md text-[11px] font-semibold cursor-pointer hover:bg-core-red/25 transition-colors"
+              >
+                <Trash2 size={11} /> Del
+              </button>
             </>
           )}
         </div>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
-        <div style={{ width: 200, borderRight: '1px solid #1e293b', background: '#161b22', padding: 12, overflowY: 'auto', flexShrink: 0 }}>
-          <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, color: '#8b95a5', marginBottom: 10 }}>Components</div>
+        <div className="w-[200px] border-r border-core-border bg-core-surface p-3 overflow-y-auto shrink-0">
+          <div className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-core-text-muted mb-2.5">
+            Components
+          </div>
           {Object.entries(NODE_DEFS).map(([type, def]) => (
             <button
               key={type}
               onClick={() => addNode(type as CanvasNode['type'])}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
-                background: 'transparent', border: '1px solid transparent', borderRadius: 8, color: '#f0f4f8',
-                cursor: 'pointer', marginBottom: 4, textAlign: 'left', transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = '#1e293b' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent' }}
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 bg-transparent border border-transparent rounded-lg text-core-text cursor-pointer mb-1 text-left transition-all hover:bg-white/[0.04] hover:border-core-border"
             >
-              <div style={{ width: 28, height: 28, borderRadius: 6, background: def.color + '22', color: def.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>{def.icon}</div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600 }}>{def.label}</div>
+              <div
+                className="w-7 h-7 rounded-md flex items-center justify-center text-[13px] shrink-0"
+                style={{ background: def.color + '22', color: def.color }}
+              >
+                <span className="text-[10px] font-bold">{def.label.charAt(0)}</span>
               </div>
+              <div className="text-[12px] font-semibold">{def.label}</div>
             </button>
           ))}
         </div>
@@ -202,7 +229,7 @@ export default function ProjectCanvas({ project, onUpdateProject, onBack }: Proj
         {/* Canvas */}
         <div
           ref={canvasRef}
-          style={{ flex: 1, position: 'relative', cursor: panning ? 'grabbing' : 'crosshair', overflow: 'hidden' }}
+          className={`flex-1 relative overflow-hidden ${panning ? 'cursor-grabbing' : 'cursor-crosshair'}`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -210,17 +237,22 @@ export default function ProjectCanvas({ project, onUpdateProject, onBack }: Proj
           onWheel={handleWheel}
         >
           {/* Dot grid */}
-          <div style={{
-            position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.08,
-            backgroundImage: 'radial-gradient(#f0f4f8 1px, transparent 1px)',
-            backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
-            backgroundPosition: `${offset.x}px ${offset.y}px`,
-          }} />
+          <div
+            className="absolute inset-0 pointer-events-none opacity-[0.08]"
+            style={{
+              backgroundImage: 'radial-gradient(#f0f4f8 1px, transparent 1px)',
+              backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
+              backgroundPosition: `${offset.x}px ${offset.y}px`,
+            }}
+          />
 
           {/* Transform layer */}
-          <div style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transformOrigin: '0 0', width: '100%', height: '100%' }}>
+          <div
+            className="w-full h-full"
+            style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transformOrigin: '0 0' }}
+          >
             {/* Links SVG */}
-            <svg style={{ position: 'absolute', top: 0, left: 0, overflow: 'visible', pointerEvents: 'none', width: '100%', height: '100%' }}>
+            <svg className="absolute top-0 left-0 overflow-visible pointer-events-none w-full h-full">
               {project.canvasLinks.map(link => {
                 const from = project.canvasNodes.find(n => n.id === link.fromId)
                 const to = project.canvasNodes.find(n => n.id === link.toId)
@@ -236,7 +268,7 @@ export default function ProjectCanvas({ project, onUpdateProject, onBack }: Proj
                 if (!from) return null
                 const x1 = from.x + (from.width || 180)
                 const y1 = from.y + (from.height || 70) / 2
-                return <path d={bezier(x1, y1, mousePos.x, mousePos.y)} fill="none" stroke="#7ed957" strokeWidth={2} strokeDasharray="5,5" />
+                return <path d={bezier(x1, y1, mousePos.x, mousePos.y)} fill="none" stroke="#6EE05A" strokeWidth={2} strokeDasharray="5,5" />
               })()}
             </svg>
 
@@ -249,21 +281,31 @@ export default function ProjectCanvas({ project, onUpdateProject, onBack }: Proj
               return (
                 <div
                   key={node.id}
+                  className="absolute overflow-hidden cursor-grab transition-shadow"
                   style={{
-                    position: 'absolute', left: node.x, top: node.y, width: w, height: h,
-                    background: '#161b22', border: `2px solid ${isSelected ? '#7ed957' : '#1e293b'}`,
-                    borderRadius: 10, overflow: 'hidden', cursor: 'grab',
-                    boxShadow: isSelected ? '0 0 0 4px rgba(126,217,87,0.2)' : 'none',
-                    transition: 'box-shadow 0.15s',
+                    left: node.x,
+                    top: node.y,
+                    width: w,
+                    height: h,
+                    background: '#161b22',
+                    border: `2px solid ${isSelected ? '#6EE05A' : '#1e293b'}`,
+                    borderRadius: 10,
+                    boxShadow: isSelected ? '0 0 0 4px rgba(110,224,90,0.2)' : 'none',
                   }}
                   onMouseDown={e => handleNodeMouseDown(e, node)}
                   onDoubleClick={e => { e.stopPropagation(); setEditingId(node.id) }}
                 >
                   {/* Color bar */}
-                  <div style={{ height: 4, background: `linear-gradient(to right, ${def.color}, ${def.color}88)` }} />
+                  <div
+                    className="h-1"
+                    style={{ background: `linear-gradient(to right, ${def.color}, ${def.color}88)` }}
+                  />
                   {/* Content */}
-                  <div style={{ padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 14 }}>{def.icon}</span>
+                  <div className="px-2.5 py-2 flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 rounded shrink-0"
+                      style={{ background: def.color + '33' }}
+                    />
                     {editingId === node.id ? (
                       <input
                         autoFocus
@@ -272,21 +314,39 @@ export default function ProjectCanvas({ project, onUpdateProject, onBack }: Proj
                         onBlur={() => setEditingId(null)}
                         onKeyDown={e => e.key === 'Enter' && setEditingId(null)}
                         onClick={e => e.stopPropagation()}
-                        style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: '1px solid #7ed957', color: '#f0f4f8', fontSize: 12, fontWeight: 700, outline: 'none', padding: 0 }}
+                        className="flex-1 bg-transparent border-none border-b border-core-green text-core-text text-[12px] font-bold outline-none p-0"
                       />
                     ) : (
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#f0f4f8' }}>{node.title}</span>
+                      <span className="text-[12px] font-bold text-core-text">{node.title}</span>
                     )}
                   </div>
-                  <div style={{ padding: '0 10px', fontSize: 10, color: '#3d4654', fontFamily: 'monospace' }}>{def.label}</div>
+                  <div className="px-2.5 text-[10px] text-core-text-muted font-mono">{def.label}</div>
 
                   {/* Ports */}
                   <div
-                    style={{ position: 'absolute', left: -5, top: h / 2 - 5, width: 10, height: 10, borderRadius: 5, background: '#0d1117', border: '2px solid #3d4654', cursor: 'crosshair' }}
+                    className="absolute cursor-crosshair"
+                    style={{
+                      left: -5,
+                      top: h / 2 - 5,
+                      width: 10,
+                      height: 10,
+                      borderRadius: 5,
+                      background: '#0d1117',
+                      border: '2px solid #3d4654',
+                    }}
                     onMouseUp={e => endConnect(e, node.id)}
                   />
                   <div
-                    style={{ position: 'absolute', right: -5, top: h / 2 - 5, width: 10, height: 10, borderRadius: 5, background: '#0d1117', border: '2px solid #3d4654', cursor: 'crosshair' }}
+                    className="absolute cursor-crosshair"
+                    style={{
+                      right: -5,
+                      top: h / 2 - 5,
+                      width: 10,
+                      height: 10,
+                      borderRadius: 5,
+                      background: '#0d1117',
+                      border: '2px solid #3d4654',
+                    }}
                     onMouseDown={e => startConnect(e, node.id)}
                   />
                 </div>

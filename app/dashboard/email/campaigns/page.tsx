@@ -248,7 +248,7 @@ export default function CampaignsPage() {
               <DialogTitle className="text-white">{selectedTemplate.name}</DialogTitle>
               <DialogDescription>Template ID: {selectedTemplate.id}</DialogDescription>
             </DialogHeader>
-            <div className="rounded-lg border border-border/50 bg-card overflow-hidden" style={{ height: 400 }}>
+            <div className="rounded-lg border border-border/50 bg-card overflow-hidden h-[400px]">
               {selectedTemplate.previewUrl ? (
                 <iframe src={selectedTemplate.previewUrl} className="w-full h-full border-0" title="Template Preview" />
               ) : (

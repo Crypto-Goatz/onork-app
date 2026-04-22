@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { ChevronLeft, ChevronRight, Plus, CalendarDays } from 'lucide-react'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -33,7 +34,6 @@ function mapCrmEvents(crmEvents: any[]): CalendarEvent[] {
     const startDate = ev.startTime || ev.start || ev.appointmentStartTime
     const date = startDate ? new Date(startDate) : new Date()
     const title = ev.title || ev.name || ev.appointmentTitle || 'Appointment'
-
     return {
       day: date.getDate(),
       label: title,
@@ -65,126 +65,116 @@ export default function CalendarPage() {
     try {
       const startTime = new Date(currentYear, currentMonth, 1).toISOString()
       const endTime = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59).toISOString()
-
       const res = await fetch(`/api/crm/calendar?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to fetch calendar')
-
       const mapped = mapCrmEvents(data.events || [])
       if (mapped.length > 0) {
         setEvents(mapped)
       } else if (isCurrentMonth) {
-        // Keep fallback events for current month if CRM returns empty
         setEvents(fallbackEvents)
       } else {
         setEvents([])
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load calendar')
-      if (isCurrentMonth) {
-        setEvents(fallbackEvents)
-      }
+      if (isCurrentMonth) setEvents(fallbackEvents)
     } finally {
       setLoading(false)
     }
   }, [currentMonth, currentYear, isCurrentMonth])
 
-  useEffect(() => {
-    fetchEvents()
-  }, [fetchEvents])
+  useEffect(() => { fetchEvents() }, [fetchEvents])
 
   const displayEvents = events.filter((e) => e.day > 0 && e.day <= daysInMonth)
 
   function prevMonth() {
-    if (currentMonth === 0) {
-      setCurrentMonth(11)
-      setCurrentYear(currentYear - 1)
-    } else {
-      setCurrentMonth(currentMonth - 1)
-    }
+    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1) }
+    else setCurrentMonth(currentMonth - 1)
   }
 
   function nextMonth() {
-    if (currentMonth === 11) {
-      setCurrentMonth(0)
-      setCurrentYear(currentYear + 1)
-    } else {
-      setCurrentMonth(currentMonth + 1)
-    }
+    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(currentYear + 1) }
+    else setCurrentMonth(currentMonth + 1)
   }
 
-  // Build calendar grid
   const cells: { day: number; dimmed: boolean; isToday: boolean }[] = []
-
-  // Previous month overflow
   for (let i = firstDay - 1; i >= 0; i--) {
     cells.push({ day: prevMonthDays - i, dimmed: true, isToday: false })
   }
-
-  // Current month
   for (let d = 1; d <= daysInMonth; d++) {
     cells.push({ day: d, dimmed: false, isToday: isCurrentMonth && d === today })
   }
-
-  // Next month overflow
   const remaining = 42 - cells.length
   for (let d = 1; d <= remaining; d++) {
     cells.push({ day: d, dimmed: true, isToday: false })
   }
 
+  const eventDotClass: Record<'green' | 'cyan' | 'purple', string> = {
+    green: 'bg-core-green',
+    cyan: 'bg-core-cyan',
+    purple: 'bg-core-purple',
+  }
+  const eventBadgeClass: Record<'green' | 'cyan' | 'purple', string> = {
+    green: 'jp-calendar-event green',
+    cyan: 'jp-calendar-event cyan',
+    purple: 'jp-calendar-event purple',
+  }
+
   return (
     <div>
-      <div className="jp-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Page header */}
+      <div className="jp-page-header flex items-center justify-between">
         <div>
           <h1 className="jp-page-title">Calendar</h1>
           <p className="jp-page-subtitle">
             {loading ? 'Loading events...' : error ? 'No events scheduled' : 'Manage your schedule and upcoming events'}
           </p>
         </div>
-        <button className="jp-btn jp-btn-primary">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
+        <button className="jp-btn jp-btn-primary flex items-center gap-2">
+          <Plus className="size-4" />
           New Event
         </button>
       </div>
 
+      {/* Error banner */}
       {error && (
-        <div style={{ marginBottom: 16, padding: '8px 14px', borderRadius: 8, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', fontSize: '0.8125rem', color: 'var(--jp-red)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="mb-4 px-3.5 py-2 rounded-lg bg-core-red/[0.08] border border-core-red/20 text-[0.8125rem] text-core-red flex justify-between items-center">
           <span>{error}</span>
-          <button onClick={fetchEvents} style={{ background: 'none', border: 'none', color: 'var(--jp-cyan)', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>Retry</button>
+          <button onClick={fetchEvents} className="bg-transparent border-0 text-core-cyan cursor-pointer text-[0.8125rem] font-semibold">
+            Retry
+          </button>
         </div>
       )}
 
       <div className="jp-card">
-        {/* Calendar Header */}
+        {/* Calendar header */}
         <div className="jp-card-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div className="flex items-center gap-4">
             <button className="jp-header-btn" onClick={prevMonth}>
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
+              <ChevronLeft className="size-4" />
             </button>
-            <h6 style={{ minWidth: 180, textAlign: 'center' }}>
+            <h6 className="min-w-[180px] text-center">
               {MONTHS[currentMonth]} {currentYear}
             </h6>
             <button className="jp-header-btn" onClick={nextMonth}>
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
+              <ChevronRight className="size-4" />
             </button>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="flex gap-2 items-center">
             {loading && (
-              <div style={{ width: 16, height: 16, border: '2px solid var(--jp-green)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+              <div className="size-4 border-2 border-core-green border-t-transparent rounded-full animate-spin" />
             )}
-            <button className="jp-btn-outline" onClick={() => { setCurrentMonth(now.getMonth()); setCurrentYear(now.getFullYear()); }}>
+            <button
+              className="jp-btn-outline"
+              onClick={() => { setCurrentMonth(now.getMonth()); setCurrentYear(now.getFullYear()) }}
+            >
               Today
             </button>
           </div>
         </div>
 
-        <div className="jp-card-body" style={{ padding: 0 }}>
+        <div className="jp-card-body p-0">
           <div className="jp-calendar-grid">
             {/* Day headers */}
             {DAYS.map((d) => (
@@ -197,11 +187,15 @@ export default function CalendarPage() {
               return (
                 <div
                   key={i}
-                  className={`jp-calendar-cell ${cell.isToday ? 'today' : ''} ${cell.dimmed ? 'dimmed' : ''}`}
+                  className={`jp-calendar-cell${cell.isToday ? ' today' : ''}${cell.dimmed ? ' dimmed' : ''}`}
                 >
                   <div className="jp-calendar-day">{cell.day}</div>
                   {cellEvents.map((ev, ei) => (
-                    <div key={ei} className={`jp-calendar-event ${ev.color}`} title={ev.time ? `${ev.time} — ${ev.label}` : ev.label}>
+                    <div
+                      key={ei}
+                      className={eventBadgeClass[ev.color]}
+                      title={ev.time ? `${ev.time} — ${ev.label}` : ev.label}
+                    >
                       {ev.label}
                     </div>
                   ))}
@@ -212,8 +206,8 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Upcoming Events */}
-      <div className="jp-card" style={{ marginTop: 16 }}>
+      {/* Upcoming events */}
+      <div className="jp-card mt-4">
         <div className="jp-card-header">
           <h6>Upcoming Events</h6>
         </div>
@@ -223,7 +217,7 @@ export default function CalendarPage() {
             .sort((a, b) => a.day - b.day)
             .map((ev, i) => (
               <li key={i} className="jp-activity-item">
-                <span className={`jp-activity-dot ${ev.color}`} />
+                <span className={`jp-activity-dot ${eventDotClass[ev.color]}`} />
                 <div className="jp-activity-content">
                   <div className="jp-activity-text">{ev.label}</div>
                   <div className="jp-activity-meta">
@@ -233,16 +227,18 @@ export default function CalendarPage() {
                   </div>
                 </div>
                 <span className="jp-activity-time">
-                  {isCurrentMonth && ev.day === today ? 'Today' : isCurrentMonth && ev.day > today ? `In ${ev.day - today}d` : `${MONTHS[currentMonth].substring(0, 3)} ${ev.day}`}
+                  {isCurrentMonth && ev.day === today
+                    ? 'Today'
+                    : isCurrentMonth && ev.day > today
+                    ? `In ${ev.day - today}d`
+                    : `${MONTHS[currentMonth].substring(0, 3)} ${ev.day}`}
                 </span>
               </li>
             ))}
           {displayEvents.filter((e) => isCurrentMonth ? e.day >= today : true).length === 0 && (
             <div className="jp-empty-state">
               <div className="jp-empty-state-icon">
-                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+                <CalendarDays className="size-6" />
               </div>
               <div className="jp-empty-state-title">No upcoming events</div>
               <div className="jp-empty-state-text">Create an event to get started</div>

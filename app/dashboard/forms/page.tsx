@@ -50,7 +50,7 @@ export default function FormsPage() {
   const filteredCrm = crmForms.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()))
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 8px' }}>
+    <div className="max-w-[1000px] mx-auto px-2">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -92,7 +92,7 @@ export default function FormsPage() {
               className="text-sm font-semibold text-primary hover:underline">Create your first form</button>
           </div>
         ) : (
-          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
             {filteredLocal.map(f => (
               <div key={f.id} className="rounded-xl border border-border bg-card p-5 group hover:border-primary/20 transition-colors">
                 <div className="flex items-start justify-between mb-3">
@@ -132,7 +132,7 @@ export default function FormsPage() {
             <p className="text-sm text-muted-foreground">No CRM forms found for this location</p>
           </div>
         ) : (
-          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+          <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
             {filteredCrm.map(f => (
               <div key={f.id} className="rounded-xl border border-border bg-card p-5">
                 <div className="flex items-start justify-between mb-3">

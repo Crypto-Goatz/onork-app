@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Phone, Mail, MessageSquare, PenLine, ClipboardCheck, Check } from 'lucide-react'
 
 const mockContact = {
   id: 'c-001',
@@ -45,6 +46,15 @@ const mockTasks = [
 
 type TabKey = 'activity' | 'notes' | 'deals' | 'tasks' | 'files'
 
+const dotColorMap: Record<string, string> = {
+  green: 'bg-core-green',
+  cyan: 'bg-core-cyan',
+  purple: 'bg-core-purple',
+  amber: 'bg-core-amber',
+  red: 'bg-core-red',
+  muted: 'bg-core-text-muted',
+}
+
 export default function ContactDetailPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('activity')
   const [noteText, setNoteText] = useState('')
@@ -70,15 +80,11 @@ export default function ContactDetailPage() {
             <p className="jp-contact-role">{mockContact.role} at {mockContact.company}</p>
             <div className="jp-contact-meta-row">
               <span className="jp-contact-meta-item">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <Mail size={14} strokeWidth={1.75} />
                 {mockContact.email}
               </span>
               <span className="jp-contact-meta-item">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
+                <Phone size={14} strokeWidth={1.75} />
                 {mockContact.phone}
               </span>
             </div>
@@ -91,33 +97,23 @@ export default function ContactDetailPage() {
         </div>
         <div className="jp-contact-actions">
           <button className="jp-btn jp-btn-primary">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
+            <Phone size={14} strokeWidth={2} />
             Call
           </button>
           <button className="jp-btn jp-btn-outline">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
+            <Mail size={14} strokeWidth={2} />
             Email
           </button>
           <button className="jp-btn jp-btn-outline">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
+            <MessageSquare size={14} strokeWidth={2} />
             SMS
           </button>
           <button className="jp-btn jp-btn-outline">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
+            <PenLine size={14} strokeWidth={2} />
             Add Note
           </button>
           <button className="jp-btn jp-btn-outline">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
+            <ClipboardCheck size={14} strokeWidth={2} />
             Add Task
           </button>
         </div>
@@ -148,7 +144,7 @@ export default function ContactDetailPage() {
               </div>
               <div className="jp-contact-detail-row">
                 <span className="jp-contact-detail-label">Total Deals</span>
-                <span className="jp-contact-detail-value" style={{ color: 'var(--jp-green)' }}>$30,000</span>
+                <span className="jp-contact-detail-value text-core-green">$30,000</span>
               </div>
             </div>
           </div>
@@ -165,7 +161,7 @@ export default function ContactDetailPage() {
               >
                 {tab.label}
                 {tab.count !== undefined && tab.count > 0 && (
-                  <span style={{ marginLeft: 6, fontSize: '0.6875rem', opacity: 0.6 }}>({tab.count})</span>
+                  <span className="ml-1.5 text-[0.6875rem] opacity-60">({tab.count})</span>
                 )}
               </button>
             ))}
@@ -177,7 +173,7 @@ export default function ContactDetailPage() {
               {mockActivity.map(item => (
                 <div key={item.id} className="jp-timeline-item">
                   <div className="jp-timeline-line" />
-                  <div className={`jp-timeline-dot ${item.color}`} />
+                  <div className={`jp-timeline-dot ${dotColorMap[item.color] ?? 'bg-core-text-muted'}`} />
                   <div className="jp-timeline-content">
                     <p className="jp-timeline-text">{item.text}</p>
                     <span className="jp-timeline-time">{item.time}</span>
@@ -190,7 +186,7 @@ export default function ContactDetailPage() {
           {/* Notes Tab */}
           {activeTab === 'notes' && (
             <div>
-              <div style={{ marginBottom: 20 }}>
+              <div className="mb-5">
                 <textarea
                   className="jp-textarea"
                   placeholder="Add a note..."
@@ -198,7 +194,7 @@ export default function ContactDetailPage() {
                   value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
                 />
-                <button className="jp-btn jp-btn-primary" style={{ marginTop: 8 }}>Save Note</button>
+                <button className="jp-btn jp-btn-primary mt-2">Save Note</button>
               </div>
               {mockNotes.map(note => (
                 <div key={note.id} className="jp-note-card">
@@ -214,24 +210,24 @@ export default function ContactDetailPage() {
 
           {/* Deals Tab */}
           {activeTab === 'deals' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="flex flex-col gap-3">
               {mockDeals.map(deal => (
-                <div key={deal.id} className="jp-card" style={{ cursor: 'pointer' }}>
+                <div key={deal.id} className="jp-card cursor-pointer">
                   <div className="jp-card-body">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <div className="flex justify-between items-start mb-3">
                       <div>
-                        <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--jp-text)' }}>{deal.name}</div>
-                        <div style={{ fontSize: '0.8125rem', color: 'var(--jp-text-muted)', marginTop: 2 }}>Stage: {deal.stage}</div>
+                        <div className="text-[0.9375rem] font-semibold text-core-text">{deal.name}</div>
+                        <div className="text-[0.8125rem] text-core-text-muted mt-0.5">Stage: {deal.stage}</div>
                       </div>
-                      <div style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--jp-green)' }}>
+                      <div className="text-lg font-bold text-core-green">
                         ${deal.value.toLocaleString()}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div className="jp-progress" style={{ flex: 1 }}>
+                    <div className="flex items-center gap-3">
+                      <div className="jp-progress flex-1">
                         <div className="jp-progress-bar green" style={{ width: `${deal.probability}%` }} />
                       </div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-secondary)' }}>{deal.probability}%</span>
+                      <span className="text-xs text-core-text-dim">{deal.probability}%</span>
                     </div>
                   </div>
                 </div>
@@ -241,38 +237,20 @@ export default function ContactDetailPage() {
 
           {/* Tasks Tab */}
           {activeTab === 'tasks' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="flex flex-col gap-2">
               {mockTasks.map(task => (
-                <div key={task.id} className="jp-card" style={{ opacity: task.done ? 0.5 : 1 }}>
-                  <div className="jp-card-body" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px' }}>
-                    <div style={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: 6,
-                      border: `2px solid ${task.done ? 'var(--jp-green)' : 'var(--jp-border-hi)'}`,
-                      background: task.done ? 'var(--jp-green)' : 'transparent',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      cursor: 'pointer',
-                    }}>
+                <div key={task.id} className={`jp-card ${task.done ? 'opacity-50' : ''}`}>
+                  <div className="jp-card-body flex items-center gap-3.5 py-3.5 px-5">
+                    <div className={`w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 cursor-pointer ${task.done ? 'border-core-green bg-core-green' : 'border-core-border bg-transparent'}`}>
                       {task.done && (
-                        <svg width="12" height="12" fill="none" stroke="#000" viewBox="0 0 24 24" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
+                        <Check size={12} strokeWidth={3} className="text-black" />
                       )}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        color: 'var(--jp-text)',
-                        textDecoration: task.done ? 'line-through' : 'none',
-                      }}>
+                    <div className="flex-1">
+                      <div className={`text-sm font-medium text-core-text ${task.done ? 'line-through' : ''}`}>
                         {task.title}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginTop: 2 }}>
+                      <div className="text-xs text-core-text-muted mt-0.5">
                         Due: {task.due} — {task.assignee}
                       </div>
                     </div>

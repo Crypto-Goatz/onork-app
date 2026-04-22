@@ -20,6 +20,12 @@ interface FocusModeProps {
   onComplete: (taskId: string) => void
 }
 
+const PRIORITY_CLASSES: Record<string, { bg: string; text: string }> = {
+  high: { bg: 'bg-core-red/10', text: 'text-core-red' },
+  medium: { bg: 'bg-core-amber/10', text: 'text-core-amber' },
+  low: { bg: 'bg-core-green/10', text: 'text-core-green' },
+}
+
 export default function FocusMode({ task, onExit, onUpdateTask, onComplete }: FocusModeProps) {
   const [elapsed, setElapsed] = useState(0)
   const [notes, setNotes] = useState(task.description || '')
@@ -52,121 +58,76 @@ export default function FocusMode({ task, onExit, onUpdateTask, onComplete }: Fo
     onExit()
   }
 
-  const PRIORITY_COLORS: Record<string, string> = {
-    high: '#ef4444',
-    medium: '#f59e0b',
-    low: '#7ed957',
-  }
+  const priority = PRIORITY_CLASSES[task.priority] || PRIORITY_CLASSES.low
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 100,
-      background: '#0d1117',
-      display: 'flex', flexDirection: 'column',
-    }}>
+    <div className="fixed inset-0 z-[100] bg-core-bg flex flex-col">
       {/* Header */}
-      <div style={{
-        height: 56, borderBottom: '1px solid #1e293b',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 24px', flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div className="h-14 border-b border-core-border flex items-center justify-between px-6 shrink-0">
+        <div className="flex items-center gap-4">
           <button
             onClick={onExit}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#8b95a5', fontSize: 13, fontWeight: 600,
-            }}
+            className="flex items-center gap-1.5 bg-transparent border-none cursor-pointer text-core-text-muted text-[13px] font-semibold hover:text-core-text transition-colors"
           >
             <ArrowLeft size={16} /> Exit
           </button>
-          <div style={{ width: 1, height: 24, background: '#1e293b' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: 'rgba(126,217,87,0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Play size={14} fill="#7ed957" style={{ color: '#7ed957' }} />
+          <div className="w-px h-6 bg-core-border" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-core-green/20 flex items-center justify-center">
+              <Play size={14} fill="currentColor" className="text-core-green" />
             </div>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#f0f4f8', margin: 0 }}>{task.title}</p>
-              <p style={{ fontSize: 11, fontFamily: 'monospace', color: '#7ed957', margin: 0 }}>{formatTime(elapsed)}</p>
+              <p className="text-[14px] font-bold text-core-text m-0">{task.title}</p>
+              <p className="text-[11px] font-mono text-core-green m-0">{formatTime(elapsed)}</p>
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{
-            fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1,
-            padding: '4px 10px', borderRadius: 6,
-            background: `${PRIORITY_COLORS[task.priority]}20`,
-            color: PRIORITY_COLORS[task.priority],
-          }}>
+        <div className="flex items-center gap-2">
+          <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md ${priority.bg} ${priority.text}`}>
             {task.priority}
           </span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#8b95a5' }}>FOCUS MODE</span>
+          <span className="text-[12px] font-semibold text-core-text-muted">FOCUS MODE</span>
         </div>
       </div>
 
       {/* Content */}
-      <div style={{
-        flex: 1, display: 'flex', overflow: 'hidden',
-        maxWidth: 900, width: '100%', margin: '0 auto',
-        padding: '32px 24px',
-        gap: 32,
-      }}>
+      <div className="flex-1 flex overflow-hidden max-w-[900px] w-full mx-auto px-6 py-8 gap-8">
         {/* Left: Subtasks / Checklist */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto' }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#8b95a5', textTransform: 'uppercase', letterSpacing: 1, margin: 0 }}>
+        <div className="flex-1 flex flex-col gap-4 overflow-auto">
+          <h3 className="text-[13px] font-bold text-core-text-muted uppercase tracking-widest m-0">
             Checklist
           </h3>
           {task.subtasks && task.subtasks.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="flex flex-col gap-2">
               {task.subtasks.map((sub, idx) => (
                 <button
                   key={sub.id}
                   onClick={() => handleToggleSubtask(idx)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '12px 14px', borderRadius: 10,
-                    background: sub.done ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.04)',
-                    border: '1px solid ' + (sub.done ? '#1e293b' : '#1e293b'),
-                    cursor: 'pointer', textAlign: 'left',
-                    opacity: sub.done ? 0.5 : 1,
-                    transition: 'all 0.15s',
-                  }}
+                  className={`flex items-center gap-2.5 px-3.5 py-3 rounded-[10px] border border-core-border cursor-pointer text-left transition-all ${sub.done ? 'bg-white/[0.02] opacity-50' : 'bg-white/[0.04]'}`}
                 >
                   {sub.done
-                    ? <CheckCircle2 size={18} style={{ color: '#7ed957', flexShrink: 0 }} />
-                    : <Circle size={18} style={{ color: '#3d4654', flexShrink: 0 }} />
+                    ? <CheckCircle2 size={18} className="text-core-green shrink-0" />
+                    : <Circle size={18} className="text-core-text-muted shrink-0" />
                   }
-                  <span style={{
-                    fontSize: 13, color: sub.done ? '#3d4654' : '#f0f4f8',
-                    textDecoration: sub.done ? 'line-through' : 'none',
-                  }}>
+                  <span className={`text-[13px] ${sub.done ? 'text-core-text-muted line-through' : 'text-core-text'}`}>
                     {sub.title}
                   </span>
                 </button>
               ))}
             </div>
           ) : (
-            <div style={{
-              flex: 1, display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              color: '#3d4654', gap: 8,
-            }}>
+            <div className="flex-1 flex flex-col items-center justify-center text-core-text-muted gap-2">
               <CheckCircle2 size={32} />
-              <p style={{ fontSize: 13 }}>No subtasks yet. Use the AI chat to auto-plan.</p>
+              <p className="text-[13px]">No subtasks yet. Use the AI chat to auto-plan.</p>
             </div>
           )}
         </div>
 
         {/* Right: Notes */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <StickyNote size={14} style={{ color: '#f59e0b' }} />
-            <h3 style={{ fontSize: 13, fontWeight: 700, color: '#8b95a5', textTransform: 'uppercase', letterSpacing: 1, margin: 0 }}>
+        <div className="flex-1 flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <StickyNote size={14} className="text-core-amber" />
+            <h3 className="text-[13px] font-bold text-core-text-muted uppercase tracking-widest m-0">
               Notes
             </h3>
           </div>
@@ -174,34 +135,16 @@ export default function FocusMode({ task, onExit, onUpdateTask, onComplete }: Fo
             value={notes}
             onChange={e => setNotes(e.target.value)}
             placeholder="Jot down thoughts, context, or progress..."
-            style={{
-              flex: 1, padding: 16,
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid #1e293b', borderRadius: 12,
-              color: '#f0f4f8', fontSize: 13, lineHeight: 1.6,
-              outline: 'none', resize: 'none',
-            }}
+            className="flex-1 p-4 bg-white/[0.02] border border-core-border rounded-xl text-core-text text-[13px] leading-relaxed outline-none resize-none placeholder:text-core-text-muted"
           />
         </div>
       </div>
 
       {/* Footer */}
-      <div style={{
-        borderTop: '1px solid #1e293b',
-        padding: '16px 24px',
-        display: 'flex', justifyContent: 'center',
-      }}>
+      <div className="border-t border-core-border px-6 py-4 flex justify-center">
         <button
           onClick={handleDone}
-          style={{
-            padding: '12px 32px', borderRadius: 12, fontSize: 15, fontWeight: 700,
-            background: '#7ed957', color: '#0d1117',
-            border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 8,
-            transition: 'transform 0.1s',
-          }}
-          onMouseDown={e => (e.currentTarget.style.transform = 'scale(0.97)')}
-          onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}
+          className="px-8 py-3 rounded-xl text-[15px] font-bold bg-core-green text-core-bg border-none cursor-pointer flex items-center gap-2 active:scale-[0.97] transition-transform"
         >
           <CheckCircle2 size={18} /> I am Done
         </button>

@@ -21,7 +21,7 @@ const FIELD_TYPES = [
   { type: 'textarea', label: 'Long Text', icon: '¶' },
   { type: 'select', label: 'Dropdown', icon: '▼' },
   { type: 'number', label: 'Number', icon: '1' },
-  { type: 'url', label: 'URL', icon: '🔗' },
+  { type: 'url', label: 'URL', icon: 'URL' },
 ]
 
 const DEFAULT_FIELDS: FormField[] = [
@@ -118,7 +118,7 @@ export default function FormBuilderPage() {
   // ── Saved state — show embed code ──
   if (saved) {
     return (
-      <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 8px' }}>
+      <div className="max-w-[700px] mx-auto px-2">
         <div className="flex items-center gap-3 mb-6">
           <CheckCircle2 className="size-6 text-primary" />
           <div>
@@ -165,7 +165,7 @@ export default function FormBuilderPage() {
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 8px' }}>
+    <div className="max-w-[900px] mx-auto px-2">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -189,7 +189,7 @@ export default function FormBuilderPage() {
 
       {error && <div className="mb-4 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-sm">{error}</div>}
 
-      <div className="grid gap-6" style={{ gridTemplateColumns: previewMode ? '1fr' : '1fr 300px' }}>
+      <div className={`grid gap-6 ${previewMode ? 'grid-cols-1' : '[grid-template-columns:1fr_300px]'}`}>
         {/* ── Main: Field Editor ── */}
         <div className="space-y-4">
           {/* Form name */}
