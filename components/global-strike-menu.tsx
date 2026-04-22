@@ -2,27 +2,19 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
+import { X, Check, Plus, Clock, StickyNote, ListTodo, Trash2 } from 'lucide-react'
 import { StrikeSettingsDialog, DEFAULT_CONFIG, type StrikeConfig, type StrikeSection } from '@/components/strike-settings-dialog'
+import { cn } from '@/lib/utils'
 
-interface QuickNote {
-  id: string
-  text: string
-  summary: string
-  date: string
-  done: boolean
-}
-
-interface StrikeTask {
-  id: string
-  text: string
-  done: boolean
-  priority: 'low' | 'med' | 'high'
-  created: string
-}
+interface QuickNote { id: string; text: string; summary: string; date: string; done: boolean }
+interface StrikeTask { id: string; text: string; done: boolean; priority: 'low' | 'med' | 'high'; created: string }
 
 const STRIKE_CONFIG_KEY = '0n_strike_config'
 const STRIKE_TASKS_KEY = '0n_strike_tasks'
 const NOTES_KEY = '0n_quick_notes'
+
+const PRIORITY_DOT: Record<string, string> = { low: 'bg-core-text-muted', med: 'bg-core-amber', high: 'bg-core-red' }
+const PRIORITY_NEXT: Record<string, 'low' | 'med' | 'high'> = { low: 'med', med: 'high', high: 'low' }
 
 function ClockDisplay() {
   const [time, setTime] = useState('')
@@ -41,32 +33,27 @@ export function GlobalStrikeMenu() {
   const [config, setConfig] = useState<StrikeConfig>(DEFAULT_CONFIG)
   const sections = config.sections
 
-  // Notes state
   const [notes, setNotes] = useState<QuickNote[]>([])
   const [noteInput, setNoteInput] = useState('')
   const [noteModalOpen, setNoteModalOpen] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
 
-  // Tasks state
   const [tasks, setTasks] = useState<StrikeTask[]>([])
   const [taskInput, setTaskInput] = useState('')
   const [taskPriority, setTaskPriority] = useState<'low' | 'med' | 'high'>('med')
 
-  // Focus timer state
   const [focusTime, setFocusTime] = useState(25 * 60)
   const [focusRunning, setFocusRunning] = useState(false)
   const [focusLeft, setFocusLeft] = useState(25 * 60)
   const focusRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Load persisted state
   useEffect(() => {
     try { const s = localStorage.getItem(NOTES_KEY); if (s) setNotes(JSON.parse(s)) } catch {}
     try { const s = localStorage.getItem(STRIKE_TASKS_KEY); if (s) setTasks(JSON.parse(s)) } catch {}
     try { const s = localStorage.getItem(STRIKE_CONFIG_KEY); if (s) setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(s) }) } catch {}
   }, [])
 
-  // Focus timer interval
   useEffect(() => {
     if (focusRunning && focusLeft > 0) {
       focusRef.current = setInterval(() => setFocusLeft(p => {
@@ -81,59 +68,36 @@ export function GlobalStrikeMenu() {
   function persistTasks(t: StrikeTask[]) { setTasks(t); localStorage.setItem(STRIKE_TASKS_KEY, JSON.stringify(t)) }
   function persistConfig(c: StrikeConfig) { setConfig(c); localStorage.setItem(STRIKE_CONFIG_KEY, JSON.stringify(c)) }
 
-  // Note functions
   function saveNote() {
     if (!noteInput.trim()) return
-    const note: QuickNote = {
-      id: Date.now().toString(),
-      text: noteInput.trim(),
-      summary: noteInput.length > 80 ? noteInput.slice(0, 77) + '...' : noteInput,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      done: false,
-    }
-    persistNotes([note, ...notes])
+    persistNotes([{ id: Date.now().toString(), text: noteInput.trim(), summary: noteInput.length > 80 ? noteInput.slice(0, 77) + '...' : noteInput, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), done: false }, ...notes])
     setNoteInput('')
     setNoteModalOpen(false)
   }
-
   function toggleNote(id: string) { persistNotes(notes.map(n => n.id === id ? { ...n, done: !n.done } : n)) }
   function removeNote(id: string) { persistNotes(notes.filter(n => n.id !== id)); if (expanded === id) setExpanded(null) }
   function expandNote(n: QuickNote) { setExpanded(n.id); setEditText(n.text) }
   function saveEdit() { if (expanded) { persistNotes(notes.map(n => n.id === expanded ? { ...n, text: editText, summary: editText.length > 80 ? editText.slice(0, 77) + '...' : editText } : n)); setExpanded(null) } }
 
-  // Task functions
   function addTask() {
     if (!taskInput.trim()) return
-    const task: StrikeTask = {
-      id: Date.now().toString(),
-      text: taskInput.trim(),
-      done: false,
-      priority: taskPriority,
-      created: new Date().toISOString(),
-    }
-    persistTasks([task, ...tasks])
+    persistTasks([{ id: Date.now().toString(), text: taskInput.trim(), done: false, priority: taskPriority, created: new Date().toISOString() }, ...tasks])
     setTaskInput('')
   }
-
   function toggleTask(id: string) { persistTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t)) }
   function removeTask(id: string) { persistTasks(tasks.filter(t => t.id !== id)) }
 
-  const priorityColor: Record<string, string> = { low: '#6b7280', med: '#f59e0b', high: '#ef4444' }
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
 
-  // Context-aware quick actions
-  function getContextActions(): { label: string; color: string }[] {
-    if (pathname.includes('/email')) return [{ label: 'Quick Compose', color: '#00d4ff' }]
-    if (pathname.includes('/contacts')) return [{ label: 'Quick Add Contact', color: '#00d4ff' }]
-    if (pathname.includes('/social')) return [{ label: 'Quick Post', color: '#00d4ff' }]
-    if (pathname.includes('/tasks')) return [{ label: 'Quick Task', color: '#00d4ff' }]
+  function getContextActions(): { label: string; action: () => void }[] {
     return [
-      { label: 'New Note', color: '#7ed957' },
-      { label: 'New Task', color: '#00d4ff' },
+      { label: 'New Note', action: () => setNoteModalOpen(true) },
+      { label: 'New Task', action: () => document.getElementById('strike-task-input')?.focus() },
     ]
   }
 
-  const contextActions = getContextActions()
+  if (!pathname?.startsWith('/dashboard')) return null
+
   const SIDEBAR_W = 280
 
   return (
@@ -141,81 +105,40 @@ export function GlobalStrikeMenu() {
       {/* Toggle pill */}
       <button
         onClick={() => setIsOpen(p => !p)}
-        style={{
-          position: 'fixed', bottom: 80, right: isOpen ? SIDEBAR_W + 8 : 12,
-          zIndex: 70, background: '#000', border: '1px solid #1e293b',
-          borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 8,
-          transition: 'right 0.3s cubic-bezier(0.4,0,0.2,1)',
-        }}
+        className={cn(
+          'fixed bottom-20 z-[70] bg-black border border-core-border rounded-lg px-3 py-1.5 cursor-pointer flex items-center gap-2 transition-all duration-300',
+          isOpen ? `right-[${SIDEBAR_W + 8}px]` : 'right-3'
+        )}
+        style={{ right: isOpen ? SIDEBAR_W + 8 : 12 }}
       >
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#7ed957', letterSpacing: '0.06em' }}>STRIKE</span>
-        <div style={{
-          width: 32, height: 18, borderRadius: 9, position: 'relative',
-          background: isOpen ? '#7ed957' : '#1e293b',
-          transition: 'background 0.2s',
-        }}>
-          <div style={{
-            width: 14, height: 14, borderRadius: 7,
-            background: isOpen ? '#000' : '#4b5563',
-            position: 'absolute', top: 2,
-            left: isOpen ? 16 : 2,
-            transition: 'left 0.2s, background 0.2s',
-          }} />
+        <span className="text-[11px] font-bold text-core-green tracking-widest">STRIKE</span>
+        <div className={cn('w-8 h-[18px] rounded-[9px] relative transition-colors duration-200', isOpen ? 'bg-core-green' : 'bg-core-border')}>
+          <div className={cn('w-3.5 h-3.5 rounded-full absolute top-0.5 transition-all duration-200', isOpen ? 'left-4 bg-black' : 'left-0.5 bg-core-text-muted')} />
         </div>
       </button>
 
       {/* Sidebar panel */}
-      <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0,
-        width: SIDEBAR_W, zIndex: 60,
-        background: 'rgba(0,0,0,0.95)',
-        borderLeft: '1px solid #1e293b',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        transform: isOpen ? 'translateX(0)' : `translateX(${SIDEBAR_W}px)`,
-        transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
-        display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
-      }}>
+      <div className={cn(
+        'fixed top-0 right-0 bottom-0 z-[60] bg-black/95 border-l border-core-border backdrop-blur-xl flex flex-col overflow-hidden transition-transform duration-300 ease-out',
+        isOpen ? 'translate-x-0' : 'translate-x-full'
+      )} style={{ width: SIDEBAR_W }}>
+
         {/* Header */}
-        <div style={{
-          padding: '14px 16px 10px', borderBottom: '1px solid #1e293b',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 6, height: 6, borderRadius: 3,
-              background: '#7ed957', boxShadow: '0 0 8px #7ed957',
-            }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#f0f4f8', letterSpacing: '0.04em' }}>Strike Menu</span>
+        <div className="px-4 pt-3.5 pb-2.5 border-b border-core-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-core-green shadow-[0_0_8px_theme(colors.core-green)]" />
+            <span className="text-[13px] font-bold text-core-text tracking-wide">Strike Menu</span>
           </div>
           <StrikeSettingsDialog config={config} onConfigChange={persistConfig} />
         </div>
 
-        {/* Context-aware actions */}
-        <div style={{ padding: '10px 12px', borderBottom: '1px solid #1e293b' }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: '#4b5563', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
-            Quick Actions
-          </div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {contextActions.map(a => (
-              <button
-                key={a.label}
-                onClick={() => {
-                  if (a.label === 'New Note' || a.label === 'Quick Compose') setNoteModalOpen(true)
-                  if (a.label === 'New Task' || a.label === 'Quick Task' || a.label === 'Quick Add Contact') {
-                    // Focus the task input
-                    const el = document.getElementById('strike-task-input')
-                    if (el) el.focus()
-                  }
-                }}
-                style={{
-                  flex: 1, padding: '6px 0', borderRadius: 6, fontSize: 10, fontWeight: 700,
-                  background: `${a.color}10`, border: `1px solid ${a.color}25`,
-                  color: a.color, cursor: 'pointer', letterSpacing: '0.02em',
-                }}
-              >
+        {/* Context actions */}
+        <div className="px-3 py-2.5 border-b border-core-border">
+          <div className="text-[9px] font-bold text-core-text-muted tracking-widest uppercase mb-1.5">Quick Actions</div>
+          <div className="flex gap-1">
+            {getContextActions().map(a => (
+              <button key={a.label} onClick={a.action}
+                className="flex-1 py-1.5 rounded-md text-[10px] font-bold bg-core-green/10 border border-core-green/20 text-core-green cursor-pointer tracking-wide hover:bg-core-green/15 transition-colors">
                 {a.label}
               </button>
             ))}
@@ -223,250 +146,114 @@ export function GlobalStrikeMenu() {
         </div>
 
         {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 80px' }}>
-          {/* Tasks Section */}
+        <div className="flex-1 overflow-y-auto px-3 py-3 pb-20">
+
+          {/* Tasks */}
           {sections.includes('tasks') && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: '#4b5563', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
+            <div className="mb-5">
+              <div className="text-[9px] font-bold text-core-text-muted tracking-widest uppercase mb-2">
                 Tasks ({tasks.filter(t => !t.done).length})
               </div>
-
-              <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-                <input
-                  id="strike-task-input"
-                  value={taskInput}
-                  onChange={e => setTaskInput(e.target.value)}
+              <div className="flex gap-1 mb-2">
+                <input id="strike-task-input" value={taskInput} onChange={e => setTaskInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') addTask() }}
                   placeholder="Add task..."
-                  style={{
-                    flex: 1, padding: '7px 10px', background: '#0a0a0a',
-                    border: '1px solid #1e293b', borderRadius: 6,
-                    color: '#f0f4f8', fontSize: 12, outline: 'none',
-                    fontFamily: 'inherit',
-                  }}
-                />
-                <button
-                  onClick={() => {
-                    const next = taskPriority === 'low' ? 'med' : taskPriority === 'med' ? 'high' : 'low'
-                    setTaskPriority(next)
-                  }}
-                  style={{
-                    width: 28, height: 28, borderRadius: 6, border: '1px solid #1e293b',
-                    background: '#0a0a0a', cursor: 'pointer', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center',
-                  }}
-                  title={`Priority: ${taskPriority}`}
-                >
-                  <div style={{ width: 8, height: 8, borderRadius: 4, background: priorityColor[taskPriority] }} />
+                  className="flex-1 px-2.5 py-1.5 bg-black border border-core-border rounded-md text-core-text text-xs placeholder:text-core-text-muted focus:border-core-green/40 focus:outline-none" />
+                <button onClick={() => setTaskPriority(PRIORITY_NEXT[taskPriority])}
+                  className="w-7 h-7 rounded-md border border-core-border bg-black flex items-center justify-center cursor-pointer" title={`Priority: ${taskPriority}`}>
+                  <div className={cn('w-2 h-2 rounded-full', PRIORITY_DOT[taskPriority])} />
                 </button>
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <div className="flex flex-col gap-0.5">
                 {tasks.map(t => (
-                  <div
-                    key={t.id}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '6px 8px', borderRadius: 6,
-                      background: 'transparent',
-                      transition: 'background 0.1s',
-                      opacity: t.done ? 0.4 : 1,
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(126,217,87,0.04)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <button
-                      onClick={() => toggleTask(t.id)}
-                      style={{
-                        width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                        border: t.done ? '2px solid #7ed957' : '2px solid #30363d',
-                        background: t.done ? '#7ed957' : 'transparent',
-                        cursor: 'pointer', display: 'flex',
-                        alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      {t.done && (
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
+                  <div key={t.id} className={cn('flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-core-green/[0.04] transition-colors group', t.done && 'opacity-40')}>
+                    <button onClick={() => toggleTask(t.id)}
+                      className={cn('w-4 h-4 rounded shrink-0 border-[1.5px] flex items-center justify-center transition-all cursor-pointer',
+                        t.done ? 'border-core-green bg-core-green' : 'border-core-text-muted/40 bg-transparent')}>
+                      {t.done && <Check className="w-2.5 h-2.5 text-black" />}
                     </button>
-                    <div style={{
-                      width: 4, height: 4, borderRadius: 2, flexShrink: 0,
-                      background: priorityColor[t.priority],
-                    }} />
-                    <span style={{
-                      flex: 1, fontSize: 12, color: '#d1d5db',
-                      textDecoration: t.done ? 'line-through' : 'none',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>
-                      {t.text}
-                    </span>
-                    <button
-                      onClick={() => removeTask(t.id)}
-                      style={{
-                        background: 'none', border: 'none', color: '#30363d',
-                        cursor: 'pointer', fontSize: 11, padding: '0 2px',
-                        opacity: 0, transition: 'opacity 0.15s',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                      onMouseLeave={e => e.currentTarget.style.opacity = '0'}
-                    >
-                      x
+                    <div className={cn('w-1 h-1 rounded-full shrink-0', PRIORITY_DOT[t.priority])} />
+                    <span className={cn('flex-1 text-xs truncate', t.done ? 'line-through text-core-text-muted/50' : 'text-core-text-dim')}>{t.text}</span>
+                    <button onClick={() => removeTask(t.id)} className="opacity-0 group-hover:opacity-100 text-core-text-muted hover:text-core-red transition-all cursor-pointer">
+                      <X className="w-3 h-3" />
                     </button>
                   </div>
                 ))}
-                {tasks.length === 0 && (
-                  <div style={{ fontSize: 11, color: '#30363d', textAlign: 'center', padding: 12 }}>
-                    No tasks yet
-                  </div>
-                )}
+                {tasks.length === 0 && <p className="text-[11px] text-core-border text-center py-3">No tasks yet</p>}
               </div>
             </div>
           )}
 
-          {/* Notes Section */}
+          {/* Notes */}
           {sections.includes('notes') && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: '#4b5563', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                  Notes ({notes.length})
-                </div>
-                <button
-                  onClick={() => setNoteModalOpen(true)}
-                  style={{
-                    background: 'transparent', border: '1px solid #1e293b',
-                    borderRadius: 4, color: '#7ed957', fontSize: 11,
-                    padding: '2px 8px', cursor: 'pointer', fontWeight: 600,
-                  }}
-                >
-                  + New
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[9px] font-bold text-core-text-muted tracking-widest uppercase">Notes ({notes.length})</div>
+                <button onClick={() => setNoteModalOpen(true)}
+                  className="bg-transparent border border-core-border rounded px-2 py-0.5 text-core-green text-[11px] font-semibold cursor-pointer hover:border-core-green/30 transition-colors">
+                  <Plus className="w-3 h-3 inline -mt-0.5" /> New
                 </button>
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div className="flex flex-col gap-1">
                 {notes.map(n => (
-                  <div
-                    key={n.id}
-                    onClick={() => expandNote(n)}
-                    style={{
-                      padding: '8px 10px', borderRadius: 6,
-                      background: '#0a0a0a', border: '1px solid #1e293b',
-                      cursor: 'pointer', transition: 'border-color 0.15s',
-                      opacity: n.done ? 0.4 : 1,
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = '#7ed957'}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = '#1e293b'}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-                      <span style={{ fontSize: 9, color: '#7ed957', fontWeight: 600, letterSpacing: '0.03em' }}>{n.date}</span>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <button
-                          onClick={e => { e.stopPropagation(); toggleNote(n.id) }}
-                          style={{ background: 'none', border: 'none', color: n.done ? '#7ed957' : '#30363d', cursor: 'pointer', fontSize: 11, padding: 0 }}
-                        >
-                          {'\u2713'}
+                  <div key={n.id} onClick={() => expandNote(n)}
+                    className={cn('px-2.5 py-2 rounded-md bg-black border border-core-border cursor-pointer hover:border-core-green/40 transition-colors', n.done && 'opacity-40')}>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[9px] text-core-green font-semibold">{n.date}</span>
+                      <div className="flex gap-1">
+                        <button onClick={e => { e.stopPropagation(); toggleNote(n.id) }} className={cn('text-[11px] cursor-pointer', n.done ? 'text-core-green' : 'text-core-border')}>
+                          <Check className="w-3 h-3" />
                         </button>
-                        <button
-                          onClick={e => { e.stopPropagation(); removeNote(n.id) }}
-                          style={{ background: 'none', border: 'none', color: '#30363d', cursor: 'pointer', fontSize: 11, padding: 0 }}
-                        >
-                          {'\u2715'}
+                        <button onClick={e => { e.stopPropagation(); removeNote(n.id) }} className="text-core-border hover:text-core-red cursor-pointer transition-colors">
+                          <X className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
-                    <div style={{
-                      fontSize: 11, color: '#94a3b8', lineHeight: 1.4,
-                      overflow: 'hidden', display: '-webkit-box',
-                      WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const,
-                    }}>
-                      {n.summary}
-                    </div>
+                    <p className="text-[11px] text-core-text-dim leading-snug line-clamp-3">{n.summary}</p>
                   </div>
                 ))}
-                {notes.length === 0 && (
-                  <div style={{ fontSize: 11, color: '#30363d', textAlign: 'center', padding: 12 }}>
-                    No notes yet
-                  </div>
-                )}
+                {notes.length === 0 && <p className="text-[11px] text-core-border text-center py-3">No notes yet</p>}
               </div>
             </div>
           )}
 
-          {/* Clock Section */}
+          {/* Clock */}
           {sections.includes('clock') && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: '#4b5563', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
-                Clock
-              </div>
-              <div style={{
-                textAlign: 'center', padding: '12px 0',
-                fontFamily: 'monospace', fontSize: 28, fontWeight: 700,
-                color: '#7ed957', letterSpacing: '0.05em',
-                textShadow: '0 0 20px rgba(126,217,87,0.3)',
-              }}>
+            <div className="mb-5">
+              <div className="text-[9px] font-bold text-core-text-muted tracking-widest uppercase mb-2">Clock</div>
+              <div className="text-center py-3 font-mono text-[28px] font-bold text-core-green tracking-wider">
                 <ClockDisplay />
               </div>
             </div>
           )}
 
-          {/* Focus Timer Section */}
+          {/* Focus Timer */}
           {sections.includes('focus') && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: '#4b5563', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
-                Focus Timer
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontFamily: 'monospace', fontSize: 36, fontWeight: 700,
-                  color: focusRunning ? '#7ed957' : '#4b5563',
-                  letterSpacing: '0.05em', marginBottom: 10,
-                  textShadow: focusRunning ? '0 0 20px rgba(126,217,87,0.3)' : 'none',
-                  transition: 'color 0.3s, text-shadow 0.3s',
-                }}>
+            <div className="mb-5">
+              <div className="text-[9px] font-bold text-core-text-muted tracking-widest uppercase mb-2">Focus Timer</div>
+              <div className="text-center">
+                <div className={cn('font-mono text-4xl font-bold tracking-wider mb-2.5 transition-colors', focusRunning ? 'text-core-green' : 'text-core-text-muted')}>
                   {formatTime(focusLeft)}
                 </div>
-                <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                  <button
-                    onClick={() => { if (!focusRunning) { setFocusLeft(focusTime) } setFocusRunning(p => !p) }}
-                    style={{
-                      padding: '5px 14px', borderRadius: 6, fontSize: 11, fontWeight: 700,
-                      background: focusRunning ? 'rgba(239,68,68,0.15)' : 'rgba(126,217,87,0.1)',
-                      border: `1px solid ${focusRunning ? '#ef4444' : '#7ed957'}`,
-                      color: focusRunning ? '#ef4444' : '#7ed957',
-                      cursor: 'pointer',
-                    }}
-                  >
+                <div className="flex gap-1.5 justify-center">
+                  <button onClick={() => { if (!focusRunning) setFocusLeft(focusTime); setFocusRunning(p => !p) }}
+                    className={cn('px-3.5 py-1.5 rounded-md text-[11px] font-bold border cursor-pointer transition-colors',
+                      focusRunning ? 'border-core-red/30 text-core-red hover:bg-core-red/10' : 'border-core-green/30 text-core-green hover:bg-core-green/10')}>
                     {focusRunning ? 'Stop' : 'Start'}
                   </button>
                   {!focusRunning && (
-                    <button
-                      onClick={() => { setFocusLeft(focusTime) }}
-                      style={{
-                        padding: '5px 14px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                        background: 'transparent', border: '1px solid #1e293b',
-                        color: '#4b5563', cursor: 'pointer',
-                      }}
-                    >
+                    <button onClick={() => setFocusLeft(focusTime)}
+                      className="px-3.5 py-1.5 rounded-md text-[11px] font-semibold border border-core-border text-core-text-muted cursor-pointer hover:text-core-text transition-colors">
                       Reset
                     </button>
                   )}
                 </div>
                 {!focusRunning && (
-                  <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginTop: 8 }}>
+                  <div className="flex gap-1 justify-center mt-2">
                     {[15, 25, 45, 60].map(m => (
-                      <button
-                        key={m}
-                        onClick={() => { setFocusTime(m * 60); setFocusLeft(m * 60) }}
-                        style={{
-                          padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600,
-                          background: focusTime === m * 60 ? 'rgba(126,217,87,0.1)' : 'transparent',
-                          border: `1px solid ${focusTime === m * 60 ? '#7ed957' : '#1e293b'}`,
-                          color: focusTime === m * 60 ? '#7ed957' : '#4b5563',
-                          cursor: 'pointer',
-                        }}
-                      >
+                      <button key={m} onClick={() => { setFocusTime(m * 60); setFocusLeft(m * 60) }}
+                        className={cn('px-2 py-0.5 rounded text-[10px] font-semibold border cursor-pointer transition-all',
+                          focusTime === m * 60 ? 'border-core-green/30 text-core-green bg-core-green/10' : 'border-core-border text-core-text-muted hover:text-core-text')}>
                         {m}m
                       </button>
                     ))}
@@ -478,131 +265,57 @@ export function GlobalStrikeMenu() {
         </div>
 
         {/* Bottom bar */}
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          padding: '8px 12px', borderTop: '1px solid #1e293b',
-          background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)',
-          display: 'flex', gap: 6,
-        }}>
-          <button
-            onClick={() => setNoteModalOpen(true)}
-            style={{
-              flex: 1, padding: '8px 0', borderRadius: 6,
-              background: '#7ed957', border: 'none',
-              color: '#000', fontSize: 11, fontWeight: 700,
-              cursor: 'pointer', letterSpacing: '0.02em',
-            }}
-          >
+        <div className="absolute bottom-0 left-0 right-0 px-3 py-2 border-t border-core-border bg-black/90 backdrop-blur-sm flex gap-1.5">
+          <button onClick={() => setNoteModalOpen(true)}
+            className="flex-1 py-2 rounded-md bg-core-green border-none text-black text-[11px] font-bold cursor-pointer hover:brightness-110 transition-all">
             + Quick Note
           </button>
-          <button
-            onClick={() => {
-              const cleared = tasks.filter(t => !t.done)
-              persistTasks(cleared)
-            }}
-            style={{
-              padding: '8px 12px', borderRadius: 6,
-              background: 'transparent', border: '1px solid #1e293b',
-              color: '#4b5563', fontSize: 11, fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
+          <button onClick={() => persistTasks(tasks.filter(t => !t.done))}
+            className="px-3 py-2 rounded-md bg-transparent border border-core-border text-core-text-muted text-[11px] font-semibold cursor-pointer hover:text-core-text transition-colors">
             Clear done
           </button>
         </div>
       </div>
 
-      {/* Note Input Modal */}
+      {/* Note Modal */}
       {noteModalOpen && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 300,
-            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-          onClick={e => { if (e.target === e.currentTarget) setNoteModalOpen(false) }}
-        >
-          <div style={{
-            background: '#000', border: '1px solid #1e293b', borderRadius: 16,
-            width: 400, padding: 24, animation: 'strikeGlobalModalIn 0.25s ease',
-          }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#7ed957', marginBottom: 12 }}>Quick Note</div>
-            <textarea
-              value={noteInput}
-              onChange={e => setNoteInput(e.target.value)}
-              placeholder="Paste or type anything..."
-              style={{
-                width: '100%', minHeight: 120, background: '#0a0a0a',
-                border: '1px solid #1e293b', borderRadius: 8, padding: 12,
-                color: '#7ed957', fontSize: 13, resize: 'vertical',
-                outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
-              }}
-              autoFocus
-              onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) saveNote() }}
-            />
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button
-                onClick={async () => { try { const t = await navigator.clipboard.readText(); setNoteInput(t) } catch {} }}
-                style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-              >
-                Paste
-              </button>
-              <button
-                onClick={() => setNoteInput('')}
-                style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-              >
-                Clear
-              </button>
-              <button
-                onClick={saveNote}
-                disabled={!noteInput.trim()}
-                style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #7ed957', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: noteInput.trim() ? 1 : 0.3 }}
-              >
-                Save
-              </button>
+        <div className="fixed inset-0 z-[300] bg-black/75 backdrop-blur-lg flex items-center justify-center" onClick={e => { if (e.target === e.currentTarget) setNoteModalOpen(false) }}>
+          <div className="bg-black border border-core-border rounded-2xl w-[400px] p-6 animate-fade-in">
+            <div className="text-sm font-bold text-core-green mb-3">Quick Note</div>
+            <textarea value={noteInput} onChange={e => setNoteInput(e.target.value)} placeholder="Paste or type anything..."
+              className="w-full min-h-[120px] bg-core-bg border border-core-border rounded-lg p-3 text-core-green text-[13px] resize-y outline-none focus:border-core-green/40 transition-colors"
+              autoFocus onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) saveNote() }} />
+            <div className="flex gap-2 mt-3">
+              <button onClick={async () => { try { setNoteInput(await navigator.clipboard.readText()) } catch {} }}
+                className="flex-1 py-2 bg-black border border-core-border rounded-md text-core-green text-xs font-semibold cursor-pointer hover:border-core-green/30 transition-colors">Paste</button>
+              <button onClick={() => setNoteInput('')}
+                className="flex-1 py-2 bg-black border border-core-border rounded-md text-core-green text-xs font-semibold cursor-pointer hover:border-core-green/30 transition-colors">Clear</button>
+              <button onClick={saveNote} disabled={!noteInput.trim()}
+                className="flex-1 py-2 bg-black border border-core-green rounded-md text-core-green text-xs font-bold cursor-pointer disabled:opacity-30 hover:bg-core-green/10 transition-colors">Save</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Expanded Note Edit Modal */}
+      {/* Edit Note Modal */}
       {expanded && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 300,
-            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-          onClick={e => { if (e.target === e.currentTarget) setExpanded(null) }}
-        >
-          <div style={{
-            background: '#000', border: '1px solid #1e293b', borderRadius: 16,
-            width: 440, padding: 24, animation: 'strikeGlobalModalIn 0.25s ease',
-          }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#7ed957', marginBottom: 4 }}>Edit Note</div>
-            <div style={{ fontSize: 10, color: '#4b5563', marginBottom: 12 }}>{notes.find(n => n.id === expanded)?.date}</div>
-            <textarea
-              value={editText}
-              onChange={e => setEditText(e.target.value)}
-              style={{
-                width: '100%', minHeight: 160, background: '#0a0a0a',
-                border: '1px solid #1e293b', borderRadius: 8, padding: 12,
-                color: '#7ed957', fontSize: 13, resize: 'vertical',
-                outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
-              }}
-            />
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button onClick={() => navigator.clipboard.writeText(editText)} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Copy</button>
-              <button onClick={() => setExpanded(null)} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #1e293b', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <button onClick={saveEdit} style={{ flex: 1, padding: '8px 0', background: '#000', border: '1px solid #7ed957', borderRadius: 6, color: '#7ed957', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+        <div className="fixed inset-0 z-[300] bg-black/75 backdrop-blur-lg flex items-center justify-center" onClick={e => { if (e.target === e.currentTarget) setExpanded(null) }}>
+          <div className="bg-black border border-core-border rounded-2xl w-[440px] p-6 animate-fade-in">
+            <div className="text-sm font-bold text-core-green mb-1">Edit Note</div>
+            <div className="text-[10px] text-core-text-muted mb-3">{notes.find(n => n.id === expanded)?.date}</div>
+            <textarea value={editText} onChange={e => setEditText(e.target.value)}
+              className="w-full min-h-[160px] bg-core-bg border border-core-border rounded-lg p-3 text-core-green text-[13px] resize-y outline-none focus:border-core-green/40 transition-colors" />
+            <div className="flex gap-2 mt-3">
+              <button onClick={() => navigator.clipboard.writeText(editText)}
+                className="flex-1 py-2 bg-black border border-core-border rounded-md text-core-green text-xs font-semibold cursor-pointer hover:border-core-green/30 transition-colors">Copy</button>
+              <button onClick={() => setExpanded(null)}
+                className="flex-1 py-2 bg-black border border-core-border rounded-md text-core-green text-xs font-semibold cursor-pointer hover:border-core-green/30 transition-colors">Cancel</button>
+              <button onClick={saveEdit}
+                className="flex-1 py-2 bg-black border border-core-green rounded-md text-core-green text-xs font-bold cursor-pointer hover:bg-core-green/10 transition-colors">Save</button>
             </div>
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes strikeGlobalModalIn { from { opacity:0; transform:scale(0.95) translateY(8px); } to { opacity:1; transform:scale(1) translateY(0); } }
-      `}</style>
     </>
   )
 }
