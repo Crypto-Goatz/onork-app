@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateReport } from '@/lib/hipaa/ai-generate'
 import { TIER_META, type Tier } from '@/lib/hipaa/report-types'
+import { sendReportReady, upsertHipaaContact } from '@/lib/hipaa/email'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -90,6 +91,45 @@ export async function POST(req: NextRequest) {
       status: 'delivered',
       full_report_sent_at: new Date().toISOString(),
     }).eq('id', orderId)
+
+    // Resolve (or rebuild) contactId + fire the report-ready email so this
+    // endpoint is a single-shot "make the customer happy" entry point.
+    let contactId: string | null = order.contact_id || null
+    if (!contactId && order.customer_email) {
+      contactId = await upsertHipaaContact({
+        email: order.customer_email,
+        name: order.customer_name,
+        companyName: a.company_name,
+        orderId,
+        tier,
+        sourceSite: order.source_site,
+      })
+      if (contactId) {
+        await sb.from('hipaa_orders').update({ contact_id: contactId }).eq('id', orderId)
+      }
+    }
+    if (contactId && order.report_view_token) {
+      try {
+        await sendReportReady({
+          contactId,
+          toName: order.customer_name,
+          companyName: report.companyName,
+          orderId,
+          reportViewUrl: `https://rocketopp.com/hipaa/reports/${orderId}?t=${order.report_view_token}`,
+          supportCallUrl: tierMeta.includesSupportCall ? `https://rocketopp.com/hipaa/book-call?order=${orderId}` : null,
+          supportCallExpiresAt: order.support_call_expires_at || null,
+          tier,
+          tierName: tierMeta.name,
+          currentGrade: report.currentGrade,
+          nprmGrade: report.nprmGrade,
+          criticalFindings: report.findings.filter((f) => f.severity === 'critical').length,
+          findingsCount: report.findings.length,
+          creditHidden: Boolean(order.credit_hidden),
+        })
+      } catch (e) {
+        console.warn('[HIPAA] report-ready email failed:', (e as Error).message)
+      }
+    }
 
     return NextResponse.json({
       ok: true,
