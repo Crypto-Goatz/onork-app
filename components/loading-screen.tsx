@@ -19,27 +19,70 @@ export function LoadingScreen() {
 
   return (
     <div
-      className={[
-        'fixed inset-0 z-[9999] bg-[#020810] flex flex-col items-center justify-center overflow-hidden',
-        'transition-opacity duration-[800ms] ease-out',
-        fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto',
-      ].join(' ')}
+      data-fade={fadeOut ? 'true' : 'false'}
+      className="ls-root fixed inset-0 z-[9999] bg-[#020810] flex flex-col items-center justify-center overflow-hidden"
     >
-      {/* Radial glow behind logo */}
-      <div
-        className={[
-          'absolute w-[400px] h-[400px] rounded-full transition-all duration-[1200ms] ease-out',
-          phase >= 2 ? 'scale-[1.3]' : 'scale-[0.8]',
-        ].join(' ')}
-        style={{
-          background: phase >= 2
-            ? 'radial-gradient(circle, rgba(126,217,87,0.15) 0%, rgba(126,217,87,0.05) 40%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(126,217,87,0.05) 0%, transparent 60%)',
-        }}
-      />
-
-      {/* Keyframe animations */}
+      {/* Keyframe animations + phase-driven CSS */}
       <style>{`
+        .ls-root { transition: opacity 0.8s ease-out; }
+        .ls-root[data-fade='true'] { opacity: 0; pointer-events: none; }
+        .ls-root[data-fade='false'] { opacity: 1; pointer-events: auto; }
+
+        .ls-glow {
+          position: absolute;
+          width: 400px; height: 400px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(126,217,87,0.05) 0%, transparent 60%);
+          transform: scale(0.8);
+          transition: all 1.2s ease-out;
+        }
+        .ls-glow.phase2 {
+          background: radial-gradient(circle, rgba(126,217,87,0.15) 0%, rgba(126,217,87,0.05) 40%, transparent 70%);
+          transform: scale(1.3);
+        }
+
+        .ls-particle {
+          position: absolute;
+          border-radius: 50%;
+          opacity: 0;
+          transition: opacity 0.5s;
+        }
+        .ls-particle.active { opacity: 1; }
+
+        .ls-p1 { width: 4px; height: 4px; background: #6EE05A; box-shadow: 0 0 8px rgba(126,217,87,0.8); }
+        .ls-p1.active { animation: orbit1 3s linear infinite; }
+
+        .ls-p2 { width: 3px; height: 3px; background: #14b8a6; box-shadow: 0 0 6px rgba(20,184,166,0.8); }
+        .ls-p2.active { animation: orbit2 4s linear infinite; }
+
+        .ls-p3 { width: 3px; height: 3px; background: #8b5cf6; box-shadow: 0 0 6px rgba(139,92,246,0.8); }
+        .ls-p3.active { animation: orbit3 2.5s linear infinite; }
+
+        .ls-logo {
+          height: 56px; object-fit: contain;
+          opacity: 0; transform: scale(0.9);
+          transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .ls-logo.phase1 { opacity: 1; transform: scale(1); }
+        .ls-logo.phase2 { animation: logoPulse 2s ease-in-out infinite; }
+
+        .ls-scan {
+          position: absolute; left: 0; right: 0; height: 2px; pointer-events: none;
+          background: linear-gradient(90deg, transparent, rgba(126,217,87,0.8), transparent);
+          animation: scanLine 1.5s ease-in-out infinite;
+        }
+
+        .ls-tagline {
+          opacity: 0;
+          margin-top: 24px;
+          font-size: 11px; font-weight: 500;
+          color: rgba(110,224,90,0.5);
+          font-family: monospace;
+          text-transform: uppercase;
+          letter-spacing: 4px;
+        }
+        .ls-tagline.phase2 { animation: textReveal 1s ease-out forwards; }
+
         @keyframes orbit1 {
           0% { transform: rotate(0deg) translateX(80px) rotate(0deg); opacity: 0.6; }
           50% { opacity: 1; }
@@ -71,64 +114,30 @@ export function LoadingScreen() {
         }
       `}</style>
 
+      {/* Radial glow */}
+      <div className={`ls-glow${phase >= 2 ? ' phase2' : ''}`} />
+
       {/* Particle 1 */}
-      <div
-        className="absolute w-1 h-1 rounded-full bg-[#6EE05A] shadow-[0_0_8px_rgba(126,217,87,0.8)] transition-opacity duration-500"
-        style={{
-          animation: phase >= 1 ? 'orbit1 3s linear infinite' : 'none',
-          opacity: phase >= 1 ? 1 : 0,
-        }}
-      />
+      <div className={`ls-particle ls-p1${phase >= 1 ? ' active' : ''}`} />
 
       {/* Particle 2 */}
-      <div
-        className="absolute w-[3px] h-[3px] rounded-full bg-[#14b8a6] shadow-[0_0_6px_rgba(20,184,166,0.8)] transition-opacity duration-500"
-        style={{
-          animation: phase >= 1 ? 'orbit2 4s linear infinite' : 'none',
-          opacity: phase >= 1 ? 1 : 0,
-        }}
-      />
+      <div className={`ls-particle ls-p2${phase >= 1 ? ' active' : ''}`} />
 
       {/* Particle 3 */}
-      <div
-        className="absolute w-[3px] h-[3px] rounded-full bg-[#8b5cf6] shadow-[0_0_6px_rgba(139,92,246,0.8)] transition-opacity duration-500"
-        style={{
-          animation: phase >= 1 ? 'orbit3 2.5s linear infinite' : 'none',
-          opacity: phase >= 1 ? 1 : 0,
-        }}
-      />
+      <div className={`ls-particle ls-p3${phase >= 1 ? ' active' : ''}`} />
 
       {/* Logo container with scan line */}
       <div className="relative z-[1]">
         <img
           src="/brand/0ncore-logo.png"
           alt="0nCore"
-          className="h-14 object-contain transition-[opacity,transform] duration-[800ms] ease-out"
-          style={{
-            opacity: phase >= 1 ? 1 : 0,
-            transform: phase >= 1 ? 'scale(1)' : 'scale(0.9)',
-            animation: phase >= 2 ? 'logoPulse 2s ease-in-out infinite' : 'none',
-          }}
+          className={`ls-logo${phase >= 1 ? ' phase1' : ''}${phase >= 2 ? ' phase2' : ''}`}
         />
-        {phase >= 2 && (
-          <div
-            className="absolute left-0 right-0 h-0.5 pointer-events-none"
-            style={{
-              background: 'linear-gradient(90deg, transparent, rgba(126,217,87,0.8), transparent)',
-              animation: 'scanLine 1.5s ease-in-out infinite',
-            }}
-          />
-        )}
+        {phase >= 2 && <div className="ls-scan" />}
       </div>
 
       {/* Tagline */}
-      <div
-        className="mt-6 text-[11px] font-medium text-[#6EE05A]/50 font-mono uppercase tracking-[4px]"
-        style={{
-          animation: phase >= 2 ? 'textReveal 1s ease-out forwards' : 'none',
-          opacity: phase >= 2 ? undefined : 0,
-        }}
-      >
+      <div className={`ls-tagline${phase >= 2 ? ' phase2' : ''}`}>
         initializing
       </div>
     </div>

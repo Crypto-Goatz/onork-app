@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { Phone } from 'lucide-react'
 
 interface RecentCall {
   number: string
@@ -93,79 +94,69 @@ export function DialerButton() {
     }
   }
 
+  const isError = callStatus.toLowerCase().includes('fail') || callStatus.toLowerCase().includes('error')
+
   return (
     <>
       {/* Floating phone button */}
       <button
         onClick={() => setOpen(!open)}
-        style={{
-          position: 'fixed', bottom: 88, right: 24, zIndex: 9001,
-          width: 44, height: 44, borderRadius: 12,
-          background: open ? '#1e293b' : 'linear-gradient(135deg, #00d4ff 0%, #0ea5e9 100%)',
-          border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: open ? '0 4px 16px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,212,255,0.35)',
-          transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
-        }}
+        className={[
+          'fixed bottom-[88px] right-6 z-[9001] w-11 h-11 rounded-xl border-none cursor-pointer',
+          'flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          open
+            ? 'bg-[#161b22] shadow-[0_4px_16px_rgba(0,0,0,0.3)]'
+            : 'bg-gradient-to-br from-[#14b8a6] to-[#0ea5e9] shadow-[0_4px_20px_rgba(20,184,166,0.35)]',
+        ].join(' ')}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={open ? '#f0f4f8' : '#000'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-        </svg>
+        <Phone
+          size={18}
+          className={open ? 'text-[#f0f4f8]' : 'text-black'}
+        />
       </button>
 
       {/* Dialer panel */}
       {open && (
-        <div style={{
-          position: 'fixed', bottom: 144, right: 24, zIndex: 9000,
-          width: 320, maxHeight: 460,
-          background: '#0d1117', border: '1px solid #1e293b', borderRadius: 16,
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(0,212,255,0.05)',
-          animation: 'dialerSlideUp 0.25s cubic-bezier(0.4,0,0.2,1)',
-        }}>
+        <div className="fixed bottom-36 right-6 z-[9000] w-[320px] max-h-[460px] bg-[#0d1117] border border-[#30363d] rounded-2xl flex flex-col overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_30px_rgba(20,184,166,0.05)] animate-[dialerSlideUp_0.25s_cubic-bezier(0.4,0,0.2,1)]">
+
           {/* Header */}
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg, rgba(0,212,255,0.06) 0%, rgba(14,165,233,0.03) 100%)' }}>
-            <div style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg, #00d4ff, #0ea5e9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-              </svg>
+          <div className="px-4 py-3 border-b border-[#30363d] flex items-center gap-2 bg-gradient-to-br from-[#14b8a6]/[.06] to-[#0ea5e9]/[.03]">
+            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#14b8a6] to-[#0ea5e9] flex items-center justify-center">
+              <Phone size={12} className="text-black" />
             </div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f4f8' }}>Click-to-Call</div>
+            <div className="text-[13px] font-bold text-[#f0f4f8]">Click-to-Call</div>
           </div>
 
-          <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
+          <div className="p-4 flex flex-col gap-3 overflow-y-auto">
             {/* Phone input */}
             <div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="flex gap-2">
                 <input
                   value={phoneNumber}
                   onChange={e => setPhoneNumber(e.target.value)}
                   placeholder="+1 (555) 123-4567"
-                  style={{
-                    flex: 1, padding: '10px 12px', borderRadius: 8,
-                    background: '#161b22', border: '1px solid #1e293b',
-                    color: '#f0f4f8', fontSize: 14, outline: 'none', fontFamily: 'monospace',
-                  }}
+                  className="flex-1 px-3 py-2.5 rounded-lg bg-[#161b22] border border-[#30363d] text-[#f0f4f8] text-[14px] outline-none font-mono"
                   onKeyDown={e => { if (e.key === 'Enter') initiateCall(phoneNumber) }}
                 />
                 <button
                   onClick={() => initiateCall(phoneNumber)}
                   disabled={!phoneNumber.trim() || calling}
-                  style={{
-                    width: 40, height: 40, borderRadius: 8, border: 'none',
-                    background: phoneNumber.trim() ? 'linear-gradient(135deg, #7ed957, #5cb83a)' : '#1e293b',
-                    cursor: phoneNumber.trim() ? 'pointer' : 'default',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    opacity: calling ? 0.6 : 1,
-                  }}
+                  className={[
+                    'w-10 h-10 rounded-lg border-none flex items-center justify-center transition-opacity',
+                    phoneNumber.trim()
+                      ? 'bg-gradient-to-br from-[#6EE05A] to-[#4abe2e] cursor-pointer'
+                      : 'bg-[#30363d] cursor-default',
+                    calling ? 'opacity-60' : '',
+                  ].join(' ')}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={phoneNumber.trim() ? '#000' : '#4b5563'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                  </svg>
+                  <Phone
+                    size={16}
+                    className={phoneNumber.trim() ? 'text-black' : 'text-[#4b5563]'}
+                  />
                 </button>
               </div>
               {callStatus && (
-                <div style={{ fontSize: 11, marginTop: 6, color: callStatus.includes('fail') || callStatus.includes('error') ? '#f87171' : '#7ed957', fontWeight: 600 }}>
+                <div className={`text-[11px] mt-1.5 font-semibold ${isError ? 'text-[#ef4444]' : 'text-[#6EE05A]'}`}>
                   {callStatus}
                 </div>
               )}
@@ -177,40 +168,36 @@ export function DialerButton() {
                 value={contactSearch}
                 onChange={e => setContactSearch(e.target.value)}
                 placeholder="Search contacts..."
-                style={{
-                  width: '100%', padding: '8px 12px', boxSizing: 'border-box', borderRadius: 8,
-                  background: '#161b22', border: '1px solid #1e293b',
-                  color: '#f0f4f8', fontSize: 12, outline: 'none',
-                }}
+                className="w-full px-3 py-2 rounded-lg bg-[#161b22] border border-[#30363d] text-[#f0f4f8] text-[12px] outline-none box-border"
               />
               {searchLoading && (
-                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>Searching...</div>
+                <div className="text-[11px] text-[#6b7280] mt-1">Searching...</div>
               )}
               {contacts.length > 0 && (
-                <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div className="mt-1.5 flex flex-col gap-0.5">
                   {contacts.map(c => (
                     <button
                       key={c.id}
                       onClick={() => selectContact(c)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px',
-                        background: 'rgba(255,255,255,0.02)', border: '1px solid transparent',
-                        borderRadius: 6, cursor: c.phone ? 'pointer' : 'default', textAlign: 'left',
-                        color: '#d1d5db', width: '100%',
-                      }}
+                      className={[
+                        'flex items-center gap-2 px-2.5 py-2 bg-white/[.02] border border-transparent rounded-md text-left text-[#d1d5db] w-full',
+                        c.phone ? 'cursor-pointer' : 'cursor-default',
+                      ].join(' ')}
                     >
-                      <div style={{ width: 26, height: 26, borderRadius: 6, background: 'rgba(0,212,255,0.1)', color: '#00d4ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
+                      <div className="w-[26px] h-[26px] rounded-md bg-[#14b8a6]/10 text-[#14b8a6] flex items-center justify-center text-[10px] font-bold shrink-0">
                         {c.name.charAt(0).toUpperCase()}
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#f0f4f8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
-                        <div style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace' }}>{c.phone || 'No phone'}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[12px] font-semibold text-[#f0f4f8] overflow-hidden text-ellipsis whitespace-nowrap">{c.name}</div>
+                        <div className="text-[10px] text-[#6b7280] font-mono">{c.phone || 'No phone'}</div>
                       </div>
                       {c.phone && (
                         <button
                           onClick={e => { e.stopPropagation(); initiateCall(c.phone!, c.name) }}
-                          style={{ background: 'rgba(126,217,87,0.1)', border: 'none', borderRadius: 4, padding: '4px 8px', color: '#7ed957', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}
-                        >Call</button>
+                          className="bg-[#6EE05A]/10 border-none rounded px-2 py-1 text-[#6EE05A] text-[10px] font-bold cursor-pointer"
+                        >
+                          Call
+                        </button>
                       )}
                     </button>
                   ))}
@@ -221,26 +208,20 @@ export function DialerButton() {
             {/* Recent calls */}
             {recentCalls.length > 0 && (
               <div>
-                <div style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Recent</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-[0.5px] mb-1.5">Recent</div>
+                <div className="flex flex-col gap-0.5">
                   {recentCalls.slice(0, 5).map((c, i) => (
                     <button
                       key={i}
                       onClick={() => { setPhoneNumber(c.number); initiateCall(c.number, c.name) }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px',
-                        background: 'transparent', border: 'none', borderRadius: 6,
-                        cursor: 'pointer', textAlign: 'left', width: '100%',
-                      }}
+                      className="flex items-center gap-2 px-2 py-1.5 bg-transparent border-none rounded-md cursor-pointer text-left w-full"
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                      </svg>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, color: '#d1d5db', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.number}</div>
-                        {c.name && <div style={{ fontSize: 10, color: '#6b7280' }}>{c.name}</div>}
+                      <Phone size={12} className="text-[#4b5563]" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[12px] text-[#d1d5db] font-mono overflow-hidden text-ellipsis whitespace-nowrap">{c.number}</div>
+                        {c.name && <div className="text-[10px] text-[#6b7280]">{c.name}</div>}
                       </div>
-                      <div style={{ fontSize: 10, color: '#4b5563' }}>
+                      <div className="text-[10px] text-[#4b5563]">
                         {new Date(c.time).toLocaleDateString()}
                       </div>
                     </button>

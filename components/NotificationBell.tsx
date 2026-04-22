@@ -13,11 +13,16 @@ interface Notification {
   created_at: string
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  success: '#6EE05A',
-  error: '#ef4444',
-  warning: '#f59e0b',
-  info: '#60a5fa',
+const TYPE_DOT_CLASS: Record<string, string> = {
+  success: 'bg-[#6EE05A] shadow-[0_0_6px_#6EE05A]',
+  error: 'bg-[#ef4444] shadow-[0_0_6px_#ef4444]',
+  warning: 'bg-[#f59e0b] shadow-[0_0_6px_#f59e0b]',
+  info: 'bg-[#60a5fa] shadow-[0_0_6px_#60a5fa]',
+}
+
+function dotClass(type: string, read: boolean): string {
+  if (read) return 'bg-white/10'
+  return TYPE_DOT_CLASS[type] || 'bg-[#6EE05A] shadow-[0_0_6px_#6EE05A]'
 }
 
 export function NotificationBell() {
@@ -125,13 +130,7 @@ export function NotificationBell() {
                 >
                   <div className="flex gap-2.5 items-start">
                     {/* Status dot */}
-                    <div
-                      className="w-2 h-2 rounded-full shrink-0 mt-[5px]"
-                      style={{
-                        background: n.read ? 'rgba(255,255,255,0.1)' : (TYPE_COLORS[n.type] || '#6EE05A'),
-                        boxShadow: n.read ? 'none' : `0 0 6px ${TYPE_COLORS[n.type] || '#6EE05A'}`,
-                      }}
-                    />
+                    <div className={`w-2 h-2 rounded-full shrink-0 mt-[5px] ${dotClass(n.type, n.read)}`} />
                     <div className="flex-1 min-w-0">
                       <div className={[
                         'text-[12px] mb-[3px]',
