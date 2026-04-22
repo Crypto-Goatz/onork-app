@@ -255,11 +255,14 @@ export function AIChatBox() {
           ))}
           {loading && (
             <div className="flex gap-1 px-3.5 py-2">
-              {[0, 1, 2].map(i => (
+              {[
+                'animate-[dotPulse_1.2s_ease-in-out_0s_infinite]',
+                'animate-[dotPulse_1.2s_ease-in-out_0.15s_infinite]',
+                'animate-[dotPulse_1.2s_ease-in-out_0.3s_infinite]',
+              ].map((animClass, i) => (
                 <div
                   key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-core-green animate-[dotPulse_1.2s_ease-in-out_infinite]"
-                  style={{ animationDelay: `${i * 0.15}s` }}
+                  className={cn('w-1.5 h-1.5 rounded-full bg-core-green', animClass)}
                 />
               ))}
             </div>

@@ -99,9 +99,9 @@ export function ActionDock() {
     <>
       {/* ═══ Tab Strip ═══ */}
       <div className={cn(
-        'fixed z-[8000] flex flex-col gap-0.5 transition-all duration-300 ease-out',
+        'fixed z-[8000] flex flex-col gap-0.5 transition-all duration-300 ease-out top-1/2 -translate-y-1/2',
         isOpen ? 'right-[360px]' : 'right-0'
-      )} style={{ top: '50%', transform: 'translateY(-50%)' }}>
+      )}>
         {TABS.map(tab => {
           const Icon = tab.icon
           const isActive = isOpen && activeTab === tab.key
