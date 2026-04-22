@@ -277,8 +277,11 @@ Rules:
   // Anthropic is down / out of credits / times out. Structured JSON both ways.
   let raw = await sonnet(prompt, { max_tokens: 1800, json: true })
   let parsed = safeParse<DeveloperFix>(raw)
-  if (!parsed || !Array.isArray(parsed.steps) || parsed.steps.length < 2) {
-    console.warn('[HIPAA] devFix: Sonnet failed or returned weak output, falling back to Groq')
+  const weak = (p: DeveloperFix | null) =>
+    !p || !Array.isArray(p.steps) || p.steps.length < 3 ||
+    !p.steps.some((s) => /```/.test(s.body || ''))
+  if (weak(parsed)) {
+    console.warn('[HIPAA] devFix: Sonnet weak/failed, falling back to Groq')
     raw = await groq(prompt, { max_tokens: 2500, json: true })
     parsed = safeParse<DeveloperFix>(raw)
   }
@@ -333,11 +336,7 @@ async function groq(prompt: string, opts: { max_tokens?: number; json?: boolean 
       }
       const j = await r.json()
       const content = j?.choices?.[0]?.message?.content || ''
-      if (opts.json) {
-        const m = content.match(/```(?:json)?\s*([\s\S]*?)```/)
-        return (m ? m[1] : content).trim()
-      }
-      return content
+      return opts.json ? stripOuterCodeFence(content) : content
     } catch (e) {
       console.warn('[HIPAA] groq attempt', attempt, 'exception:', (e as Error).message)
     }
@@ -370,15 +369,26 @@ async function sonnet(prompt: string, opts: { max_tokens?: number; json?: boolea
     }
     const j = await r.json()
     const content = j?.content?.[0]?.text || ''
-    if (opts.json) {
-      const m = content.match(/```(?:json)?\s*([\s\S]*?)```/)
-      return (m ? m[1] : content).trim()
-    }
-    return content
+    return opts.json ? stripOuterCodeFence(content) : content
   } catch (e) {
     console.warn('[HIPAA] sonnet exception:', (e as Error).message)
     return ''
   }
+}
+
+/**
+ * Strip markdown code fences **only when they wrap the entire response**.
+ * The old regex was greedy and would eat inner fences inside JSON string
+ * fields (e.g. `"body": "... \`\`\`bash ... \`\`\`"`), which broke parsing
+ * when a model returned clean JSON containing embedded code blocks.
+ */
+function stripOuterCodeFence(raw: string): string {
+  const s = raw.trim()
+  if (!s.startsWith('```')) return s
+  // Remove leading ```json or ```
+  const withoutLead = s.replace(/^```(?:json)?\s*/, '')
+  // Remove trailing ``` if present
+  return withoutLead.replace(/\s*```\s*$/, '').trim()
 }
 
 function safeParse<T>(raw: string): T | null {
