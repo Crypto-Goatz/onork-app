@@ -108,13 +108,7 @@ export function StrikeSettingsDialog({ config, onConfigChange, trigger }: Strike
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger render={trigger as React.ReactElement || (
-        <button
-          style={{
-            background: 'transparent', border: 'none', color: '#4b5563',
-            cursor: 'pointer', padding: 4, borderRadius: 4,
-            display: 'flex', alignItems: 'center',
-          }}
-        >
+        <button className="bg-transparent border-none text-core-text-muted cursor-pointer p-1 rounded flex items-center hover:text-core-text transition-colors">
           <Settings className="size-4" />
         </button>
       )} />
