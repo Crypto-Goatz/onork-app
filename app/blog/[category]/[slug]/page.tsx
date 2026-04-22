@@ -13,7 +13,11 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   return {
     title: data.meta_title || `${data.title} — 0nCore Blog`,
     description: data.meta_description,
-    openGraph: { title: data.meta_title || data.title, description: data.meta_description || '', url: `https://0ncore.com/blog/${data.category_slug}/${data.slug}`, type: 'article' },
+    openGraph: {
+      title: data.meta_title || data.title, description: data.meta_description || '',
+      url: `https://0ncore.com/blog/${data.category_slug}/${data.slug}`, type: 'article',
+      images: [{ url: `https://0ncore.com/api/og/blog/${data.slug}`, width: 1200, height: 310, alt: data.title }],
+    },
     alternates: { canonical: `https://0ncore.com/blog/${data.category_slug}/${data.slug}` },
   }
 }
@@ -81,6 +85,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ categ
     datePublished: post.published_at, dateModified: post.updated_at,
     author: { '@type': 'Person', name: post.author_name },
     publisher: { '@type': 'Organization', name: '0nCore', url: 'https://0ncore.com', logo: { '@type': 'ImageObject', url: 'https://0ncore.com/brand/0ncore-logo.png' } },
+    image: `https://0ncore.com/api/og/blog/${slug}`,
     wordCount: post.content?.split(/\s+/).length || 0,
     timeRequired: `PT${post.reading_time}M`,
   }
@@ -96,6 +101,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ categ
           <Link href="/login" style={{ fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Get Started</Link>
         </div>
       </nav>
+
+      {/* Hero Image */}
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 24px) 0' }}>
+        <img
+          src={`/api/og/blog/${slug}`}
+          alt={post.title}
+          style={{ width: '100%', height: 'auto', borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)' }}
+        />
+      </div>
 
       <article style={{ maxWidth: 720, margin: '0 auto', padding: 'clamp(24px, 4vw, 40px) clamp(16px, 4vw, 24px) 80px' }}>
         {/* Breadcrumb */}
