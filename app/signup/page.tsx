@@ -51,9 +51,9 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-core-bg flex items-center justify-center px-4" style={{ position: 'relative', overflow: 'hidden' }}>
+      <div className="min-h-screen bg-core-bg flex items-center justify-center px-4 relative overflow-hidden">
         <VideoBg opacity={0.1} />
-        <div className="w-full max-w-sm text-center animate-fade-in" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="w-full max-w-sm text-center animate-fade-in relative z-10">
           <div className="bg-core-card border border-core-border rounded-xl p-8">
             <div className="w-16 h-16 bg-core-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-core-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,9 +74,9 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-core-bg flex items-center justify-center px-4" style={{ position: 'relative', overflow: 'hidden' }}>
+    <div className="min-h-screen bg-core-bg flex items-center justify-center px-4 relative overflow-hidden">
       <VideoBg opacity={0.1} />
-      <div className="w-full max-w-sm animate-fade-in" style={{ position: 'relative', zIndex: 1 }}>
+      <div className="w-full max-w-sm animate-fade-in relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="text-3xl font-bold text-core-green">

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { VideoBg } from '@/components/video-bg'
+import { Check, X } from 'lucide-react'
 
 const FEATURES = [
   '1,554+ AI tools across 96 services',
@@ -59,30 +60,30 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-split" style={{ position: 'relative' }}>
+    <div className="login-split relative">
       {/* Video background */}
       <VideoBg opacity={0.08} />
 
       {/* LEFT — Login */}
       <div className="login-left">
         <div className="login-left-inner">
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div className="text-center mb-8">
             <Link href="/">
-              <img src="/brand/0ncore-logo.png" alt="0nCore" style={{ height: 36, objectFit: 'contain' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+              <img src="/brand/0ncore-logo.png" alt="0nCore" className="h-9 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
             </Link>
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, marginTop: 8, letterSpacing: '0.06em' }}>
+            <p className="text-white/35 text-[12px] mt-2 tracking-[0.06em]">
               Your AI Command Center
             </p>
           </div>
 
           <div className="glass-login-card">
             {error && (
-              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, fontSize: 13, color: '#ef4444' }}>
+              <div className="bg-[#ef4444]/[0.08] border border-[#ef4444]/20 rounded-[10px] px-[14px] py-[10px] mb-[14px] text-[13px] text-[#ef4444]">
                 {error}
               </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
+            <div className="flex flex-col gap-[10px] mb-[18px]">
               <button onClick={() => handleOAuth('google')} className="oauth-btn">
                 <svg width="18" height="18" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -100,18 +101,18 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>or</span>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+            <div className="flex items-center gap-3 mb-[18px]">
+              <div className="flex-1 h-px bg-white/[0.06]" />
+              <span className="text-[10px] text-white/25 uppercase tracking-[0.1em]">or</span>
+              <div className="flex-1 h-px bg-white/[0.06]" />
             </div>
 
             <form onSubmit={handleLogin}>
-              <div style={{ marginBottom: 12 }}>
+              <div className="mb-3">
                 <label className="login-label">Email</label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com" className="login-input" />
               </div>
-              <div style={{ marginBottom: 20 }}>
+              <div className="mb-5">
                 <label className="login-label">Password</label>
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Enter your password" className="login-input" />
               </div>
@@ -120,15 +121,15 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div style={{ textAlign: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="text-center mt-4 pt-4 border-t border-white/[0.05]">
               <button onClick={() => setShowModal(true)} className="login-request-btn">
                 Request Access
               </button>
             </div>
           </div>
 
-          <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 20 }}>
-            <Link href="https://0nmcp.com" style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Learn more about 0nAI</Link>
+          <p className="text-center text-[11px] text-white/20 mt-5">
+            <Link href="https://0nmcp.com" className="text-white/30 no-underline">Learn more about 0nAI</Link>
           </p>
         </div>
       </div>
@@ -136,19 +137,21 @@ export default function LoginPage() {
       {/* RIGHT — Features */}
       <div className="login-right">
         <div className="login-right-inner">
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <img src="/brand/0n-icon-white.svg" alt="0n" style={{ height: 56, objectFit: 'contain', filter: 'drop-shadow(0 0 30px rgba(126,217,87,0.4))' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+          <div className="text-center mb-10">
+            <img src="/brand/0n-icon-white.svg" alt="0n" className="h-14 object-contain drop-shadow-[0_0_30px_rgba(126,217,87,0.4)]" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
           </div>
 
           <h2 className="features-title">
-            Scale with <span style={{ color: '#7ed957' }}>AI</span>
+            Scale with <span className="text-[#7ed957]">AI</span>
           </h2>
           <p className="features-subtitle">Everything you need to automate your business.</p>
 
           <div className="features-list">
             {FEATURES.map((f, i) => (
               <div key={f} className="feature-item" style={{ animationDelay: `${i * 150}ms` }}>
-                <span className="feature-check">&#10003;</span>
+                <span className="feature-check">
+                  <Check size={10} strokeWidth={3} />
+                </span>
                 <span>{f}</span>
               </div>
             ))}
@@ -174,25 +177,29 @@ export default function LoginPage() {
       {/* Request Access Modal */}
       {showModal && (
         <div className="modal-backdrop" onClick={() => !requestSent && setShowModal(false)}>
-          <div className="glass-login-card" style={{ maxWidth: 480, width: '100%' }} onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 18 }}>x</button>
+          <div className="glass-login-card max-w-[480px] w-full" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 bg-transparent border-none text-white/40 cursor-pointer text-lg leading-none p-0">
+              <X size={18} />
+            </button>
             {requestSent ? (
-              <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <div style={{ fontSize: 40, marginBottom: 12, color: '#7ed957' }}>&#10003;</div>
-                <h2 style={{ fontSize: 20, fontWeight: 800, color: '#7ed957', marginBottom: 10 }}>Request Received</h2>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, lineHeight: 1.7 }}>Check your email — you will hear from us shortly.</p>
-                <button onClick={() => setShowModal(false)} className="login-submit" style={{ marginTop: 20, width: 'auto', padding: '10px 32px' }}>Got it</button>
+              <div className="text-center py-5">
+                <div className="mb-3 text-[#7ed957] flex justify-center">
+                  <Check size={40} strokeWidth={2} />
+                </div>
+                <h2 className="text-xl font-extrabold text-[#7ed957] mb-[10px]">Request Received</h2>
+                <p className="text-white/50 text-[13px] leading-[1.7]">Check your email — you will hear from us shortly.</p>
+                <button onClick={() => setShowModal(false)} className="login-submit mt-5 w-auto px-8 py-[10px]">Got it</button>
               </div>
             ) : (
               <>
-                <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6 }}>Request Access</h2>
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginBottom: 20 }}>Join the waitlist for your personal AI agent.</p>
+                <h2 className="text-xl font-extrabold text-white mb-[6px]">Request Access</h2>
+                <p className="text-white/40 text-[12px] mb-5">Join the waitlist for your personal AI agent.</p>
                 <form onSubmit={handleRequestAccess}>
-                  <div className="modal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div className="grid grid-cols-2 gap-[10px] mb-[10px]">
                     <div><label className="login-label">Name</label><input value={requestForm.name} onChange={e => setRequestForm(p => ({ ...p, name: e.target.value }))} required placeholder="Your name" className="login-input" /></div>
                     <div><label className="login-label">Email</label><input type="email" value={requestForm.email} onChange={e => setRequestForm(p => ({ ...p, email: e.target.value }))} required placeholder="you@company.com" className="login-input" /></div>
                   </div>
-                  <div className="modal-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
+                  <div className="grid grid-cols-2 gap-[10px] mb-[18px]">
                     <div><label className="login-label">Company</label><input value={requestForm.company} onChange={e => setRequestForm(p => ({ ...p, company: e.target.value }))} placeholder="Company" className="login-input" /></div>
                     <div><label className="login-label">Role</label><input value={requestForm.role} onChange={e => setRequestForm(p => ({ ...p, role: e.target.value }))} placeholder="Your role" className="login-input" /></div>
                   </div>
@@ -252,7 +259,7 @@ export default function LoginPage() {
         }
         @media (max-width: 480px) {
           .glass-login-card { padding: 20px; }
-          .modal-form-grid { grid-template-columns: 1fr !important; }
+          .grid-cols-2 { grid-template-columns: 1fr !important; }
         }
 
         .glass-login-card {
