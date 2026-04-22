@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="pd-glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00B4FF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#6EE05A" stop-opacity="0.3"/>
+    </linearGradient>
+    <filter id="pd-neon">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Glass backdrop -->
+  <rect x="6" y="6" width="52" height="52" rx="16" fill="url(#pd-glow)" stroke="rgba(0,180,255,0.2)" stroke-width="1"/>
+  <rect x="6" y="6" width="52" height="52" rx="16" fill="rgba(255,255,255,0.04)"/>
+  <!-- Shield outline -->
+  <path d="M32 14L18 22v10c0 10 6 18 14 22 8-4 14-12 14-22V22L32 14z" fill="none" stroke="#00B4FF" stroke-width="2" stroke-linejoin="round" filter="url(#pd-neon)">
+    <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite"/>
+  </path>
+  <!-- Eye inside shield (privacy) -->
+  <ellipse cx="32" cy="33" rx="7" ry="4.5" fill="none" stroke="#6EE05A" stroke-width="1.5">
+    <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite"/>
+  </ellipse>
+  <circle cx="32" cy="33" r="2" fill="#6EE05A">
+    <animate attributeName="r" values="1.5;2.5;1.5" dur="2.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.7;1;0.7" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+</svg>

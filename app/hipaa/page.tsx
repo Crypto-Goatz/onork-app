@@ -21,11 +21,11 @@ const US_STATES = [
 ]
 
 const CATEGORIES = [
-  { icon: '\u{1F510}', title: 'Transport Security', desc: 'TLS configuration, HSTS enforcement, certificate validity, and encryption-in-transit verification across public and authenticated endpoints.', count: 12 },
-  { icon: '\u{1F4DC}', title: 'Privacy Disclosures', desc: 'Notice of Privacy Practices presence, contact forms, data use statements, HIPAA badge visibility, and consent language assessment.', count: 9 },
-  { icon: '\u{1F6E1}\uFE0F', title: 'Security Headers', desc: 'Content-Security-Policy, X-Frame-Options, CORS configuration, server version exposure, and clickjacking prevention.', count: 11 },
-  { icon: '\u{1F511}', title: 'Authentication Controls', desc: 'MFA indicators, session timeout headers, rate-limiting evidence, login page security, and password policy signals.', count: 10 },
-  { icon: '\u{1F50D}', title: 'Data Exposure', desc: 'PHI leakage in URLs, exposed development files, third-party trackers without BAA, open directory listings, and debug endpoints.', count: 9 },
+  { svg: '/icons/hipaa/transport-security.svg', title: 'Transport Security', desc: 'TLS configuration, HSTS enforcement, certificate validity, HTTP redirect chains, and encryption-in-transit verification across public and authenticated endpoints.', count: 14 },
+  { svg: '/icons/hipaa/privacy-disclosures.svg', title: 'Privacy Disclosures', desc: 'Notice of Privacy Practices, CMS version disclosure, content freshness monitoring, consent language assessment, and HIPAA badge visibility.', count: 10 },
+  { svg: '/icons/hipaa/security-headers.svg', title: 'Security Headers', desc: 'Content-Security-Policy, X-Frame-Options, CORS configuration, wildcard origin detection, server version exposure, and clickjacking prevention.', count: 13 },
+  { svg: '/icons/hipaa/auth-controls.svg', title: 'Authentication Controls', desc: 'MFA detection, session cookie security, open registration endpoints, rate limiting, login page analysis, and password policy signals.', count: 12 },
+  { svg: '/icons/hipaa/data-exposure.svg', title: 'Data Exposure', desc: 'PHI in URLs, phpinfo/test.php exposure, EOL software detection, third-party trackers without BAA, exposed logs, composer.json, and debug endpoints.', count: 14 },
 ]
 
 const CHANGES_TABLE = [
@@ -251,7 +251,7 @@ export default function HIPAAPage() {
             boxShadow: '0 20px 80px rgba(0,0,0,0.4)',
           }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Free HIPAA Readiness Score</h2>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>51-point assessment in 30 seconds</p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>63-point assessment in 30 seconds</p>
             <ScanForm />
           </div>
         </div>
@@ -262,7 +262,7 @@ export default function HIPAAPage() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <h2 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: 800, marginBottom: 8 }}>
-              51 Compliance Checks Across 5 Categories
+              63 Compliance Checks Across 5 Categories
             </h2>
             <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', maxWidth: 600, margin: '0 auto' }}>
               Every check maps to a specific HIPAA Security Rule section and its 2026 NPRM equivalent.
@@ -275,7 +275,7 @@ export default function HIPAAPage() {
                 background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
                 textAlign: 'center',
               }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>{c.icon}</div>
+                <img src={c.svg} alt={c.title} style={{ width: 48, height: 48, marginBottom: 12 }} />
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>{c.title}</h3>
                 <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6, marginBottom: 12 }}>{c.desc}</p>
                 <div style={{

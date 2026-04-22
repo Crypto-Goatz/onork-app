@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="ts-glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6EE05A" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#00B4FF" stop-opacity="0.3"/>
+    </linearGradient>
+    <filter id="ts-blur">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.5"/>
+    </filter>
+    <filter id="ts-neon">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Glass backdrop -->
+  <rect x="6" y="6" width="52" height="52" rx="16" fill="url(#ts-glow)" stroke="rgba(110,224,90,0.2)" stroke-width="1"/>
+  <rect x="6" y="6" width="52" height="52" rx="16" fill="rgba(255,255,255,0.04)"/>
+  <!-- Lock body -->
+  <rect x="22" y="30" width="20" height="16" rx="3" fill="none" stroke="#6EE05A" stroke-width="2" filter="url(#ts-neon)">
+    <animate attributeName="stroke-opacity" values="0.7;1;0.7" dur="3s" repeatCount="indefinite"/>
+  </rect>
+  <!-- Lock shackle -->
+  <path d="M26 30V24a6 6 0 0112 0v6" fill="none" stroke="#00B4FF" stroke-width="2" stroke-linecap="round" filter="url(#ts-neon)">
+    <animate attributeName="stroke-opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite" begin="0.5s"/>
+  </path>
+  <!-- Keyhole -->
+  <circle cx="32" cy="37" r="2" fill="#6EE05A">
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <line x1="32" y1="39" x2="32" y2="43" stroke="#6EE05A" stroke-width="2" stroke-linecap="round">
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+  </line>
+</svg>
