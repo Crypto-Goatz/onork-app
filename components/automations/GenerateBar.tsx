@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { Sparkles, X } from 'lucide-react'
 import type { Capability } from './capabilities'
 import { CAPABILITIES } from './capabilities'
 import type { CapabilityNodeType, CapabilityNodeData } from './CapabilityNode'
@@ -97,7 +98,7 @@ function dotOnToNodes(workflow: any): { nodes: CapabilityNodeType[], edges: Edge
         source: prevId,
         target: nodeId,
         animated: true,
-        style: { stroke: 'var(--color-cyan, #14b8a6)', strokeWidth: 2 },
+        style: { stroke: '#14b8a6', strokeWidth: 2 },
         type: 'smoothstep',
       })
     }
@@ -110,6 +111,7 @@ export default function GenerateBar({ onGenerate }: GenerateBarProps) {
   const [prompt, setPrompt] = useState('')
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [inputFocused, setInputFocused] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   async function handleGenerate() {
@@ -139,57 +141,27 @@ export default function GenerateBar({ onGenerate }: GenerateBarProps) {
     return (
       <button
         onClick={() => { setExpanded(true); setTimeout(() => inputRef.current?.focus(), 100) }}
-        style={{
-          position: 'absolute',
-          bottom: 20,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          padding: '12px 24px',
-          background: 'rgba(14, 24, 37, 0.95)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid #1c2b42',
-          borderRadius: 12,
-          color: 'var(--text-secondary, #9ca3af)',
-          fontSize: 14,
-          cursor: 'pointer',
-          zIndex: 10,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          transition: 'all 0.2s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-cyan, #14b8a6)'; e.currentTarget.style.color = 'var(--color-cyan, #14b8a6)' }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border, #30363d)'; e.currentTarget.style.color = 'var(--text-secondary, #9ca3af)' }}
+        className="absolute bottom-5 left-1/2 -translate-x-1/2 px-6 py-3 bg-[rgba(14,24,37,0.95)] backdrop-blur-md border border-[#1c2b42] rounded-xl text-core-text-dim text-sm cursor-pointer z-10 flex items-center gap-2 transition-all duration-200 hover:border-core-cyan hover:text-core-cyan"
       >
-        <span style={{ fontSize: 16 }}>✨</span>
+        <Sparkles className="w-4 h-4" />
         Describe what you want to automate...
       </button>
     )
   }
 
   return (
-    <div style={{
-      position: 'absolute',
-      bottom: 20,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: '90%',
-      maxWidth: 600,
-      background: 'rgba(14, 24, 37, 0.97)',
-      backdropFilter: 'blur(16px)',
-      border: '1px solid #1c2b42',
-      borderRadius: 16,
-      padding: 16,
-      zIndex: 10,
-      boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-cyan, #14b8a6)' }}>
-          ✨ Describe your automation
+    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 w-[90%] max-w-[600px] bg-[rgba(14,24,37,0.97)] backdrop-blur-xl border border-[#1c2b42] rounded-2xl p-4 z-10 shadow-[0_16px_48px_rgba(0,0,0,0.5)]">
+      <div className="flex justify-between items-center mb-2.5">
+        <span className="text-[13px] font-bold text-core-cyan flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5" />
+          Describe your automation
         </span>
-        <button onClick={() => setExpanded(false)} style={{
-          background: 'none', border: 'none', color: 'var(--text-muted, #6b7280)', cursor: 'pointer', fontSize: 16,
-        }}>×</button>
+        <button
+          onClick={() => setExpanded(false)}
+          className="text-core-text-muted hover:text-core-text transition-colors cursor-pointer bg-transparent border-none p-0"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
       <textarea
         ref={inputRef}
@@ -197,35 +169,22 @@ export default function GenerateBar({ onGenerate }: GenerateBarProps) {
         onChange={e => setPrompt(e.target.value)}
         placeholder="When a new lead comes in from my website form, score them as a lead. If they're hot, call them with AI. If they answer, book an appointment. If they don't, send a text with my booking link. Start a 7-day nurture sequence either way."
         rows={3}
-        style={{
-          width: '100%',
-          padding: '12px 14px',
-          background: 'var(--bg-secondary, #161b22)',
-          border: '1px solid #1c2b42',
-          borderRadius: 10,
-          color: 'var(--text-primary, #f0f4f8)',
-          fontSize: 14,
-          lineHeight: 1.6,
-          resize: 'none',
-          outline: 'none',
-          fontFamily: '-apple-system, sans-serif',
-        }}
-        onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-        onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
+        className="w-full px-3.5 py-3 bg-core-surface border rounded-[10px] text-core-text text-sm leading-relaxed resize-none outline-none transition-colors duration-150"
+        style={{ borderColor: inputFocused ? '#14b8a6' : '#1c2b42' }}
+        onFocus={() => setInputFocused(true)}
+        onBlur={() => setInputFocused(false)}
         onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) handleGenerate() }}
       />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-        <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>⌘+Enter to generate</span>
+      <div className="flex justify-between items-center mt-2.5">
+        <span className="text-[11px] text-core-text-muted">Cmd+Enter to generate</span>
         <button
           onClick={handleGenerate}
           disabled={loading || !prompt.trim()}
-          style={{
-            padding: '9px 20px',
-            background: loading ? 'var(--border, #30363d)' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-            color: loading ? 'var(--text-muted, #6b7280)' : '#0c1220',
-            fontWeight: 700, fontSize: 13, borderRadius: 8,
-            border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-          }}
+          className={`px-5 py-[9px] font-bold text-[13px] rounded-lg border-none transition-all duration-150 ${
+            loading || !prompt.trim()
+              ? 'bg-core-border text-core-text-muted cursor-not-allowed'
+              : 'bg-gradient-to-br from-[#2dd4bf] to-core-cyan text-[#0c1220] cursor-pointer hover:opacity-90'
+          }`}
         >
           {loading ? 'Generating...' : 'Generate Automation'}
         </button>

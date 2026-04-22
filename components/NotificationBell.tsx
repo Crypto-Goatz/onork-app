@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Bell } from 'lucide-react'
 
 interface Notification {
   id: string
@@ -65,43 +66,15 @@ export function NotificationBell() {
   }
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="relative">
       {/* Bell button */}
       <button
         onClick={() => setOpen(!open)}
-        style={{
-          position: 'relative',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          padding: 6,
-          color: 'var(--text-secondary, #9ca3af)',
-          display: 'flex',
-          alignItems: 'center',
-          transition: 'color 0.2s',
-        }}
+        className="relative bg-transparent border-none cursor-pointer p-1.5 text-[#9ca3af] flex items-center transition-colors duration-200"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.73 21a2 2 0 01-3.46 0" />
-        </svg>
+        <Bell size={20} />
         {unread > 0 && (
-          <span style={{
-            position: 'absolute',
-            top: 2,
-            right: 2,
-            width: 16,
-            height: 16,
-            borderRadius: '50%',
-            background: '#6EE05A',
-            color: '#07080C',
-            fontSize: 9,
-            fontWeight: 800,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 8px rgba(110,224,90,0.4)',
-          }}>
+          <span className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-[#6EE05A] text-[#07080C] text-[9px] font-extrabold flex items-center justify-center shadow-[0_0_8px_rgba(110,224,90,0.4)]">
             {unread}
           </span>
         )}
@@ -111,48 +84,16 @@ export function NotificationBell() {
       {open && (
         <>
           <div
-            style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+            className="fixed inset-0 z-[90]"
             onClick={() => setOpen(false)}
           />
-          <div style={{
-            position: 'absolute',
-            top: '100%',
-            right: 0,
-            marginTop: 8,
-            width: 360,
-            maxHeight: 440,
-            overflowY: 'auto',
-            background: 'rgba(15,17,23,0.95)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 14,
-            boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
-            zIndex: 100,
-          }}>
+          <div className="absolute top-full right-0 mt-2 w-[360px] max-h-[440px] overflow-y-auto bg-[#0f1117]/95 backdrop-blur-xl border border-white/[.06] rounded-[14px] shadow-[0_12px_40px_rgba(0,0,0,0.5)] z-[100]">
             {/* Header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '14px 16px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
-            }}>
-              <span style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: 'var(--text-primary, #E8ECF4)',
-              }}>
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/[.06]">
+              <span className="text-[13px] font-bold text-[#f0f4f8]">
                 Notifications
                 {unread > 0 && (
-                  <span style={{
-                    marginLeft: 8,
-                    fontSize: 10,
-                    padding: '2px 7px',
-                    borderRadius: 10,
-                    background: 'rgba(110,224,90,0.12)',
-                    color: '#6EE05A',
-                    fontWeight: 600,
-                  }}>
+                  <span className="ml-2 text-[10px] px-[7px] py-0.5 rounded-[10px] bg-[#6EE05A]/[.12] text-[#6EE05A] font-semibold">
                     {unread} new
                   </span>
                 )}
@@ -160,14 +101,7 @@ export function NotificationBell() {
               {unread > 0 && (
                 <button
                   onClick={markAllRead}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#6EE05A',
-                    fontSize: 11,
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                  }}
+                  className="bg-transparent border-none text-[#6EE05A] text-[11px] cursor-pointer font-semibold"
                 >
                   Mark all read
                 </button>
@@ -176,12 +110,7 @@ export function NotificationBell() {
 
             {/* Notifications */}
             {notifications.length === 0 ? (
-              <div style={{
-                padding: '32px 16px',
-                textAlign: 'center',
-                color: 'rgba(255,255,255,0.25)',
-                fontSize: 13,
-              }}>
+              <div className="py-8 px-4 text-center text-white/25 text-[13px]">
                 No notifications yet
               </div>
             ) : (
@@ -189,47 +118,31 @@ export function NotificationBell() {
                 <div
                   key={n.id}
                   onClick={() => !n.read && markRead(n.id)}
-                  style={{
-                    padding: '12px 16px',
-                    borderBottom: '1px solid rgba(255,255,255,0.03)',
-                    cursor: n.read ? 'default' : 'pointer',
-                    background: n.read ? 'transparent' : 'rgba(110,224,90,0.02)',
-                    transition: 'background 0.15s',
-                  }}
+                  className={[
+                    'px-4 py-3 border-b border-white/[.03] transition-[background] duration-150',
+                    n.read ? 'cursor-default bg-transparent' : 'cursor-pointer bg-[#6EE05A]/[.02]',
+                  ].join(' ')}
                 >
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <div className="flex gap-2.5 items-start">
                     {/* Status dot */}
-                    <div style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      background: n.read ? 'rgba(255,255,255,0.1)' : (TYPE_COLORS[n.type] || '#6EE05A'),
-                      boxShadow: n.read ? 'none' : `0 0 6px ${TYPE_COLORS[n.type] || '#6EE05A'}`,
-                      flexShrink: 0,
-                      marginTop: 5,
-                    }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        fontSize: 12,
-                        fontWeight: n.read ? 500 : 700,
-                        color: n.read ? 'rgba(255,255,255,0.4)' : 'var(--text-primary, #E8ECF4)',
-                        marginBottom: 3,
-                      }}>
+                    <div
+                      className="w-2 h-2 rounded-full shrink-0 mt-[5px]"
+                      style={{
+                        background: n.read ? 'rgba(255,255,255,0.1)' : (TYPE_COLORS[n.type] || '#6EE05A'),
+                        boxShadow: n.read ? 'none' : `0 0 6px ${TYPE_COLORS[n.type] || '#6EE05A'}`,
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className={[
+                        'text-[12px] mb-[3px]',
+                        n.read ? 'font-medium text-white/40' : 'font-bold text-[#f0f4f8]',
+                      ].join(' ')}>
                         {n.title}
                       </div>
-                      <div style={{
-                        fontSize: 11,
-                        color: 'rgba(255,255,255,0.3)',
-                        lineHeight: 1.5,
-                      }}>
+                      <div className="text-[11px] text-white/30 leading-relaxed">
                         {n.message.length > 150 ? n.message.slice(0, 150) + '...' : n.message}
                       </div>
-                      <div style={{
-                        fontSize: 10,
-                        color: 'rgba(255,255,255,0.15)',
-                        marginTop: 4,
-                        fontFamily: "'JetBrains Mono', monospace",
-                      }}>
+                      <div className="text-[10px] text-white/15 mt-1 font-mono">
                         {timeAgo(n.created_at)}
                       </div>
                     </div>

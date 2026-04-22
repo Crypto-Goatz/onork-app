@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { KeyRound, X } from 'lucide-react'
 
 interface Token {
   id: string
@@ -72,63 +73,49 @@ export function TokenButton() {
       <button
         onClick={() => { setOpen(true); setNewToken(''); setAgreed(false) }}
         title="API Tokens"
-        style={{
-          width: 32, height: 32, borderRadius: 8,
-          background: 'rgba(126,217,87,0.08)',
-          border: '1px solid rgba(126,217,87,0.15)',
-          color: '#7ed957', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
+        className="w-8 h-8 rounded-lg bg-[#6EE05A]/[.08] border border-[#6EE05A]/15 text-[#6EE05A] cursor-pointer flex items-center justify-center"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-        </svg>
+        <KeyRound size={16} />
       </button>
 
       {/* Modal */}
       {open && (
         <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 10000,
-            background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
+          className="fixed inset-0 z-[10000] bg-black/75 backdrop-blur-[8px] flex items-center justify-center"
           onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}
         >
-          <div style={{
-            background: '#0d1117', border: '1px solid #1e293b', borderRadius: 16,
-            width: 480, maxHeight: '80vh', overflow: 'hidden',
-            display: 'flex', flexDirection: 'column',
-            animation: 'tokenModalIn 0.25s ease',
-          }}>
+          <div className="bg-[#0d1117] border border-[#30363d] rounded-2xl w-[480px] max-h-[80vh] overflow-hidden flex flex-col animate-[tokenModalIn_0.25s_ease]">
             {/* Header */}
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7ed957" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-                </svg>
-                <span style={{ fontSize: 15, fontWeight: 700, color: '#f0f4f8' }}>API Tokens</span>
+            <div className="px-5 py-4 border-b border-[#30363d] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <KeyRound size={18} className="text-[#6EE05A]" />
+                <span className="text-[15px] font-bold text-[#f0f4f8]">API Tokens</span>
               </div>
-              <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#4b5563', cursor: 'pointer', fontSize: 18 }}>x</button>
+              <button
+                onClick={() => setOpen(false)}
+                className="bg-transparent border-none text-[#4b5563] cursor-pointer flex items-center justify-center"
+              >
+                <X size={18} />
+              </button>
             </div>
 
-            <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
+            <div className="p-5 overflow-y-auto flex-1">
               {/* Generate new token */}
               {!newToken ? (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f4f8', marginBottom: 8 }}>Generate New Token</div>
-                  <p style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6, marginBottom: 12 }}>
+                <div className="mb-5">
+                  <div className="text-[13px] font-semibold text-[#f0f4f8] mb-2">Generate New Token</div>
+                  <p className="text-[12px] text-[#6b7280] leading-relaxed mb-3">
                     Tokens are used to authenticate the 0nCore WordPress plugin and other integrations. Each token is shown once — copy it immediately.
                   </p>
 
-                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', marginBottom: 12 }}>
+                  <label className="flex items-start gap-2 cursor-pointer mb-3">
                     <input
                       type="checkbox"
                       checked={agreed}
                       onChange={e => setAgreed(e.target.checked)}
-                      style={{ marginTop: 3, accentColor: '#7ed957' }}
+                      className="mt-[3px] accent-[#6EE05A]"
                     />
-                    <span style={{ fontSize: 12, color: '#8b95a5', lineHeight: 1.5 }}>
+                    <span className="text-[12px] text-[#9ca3af] leading-relaxed">
                       I understand this token grants API access to my 0nCore account. I will store it securely and not share it publicly.
                     </span>
                   </label>
@@ -136,69 +123,60 @@ export function TokenButton() {
                   <button
                     onClick={generateToken}
                     disabled={!agreed || generating}
-                    style={{
-                      width: '100%', padding: '10px', borderRadius: 8, border: 'none',
-                      background: agreed ? '#7ed957' : '#1e293b',
-                      color: agreed ? '#000' : '#4b5563',
-                      fontSize: 13, fontWeight: 700, cursor: agreed ? 'pointer' : 'default',
-                      opacity: generating ? 0.5 : 1,
-                    }}
+                    className={[
+                      'w-full py-2.5 rounded-lg border-none text-[13px] font-bold transition-colors',
+                      agreed
+                        ? 'bg-[#6EE05A] text-black cursor-pointer'
+                        : 'bg-[#30363d] text-[#4b5563] cursor-default',
+                      generating ? 'opacity-50' : '',
+                    ].join(' ')}
                   >
                     {generating ? 'Generating...' : 'Generate Token'}
                   </button>
                 </div>
               ) : (
-                <div style={{
-                  marginBottom: 20, padding: 16, borderRadius: 10,
-                  background: 'rgba(126,217,87,0.06)', border: '1px solid rgba(126,217,87,0.2)',
-                }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#7ed957', marginBottom: 8 }}>Your new token (copy now — shown once):</div>
-                  <div style={{
-                    padding: '10px 12px', borderRadius: 6, fontFamily: 'monospace', fontSize: 11,
-                    background: '#0a0e17', border: '1px solid #1e293b', color: '#f0f4f8',
-                    wordBreak: 'break-all', lineHeight: 1.5, marginBottom: 8,
-                  }}>
+                <div className="mb-5 p-4 rounded-[10px] bg-[#6EE05A]/[.06] border border-[#6EE05A]/20">
+                  <div className="text-[12px] font-bold text-[#6EE05A] mb-2">Your new token (copy now — shown once):</div>
+                  <div className="px-3 py-2.5 rounded-md font-mono text-[11px] bg-[#0d1117] border border-[#30363d] text-[#f0f4f8] break-all leading-relaxed mb-2">
                     {newToken}
                   </div>
-                  <button onClick={copyToken} style={{
-                    width: '100%', padding: '8px', borderRadius: 6, border: 'none',
-                    background: copied ? 'rgba(126,217,87,0.2)' : '#7ed957',
-                    color: copied ? '#7ed957' : '#000',
-                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  }}>
+                  <button
+                    onClick={copyToken}
+                    className={[
+                      'w-full py-2 rounded-md border-none text-[12px] font-bold cursor-pointer',
+                      copied
+                        ? 'bg-[#6EE05A]/20 text-[#6EE05A]'
+                        : 'bg-[#6EE05A] text-black',
+                    ].join(' ')}
+                  >
                     {copied ? 'Copied' : 'Copy to Clipboard'}
                   </button>
                 </div>
               )}
 
               {/* Existing tokens */}
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f4f8', marginBottom: 8 }}>Active Tokens</div>
+              <div className="text-[13px] font-semibold text-[#f0f4f8] mb-2">Active Tokens</div>
               {loading ? (
-                <div style={{ color: '#4b5563', fontSize: 12, padding: 12 }}>Loading...</div>
+                <div className="text-[#4b5563] text-[12px] p-3">Loading...</div>
               ) : tokens.length === 0 ? (
-                <div style={{ color: '#4b5563', fontSize: 12, padding: 12, textAlign: 'center' }}>No active tokens</div>
+                <div className="text-[#4b5563] text-[12px] p-3 text-center">No active tokens</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="flex flex-col gap-1.5">
                   {tokens.map(t => (
-                    <div key={t.id} style={{
-                      padding: '10px 12px', borderRadius: 8,
-                      background: '#161b22', border: '1px solid #1e293b',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    }}>
+                    <div
+                      key={t.id}
+                      className="px-3 py-2.5 rounded-lg bg-[#161b22] border border-[#30363d] flex items-center justify-between"
+                    >
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#f0f4f8' }}>{t.label}</div>
-                        <div style={{ fontSize: 10, color: '#4b5563', fontFamily: 'monospace', marginTop: 2 }}>{t.token_prefix}</div>
-                        <div style={{ fontSize: 10, color: '#4b5563', marginTop: 2 }}>
+                        <div className="text-[12px] font-semibold text-[#f0f4f8]">{t.label}</div>
+                        <div className="text-[10px] text-[#4b5563] font-mono mt-0.5">{t.token_prefix}</div>
+                        <div className="text-[10px] text-[#4b5563] mt-0.5">
                           Created {new Date(t.created_at).toLocaleDateString()}
                         </div>
                       </div>
                       <button
                         onClick={() => revokeToken(t.id)}
-                        style={{
-                          padding: '4px 10px', borderRadius: 4, border: '1px solid rgba(248,113,113,0.3)',
-                          background: 'rgba(248,113,113,0.08)', color: '#f87171',
-                          fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                        }}
+                        className="px-2.5 py-1 rounded border border-[#ef4444]/30 bg-[#ef4444]/[.08] text-[#f87171] text-[10px] font-semibold cursor-pointer"
                       >
                         Revoke
                       </button>
