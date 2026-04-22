@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Rocket, Bot, CheckCircle, ArrowRight } from 'lucide-react'
 
 interface OnboardingData {
   businessName: string
@@ -55,7 +56,6 @@ export default function OnboardingPage() {
   async function handleComplete() {
     setSaving(true)
 
-    // Save to user metadata
     await supabase.auth.updateUser({
       data: {
         business_name: data.businessName,
@@ -69,7 +69,6 @@ export default function OnboardingPage() {
       }
     })
 
-    // Update CRM custom values via API
     await fetch('/api/onboarding/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -83,11 +82,13 @@ export default function OnboardingPage() {
     // Step 0: Welcome
     {
       title: 'Welcome to 0nAI',
-      subtitle: 'Let\'s set up your AI in under 2 minutes.',
+      subtitle: "Let's set up your AI in under 2 minutes.",
       content: (
-        <div style={{ textAlign: 'center', padding: '20px 0' }}>
-          <div style={{ fontSize: 64, marginBottom: 20 }}>🚀</div>
-          <p style={{ color: 'var(--text-secondary, #9ca3af)', fontSize: 15, lineHeight: 1.7, maxWidth: 400, margin: '0 auto' }}>
+        <div className="text-center py-5">
+          <div className="flex items-center justify-center mb-5">
+            <Rocket className="w-16 h-16 text-core-cyan" strokeWidth={1.5} />
+          </div>
+          <p className="text-core-text-dim text-[15px] leading-relaxed max-w-[400px] mx-auto">
             We're going to ask you a few questions about your business. Your AI will use this to personalize every interaction, automation, and recommendation.
           </p>
         </div>
@@ -96,7 +97,7 @@ export default function OnboardingPage() {
     },
     // Step 1: Business Name
     {
-      title: 'What\'s your business called?',
+      title: "What's your business called?",
       subtitle: 'This is how your AI will introduce itself.',
       content: (
         <div>
@@ -105,9 +106,7 @@ export default function OnboardingPage() {
             value={data.businessName}
             onChange={e => update('businessName', e.target.value)}
             placeholder="e.g. Acme Marketing Agency"
-            style={inputStyle}
-            onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-            onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
+            className="w-full px-4 py-3.5 bg-core-card border border-core-border rounded-[10px] text-core-text text-[15px] outline-none transition-colors duration-200 focus:border-core-cyan placeholder:text-core-text-muted"
           />
         </div>
       ),
@@ -118,24 +117,20 @@ export default function OnboardingPage() {
       title: 'What industry are you in?',
       subtitle: 'Helps your AI understand your world.',
       content: (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+        <div className="grid grid-cols-2 gap-2">
           {INDUSTRIES.map(ind => (
             <button
               key={ind}
               onClick={() => update('industry', ind)}
-              style={{
-                padding: '12px 16px',
-                background: data.industry === ind ? 'rgba(45,212,191,0.12)' : 'var(--bg-card, #1f2937)',
-                border: `1px solid ${data.industry === ind ? 'var(--color-cyan, #14b8a6)' : 'var(--border, #30363d)'}`,
-                borderRadius: 10,
-                color: data.industry === ind ? 'var(--color-cyan, #14b8a6)' : 'var(--text-secondary, #9ca3af)',
-                fontSize: 13,
-                fontWeight: data.industry === ind ? 600 : 400,
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'all 0.15s',
-              }}
-            >{ind}</button>
+              className={[
+                'px-4 py-3 rounded-[10px] text-[13px] text-left transition-all duration-150 border cursor-pointer',
+                data.industry === ind
+                  ? 'bg-core-cyan/10 border-core-cyan text-core-cyan font-semibold'
+                  : 'bg-core-card border-core-border text-core-text-dim font-normal hover:border-core-cyan/50',
+              ].join(' ')}
+            >
+              {ind}
+            </button>
           ))}
         </div>
       ),
@@ -152,11 +147,9 @@ export default function OnboardingPage() {
             onChange={e => update('services', e.target.value)}
             placeholder="e.g. SEO, PPC, Social Media Management, Web Design, Email Marketing"
             rows={4}
-            style={{ ...inputStyle, resize: 'none', lineHeight: 1.6 }}
-            onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-            onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
+            className="w-full px-4 py-3.5 bg-core-card border border-core-border rounded-[10px] text-core-text text-[15px] outline-none transition-colors duration-200 focus:border-core-cyan placeholder:text-core-text-muted resize-none leading-relaxed"
           />
-          <p style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', marginTop: 8 }}>Separate with commas</p>
+          <p className="text-[11px] text-core-text-muted mt-2">Separate with commas</p>
         </div>
       ),
       valid: data.services.length > 2,
@@ -166,65 +159,60 @@ export default function OnboardingPage() {
       title: 'How can clients reach you?',
       subtitle: 'Your AI will share this when asked.',
       content: (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="flex flex-col gap-3">
           <div>
-            <label style={labelStyle}>Phone</label>
+            <label className="block text-[11px] text-core-text-muted mb-1.5 font-semibold uppercase tracking-[0.06em]">
+              Phone
+            </label>
             <input
               value={data.phone}
               onChange={e => update('phone', e.target.value)}
               placeholder="(555) 123-4567"
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
+              className="w-full px-4 py-3.5 bg-core-card border border-core-border rounded-[10px] text-core-text text-[15px] outline-none transition-colors duration-200 focus:border-core-cyan placeholder:text-core-text-muted"
             />
           </div>
           <div>
-            <label style={labelStyle}>Website</label>
+            <label className="block text-[11px] text-core-text-muted mb-1.5 font-semibold uppercase tracking-[0.06em]">
+              Website
+            </label>
             <input
               value={data.website}
               onChange={e => update('website', e.target.value)}
               placeholder="https://yourbusiness.com"
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
+              className="w-full px-4 py-3.5 bg-core-card border border-core-border rounded-[10px] text-core-text text-[15px] outline-none transition-colors duration-200 focus:border-core-cyan placeholder:text-core-text-muted"
             />
           </div>
           <div>
-            <label style={labelStyle}>Booking Link (optional)</label>
+            <label className="block text-[11px] text-core-text-muted mb-1.5 font-semibold uppercase tracking-[0.06em]">
+              Booking Link (optional)
+            </label>
             <input
               value={data.bookingUrl}
               onChange={e => update('bookingUrl', e.target.value)}
               placeholder="https://calendly.com/you or your booking page"
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
+              className="w-full px-4 py-3.5 bg-core-card border border-core-border rounded-[10px] text-core-text text-[15px] outline-none transition-colors duration-200 focus:border-core-cyan placeholder:text-core-text-muted"
             />
           </div>
         </div>
       ),
-      valid: true, // phone/website optional
+      valid: true,
     },
     // Step 5: AI Name
     {
       title: 'Name your AI assistant',
       subtitle: 'This is what your clients will call it. Leave blank for "0nAI".',
       content: (
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: 80, height: 80, borderRadius: 20, margin: '0 auto 20px',
-            background: 'linear-gradient(135deg, rgba(45,212,191,0.15), rgba(139,92,246,0.15))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 32,
-          }}>🤖</div>
+        <div className="text-center">
+          <div className="w-20 h-20 rounded-[20px] mx-auto mb-5 bg-gradient-to-br from-core-cyan/15 to-core-purple/15 flex items-center justify-center">
+            <Bot className="w-9 h-9 text-core-cyan" strokeWidth={1.5} />
+          </div>
           <input
             value={data.aiName}
             onChange={e => update('aiName', e.target.value)}
             placeholder="0nAI"
-            style={{ ...inputStyle, textAlign: 'center', fontSize: 20, fontWeight: 700 }}
-            onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-            onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
+            className="w-full px-4 py-3.5 bg-core-card border border-core-border rounded-[10px] text-core-text text-xl font-bold text-center outline-none transition-colors duration-200 focus:border-core-cyan placeholder:text-core-text-muted"
           />
-          <p style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)', marginTop: 12 }}>
+          <p className="text-[12px] text-core-text-muted mt-3">
             Your clients will see: "Hi, I'm {data.aiName || '0nAI'} from {data.businessName || 'your business'}."
           </p>
         </div>
@@ -236,18 +224,18 @@ export default function OnboardingPage() {
       title: 'Your AI is ready.',
       subtitle: `${data.aiName || '0nAI'} knows your business. Let's go.`,
       content: (
-        <div style={{ textAlign: 'center', padding: '20px 0' }}>
-          <div style={{
-            width: 100, height: 100, borderRadius: 24, margin: '0 auto 24px',
-            background: 'linear-gradient(135deg, #2dd4bf, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 44, boxShadow: '0 8px 32px rgba(45,212,191,0.3)',
-          }}>✓</div>
-          <div style={{ fontSize: 14, color: 'var(--text-secondary, #9ca3af)', lineHeight: 1.7, maxWidth: 360, margin: '0 auto' }}>
-            <p><strong style={{ color: 'var(--text-primary, #f0f4f8)' }}>{data.businessName}</strong> · {data.industry}</p>
-            <p style={{ marginTop: 8 }}>{data.services}</p>
-            {data.phone && <p style={{ marginTop: 8 }}>{data.phone}</p>}
-            <p style={{ marginTop: 12, color: 'var(--color-cyan, #14b8a6)', fontWeight: 600 }}>
+        <div className="text-center py-5">
+          <div className="w-24 h-24 rounded-[24px] mx-auto mb-6 bg-gradient-to-br from-core-cyan to-core-purple flex items-center justify-center shadow-[0_8px_32px_rgba(45,212,191,0.3)]">
+            <CheckCircle className="w-11 h-11 text-core-bg" strokeWidth={2} />
+          </div>
+          <div className="text-[14px] text-core-text-dim leading-relaxed max-w-[360px] mx-auto">
+            <p>
+              <strong className="text-core-text">{data.businessName}</strong>
+              {data.industry ? ` · ${data.industry}` : ''}
+            </p>
+            {data.services && <p className="mt-2">{data.services}</p>}
+            {data.phone && <p className="mt-2">{data.phone}</p>}
+            <p className="mt-3 text-core-cyan font-semibold">
               {data.aiName || '0nAI'} is trained and ready to work.
             </p>
           </div>
@@ -259,114 +247,87 @@ export default function OnboardingPage() {
 
   const current = steps[step]
   const isLast = step === steps.length - 1
-  const progress = ((step) / (steps.length - 1)) * 100
+  const progress = (step / (steps.length - 1)) * 100
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'var(--bg-primary, #0d1117)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 24,
-    }}>
-      <div style={{ width: '100%', maxWidth: 480 }}>
+    <div className="min-h-screen bg-core-bg flex items-center justify-center p-6">
+      <div className="w-full max-w-[480px]">
+
         {/* Progress bar */}
-        <div style={{
-          height: 3, background: 'var(--border, #30363d)', borderRadius: 2,
-          marginBottom: 40, overflow: 'hidden',
-        }}>
-          <div style={{
-            height: '100%', width: `${progress}%`,
-            background: 'linear-gradient(90deg, #2dd4bf, #8b5cf6)',
-            borderRadius: 2, transition: 'width 0.4s ease',
-          }} />
+        <div className="h-[3px] bg-core-border rounded-sm mb-10 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-core-cyan to-core-purple rounded-sm transition-[width] duration-[400ms] ease-in-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        {/* Step header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-core-text mb-1.5">{current.title}</h1>
+          <p className="text-[14px] text-core-text-muted">{current.subtitle}</p>
         </div>
 
         {/* Step content */}
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: 6 }}>
-            {current.title}
-          </h1>
-          <p style={{ fontSize: 14, color: 'var(--text-muted, #6b7280)' }}>{current.subtitle}</p>
-        </div>
-
-        <div style={{ marginBottom: 32 }}>
-          {current.content}
-        </div>
+        <div className="mb-8">{current.content}</div>
 
         {/* Navigation */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="flex justify-between items-center">
           {step > 0 ? (
-            <button onClick={() => setStep(step - 1)} style={{
-              padding: '10px 20px', background: 'none',
-              border: '1px solid #1c2b42', borderRadius: 10,
-              color: 'var(--text-secondary, #9ca3af)', fontSize: 14, cursor: 'pointer',
-            }}>Back</button>
-          ) : <div />}
+            <button
+              onClick={() => setStep(step - 1)}
+              className="px-5 py-2.5 bg-transparent border border-core-border rounded-[10px] text-core-text-dim text-[14px] cursor-pointer hover:border-core-border/80 transition-colors"
+            >
+              Back
+            </button>
+          ) : (
+            <div />
+          )}
 
           {isLast ? (
-            <button onClick={handleComplete} disabled={saving} style={{
-              padding: '12px 32px',
-              background: saving ? 'var(--border, #30363d)' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-              color: saving ? 'var(--text-muted, #6b7280)' : '#0c1220',
-              fontWeight: 700, fontSize: 15, borderRadius: 10,
-              border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
-            }}>
-              {saving ? 'Setting up...' : 'Launch Dashboard →'}
+            <button
+              onClick={handleComplete}
+              disabled={saving}
+              className={[
+                'px-8 py-3 rounded-[10px] font-bold text-[15px] border-none transition-all',
+                saving
+                  ? 'bg-core-border text-core-text-muted cursor-not-allowed'
+                  : 'bg-gradient-to-r from-core-cyan to-core-cyan/80 text-core-bg cursor-pointer hover:opacity-90',
+              ].join(' ')}
+            >
+              {saving ? 'Setting up...' : 'Launch Dashboard'}
             </button>
           ) : (
             <button
               onClick={() => setStep(step + 1)}
               disabled={!current.valid}
-              style={{
-                padding: '12px 28px',
-                background: current.valid ? 'linear-gradient(135deg, #2dd4bf, #14b8a6)' : 'var(--border, #30363d)',
-                color: current.valid ? '#0c1220' : 'var(--text-muted, #6b7280)',
-                fontWeight: 700, fontSize: 14, borderRadius: 10,
-                border: 'none', cursor: current.valid ? 'pointer' : 'not-allowed',
-              }}
-            >Continue</button>
+              className={[
+                'flex items-center gap-2 px-7 py-3 rounded-[10px] font-bold text-[14px] border-none transition-all',
+                current.valid
+                  ? 'bg-gradient-to-r from-core-cyan to-core-cyan/80 text-core-bg cursor-pointer hover:opacity-90'
+                  : 'bg-core-border text-core-text-muted cursor-not-allowed',
+              ].join(' ')}
+            >
+              Continue
+              <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+            </button>
           )}
         </div>
 
-        {/* Step indicator */}
-        <div style={{
-          display: 'flex', justifyContent: 'center', gap: 6, marginTop: 32,
-        }}>
+        {/* Step dots */}
+        <div className="flex justify-center gap-1.5 mt-8">
           {steps.map((_, i) => (
-            <div key={i} style={{
-              width: i === step ? 24 : 8, height: 8,
-              borderRadius: 4,
-              background: i <= step ? 'var(--color-cyan, #14b8a6)' : 'var(--border, #30363d)',
-              transition: 'all 0.3s',
-            }} />
+            <div
+              key={i}
+              className={[
+                'h-2 rounded-full transition-all duration-300',
+                i === step ? 'w-6' : 'w-2',
+                i <= step ? 'bg-core-cyan' : 'bg-core-border',
+              ].join(' ')}
+            />
           ))}
         </div>
+
       </div>
     </div>
   )
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '14px 16px',
-  background: 'var(--bg-card, #1f2937)',
-  border: '1px solid #1c2b42',
-  borderRadius: 10,
-  color: 'var(--text-primary, #f0f4f8)',
-  fontSize: 15,
-  outline: 'none',
-  transition: 'border-color 0.2s',
-  fontFamily: '-apple-system, sans-serif',
-}
-
-const labelStyle: React.CSSProperties = {
-  display: 'block',
-  fontSize: 11,
-  color: 'var(--text-muted, #6b7280)',
-  marginBottom: 6,
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  letterSpacing: '0.06em',
 }

@@ -340,16 +340,16 @@ export default function SocialPage() {
     })
   }
 
-  const statusColor = (s: string) => {
-    if (s === 'posted') return 'var(--jp-green)'
-    if (s === 'failed') return 'var(--jp-red)'
-    return 'var(--jp-amber)'
+  const statusColorClass = (s: string) => {
+    if (s === 'posted') return 'text-core-green'
+    if (s === 'failed') return 'text-core-red'
+    return 'text-core-amber'
   }
 
-  const statusBg = (s: string) => {
-    if (s === 'posted') return 'var(--jp-green-glow)'
-    if (s === 'failed') return 'rgba(248, 113, 113, 0.12)'
-    return 'rgba(251, 191, 36, 0.12)'
+  const statusBgClass = (s: string) => {
+    if (s === 'posted') return 'bg-core-green/10'
+    if (s === 'failed') return 'bg-core-red/10'
+    return 'bg-core-amber/10'
   }
 
   const platformName = (key: string) => PLATFORMS.find((p) => p.key === key)?.platform || key
@@ -357,48 +357,26 @@ export default function SocialPage() {
   const platformColor = (key: string) => PLATFORMS.find((p) => p.key === key)?.color || '#666'
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="jp-page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="flex items-center gap-2.5">
           <h1 className="jp-page-title">Social</h1>
-          <span style={{
-            fontSize: '0.6875rem',
-            fontWeight: 700,
-            padding: '2px 8px',
-            borderRadius: 10,
-            background: 'rgba(0, 212, 255, 0.12)',
-            color: 'var(--jp-cyan)',
-          }}>social0n</span>
+          <span className="text-[0.6875rem] font-bold px-2 py-0.5 rounded-full bg-core-cyan/10 text-core-cyan">social0n</span>
         </div>
         <p className="jp-page-subtitle">AI-powered social publishing, scheduling, and analytics</p>
       </div>
 
       {/* Tabs */}
-      <div style={{
-        display: 'flex',
-        gap: 6,
-        marginBottom: 24,
-        background: 'var(--jp-bg-card)',
-        padding: 4,
-        borderRadius: 'var(--jp-radius-sm)',
-        boxShadow: 'var(--jp-shadow)',
-        width: 'fit-content',
-      }}>
+      <div className="flex gap-1.5 mb-6 bg-core-card p-1 rounded shadow w-fit">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            style={{
-              padding: '10px 22px',
-              background: activeTab === tab.key ? 'var(--jp-green)' : 'transparent',
-              border: 'none',
-              borderRadius: 'var(--jp-radius-xs)',
-              color: activeTab === tab.key ? '#000' : 'var(--jp-text-secondary)',
-              fontSize: '0.8125rem',
-              fontWeight: activeTab === tab.key ? 700 : 500,
-              cursor: 'pointer',
-              transition: 'all var(--jp-transition)',
-            }}
+            className={`px-5 py-2.5 rounded text-[0.8125rem] font-medium transition-all border-none cursor-pointer ${
+              activeTab === tab.key
+                ? 'bg-core-green text-black font-bold'
+                : 'bg-transparent text-core-text-dim'
+            }`}
           >
             {tab.label}
           </button>
@@ -407,14 +385,14 @@ export default function SocialPage() {
 
       {/* ═══════════════ COMPOSE TAB ═══════════════ */}
       {activeTab === 'compose' && (
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+        <div className="flex gap-5 items-start">
           {/* Left: Compose form */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="flex-1 flex flex-col gap-4">
             <div className="jp-card">
-              <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div className="jp-card-body flex flex-col gap-4">
                 {/* Topic input */}
                 <div>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 8, display: 'block' }}>
+                  <label className="text-[0.8125rem] font-semibold text-core-text mb-2 block">
                     What do you want to post about?
                   </label>
                   <textarea
@@ -422,76 +400,44 @@ export default function SocialPage() {
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="Describe your topic and the AI will generate optimized posts for each platform..."
                     rows={4}
-                    style={{
-                      width: '100%',
-                      padding: 14,
-                      background: 'var(--jp-bg-input)',
-                      border: '1px solid var(--jp-border)',
-                      borderRadius: 'var(--jp-radius-sm)',
-                      color: 'var(--jp-text)',
-                      fontSize: '0.875rem',
-                      resize: 'vertical',
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                      lineHeight: 1.6,
-                    }}
+                    className="w-full p-3.5 bg-core-surface border border-core-border rounded text-core-text text-sm resize-y outline-none font-inherit leading-relaxed"
                   />
                 </div>
 
                 {/* Title (for Reddit, Dev.to, HN) */}
                 <div>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 8, display: 'block' }}>
-                    Post Title <span style={{ fontWeight: 400, color: 'var(--jp-text-muted)' }}>(for Reddit, Dev.to, Hacker News)</span>
+                  <label className="text-[0.8125rem] font-semibold text-core-text mb-2 block">
+                    Post Title <span className="font-normal text-core-text-muted">(for Reddit, Dev.to, Hacker News)</span>
                   </label>
                   <input
                     type="text"
                     value={postTitle}
                     onChange={(e) => setPostTitle(e.target.value)}
                     placeholder="Auto-generated if left blank"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      background: 'var(--jp-bg-input)',
-                      border: '1px solid var(--jp-border)',
-                      borderRadius: 'var(--jp-radius-sm)',
-                      color: 'var(--jp-text)',
-                      fontSize: '0.875rem',
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                    }}
+                    className="w-full px-3.5 py-2.5 bg-core-surface border border-core-border rounded text-core-text text-sm outline-none font-inherit"
                   />
                 </div>
 
                 {/* Campaign */}
                 <div>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 8, display: 'block' }}>
-                    Campaign <span style={{ fontWeight: 400, color: 'var(--jp-text-muted)' }}>(optional tracking)</span>
+                  <label className="text-[0.8125rem] font-semibold text-core-text mb-2 block">
+                    Campaign <span className="font-normal text-core-text-muted">(optional tracking)</span>
                   </label>
                   <input
                     type="text"
                     value={campaign}
                     onChange={(e) => setCampaign(e.target.value)}
                     placeholder="e.g., v2.5-launch, weekly-tips"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      background: 'var(--jp-bg-input)',
-                      border: '1px solid var(--jp-border)',
-                      borderRadius: 'var(--jp-radius-sm)',
-                      color: 'var(--jp-text)',
-                      fontSize: '0.875rem',
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                    }}
+                    className="w-full px-3.5 py-2.5 bg-core-surface border border-core-border rounded text-core-text text-sm outline-none font-inherit"
                   />
                 </div>
 
                 {/* Platforms */}
                 <div>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 8, display: 'block' }}>
+                  <label className="text-[0.8125rem] font-semibold text-core-text mb-2 block">
                     Platforms
                   </label>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <div className="flex gap-2 flex-wrap">
                     {PLATFORMS.map((p) => {
                       const isSelected = selectedPlatforms.includes(p.key)
                       const isDisabled = !!p.comingSoon
@@ -499,38 +445,23 @@ export default function SocialPage() {
                         <button
                           key={p.key}
                           onClick={() => !isDisabled && togglePlatform(p.key)}
-                          style={{
-                            padding: '7px 14px',
-                            background: isSelected ? 'var(--jp-green-glow)' : 'var(--jp-bg-input)',
-                            border: `1px solid ${isSelected ? 'var(--jp-green-dim)' : 'var(--jp-border)'}`,
-                            borderRadius: 'var(--jp-radius-sm)',
-                            color: isDisabled ? 'var(--jp-text-muted)' : isSelected ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-                            fontSize: '0.8125rem',
-                            fontWeight: 500,
-                            cursor: isDisabled ? 'default' : 'pointer',
-                            opacity: isDisabled ? 0.5 : 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            transition: 'all var(--jp-transition)',
-                          }}
+                          className={`flex items-center gap-1.5 px-3.5 py-[7px] rounded text-[0.8125rem] font-medium transition-all border ${
+                            isSelected
+                              ? 'bg-core-green/10 border-core-green-dim text-core-green'
+                              : 'bg-core-surface border-core-border text-core-text-dim'
+                          } ${isDisabled ? 'opacity-50 cursor-default' : 'cursor-pointer'}`}
                         >
-                          <span style={{
-                            fontWeight: 700,
-                            fontSize: '0.6875rem',
-                            width: 20,
-                            height: 20,
-                            borderRadius: 4,
-                            background: isSelected ? p.color : 'transparent',
-                            color: isSelected ? '#fff' : 'inherit',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}>
+                          <span
+                            className="text-[0.6875rem] font-bold w-5 h-5 rounded flex items-center justify-center"
+                            style={{
+                              background: isSelected ? p.color : 'transparent',
+                              color: isSelected ? '#fff' : 'inherit',
+                            }}
+                          >
                             {p.icon}
                           </span>
                           {p.platform}
-                          {isDisabled && <span style={{ fontSize: '0.625rem', color: 'var(--jp-text-muted)' }}>(soon)</span>}
+                          {isDisabled && <span className="text-[0.625rem] text-core-text-muted">(soon)</span>}
                         </button>
                       )
                     })}
@@ -539,10 +470,10 @@ export default function SocialPage() {
 
                 {/* Tone */}
                 <div>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 8, display: 'block' }}>
+                  <label className="text-[0.8125rem] font-semibold text-core-text mb-2 block">
                     Tone
                   </label>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div className="flex gap-2">
                     {([
                       { key: 'professional' as Tone, label: 'Professional', desc: 'Clear, authoritative' },
                       { key: 'casual' as Tone, label: 'Casual', desc: 'Friendly, conversational' },
@@ -551,21 +482,14 @@ export default function SocialPage() {
                       <button
                         key={t.key}
                         onClick={() => setTone(t.key)}
-                        style={{
-                          padding: '10px 18px',
-                          background: tone === t.key ? 'var(--jp-green-glow)' : 'var(--jp-bg-input)',
-                          border: `1px solid ${tone === t.key ? 'var(--jp-green-dim)' : 'var(--jp-border)'}`,
-                          borderRadius: 'var(--jp-radius-sm)',
-                          color: tone === t.key ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-                          fontSize: '0.8125rem',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          transition: 'all var(--jp-transition)',
-                        }}
+                        className={`px-4 py-2.5 rounded text-[0.8125rem] font-medium cursor-pointer text-left transition-all border ${
+                          tone === t.key
+                            ? 'bg-core-green/10 border-core-green-dim text-core-green'
+                            : 'bg-core-surface border-core-border text-core-text-dim'
+                        }`}
                       >
-                        <div style={{ fontWeight: 600 }}>{t.label}</div>
-                        <div style={{ fontSize: '0.6875rem', opacity: 0.7, marginTop: 2 }}>{t.desc}</div>
+                        <div className="font-semibold">{t.label}</div>
+                        <div className="text-[0.6875rem] opacity-70 mt-0.5">{t.desc}</div>
                       </button>
                     ))}
                   </div>
@@ -573,27 +497,21 @@ export default function SocialPage() {
 
                 {/* Hashtags */}
                 <div>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 8, display: 'block' }}>
+                  <label className="text-[0.8125rem] font-semibold text-core-text mb-2 block">
                     Hashtags
                   </label>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <div className="flex gap-1.5 flex-wrap">
                     {HASHTAG_SUGGESTIONS.map((tag) => {
                       const isSelected = selectedHashtags.includes(tag)
                       return (
                         <span
                           key={tag}
                           onClick={() => toggleHashtag(tag)}
-                          style={{
-                            padding: '4px 10px',
-                            background: isSelected ? 'rgba(167, 139, 250, 0.25)' : 'rgba(167, 139, 250, 0.12)',
-                            color: 'var(--jp-purple)',
-                            borderRadius: 'var(--jp-radius-xs)',
-                            fontSize: '0.75rem',
-                            fontWeight: isSelected ? 700 : 500,
-                            cursor: 'pointer',
-                            border: isSelected ? '1px solid var(--jp-purple)' : '1px solid transparent',
-                            transition: 'all var(--jp-transition)',
-                          }}
+                          className={`px-2.5 py-1 rounded text-xs text-core-purple cursor-pointer transition-all border ${
+                            isSelected
+                              ? 'bg-core-purple/25 border-core-purple font-bold'
+                              : 'bg-core-purple/10 border-transparent font-medium'
+                          }`}
                         >
                           {tag}
                         </span>
@@ -604,19 +522,11 @@ export default function SocialPage() {
 
                 {/* Image upload placeholder */}
                 <div>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 8, display: 'block' }}>
-                    Image <span style={{ fontWeight: 400, color: 'var(--jp-text-muted)' }}>(coming soon)</span>
+                  <label className="text-[0.8125rem] font-semibold text-core-text mb-2 block">
+                    Image <span className="font-normal text-core-text-muted">(coming soon)</span>
                   </label>
-                  <div style={{
-                    padding: 24,
-                    border: '2px dashed var(--jp-border)',
-                    borderRadius: 'var(--jp-radius-sm)',
-                    textAlign: 'center',
-                    color: 'var(--jp-text-muted)',
-                    fontSize: '0.8125rem',
-                    opacity: 0.6,
-                  }}>
-                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} style={{ margin: '0 auto 8px' }}>
+                  <div className="p-6 border-2 border-dashed border-core-border rounded text-center text-core-text-muted text-[0.8125rem] opacity-60">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} className="mx-auto mb-2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
                     </svg>
                     <div>Drag and drop an image or click to upload</div>
@@ -624,34 +534,19 @@ export default function SocialPage() {
                 </div>
 
                 {/* Generate button */}
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4 }}>
+                <div className="flex gap-2 justify-end pt-1">
                   <button
                     onClick={handleGenerate}
                     disabled={isGenerating || !topic.trim() || selectedPlatforms.length === 0}
-                    style={{
-                      padding: '12px 28px',
-                      background: isGenerating ? 'var(--jp-border)' : 'linear-gradient(135deg, var(--jp-cyan-dim), var(--jp-cyan))',
-                      color: isGenerating ? 'var(--jp-text-muted)' : '#000',
-                      border: 'none',
-                      borderRadius: 'var(--jp-radius-sm)',
-                      fontSize: '0.875rem',
-                      fontWeight: 700,
-                      cursor: isGenerating ? 'default' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      transition: 'all var(--jp-transition)',
-                    }}
+                    className={`flex items-center gap-2 px-7 py-3 rounded text-sm font-bold transition-all border-none ${
+                      isGenerating
+                        ? 'bg-core-border text-core-text-muted cursor-default'
+                        : 'bg-gradient-to-br from-core-cyan/80 to-core-cyan text-black cursor-pointer'
+                    }`}
                   >
                     {isGenerating ? (
                       <>
-                        <span style={{
-                          width: 14, height: 14,
-                          border: '2px solid var(--jp-text-muted)',
-                          borderTopColor: 'transparent',
-                          borderRadius: '50%',
-                          animation: 'spin 0.8s linear infinite',
-                        }} />
+                        <span className="w-3.5 h-3.5 border-2 border-core-text-muted border-t-transparent rounded-full animate-spin" />
                         Generating...
                       </>
                     ) : (
@@ -669,25 +564,17 @@ export default function SocialPage() {
 
             {/* Generated content previews */}
             {generatedContent.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--jp-text)' }}>Generated Posts</h3>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-core-text">Generated Posts</h3>
                   <button
                     onClick={() => handlePost()}
                     disabled={isPosting}
-                    style={{
-                      padding: '10px 24px',
-                      background: isPosting ? 'var(--jp-border)' : 'var(--jp-green)',
-                      color: isPosting ? 'var(--jp-text-muted)' : '#000',
-                      border: 'none',
-                      borderRadius: 'var(--jp-radius-sm)',
-                      fontSize: '0.8125rem',
-                      fontWeight: 700,
-                      cursor: isPosting ? 'default' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                    }}
+                    className={`flex items-center gap-1.5 px-6 py-2.5 rounded text-[0.8125rem] font-bold border-none ${
+                      isPosting
+                        ? 'bg-core-border text-core-text-muted cursor-default'
+                        : 'bg-core-green text-black cursor-pointer'
+                    }`}
                   >
                     {isPosting ? 'Posting...' : 'Post to All'}
                   </button>
@@ -697,65 +584,47 @@ export default function SocialPage() {
                   const result = postResults.find((r) => r.platform === item.platform)
                   return (
                     <div key={item.platform} className="jp-card">
-                      <div className="jp-card-header" style={{ padding: '14px 20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{
-                            width: 32, height: 32,
-                            borderRadius: 'var(--jp-radius-xs)',
-                            background: platformColor(item.platform),
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '0.6875rem', fontWeight: 700, color: '#fff',
-                          }}>
+                      <div className="jp-card-header px-5 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className="w-8 h-8 rounded flex items-center justify-center text-[0.6875rem] font-bold text-white flex-shrink-0"
+                            style={{ background: platformColor(item.platform) }}
+                          >
                             {platformIcon(item.platform)}
                           </div>
                           <div>
-                            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)' }}>
+                            <div className="text-sm font-semibold text-core-text">
                               {platformName(item.platform)}
                             </div>
-                            <div style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)' }}>
+                            <div className="text-[0.6875rem] text-core-text-muted">
                               {item.content.length} / {item.charLimit.toLocaleString()} characters
                             </div>
                           </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div className="flex items-center gap-2">
                           {result && (
-                            <span style={{
-                              fontSize: '0.6875rem',
-                              fontWeight: 600,
-                              padding: '3px 10px',
-                              borderRadius: 6,
-                              background: result.success ? 'var(--jp-green-glow)' : 'rgba(248, 113, 113, 0.12)',
-                              color: result.success ? 'var(--jp-green)' : 'var(--jp-red)',
-                            }}>
+                            <span className={`text-[0.6875rem] font-semibold px-2.5 py-[3px] rounded-md ${
+                              result.success
+                                ? 'bg-core-green/10 text-core-green'
+                                : 'bg-core-red/10 text-core-red'
+                            }`}>
                               {result.success ? 'Posted' : result.message}
                             </span>
                           )}
                           <button
                             onClick={() => handlePost([item.platform])}
                             disabled={isPosting}
-                            style={{
-                              padding: '6px 14px',
-                              background: 'var(--jp-green)',
-                              color: '#000',
-                              border: 'none',
-                              borderRadius: 'var(--jp-radius-xs)',
-                              fontSize: '0.75rem',
-                              fontWeight: 600,
-                              cursor: isPosting ? 'default' : 'pointer',
-                            }}
+                            className={`px-3.5 py-1.5 bg-core-green text-black rounded text-xs font-semibold border-none ${
+                              isPosting ? 'cursor-default' : 'cursor-pointer'
+                            }`}
                           >
                             Post
                           </button>
                         </div>
                       </div>
-                      <div className="jp-card-body" style={{ padding: '14px 20px' }}>
+                      <div className="jp-card-body px-5 py-3.5">
                         {item.title && (
-                          <div style={{
-                            fontSize: '0.8125rem',
-                            fontWeight: 700,
-                            color: 'var(--jp-text)',
-                            marginBottom: 8,
-                          }}>
+                          <div className="text-[0.8125rem] font-bold text-core-text mb-2">
                             {item.title}
                           </div>
                         )}
@@ -763,19 +632,7 @@ export default function SocialPage() {
                           value={item.content}
                           onChange={(e) => updateGeneratedContent(idx, e.target.value)}
                           rows={Math.min(8, Math.max(3, Math.ceil(item.content.length / 80)))}
-                          style={{
-                            width: '100%',
-                            padding: 12,
-                            background: 'var(--jp-bg-input)',
-                            border: '1px solid var(--jp-border)',
-                            borderRadius: 'var(--jp-radius-xs)',
-                            color: 'var(--jp-text)',
-                            fontSize: '0.8125rem',
-                            resize: 'vertical',
-                            outline: 'none',
-                            fontFamily: 'inherit',
-                            lineHeight: 1.6,
-                          }}
+                          className="w-full p-3 bg-core-surface border border-core-border rounded text-core-text text-[0.8125rem] resize-y outline-none font-inherit leading-relaxed"
                         />
                       </div>
                     </div>
@@ -786,68 +643,42 @@ export default function SocialPage() {
           </div>
 
           {/* Right: Preview sidebar */}
-          <div style={{ width: 300, flexShrink: 0 }}>
-            <div className="jp-card" style={{ position: 'sticky', top: 88 }}>
+          <div className="w-[300px] flex-shrink-0">
+            <div className="jp-card sticky top-22">
               <div className="jp-card-header">
-                <h4 style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>Preview</h4>
+                <h4 className="text-[0.8125rem] font-semibold text-core-text m-0">Preview</h4>
               </div>
               <div className="jp-card-body">
-                <div style={{
-                  padding: 16,
-                  background: 'var(--jp-bg)',
-                  borderRadius: 'var(--jp-radius-sm)',
-                  border: '1px solid var(--jp-border)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <div style={{
-                      width: 32, height: 32,
-                      borderRadius: '50%',
-                      background: 'var(--jp-green)',
-                      color: '#000',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.6875rem', fontWeight: 700,
-                    }}>
+                <div className="p-4 bg-core-bg rounded border border-core-border">
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <div className="w-8 h-8 rounded-full bg-core-green text-black flex items-center justify-center text-[0.6875rem] font-bold">
                       MM
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>Mike @ RocketOpp</div>
-                      <div style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)' }}>Just now</div>
+                      <div className="text-[0.8125rem] font-semibold text-core-text">Mike @ RocketOpp</div>
+                      <div className="text-[0.6875rem] text-core-text-muted">Just now</div>
                     </div>
                   </div>
-                  <p style={{
-                    fontSize: '0.8125rem',
-                    color: topic ? 'var(--jp-text-secondary)' : 'var(--jp-text-muted)',
-                    lineHeight: 1.6,
-                    margin: 0,
-                    minHeight: 60,
-                    whiteSpace: 'pre-wrap',
-                  }}>
+                  <p className={`text-[0.8125rem] leading-relaxed m-0 min-h-[60px] whitespace-pre-wrap ${
+                    topic ? 'text-core-text-dim' : 'text-core-text-muted'
+                  }`}>
                     {generatedContent.length > 0
                       ? generatedContent[0].content.slice(0, 200) + (generatedContent[0].content.length > 200 ? '...' : '')
                       : topic || 'Your post preview will appear here...'}
                   </p>
                   {selectedPlatforms.length > 0 && (
-                    <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
+                    <div className="flex gap-1.5 mt-3 flex-wrap">
                       {selectedPlatforms.map((key) => (
-                        <span key={key} style={{
-                          fontSize: '0.6875rem',
-                          padding: '2px 8px',
-                          borderRadius: 6,
-                          background: 'var(--jp-border)',
-                          color: 'var(--jp-text-secondary)',
-                        }}>
+                        <span key={key} className="text-[0.6875rem] px-2 py-0.5 rounded-md bg-core-border text-core-text-dim">
                           {platformName(key)}
                         </span>
                       ))}
                     </div>
                   )}
                   {selectedHashtags.length > 0 && (
-                    <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
+                    <div className="flex gap-1 mt-2 flex-wrap">
                       {selectedHashtags.map((tag) => (
-                        <span key={tag} style={{
-                          fontSize: '0.625rem',
-                          color: 'var(--jp-purple)',
-                        }}>
+                        <span key={tag} className="text-[0.625rem] text-core-purple">
                           {tag}
                         </span>
                       ))}
@@ -856,22 +687,22 @@ export default function SocialPage() {
                 </div>
 
                 {/* Quick stats */}
-                <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                    <span style={{ color: 'var(--jp-text-muted)' }}>Platforms</span>
-                    <span style={{ color: 'var(--jp-text)', fontWeight: 600 }}>{selectedPlatforms.length}</span>
+                <div className="mt-4 flex flex-col gap-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-core-text-muted">Platforms</span>
+                    <span className="text-core-text font-semibold">{selectedPlatforms.length}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                    <span style={{ color: 'var(--jp-text-muted)' }}>Hashtags</span>
-                    <span style={{ color: 'var(--jp-text)', fontWeight: 600 }}>{selectedHashtags.length}</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-core-text-muted">Hashtags</span>
+                    <span className="text-core-text font-semibold">{selectedHashtags.length}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                    <span style={{ color: 'var(--jp-text-muted)' }}>Campaign</span>
-                    <span style={{ color: 'var(--jp-text)', fontWeight: 600 }}>{campaign || 'none'}</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-core-text-muted">Campaign</span>
+                    <span className="text-core-text font-semibold">{campaign || 'none'}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                    <span style={{ color: 'var(--jp-text-muted)' }}>Tone</span>
-                    <span style={{ color: 'var(--jp-text)', fontWeight: 600, textTransform: 'capitalize' }}>{tone.replace('-', ' ')}</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-core-text-muted">Tone</span>
+                    <span className="text-core-text font-semibold capitalize">{tone.replace('-', ' ')}</span>
                   </div>
                 </div>
               </div>
@@ -882,76 +713,59 @@ export default function SocialPage() {
 
       {/* ═══════════════ BULK TAB ═══════════════ */}
       {activeTab === 'bulk' && (
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+        <div className="flex gap-5 items-start">
           {/* Left: Config */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="flex-1 flex flex-col gap-4">
             <div className="jp-card">
-              <div className="jp-card-header" style={{ padding: '14px 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <h4 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--jp-text)', margin: 0 }}>Bulk Post Generator</h4>
-                  <span style={{ fontSize: '0.625rem', fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(239,68,68,0.12)', color: '#ef4444' }}>NEW</span>
+              <div className="jp-card-header px-5 py-3.5">
+                <div className="flex items-center gap-2.5">
+                  <h4 className="text-[0.9375rem] font-bold text-core-text m-0">Bulk Post Generator</h4>
+                  <span className="text-[0.625rem] font-bold px-2 py-0.5 rounded-full bg-core-red/10 text-core-red">NEW</span>
                 </div>
               </div>
-              <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div className="jp-card-body flex flex-col gap-4">
                 {/* Topics */}
                 <div>
-                  <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 8, display: 'block' }}>
-                    Topics <span style={{ fontWeight: 400, color: 'var(--jp-text-muted)' }}>(one per line)</span>
+                  <label className="text-[0.8125rem] font-semibold text-core-text mb-2 block">
+                    Topics <span className="font-normal text-core-text-muted">(one per line)</span>
                   </label>
                   <textarea
                     value={bulkTopics}
                     onChange={e => setBulkTopics(e.target.value)}
                     placeholder={"AI orchestration and MCP servers\nWorkflow automation tips\nHow 0nMCP saves developer time\nAPI integration best practices\nThe future of no-code AI tools"}
                     rows={6}
-                    style={{
-                      width: '100%', padding: 14, background: 'var(--jp-bg-input)',
-                      border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius-sm)',
-                      color: 'var(--jp-text)', fontSize: '0.875rem', resize: 'vertical',
-                      outline: 'none', fontFamily: 'inherit', lineHeight: 1.8,
-                    }}
+                    className="w-full p-3.5 bg-core-surface border border-core-border rounded text-core-text text-sm resize-y outline-none font-inherit leading-loose"
                   />
                 </div>
 
                 {/* Config row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
+                <div className="grid grid-cols-4 gap-3">
                   <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--jp-text-muted)', marginBottom: 6, display: 'block' }}>Posts per topic</label>
+                    <label className="text-xs font-semibold text-core-text-muted mb-1.5 block">Posts per topic</label>
                     <select
                       value={bulkPerTopic}
                       onChange={e => setBulkPerTopic(Number(e.target.value))}
-                      style={{
-                        width: '100%', padding: '8px 10px', background: 'var(--jp-bg-input)',
-                        border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius-xs)',
-                        color: 'var(--jp-text)', fontSize: '0.8125rem', outline: 'none',
-                      }}
+                      className="w-full px-2.5 py-2 bg-core-surface border border-core-border rounded text-core-text text-[0.8125rem] outline-none"
                     >
                       {[3, 5, 7, 10, 15, 20].map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--jp-text-muted)', marginBottom: 6, display: 'block' }}>Hours between posts</label>
+                    <label className="text-xs font-semibold text-core-text-muted mb-1.5 block">Hours between posts</label>
                     <select
                       value={bulkInterval}
                       onChange={e => setBulkInterval(Number(e.target.value))}
-                      style={{
-                        width: '100%', padding: '8px 10px', background: 'var(--jp-bg-input)',
-                        border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius-xs)',
-                        color: 'var(--jp-text)', fontSize: '0.8125rem', outline: 'none',
-                      }}
+                      className="w-full px-2.5 py-2 bg-core-surface border border-core-border rounded text-core-text text-[0.8125rem] outline-none"
                     >
                       {[4, 6, 8, 12, 24, 48].map(n => <option key={n} value={n}>{n}h</option>)}
                     </select>
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--jp-text-muted)', marginBottom: 6, display: 'block' }}>Tone</label>
+                    <label className="text-xs font-semibold text-core-text-muted mb-1.5 block">Tone</label>
                     <select
                       value={bulkTone}
                       onChange={e => setBulkTone(e.target.value)}
-                      style={{
-                        width: '100%', padding: '8px 10px', background: 'var(--jp-bg-input)',
-                        border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius-xs)',
-                        color: 'var(--jp-text)', fontSize: '0.8125rem', outline: 'none',
-                      }}
+                      className="w-full px-2.5 py-2 bg-core-surface border border-core-border rounded text-core-text text-[0.8125rem] outline-none"
                     >
                       <option value="professional">Professional</option>
                       <option value="casual">Casual</option>
@@ -961,41 +775,33 @@ export default function SocialPage() {
                     </select>
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--jp-text-muted)', marginBottom: 6, display: 'block' }}>Start date</label>
+                    <label className="text-xs font-semibold text-core-text-muted mb-1.5 block">Start date</label>
                     <input
                       type="datetime-local"
                       value={bulkStartDate}
                       onChange={e => setBulkStartDate(e.target.value)}
-                      style={{
-                        width: '100%', padding: '8px 10px', background: 'var(--jp-bg-input)',
-                        border: '1px solid var(--jp-border)', borderRadius: 'var(--jp-radius-xs)',
-                        color: 'var(--jp-text)', fontSize: '0.75rem', outline: 'none',
-                      }}
+                      className="w-full px-2.5 py-2 bg-core-surface border border-core-border rounded text-core-text text-xs outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Generate button */}
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', paddingTop: 4 }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
-                    {bulkTopics.split('\n').filter(t => t.trim()).length} topics × {bulkPerTopic} posts = <strong style={{ color: 'var(--jp-green)' }}>{bulkTopics.split('\n').filter(t => t.trim()).length * bulkPerTopic} posts</strong>
+                <div className="flex gap-2 justify-between items-center pt-1">
+                  <div className="text-xs text-core-text-muted">
+                    {bulkTopics.split('\n').filter(t => t.trim()).length} topics × {bulkPerTopic} posts = <strong className="text-core-green">{bulkTopics.split('\n').filter(t => t.trim()).length * bulkPerTopic} posts</strong>
                   </div>
                   <button
                     onClick={handleBulkGenerate}
                     disabled={bulkGenerating || !bulkTopics.trim()}
-                    style={{
-                      padding: '12px 28px',
-                      background: bulkGenerating ? 'var(--jp-border)' : 'var(--jp-green)',
-                      color: bulkGenerating ? 'var(--jp-text-muted)' : '#000',
-                      border: 'none', borderRadius: 'var(--jp-radius-sm)',
-                      fontSize: '0.875rem', fontWeight: 700,
-                      cursor: bulkGenerating ? 'default' : 'pointer',
-                      display: 'flex', alignItems: 'center', gap: 8,
-                    }}
+                    className={`flex items-center gap-2 px-7 py-3 rounded text-sm font-bold border-none ${
+                      bulkGenerating
+                        ? 'bg-core-border text-core-text-muted cursor-default'
+                        : 'bg-core-green text-black cursor-pointer'
+                    }`}
                   >
                     {bulkGenerating ? (
                       <>
-                        <span style={{ width: 14, height: 14, border: '2px solid var(--jp-text-muted)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                        <span className="w-3.5 h-3.5 border-2 border-core-text-muted border-t-transparent rounded-full animate-spin" />
                         Generating {bulkTopics.split('\n').filter(t => t.trim()).length * bulkPerTopic} posts...
                       </>
                     ) : 'Generate Bulk Posts'}
@@ -1006,20 +812,18 @@ export default function SocialPage() {
 
             {/* CSV Upload */}
             <div className="jp-card">
-              <div className="jp-card-header" style={{ padding: '14px 20px' }}>
-                <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--jp-text)', margin: 0 }}>CSV Import</h4>
+              <div className="jp-card-header px-5 py-3.5">
+                <h4 className="text-sm font-bold text-core-text m-0">CSV Import</h4>
               </div>
-              <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{
-                  padding: 20, border: '2px dashed var(--jp-border)', borderRadius: 'var(--jp-radius-sm)',
-                  textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.15s',
-                }}
+              <div className="jp-card-body flex flex-col gap-3">
+                <div
+                  className="p-5 border-2 border-dashed border-core-border rounded text-center cursor-pointer transition-colors"
                   onClick={() => document.getElementById('csv-upload')?.click()}
-                  onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--jp-green)' }}
-                  onDragLeave={e => { e.currentTarget.style.borderColor = 'var(--jp-border)' }}
+                  onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--core-green, #6EE05A)' }}
+                  onDragLeave={e => { e.currentTarget.style.borderColor = '' }}
                   onDrop={e => {
                     e.preventDefault()
-                    e.currentTarget.style.borderColor = 'var(--jp-border)'
+                    e.currentTarget.style.borderColor = ''
                     const file = e.dataTransfer.files[0]
                     if (file?.name.endsWith('.csv')) setCsvFile(file)
                   }}
@@ -1028,43 +832,33 @@ export default function SocialPage() {
                     id="csv-upload"
                     type="file"
                     accept=".csv"
-                    style={{ display: 'none' }}
+                    className="hidden"
                     onChange={e => { if (e.target.files?.[0]) setCsvFile(e.target.files[0]) }}
                   />
                   {csvFile ? (
                     <div>
-                      <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-green)' }}>{csvFile.name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginTop: 4 }}>{(csvFile.size / 1024).toFixed(1)} KB</div>
+                      <div className="text-sm font-semibold text-core-green">{csvFile.name}</div>
+                      <div className="text-xs text-core-text-muted mt-1">{(csvFile.size / 1024).toFixed(1)} KB</div>
                     </div>
                   ) : (
                     <div>
-                      <div style={{ fontSize: '0.8125rem', color: 'var(--jp-text-muted)', marginBottom: 4 }}>Drop CSV file here or click to browse</div>
-                      <div style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)', opacity: 0.6 }}>Columns: summary, scheduleDate, accountIds, mediaUrl, mediaType, followUpComment, status</div>
+                      <div className="text-[0.8125rem] text-core-text-muted mb-1">Drop CSV file here or click to browse</div>
+                      <div className="text-[0.6875rem] text-core-text-muted opacity-60">Columns: summary, scheduleDate, accountIds, mediaUrl, mediaType, followUpComment, status</div>
                     </div>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div className="flex gap-2">
                   <a
                     href="/api/social/csv?action=template"
                     download
-                    style={{
-                      padding: '8px 16px', borderRadius: 'var(--jp-radius-xs)',
-                      border: '1px solid var(--jp-border)', background: 'transparent',
-                      color: 'var(--jp-text-secondary)', fontSize: '0.75rem', fontWeight: 600,
-                      textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4,
-                    }}
+                    className="flex items-center gap-1 px-4 py-2 rounded border border-core-border bg-transparent text-core-text-dim text-xs font-semibold no-underline"
                   >
                     Download Template
                   </a>
                   <a
                     href="/api/social/csv?action=export"
                     download
-                    style={{
-                      padding: '8px 16px', borderRadius: 'var(--jp-radius-xs)',
-                      border: '1px solid var(--jp-border)', background: 'transparent',
-                      color: 'var(--jp-text-secondary)', fontSize: '0.75rem', fontWeight: 600,
-                      textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4,
-                    }}
+                    className="flex items-center gap-1 px-4 py-2 rounded border border-core-border bg-transparent text-core-text-dim text-xs font-semibold no-underline"
                   >
                     Export Existing
                   </a>
@@ -1072,12 +866,9 @@ export default function SocialPage() {
                     <button
                       onClick={handleBulkUpload}
                       disabled={bulkUploading}
-                      style={{
-                        padding: '8px 16px', borderRadius: 'var(--jp-radius-xs)',
-                        background: 'var(--jp-green)', border: 'none',
-                        color: '#000', fontSize: '0.75rem', fontWeight: 700,
-                        cursor: bulkUploading ? 'default' : 'pointer', marginLeft: 'auto',
-                      }}
+                      className={`px-4 py-2 rounded bg-core-green border-none text-black text-xs font-bold ml-auto ${
+                        bulkUploading ? 'cursor-default' : 'cursor-pointer'
+                      }`}
                     >
                       {bulkUploading ? 'Uploading...' : 'Upload CSV to CRM'}
                     </button>
@@ -1089,78 +880,63 @@ export default function SocialPage() {
             {/* Generated posts preview */}
             {bulkPosts.length > 0 && (
               <div className="jp-card">
-                <div className="jp-card-header" style={{ padding: '14px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--jp-text)', margin: 0 }}>
+                <div className="jp-card-header px-5 py-3.5">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-bold text-core-text m-0">
                         Generated — {bulkPosts.length} Posts
                       </h4>
                       {bulkResult && (
-                        <span style={{
-                          fontSize: '0.6875rem', fontWeight: 600, padding: '2px 8px', borderRadius: 6,
-                          background: bulkResult.failed === 0 ? 'var(--jp-green-glow)' : 'rgba(248,113,113,0.12)',
-                          color: bulkResult.failed === 0 ? 'var(--jp-green)' : '#ef4444',
-                        }}>
+                        <span className={`text-[0.6875rem] font-semibold px-2 py-0.5 rounded-md ${
+                          bulkResult.failed === 0
+                            ? 'bg-core-green/10 text-core-green'
+                            : 'bg-core-red/10 text-core-red'
+                        }`}>
                           {bulkResult.success}/{bulkResult.total} uploaded
                         </span>
                       )}
                     </div>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={downloadCsv} style={{
-                        padding: '6px 14px', borderRadius: 'var(--jp-radius-xs)',
-                        border: '1px solid var(--jp-border)', background: 'transparent',
-                        color: 'var(--jp-text-secondary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
-                      }}>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={downloadCsv}
+                        className="px-3.5 py-1.5 rounded border border-core-border bg-transparent text-core-text-dim text-xs font-semibold cursor-pointer"
+                      >
                         Download CSV
                       </button>
                       <button
                         onClick={handleBulkUpload}
                         disabled={bulkUploading}
-                        style={{
-                          padding: '6px 14px', borderRadius: 'var(--jp-radius-xs)',
-                          background: 'var(--jp-green)', border: 'none',
-                          color: '#000', fontSize: '0.75rem', fontWeight: 700,
-                          cursor: bulkUploading ? 'default' : 'pointer',
-                        }}
+                        className={`px-3.5 py-1.5 rounded bg-core-green border-none text-black text-xs font-bold ${
+                          bulkUploading ? 'cursor-default' : 'cursor-pointer'
+                        }`}
                       >
                         {bulkUploading ? 'Uploading...' : 'Upload All to CRM'}
                       </button>
                     </div>
                   </div>
                 </div>
-                <div className="jp-card-body" style={{ padding: '0 20px 20px', maxHeight: 500, overflowY: 'auto' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div className="px-5 pb-5 max-h-[500px] overflow-y-auto">
+                  <div className="flex flex-col gap-1">
                     {bulkPosts.map((post, i) => (
-                      <div key={i} style={{
-                        display: 'flex', gap: 12, padding: '10px 0',
-                        borderBottom: i < bulkPosts.length - 1 ? '1px solid var(--jp-border)' : 'none',
-                      }}>
-                        <div style={{
-                          width: 28, height: 28, borderRadius: 6, flexShrink: 0,
-                          background: 'var(--jp-bg-input)', display: 'flex',
-                          alignItems: 'center', justifyContent: 'center',
-                          fontSize: '0.6875rem', fontWeight: 700, color: 'var(--jp-text-muted)',
-                        }}>
+                      <div
+                        key={i}
+                        className={`flex gap-3 py-2.5 ${i < bulkPosts.length - 1 ? 'border-b border-core-border' : ''}`}
+                      >
+                        <div className="w-7 h-7 rounded-md flex-shrink-0 bg-core-surface flex items-center justify-center text-[0.6875rem] font-bold text-core-text-muted">
                           {i + 1}
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '0.8125rem', color: 'var(--jp-text)', lineHeight: 1.5 }}>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[0.8125rem] text-core-text leading-snug">
                             {post.content}
                           </div>
-                          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                            <span style={{ fontSize: '0.625rem', color: 'var(--jp-text-muted)' }}>
+                          <div className="flex gap-2 mt-1">
+                            <span className="text-[0.625rem] text-core-text-muted">
                               {new Date(post.scheduleDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </span>
-                            <span style={{
-                              fontSize: '0.625rem', padding: '0 6px', borderRadius: 4,
-                              background: 'rgba(167,139,250,0.12)', color: 'var(--jp-purple)',
-                            }}>
+                            <span className="text-[0.625rem] px-1.5 rounded bg-core-purple/10 text-core-purple">
                               {post.angle}
                             </span>
-                            <span style={{
-                              fontSize: '0.625rem', padding: '0 6px', borderRadius: 4,
-                              background: 'var(--jp-bg-input)', color: 'var(--jp-text-muted)',
-                            }}>
+                            <span className="text-[0.625rem] px-1.5 rounded bg-core-surface text-core-text-muted">
                               {post.topic.slice(0, 30)}
                             </span>
                           </div>
@@ -1174,53 +950,53 @@ export default function SocialPage() {
           </div>
 
           {/* Right: Stats sidebar */}
-          <div style={{ width: 280, flexShrink: 0 }}>
-            <div className="jp-card" style={{ position: 'sticky', top: 88 }}>
+          <div className="w-[280px] flex-shrink-0">
+            <div className="jp-card sticky top-22">
               <div className="jp-card-header">
-                <h4 style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>Bulk Stats</h4>
+                <h4 className="text-[0.8125rem] font-semibold text-core-text m-0">Bulk Stats</h4>
               </div>
-              <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <div style={{ padding: 12, borderRadius: 'var(--jp-radius-xs)', background: 'var(--jp-bg-input)', textAlign: 'center' }}>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--jp-green)' }}>
+              <div className="jp-card-body flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-3 rounded bg-core-surface text-center">
+                    <div className="text-xl font-bold text-core-green">
                       {bulkPosts.length}
                     </div>
-                    <div style={{ fontSize: '0.625rem', color: 'var(--jp-text-muted)', fontWeight: 600 }}>Generated</div>
+                    <div className="text-[0.625rem] text-core-text-muted font-semibold">Generated</div>
                   </div>
-                  <div style={{ padding: 12, borderRadius: 'var(--jp-radius-xs)', background: 'var(--jp-bg-input)', textAlign: 'center' }}>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--jp-cyan)' }}>
+                  <div className="p-3 rounded bg-core-surface text-center">
+                    <div className="text-xl font-bold text-core-cyan">
                       {bulkResult?.success || 0}
                     </div>
-                    <div style={{ fontSize: '0.625rem', color: 'var(--jp-text-muted)', fontWeight: 600 }}>Uploaded</div>
+                    <div className="text-[0.625rem] text-core-text-muted font-semibold">Uploaded</div>
                   </div>
                 </div>
 
                 {bulkPosts.length > 0 && (
                   <>
-                    <div style={{ height: 1, background: 'var(--jp-border)' }} />
-                    <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div className="h-px bg-core-border" />
+                    <div className="text-xs text-core-text-muted">
+                      <div className="flex justify-between mb-1">
                         <span>First post</span>
-                        <span style={{ color: 'var(--jp-text)', fontWeight: 600 }}>
+                        <span className="text-core-text font-semibold">
                           {new Date(bulkPosts[0].scheduleDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <div className="flex justify-between mb-1">
                         <span>Last post</span>
-                        <span style={{ color: 'var(--jp-text)', fontWeight: 600 }}>
+                        <span className="text-core-text font-semibold">
                           {new Date(bulkPosts[bulkPosts.length - 1].scheduleDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <div className="flex justify-between">
                         <span>Interval</span>
-                        <span style={{ color: 'var(--jp-text)', fontWeight: 600 }}>{bulkInterval}h</span>
+                        <span className="text-core-text font-semibold">{bulkInterval}h</span>
                       </div>
                     </div>
                   </>
                 )}
 
-                <div style={{ height: 1, background: 'var(--jp-border)' }} />
-                <div style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)', lineHeight: 1.6 }}>
+                <div className="h-px bg-core-border" />
+                <div className="text-[0.6875rem] text-core-text-muted leading-relaxed">
                   AI generates varied posts per topic — hooks, questions, hot takes, tips, stats. Posts are scheduled at your chosen interval across all connected accounts.
                 </div>
               </div>
@@ -1232,49 +1008,30 @@ export default function SocialPage() {
       {/* ═══════════════ SCHEDULED TAB ═══════════════ */}
       {activeTab === 'scheduled' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div style={{ display: 'flex', gap: 4, background: 'var(--jp-bg-card)', padding: 3, borderRadius: 'var(--jp-radius-xs)' }}>
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex gap-1 bg-core-card p-[3px] rounded">
               <button
                 onClick={() => setScheduleView('list')}
-                style={{
-                  padding: '6px 14px',
-                  background: scheduleView === 'list' ? 'var(--jp-green-glow)' : 'transparent',
-                  border: 'none',
-                  borderRadius: 'var(--jp-radius-xs)',
-                  color: scheduleView === 'list' ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className={`px-3.5 py-1.5 rounded border-none text-xs font-semibold cursor-pointer ${
+                  scheduleView === 'list'
+                    ? 'bg-core-green/10 text-core-green'
+                    : 'bg-transparent text-core-text-dim'
+                }`}
               >
                 List
               </button>
               <button
                 onClick={() => setScheduleView('calendar')}
-                style={{
-                  padding: '6px 14px',
-                  background: scheduleView === 'calendar' ? 'var(--jp-green-glow)' : 'transparent',
-                  border: 'none',
-                  borderRadius: 'var(--jp-radius-xs)',
-                  color: scheduleView === 'calendar' ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className={`px-3.5 py-1.5 rounded border-none text-xs font-semibold cursor-pointer ${
+                  scheduleView === 'calendar'
+                    ? 'bg-core-green/10 text-core-green'
+                    : 'bg-transparent text-core-text-dim'
+                }`}
               >
                 Calendar
               </button>
             </div>
-            <button style={{
-              padding: '8px 18px',
-              background: 'var(--jp-green)',
-              color: '#000',
-              border: 'none',
-              borderRadius: 'var(--jp-radius-sm)',
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}>
+            <button className="px-4 py-2 bg-core-green text-black border-none rounded text-[0.8125rem] font-semibold cursor-pointer">
               + New Scheduled Post
             </button>
           </div>
@@ -1282,98 +1039,45 @@ export default function SocialPage() {
           {scheduleView === 'list' ? (
             <div className="jp-card">
               <div className="jp-card-header">
-                <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>Scheduled Posts</h4>
-                <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>{scheduledPosts.length} total</span>
+                <h4 className="text-sm font-semibold text-core-text m-0">Scheduled Posts</h4>
+                <span className="text-xs text-core-text-muted">{scheduledPosts.length} total</span>
               </div>
               <div>
                 {scheduledPosts.map((post) => (
                   <div
                     key={post.id}
-                    style={{
-                      padding: '16px 20px',
-                      borderBottom: '1px solid var(--jp-border)',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 16,
-                    }}
+                    className="px-5 py-4 border-b border-core-border flex items-start gap-4"
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{
-                        fontSize: '0.875rem',
-                        color: 'var(--jp-text)',
-                        lineHeight: 1.5,
-                        margin: '0 0 8px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-core-text leading-snug m-0 mb-2 overflow-hidden text-ellipsis whitespace-nowrap">
                         {post.content}
                       </p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <div className="flex items-center gap-2 flex-wrap">
                         {post.platforms.map((p) => (
-                          <span key={p} style={{
-                            fontSize: '0.6875rem',
-                            fontWeight: 600,
-                            padding: '2px 8px',
-                            borderRadius: 6,
-                            background: 'var(--jp-border)',
-                            color: 'var(--jp-text-secondary)',
-                          }}>
+                          <span key={p} className="text-[0.6875rem] font-semibold px-2 py-0.5 rounded-md bg-core-border text-core-text-dim">
                             {p}
                           </span>
                         ))}
-                        <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
+                        <span className="text-xs text-core-text-muted">
                           {post.date} at {post.time}
                         </span>
                         {post.campaign && (
-                          <span style={{
-                            fontSize: '0.625rem',
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            background: 'rgba(0, 212, 255, 0.12)',
-                            color: 'var(--jp-cyan)',
-                            fontWeight: 600,
-                          }}>
+                          <span className="text-[0.625rem] px-1.5 py-0.5 rounded bg-core-cyan/10 text-core-cyan font-semibold">
                             {post.campaign}
                           </span>
                         )}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{
-                        fontSize: '0.6875rem',
-                        fontWeight: 600,
-                        padding: '3px 10px',
-                        borderRadius: 6,
-                        background: statusBg(post.status),
-                        color: statusColor(post.status),
-                        textTransform: 'capitalize',
-                        whiteSpace: 'nowrap',
-                      }}>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[0.6875rem] font-semibold px-2.5 py-[3px] rounded-md capitalize whitespace-nowrap ${statusBgClass(post.status)} ${statusColorClass(post.status)}`}>
                         {post.status}
                       </span>
                       {post.status === 'pending' && (
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <button style={{
-                            padding: '4px 8px',
-                            background: 'none',
-                            border: '1px solid var(--jp-border)',
-                            borderRadius: 'var(--jp-radius-xs)',
-                            color: 'var(--jp-text-secondary)',
-                            fontSize: '0.6875rem',
-                            cursor: 'pointer',
-                          }}>
+                        <div className="flex gap-1">
+                          <button className="px-2 py-1 bg-transparent border border-core-border rounded text-core-text-dim text-[0.6875rem] cursor-pointer">
                             Edit
                           </button>
-                          <button style={{
-                            padding: '4px 8px',
-                            background: 'none',
-                            border: '1px solid var(--jp-border)',
-                            borderRadius: 'var(--jp-radius-xs)',
-                            color: 'var(--jp-red)',
-                            fontSize: '0.6875rem',
-                            cursor: 'pointer',
-                          }}>
+                          <button className="px-2 py-1 bg-transparent border border-core-border rounded text-core-red text-[0.6875rem] cursor-pointer">
                             Delete
                           </button>
                         </div>
@@ -1387,22 +1091,12 @@ export default function SocialPage() {
             /* Calendar View */
             <div className="jp-card">
               <div className="jp-card-header">
-                <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>March 2026</h4>
+                <h4 className="text-sm font-semibold text-core-text m-0">March 2026</h4>
               </div>
               <div className="jp-card-body">
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(7, 1fr)',
-                  gap: 2,
-                }}>
+                <div className="grid grid-cols-7 gap-0.5">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                    <div key={d} style={{
-                      padding: '8px 4px',
-                      fontSize: '0.6875rem',
-                      fontWeight: 600,
-                      color: 'var(--jp-text-muted)',
-                      textAlign: 'center',
-                    }}>
+                    <div key={d} className="py-2 px-1 text-[0.6875rem] font-semibold text-core-text-muted text-center">
                       {d}
                     </div>
                   ))}
@@ -1412,28 +1106,20 @@ export default function SocialPage() {
                     const dateStr = `2026-03-${String(day).padStart(2, '0')}`
                     const postsOnDay = scheduledPosts.filter((p) => p.date === dateStr)
                     return (
-                      <div key={day} style={{
-                        padding: 8,
-                        minHeight: 60,
-                        background: postsOnDay.length > 0 ? 'var(--jp-green-glow)' : 'var(--jp-bg)',
-                        borderRadius: 'var(--jp-radius-xs)',
-                        border: '1px solid var(--jp-border)',
-                      }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 4 }}>
+                      <div
+                        key={day}
+                        className={`p-2 min-h-[60px] rounded border border-core-border ${
+                          postsOnDay.length > 0 ? 'bg-core-green/10' : 'bg-core-bg'
+                        }`}
+                      >
+                        <div className="text-xs font-semibold text-core-text mb-1">
                           {day}
                         </div>
                         {postsOnDay.map((p) => (
-                          <div key={p.id} style={{
-                            fontSize: '0.5625rem',
-                            padding: '1px 4px',
-                            borderRadius: 3,
-                            background: statusBg(p.status),
-                            color: statusColor(p.status),
-                            marginBottom: 2,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}>
+                          <div
+                            key={p.id}
+                            className={`text-[0.5625rem] px-1 py-[1px] rounded mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap ${statusBgClass(p.status)} ${statusColorClass(p.status)}`}
+                          >
                             {p.time} - {p.platforms.join(', ')}
                           </div>
                         ))}
@@ -1449,7 +1135,7 @@ export default function SocialPage() {
 
       {/* ═══════════════ ANALYTICS TAB ═══════════════ */}
       {activeTab === 'analytics' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="flex flex-col gap-5">
           {/* Stat cards */}
           <div className="jp-stat-grid">
             {[
@@ -1476,7 +1162,7 @@ export default function SocialPage() {
           {/* Chart */}
           <div className="jp-card">
             <div className="jp-card-header">
-              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>
+              <h4 className="text-sm font-semibold text-core-text m-0">
                 Engagement — Last 30 Days
               </h4>
             </div>
@@ -1491,10 +1177,10 @@ export default function SocialPage() {
                   />
                 ))}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-                <span style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)' }}>Mar 1</span>
-                <span style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)' }}>Mar 15</span>
-                <span style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)' }}>Mar 30</span>
+              <div className="flex justify-between mt-2">
+                <span className="text-[0.6875rem] text-core-text-muted">Mar 1</span>
+                <span className="text-[0.6875rem] text-core-text-muted">Mar 15</span>
+                <span className="text-[0.6875rem] text-core-text-muted">Mar 30</span>
               </div>
             </div>
           </div>
@@ -1502,23 +1188,13 @@ export default function SocialPage() {
           {/* Per-platform breakdown */}
           <div className="jp-card">
             <div className="jp-card-header">
-              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>
+              <h4 className="text-sm font-semibold text-core-text m-0">
                 Platform Breakdown
               </h4>
             </div>
             <div>
               {/* Table header */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
-                padding: '12px 20px',
-                borderBottom: '1px solid var(--jp-border)',
-                fontSize: '0.6875rem',
-                fontWeight: 600,
-                color: 'var(--jp-text-muted)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}>
+              <div className="grid px-5 py-3 border-b border-core-border text-[0.6875rem] font-semibold text-core-text-muted uppercase tracking-wide" style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr' }}>
                 <div>Platform</div>
                 <div>Posts</div>
                 <div>Reach</div>
@@ -1528,27 +1204,20 @@ export default function SocialPage() {
               {ANALYTICS_PLATFORMS.map((p) => (
                 <div
                   key={p.platform}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
-                    padding: '14px 20px',
-                    borderBottom: '1px solid var(--jp-border)',
-                    alignItems: 'center',
-                    transition: 'background var(--jp-transition)',
-                  }}
+                  className="grid px-5 py-3.5 border-b border-core-border items-center transition-colors"
+                  style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 8, height: 8,
-                      borderRadius: '50%',
-                      background: p.color,
-                    }} />
-                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)' }}>{p.platform}</span>
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ background: p.color }}
+                    />
+                    <span className="text-sm font-semibold text-core-text">{p.platform}</span>
                   </div>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--jp-text-secondary)' }}>{p.posts}</div>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--jp-text-secondary)' }}>{p.reach}</div>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--jp-green)', fontWeight: 600 }}>{p.engagement}</div>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--jp-text-secondary)' }}>{p.clicks}</div>
+                  <div className="text-sm text-core-text-dim">{p.posts}</div>
+                  <div className="text-sm text-core-text-dim">{p.reach}</div>
+                  <div className="text-sm text-core-green font-semibold">{p.engagement}</div>
+                  <div className="text-sm text-core-text-dim">{p.clicks}</div>
                 </div>
               ))}
             </div>
@@ -1557,7 +1226,7 @@ export default function SocialPage() {
           {/* Top performing posts */}
           <div className="jp-card">
             <div className="jp-card-header">
-              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>
+              <h4 className="text-sm font-semibold text-core-text m-0">
                 Top Performing Posts
               </h4>
             </div>
@@ -1565,45 +1234,25 @@ export default function SocialPage() {
               {TOP_POSTS.map((post, i) => (
                 <div
                   key={i}
-                  style={{
-                    padding: '14px 20px',
-                    borderBottom: '1px solid var(--jp-border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 14,
-                  }}
+                  className="px-5 py-3.5 border-b border-core-border flex items-center gap-3.5"
                 >
-                  <div style={{
-                    width: 28, height: 28,
-                    borderRadius: '50%',
-                    background: 'var(--jp-green-glow)',
-                    color: 'var(--jp-green)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
-                  }}>
+                  <div className="w-7 h-7 rounded-full bg-core-green/10 text-core-green flex items-center justify-center text-xs font-bold flex-shrink-0">
                     {i + 1}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{
-                      fontSize: '0.8125rem',
-                      color: 'var(--jp-text)',
-                      margin: 0,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[0.8125rem] text-core-text m-0 overflow-hidden text-ellipsis whitespace-nowrap">
                       {post.content}
                     </p>
-                    <span style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)' }}>{post.platform}</span>
+                    <span className="text-[0.6875rem] text-core-text-muted">{post.platform}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--jp-text)' }}>{post.reach}</div>
-                      <div style={{ fontSize: '0.625rem', color: 'var(--jp-text-muted)' }}>reach</div>
+                  <div className="flex gap-4 flex-shrink-0">
+                    <div className="text-right">
+                      <div className="text-[0.8125rem] font-bold text-core-text">{post.reach}</div>
+                      <div className="text-[0.625rem] text-core-text-muted">reach</div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--jp-green)' }}>{post.engagement}</div>
-                      <div style={{ fontSize: '0.625rem', color: 'var(--jp-text-muted)' }}>engagement</div>
+                    <div className="text-right">
+                      <div className="text-[0.8125rem] font-bold text-core-green">{post.engagement}</div>
+                      <div className="text-[0.625rem] text-core-text-muted">engagement</div>
                     </div>
                   </div>
                 </div>
@@ -1618,24 +1267,24 @@ export default function SocialPage() {
         <div>
           {/* Error display */}
           {connectError && (
-            <div style={{ padding: '12px 16px', marginBottom: 16, borderRadius: 8, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', color: '#f87171', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="flex items-center justify-between px-4 py-3 mb-4 rounded-lg bg-core-red/[0.08] border border-core-red/20 text-core-red text-sm">
               <span>{connectError}</span>
-              <button onClick={() => setConnectError('')} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 16 }}>×</button>
+              <button onClick={() => setConnectError('')} className="bg-transparent border-none text-core-red cursor-pointer text-base">×</button>
             </div>
           )}
 
           {/* Quick tip */}
-          <div style={{ padding: '12px 16px', marginBottom: 16, borderRadius: 8, background: 'rgba(126,217,87,0.06)', border: '1px solid rgba(126,217,87,0.12)', fontSize: 12, color: 'var(--jp-text-secondary)', lineHeight: 1.6 }}>
-            <strong style={{ color: '#7ed957' }}>Tip:</strong> Social accounts are connected through your CRM. If the connect button doesn't work, you can connect directly in your{' '}
-            <a href="https://app.gohighlevel.com" target="_blank" rel="noopener noreferrer" style={{ color: '#7ed957', textDecoration: 'none', fontWeight: 600 }}>CRM Dashboard → Social Planner → Settings</a>
+          <div className="px-4 py-3 mb-4 rounded-lg bg-core-green/[0.06] border border-core-green/10 text-xs text-core-text-dim leading-relaxed">
+            <strong className="text-core-green">Tip:</strong> Social accounts are connected through your CRM. If the connect button doesn't work, you can connect directly in your{' '}
+            <a href="https://app.gohighlevel.com" target="_blank" rel="noopener noreferrer" className="text-core-green no-underline font-semibold">CRM Dashboard → Social Planner → Settings</a>
             {' '}and it will sync here automatically.
           </div>
 
           {/* CRM OAuth Platforms */}
-          <div className="jp-card" style={{ marginBottom: 16 }}>
+          <div className="jp-card mb-4">
             <div className="jp-card-header">
-              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>Social Accounts (CRM OAuth)</h4>
-              <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
+              <h4 className="text-sm font-semibold text-core-text m-0">Social Accounts (CRM OAuth)</h4>
+              <span className="text-xs text-core-text-muted">
                 Connect via CRM — accounts sync to your location
               </span>
             </div>
@@ -1643,34 +1292,31 @@ export default function SocialPage() {
               {CRM_PLATFORMS.map((account) => {
                 const isConnected = connectedAccounts[account.key] || false
                 return (
-                  <div key={account.key} style={{ padding: '16px 20px', borderBottom: '1px solid var(--jp-border)', display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 'var(--jp-radius-sm)', background: account.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8125rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                  <div key={account.key} className="flex items-center gap-3.5 px-5 py-4 border-b border-core-border">
+                    <div
+                      className="w-11 h-11 rounded flex items-center justify-center text-[0.8125rem] font-bold text-white flex-shrink-0"
+                      style={{ background: account.color }}
+                    >
                       {account.icon}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--jp-text)' }}>{account.platform}</span>
-                      {isConnected && <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginTop: 2 }}>Connected via CRM</div>}
+                    <div className="flex-1">
+                      <span className="text-[0.9375rem] font-semibold text-core-text">{account.platform}</span>
+                      {isConnected && <div className="text-xs text-core-text-muted mt-0.5">Connected via CRM</div>}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div className="flex items-center gap-2.5">
                       {isConnected && (
-                        <span style={{ fontSize: '0.6875rem', fontWeight: 600, padding: '3px 10px', borderRadius: 6, background: 'var(--jp-green-glow)', color: 'var(--jp-green)' }}>
+                        <span className="text-[0.6875rem] font-semibold px-2.5 py-[3px] rounded-md bg-core-green/10 text-core-green">
                           Connected
                         </span>
                       )}
                       <button
                         onClick={() => !isConnected && connectPlatform(account.key)}
                         disabled={connecting === account.key}
-                        style={{
-                          padding: '7px 16px',
-                          background: isConnected ? 'transparent' : 'var(--jp-green)',
-                          color: isConnected ? 'var(--jp-red)' : '#000',
-                          border: isConnected ? '1px solid var(--jp-border)' : 'none',
-                          borderRadius: 'var(--jp-radius-sm)',
-                          fontSize: '0.8125rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          opacity: connecting === account.key ? 0.5 : 1,
-                        }}
+                        className={`px-4 py-[7px] rounded text-[0.8125rem] font-semibold cursor-pointer ${
+                          isConnected
+                            ? 'bg-transparent text-core-red border border-core-border'
+                            : 'bg-core-green text-black border-none'
+                        } ${connecting === account.key ? 'opacity-50' : ''}`}
                       >
                         {connecting === account.key ? 'Connecting...' : isConnected ? 'Reconnect' : 'Connect'}
                       </button>
@@ -1684,32 +1330,29 @@ export default function SocialPage() {
           {/* Direct Platforms */}
           <div className="jp-card">
             <div className="jp-card-header">
-              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>Direct Integrations</h4>
-              <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>
+              <h4 className="text-sm font-semibold text-core-text m-0">Direct Integrations</h4>
+              <span className="text-xs text-core-text-muted">
                 Connected via API keys in Settings
               </span>
             </div>
             <div>
               {DIRECT_PLATFORMS.map((account) => (
-                <div key={account.key} style={{ padding: '16px 20px', borderBottom: '1px solid var(--jp-border)', display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 'var(--jp-radius-sm)', background: account.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8125rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                <div key={account.key} className="flex items-center gap-3.5 px-5 py-4 border-b border-core-border">
+                  <div
+                    className="w-11 h-11 rounded flex items-center justify-center text-[0.8125rem] font-bold text-white flex-shrink-0"
+                    style={{ background: account.color }}
+                  >
                     {account.icon}
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--jp-text)' }}>{account.platform}</span>
+                  <div className="flex-1">
+                    <span className="text-[0.9375rem] font-semibold text-core-text">{account.platform}</span>
                   </div>
                   <button
-                    style={{
-                      padding: '7px 16px',
-                      background: account.comingSoon ? 'var(--jp-border)' : 'var(--jp-green)',
-                      color: account.comingSoon ? 'var(--jp-text-muted)' : '#000',
-                      border: 'none',
-                      borderRadius: 'var(--jp-radius-sm)',
-                      fontSize: '0.8125rem',
-                      fontWeight: 600,
-                      cursor: account.comingSoon ? 'default' : 'pointer',
-                      opacity: account.comingSoon ? 0.5 : 1,
-                    }}
+                    className={`px-4 py-[7px] rounded border-none text-[0.8125rem] font-semibold ${
+                      account.comingSoon
+                        ? 'bg-core-border text-core-text-muted opacity-50 cursor-default'
+                        : 'bg-core-green text-black cursor-pointer'
+                    }`}
                     disabled={account.comingSoon}
                     onClick={() => !account.comingSoon && (window.location.href = '/dashboard/integrations')}
                   >
@@ -1721,9 +1364,6 @@ export default function SocialPage() {
           </div>
         </div>
       )}
-
-      {/* Spinner keyframe */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }

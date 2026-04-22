@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 
 type Tab = 'overview' | 'pages' | 'search' | 'cro'
 type DateRange = '7d' | '14d' | '30d' | '90d'
@@ -23,20 +24,41 @@ const RANGE_MAP: Record<DateRange, { start: string; end: string; label: string }
 }
 
 function MetricCard({ label, value, sub, color }: Metric) {
+  // Map legacy hex colors to Tailwind token classes
+  const valueClass =
+    color === '#7ed957' || color === '#6EE05A'
+      ? 'text-core-green'
+      : color === '#ef4444'
+      ? 'text-core-red'
+      : color === '#00d4ff'
+      ? 'text-core-cyan'
+      : 'text-core-text'
+
   return (
-    <div style={{ padding: '16px 18px', borderRadius: 12, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)' }}>
-      <div style={{ fontSize: 11, color: 'var(--jp-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: 800, color: color || 'var(--jp-text)', letterSpacing: '-0.02em' }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: 'var(--jp-text-muted)', marginTop: 2 }}>{sub}</div>}
+    <div className="px-[18px] py-4 rounded-xl bg-core-card border border-core-border">
+      <div className="text-[11px] text-core-text-muted font-semibold uppercase tracking-[0.06em] mb-1.5">
+        {label}
+      </div>
+      <div className={`text-2xl font-extrabold tracking-tight ${valueClass}`}>
+        {value}
+      </div>
+      {sub && (
+        <div className="text-[11px] text-core-text-muted mt-0.5">{sub}</div>
+      )}
     </div>
   )
 }
 
 function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0
+  const barColor = color === '#00d4ff' ? 'bg-core-cyan' : 'bg-core-green'
+
   return (
-    <div style={{ width: 80, height: 6, borderRadius: 3, background: 'var(--jp-border)', overflow: 'hidden' }}>
-      <div style={{ height: '100%', width: `${pct}%`, borderRadius: 3, background: color, transition: 'width 0.5s ease' }} />
+    <div className="w-20 h-1.5 rounded-full bg-core-border overflow-hidden">
+      <div
+        className={`h-full rounded-full transition-[width] duration-500 ${barColor}`}
+        style={{ width: `${pct}%` }}
+      />
     </div>
   )
 }
@@ -45,20 +67,30 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
   const r = (size - 12) / 2
   const circ = 2 * Math.PI * r
   const offset = circ - (score / 100) * circ
-  const color = score >= 70 ? '#7ed957' : score >= 40 ? '#f59e0b' : '#ef4444'
+  const color = score >= 70 ? '#6EE05A' : score >= 40 ? '#f59e0b' : '#ef4444'
 
   return (
-    <div style={{ position: 'relative', width: size, height: size }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--jp-border)" strokeWidth={6} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={6}
-          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 1s ease' }}
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#30363d" strokeWidth={6} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={6}
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="transition-[stroke-dashoffset] duration-1000 ease-in-out"
         />
       </svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 28, fontWeight: 800, color }}>{score}</span>
-        <span style={{ fontSize: 9, color: 'var(--jp-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>CRO Score</span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-[28px] font-extrabold" style={{ color }}>{score}</span>
+        <span className="text-[9px] text-core-text-muted font-semibold uppercase tracking-[0.08em]">
+          CRO Score
+        </span>
       </div>
     </div>
   )
@@ -219,64 +251,86 @@ export default function AnalyticsPage() {
     { key: 'cro', label: 'CRO9' },
   ]
 
-  const priorityBadge = (p: string) => {
-    const colors: Record<string, { bg: string; text: string }> = {
-      high: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444' },
-      medium: { bg: 'rgba(245,158,11,0.12)', text: '#f59e0b' },
-      low: { bg: 'rgba(126,217,87,0.12)', text: '#7ed957' },
-    }
-    return colors[p] || colors.low
+  const priorityClasses = (p: string): { badge: string; text: string } => {
+    if (p === 'high') return { badge: 'bg-core-red/10', text: 'text-core-red' }
+    if (p === 'medium') return { badge: 'bg-core-amber/10', text: 'text-core-amber' }
+    return { badge: 'bg-core-green/10', text: 'text-core-green' }
   }
 
+  // Helper: score bar color based on value
+  const scoreBgClass = (val: number) =>
+    val >= 70 ? 'bg-core-green' : val >= 40 ? 'bg-core-amber' : 'bg-core-red'
+
+  // Helper: bar color for daily chart
+  const dailyBarClass = (sessions: number) =>
+    sessions > dailyMax * 0.7
+      ? 'bg-core-green'
+      : sessions > dailyMax * 0.3
+      ? 'bg-core-green/50'
+      : 'bg-core-green/20'
+
   return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+    <div className="animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--jp-text)' }}>Analytics</h1>
-            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(126,217,87,0.12)', color: '#7ed957' }}>CRO9</span>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-extrabold text-core-text">Analytics</h1>
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-core-green/10 text-core-green">
+              CRO9
+            </span>
           </div>
-          <p style={{ fontSize: 12, color: 'var(--jp-text-muted)', marginTop: 2 }}>Google Analytics + Search Console + Conversion Optimization</p>
+          <p className="text-[12px] text-core-text-muted mt-0.5">
+            Google Analytics + Search Console + Conversion Optimization
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: 4, background: 'var(--jp-bg-card)', padding: 3, borderRadius: 8 }}>
+
+        {/* Date range picker */}
+        <div className="flex gap-1 bg-core-card p-0.5 rounded-lg">
           {(['7d', '14d', '30d', '90d'] as DateRange[]).map(r => (
-            <button key={r} onClick={() => setRange(r)} style={{
-              padding: '6px 12px', borderRadius: 6, border: 'none', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-              background: range === r ? '#7ed957' : 'transparent',
-              color: range === r ? '#000' : 'var(--jp-text-muted)',
-            }}>{RANGE_MAP[r].label}</button>
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={`px-3 py-1.5 rounded-md text-[11px] font-semibold cursor-pointer border-none transition-all duration-150 ${
+                range === r
+                  ? 'bg-core-green text-core-bg'
+                  : 'bg-transparent text-core-text-muted hover:text-core-text'
+              }`}
+            >
+              {RANGE_MAP[r].label}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* Tabs — Glowing gradient style */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6">
         {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{
-            padding: '10px 24px', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            position: 'relative', overflow: 'hidden',
-            background: tab === t.key
-              ? 'linear-gradient(135deg, rgba(126,217,87,0.15) 0%, rgba(0,212,255,0.1) 100%)'
-              : 'rgba(255,255,255,0.02)',
-            color: tab === t.key ? '#7ed957' : 'var(--jp-text-muted)',
-            boxShadow: tab === t.key
-              ? '0 0 20px rgba(126,217,87,0.15), inset 0 0 0 1px rgba(126,217,87,0.3)'
-              : 'inset 0 0 0 1px rgba(255,255,255,0.04)',
-            transition: 'all 0.2s ease',
-            letterSpacing: '0.01em',
-          }}>{t.label}</button>
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-6 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer border-none tracking-[0.01em] transition-all duration-200 relative overflow-hidden ${
+              tab === t.key
+                ? 'text-core-green shadow-[0_0_20px_rgba(110,224,90,0.15),inset_0_0_0_1px_rgba(110,224,90,0.3)] bg-gradient-to-br from-core-green/15 to-core-cyan/10'
+                : 'text-core-text-muted bg-white/[0.02] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)] hover:text-core-text'
+            }`}
+          >
+            {t.label}
+          </button>
         ))}
       </div>
 
+      {/* Error */}
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontSize: 13, marginBottom: 16 }}>
+        <div className="px-4 py-3 rounded-lg bg-core-red/[0.08] border border-core-red/20 text-core-red text-[13px] mb-4">
           {error}
         </div>
       )}
 
+      {/* Loading */}
       {loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--jp-text-muted)', fontSize: 13, marginBottom: 16 }}>
-          <span style={{ width: 14, height: 14, border: '2px solid var(--jp-text-muted)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />
+        <div className="flex items-center gap-2 text-core-text-muted text-[13px] mb-4">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
           Loading...
         </div>
       )}
@@ -284,50 +338,62 @@ export default function AnalyticsPage() {
       {/* ═══ OVERVIEW TAB ═══ */}
       {tab === 'overview' && !loading && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+          <div className="grid grid-cols-4 gap-3 mb-5">
             {metrics.map(m => <MetricCard key={m.label} {...m} />)}
           </div>
 
           {/* Daily chart */}
           {daily.length > 0 && (
-            <div style={{ marginBottom: 20, padding: '16px 18px', borderRadius: 12, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text)', marginBottom: 12 }}>Daily Sessions</div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 80 }}>
+            <div className="mb-5 px-[18px] py-4 rounded-xl bg-core-card border border-core-border">
+              <div className="text-[12px] font-bold text-core-text mb-3">Daily Sessions</div>
+              <div className="flex items-end gap-0.5 h-20">
                 {daily.map((d, i) => (
-                  <div key={i} title={`${d.date}: ${d.sessions} sessions`} style={{
-                    flex: 1, borderRadius: '2px 2px 0 0', minHeight: 2,
-                    height: `${(d.sessions / dailyMax) * 100}%`,
-                    background: d.sessions > dailyMax * 0.7 ? '#7ed957' : d.sessions > dailyMax * 0.3 ? 'rgba(126,217,87,0.5)' : 'rgba(126,217,87,0.2)',
-                    transition: 'height 0.3s ease',
-                  }} />
+                  <div
+                    key={i}
+                    title={`${d.date}: ${d.sessions} sessions`}
+                    className={`flex-1 rounded-t-sm min-h-[2px] transition-[height] duration-300 ${dailyBarClass(d.sessions)}`}
+                    style={{ height: `${(d.sessions / dailyMax) * 100}%` }}
+                  />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Sources + Top Pages side by side */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div style={{ padding: '16px 18px', borderRadius: 12, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text)', marginBottom: 12 }}>Traffic Sources</div>
+          {/* Sources + Top Pages */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="px-[18px] py-4 rounded-xl bg-core-card border border-core-border">
+              <div className="text-[12px] font-bold text-core-text mb-3">Traffic Sources</div>
               {sources.map((s, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: i < sources.length - 1 ? '1px solid var(--jp-border)' : 'none' }}>
-                  <span style={{ fontSize: 12, color: 'var(--jp-text-secondary)' }}>{s.channel}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <MiniBar value={s.sessions} max={sources[0]?.sessions || 1} color="#7ed957" />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--jp-text)', minWidth: 40, textAlign: 'right' }}>{s.sessions.toLocaleString()}</span>
+                <div
+                  key={i}
+                  className={`flex items-center justify-between py-1.5 ${i < sources.length - 1 ? 'border-b border-core-border' : ''}`}
+                >
+                  <span className="text-[12px] text-core-text-dim">{s.channel}</span>
+                  <div className="flex items-center gap-2">
+                    <MiniBar value={s.sessions} max={sources[0]?.sessions || 1} color="#6EE05A" />
+                    <span className="text-[12px] font-semibold text-core-text min-w-[40px] text-right">
+                      {s.sessions.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div style={{ padding: '16px 18px', borderRadius: 12, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text)', marginBottom: 12 }}>Top Pages</div>
+            <div className="px-[18px] py-4 rounded-xl bg-core-card border border-core-border">
+              <div className="text-[12px] font-bold text-core-text mb-3">Top Pages</div>
               {pages.slice(0, 8).map((p, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: i < 7 ? '1px solid var(--jp-border)' : 'none' }}>
-                  <span style={{ fontSize: 11, color: 'var(--jp-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{p.page}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div
+                  key={i}
+                  className={`flex items-center justify-between py-1.5 ${i < 7 ? 'border-b border-core-border' : ''}`}
+                >
+                  <span className="text-[11px] text-core-text-dim overflow-hidden text-ellipsis whitespace-nowrap max-w-[200px]">
+                    {p.page}
+                  </span>
+                  <div className="flex items-center gap-2">
                     <MiniBar value={p.sessions} max={maxSessions} color="#00d4ff" />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--jp-text)', minWidth: 40, textAlign: 'right' }}>{p.sessions.toLocaleString()}</span>
+                    <span className="text-[12px] font-semibold text-core-text min-w-[40px] text-right">
+                      {p.sessions.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -338,24 +404,39 @@ export default function AnalyticsPage() {
 
       {/* ═══ PAGES TAB ═══ */}
       {tab === 'pages' && !loading && (
-        <div style={{ padding: '16px 18px', borderRadius: 12, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text)', marginBottom: 12 }}>Landing Pages</div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+        <div className="px-[18px] py-4 rounded-xl bg-core-card border border-core-border">
+          <div className="text-[12px] font-bold text-core-text mb-3">Landing Pages</div>
+          <table className="w-full border-collapse text-[12px]">
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--jp-border)' }}>
+              <tr className="border-b border-core-border">
                 {['Page', 'Sessions', 'Users', 'Bounce', 'Avg Duration'].map(h => (
-                  <th key={h} style={{ padding: '8px 10px', textAlign: h === 'Page' ? 'left' : 'right', color: 'var(--jp-text-muted)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                  <th
+                    key={h}
+                    className={`px-2.5 py-2 text-core-text-muted font-semibold text-[10px] uppercase tracking-[0.06em] ${h === 'Page' ? 'text-left' : 'text-right'}`}
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {pages.map((p, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid var(--jp-border)' }}>
-                  <td style={{ padding: '8px 10px', color: 'var(--jp-text-secondary)', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.page}</td>
-                  <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--jp-text)' }}>{p.sessions.toLocaleString()}</td>
-                  <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--jp-text-secondary)' }}>{p.users.toLocaleString()}</td>
-                  <td style={{ padding: '8px 10px', textAlign: 'right', color: p.bounceRate > 0.7 ? '#ef4444' : 'var(--jp-text-secondary)' }}>{(p.bounceRate * 100).toFixed(1)}%</td>
-                  <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--jp-text-secondary)' }}>{Math.floor(p.avgDuration / 60)}m {Math.round(p.avgDuration % 60)}s</td>
+                <tr key={i} className="border-b border-core-border">
+                  <td className="px-2.5 py-2 text-core-text-dim max-w-[300px] overflow-hidden text-ellipsis whitespace-nowrap">
+                    {p.page}
+                  </td>
+                  <td className="px-2.5 py-2 text-right font-semibold text-core-text">
+                    {p.sessions.toLocaleString()}
+                  </td>
+                  <td className="px-2.5 py-2 text-right text-core-text-dim">
+                    {p.users.toLocaleString()}
+                  </td>
+                  <td className={`px-2.5 py-2 text-right ${p.bounceRate > 0.7 ? 'text-core-red' : 'text-core-text-dim'}`}>
+                    {(p.bounceRate * 100).toFixed(1)}%
+                  </td>
+                  <td className="px-2.5 py-2 text-right text-core-text-dim">
+                    {Math.floor(p.avgDuration / 60)}m {Math.round(p.avgDuration % 60)}s
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -365,33 +446,67 @@ export default function AnalyticsPage() {
 
       {/* ═══ SEARCH TAB ═══ */}
       {tab === 'search' && !loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div style={{ padding: '16px 18px', borderRadius: 12, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text)', marginBottom: 12 }}>Top Queries</div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="px-[18px] py-4 rounded-xl bg-core-card border border-core-border">
+            <div className="text-[12px] font-bold text-core-text mb-3">Top Queries</div>
             {queries.map((q, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: i < queries.length - 1 ? '1px solid var(--jp-border)' : 'none' }}>
-                <span style={{ fontSize: 11, color: q.position <= 3 ? '#7ed957' : q.position <= 10 ? '#f59e0b' : 'var(--jp-text-muted)', fontWeight: 700, minWidth: 24 }}>{q.position.toFixed(0)}</span>
-                <span style={{ flex: 1, fontSize: 12, color: 'var(--jp-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.query}</span>
+              <div
+                key={i}
+                className={`flex items-center gap-2 py-1.5 ${i < queries.length - 1 ? 'border-b border-core-border' : ''}`}
+              >
+                <span
+                  className={`text-[11px] font-bold min-w-[24px] ${
+                    q.position <= 3
+                      ? 'text-core-green'
+                      : q.position <= 10
+                      ? 'text-core-amber'
+                      : 'text-core-text-muted'
+                  }`}
+                >
+                  {q.position.toFixed(0)}
+                </span>
+                <span className="flex-1 text-[12px] text-core-text-dim overflow-hidden text-ellipsis whitespace-nowrap">
+                  {q.query}
+                </span>
                 <MiniBar value={q.clicks} max={maxClicks} color="#00d4ff" />
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--jp-text)', minWidth: 30, textAlign: 'right' }}>{q.clicks}</span>
-                <span style={{ fontSize: 10, color: 'var(--jp-text-muted)', minWidth: 35, textAlign: 'right' }}>{(q.ctr * 100).toFixed(1)}%</span>
+                <span className="text-[11px] font-semibold text-core-text min-w-[30px] text-right">
+                  {q.clicks}
+                </span>
+                <span className="text-[10px] text-core-text-muted min-w-[35px] text-right">
+                  {(q.ctr * 100).toFixed(1)}%
+                </span>
               </div>
             ))}
-            {queries.length === 0 && <div style={{ color: 'var(--jp-text-muted)', fontSize: 12, padding: 20, textAlign: 'center' }}>No query data yet. Add the service account to Search Console.</div>}
+            {queries.length === 0 && (
+              <div className="text-core-text-muted text-[12px] py-5 text-center">
+                No query data yet. Add the service account to Search Console.
+              </div>
+            )}
           </div>
 
-          <div style={{ padding: '16px 18px', borderRadius: 12, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text)', marginBottom: 12 }}>Top Pages (Search)</div>
+          <div className="px-[18px] py-4 rounded-xl bg-core-card border border-core-border">
+            <div className="text-[12px] font-bold text-core-text mb-3">Top Pages (Search)</div>
             {scPages.map((p, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: i < scPages.length - 1 ? '1px solid var(--jp-border)' : 'none' }}>
-                <span style={{ flex: 1, fontSize: 11, color: 'var(--jp-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div
+                key={i}
+                className={`flex items-center gap-2 py-1.5 ${i < scPages.length - 1 ? 'border-b border-core-border' : ''}`}
+              >
+                <span className="flex-1 text-[11px] text-core-text-dim overflow-hidden text-ellipsis whitespace-nowrap">
                   {p.query.replace(/^https?:\/\/[^/]+/, '')}
                 </span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#00d4ff', minWidth: 30, textAlign: 'right' }}>{p.clicks}</span>
-                <span style={{ fontSize: 10, color: 'var(--jp-text-muted)', minWidth: 50, textAlign: 'right' }}>{p.impressions.toLocaleString()} imp</span>
+                <span className="text-[11px] font-semibold text-core-cyan min-w-[30px] text-right">
+                  {p.clicks}
+                </span>
+                <span className="text-[10px] text-core-text-muted min-w-[50px] text-right">
+                  {p.impressions.toLocaleString()} imp
+                </span>
               </div>
             ))}
-            {scPages.length === 0 && <div style={{ color: 'var(--jp-text-muted)', fontSize: 12, padding: 20, textAlign: 'center' }}>No page data yet.</div>}
+            {scPages.length === 0 && (
+              <div className="text-core-text-muted text-[12px] py-5 text-center">
+                No page data yet.
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -400,27 +515,32 @@ export default function AnalyticsPage() {
       {tab === 'cro' && (
         <>
           {croLoading ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--jp-text-muted)', fontSize: 13, padding: 40, justifyContent: 'center' }}>
-              <span style={{ width: 14, height: 14, border: '2px solid var(--jp-text-muted)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />
+            <div className="flex items-center justify-center gap-2 text-core-text-muted text-[13px] py-10">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
               Running CRO9 analysis...
             </div>
           ) : (
             <>
               {/* Score + Dimensions */}
-              <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
-                <div style={{ padding: 24, borderRadius: 12, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="flex gap-5 mb-5">
+                <div className="p-6 rounded-xl bg-core-card border border-core-border flex items-center justify-center">
                   <ScoreRing score={croScore} />
                 </div>
                 {croScores && (
-                  <div style={{ flex: 1, padding: '16px 20px', borderRadius: 12, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, alignContent: 'center' }}>
+                  <div className="flex-1 px-5 py-4 rounded-xl bg-core-card border border-core-border grid grid-cols-3 gap-3 content-center">
                     {Object.entries(croScores).map(([key, val]) => (
                       <div key={key}>
-                        <div style={{ fontSize: 10, color: 'var(--jp-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{key}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--jp-border)', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${val}%`, borderRadius: 3, background: val >= 70 ? '#7ed957' : val >= 40 ? '#f59e0b' : '#ef4444', transition: 'width 0.5s' }} />
+                        <div className="text-[10px] text-core-text-muted uppercase tracking-[0.06em] mb-1">
+                          {key}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 rounded-full bg-core-border overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-[width] duration-500 ${scoreBgClass(val)}`}
+                              style={{ width: `${val}%` }}
+                            />
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text)', minWidth: 24 }}>{val}</span>
+                          <span className="text-[12px] font-bold text-core-text min-w-[24px]">{val}</span>
                         </div>
                       </div>
                     ))}
@@ -430,20 +550,24 @@ export default function AnalyticsPage() {
 
               {/* Recommendations */}
               {croRecs.length > 0 && (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--jp-text)', marginBottom: 12 }}>Recommendations ({croRecs.length})</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="mb-5">
+                  <div className="text-[13px] font-bold text-core-text mb-3">
+                    Recommendations ({croRecs.length})
+                  </div>
+                  <div className="flex flex-col gap-2">
                     {croRecs.map((r, i) => {
-                      const badge = priorityBadge(r.priority)
+                      const { badge, text } = priorityClasses(r.priority)
                       return (
-                        <div key={i} style={{ padding: '14px 18px', borderRadius: 10, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: badge.bg, color: badge.text, textTransform: 'uppercase' }}>{r.priority}</span>
-                            <span style={{ fontSize: 10, color: 'var(--jp-text-muted)', fontWeight: 600 }}>{r.category}</span>
+                        <div key={i} className="px-[18px] py-3.5 rounded-xl bg-core-card border border-core-border">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${badge} ${text}`}>
+                              {r.priority}
+                            </span>
+                            <span className="text-[10px] text-core-text-muted font-semibold">{r.category}</span>
                           </div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--jp-text)', marginBottom: 4 }}>{r.title}</div>
-                          <div style={{ fontSize: 12, color: 'var(--jp-text-secondary)', lineHeight: 1.5, marginBottom: 4 }}>{r.description}</div>
-                          <div style={{ fontSize: 11, color: '#7ed957', fontWeight: 600 }}>{r.impact}</div>
+                          <div className="text-[13px] font-semibold text-core-text mb-1">{r.title}</div>
+                          <div className="text-[12px] text-core-text-dim leading-relaxed mb-1">{r.description}</div>
+                          <div className="text-[11px] text-core-green font-semibold">{r.impact}</div>
                         </div>
                       )
                     })}
@@ -453,24 +577,45 @@ export default function AnalyticsPage() {
 
               {/* CRO Landing Pages */}
               {croPages.length > 0 && (
-                <div style={{ padding: '16px 18px', borderRadius: 12, background: 'var(--jp-bg-card)', border: '1px solid var(--jp-border)' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text)', marginBottom: 12 }}>Landing Page Performance</div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <div className="px-[18px] py-4 rounded-xl bg-core-card border border-core-border">
+                  <div className="text-[12px] font-bold text-core-text mb-3">Landing Page Performance</div>
+                  <table className="w-full border-collapse text-[12px]">
                     <thead>
-                      <tr style={{ borderBottom: '1px solid var(--jp-border)' }}>
+                      <tr className="border-b border-core-border">
                         {['Page', 'Sessions', 'Bounce', 'Duration', 'Conversions'].map(h => (
-                          <th key={h} style={{ padding: '8px 10px', textAlign: h === 'Page' ? 'left' : 'right', color: 'var(--jp-text-muted)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                          <th
+                            key={h}
+                            className={`px-2.5 py-2 text-core-text-muted font-semibold text-[10px] uppercase tracking-[0.06em] ${h === 'Page' ? 'text-left' : 'text-right'}`}
+                          >
+                            {h}
+                          </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {croPages.map((p, i) => (
-                        <tr key={i} style={{ borderBottom: '1px solid var(--jp-border)' }}>
-                          <td style={{ padding: '8px 10px', color: 'var(--jp-text-secondary)', maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.page}</td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--jp-text)' }}>{p.sessions}</td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right', color: p.bounceRate > 0.7 ? '#ef4444' : p.bounceRate > 0.5 ? '#f59e0b' : '#7ed957' }}>{(p.bounceRate * 100).toFixed(1)}%</td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--jp-text-secondary)' }}>{Math.floor(p.avgDuration / 60)}m {Math.round(p.avgDuration % 60)}s</td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: p.conversions > 0 ? '#7ed957' : 'var(--jp-text-muted)' }}>{p.conversions}</td>
+                        <tr key={i} className="border-b border-core-border">
+                          <td className="px-2.5 py-2 text-core-text-dim max-w-[250px] overflow-hidden text-ellipsis whitespace-nowrap">
+                            {p.page}
+                          </td>
+                          <td className="px-2.5 py-2 text-right font-semibold text-core-text">
+                            {p.sessions}
+                          </td>
+                          <td className={`px-2.5 py-2 text-right ${
+                            p.bounceRate > 0.7
+                              ? 'text-core-red'
+                              : p.bounceRate > 0.5
+                              ? 'text-core-amber'
+                              : 'text-core-green'
+                          }`}>
+                            {(p.bounceRate * 100).toFixed(1)}%
+                          </td>
+                          <td className="px-2.5 py-2 text-right text-core-text-dim">
+                            {Math.floor(p.avgDuration / 60)}m {Math.round(p.avgDuration % 60)}s
+                          </td>
+                          <td className={`px-2.5 py-2 text-right font-semibold ${p.conversions > 0 ? 'text-core-green' : 'text-core-text-muted'}`}>
+                            {p.conversions}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -479,17 +624,19 @@ export default function AnalyticsPage() {
               )}
 
               {croScore === 0 && croRecs.length === 0 && !croLoading && (
-                <div style={{ textAlign: 'center', padding: 40, color: 'var(--jp-text-muted)' }}>
-                  <div style={{ fontSize: 14, marginBottom: 8 }}>Add the service account to GA4 + Search Console to enable CRO9</div>
-                  <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--jp-text-muted)', opacity: 0.6 }}>id-nmcp@gen-lang-client-0912315168.iam.gserviceaccount.com</div>
+                <div className="text-center py-10 text-core-text-muted">
+                  <div className="text-[14px] mb-2">
+                    Add the service account to GA4 + Search Console to enable CRO9
+                  </div>
+                  <div className="text-[11px] font-mono opacity-60">
+                    id-nmcp@gen-lang-client-0912315168.iam.gserviceaccount.com
+                  </div>
                 </div>
               )}
             </>
           )}
         </>
       )}
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }

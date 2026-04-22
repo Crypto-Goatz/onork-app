@@ -1,6 +1,18 @@
 'use client'
 
 import { useState } from 'react'
+import {
+  Linkedin,
+  Users,
+  FileText,
+  ShieldCheck,
+  Lightbulb,
+  Play,
+  ChevronDown,
+  Copy,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react'
 
 interface WorkflowResult {
   action: string
@@ -13,8 +25,10 @@ interface WorkflowDef {
   id: string
   name: string
   description: string
-  icon: string
-  color: string
+  icon: React.ElementType
+  colorClass: string
+  iconBgClass: string
+  iconBorderClass: string
   hasInput?: boolean
   inputLabel?: string
   inputPlaceholder?: string
@@ -25,8 +39,10 @@ const workflows: WorkflowDef[] = [
     id: 'linkedin_comment_bot',
     name: 'LinkedIn Comment Bot',
     description: 'Generate AI-powered LinkedIn comments for engagement. Creates 3 variants: insightful, supportive, and curious.',
-    icon: 'M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z M4 4a2 2 0 100 4 2 2 0 000-4z',
-    color: 'var(--jp-cyan)',
+    icon: Linkedin,
+    colorClass: 'text-core-cyan',
+    iconBgClass: 'bg-core-cyan/10',
+    iconBorderClass: 'border-core-cyan/20',
     hasInput: true,
     inputLabel: 'Post Content / Topics',
     inputPlaceholder: 'Paste a LinkedIn post or describe topics to comment on...',
@@ -35,15 +51,19 @@ const workflows: WorkflowDef[] = [
     id: 'lead_nurture_sequence',
     name: 'Lead Nurture Sequence',
     description: 'Fetch contacts tagged for onboarding from CRM and generate personalized follow-up email sequences.',
-    icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
-    color: 'var(--jp-green)',
+    icon: Users,
+    colorClass: 'text-core-green',
+    iconBgClass: 'bg-core-green/10',
+    iconBorderClass: 'border-core-green/20',
   },
   {
     id: 'content_pipeline',
     name: 'Content Pipeline',
     description: 'Generate blog post ideas, LinkedIn post drafts, and content strategies for the 0nMCP ecosystem.',
-    icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
-    color: 'var(--jp-purple)',
+    icon: FileText,
+    colorClass: 'text-core-purple',
+    iconBgClass: 'bg-core-purple/10',
+    iconBorderClass: 'border-core-purple/20',
     hasInput: true,
     inputLabel: 'Topic Focus',
     inputPlaceholder: 'e.g., AI orchestration, MCP tools, API integration...',
@@ -52,15 +72,19 @@ const workflows: WorkflowDef[] = [
     id: 'crm_health_check',
     name: 'CRM Health Check',
     description: 'Audit CRM data quality: contact counts, pipeline stats, stale contacts, and generate a health score report.',
-    icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
-    color: 'var(--jp-amber)',
+    icon: ShieldCheck,
+    colorClass: 'text-core-amber',
+    iconBgClass: 'bg-core-amber/10',
+    iconBorderClass: 'border-core-amber/20',
   },
   {
     id: 'training_batch',
     name: 'Training Batch',
     description: 'Run an AI training feed batch — ingests sources from HN, Dev.to, CoinGecko and more into the training pipeline.',
-    icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
-    color: 'var(--jp-green)',
+    icon: Lightbulb,
+    colorClass: 'text-core-green',
+    iconBgClass: 'bg-core-green/10',
+    iconBorderClass: 'border-core-green/20',
   },
 ]
 
@@ -112,11 +136,25 @@ export default function WorkflowsPage() {
     return 'idle'
   }
 
-  const statusColors: Record<string, string> = {
-    idle: 'var(--jp-text-muted)',
-    running: 'var(--jp-amber)',
-    completed: 'var(--jp-green)',
-    failed: 'var(--jp-red)',
+  const statusDotClass: Record<string, string> = {
+    idle: 'bg-core-text-muted',
+    running: 'bg-core-amber animate-pulse shadow-[0_0_8px_var(--core-amber)]',
+    completed: 'bg-core-green',
+    failed: 'bg-core-red',
+  }
+
+  const statusLabelClass: Record<string, string> = {
+    idle: 'text-core-text-muted',
+    running: 'text-core-amber',
+    completed: 'text-core-green',
+    failed: 'text-core-red',
+  }
+
+  const cardBorderClass: Record<string, string> = {
+    idle: 'border-core-border',
+    running: 'border-core-border',
+    completed: 'border-core-green/30',
+    failed: 'border-core-red/30',
   }
 
   function copyToClipboard(text: string) {
@@ -124,72 +162,42 @@ export default function WorkflowsPage() {
   }
 
   return (
-    <div style={{ padding: '0 0 40px' }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--jp-green)', margin: 0, letterSpacing: -0.5 }}>
+    <div className="pb-10">
+      <div className="mb-6">
+        <h1 className="text-[28px] font-bold text-core-green tracking-tight m-0">
           Workflow Launcher
         </h1>
-        <p style={{ color: 'var(--jp-text-muted)', fontSize: 13, margin: '4px 0 0' }}>
+        <p className="text-core-text-muted text-[13px] mt-1 mb-0">
           Real executable workflows powered by CRM API + AI generation
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))', gap: 16 }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))' }}>
         {workflows.map(wf => {
           const status = getStatus(wf.id)
           const result = results[wf.id]
+          const Icon = wf.icon
 
           return (
             <div
               key={wf.id}
-              style={{
-                background: 'var(--jp-bg-card)',
-                border: `1px solid ${status === 'completed' ? 'rgba(126, 217, 87, 0.3)' : status === 'failed' ? 'rgba(248, 113, 113, 0.3)' : 'var(--jp-border)'}`,
-                borderRadius: 'var(--jp-radius)',
-                overflow: 'hidden',
-                transition: 'border-color 0.2s',
-              }}
+              className={`bg-core-card border rounded-[var(--radius)] overflow-hidden transition-colors duration-200 ${cardBorderClass[status]}`}
             >
               {/* Card Header */}
-              <div style={{ padding: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                  <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', flex: 1 }}>
-                    <div style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 'var(--jp-radius-sm)',
-                      background: `${wf.color}15`,
-                      border: `1px solid ${wf.color}30`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      <svg width={22} height={22} fill="none" stroke={wf.color} viewBox="0 0 24 24" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d={wf.icon} />
-                      </svg>
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex gap-3.5 items-start flex-1">
+                    <div className={`w-11 h-11 rounded-[var(--radius-sm)] ${wf.iconBgClass} border ${wf.iconBorderClass} flex items-center justify-center shrink-0`}>
+                      <Icon size={22} className={wf.colorClass} strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--jp-text)', margin: 0 }}>{wf.name}</h3>
-                      <p style={{ color: 'var(--jp-text-secondary)', fontSize: 12, margin: '4px 0 0', lineHeight: 1.5 }}>{wf.description}</p>
+                      <h3 className="text-base font-bold text-core-text m-0">{wf.name}</h3>
+                      <p className="text-core-text-dim text-[12px] mt-1 mb-0 leading-relaxed">{wf.description}</p>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                    <span style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      background: statusColors[status],
-                      boxShadow: status === 'running' ? `0 0 8px ${statusColors[status]}` : 'none',
-                      animation: status === 'running' ? 'jp-pulse 1s ease-in-out infinite' : 'none',
-                    }} />
-                    <span style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: statusColors[status],
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.5,
-                    }}>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`w-2 h-2 rounded-full ${statusDotClass[status]}`} />
+                    <span className={`text-[11px] font-semibold uppercase tracking-wide ${statusLabelClass[status]}`}>
                       {status}
                     </span>
                   </div>
@@ -197,53 +205,35 @@ export default function WorkflowsPage() {
 
                 {/* Input field */}
                 {wf.hasInput && (
-                  <div style={{ marginTop: 14 }}>
-                    <label style={{ color: 'var(--jp-text-muted)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 6 }}>
+                  <div className="mt-3.5">
+                    <label className="text-core-text-muted text-[11px] font-semibold uppercase tracking-wide block mb-1.5">
                       {wf.inputLabel}
                     </label>
                     <textarea
                       value={inputs[wf.id] || ''}
                       onChange={e => setInputs(prev => ({ ...prev, [wf.id]: e.target.value }))}
                       placeholder={wf.inputPlaceholder}
-                      style={{
-                        width: '100%',
-                        minHeight: 60,
-                        padding: '10px 12px',
-                        background: 'var(--jp-bg-input)',
-                        border: '1px solid var(--jp-border)',
-                        borderRadius: 'var(--jp-radius-xs)',
-                        color: 'var(--jp-text)',
-                        fontSize: 13,
-                        resize: 'vertical',
-                        outline: 'none',
-                        fontFamily: 'inherit',
-                      }}
+                      className="w-full min-h-[60px] px-3 py-2.5 bg-core-surface border border-core-border rounded-[var(--radius-xs)] text-core-text text-[13px] resize-y outline-none font-[inherit] placeholder:text-core-text-muted"
                     />
                   </div>
                 )}
 
                 {/* Launch + Meta */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
+                <div className="flex items-center justify-between mt-3.5">
                   <button
                     onClick={() => launchWorkflow(wf)}
                     disabled={running[wf.id]}
-                    style={{
-                      padding: '10px 24px',
-                      background: running[wf.id] ? 'var(--jp-bg)' : 'linear-gradient(135deg, #7ed957, #5cb83a)',
-                      color: running[wf.id] ? 'var(--jp-text-muted)' : '#000',
-                      border: running[wf.id] ? '1px solid var(--jp-border)' : 'none',
-                      borderRadius: 'var(--jp-radius-xs)',
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: running[wf.id] ? 'default' : 'pointer',
-                      letterSpacing: 0.3,
-                      transition: 'all 0.2s',
-                    }}
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-[var(--radius-xs)] text-[13px] font-bold tracking-wide transition-all duration-200 ${
+                      running[wf.id]
+                        ? 'bg-core-bg border border-core-border text-core-text-muted cursor-default'
+                        : 'bg-gradient-to-br from-core-green to-[#5cb83a] text-black border-0 cursor-pointer hover:opacity-90'
+                    }`}
                   >
+                    <Play size={14} />
                     {running[wf.id] ? 'Running...' : 'Launch'}
                   </button>
                   {lastRun[wf.id] && (
-                    <span style={{ color: 'var(--jp-text-muted)', fontSize: 11 }}>
+                    <span className="text-core-text-muted text-[11px]">
                       Last run: {new Date(lastRun[wf.id]).toLocaleTimeString()}
                     </span>
                   )}
@@ -252,36 +242,22 @@ export default function WorkflowsPage() {
 
               {/* Results Panel */}
               {result && (
-                <div style={{ borderTop: '1px solid var(--jp-border)' }}>
+                <div className="border-t border-core-border">
                   <button
                     onClick={() => setExpanded(prev => ({ ...prev, [wf.id]: !prev[wf.id] }))}
-                    style={{
-                      width: '100%',
-                      padding: '10px 20px',
-                      background: 'var(--jp-bg-elevated)',
-                      border: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      color: 'var(--jp-text-secondary)',
-                      fontSize: 12,
-                      fontWeight: 600,
-                    }}
+                    className="w-full px-5 py-2.5 bg-core-surface border-0 flex items-center justify-between cursor-pointer text-core-text-dim text-[12px] font-semibold"
                   >
                     <span>Results</span>
-                    <svg
-                      width={14} height={14} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}
-                      style={{ transform: expanded[wf.id] ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <ChevronDown
+                      size={14}
+                      className={`transition-transform duration-150 ${expanded[wf.id] ? 'rotate-180' : ''}`}
+                    />
                   </button>
 
                   {expanded[wf.id] && (
-                    <div style={{ padding: 20, background: 'var(--jp-bg)' }}>
+                    <div className="p-5 bg-core-bg">
                       {result.status === 'failed' ? (
-                        <div style={{ color: 'var(--jp-red)', fontSize: 13 }}>
+                        <div className="text-core-red text-[13px]">
                           Error: {String(result.error || 'Unknown error')}
                         </div>
                       ) : wf.id === 'linkedin_comment_bot' ? (
@@ -295,7 +271,7 @@ export default function WorkflowsPage() {
                       ) : wf.id === 'training_batch' ? (
                         <TrainingResults result={result} />
                       ) : (
-                        <pre style={{ color: 'var(--jp-text-secondary)', fontSize: 12, fontFamily: 'monospace', whiteSpace: 'pre-wrap', margin: 0 }}>
+                        <pre className="text-core-text-dim text-[12px] font-mono whitespace-pre-wrap m-0">
                           {JSON.stringify(result, null, 2)}
                         </pre>
                       )}
@@ -307,60 +283,46 @@ export default function WorkflowsPage() {
           )
         })}
       </div>
-
-      <style>{`@keyframes jp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }`}</style>
     </div>
   )
 }
 
 // --- Result Components ---
 
+const commentStyleClasses: Record<number, { badge: string; text: string }> = {
+  0: { badge: 'bg-core-cyan/10 border-core-cyan/20 text-core-cyan', text: 'text-core-cyan' },
+  1: { badge: 'bg-core-green/10 border-core-green/20 text-core-green', text: 'text-core-green' },
+  2: { badge: 'bg-core-purple/10 border-core-purple/20 text-core-purple', text: 'text-core-purple' },
+}
+
 function LinkedInResults({ result, onCopy }: { result: WorkflowResult; onCopy: (t: string) => void }) {
   const comments = (result.comments as { style: string; comment: string; topic: string }[]) || []
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ color: 'var(--jp-text-muted)', fontSize: 11, marginBottom: 4 }}>
+    <div className="flex flex-col gap-3">
+      <div className="text-core-text-muted text-[11px] mb-1">
         Context: {String(result.post_context)}
       </div>
-      {comments.map((c, i) => (
-        <div key={i} style={{
-          background: 'var(--jp-bg-card)',
-          border: '1px solid var(--jp-border)',
-          borderRadius: 'var(--jp-radius-sm)',
-          padding: 14,
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{
-              padding: '2px 8px',
-              background: i === 0 ? 'rgba(0, 212, 255, 0.1)' : i === 1 ? 'rgba(126, 217, 87, 0.1)' : 'rgba(167, 139, 250, 0.1)',
-              border: `1px solid ${i === 0 ? 'rgba(0, 212, 255, 0.2)' : i === 1 ? 'rgba(126, 217, 87, 0.2)' : 'rgba(167, 139, 250, 0.2)'}`,
-              borderRadius: 4,
-              color: i === 0 ? 'var(--jp-cyan)' : i === 1 ? 'var(--jp-green)' : 'var(--jp-purple)',
-              fontSize: 10,
-              fontWeight: 600,
-              textTransform: 'uppercase',
-            }}>
-              {c.style}
-            </span>
-            <button
-              onClick={() => onCopy(c.comment)}
-              style={{
-                padding: '4px 10px',
-                background: 'var(--jp-bg)',
-                border: '1px solid var(--jp-border)',
-                borderRadius: 4,
-                color: 'var(--jp-text-secondary)',
-                fontSize: 11,
-                cursor: 'pointer',
-              }}
-            >
-              Copy
-            </button>
+      {comments.map((c, i) => {
+        const style = commentStyleClasses[i] ?? commentStyleClasses[2]
+        return (
+          <div key={i} className="bg-core-card border border-core-border rounded-[var(--radius-sm)] p-3.5">
+            <div className="flex justify-between mb-2">
+              <span className={`px-2 py-0.5 border rounded text-[10px] font-semibold uppercase ${style.badge}`}>
+                {c.style}
+              </span>
+              <button
+                onClick={() => onCopy(c.comment)}
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-core-bg border border-core-border rounded text-core-text-dim text-[11px] cursor-pointer hover:text-core-text transition-colors"
+              >
+                <Copy size={11} />
+                Copy
+              </button>
+            </div>
+            <p className="text-core-text text-[13px] m-0 leading-relaxed">{c.comment}</p>
+            <div className="text-core-text-muted text-[10px] mt-1.5">Topic: {c.topic}</div>
           </div>
-          <p style={{ color: 'var(--jp-text)', fontSize: 13, margin: 0, lineHeight: 1.6 }}>{c.comment}</p>
-          <div style={{ color: 'var(--jp-text-muted)', fontSize: 10, marginTop: 6 }}>Topic: {c.topic}</div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -369,65 +331,38 @@ function NurtureResults({ result, onCopy }: { result: WorkflowResult; onCopy: (t
   const messages = (result.messages as { contact_id: string; contact_name: string; contact_email: string; tags: string[]; message: { subject: string; body: string; type: string } }[]) || []
   return (
     <div>
-      <div style={{ color: 'var(--jp-text-muted)', fontSize: 11, marginBottom: 12 }}>
+      <div className="text-core-text-muted text-[11px] mb-3">
         {String(result.total_contacts_found)} contacts found
       </div>
       {messages.length === 0 ? (
-        <div style={{ color: 'var(--jp-text-muted)', fontSize: 13, textAlign: 'center', padding: 20 }}>
-          No contacts matched nurture criteria. Tag contacts as "needs-onboarding" or "free-tier" in CRM.
+        <div className="text-core-text-muted text-[13px] text-center py-5">
+          No contacts matched nurture criteria. Tag contacts as &quot;needs-onboarding&quot; or &quot;free-tier&quot; in CRM.
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="flex flex-col gap-2.5">
           {messages.map((m, i) => (
-            <div key={i} style={{
-              background: 'var(--jp-bg-card)',
-              border: '1px solid var(--jp-border)',
-              borderRadius: 'var(--jp-radius-sm)',
-              padding: 14,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div key={i} className="bg-core-card border border-core-border rounded-[var(--radius-sm)] p-3.5">
+              <div className="flex justify-between items-center mb-2">
                 <div>
-                  <span style={{ color: 'var(--jp-text)', fontSize: 14, fontWeight: 600 }}>{m.contact_name}</span>
-                  <span style={{ color: 'var(--jp-text-muted)', fontSize: 12, marginLeft: 8 }}>{m.contact_email}</span>
+                  <span className="text-core-text text-[14px] font-semibold">{m.contact_name}</span>
+                  <span className="text-core-text-muted text-[12px] ml-2">{m.contact_email}</span>
                 </div>
-                <span style={{
-                  padding: '2px 8px',
-                  background: 'rgba(126, 217, 87, 0.1)',
-                  border: '1px solid rgba(126, 217, 87, 0.2)',
-                  borderRadius: 4,
-                  color: 'var(--jp-green)',
-                  fontSize: 10,
-                  fontWeight: 600,
-                }}>
+                <span className="px-2 py-0.5 bg-core-green/10 border border-core-green/20 rounded text-core-green text-[10px] font-semibold">
                   {m.message.type}
                 </span>
               </div>
-              <div style={{ color: 'var(--jp-cyan)', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+              <div className="text-core-cyan text-[13px] font-semibold mb-1.5">
                 Subject: {m.message.subject}
               </div>
-              <pre style={{
-                color: 'var(--jp-text-secondary)',
-                fontSize: 12,
-                margin: 0,
-                whiteSpace: 'pre-wrap',
-                fontFamily: 'inherit',
-                lineHeight: 1.6,
-              }}>
+              <pre className="text-core-text-dim text-[12px] m-0 whitespace-pre-wrap font-[inherit] leading-relaxed">
                 {m.message.body}
               </pre>
-              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <div className="flex gap-2 mt-2.5">
                 <button
                   onClick={() => onCopy(`Subject: ${m.message.subject}\n\n${m.message.body}`)}
-                  style={{
-                    padding: '4px 10px',
-                    background: 'var(--jp-bg)',
-                    border: '1px solid var(--jp-border)',
-                    borderRadius: 4,
-                    color: 'var(--jp-text-secondary)',
-                    fontSize: 11,
-                    cursor: 'pointer',
-                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 bg-core-bg border border-core-border rounded text-core-text-dim text-[11px] cursor-pointer hover:text-core-text transition-colors"
                 >
+                  <Copy size={11} />
                   Copy Email
                 </button>
               </div>
@@ -445,85 +380,45 @@ function ContentResults({ result, onCopy }: { result: WorkflowResult; onCopy: (t
 
   return (
     <div>
-      <h4 style={{ color: 'var(--jp-purple)', fontSize: 14, fontWeight: 700, marginTop: 0, marginBottom: 12 }}>Blog Ideas</h4>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+      <h4 className="text-core-purple text-[14px] font-bold mt-0 mb-3">Blog Ideas</h4>
+      <div className="flex flex-col gap-2.5 mb-5">
         {blogIdeas.map((idea, i) => (
-          <div key={i} style={{
-            background: 'var(--jp-bg-card)',
-            border: '1px solid var(--jp-border)',
-            borderRadius: 'var(--jp-radius-sm)',
-            padding: 14,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-              <h5 style={{ color: 'var(--jp-text)', fontSize: 14, fontWeight: 600, margin: 0 }}>{idea.title}</h5>
-              <span style={{
-                padding: '2px 8px',
-                background: 'rgba(167, 139, 250, 0.1)',
-                border: '1px solid rgba(167, 139, 250, 0.2)',
-                borderRadius: 4,
-                color: 'var(--jp-purple)',
-                fontSize: 10,
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}>
+          <div key={i} className="bg-core-card border border-core-border rounded-[var(--radius-sm)] p-3.5">
+            <div className="flex justify-between items-start mb-1.5">
+              <h5 className="text-core-text text-[14px] font-semibold m-0">{idea.title}</h5>
+              <span className="px-2 py-0.5 bg-core-purple/10 border border-core-purple/20 rounded text-core-purple text-[10px] font-semibold whitespace-nowrap shrink-0 ml-2">
                 {idea.angle}
               </span>
             </div>
-            <ul style={{ color: 'var(--jp-text-secondary)', fontSize: 12, margin: '4px 0', paddingLeft: 16, lineHeight: 1.8 }}>
+            <ul className="text-core-text-dim text-[12px] my-1 pl-4 leading-[1.8]">
               {idea.outline.map((o, j) => <li key={j}>{o}</li>)}
             </ul>
-            <div style={{ color: 'var(--jp-text-muted)', fontSize: 11, marginTop: 4 }}>~{idea.estimated_words} words</div>
+            <div className="text-core-text-muted text-[11px] mt-1">~{idea.estimated_words} words</div>
           </div>
         ))}
       </div>
 
-      <h4 style={{ color: 'var(--jp-cyan)', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>LinkedIn Post Drafts</h4>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <h4 className="text-core-cyan text-[14px] font-bold mb-3">LinkedIn Post Drafts</h4>
+      <div className="flex flex-col gap-2.5">
         {linkedinPosts.map((post, i) => (
-          <div key={i} style={{
-            background: 'var(--jp-bg-card)',
-            border: '1px solid var(--jp-border)',
-            borderRadius: 'var(--jp-radius-sm)',
-            padding: 14,
-          }}>
-            <div style={{ color: 'var(--jp-text)', fontSize: 15, fontWeight: 700, marginBottom: 8 }}>{post.hook}</div>
-            <pre style={{
-              color: 'var(--jp-text-secondary)',
-              fontSize: 12,
-              margin: '0 0 8px',
-              whiteSpace: 'pre-wrap',
-              fontFamily: 'inherit',
-              lineHeight: 1.6,
-            }}>
+          <div key={i} className="bg-core-card border border-core-border rounded-[var(--radius-sm)] p-3.5">
+            <div className="text-core-text text-[15px] font-bold mb-2">{post.hook}</div>
+            <pre className="text-core-text-dim text-[12px] m-0 mb-2 whitespace-pre-wrap font-[inherit] leading-relaxed">
               {post.body}
             </pre>
-            <div style={{ color: 'var(--jp-green)', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>{post.cta}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+            <div className="text-core-green text-[12px] font-semibold mb-1.5">{post.cta}</div>
+            <div className="flex flex-wrap gap-1 mb-2">
               {post.hashtags.map((h, j) => (
-                <span key={j} style={{
-                  padding: '2px 6px',
-                  background: 'rgba(0, 212, 255, 0.08)',
-                  borderRadius: 4,
-                  color: 'var(--jp-cyan)',
-                  fontSize: 10,
-                }}>
+                <span key={j} className="px-1.5 py-0.5 bg-core-cyan/10 rounded text-core-cyan text-[10px]">
                   {h}
                 </span>
               ))}
             </div>
             <button
               onClick={() => onCopy(`${post.hook}\n\n${post.body}\n\n${post.cta}\n\n${post.hashtags.join(' ')}`)}
-              style={{
-                padding: '4px 10px',
-                background: 'var(--jp-bg)',
-                border: '1px solid var(--jp-border)',
-                borderRadius: 4,
-                color: 'var(--jp-text-secondary)',
-                fontSize: 11,
-                cursor: 'pointer',
-              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-core-bg border border-core-border rounded text-core-text-dim text-[11px] cursor-pointer hover:text-core-text transition-colors"
             >
+              <Copy size={11} />
               Copy Post
             </button>
           </div>
@@ -548,67 +443,55 @@ function HealthResults({ result }: { result: WorkflowResult }) {
   }
   if (!report) return null
 
-  const scoreColor = report.health_score >= 80 ? 'var(--jp-green)' : report.health_score >= 50 ? 'var(--jp-amber)' : 'var(--jp-red)'
+  const scoreColorClass =
+    report.health_score >= 80
+      ? 'text-core-green'
+      : report.health_score >= 50
+      ? 'text-core-amber'
+      : 'text-core-red'
+
+  const stats = [
+    { label: 'Contacts', value: report.contact_count, colorClass: 'text-core-green' },
+    { label: 'Pipelines', value: report.pipeline_count, colorClass: 'text-core-cyan' },
+    { label: 'Opportunities', value: report.opportunity_count, colorClass: 'text-core-purple' },
+    { label: 'Pipeline Value', value: `$${report.pipeline_value.toLocaleString()}`, colorClass: 'text-core-amber' },
+    { label: 'Conversations', value: report.conversation_count, colorClass: 'text-core-cyan' },
+    { label: 'Stale Contacts', value: report.stale_contacts, colorClass: report.stale_contacts > 0 ? 'text-core-red' : 'text-core-green' },
+  ]
 
   return (
     <div>
       {/* Health Score */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 20,
-        padding: 16,
-        background: 'var(--jp-bg-card)',
-        border: '1px solid var(--jp-border)',
-        borderRadius: 'var(--jp-radius-sm)',
-        marginBottom: 16,
-      }}>
-        <div style={{ fontSize: 48, fontWeight: 800, color: scoreColor }}>{report.health_score}</div>
+      <div className="flex items-center gap-5 p-4 bg-core-card border border-core-border rounded-[var(--radius-sm)] mb-4">
+        <div className={`text-[48px] font-extrabold leading-none ${scoreColorClass}`}>{report.health_score}</div>
         <div>
-          <div style={{ color: 'var(--jp-text)', fontSize: 16, fontWeight: 600 }}>Health Score</div>
-          <div style={{ color: 'var(--jp-text-muted)', fontSize: 12 }}>
-            {report.health_score >= 80 ? 'CRM is in good shape' : report.health_score >= 50 ? 'Some issues need attention' : 'Critical issues detected'}
+          <div className="text-core-text text-[16px] font-semibold">Health Score</div>
+          <div className="text-core-text-muted text-[12px]">
+            {report.health_score >= 80
+              ? 'CRM is in good shape'
+              : report.health_score >= 50
+              ? 'Some issues need attention'
+              : 'Critical issues detected'}
           </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
-        {[
-          { label: 'Contacts', value: report.contact_count, color: 'var(--jp-green)' },
-          { label: 'Pipelines', value: report.pipeline_count, color: 'var(--jp-cyan)' },
-          { label: 'Opportunities', value: report.opportunity_count, color: 'var(--jp-purple)' },
-          { label: 'Pipeline Value', value: `$${report.pipeline_value.toLocaleString()}`, color: 'var(--jp-amber)' },
-          { label: 'Conversations', value: report.conversation_count, color: 'var(--jp-cyan)' },
-          { label: 'Stale Contacts', value: report.stale_contacts, color: report.stale_contacts > 0 ? 'var(--jp-red)' : 'var(--jp-green)' },
-        ].map((s, i) => (
-          <div key={i} style={{
-            background: 'var(--jp-bg-card)',
-            border: '1px solid var(--jp-border)',
-            borderRadius: 'var(--jp-radius-xs)',
-            padding: 12,
-            textAlign: 'center',
-          }}>
-            <div style={{ color: 'var(--jp-text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{s.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
+      <div className="grid gap-2.5 mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' }}>
+        {stats.map((s, i) => (
+          <div key={i} className="bg-core-card border border-core-border rounded-[var(--radius-xs)] p-3 text-center">
+            <div className="text-core-text-muted text-[10px] uppercase tracking-wide mb-1">{s.label}</div>
+            <div className={`text-[20px] font-bold ${s.colorClass}`}>{s.value}</div>
           </div>
         ))}
       </div>
 
       {/* Issues */}
       {report.issues.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <h5 style={{ color: 'var(--jp-red)', fontSize: 12, fontWeight: 600, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.5 }}>Issues</h5>
+        <div className="mb-3">
+          <h5 className="text-core-red text-[12px] font-semibold m-0 mb-2 uppercase tracking-wide">Issues</h5>
           {report.issues.map((issue, i) => (
-            <div key={i} style={{
-              padding: '8px 12px',
-              background: 'rgba(248, 113, 113, 0.06)',
-              border: '1px solid rgba(248, 113, 113, 0.15)',
-              borderRadius: 'var(--jp-radius-xs)',
-              color: 'var(--jp-text-secondary)',
-              fontSize: 12,
-              marginBottom: 4,
-            }}>
+            <div key={i} className="px-3 py-2 bg-core-red/5 border border-core-red/15 rounded-[var(--radius-xs)] text-core-text-dim text-[12px] mb-1">
               {issue}
             </div>
           ))}
@@ -618,17 +501,9 @@ function HealthResults({ result }: { result: WorkflowResult }) {
       {/* Recommendations */}
       {report.recommendations.length > 0 && (
         <div>
-          <h5 style={{ color: 'var(--jp-green)', fontSize: 12, fontWeight: 600, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.5 }}>Recommendations</h5>
+          <h5 className="text-core-green text-[12px] font-semibold m-0 mb-2 uppercase tracking-wide">Recommendations</h5>
           {report.recommendations.map((rec, i) => (
-            <div key={i} style={{
-              padding: '8px 12px',
-              background: 'rgba(126, 217, 87, 0.06)',
-              border: '1px solid rgba(126, 217, 87, 0.15)',
-              borderRadius: 'var(--jp-radius-xs)',
-              color: 'var(--jp-text-secondary)',
-              fontSize: 12,
-              marginBottom: 4,
-            }}>
+            <div key={i} className="px-3 py-2 bg-core-green/5 border border-core-green/15 rounded-[var(--radius-xs)] text-core-text-dim text-[12px] mb-1">
               {rec}
             </div>
           ))}
@@ -639,33 +514,27 @@ function HealthResults({ result }: { result: WorkflowResult }) {
 }
 
 function TrainingResults({ result }: { result: WorkflowResult }) {
+  const isCompleted = result.status === 'completed'
   return (
-    <div style={{
-      background: 'var(--jp-bg-card)',
-      border: '1px solid var(--jp-border)',
-      borderRadius: 'var(--jp-radius-sm)',
-      padding: 16,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-        <span style={{
-          width: 10,
-          height: 10,
-          borderRadius: '50%',
-          background: result.status === 'completed' ? 'var(--jp-green)' : 'var(--jp-red)',
-        }} />
-        <span style={{ color: 'var(--jp-text)', fontSize: 14, fontWeight: 600 }}>
-          {result.status === 'completed' ? 'Feed completed successfully' : 'Feed failed'}
+    <div className="bg-core-card border border-core-border rounded-[var(--radius-sm)] p-4">
+      <div className="flex items-center gap-3 mb-2">
+        {isCompleted ? (
+          <CheckCircle size={16} className="text-core-green" />
+        ) : (
+          <XCircle size={16} className="text-core-red" />
+        )}
+        <span className="text-core-text text-[14px] font-semibold">
+          {isCompleted ? 'Feed completed successfully' : 'Feed failed'}
         </span>
       </div>
       {result.sources_ingested !== undefined && (
-        <div style={{ color: 'var(--jp-text-secondary)', fontSize: 13 }}>
-          Sources ingested: <span style={{ color: 'var(--jp-green)', fontWeight: 700 }}>{String(result.sources_ingested)}</span>
+        <div className="text-core-text-dim text-[13px]">
+          Sources ingested:{' '}
+          <span className="text-core-green font-bold">{String(result.sources_ingested)}</span>
         </div>
       )}
       {result.error ? (
-        <div style={{ color: 'var(--jp-red)', fontSize: 12, marginTop: 8 }}>
-          {String(result.error)}
-        </div>
+        <div className="text-core-red text-[12px] mt-2">{String(result.error)}</div>
       ) : null}
     </div>
   )

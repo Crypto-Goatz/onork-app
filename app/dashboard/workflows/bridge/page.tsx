@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { RefreshCw, Zap, Layers, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
 interface BridgeExecution {
   id: string
@@ -35,6 +36,28 @@ const TEMPLATES: Template[] = [
   { key: 'missed-call', name: 'Missed Call Text-back', description: 'Instant text when a call is missed', trigger: 'call.missed', stepCount: 2 },
   { key: 'invoice-followup', name: 'Invoice Follow-up', description: 'Reminder emails for unpaid invoices', trigger: 'invoice.sent', stepCount: 3 },
 ]
+
+function statusBadge(status: string) {
+  const map: Record<string, string> = {
+    completed: 'bg-core-green/10 text-core-green',
+    running: 'bg-core-cyan/10 text-core-cyan',
+    failed: 'bg-core-red/10 text-core-red',
+  }
+  const cls = map[status] ?? map.running
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${cls}`}>
+      {status}
+    </span>
+  )
+}
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  if (diff < 60000) return 'just now'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
+  return `${Math.floor(diff / 86400000)}d ago`
+}
 
 export default function BridgePage() {
   const [executions, setExecutions] = useState<BridgeExecution[]>([])
@@ -74,7 +97,6 @@ export default function BridgePage() {
       })
       const data = await res.json()
       setTryResult(data)
-      // Refresh executions list
       loadExecutions()
     } catch {
       setTryResult({ success: false, summary: 'Connection error', created: [], errors: ['Failed to reach Agent Bridge'] })
@@ -105,83 +127,48 @@ export default function BridgePage() {
     setDeployingTemplate(null)
   }
 
-  function statusBadge(status: string) {
-    const colors: Record<string, { bg: string; text: string }> = {
-      completed: { bg: 'rgba(126,217,87,0.12)', text: '#7ed957' },
-      running: { bg: 'rgba(0,212,255,0.12)', text: '#00d4ff' },
-      failed: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444' },
-    }
-    const c = colors[status] || colors.running
-    return (
-      <span style={{
-        display: 'inline-block', padding: '2px 8px', borderRadius: 4,
-        fontSize: 11, fontWeight: 600,
-        background: c.bg, color: c.text,
-      }}>
-        {status}
-      </span>
-    )
-  }
-
-  function timeAgo(dateStr: string) {
-    const diff = Date.now() - new Date(dateStr).getTime()
-    if (diff < 60000) return 'just now'
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
-    return `${Math.floor(diff / 86400000)}d ago`
-  }
-
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
+    <div className="max-w-[960px] mx-auto px-4 py-6">
+
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary, #f0f4f8)', margin: 0 }}>
-          <span style={{ color: '#7ed957' }}>Agent</span> Bridge
+      <div className="mb-8">
+        <h1 className="text-2xl font-extrabold text-core-text m-0">
+          <span className="text-core-green">Agent</span> Bridge
         </h1>
-        <p style={{ fontSize: 14, color: 'var(--text-muted, #6b7280)', margin: '6px 0 0' }}>
+        <p className="text-sm text-core-text-muted mt-1.5 mb-0">
           Create agents, workflows, voice AI, and more from natural language.
         </p>
       </div>
 
       {/* Try It Section */}
-      <div style={{
-        background: 'var(--bg-card, #161b22)',
-        border: '1px solid var(--border, #1e293b)',
-        borderRadius: 12,
-        padding: 20,
-        marginBottom: 24,
-      }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 12px' }}>
+      <div className="bg-core-card border border-core-border rounded-xl p-5 mb-6">
+        <h2 className="text-base font-bold text-core-text mb-3">
           Try It
         </h2>
-        <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: '0 0 12px' }}>
+        <p className="text-[13px] text-core-text-muted mb-3">
           Describe what you want to automate in plain English.
         </p>
-        <form onSubmit={(e) => { e.preventDefault(); tryBridge() }} style={{ display: 'flex', gap: 8 }}>
+        <form
+          onSubmit={(e) => { e.preventDefault(); tryBridge() }}
+          className="flex gap-2"
+        >
           <input
             value={tryInput}
             onChange={(e) => setTryInput(e.target.value)}
             placeholder="e.g., Set up a lead follow-up sequence with text, email, and a call task"
             disabled={tryLoading}
-            style={{
-              flex: 1, padding: '10px 14px', borderRadius: 8,
-              background: 'var(--bg-primary, #0d1117)',
-              border: '1px solid var(--border, #1e293b)',
-              color: 'var(--text-primary, #f0f4f8)',
-              fontSize: 13, outline: 'none', fontFamily: 'inherit',
-            }}
+            className="flex-1 px-3.5 py-2.5 rounded-lg bg-core-bg border border-core-border text-core-text text-[13px] outline-none font-[inherit] disabled:opacity-60 placeholder:text-core-text-muted"
           />
           <button
             type="submit"
             disabled={tryLoading || !tryInput.trim()}
-            style={{
-              padding: '10px 20px', borderRadius: 8, border: 'none',
-              background: tryInput.trim() ? '#7ed957' : 'var(--border, #1e293b)',
-              color: tryInput.trim() ? '#000' : 'var(--text-muted, #6b7280)',
-              fontSize: 13, fontWeight: 700, cursor: tryInput.trim() ? 'pointer' : 'default',
-              transition: 'all 0.2s', whiteSpace: 'nowrap',
-              opacity: tryLoading ? 0.6 : 1,
-            }}
+            className={[
+              'px-5 py-2.5 rounded-lg border-none text-[13px] font-bold whitespace-nowrap transition-all duration-200',
+              tryInput.trim()
+                ? 'bg-core-green text-black cursor-pointer'
+                : 'bg-core-border text-core-text-muted cursor-default',
+              tryLoading ? 'opacity-60' : '',
+            ].join(' ')}
           >
             {tryLoading ? 'Running...' : 'Execute'}
           </button>
@@ -189,47 +176,49 @@ export default function BridgePage() {
 
         {/* Try Result */}
         {tryResult && (
-          <div style={{
-            marginTop: 16, padding: 16, borderRadius: 8,
-            background: tryResult.success ? 'rgba(126,217,87,0.06)' : 'rgba(239,68,68,0.06)',
-            border: `1px solid ${tryResult.success ? 'rgba(126,217,87,0.15)' : 'rgba(239,68,68,0.15)'}`,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <div style={{
-                width: 8, height: 8, borderRadius: 4,
-                background: tryResult.success ? '#7ed957' : '#ef4444',
-              }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)' }}>
+          <div className={[
+            'mt-4 p-4 rounded-lg border',
+            tryResult.success
+              ? 'bg-core-green/5 border-core-green/15'
+              : 'bg-core-red/5 border-core-red/15',
+          ].join(' ')}>
+            <div className="flex items-center gap-2 mb-2">
+              {tryResult.success
+                ? <CheckCircle className="w-4 h-4 text-core-green" />
+                : <XCircle className="w-4 h-4 text-core-red" />
+              }
+              <span className="text-[13px] font-bold text-core-text">
                 {tryResult.success ? 'Success' : 'Failed'}
               </span>
             </div>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary, #8b95a5)', margin: 0, lineHeight: 1.6 }}>
+            <p className="text-[13px] text-core-text-dim leading-relaxed m-0">
               {tryResult.summary}
             </p>
             {tryResult.created?.length > 0 && (
-              <div style={{ marginTop: 10 }}>
+              <div className="mt-2.5">
                 {tryResult.created.map((c, i) => (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0',
-                    borderTop: i > 0 ? '1px solid var(--border, #1e293b)' : 'none',
-                  }}>
-                    <span style={{
-                      padding: '2px 6px', borderRadius: 4, fontSize: 10, fontWeight: 700,
-                      background: 'rgba(0,212,255,0.1)', color: '#00d4ff',
-                      textTransform: 'uppercase',
-                    }}>{c.type}</span>
-                    <span style={{ fontSize: 12, color: 'var(--text-primary, #f0f4f8)', fontWeight: 600 }}>{c.name}</span>
+                  <div
+                    key={i}
+                    className={[
+                      'flex items-center gap-2 py-1.5',
+                      i > 0 ? 'border-t border-core-border' : '',
+                    ].join(' ')}
+                  >
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-core-cyan/10 text-core-cyan uppercase">
+                      {c.type}
+                    </span>
+                    <span className="text-xs text-core-text font-semibold">{c.name}</span>
                     {c.detail && (
-                      <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>{c.detail}</span>
+                      <span className="text-[11px] text-core-text-muted">{c.detail}</span>
                     )}
                   </div>
                 ))}
               </div>
             )}
             {tryResult.errors && tryResult.errors.length > 0 && (
-              <div style={{ marginTop: 8 }}>
+              <div className="mt-2">
                 {tryResult.errors.map((e, i) => (
-                  <p key={i} style={{ fontSize: 12, color: '#ef4444', margin: '2px 0' }}>{e}</p>
+                  <p key={i} className="text-xs text-core-red m-0.5">{e}</p>
                 ))}
               </div>
             )}
@@ -238,52 +227,40 @@ export default function BridgePage() {
       </div>
 
       {/* Templates */}
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 12px' }}>
+      <div className="mb-6">
+        <h2 className="text-base font-bold text-core-text mb-3">
           Templates
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+        <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
           {TEMPLATES.map((tpl) => (
-            <div key={tpl.key} style={{
-              background: 'var(--bg-card, #161b22)',
-              border: '1px solid var(--border, #1e293b)',
-              borderRadius: 10, padding: 16,
-              display: 'flex', flexDirection: 'column', gap: 8,
-              transition: 'border-color 0.15s',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0 }}>
+            <div
+              key={tpl.key}
+              className="bg-core-card border border-core-border rounded-[10px] p-4 flex flex-col gap-2 transition-colors duration-150 hover:border-core-border/80"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-core-text m-0">
                   {tpl.name}
                 </h3>
-                <span style={{
-                  padding: '2px 6px', borderRadius: 4, fontSize: 10, fontWeight: 600,
-                  background: 'rgba(126,217,87,0.08)', color: '#7ed957',
-                }}>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-core-green/8 text-core-green">
                   {tpl.stepCount} steps
                 </span>
               </div>
-              <p style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)', margin: 0, lineHeight: 1.5 }}>
+              <p className="text-xs text-core-text-muted m-0 leading-relaxed">
                 {tpl.description}
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <span style={{
-                  padding: '2px 6px', borderRadius: 4, fontSize: 10,
-                  background: 'rgba(0,212,255,0.08)', color: '#00d4ff',
-                  fontFamily: 'monospace',
-                }}>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="px-1.5 py-0.5 rounded text-[10px] bg-core-cyan/8 text-core-cyan font-mono">
                   {tpl.trigger}
                 </span>
               </div>
               <button
                 onClick={() => deployTemplate(tpl.key)}
                 disabled={deployingTemplate === tpl.key}
-                style={{
-                  marginTop: 8, padding: '8px 0', borderRadius: 6, border: '1px solid rgba(126,217,87,0.2)',
-                  background: 'rgba(126,217,87,0.06)',
-                  color: '#7ed957', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  opacity: deployingTemplate === tpl.key ? 0.5 : 1,
-                }}
+                className={[
+                  'mt-2 py-2 rounded-md border border-core-green/20 bg-core-green/6',
+                  'text-core-green text-xs font-bold cursor-pointer transition-all duration-150',
+                  deployingTemplate === tpl.key ? 'opacity-50 cursor-not-allowed' : 'hover:bg-core-green/10',
+                ].join(' ')}
               >
                 {deployingTemplate === tpl.key ? 'Deploying...' : 'Deploy'}
               </button>
@@ -294,80 +271,54 @@ export default function BridgePage() {
 
       {/* Recent Executions */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0 }}>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-bold text-core-text m-0">
             Recent Executions
           </h2>
           <button
             onClick={loadExecutions}
-            style={{
-              padding: '4px 12px', borderRadius: 6, border: '1px solid var(--border, #1e293b)',
-              background: 'transparent', color: 'var(--text-muted, #6b7280)',
-              fontSize: 12, cursor: 'pointer',
-            }}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-md border border-core-border bg-transparent text-core-text-muted text-xs cursor-pointer hover:text-core-text transition-colors"
           >
+            <RefreshCw className="w-3 h-3" />
             Refresh
           </button>
         </div>
 
         {loading ? (
-          <div style={{
-            padding: 40, textAlign: 'center',
-            background: 'var(--bg-card, #161b22)',
-            border: '1px solid var(--border, #1e293b)',
-            borderRadius: 10,
-          }}>
-            <div style={{
-              width: 24, height: 24, border: '2px solid var(--border, #1e293b)',
-              borderTopColor: '#7ed957', borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite',
-              margin: '0 auto',
-            }} />
-            <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+          <div className="p-10 text-center bg-core-card border border-core-border rounded-[10px]">
+            <Loader2 className="w-6 h-6 text-core-green animate-spin mx-auto" />
           </div>
         ) : executions.length === 0 ? (
-          <div style={{
-            padding: 40, textAlign: 'center',
-            background: 'var(--bg-card, #161b22)',
-            border: '1px solid var(--border, #1e293b)',
-            borderRadius: 10,
-          }}>
-            <p style={{ fontSize: 14, color: 'var(--text-muted, #6b7280)', margin: 0 }}>
+          <div className="p-10 text-center bg-core-card border border-core-border rounded-[10px]">
+            <p className="text-sm text-core-text-muted m-0">
               No executions yet. Try the Agent Bridge above or deploy a template.
             </p>
           </div>
         ) : (
-          <div style={{
-            background: 'var(--bg-card, #161b22)',
-            border: '1px solid var(--border, #1e293b)',
-            borderRadius: 10,
-            overflow: 'hidden',
-          }}>
+          <div className="bg-core-card border border-core-border rounded-[10px] overflow-hidden">
             {executions.map((exec, i) => (
-              <div key={exec.id} style={{
-                padding: '14px 16px',
-                borderBottom: i < executions.length - 1 ? '1px solid var(--border, #1e293b)' : 'none',
-                display: 'flex', alignItems: 'flex-start', gap: 12,
-              }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{
-                      padding: '2px 6px', borderRadius: 4, fontSize: 10, fontWeight: 700,
-                      background: 'rgba(167,139,250,0.1)', color: '#a78bfa',
-                      textTransform: 'uppercase', fontFamily: 'monospace',
-                    }}>
+              <div
+                key={exec.id}
+                className={[
+                  'px-4 py-3.5 flex items-start gap-3',
+                  i < executions.length - 1 ? 'border-b border-core-border' : '',
+                ].join(' ')}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-core-purple/10 text-core-purple uppercase font-mono">
                       {exec.action}
                     </span>
                     {statusBadge(exec.status)}
-                    <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>
+                    <span className="text-[11px] text-core-text-muted">
                       {timeAgo(exec.created_at)}
                     </span>
                   </div>
-                  <p style={{ fontSize: 13, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px', fontWeight: 500 }}>
+                  <p className="text-[13px] text-core-text m-0 mb-1 font-medium">
                     {exec.intent}
                   </p>
                   {exec.result?.summary && (
-                    <p style={{ fontSize: 12, color: 'var(--text-secondary, #8b95a5)', margin: 0 }}>
+                    <p className="text-xs text-core-text-dim m-0">
                       {exec.result.summary}
                     </p>
                   )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { Search, Plus, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface UsageData {
@@ -21,11 +22,11 @@ interface StackJob {
   created_at: string
 }
 
-const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  complete: { bg: 'rgba(110,224,90,0.15)', color: '#6EE05A', label: 'Complete' },
-  processing: { bg: 'rgba(59,130,246,0.15)', color: '#60a5fa', label: 'Processing' },
-  pending: { bg: 'rgba(251,191,36,0.15)', color: '#fbbf24', label: 'Pending' },
-  failed: { bg: 'rgba(239,68,68,0.15)', color: '#f87171', label: 'Failed' },
+const STATUS_CLASSES: Record<string, { badge: string; label: string }> = {
+  complete:   { badge: 'bg-core-green/15 text-core-green',   label: 'Complete' },
+  processing: { badge: 'bg-blue-500/15 text-blue-400',       label: 'Processing' },
+  pending:    { badge: 'bg-core-amber/15 text-core-amber',   label: 'Pending' },
+  failed:     { badge: 'bg-core-red/15 text-core-red',       label: 'Failed' },
 }
 
 export default function StackDashboard() {
@@ -41,14 +42,12 @@ export default function StackDashboard() {
   async function loadData() {
     setLoading(true)
     try {
-      // Fetch usage
       const usageRes = await fetch('/api/stack/usage')
       if (usageRes.ok) {
         const u = await usageRes.json()
         setUsage(u)
       }
 
-      // Fetch jobs from Supabase
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data } = await supabase
@@ -67,136 +66,102 @@ export default function StackDashboard() {
 
   const usagePct = usage ? usage.percentUsed : 0
 
+  const barColor =
+    usagePct > 90 ? 'bg-core-red' :
+    usagePct > 70 ? 'bg-core-amber' :
+    'bg-core-green'
+
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 8px' }}>
+    <div className="max-w-[1100px] mx-auto px-2">
 
       {/* ═══ HEADER ═══ */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 24, flexWrap: 'wrap', gap: 12,
-      }}>
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
         <div>
-          <h1 style={{
-            fontSize: 22, fontWeight: 800, color: 'var(--text-primary, #f0f4f8)',
-            margin: 0, letterSpacing: '-0.02em',
-          }}>
+          <h1 className="text-[22px] font-extrabold text-core-text tracking-tight m-0">
             0nStack — Lead Enrichment
           </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: '4px 0 0' }}>
+          <p className="text-[13px] text-core-text-muted mt-1 mb-0">
             Bulk CRM detection and lead scoring
           </p>
         </div>
         <Link
           href="/dashboard/stack/upload"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '10px 20px', borderRadius: 10,
-            background: '#6EE05A', color: '#0c1220',
-            fontWeight: 700, fontSize: 14, textDecoration: 'none',
-            border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-          }}
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-[10px] bg-core-green text-[#0c1220] font-bold text-sm no-underline"
         >
-          + New Enrichment Run
+          <Plus className="w-4 h-4" />
+          New Enrichment Run
         </Link>
       </div>
 
       {/* ═══ USAGE GAUGE ═══ */}
-      <div style={{
-        background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-        borderRadius: 14, padding: '20px 24px', marginBottom: 24,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary, #94a3b8)' }}>
+      <div className="bg-core-card border border-core-border rounded-2xl px-6 py-5 mb-6">
+        <div className="flex items-center justify-between mb-2.5">
+          <span className="text-[13px] font-semibold text-core-text-dim">
             Contacts Enriched
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{
-              fontFamily: 'monospace', fontSize: 14, fontWeight: 700,
-              color: 'var(--text-primary, #f0f4f8)',
-            }}>
-              {usage ? `${usage.contactsUsed.toLocaleString()} / ${usage.contactsLimit.toLocaleString()}` : '---'}
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[14px] font-bold text-core-text">
+              {usage
+                ? `${usage.contactsUsed.toLocaleString()} / ${usage.contactsLimit.toLocaleString()}`
+                : '---'}
             </span>
             {usage && (
-              <span style={{
-                padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700,
-                background: 'rgba(110,224,90,0.15)', color: '#6EE05A',
-                textTransform: 'uppercase', letterSpacing: '0.05em',
-              }}>
+              <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-core-green/15 text-core-green uppercase tracking-wide">
                 {usage.tier}
               </span>
             )}
           </div>
         </div>
-        <div style={{
-          height: 8, borderRadius: 4, background: '#1c2b42', overflow: 'hidden',
-        }}>
-          <div style={{
-            height: '100%', borderRadius: 4,
-            width: `${usagePct}%`,
-            background: usagePct > 90 ? '#f87171' : usagePct > 70 ? '#fbbf24' : '#6EE05A',
-            transition: 'width 0.6s ease',
-          }} />
+        <div className="h-2 rounded-full bg-core-border overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-[width] duration-[600ms] ease-in-out ${barColor}`}
+            style={{ width: `${usagePct}%` }}
+          />
         </div>
       </div>
 
       {/* ═══ JOB HISTORY ═══ */}
-      <div style={{
-        background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-        borderRadius: 14, overflow: 'hidden',
-      }}>
-        <div style={{
-          padding: '16px 24px', borderBottom: '1px solid #1c2b42',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0 }}>
+      <div className="bg-core-card border border-core-border rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-core-border flex items-center justify-between">
+          <h2 className="text-[15px] font-bold text-core-text m-0">
             Enrichment History
           </h2>
-          <span style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)' }}>
+          <span className="text-[12px] text-core-text-muted">
             {jobs.length} run{jobs.length !== 1 ? 's' : ''}
           </span>
         </div>
 
         {loading ? (
-          <div style={{ padding: 48, textAlign: 'center' }}>
-            <div style={{
-              width: 28, height: 28, margin: '0 auto 12px',
-              border: '2px solid #1c2b42', borderTopColor: '#6EE05A',
-              borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-            }} />
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: 0 }}>Loading...</p>
+          <div className="py-12 flex flex-col items-center gap-3">
+            <Loader2 className="w-7 h-7 text-core-green animate-spin" />
+            <p className="text-[13px] text-core-text-muted m-0">Loading...</p>
           </div>
         ) : jobs.length === 0 ? (
-          <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>&#x1F50D;</div>
-            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 6px' }}>
+          <div className="py-12 px-6 flex flex-col items-center text-center">
+            <Search className="w-9 h-9 text-core-text-muted mb-3" />
+            <p className="text-[15px] font-semibold text-core-text m-0 mb-1.5">
               No enrichment runs yet
             </p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: '0 0 16px' }}>
+            <p className="text-[13px] text-core-text-muted m-0 mb-4">
               Upload a CSV to detect CRM usage and score your leads.
             </p>
             <Link
               href="/dashboard/stack/upload"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                color: '#6EE05A', fontSize: 14, fontWeight: 600,
-                textDecoration: 'none',
-              }}
+              className="inline-flex items-center gap-1 text-core-green text-sm font-semibold no-underline"
             >
               Start your first run &rarr;
             </Link>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse min-w-[600px]">
               <thead>
-                <tr style={{ borderBottom: '1px solid #1c2b42' }}>
+                <tr className="border-b border-core-border">
                   {['File', 'Contacts', 'No CRM', 'Status', 'Date', ''].map((h) => (
-                    <th key={h} style={{
-                      padding: '10px 16px', textAlign: 'left',
-                      fontSize: 11, fontWeight: 600, color: 'var(--text-muted, #6b7280)',
-                      textTransform: 'uppercase', letterSpacing: '0.05em',
-                    }}>
+                    <th
+                      key={h}
+                      className="px-4 py-2.5 text-left text-[11px] font-semibold text-core-text-muted uppercase tracking-wide"
+                    >
                       {h}
                     </th>
                   ))}
@@ -204,53 +169,35 @@ export default function StackDashboard() {
               </thead>
               <tbody>
                 {jobs.map((job) => {
-                  const s = STATUS_STYLES[job.status] || STATUS_STYLES.pending
+                  const s = STATUS_CLASSES[job.status] || STATUS_CLASSES.pending
                   const date = new Date(job.created_at)
                   const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                   const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
                   return (
-                    <tr key={job.id} style={{ borderBottom: '1px solid #1c2b42' }}>
-                      <td style={{
-                        padding: '12px 16px', fontSize: 14, fontWeight: 600,
-                        color: 'var(--text-primary, #f0f4f8)', fontFamily: 'monospace',
-                        maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
+                    <tr key={job.id} className="border-b border-core-border">
+                      <td className="px-4 py-3 text-sm font-semibold text-core-text font-mono max-w-[220px] overflow-hidden text-ellipsis whitespace-nowrap">
                         {job.source_filename}
                       </td>
-                      <td style={{
-                        padding: '12px 16px', fontSize: 14, fontFamily: 'monospace',
-                        color: 'var(--text-secondary, #94a3b8)',
-                      }}>
+                      <td className="px-4 py-3 text-sm font-mono text-core-text-dim">
                         {job.total_contacts.toLocaleString()}
                       </td>
-                      <td style={{
-                        padding: '12px 16px', fontSize: 14, fontFamily: 'monospace',
-                        color: job.no_crm_count > 0 ? '#f87171' : 'var(--text-muted, #6b7280)',
-                      }}>
+                      <td className={`px-4 py-3 text-sm font-mono ${job.no_crm_count > 0 ? 'text-core-red' : 'text-core-text-muted'}`}>
                         {job.no_crm_count.toLocaleString()}
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{
-                          display: 'inline-block', padding: '3px 10px', borderRadius: 6,
-                          fontSize: 12, fontWeight: 700, background: s.bg, color: s.color,
-                        }}>
+                      <td className="px-4 py-3">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-md text-[12px] font-bold ${s.badge}`}>
                           {s.label}
                         </span>
                       </td>
-                      <td style={{
-                        padding: '12px 16px', fontSize: 13, color: 'var(--text-muted, #6b7280)',
-                      }}>
+                      <td className="px-4 py-3 text-[13px] text-core-text-muted">
                         <span>{dateStr}</span>
-                        <span style={{ opacity: 0.5, marginLeft: 6 }}>{timeStr}</span>
+                        <span className="opacity-50 ml-1.5">{timeStr}</span>
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
+                      <td className="px-4 py-3">
                         {job.status === 'complete' && (
                           <Link
                             href={`/dashboard/stack/results/${job.id}`}
-                            style={{
-                              fontSize: 13, fontWeight: 600, color: '#6EE05A',
-                              textDecoration: 'none',
-                            }}
+                            className="text-[13px] font-semibold text-core-green no-underline"
                           >
                             View &rarr;
                           </Link>

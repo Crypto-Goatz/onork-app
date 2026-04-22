@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Sparkles, X, Info } from 'lucide-react'
 
 interface AutoPlanModalProps {
   isOpen: boolean
@@ -14,65 +15,67 @@ export default function AutoPlanModal({ isOpen, onClose, onSubmit, isProcessing 
 
   if (!isOpen) return null
 
+  const canSubmit = text.trim() && !isProcessing
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.6)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-    }}>
-      <div style={{
-        background: '#161b22', border: '1px solid #1e293b', borderRadius: 14,
-        width: '100%', maxWidth: 620, display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflow: 'hidden',
-      }}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60">
+      <div className="bg-core-surface border border-core-border rounded-[14px] w-full max-w-[620px] flex flex-col max-h-[90vh] overflow-hidden">
+
         {/* Header */}
-        <div style={{ padding: '18px 20px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 8, background: 'linear-gradient(135deg, #7ed957, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16 }}>{'\u2728'}</div>
+        <div className="px-5 py-[18px] border-b border-core-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-[34px] h-[34px] rounded-lg bg-gradient-to-br from-core-green to-blue-500 flex items-center justify-center text-white shrink-0">
+              <Sparkles size={16} />
+            </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#f0f4f8' }}>Auto-Plan Brain Dump</h3>
-              <p style={{ margin: 0, fontSize: 11, color: '#8b95a5' }}>Paste a list, a rough plan, or random thoughts. AI will sort it out.</p>
+              <h3 className="m-0 text-base font-extrabold text-core-text">Auto-Plan Brain Dump</h3>
+              <p className="m-0 text-[11px] text-core-text-muted">Paste a list, a rough plan, or random thoughts. AI will sort it out.</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#8b95a5', cursor: 'pointer', fontSize: 18 }}>x</button>
+          <button
+            onClick={onClose}
+            className="bg-transparent border-none text-core-text-dim cursor-pointer p-1 hover:text-core-text transition-colors"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* Body */}
-        <div style={{ padding: 20, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div className="p-5 flex-1 flex flex-col">
           <textarea
             autoFocus
             value={text}
             onChange={e => setText(e.target.value)}
             disabled={isProcessing}
             placeholder={'Example:\n- Redesign the website for Acme Corp\n- Need to get credentials from Bob\n- Create a new project called "Marketing 2025"\n- Follow up with Jane about the logo'}
-            style={{
-              flex: 1, minHeight: 180, width: '100%', padding: 14, background: '#0d1117',
-              border: '1px solid #1e293b', borderRadius: 10, color: '#f0f4f8', fontSize: 13,
-              lineHeight: 1.6, resize: 'none', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
-            }}
+            className="flex-1 min-h-[180px] w-full p-[14px] bg-core-bg border border-core-border rounded-[10px] text-core-text text-[13px] leading-relaxed resize-none outline-none font-inherit box-border disabled:opacity-50"
           />
-          <div style={{ marginTop: 12, background: 'rgba(59,130,246,0.1)', padding: '10px 14px', borderRadius: 8, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-            <span style={{ color: '#3b82f6', fontSize: 14, marginTop: 1 }}>{'\u2139'}</span>
-            <p style={{ margin: 0, fontSize: 11, color: '#3b82f6', lineHeight: 1.5 }}>
+          <div className="mt-3 bg-blue-500/10 px-[14px] py-[10px] rounded-lg flex gap-2 items-start">
+            <Info size={14} className="text-blue-400 mt-0.5 shrink-0" />
+            <p className="m-0 text-[11px] text-blue-400 leading-relaxed">
               AI will analyze this text to automatically create Clients, Projects, and Tasks. It may take a moment to generate the structure.
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '14px 20px', borderTop: '1px solid #1e293b', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+        <div className="px-5 py-[14px] border-t border-core-border flex justify-end gap-2">
           <button
             onClick={onClose}
             disabled={isProcessing}
-            style={{ padding: '8px 18px', background: 'none', border: '1px solid #1e293b', borderRadius: 8, color: '#8b95a5', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
-          >Cancel</button>
+            className="px-[18px] py-2 bg-transparent border border-core-border rounded-lg text-core-text-dim cursor-pointer text-xs font-semibold hover:text-core-text transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
           <button
             onClick={() => onSubmit(text)}
-            disabled={!text.trim() || isProcessing}
-            style={{
-              padding: '8px 20px', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: !text.trim() || isProcessing ? 'not-allowed' : 'pointer',
-              background: !text.trim() || isProcessing ? '#1e293b' : 'linear-gradient(135deg, #7ed957, #3b82f6)',
-              color: !text.trim() || isProcessing ? '#3d4654' : '#fff',
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}
+            disabled={!canSubmit}
+            className={[
+              'px-5 py-2 border-none rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all',
+              canSubmit
+                ? 'bg-gradient-to-br from-core-green to-blue-500 text-white cursor-pointer'
+                : 'bg-core-card text-core-text-muted cursor-not-allowed',
+            ].join(' ')}
           >
             {isProcessing ? 'Processing...' : 'Generate Plan'}
           </button>

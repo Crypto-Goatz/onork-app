@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { FileText, Check } from 'lucide-react'
 
 interface ParsedCSV {
   headers: string[]
@@ -142,35 +143,26 @@ export default function StackUpload() {
     const max = entries[0][1]
 
     return (
-      <div style={{ marginTop: 20 }}>
-        <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary, #94a3b8)', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div className="mt-5">
+        <h3 className="text-[11px] font-bold text-core-text-muted uppercase tracking-widest mb-3">
           CRM Breakdown
         </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="flex flex-col gap-2">
           {entries.map(([crm, count]) => {
             const isNoCrm = crm === 'no_crm' || crm === 'none'
             const pct = max > 0 ? (count / max) * 100 : 0
             return (
-              <div key={crm} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{
-                  width: 100, fontSize: 12, fontWeight: 600, fontFamily: 'monospace',
-                  color: isNoCrm ? '#f87171' : 'var(--text-primary, #f0f4f8)',
-                  textTransform: 'capitalize', flexShrink: 0,
-                }}>
+              <div key={crm} className="flex items-center gap-3">
+                <span className={`w-[100px] text-xs font-semibold font-mono capitalize shrink-0 ${isNoCrm ? 'text-core-red' : 'text-core-text'}`}>
                   {crm.replace(/_/g, ' ')}
                 </span>
-                <div style={{ flex: 1, height: 8, borderRadius: 4, background: '#1c2b42', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%', borderRadius: 4, width: `${pct}%`,
-                    background: isNoCrm ? '#f87171' : '#6EE05A',
-                    transition: 'width 0.4s ease',
-                    boxShadow: isNoCrm ? '0 0 8px rgba(248,113,113,0.3)' : '0 0 8px rgba(110,224,90,0.3)',
-                  }} />
+                <div className="flex-1 h-2 rounded-full bg-core-border overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-[width] duration-400 ease-in-out ${isNoCrm ? 'bg-core-red shadow-[0_0_8px_rgba(248,113,113,0.3)]' : 'bg-core-green shadow-[0_0_8px_rgba(110,224,90,0.3)]'}`}
+                    style={{ width: `${pct}%` }}
+                  />
                 </div>
-                <span style={{
-                  width: 48, fontSize: 13, fontFamily: 'monospace', fontWeight: 700,
-                  color: isNoCrm ? '#f87171' : '#6EE05A', textAlign: 'right', flexShrink: 0,
-                }}>
+                <span className={`w-12 text-[13px] font-mono font-bold text-right shrink-0 ${isNoCrm ? 'text-core-red' : 'text-core-green'}`}>
                   {count}
                 </span>
               </div>
@@ -184,42 +176,33 @@ export default function StackUpload() {
   // ── Render ─────────────────────────────────────────────────
 
   return (
-    <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 8px' }}>
+    <div className="max-w-[700px] mx-auto px-2">
 
       {/* ═══ STEP INDICATORS ═══ */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        gap: 0, marginBottom: 32,
-      }}>
+      <div className="flex items-center justify-center mb-8">
         {STEPS.map((s, i) => (
-          <div key={s.num} style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 14, fontWeight: 800, fontFamily: 'monospace',
-                background: step >= s.num ? '#6EE05A' : '#1c2b42',
-                color: step >= s.num ? '#0c1220' : 'var(--text-muted, #6b7280)',
-                transition: 'all 0.3s ease',
-                border: step === s.num ? '2px solid #6EE05A' : '2px solid transparent',
-                boxShadow: step === s.num ? '0 0 12px rgba(110,224,90,0.3)' : 'none',
-              }}>
-                {step > s.num ? '\u2713' : s.num}
+          <div key={s.num} className="flex items-center">
+            <div className="flex flex-col items-center gap-1">
+              <div className={`
+                w-9 h-9 rounded-full flex items-center justify-center
+                text-sm font-extrabold font-mono
+                border-2 transition-all duration-300
+                ${step >= s.num
+                  ? 'bg-core-green text-core-bg border-core-green'
+                  : 'bg-core-border text-core-text-muted border-transparent'}
+                ${step === s.num ? 'shadow-[0_0_12px_rgba(110,224,90,0.3)]' : ''}
+              `}>
+                {step > s.num ? <Check size={14} strokeWidth={3} /> : s.num}
               </div>
-              <span style={{
-                fontSize: 11, fontWeight: 600,
-                color: step >= s.num ? '#6EE05A' : 'var(--text-muted, #6b7280)',
-              }}>
+              <span className={`text-[11px] font-semibold ${step >= s.num ? 'text-core-green' : 'text-core-text-muted'}`}>
                 {s.label}
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div style={{
-                width: 60, height: 2, margin: '0 12px',
-                background: step > s.num ? '#6EE05A' : '#1c2b42',
-                borderRadius: 1, transition: 'background 0.3s ease',
-                marginBottom: 20,
-              }} />
+              <div className={`
+                w-[60px] h-0.5 mx-3 mb-5 rounded transition-colors duration-300
+                ${step > s.num ? 'bg-core-green' : 'bg-core-border'}
+              `} />
             )}
           </div>
         ))}
@@ -227,14 +210,11 @@ export default function StackUpload() {
 
       {/* ═══ STEP 1: UPLOAD ═══ */}
       {step === 1 && (
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: 32,
-        }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 8px' }}>
+        <div className="bg-core-card border border-core-border rounded-2xl p-8">
+          <h2 className="text-lg font-bold text-core-text mb-2">
             Upload your contact list
           </h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: '0 0 24px' }}>
+          <p className="text-[13px] text-core-text-muted mb-6">
             Upload a CSV with email addresses. We&apos;ll detect which CRM each contact uses.
           </p>
 
@@ -244,25 +224,27 @@ export default function StackUpload() {
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={() => setDragOver(false)}
-            style={{
-              border: `2px dashed ${dragOver ? '#6EE05A' : '#1c2b42'}`,
-              borderRadius: 12, padding: '48px 24px', textAlign: 'center',
-              cursor: 'pointer', transition: 'all 0.2s ease',
-              background: dragOver ? 'rgba(110,224,90,0.05)' : 'transparent',
-            }}
+            className={`
+              border-2 border-dashed rounded-xl px-6 py-12 text-center cursor-pointer transition-all duration-200
+              ${dragOver
+                ? 'border-core-green bg-core-green/5'
+                : 'border-core-border bg-transparent hover:border-core-green/40 hover:bg-core-green/[0.02]'}
+            `}
           >
-            <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.6 }}>&#x1F4C4;</div>
-            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px' }}>
+            <div className="flex justify-center mb-3 opacity-60">
+              <FileText size={40} className="text-core-text-dim" />
+            </div>
+            <p className="text-[15px] font-semibold text-core-text mb-1">
               {dragOver ? 'Drop it here' : 'Click or drag a CSV file'}
             </p>
-            <p style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)', margin: 0 }}>
+            <p className="text-xs text-core-text-muted">
               .csv files up to 50MB
             </p>
             <input
               ref={fileInputRef}
               type="file"
               accept=".csv"
-              style={{ display: 'none' }}
+              className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0]
                 if (f) handleFile(f)
@@ -271,11 +253,7 @@ export default function StackUpload() {
           </div>
 
           {parseError && (
-            <div style={{
-              marginTop: 16, padding: '10px 14px', borderRadius: 8,
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-              color: '#f87171', fontSize: 13,
-            }}>
+            <div className="mt-4 px-4 py-2.5 rounded-lg bg-core-red/10 border border-core-red/30 text-core-red text-[13px]">
               {parseError}
             </div>
           )}
@@ -284,34 +262,23 @@ export default function StackUpload() {
 
       {/* ═══ STEP 2: COLUMN MAPPING ═══ */}
       {step === 2 && csv && (
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: 32,
-        }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px' }}>
+        <div className="bg-core-card border border-core-border rounded-2xl p-8">
+          <h2 className="text-lg font-bold text-core-text mb-1">
             Map your columns
           </h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: '0 0 24px' }}>
+          <p className="text-[13px] text-core-text-muted mb-6">
             {csv.file.name} &mdash; {csv.rows.length.toLocaleString()} rows detected
           </p>
 
           {/* Email column select */}
-          <label style={{ display: 'block', marginBottom: 16 }}>
-            <span style={{
-              fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600,
-              display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em',
-            }}>
-              Email Column <span style={{ color: '#f87171' }}>*</span>
+          <label className="block mb-4">
+            <span className="block text-[11px] text-core-text-muted font-semibold uppercase tracking-widest mb-1">
+              Email Column <span className="text-core-red">*</span>
             </span>
             <select
               value={emailCol}
               onChange={(e) => setEmailCol(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: 8,
-                border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
-                color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
-                cursor: 'pointer',
-              }}
+              className="w-full px-3 py-2.5 rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none cursor-pointer"
             >
               <option value="">Select email column</option>
               {csv.headers.map(h => (
@@ -321,22 +288,14 @@ export default function StackUpload() {
           </label>
 
           {/* Domain column select */}
-          <label style={{ display: 'block', marginBottom: 20 }}>
-            <span style={{
-              fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600,
-              display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em',
-            }}>
-              Domain Column <span style={{ opacity: 0.5 }}>(optional)</span>
+          <label className="block mb-5">
+            <span className="block text-[11px] text-core-text-muted font-semibold uppercase tracking-widest mb-1">
+              Domain Column <span className="opacity-50">(optional)</span>
             </span>
             <select
               value={domainCol}
               onChange={(e) => setDomainCol(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: 8,
-                border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
-                color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
-                cursor: 'pointer',
-              }}
+              className="w-full px-3 py-2.5 rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none cursor-pointer"
             >
               <option value="">None</option>
               {csv.headers.map(h => (
@@ -346,39 +305,29 @@ export default function StackUpload() {
           </label>
 
           {/* Info box */}
-          <div style={{
-            padding: '12px 16px', borderRadius: 8, marginBottom: 24,
-            background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)',
-          }}>
-            <p style={{ fontSize: 13, color: '#60a5fa', margin: 0, lineHeight: 1.5 }}>
+          <div className="px-4 py-3 rounded-lg mb-6 bg-blue-500/[0.08] border border-blue-500/20">
+            <p className="text-[13px] text-blue-400 leading-relaxed">
               <strong>Tip:</strong> Free email providers (gmail.com, yahoo.com, etc.) are automatically skipped during CRM detection to save credits.
             </p>
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div className="flex gap-2.5">
             <button
               onClick={() => setStep(1)}
-              style={{
-                padding: '12px 20px', borderRadius: 10,
-                border: '1px solid #1c2b42', background: 'transparent',
-                color: 'var(--text-secondary, #94a3b8)', fontSize: 14,
-                fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-              }}
+              className="px-5 py-3 rounded-xl border border-core-border bg-transparent text-core-text-dim text-sm font-semibold cursor-pointer font-sans hover:border-core-border/70 transition-colors"
             >
               Back
             </button>
             <button
               onClick={startEnrichment}
               disabled={!emailCol}
-              style={{
-                flex: 1, padding: '12px',
-                background: emailCol ? '#6EE05A' : '#374151',
-                color: emailCol ? '#0c1220' : '#6b7280',
-                fontWeight: 700, fontSize: 14, borderRadius: 10,
-                border: 'none', cursor: emailCol ? 'pointer' : 'not-allowed',
-                fontFamily: 'inherit',
-              }}
+              className={`
+                flex-1 py-3 font-bold text-sm rounded-xl border-none font-sans transition-colors
+                ${emailCol
+                  ? 'bg-core-green text-core-bg cursor-pointer hover:brightness-110'
+                  : 'bg-core-surface text-core-text-muted cursor-not-allowed'}
+              `}
             >
               Run Enrichment
             </button>
@@ -388,36 +337,26 @@ export default function StackUpload() {
 
       {/* ═══ STEP 3: LIVE PROGRESS ═══ */}
       {step === 3 && (
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: 32,
-        }}>
+        <div className="bg-core-card border border-core-border rounded-2xl p-8">
           {error ? (
-            <div style={{
-              padding: '16px', borderRadius: 8, textAlign: 'center',
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-            }}>
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#f87171', margin: '0 0 8px' }}>
+            <div className="px-4 py-4 rounded-lg text-center bg-core-red/10 border border-core-red/30">
+              <p className="text-[15px] font-semibold text-core-red mb-2">
                 Enrichment Failed
               </p>
-              <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: '0 0 16px' }}>{error}</p>
+              <p className="text-[13px] text-core-text-muted mb-4">{error}</p>
               <button
                 onClick={() => { setStep(2); setError('') }}
-                style={{
-                  padding: '10px 20px', borderRadius: 8, border: '1px solid #1c2b42',
-                  background: 'transparent', color: 'var(--text-primary, #f0f4f8)',
-                  fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                }}
+                className="px-5 py-2.5 rounded-lg border border-core-border bg-transparent text-core-text text-sm font-semibold cursor-pointer font-sans hover:border-core-border/70 transition-colors"
               >
                 Try Again
               </button>
             </div>
           ) : (
             <>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px' }}>
+              <h2 className="text-lg font-bold text-core-text mb-1">
                 {progress?.status === 'complete' ? 'Enrichment Complete' : 'Processing...'}
               </h2>
-              <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: '0 0 24px' }}>
+              <p className="text-[13px] text-core-text-muted mb-6">
                 {progress?.status === 'complete'
                   ? 'Complete \u2014 redirecting to results...'
                   : `Analyzing ${progress?.total.toLocaleString() || '...'} contacts`
@@ -425,49 +364,32 @@ export default function StackUpload() {
               </p>
 
               {/* Progress Bar */}
-              <div style={{
-                height: 12, borderRadius: 6, background: '#1c2b42', overflow: 'hidden',
-                marginBottom: 24, position: 'relative',
-              }}>
-                <div style={{
-                  height: '100%', borderRadius: 6,
-                  width: progress?.total ? `${Math.min((progress.processed / progress.total) * 100, 100)}%` : '0%',
-                  background: 'linear-gradient(90deg, #6EE05A, #4ade80)',
-                  transition: 'width 0.5s ease',
-                  boxShadow: '0 0 16px rgba(110,224,90,0.4)',
-                }} />
+              <div className="h-3 rounded-full bg-core-border overflow-hidden mb-6 relative">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-core-green to-green-400 shadow-[0_0_16px_rgba(110,224,90,0.4)] transition-[width] duration-500 ease-in-out"
+                  style={{ width: progress?.total ? `${Math.min((progress.processed / progress.total) * 100, 100)}%` : '0%' }}
+                />
                 {progress?.status === 'processing' && (
-                  <div style={{
-                    position: 'absolute', inset: 0, borderRadius: 6,
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)',
-                    animation: 'shimmer 2s infinite',
-                  }} />
+                  <>
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+                    <style>{`@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } } .animate-shimmer { animation: shimmer 2s infinite; }`}</style>
+                  </>
                 )}
-                <style>{`@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`}</style>
               </div>
 
               {/* Stat Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 8 }}>
+              <div className="grid grid-cols-4 gap-3 mb-2">
                 {[
-                  { label: 'Total', value: progress?.total || 0, color: 'var(--text-primary, #f0f4f8)' },
-                  { label: 'Processed', value: progress?.processed || 0, color: '#6EE05A' },
-                  { label: 'No CRM', value: progress?.no_crm || 0, color: '#f87171' },
-                  { label: 'Skipped', value: progress?.skipped || 0, color: 'var(--text-muted, #6b7280)' },
+                  { label: 'Total', value: progress?.total || 0, colorClass: 'text-core-text' },
+                  { label: 'Processed', value: progress?.processed || 0, colorClass: 'text-core-green' },
+                  { label: 'No CRM', value: progress?.no_crm || 0, colorClass: 'text-core-red' },
+                  { label: 'Skipped', value: progress?.skipped || 0, colorClass: 'text-core-text-muted' },
                 ].map((stat) => (
-                  <div key={stat.label} style={{
-                    background: '#0f172a', border: '1px solid #1c2b42',
-                    borderRadius: 10, padding: '14px 12px', textAlign: 'center',
-                  }}>
-                    <div style={{
-                      fontSize: 22, fontWeight: 800, fontFamily: 'monospace', color: stat.color,
-                      marginBottom: 2,
-                    }}>
+                  <div key={stat.label} className="bg-core-bg border border-core-border rounded-xl px-3 py-3.5 text-center">
+                    <div className={`text-[22px] font-extrabold font-mono mb-0.5 ${stat.colorClass}`}>
                       {stat.value.toLocaleString()}
                     </div>
-                    <div style={{
-                      fontSize: 11, fontWeight: 600, color: 'var(--text-muted, #6b7280)',
-                      textTransform: 'uppercase', letterSpacing: '0.05em',
-                    }}>
+                    <div className="text-[11px] font-semibold text-core-text-muted uppercase tracking-widest">
                       {stat.label}
                     </div>
                   </div>

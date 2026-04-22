@@ -1,7 +1,25 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 import { ReactFlowProvider, type Edge } from '@xyflow/react'
+import {
+  Folder,
+  ChevronDown,
+  Plus,
+  Pencil,
+  CheckCircle,
+  AlertTriangle,
+  Layers,
+  Save,
+  Zap,
+  Loader2,
+  X,
+  Check,
+  LayoutTemplate,
+  Minimize2,
+  Columns2,
+  AlignJustify,
+} from 'lucide-react'
 import CapabilityPalette from '@/components/automations/CapabilityPalette'
 import AutomationCanvas from '@/components/automations/AutomationCanvas'
 import ConfigPanel from '@/components/automations/ConfigPanel'
@@ -36,7 +54,6 @@ export default function AutomationsPage() {
 
   const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) : null
   const nodeCount = nodes.length
-  const configuredCount = nodes.filter(n => n.data.configured).length
   const hasTrigger = nodes.some(n => n.data.category === 'triggers')
 
   const handleNodeUpdate = useCallback((nodeId: string, config: Record<string, string>) => {
@@ -75,14 +92,13 @@ export default function AutomationsPage() {
       data,
     }
 
-    // Auto-connect to last node
     const lastNode = nodes[nodes.length - 1]
     const newEdge: Edge | null = lastNode ? {
       id: `e_${lastNode.id}_${newNode.id}`,
       source: lastNode.id,
       target: newNode.id,
       animated: true,
-      style: { stroke: 'var(--color-cyan, #14b8a6)', strokeWidth: 2 },
+      style: { stroke: 'var(--core-cyan)', strokeWidth: 2 },
       type: 'smoothstep',
     } : null
 
@@ -113,7 +129,6 @@ export default function AutomationsPage() {
       return [draft, ...prev]
     })
 
-    // Save to localStorage for persistence
     try {
       const all = JSON.parse(localStorage.getItem('0ncore-automations') || '[]')
       const idx = all.findIndex((d: SavedAutomation) => d.id === draft.id)
@@ -152,7 +167,6 @@ export default function AutomationsPage() {
     setActivating(true)
     setActivateToast(null)
 
-    // Build .0n workflow from nodes
     const dotOnSteps = nodes.map((node, i) => ({
       id: node.id,
       action: node.data.capabilityId || node.data.name || 'unknown',
@@ -184,7 +198,6 @@ export default function AutomationsPage() {
     }
 
     try {
-      // Save to user_workflows via API
       const res = await fetch('/api/automations/activate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -199,7 +212,6 @@ export default function AutomationsPage() {
       })
 
       if (res.ok) {
-        // Update local draft status
         setSavedDrafts(prev => prev.map(d =>
           d.id === automationId ? { ...d, status: 'active' as const } : d
         ))
@@ -231,106 +243,94 @@ export default function AutomationsPage() {
     } catch {}
   })
 
+  const menuSizeIcons = {
+    minimize: Minimize2,
+    compact: Columns2,
+    expand: AlignJustify,
+  } as const
+
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: 'calc(100vh - 64px)',
-      background: 'var(--bg-primary, #0d1117)',
-    }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes toastSlide { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }`}</style>
+    <div className="flex flex-col bg-core-bg" style={{ height: 'calc(100vh - 64px)' }}>
 
       {/* Activate Toast */}
       {activateToast && (
-        <div style={{
-          position: 'fixed', top: 20, right: 20, zIndex: 10000,
-          padding: '12px 20px', borderRadius: 10,
-          background: activateToast.type === 'success' ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
-          border: `1px solid ${activateToast.type === 'success' ? 'rgba(52,211,153,0.3)' : 'rgba(248,113,113,0.3)'}`,
-          color: activateToast.type === 'success' ? '#34d399' : '#f87171',
-          fontSize: 13, fontWeight: 600, backdropFilter: 'blur(12px)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-          animation: 'toastSlide 0.3s ease-out',
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          {activateToast.type === 'success' ? '✓' : '✕'} {activateToast.text}
+        <div
+          className={[
+            'fixed top-5 right-5 z-[10000] flex items-center gap-2',
+            'px-5 py-3 rounded-xl text-[13px] font-semibold',
+            'backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
+            'animate-[toastSlide_0.3s_ease-out]',
+            activateToast.type === 'success'
+              ? 'bg-core-green/10 border border-core-green/30 text-core-green'
+              : 'bg-core-red/10 border border-core-red/30 text-core-red',
+          ].join(' ')}
+        >
+          {activateToast.type === 'success'
+            ? <Check className="w-4 h-4 shrink-0" />
+            : <X className="w-4 h-4 shrink-0" />}
+          {activateToast.text}
         </div>
       )}
 
       {/* Top Bar */}
-      <div style={{
-        padding: '10px 20px',
-        borderBottom: '1px solid #1c2b42',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        background: 'var(--bg-secondary, #161b22)',
-        flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="flex items-center justify-between px-5 py-[10px] border-b border-core-border bg-core-surface shrink-0">
+
+        <div className="flex items-center gap-3">
+
           {/* Workflow Switcher */}
-          <div style={{ position: 'relative' }}>
+          <div className="relative">
             <button
               onClick={() => setShowWorkflowMenu(!showWorkflowMenu)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 12px', background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-                borderRadius: 8, color: 'var(--text-secondary, #9ca3af)', fontSize: 12, cursor: 'pointer',
-                fontFamily: '-apple-system, sans-serif',
-              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-core-card border border-core-border rounded-lg text-core-text-dim text-xs cursor-pointer hover:text-core-text transition-colors"
             >
-              <span style={{ fontSize: 14 }}>📂</span>
+              <Folder className="w-3.5 h-3.5" />
               Workflows
-              <span style={{ fontSize: 10 }}>▼</span>
+              <ChevronDown className="w-3 h-3" />
             </button>
 
             {showWorkflowMenu && (
-              <div style={{
-                position: 'absolute', top: '100%', left: 0, marginTop: 4,
-                width: 280, background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-                borderRadius: 10, overflow: 'hidden', zIndex: 100,
-                boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
-              }}>
-                <button onClick={handleNewAutomation} style={{
-                  width: '100%', padding: '10px 14px', background: 'none',
-                  border: 'none', borderBottom: '1px solid #1c2b42',
-                  color: 'var(--color-cyan, #14b8a6)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  textAlign: 'left', fontFamily: '-apple-system, sans-serif',
-                  display: 'flex', gap: 8, alignItems: 'center',
-                }}>
-                  <span>+</span> New Automation
+              <div className="absolute top-full left-0 mt-1 w-[280px] bg-core-card border border-core-border rounded-xl overflow-hidden z-[100] shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
+                <button
+                  onClick={handleNewAutomation}
+                  className="w-full flex items-center gap-2 px-3.5 py-2.5 text-left text-core-cyan text-[13px] font-semibold border-b border-core-border bg-transparent hover:bg-core-card-hover transition-colors cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  New Automation
                 </button>
+
                 {savedDrafts.length === 0 ? (
-                  <div style={{ padding: '16px 14px', color: 'var(--text-muted, #6b7280)', fontSize: 12, textAlign: 'center', fontFamily: '-apple-system, sans-serif' }}>
+                  <div className="px-3.5 py-4 text-core-text-muted text-xs text-center">
                     No saved workflows yet
                   </div>
                 ) : (
-                  <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+                  <div className="max-h-60 overflow-y-auto">
                     {savedDrafts.map(draft => (
                       <button
                         key={draft.id}
                         onClick={() => handleLoadDraft(draft)}
-                        style={{
-                          width: '100%', padding: '10px 14px', background: draft.id === automationId ? '#1a2740' : 'none',
-                          border: 'none', borderBottom: '1px solid rgba(28,43,66,0.5)',
-                          color: 'var(--text-primary, #f0f4f8)', fontSize: 13, cursor: 'pointer',
-                          textAlign: 'left', fontFamily: '-apple-system, sans-serif',
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#1a2740'}
-                        onMouseLeave={e => e.currentTarget.style.background = draft.id === automationId ? '#1a2740' : 'transparent'}
+                        className={[
+                          'w-full flex items-center justify-between px-3.5 py-2.5',
+                          'text-left text-core-text text-[13px] border-b border-core-border/50',
+                          'bg-transparent hover:bg-core-card-hover transition-colors cursor-pointer',
+                          draft.id === automationId ? 'bg-core-card-hover' : '',
+                        ].join(' ')}
                       >
                         <div>
-                          <div style={{ fontWeight: 600 }}>{draft.name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', marginTop: 2 }}>
+                          <div className="font-semibold">{draft.name}</div>
+                          <div className="text-[11px] text-core-text-muted mt-0.5">
                             {draft.nodes.length} steps · {new Date(draft.updatedAt).toLocaleDateString()}
                           </div>
                         </div>
-                        <span style={{
-                          padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
-                          background: draft.status === 'active' ? 'rgba(52,211,153,0.1)' : 'rgba(251,191,36,0.1)',
-                          color: draft.status === 'active' ? '#34d399' : '#fbbf24',
-                        }}>{draft.status}</span>
+                        <span
+                          className={[
+                            'px-2 py-0.5 rounded text-[10px] font-bold',
+                            draft.status === 'active'
+                              ? 'bg-core-green/10 text-core-green'
+                              : 'bg-core-amber/10 text-core-amber',
+                          ].join(' ')}
+                        >
+                          {draft.status}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -344,101 +344,125 @@ export default function AutomationsPage() {
             <input
               autoFocus
               value={automationName}
-              onChange={e => { setAutomationName(e.target.value); setSaveStatus('unsaved'); }}
+              onChange={e => { setAutomationName(e.target.value); setSaveStatus('unsaved') }}
               onBlur={() => setEditing(false)}
               onKeyDown={e => e.key === 'Enter' && setEditing(false)}
-              style={{
-                background: 'var(--bg-card, #1f2937)', border: '1px solid #2dd4bf', borderRadius: 8,
-                padding: '6px 12px', color: 'var(--text-primary, #f0f4f8)', fontSize: 15, fontWeight: 700,
-                outline: 'none', width: 240, fontFamily: '-apple-system, sans-serif',
-              }}
+              className="bg-core-card border border-core-cyan rounded-lg px-3 py-1.5 text-core-text text-[15px] font-bold outline-none w-60"
             />
           ) : (
-            <h1 onClick={() => setEditing(true)} style={{
-              fontSize: 16, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', cursor: 'pointer',
-              margin: 0, fontFamily: '-apple-system, sans-serif',
-            }}>
-              {automationName}
-              <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', marginLeft: 8 }}>✎</span>
-            </h1>
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-2 m-0 p-0 bg-transparent border-none cursor-pointer"
+            >
+              <h1 className="text-[16px] font-bold text-core-text m-0">
+                {automationName}
+              </h1>
+              <Pencil className="w-3 h-3 text-core-text-muted" />
+            </button>
           )}
 
           {/* Status pills */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <span style={{
-              padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-              background: hasTrigger ? 'rgba(52,211,153,0.1)' : 'rgba(251,191,36,0.1)',
-              color: hasTrigger ? '#34d399' : '#fbbf24',
-              fontFamily: '-apple-system, sans-serif',
-            }}>
-              {hasTrigger ? '✓ Trigger' : '⚠ Needs trigger'}
+          <div className="flex gap-2">
+            <span
+              className={[
+                'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold',
+                hasTrigger
+                  ? 'bg-core-green/10 text-core-green'
+                  : 'bg-core-amber/10 text-core-amber',
+              ].join(' ')}
+            >
+              {hasTrigger
+                ? <CheckCircle className="w-3 h-3" />
+                : <AlertTriangle className="w-3 h-3" />}
+              {hasTrigger ? 'Trigger' : 'Needs trigger'}
             </span>
-            <span style={{
-              padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-              background: 'rgba(139,92,246,0.1)', color: '#8b5cf6',
-              fontFamily: '-apple-system, sans-serif',
-            }}>
+
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-core-purple/10 text-core-purple">
+              <Layers className="w-3 h-3" />
               {nodeCount} steps
             </span>
-            <span style={{
-              padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-              background: saveStatus === 'saved' ? 'rgba(52,211,153,0.1)' : saveStatus === 'saving' ? 'rgba(45,212,191,0.1)' : 'rgba(85,104,128,0.1)',
-              color: saveStatus === 'saved' ? '#34d399' : saveStatus === 'saving' ? 'var(--color-cyan, #14b8a6)' : 'var(--text-muted, #6b7280)',
-              fontFamily: '-apple-system, sans-serif',
-            }}>
-              {saveStatus === 'saved' ? '✓ Saved' : saveStatus === 'saving' ? 'Saving...' : '○ Unsaved'}
+
+            <span
+              className={[
+                'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold',
+                saveStatus === 'saved'
+                  ? 'bg-core-green/10 text-core-green'
+                  : saveStatus === 'saving'
+                    ? 'bg-core-cyan/10 text-core-cyan'
+                    : 'bg-core-border/30 text-core-text-muted',
+              ].join(' ')}
+            >
+              {saveStatus === 'saved'
+                ? <Check className="w-3 h-3" />
+                : saveStatus === 'saving'
+                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                  : <Save className="w-3 h-3" />}
+              {saveStatus === 'saved' ? 'Saved' : saveStatus === 'saving' ? 'Saving...' : 'Unsaved'}
             </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex gap-2">
           {/* Menu size toggles */}
-          <div style={{ display: 'flex', background: 'var(--bg-card, #1f2937)', borderRadius: 8, border: '1px solid #1c2b42', overflow: 'hidden' }}>
-            {(['minimize', 'compact', 'expand'] as const).map(size => (
-              <button key={size} onClick={() => setMenuSize(size)} style={{
-                padding: '6px 10px', background: menuSize === size ? 'var(--border, #30363d)' : 'none',
-                border: 'none', color: menuSize === size ? 'var(--color-cyan, #14b8a6)' : 'var(--text-muted, #6b7280)',
-                fontSize: 11, cursor: 'pointer', fontWeight: 600,
-                fontFamily: '-apple-system, sans-serif',
-              }}>{size === 'minimize' ? '—' : size === 'compact' ? '◧' : '☰'}</button>
-            ))}
+          <div className="flex bg-core-card border border-core-border rounded-lg overflow-hidden">
+            {(['minimize', 'compact', 'expand'] as const).map(size => {
+              const Icon = menuSizeIcons[size]
+              return (
+                <button
+                  key={size}
+                  onClick={() => setMenuSize(size)}
+                  className={[
+                    'px-2.5 py-1.5 border-none text-[11px] font-semibold cursor-pointer transition-colors',
+                    menuSize === size
+                      ? 'bg-core-border text-core-cyan'
+                      : 'bg-transparent text-core-text-muted hover:text-core-text',
+                  ].join(' ')}
+                  title={size}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                </button>
+              )
+            })}
           </div>
-          <button onClick={handleSaveDraft} style={{
-            padding: '8px 16px', background: 'none',
-            border: '1px solid #1c2b42', borderRadius: 8,
-            color: 'var(--text-secondary, #9ca3af)', fontSize: 13, cursor: 'pointer',
-            fontFamily: '-apple-system, sans-serif',
-          }}>Save Draft</button>
+
+          <button
+            onClick={handleSaveDraft}
+            className="flex items-center gap-1.5 px-4 py-2 bg-transparent border border-core-border rounded-lg text-core-text-dim text-[13px] cursor-pointer hover:text-core-text hover:border-core-text-dim transition-colors"
+          >
+            <Save className="w-3.5 h-3.5" />
+            Save Draft
+          </button>
+
           <button
             onClick={handleActivate}
             disabled={nodeCount === 0 || !hasTrigger || activating}
-            style={{
-              padding: '8px 20px',
-              background: nodeCount > 0 && hasTrigger ? (activating ? '#1a4a4a' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)') : 'var(--border, #30363d)',
-              color: nodeCount > 0 && hasTrigger ? (activating ? '#14b8a6' : '#0c1220') : 'var(--text-muted, #6b7280)',
-              border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
-              cursor: nodeCount > 0 && hasTrigger && !activating ? 'pointer' : 'not-allowed',
-              fontFamily: '-apple-system, sans-serif',
-              display: 'flex', alignItems: 'center', gap: 6,
-              transition: 'all 0.15s',
-            }}
+            className={[
+              'flex items-center gap-1.5 px-5 py-2 rounded-lg text-[13px] font-bold border-none transition-all',
+              nodeCount > 0 && hasTrigger && !activating
+                ? 'bg-gradient-to-br from-core-cyan to-core-cyan/80 text-core-bg cursor-pointer hover:opacity-90'
+                : nodeCount > 0 && hasTrigger && activating
+                  ? 'bg-core-cyan/10 text-core-cyan cursor-not-allowed'
+                  : 'bg-core-border text-core-text-muted cursor-not-allowed',
+            ].join(' ')}
           >
-            {activating && <span style={{ width: 12, height: 12, border: '2px solid rgba(20,184,166,0.3)', borderTopColor: '#14b8a6', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />}
+            {activating
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <Zap className="w-3.5 h-3.5" />}
             {activating ? 'Activating...' : 'Activate'}
           </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, position: 'relative' }}>
+      <div className="flex flex-1 min-h-0 relative">
         <ReactFlowProvider>
           {/* Canvas (full width) */}
-          <div style={{ flex: 1, position: 'relative' }}>
+          <div className="flex-1 relative">
             <AutomationCanvas
               nodes={nodes}
               edges={edges}
-              onNodesChange={(n) => { setNodes(n); setSaveStatus('unsaved'); }}
-              onEdgesChange={(e) => { setEdges(e); setSaveStatus('unsaved'); }}
+              onNodesChange={(n) => { setNodes(n); setSaveStatus('unsaved') }}
+              onEdgesChange={(e) => { setEdges(e); setSaveStatus('unsaved') }}
               onNodeSelect={setSelectedNodeId}
               stepCounter={stepCounter}
               onStepCounterUpdate={setStepCounter}

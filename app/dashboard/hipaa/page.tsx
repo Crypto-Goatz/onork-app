@@ -1,29 +1,55 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { ShieldCheck, ArrowLeft, Send, CheckCircle, Loader2 } from 'lucide-react'
 import { useRole } from '@/lib/use-role'
 import { createClient } from '@/lib/supabase/client'
 import type { HIPAAResult, HIPAACheck } from '@/lib/hipaa/scanner'
 
 type Tab = 'public' | 'dashboard' | 'universal'
 
-const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  pass: { bg: 'rgba(126,217,87,0.15)', text: '#7ed957', label: 'PASS' },
-  fail: { bg: 'rgba(239,68,68,0.15)', text: '#ef4444', label: 'FAIL' },
-  warning: { bg: 'rgba(245,158,11,0.15)', text: '#f59e0b', label: 'WARN' },
-  'attestation-required': { bg: 'rgba(59,130,246,0.15)', text: '#3b82f6', label: 'ATTEST' },
+// Tailwind class maps — keyed by status / severity / grade
+const STATUS_CLASSES: Record<string, { bg: string; text: string; label: string }> = {
+  pass:                   { bg: 'bg-core-green/15',  text: 'text-core-green',  label: 'PASS'   },
+  fail:                   { bg: 'bg-core-red/15',    text: 'text-core-red',    label: 'FAIL'   },
+  warning:                { bg: 'bg-core-amber/15',  text: 'text-core-amber',  label: 'WARN'   },
+  'attestation-required': { bg: 'bg-core-cyan/15',   text: 'text-core-cyan',   label: 'ATTEST' },
 }
 
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: '#ef4444',
-  high: '#f97316',
-  medium: '#f59e0b',
-  low: '#8b95a5',
+const SEVERITY_TEXT: Record<string, string> = {
+  critical: 'text-core-red',
+  high:     'text-orange-500',
+  medium:   'text-core-amber',
+  low:      'text-core-text-muted',
 }
 
-const GRADE_COLORS: Record<string, string> = {
+const SEVERITY_BG: Record<string, string> = {
+  critical: 'bg-core-red/10',
+  high:     'bg-orange-500/10',
+  medium:   'bg-core-amber/10',
+  low:      'bg-core-text-muted/10',
+}
+
+const GRADE_TEXT: Record<string, string> = {
+  A: 'text-core-green',
+  B: 'text-core-cyan',
+  C: 'text-core-amber',
+  D: 'text-orange-500',
+  F: 'text-core-red',
+}
+
+const GRADE_BG: Record<string, string> = {
+  A: 'bg-core-green/15',
+  B: 'bg-core-cyan/15',
+  C: 'bg-core-amber/15',
+  D: 'bg-orange-500/15',
+  F: 'bg-core-red/15',
+}
+
+// SVG stroke colors for the score ring (must be inline — SVG attribute, not CSS class)
+const GRADE_STROKE: Record<string, string> = {
   A: '#7ed957',
-  B: '#3b82f6',
+  B: '#22d3ee',
   C: '#f59e0b',
   D: '#f97316',
   F: '#ef4444',
@@ -60,9 +86,9 @@ export default function HIPAAPage() {
   // Guard: admin only
   if (!role.loading && !role.isAdmin) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#8b95a5' }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>403</div>
-        <div>This tool is restricted to administrators.</div>
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="text-6xl font-black text-core-text mb-4">403</div>
+        <div className="text-core-text-muted">This tool is restricted to administrators.</div>
       </div>
     )
   }
@@ -76,13 +102,11 @@ export default function HIPAAPage() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
     try {
-      const res = await fetch('/api/hipaa/report?assessmentId=history', {
+      await fetch('/api/hipaa/report?assessmentId=history', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
-      // This will 404 for "history" — we load from supabase directly
     } catch {}
 
-    // Use admin client via supabase
     const { data } = await supabase
       .from('hipaa_assessments')
       .select('id, company_name, current_grade, nprm_grade, created_at')
@@ -173,7 +197,6 @@ export default function HIPAAPage() {
   }
 
   function loadAssessment(id: string) {
-    // Fetch from Supabase directly
     supabase
       .from('hipaa_assessments')
       .select('*')
@@ -214,53 +237,37 @@ export default function HIPAAPage() {
 
   function renderChecks(checks: HIPAACheck[]) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="flex flex-col gap-2">
         {checks.map(c => {
-          const st = STATUS_COLORS[c.status] || STATUS_COLORS.fail
+          const st = STATUS_CLASSES[c.status] || STATUS_CLASSES.fail
           return (
-            <div key={c.id} style={{
-              background: 'var(--bg-card, #161b22)',
-              border: '1px solid var(--border, #1e293b)',
-              borderRadius: 8,
-              padding: '12px 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-                  <span style={{
-                    fontFamily: 'monospace',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: '#8b95a5',
-                    minWidth: 60,
-                  }}>{c.id}</span>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary, #f0f4f8)' }}>{c.name}</span>
-                  <span style={{
-                    fontSize: 10,
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    background: `${SEVERITY_COLORS[c.severity]}20`,
-                    color: SEVERITY_COLORS[c.severity],
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                  }}>{c.severity}</span>
+            <div
+              key={c.id}
+              className="bg-core-card border border-core-border rounded-lg px-4 py-3 flex flex-col gap-1.5"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                  <span className="font-mono text-[11px] font-bold text-core-text-muted min-w-[60px] shrink-0">
+                    {c.id}
+                  </span>
+                  <span className="font-semibold text-[13px] text-core-text truncate">
+                    {c.name}
+                  </span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase shrink-0 ${SEVERITY_BG[c.severity]} ${SEVERITY_TEXT[c.severity]}`}>
+                    {c.severity}
+                  </span>
                 </div>
-                <span style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: '3px 10px',
-                  borderRadius: 4,
-                  background: st.bg,
-                  color: st.text,
-                }}>{st.label}</span>
+                <span className={`text-[11px] font-bold px-2.5 py-1 rounded shrink-0 ${st.bg} ${st.text}`}>
+                  {st.label}
+                </span>
               </div>
-              <div style={{ fontSize: 12, color: '#8b95a5', paddingLeft: 70 }}>
-                <span style={{ color: '#6b7280' }}>{c.ruleSection}</span> &middot; {c.detail}
+              <div className="text-[12px] text-core-text-muted pl-[70px]">
+                <span className="text-core-text-muted/60">{c.ruleSection}</span>
+                {' · '}
+                {c.detail}
               </div>
               {c.remediation && c.status !== 'pass' && (
-                <div style={{ fontSize: 11, color: '#f59e0b', paddingLeft: 70, fontStyle: 'italic' }}>
+                <div className="text-[11px] text-core-amber pl-[70px] italic">
                   Remediation: {c.remediation}
                 </div>
               )}
@@ -271,67 +278,30 @@ export default function HIPAAPage() {
     )
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '10px 14px',
-    background: 'var(--bg-card, #161b22)',
-    border: '1px solid var(--border, #1e293b)',
-    borderRadius: 8,
-    color: 'var(--text-primary, #f0f4f8)',
-    fontSize: 14,
-    outline: 'none',
-  }
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: 12,
-    fontWeight: 600,
-    color: '#8b95a5',
-    marginBottom: 4,
-    display: 'block',
-  }
+  const fieldClass = 'w-full px-3.5 py-2.5 bg-core-card border border-core-border rounded-lg text-core-text text-sm outline-none focus:border-core-border-hi transition-colors'
+  const labelClass = 'block text-[12px] font-semibold text-core-text-muted mb-1'
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px' }}>
+    <div className="max-w-[1100px] mx-auto px-4 py-6 animate-fade-in">
+
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <div style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          background: 'linear-gradient(135deg, #ef4444, #f97316)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <svg width="22" height="22" fill="none" stroke="#fff" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-          </svg>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-core-red to-orange-500 flex items-center justify-center shrink-0">
+          <ShieldCheck className="w-5 h-5 text-white" />
         </div>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary, #f0f4f8)', margin: 0 }}>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-[22px] font-black text-core-text m-0">
               HIPAA 2026 Readiness Scanner
             </h1>
-            <span style={{
-              fontSize: 10,
-              fontWeight: 800,
-              padding: '3px 8px',
-              borderRadius: 4,
-              background: 'rgba(239,68,68,0.15)',
-              color: '#ef4444',
-              letterSpacing: 1,
-            }}>PRIVATE</span>
-            <span style={{
-              fontSize: 10,
-              fontWeight: 800,
-              padding: '3px 8px',
-              borderRadius: 4,
-              background: 'rgba(168,85,247,0.15)',
-              color: '#a855f7',
-              letterSpacing: 1,
-            }}>UNLIMITED</span>
+            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-core-red/15 text-core-red tracking-widest">
+              PRIVATE
+            </span>
+            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-core-purple/15 text-core-purple tracking-widest">
+              UNLIMITED
+            </span>
           </div>
-          <div style={{ fontSize: 12, color: '#8b95a5', marginTop: 2 }}>
+          <div className="text-[12px] text-core-text-muted mt-0.5">
             51 checks &middot; Current Rule + NPRM 2026 scoring &middot; Passive scan only
           </div>
         </div>
@@ -339,33 +309,52 @@ export default function HIPAAPage() {
 
       {/* Input form */}
       {!result && (
-        <div style={{
-          background: 'var(--bg-card, #161b22)',
-          border: '1px solid var(--border, #1e293b)',
-          borderRadius: 12,
-          padding: 24,
-          marginBottom: 24,
-        }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="bg-core-card border border-core-border rounded-xl p-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label style={labelStyle}>Company Name *</label>
-              <input style={inputStyle} value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Acme Healthcare" />
+              <label className={labelClass}>Company Name *</label>
+              <input
+                className={fieldClass}
+                value={companyName}
+                onChange={e => setCompanyName(e.target.value)}
+                placeholder="Acme Healthcare"
+              />
             </div>
             <div>
-              <label style={labelStyle}>Contact Email</label>
-              <input style={inputStyle} type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="compliance@acme.com" />
+              <label className={labelClass}>Contact Email</label>
+              <input
+                className={fieldClass}
+                type="email"
+                value={contactEmail}
+                onChange={e => setContactEmail(e.target.value)}
+                placeholder="compliance@acme.com"
+              />
             </div>
             <div>
-              <label style={labelStyle}>Public Website URL *</label>
-              <input style={inputStyle} value={publicUrl} onChange={e => setPublicUrl(e.target.value)} placeholder="https://acme-health.com" />
+              <label className={labelClass}>Public Website URL *</label>
+              <input
+                className={fieldClass}
+                value={publicUrl}
+                onChange={e => setPublicUrl(e.target.value)}
+                placeholder="https://acme-health.com"
+              />
             </div>
             <div>
-              <label style={labelStyle}>Dashboard / Portal URL *</label>
-              <input style={inputStyle} value={dashboardUrl} onChange={e => setDashboardUrl(e.target.value)} placeholder="https://portal.acme-health.com" />
+              <label className={labelClass}>Dashboard / Portal URL *</label>
+              <input
+                className={fieldClass}
+                value={dashboardUrl}
+                onChange={e => setDashboardUrl(e.target.value)}
+                placeholder="https://portal.acme-health.com"
+              />
             </div>
             <div>
-              <label style={labelStyle}>Entity Type</label>
-              <select style={inputStyle} value={entityType} onChange={e => setEntityType(e.target.value as typeof entityType)}>
+              <label className={labelClass}>Entity Type</label>
+              <select
+                className={fieldClass}
+                value={entityType}
+                onChange={e => setEntityType(e.target.value as typeof entityType)}
+              >
                 <option value="unsure">Not Sure</option>
                 <option value="covered-entity">Covered Entity</option>
                 <option value="business-associate">Business Associate</option>
@@ -373,8 +362,12 @@ export default function HIPAAPage() {
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Employee Count</label>
-              <select style={inputStyle} value={employeeCount} onChange={e => setEmployeeCount(e.target.value)}>
+              <label className={labelClass}>Employee Count</label>
+              <select
+                className={fieldClass}
+                value={employeeCount}
+                onChange={e => setEmployeeCount(e.target.value)}
+              >
                 <option value="">Select...</option>
                 <option value="1-10">1-10</option>
                 <option value="11-50">11-50</option>
@@ -384,8 +377,12 @@ export default function HIPAAPage() {
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Primary State</label>
-              <select style={inputStyle} value={primaryState} onChange={e => setPrimaryState(e.target.value)}>
+              <label className={labelClass}>Primary State</label>
+              <select
+                className={fieldClass}
+                value={primaryState}
+                onChange={e => setPrimaryState(e.target.value)}
+              >
                 <option value="">Select state...</option>
                 {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -393,37 +390,30 @@ export default function HIPAAPage() {
           </div>
 
           {error && (
-            <div style={{ marginTop: 16, padding: '10px 16px', borderRadius: 8, background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontSize: 13 }}>
+            <div className="mt-4 px-4 py-2.5 rounded-lg bg-core-red/10 text-core-red text-[13px]">
               {error}
             </div>
           )}
 
-          <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="mt-5 flex items-center gap-3">
             <button
               onClick={runScan}
               disabled={loading || !publicUrl || !dashboardUrl || !companyName}
-              style={{
-                padding: '12px 28px',
-                borderRadius: 8,
-                border: 'none',
-                background: loading ? '#333' : 'linear-gradient(135deg, #ef4444, #f97316)',
-                color: '#fff',
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: (!publicUrl || !dashboardUrl || !companyName) ? 0.5 : 1,
-              }}
+              className={[
+                'px-7 py-3 rounded-lg border-none text-white text-[14px] font-bold transition-opacity',
+                loading
+                  ? 'bg-core-surface cursor-not-allowed'
+                  : 'bg-gradient-to-br from-core-red to-orange-500 cursor-pointer',
+                (!publicUrl || !dashboardUrl || !companyName) ? 'opacity-50' : 'opacity-100',
+              ].join(' ')}
             >
               {loading ? 'Scanning...' : 'Run Assessment'}
             </button>
+
             {progress && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{
-                  width: 16, height: 16, border: '2px solid #f97316', borderTopColor: 'transparent',
-                  borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-                }} />
-                <span style={{ fontSize: 13, color: '#f59e0b' }}>{progress}</span>
-                <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
+                <span className="text-[13px] text-core-amber">{progress}</span>
               </div>
             )}
           </div>
@@ -434,134 +424,110 @@ export default function HIPAAPage() {
       {result && (
         <div>
           {/* Back / Actions bar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div className="flex items-center justify-between mb-5">
             <button
               onClick={() => setResult(null)}
-              style={{
-                padding: '8px 16px', borderRadius: 6, border: '1px solid var(--border, #1e293b)',
-                background: 'transparent', color: '#8b95a5', fontSize: 13, cursor: 'pointer',
-              }}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-md border border-core-border bg-transparent text-core-text-muted text-[13px] cursor-pointer hover:text-core-text transition-colors"
             >
-              &larr; New Scan
+              <ArrowLeft className="w-4 h-4" />
+              New Scan
             </button>
-            <div style={{ display: 'flex', gap: 8 }}>
+
+            <div className="flex gap-2">
               {contactEmail && (
                 <button
                   onClick={sendReport}
                   disabled={sendingReport || reportSent}
-                  style={{
-                    padding: '8px 16px', borderRadius: 6, border: 'none',
-                    background: reportSent ? 'rgba(126,217,87,0.15)' : '#7ed957',
-                    color: reportSent ? '#7ed957' : '#000',
-                    fontSize: 13, fontWeight: 700, cursor: reportSent ? 'default' : 'pointer',
-                  }}
+                  className={[
+                    'flex items-center gap-1.5 px-4 py-2 rounded-md border-none text-[13px] font-bold transition-all',
+                    reportSent
+                      ? 'bg-core-green/15 text-core-green cursor-default'
+                      : 'bg-core-green text-black cursor-pointer hover:opacity-90',
+                  ].join(' ')}
                 >
-                  {reportSent ? 'Report Sent' : sendingReport ? 'Sending...' : 'Send Report to Prospect'}
+                  {reportSent
+                    ? <><CheckCircle className="w-4 h-4" /> Report Sent</>
+                    : sendingReport
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
+                      : <><Send className="w-4 h-4" /> Send Report to Prospect</>
+                  }
                 </button>
               )}
             </div>
           </div>
 
           {/* Score rings */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 16,
-            marginBottom: 24,
-          }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             {[
-              { label: 'Current HIPAA Rule', score: result.currentRuleScore, gradeVal: result.currentGrade },
-              { label: '2026 NPRM Projected', score: result.nprm2026Score, gradeVal: result.nprmGrade },
-            ].map(({ label, score, gradeVal }) => (
-              <div key={label} style={{
-                background: 'var(--bg-card, #161b22)',
-                border: '1px solid var(--border, #1e293b)',
-                borderRadius: 12,
-                padding: 24,
-                textAlign: 'center',
-              }}>
-                <div style={{ fontSize: 12, color: '#8b95a5', marginBottom: 12, fontWeight: 600 }}>{label}</div>
-                <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto' }}>
-                  <svg viewBox="0 0 120 120" width={120} height={120}>
-                    <circle cx={60} cy={60} r={52} fill="none" stroke="#1e293b" strokeWidth={8} />
-                    <circle
-                      cx={60} cy={60} r={52} fill="none"
-                      stroke={GRADE_COLORS[gradeVal] || '#8b95a5'}
-                      strokeWidth={8}
-                      strokeLinecap="round"
-                      strokeDasharray={`${(score / 100) * 327} 327`}
-                      transform="rotate(-90 60 60)"
-                    />
-                  </svg>
-                  <div style={{
-                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                    textAlign: 'center',
-                  }}>
-                    <div style={{ fontSize: 28, fontWeight: 800, color: GRADE_COLORS[gradeVal] || '#8b95a5' }}>{score}</div>
-                    <div style={{ fontSize: 11, color: '#8b95a5' }}>/100</div>
+              { label: 'Current HIPAA Rule',   score: result.currentRuleScore, gradeVal: result.currentGrade },
+              { label: '2026 NPRM Projected',  score: result.nprm2026Score,    gradeVal: result.nprmGrade    },
+            ].map(({ label, score, gradeVal }) => {
+              const strokeColor = GRADE_STROKE[gradeVal] ?? '#8b95a5'
+              return (
+                <div
+                  key={label}
+                  className="bg-core-card border border-core-border rounded-xl p-6 text-center"
+                >
+                  <div className="text-[12px] text-core-text-muted mb-3 font-semibold">{label}</div>
+                  <div className="relative w-[120px] h-[120px] mx-auto">
+                    <svg viewBox="0 0 120 120" width={120} height={120}>
+                      <circle cx={60} cy={60} r={52} fill="none" stroke="#1e293b" strokeWidth={8} />
+                      <circle
+                        cx={60} cy={60} r={52} fill="none"
+                        stroke={strokeColor}
+                        strokeWidth={8}
+                        strokeLinecap="round"
+                        strokeDasharray={`${(score / 100) * 327} 327`}
+                        transform="rotate(-90 60 60)"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <div
+                        className={`text-[28px] font-black ${GRADE_TEXT[gradeVal] ?? 'text-core-text-muted'}`}
+                      >
+                        {score}
+                      </div>
+                      <div className="text-[11px] text-core-text-muted">/100</div>
+                    </div>
+                  </div>
+                  <div
+                    className={`mt-3 inline-block px-4 py-1 rounded-md text-[18px] font-black ${GRADE_BG[gradeVal] ?? 'bg-core-text-muted/15'} ${GRADE_TEXT[gradeVal] ?? 'text-core-text-muted'}`}
+                  >
+                    Grade: {gradeVal}
                   </div>
                 </div>
-                <div style={{
-                  marginTop: 12,
-                  display: 'inline-block',
-                  padding: '4px 16px',
-                  borderRadius: 6,
-                  background: `${GRADE_COLORS[gradeVal] || '#8b95a5'}20`,
-                  color: GRADE_COLORS[gradeVal] || '#8b95a5',
-                  fontSize: 18,
-                  fontWeight: 800,
-                }}>
-                  Grade: {gradeVal}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Summary stats */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 12,
-            marginBottom: 24,
-          }}>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             {[
-              { label: 'Critical', count: result.criticalFindings, color: '#ef4444' },
-              { label: 'High', count: result.highFindings, color: '#f97316' },
-              { label: 'Medium', count: result.mediumFindings, color: '#f59e0b' },
-              { label: 'Passed', count: result.passCount, color: '#7ed957' },
+              { label: 'Critical', count: result.criticalFindings, colorClass: 'text-core-red'   },
+              { label: 'High',     count: result.highFindings,    colorClass: 'text-orange-500'  },
+              { label: 'Medium',   count: result.mediumFindings,  colorClass: 'text-core-amber'  },
+              { label: 'Passed',   count: result.passCount,       colorClass: 'text-core-green'  },
             ].map(s => (
-              <div key={s.label} style={{
-                background: 'var(--bg-card, #161b22)',
-                border: '1px solid var(--border, #1e293b)',
-                borderRadius: 8,
-                padding: '14px 16px',
-                textAlign: 'center',
-              }}>
-                <div style={{ fontSize: 24, fontWeight: 800, color: s.color }}>{s.count}</div>
-                <div style={{ fontSize: 11, color: '#8b95a5', fontWeight: 600 }}>{s.label}</div>
+              <div
+                key={s.label}
+                className="bg-core-card border border-core-border rounded-lg px-4 py-3.5 text-center"
+              >
+                <div className={`text-[24px] font-black ${s.colorClass}`}>{s.count}</div>
+                <div className="text-[11px] text-core-text-muted font-semibold">{s.label}</div>
               </div>
             ))}
           </div>
 
           {/* Company + scan info */}
-          <div style={{
-            background: 'var(--bg-card, #161b22)',
-            border: '1px solid var(--border, #1e293b)',
-            borderRadius: 8,
-            padding: '12px 16px',
-            marginBottom: 24,
-            fontSize: 12,
-            color: '#8b95a5',
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '8px 24px',
-          }}>
-            <span><strong style={{ color: 'var(--text-primary, #f0f4f8)' }}>{result.companyName}</strong></span>
+          <div className="bg-core-card border border-core-border rounded-lg px-4 py-3 mb-6 text-[12px] text-core-text-muted flex flex-wrap gap-x-6 gap-y-2">
+            <span>
+              <strong className="text-core-text">{result.companyName}</strong>
+            </span>
             <span>Public: {result.publicUrl}</span>
             <span>Dashboard: {result.dashboardUrl}</span>
             <span>Scanned: {new Date(result.scanDate).toLocaleString()}</span>
             {result.stateOverlay && (
-              <span style={{ color: '#f59e0b' }}>
+              <span className="text-core-amber">
                 State: {result.stateOverlay.state} ({result.stateOverlay.law})
               </span>
             )}
@@ -569,40 +535,30 @@ export default function HIPAAPage() {
 
           {/* State overlay detail */}
           {result.stateOverlay && (
-            <div style={{
-              background: 'rgba(245,158,11,0.08)',
-              border: '1px solid rgba(245,158,11,0.2)',
-              borderRadius: 8,
-              padding: '12px 16px',
-              marginBottom: 24,
-              fontSize: 12,
-              color: '#f59e0b',
-            }}>
-              <strong>State Overlay: {result.stateOverlay.state} - {result.stateOverlay.law}</strong>
-              <div style={{ marginTop: 4, color: '#d4a' }}>{result.stateOverlay.relevance}</div>
+            <div className="bg-core-amber/[0.08] border border-core-amber/20 rounded-lg px-4 py-3 mb-6 text-[12px] text-core-amber">
+              <strong>
+                State Overlay: {result.stateOverlay.state} - {result.stateOverlay.law}
+              </strong>
+              <div className="mt-1 text-core-amber/70">{result.stateOverlay.relevance}</div>
             </div>
           )}
 
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+          <div className="flex gap-1 mb-4">
             {([
-              { key: 'public' as Tab, label: `Public URL (${result.publicChecks.length})` },
+              { key: 'public'    as Tab, label: `Public URL (${result.publicChecks.length})`     },
               { key: 'dashboard' as Tab, label: `Dashboard URL (${result.dashboardChecks.length})` },
-              { key: 'universal' as Tab, label: `Universal (${result.universalChecks.length})` },
+              { key: 'universal' as Tab, label: `Universal (${result.universalChecks.length})`   },
             ]).map(t => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                style={{
-                  padding: '8px 18px',
-                  borderRadius: 6,
-                  border: tab === t.key ? '1px solid var(--border, #1e293b)' : '1px solid transparent',
-                  background: tab === t.key ? 'var(--bg-card, #161b22)' : 'transparent',
-                  color: tab === t.key ? 'var(--text-primary, #f0f4f8)' : '#8b95a5',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className={[
+                  'px-4 py-2 rounded-md text-[13px] font-semibold cursor-pointer transition-colors',
+                  tab === t.key
+                    ? 'bg-core-card border border-core-border text-core-text'
+                    : 'bg-transparent border border-transparent text-core-text-muted hover:text-core-text',
+                ].join(' ')}
               >
                 {t.label}
               </button>
@@ -610,51 +566,52 @@ export default function HIPAAPage() {
           </div>
 
           {/* Check results */}
-          {tab === 'public' && renderChecks(result.publicChecks)}
+          {tab === 'public'    && renderChecks(result.publicChecks)}
           {tab === 'dashboard' && renderChecks(result.dashboardChecks)}
           {tab === 'universal' && renderChecks(result.universalChecks)}
 
           {/* Remediation roadmap */}
           {result.remediationPriority.length > 0 && (
-            <div style={{ marginTop: 32 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: 12 }}>
+            <div className="mt-8">
+              <h2 className="text-[16px] font-bold text-core-text mb-3">
                 Remediation Roadmap
               </h2>
-              <div style={{
-                background: 'var(--bg-card, #161b22)',
-                border: '1px solid var(--border, #1e293b)',
-                borderRadius: 12,
-                overflow: 'hidden',
-              }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <div className="bg-core-card border border-core-border rounded-xl overflow-hidden">
+                <table className="w-full border-collapse text-[13px]">
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border, #1e293b)' }}>
-                      <th style={{ textAlign: 'left', padding: '10px 14px', color: '#8b95a5', fontWeight: 600, fontSize: 11 }}>#</th>
-                      <th style={{ textAlign: 'left', padding: '10px 14px', color: '#8b95a5', fontWeight: 600, fontSize: 11 }}>Check</th>
-                      <th style={{ textAlign: 'left', padding: '10px 14px', color: '#8b95a5', fontWeight: 600, fontSize: 11 }}>Name</th>
-                      <th style={{ textAlign: 'center', padding: '10px 14px', color: '#8b95a5', fontWeight: 600, fontSize: 11 }}>Effort</th>
-                      <th style={{ textAlign: 'center', padding: '10px 14px', color: '#8b95a5', fontWeight: 600, fontSize: 11 }}>Impact</th>
+                    <tr className="border-b border-core-border">
+                      <th className="text-left px-3.5 py-2.5 text-core-text-muted font-semibold text-[11px]">#</th>
+                      <th className="text-left px-3.5 py-2.5 text-core-text-muted font-semibold text-[11px]">Check</th>
+                      <th className="text-left px-3.5 py-2.5 text-core-text-muted font-semibold text-[11px]">Name</th>
+                      <th className="text-center px-3.5 py-2.5 text-core-text-muted font-semibold text-[11px]">Effort</th>
+                      <th className="text-center px-3.5 py-2.5 text-core-text-muted font-semibold text-[11px]">Impact</th>
                     </tr>
                   </thead>
                   <tbody>
                     {result.remediationPriority.map(r => (
-                      <tr key={r.checkId} style={{ borderBottom: '1px solid rgba(30,41,59,0.5)' }}>
-                        <td style={{ padding: '8px 14px', color: '#f59e0b', fontWeight: 700 }}>{r.priority}</td>
-                        <td style={{ padding: '8px 14px', fontFamily: 'monospace', color: '#8b95a5' }}>{r.checkId}</td>
-                        <td style={{ padding: '8px 14px', color: 'var(--text-primary, #f0f4f8)' }}>{r.name}</td>
-                        <td style={{ padding: '8px 14px', textAlign: 'center' }}>
-                          <span style={{
-                            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-                            background: r.effort === 'low' ? 'rgba(126,217,87,0.15)' : r.effort === 'medium' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
-                            color: r.effort === 'low' ? '#7ed957' : r.effort === 'medium' ? '#f59e0b' : '#ef4444',
-                          }}>{r.effort.toUpperCase()}</span>
+                      <tr key={r.checkId} className="border-b border-core-border/50">
+                        <td className="px-3.5 py-2 text-core-amber font-bold">{r.priority}</td>
+                        <td className="px-3.5 py-2 font-mono text-core-text-muted">{r.checkId}</td>
+                        <td className="px-3.5 py-2 text-core-text">{r.name}</td>
+                        <td className="px-3.5 py-2 text-center">
+                          <span className={[
+                            'text-[10px] font-bold px-2 py-0.5 rounded',
+                            r.effort === 'low'    ? 'bg-core-green/15 text-core-green'   :
+                            r.effort === 'medium' ? 'bg-core-amber/15 text-core-amber'   :
+                                                    'bg-core-red/15   text-core-red',
+                          ].join(' ')}>
+                            {r.effort.toUpperCase()}
+                          </span>
                         </td>
-                        <td style={{ padding: '8px 14px', textAlign: 'center' }}>
-                          <span style={{
-                            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-                            background: r.impact === 'critical' ? 'rgba(239,68,68,0.15)' : r.impact === 'high' ? 'rgba(249,115,22,0.15)' : 'rgba(245,158,11,0.15)',
-                            color: r.impact === 'critical' ? '#ef4444' : r.impact === 'high' ? '#f97316' : '#f59e0b',
-                          }}>{r.impact.toUpperCase()}</span>
+                        <td className="px-3.5 py-2 text-center">
+                          <span className={[
+                            'text-[10px] font-bold px-2 py-0.5 rounded',
+                            r.impact === 'critical' ? 'bg-core-red/15    text-core-red'    :
+                            r.impact === 'high'     ? 'bg-orange-500/15  text-orange-500'  :
+                                                      'bg-core-amber/15  text-core-amber',
+                          ].join(' ')}>
+                            {r.impact.toUpperCase()}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -668,50 +625,26 @@ export default function HIPAAPage() {
 
       {/* Assessment history */}
       {history.length > 0 && (
-        <div style={{ marginTop: 32 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: 12 }}>
+        <div className="mt-8">
+          <h2 className="text-[16px] font-bold text-core-text mb-3">
             Assessment History
           </h2>
-          <div style={{
-            background: 'var(--bg-card, #161b22)',
-            border: '1px solid var(--border, #1e293b)',
-            borderRadius: 12,
-            overflow: 'hidden',
-          }}>
+          <div className="bg-core-card border border-core-border rounded-xl overflow-hidden">
             {history.map(h => (
               <button
                 key={h.id}
                 onClick={() => loadAssessment(h.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  width: '100%',
-                  padding: '12px 16px',
-                  borderBottom: '1px solid rgba(30,41,59,0.5)',
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottomWidth: 1,
-                  borderBottomStyle: 'solid',
-                  borderBottomColor: 'rgba(30,41,59,0.5)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  color: 'var(--text-primary, #f0f4f8)',
-                }}
+                className="flex items-center justify-between w-full px-4 py-3 border-b border-core-border/50 last:border-b-0 bg-transparent cursor-pointer text-left hover:bg-core-card-hover transition-colors"
               >
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{h.company_name}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-                    background: `${GRADE_COLORS[h.current_grade] || '#8b95a5'}20`,
-                    color: GRADE_COLORS[h.current_grade] || '#8b95a5',
-                  }}>{h.current_grade}</span>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-                    background: `${GRADE_COLORS[h.nprm_grade] || '#8b95a5'}20`,
-                    color: GRADE_COLORS[h.nprm_grade] || '#8b95a5',
-                  }}>NPRM: {h.nprm_grade}</span>
-                  <span style={{ fontSize: 11, color: '#8b95a5' }}>
+                <span className="font-semibold text-[13px] text-core-text">{h.company_name}</span>
+                <div className="flex items-center gap-3">
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${GRADE_BG[h.current_grade] ?? 'bg-core-text-muted/15'} ${GRADE_TEXT[h.current_grade] ?? 'text-core-text-muted'}`}>
+                    {h.current_grade}
+                  </span>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${GRADE_BG[h.nprm_grade] ?? 'bg-core-text-muted/15'} ${GRADE_TEXT[h.nprm_grade] ?? 'text-core-text-muted'}`}>
+                    NPRM: {h.nprm_grade}
+                  </span>
+                  <span className="text-[11px] text-core-text-muted">
                     {new Date(h.created_at).toLocaleDateString()}
                   </span>
                 </div>

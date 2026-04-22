@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Link2, Check, Loader2 } from 'lucide-react'
 
 /**
  * 0nCommand — Connection Link Configuration
@@ -84,30 +85,22 @@ export default function AdminConnections() {
 
   const affiliateCount = Object.values(config).filter(c => c.affiliateUrl?.trim()).length
 
-  const inp = {
-    width: '100%', padding: '8px 10px', borderRadius: 8,
-    border: '1px solid var(--jp-border, #1E293B)',
-    background: 'var(--jp-surface, #0B0F19)',
-    color: 'var(--jp-text, #E8EAED)',
-    fontSize: '0.75rem', outline: 'none',
-    fontFamily: "'JetBrains Mono', monospace",
-  } as React.CSSProperties
-
-  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--jp-text-muted)' }}>Loading...</div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-core-text-muted text-sm">
+        Loading...
+      </div>
+    )
+  }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div className="max-w-[900px] mx-auto">
       {/* Header */}
-      <div className="jp-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="jp-page-header flex items-center justify-between">
         <div>
-          <h1 className="jp-page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg, rgba(110,224,90,0.15), rgba(0,212,255,0.10))',
-              border: '1px solid rgba(110,224,90,0.25)',
-            }}>
-              <svg width="18" height="18" fill="none" stroke="#7ed957" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+          <h1 className="jp-page-title flex items-center gap-2.5">
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-[10px] bg-gradient-to-br from-core-green/15 to-core-cyan/10 border border-core-green/25">
+              <Link2 className="w-[18px] h-[18px] text-core-green" strokeWidth={1.75} />
             </span>
             Connection Links
           </h1>
@@ -115,83 +108,85 @@ export default function AdminConnections() {
             {SERVICES.length} services · {affiliateCount} affiliate links configured
           </p>
         </div>
-        <button onClick={handleSave} disabled={saving} style={{
-          padding: '8px 20px', borderRadius: 8,
-          background: saved ? 'rgba(110,224,90,0.15)' : 'var(--jp-green, #7ed957)',
-          color: saved ? 'var(--jp-green)' : '#000',
-          border: saved ? '1px solid rgba(110,224,90,0.3)' : 'none',
-          fontSize: '0.8125rem', fontWeight: 700,
-          cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
-        }}>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className={[
+            'px-5 py-2 rounded-lg text-[0.8125rem] font-bold cursor-pointer transition-all duration-200',
+            saved
+              ? 'bg-core-green/15 text-core-green border border-core-green/30'
+              : 'bg-core-green text-black border-0',
+          ].join(' ')}
+        >
           {saving ? 'Saving...' : saved ? 'Saved' : 'Save All'}
         </button>
       </div>
 
       {/* Info */}
-      <div style={{
-        padding: '12px 16px', borderRadius: 10,
-        background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)',
-        marginBottom: 20, fontSize: '0.8125rem', color: 'var(--jp-text-secondary, #9CA3AF)', lineHeight: 1.6,
-      }}>
-        Configure where users are sent to get their API keys. If an <strong style={{ color: 'var(--jp-green)' }}>affiliate link</strong> is set, users will be directed there instead of the default URL. Leave affiliate blank to use the default.
+      <div className="px-4 py-3 rounded-[10px] bg-core-cyan/[0.06] border border-core-cyan/15 mb-5 text-[0.8125rem] text-core-text-dim leading-relaxed">
+        Configure where users are sent to get their API keys. If an{' '}
+        <strong className="text-core-green">affiliate link</strong> is set, users will be directed
+        there instead of the default URL. Leave affiliate blank to use the default.
       </div>
 
       {/* Service List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+      <div className="flex flex-col gap-2.5">
         {SERVICES.map(svc => {
           const c = config[svc.id] || { keyUrl: '', affiliateUrl: '', enabled: true }
           const hasAffiliate = !!c.affiliateUrl?.trim()
           return (
-            <div key={svc.id} style={{
-              background: 'var(--jp-surface, #111827)',
-              border: `1px solid ${hasAffiliate ? 'rgba(110,224,90,0.2)' : 'var(--jp-border, #1E293B)'}`,
-              borderRadius: 12, padding: '1rem 1.125rem',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: 8, background: `${svc.color}15`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: svc.color, fontSize: '0.6875rem', fontWeight: 800,
-                  fontFamily: "'JetBrains Mono', monospace", flexShrink: 0,
-                }}>
+            <div
+              key={svc.id}
+              className={[
+                'bg-core-surface rounded-xl px-[1.125rem] py-4',
+                hasAffiliate
+                  ? 'border border-core-green/20'
+                  : 'border border-core-border',
+              ].join(' ')}
+            >
+              <div className="flex items-center gap-2.5 mb-2.5">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[0.6875rem] font-extrabold shrink-0 font-mono"
+                  style={{ background: `${svc.color}15`, color: svc.color }}
+                >
                   {svc.icon}
                 </div>
-                <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--jp-text, #E8EAED)', flex: 1 }}>
+                <span className="text-[0.875rem] font-bold text-core-text flex-1">
                   {svc.name}
                 </span>
                 {hasAffiliate && (
-                  <span style={{
-                    padding: '2px 8px', borderRadius: 4,
-                    background: 'rgba(110,224,90,0.1)', border: '1px solid rgba(110,224,90,0.2)',
-                    color: 'var(--jp-green)', fontSize: '0.5625rem', fontWeight: 700,
-                    letterSpacing: '0.06em', textTransform: 'uppercase',
-                  }}>
+                  <span className="px-2 py-0.5 rounded text-[0.5625rem] font-bold tracking-[0.06em] uppercase bg-core-green/10 border border-core-green/20 text-core-green">
                     Affiliate
                   </span>
                 )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <div style={{ fontSize: '0.5625rem', fontWeight: 700, color: 'var(--jp-text-muted, #4A5568)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                  <div className="text-[0.5625rem] font-bold text-core-text-muted uppercase tracking-[0.08em] mb-1">
                     Default URL
                   </div>
                   <input
                     value={c.keyUrl || svc.defaultUrl}
                     onChange={e => updateConfig(svc.id, 'keyUrl', e.target.value)}
                     placeholder={svc.defaultUrl}
-                    style={inp}
+                    className="w-full px-2.5 py-2 rounded-lg border border-core-border bg-core-bg text-core-text text-[0.75rem] outline-none font-mono focus:border-core-cyan/40 transition-colors"
                   />
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.5625rem', fontWeight: 700, color: 'var(--jp-green, #7ed957)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                  <div className="text-[0.5625rem] font-bold text-core-green uppercase tracking-[0.08em] mb-1">
                     Affiliate Link
                   </div>
                   <input
                     value={c.affiliateUrl || ''}
                     onChange={e => updateConfig(svc.id, 'affiliateUrl', e.target.value)}
                     placeholder="https://partner.example.com/ref/0nmcp"
-                    style={{ ...inp, borderColor: hasAffiliate ? 'rgba(110,224,90,0.3)' : undefined }}
+                    className={[
+                      'w-full px-2.5 py-2 rounded-lg border bg-core-bg text-core-text text-[0.75rem] outline-none font-mono transition-colors',
+                      hasAffiliate
+                        ? 'border-core-green/30 focus:border-core-green/50'
+                        : 'border-core-border focus:border-core-cyan/40',
+                    ].join(' ')}
                   />
                 </div>
               </div>
@@ -201,15 +196,19 @@ export default function AdminConnections() {
       </div>
 
       {/* Bottom save */}
-      <div style={{ padding: '2rem 0', textAlign: 'center' }}>
-        <button onClick={handleSave} disabled={saving} style={{
-          padding: '12px 32px', borderRadius: 10,
-          background: saved ? 'rgba(110,224,90,0.15)' : 'var(--jp-green, #7ed957)',
-          color: saved ? 'var(--jp-green)' : '#000',
-          border: saved ? '1px solid rgba(110,224,90,0.3)' : 'none',
-          fontSize: '0.9375rem', fontWeight: 700,
-          cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
-        }}>
+      <div className="py-8 text-center">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className={[
+            'px-8 py-3 rounded-[10px] text-[0.9375rem] font-bold cursor-pointer transition-all duration-200 flex items-center gap-2 mx-auto',
+            saved
+              ? 'bg-core-green/15 text-core-green border border-core-green/30'
+              : 'bg-core-green text-black border-0',
+          ].join(' ')}
+        >
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+          {saved && <Check className="w-4 h-4" />}
           {saving ? 'Saving...' : saved ? 'All Changes Saved' : 'Save Configuration'}
         </button>
       </div>

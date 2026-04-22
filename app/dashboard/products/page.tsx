@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Search, Plus, Package, RefreshCw, X } from 'lucide-react'
 
 interface Product {
   id: string
@@ -86,54 +87,100 @@ export default function ProductsPage() {
   const filtered = products.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()))
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 8px' }}>
+    <div className="max-w-[1100px] mx-auto px-2">
+
       {/* Create Modal */}
       {showCreate && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 100,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-        }} onClick={() => !creating && setShowCreate(false)}>
-          <div style={{
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 16, padding: 28, maxWidth: 460, width: '100%',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-          }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 20px' }}>Create Product</h2>
+        <div
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+          onClick={() => !creating && setShowCreate(false)}
+        >
+          <div
+            className="bg-core-card border border-core-border rounded-2xl p-7 w-full max-w-[460px] shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-[18px] font-bold text-core-text">Create Product</h2>
+              <button
+                type="button"
+                onClick={() => setShowCreate(false)}
+                className="text-core-text-muted hover:text-core-text transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
             <form onSubmit={handleCreate}>
-              <label style={{ display: 'block', marginBottom: 12 }}>
-                <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product Name</span>
-                <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Consultation Package"
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)', color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+              <label className="block mb-3">
+                <span className="block text-[11px] font-semibold text-core-text-muted uppercase tracking-[0.05em] mb-1">
+                  Product Name
+                </span>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Consultation Package"
+                  className="w-full px-3 py-[10px] rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none focus:border-core-cyan transition-colors"
+                />
               </label>
-              <label style={{ display: 'block', marginBottom: 12 }}>
-                <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description</span>
-                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Product description"
-                  rows={3} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)', color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit' }} />
+
+              <label className="block mb-3">
+                <span className="block text-[11px] font-semibold text-core-text-muted uppercase tracking-[0.05em] mb-1">
+                  Description
+                </span>
+                <textarea
+                  value={form.description}
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="Product description"
+                  rows={3}
+                  className="w-full px-3 py-[10px] rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none focus:border-core-cyan transition-colors resize-y font-[inherit]"
+                />
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+
+              <div className="grid grid-cols-2 gap-3 mb-5">
                 <label>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price (USD)</span>
-                  <input type="number" step="0.01" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="49.99"
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)', color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+                  <span className="block text-[11px] font-semibold text-core-text-muted uppercase tracking-[0.05em] mb-1">
+                    Price (USD)
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={form.price}
+                    onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                    placeholder="49.99"
+                    className="w-full px-3 py-[10px] rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none focus:border-core-cyan transition-colors"
+                  />
                 </label>
                 <label>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price Type</span>
-                  <select value={form.priceType} onChange={e => setForm(f => ({ ...f, priceType: e.target.value }))}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)', color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}>
+                  <span className="block text-[11px] font-semibold text-core-text-muted uppercase tracking-[0.05em] mb-1">
+                    Price Type
+                  </span>
+                  <select
+                    value={form.priceType}
+                    onChange={e => setForm(f => ({ ...f, priceType: e.target.value }))}
+                    className="w-full px-3 py-[10px] rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none focus:border-core-cyan transition-colors"
+                  >
                     <option value="one_time">One-time</option>
                     <option value="recurring">Recurring</option>
                   </select>
                 </label>
               </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button type="submit" disabled={creating || !form.name} style={{
-                  flex: 1, padding: 12, background: creating ? '#374151' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-                  color: creating ? '#9CA3AF' : '#0c1220', fontWeight: 700, fontSize: 14, borderRadius: 10, border: 'none', cursor: creating ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-                }}>{creating ? 'Creating...' : 'Create Product'}</button>
-                <button type="button" onClick={() => setShowCreate(false)} style={{
-                  padding: '12px 20px', borderRadius: 10, border: '1px solid #1c2b42', background: 'transparent', color: 'var(--text-muted, #6b7280)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-                }}>Cancel</button>
+
+              <div className="flex gap-2.5">
+                <button
+                  type="submit"
+                  disabled={creating || !form.name}
+                  className="flex-1 py-3 bg-gradient-to-br from-core-cyan to-teal-500 text-core-bg font-bold text-sm rounded-[10px] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-opacity font-[inherit]"
+                >
+                  {creating ? 'Creating...' : 'Create Product'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(false)}
+                  className="px-5 py-3 rounded-[10px] border border-core-border bg-transparent text-core-text-muted text-sm cursor-pointer hover:text-core-text transition-colors font-[inherit]"
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           </div>
@@ -141,88 +188,118 @@ export default function ProductsPage() {
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0, display: 'flex', alignItems: 'center' }}>
+          <h1 className="text-[22px] font-bold text-core-text m-0 flex items-center gap-2">
             Product Catalog
-            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(126,217,87,0.12)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)', marginLeft: 8 }}>UNLIMITED</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-[10px] bg-core-green/10 text-core-green border border-core-green/20">
+              UNLIMITED
+            </span>
           </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', marginTop: 4 }}>
+          <p className="text-[13px] text-core-text-muted mt-1">
             {products.length > 0 ? `${products.length} products` : 'Manage your product catalog and pricing'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#7ed957' }}>Activated</span>
-          <button onClick={() => setShowCreate(true)} style={{
-            padding: '10px 20px', background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-            color: '#0c1220', fontWeight: 700, fontSize: 13, borderRadius: 10, border: 'none', cursor: 'pointer',
-          }}>+ Create Product</button>
+        <div className="flex gap-2 items-center">
+          <span className="text-[11px] font-semibold text-core-green">Activated</span>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 px-5 py-[10px] bg-gradient-to-br from-core-cyan to-teal-500 text-core-bg font-bold text-[13px] rounded-[10px] border-none cursor-pointer hover:opacity-90 transition-opacity"
+          >
+            <Plus size={14} />
+            Create Product
+          </button>
         </div>
       </div>
 
       {/* Search */}
-      <div style={{ marginBottom: 20 }}>
-        <input type="text" placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)}
-          style={{
-            width: '100%', padding: '12px 16px 12px 40px',
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 10, color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23556880' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat', backgroundPosition: '14px center',
-          }} />
+      <div className="relative mb-5">
+        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-core-text-dim pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-3 bg-core-card border border-core-border rounded-[10px] text-core-text text-sm outline-none focus:border-core-cyan transition-colors"
+        />
       </div>
 
       {/* Content */}
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-          <div style={{ width: 32, height: 32, border: '3px solid #1c2b42', borderTopColor: 'var(--color-cyan, #14b8a6)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div className="flex justify-center py-16">
+          <RefreshCw size={28} className="text-core-cyan animate-spin" />
         </div>
       ) : error ? (
-        <div style={{ background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 14, padding: 40, textAlign: 'center' }}>
-          <p style={{ color: '#f87171', fontSize: 14, marginBottom: 12 }}>{error}</p>
-          <button onClick={fetchProducts} style={{ color: 'var(--color-cyan, #14b8a6)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Try again</button>
+        <div className="bg-core-card border border-core-border rounded-2xl p-10 text-center">
+          <p className="text-core-red text-sm mb-3">{error}</p>
+          <button
+            onClick={fetchProducts}
+            className="text-core-cyan bg-transparent border-none cursor-pointer text-[13px] font-semibold hover:underline"
+          >
+            Try again
+          </button>
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 14, padding: '60px 40px', textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>&#127991;</div>
-          <p style={{ color: 'var(--text-secondary, #9ca3af)', fontSize: 14, marginBottom: 16 }}>
+        <div className="bg-core-card border border-core-border rounded-2xl py-16 px-10 text-center">
+          <div className="flex justify-center mb-4 opacity-30">
+            <Package size={44} className="text-core-text-dim" />
+          </div>
+          <p className="text-core-text-dim text-sm mb-4">
             {search ? 'No products match your search.' : 'No products yet. Create your first one.'}
           </p>
           {!search && (
-            <button onClick={() => setShowCreate(true)} style={{
-              padding: '10px 20px', background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-              color: '#0c1220', fontWeight: 700, fontSize: 13, borderRadius: 10, border: 'none', cursor: 'pointer',
-            }}>+ Create Product</button>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="inline-flex items-center gap-1.5 px-5 py-[10px] bg-gradient-to-br from-core-cyan to-teal-500 text-core-bg font-bold text-[13px] rounded-[10px] border-none cursor-pointer hover:opacity-90 transition-opacity"
+            >
+              <Plus size={14} />
+              Create Product
+            </button>
           )}
         </div>
       ) : (
-        <div style={{ background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 14, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="bg-core-card border border-core-border rounded-2xl overflow-hidden">
+          <table className="w-full border-collapse">
             <thead>
-              <tr style={{ borderBottom: '1px solid #1c2b42' }}>
+              <tr className="border-b border-core-border">
                 {['Product', 'Price', 'Type', 'Status', 'Created'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '12px 20px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                  <th
+                    key={h}
+                    className="text-left px-5 py-3 text-[11px] font-semibold text-core-text-muted uppercase tracking-[0.06em]"
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map(p => (
-                <tr key={p.id} style={{ borderBottom: '1px solid rgba(28,43,66,0.5)' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#1a2740'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <td style={{ padding: '14px 20px' }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>{p.name}</div>
-                    {p.description && <div style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)', marginTop: 2 }}>{p.description.slice(0, 60)}{p.description.length > 60 ? '...' : ''}</div>}
+                <tr
+                  key={p.id}
+                  className="border-b border-core-border/50 hover:bg-core-card-hover transition-colors"
+                >
+                  <td className="px-5 py-3.5">
+                    <div className="text-sm font-semibold text-core-text">{p.name}</div>
+                    {p.description && (
+                      <div className="text-xs text-core-text-muted mt-0.5">
+                        {p.description.slice(0, 60)}{p.description.length > 60 ? '...' : ''}
+                      </div>
+                    )}
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 14, fontWeight: 700, color: '#7ed957' }}>{getPrice(p)}</td>
-                  <td style={{ padding: '14px 20px' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(45,212,191,0.1)', color: 'var(--color-cyan, #14b8a6)' }}>{getPriceType(p)}</span>
+                  <td className="px-5 py-3.5 text-sm font-bold text-core-green">{getPrice(p)}</td>
+                  <td className="px-5 py-3.5">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-core-cyan/10 text-core-cyan">
+                      {getPriceType(p)}
+                    </span>
                   </td>
-                  <td style={{ padding: '14px 20px' }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: p.status === 'active' ? '#7ed957' : 'var(--text-muted, #6b7280)' }}>{p.status || 'active'}</span>
+                  <td className="px-5 py-3.5">
+                    <span className={`text-[11px] font-semibold ${p.status === 'active' ? 'text-core-green' : 'text-core-text-muted'}`}>
+                      {p.status || 'active'}
+                    </span>
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 12, color: 'var(--text-muted, #6b7280)' }}>{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '—'}</td>
+                  <td className="px-5 py-3.5 text-xs text-core-text-muted">
+                    {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -3,6 +3,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import {
+  Mail,
+  Send,
+  Plus,
+  Zap,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Save,
+} from 'lucide-react'
 
 const EmailEditor = dynamic(
   () => import('react-email-editor').then((mod) => mod.default),
@@ -194,126 +204,63 @@ export default function EmailBuilderPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', margin: '-24px', overflow: 'hidden', position: 'fixed', top: 0, left: 'var(--jp-sidebar-width, 220px)', right: 0, bottom: 0, zIndex: 40, background: 'var(--jp-bg, #0d1117)' }}>
+    <div className="fixed top-0 right-0 bottom-0 flex flex-col overflow-hidden bg-core-bg z-40" style={{ left: 'var(--jp-sidebar-width, 220px)' }}>
       {/* Top Toolbar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '12px 16px',
-        background: 'var(--jp-surface)',
-        borderBottom: '1px solid var(--jp-border)',
-        flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <svg width="20" height="20" fill="none" stroke="var(--jp-green)" viewBox="0 0 24 24" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
-          <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--jp-text)' }}>Email Builder</span>
-          <span style={{
-            fontSize: '0.6rem',
-            fontWeight: 800,
-            background: 'var(--jp-green)',
-            color: '#000',
-            padding: '2px 8px',
-            borderRadius: 20,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-          }}>
+      <div className="flex items-center gap-3 px-4 py-3 bg-core-surface border-b border-core-border flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <Mail size={20} className="text-core-green" />
+          <span className="text-[1rem] font-bold text-core-text">Email Builder</span>
+          <span className="text-[0.6rem] font-extrabold bg-core-green text-black px-2 py-0.5 rounded-full tracking-wide uppercase">
             UNLIMITED
           </span>
         </div>
 
-        <div style={{ flex: 1, display: 'flex', gap: 8 }}>
+        <div className="flex-1 flex gap-2">
           <input
             type="text"
             placeholder="Template name..."
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
-            style={{
-              flex: 1,
-              maxWidth: 240,
-              padding: '8px 12px',
-              background: 'var(--jp-bg-input)',
-              border: '1px solid var(--jp-border)',
-              borderRadius: 'var(--jp-radius-xs)',
-              color: 'var(--jp-text)',
-              fontSize: '0.8125rem',
-              outline: 'none',
-            }}
+            className="flex-1 max-w-[240px] px-3 py-2 bg-core-card border border-core-border rounded text-core-text text-[0.8125rem] outline-none"
           />
           <input
             type="text"
             placeholder="Subject line..."
             value={subjectLine}
             onChange={(e) => setSubjectLine(e.target.value)}
-            style={{
-              flex: 1,
-              maxWidth: 320,
-              padding: '8px 12px',
-              background: 'var(--jp-bg-input)',
-              border: '1px solid var(--jp-border)',
-              borderRadius: 'var(--jp-radius-xs)',
-              color: 'var(--jp-text)',
-              fontSize: '0.8125rem',
-              outline: 'none',
-            }}
+            className="flex-1 max-w-[320px] px-3 py-2 bg-core-card border border-core-border rounded text-core-text text-[0.8125rem] outline-none"
           />
         </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="flex gap-2 items-center">
           {saveMsg && (
-            <span style={{
-              fontSize: '0.75rem',
-              color: saveMsg === 'Saved!' ? 'var(--jp-green)' : 'var(--jp-red)',
-              fontWeight: 600,
-            }}>
+            <span className={`text-xs font-semibold flex items-center gap-1 ${saveMsg === 'Saved!' ? 'text-core-green' : 'text-core-red'}`}>
+              {saveMsg === 'Saved!'
+                ? <CheckCircle size={12} />
+                : <AlertCircle size={12} />
+              }
               {saveMsg}
             </span>
           )}
           <button
             onClick={handleSave}
             disabled={saving}
-            style={{
-              padding: '8px 20px',
-              background: 'transparent',
-              color: 'var(--jp-text-secondary)',
-              border: '1px solid var(--jp-border)',
-              borderRadius: 'var(--jp-radius-xs)',
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              cursor: saving ? 'wait' : 'pointer',
-            }}
+            className="flex items-center gap-1.5 px-5 py-2 bg-transparent text-core-text-dim border border-core-border rounded text-[0.8125rem] font-semibold cursor-pointer disabled:cursor-wait hover:border-core-green transition-colors"
           >
+            <Save size={13} />
             {saving ? 'Saving...' : 'Save'}
           </button>
-          <button
-            style={{
-              padding: '8px 20px',
-              background: 'var(--jp-green)',
-              color: '#000',
-              border: 'none',
-              borderRadius: 'var(--jp-radius-xs)',
-              fontSize: '0.8125rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
+          <button className="flex items-center gap-1.5 px-5 py-2 bg-core-green text-black border-none rounded text-[0.8125rem] font-bold cursor-pointer">
+            <Send size={13} />
             Send
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div className="flex flex-1 overflow-hidden">
         {/* Unlayer Editor */}
-        <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+        <div className="flex-1 relative min-h-0">
           <EmailEditor
             onReady={onEditorReady}
             appearance={{
@@ -332,47 +279,19 @@ export default function EmailBuilderPage() {
             style={{ height: '100%', minHeight: '100%' }}
           />
           {!editorReady && (
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'var(--jp-bg)',
-              zIndex: 10,
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  width: 32,
-                  height: 32,
-                  border: '2px solid var(--jp-green)',
-                  borderTopColor: 'transparent',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite',
-                  margin: '0 auto 12px',
-                }} />
-                <span style={{ color: 'var(--jp-text-muted)', fontSize: '0.8125rem' }}>Loading editor...</span>
+            <div className="absolute inset-0 flex items-center justify-center bg-core-bg z-10">
+              <div className="text-center">
+                <Loader2 size={32} className="text-core-green animate-spin mx-auto mb-3" />
+                <span className="text-core-text-muted text-[0.8125rem]">Loading editor...</span>
               </div>
             </div>
           )}
         </div>
 
         {/* Right Sidebar */}
-        <div style={{
-          width: 340,
-          flexShrink: 0,
-          background: 'var(--jp-surface)',
-          borderLeft: '1px solid var(--jp-border)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}>
+        <div className="w-[340px] flex-shrink-0 bg-core-surface border-l border-core-border flex flex-col overflow-hidden">
           {/* Sidebar Tabs */}
-          <div style={{
-            display: 'flex',
-            borderBottom: '1px solid var(--jp-border)',
-            flexShrink: 0,
-          }}>
+          <div className="flex border-b border-core-border flex-shrink-0">
             {([
               { key: 'templates' as SidebarTab, label: 'Templates' },
               { key: 'ai' as SidebarTab, label: 'AI Generate' },
@@ -381,18 +300,12 @@ export default function EmailBuilderPage() {
               <button
                 key={tab.key}
                 onClick={() => setSidebarTab(tab.key)}
-                style={{
-                  flex: 1,
-                  padding: '10px 8px',
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: sidebarTab === tab.key ? '2px solid var(--jp-green)' : '2px solid transparent',
-                  color: sidebarTab === tab.key ? 'var(--jp-green)' : 'var(--jp-text-muted)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
+                className={[
+                  'flex-1 px-2 py-2.5 bg-transparent border-none text-xs font-semibold cursor-pointer transition-all border-b-2',
+                  sidebarTab === tab.key
+                    ? 'border-core-green text-core-green'
+                    : 'border-transparent text-core-text-muted hover:text-core-text',
+                ].join(' ')}
               >
                 {tab.label}
               </button>
@@ -400,53 +313,24 @@ export default function EmailBuilderPage() {
           </div>
 
           {/* Sidebar Content */}
-          <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
+          <div className="flex-1 overflow-auto p-3">
             {/* Templates Panel */}
             {sidebarTab === 'templates' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="flex flex-col gap-2">
                 <button
                   onClick={handleSave}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: 'var(--jp-green-glow)',
-                    border: '1px solid rgba(126, 217, 87, 0.3)',
-                    borderRadius: 'var(--jp-radius-xs)',
-                    color: 'var(--jp-green)',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                  }}
+                  className="w-full px-3 py-2 bg-core-green/10 border border-core-green/30 rounded text-core-green text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5 hover:bg-core-green/20 transition-colors"
                 >
-                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
+                  <Plus size={12} />
                   Save as Template
                 </button>
 
                 {templatesLoading ? (
-                  <div style={{ padding: 20, textAlign: 'center' }}>
-                    <div style={{
-                      width: 24,
-                      height: 24,
-                      border: '2px solid var(--jp-green)',
-                      borderTopColor: 'transparent',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite',
-                      margin: '0 auto',
-                    }} />
+                  <div className="p-5 flex justify-center">
+                    <Loader2 size={24} className="text-core-green animate-spin" />
                   </div>
                 ) : templates.length === 0 ? (
-                  <div style={{
-                    padding: '20px 12px',
-                    textAlign: 'center',
-                    color: 'var(--jp-text-muted)',
-                    fontSize: '0.75rem',
-                  }}>
+                  <div className="px-3 py-5 text-center text-core-text-muted text-xs">
                     No templates found. Create your first one!
                   </div>
                 ) : (
@@ -454,27 +338,18 @@ export default function EmailBuilderPage() {
                     <div
                       key={tmpl.id}
                       onClick={() => loadTemplate(tmpl)}
-                      style={{
-                        padding: '10px 12px',
-                        background: 'var(--jp-bg-card)',
-                        border: '1px solid var(--jp-border)',
-                        borderRadius: 'var(--jp-radius-xs)',
-                        cursor: 'pointer',
-                        transition: 'border-color 0.2s',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--jp-green)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--jp-border)')}
+                      className="px-3 py-2.5 bg-core-card border border-core-border rounded cursor-pointer transition-colors hover:border-core-green"
                     >
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 2 }}>
+                      <div className="text-[0.8125rem] font-semibold text-core-text mb-0.5">
                         {tmpl.name || 'Untitled'}
                       </div>
                       {tmpl.subject && (
-                        <div style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div className="text-[0.6875rem] text-core-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
                           {tmpl.subject}
                         </div>
                       )}
                       {tmpl.lastUpdated && (
-                        <div style={{ fontSize: '0.625rem', color: 'var(--jp-text-muted)', marginTop: 4 }}>
+                        <div className="text-[0.625rem] text-core-text-muted mt-1">
                           {new Date(tmpl.lastUpdated).toLocaleDateString()}
                         </div>
                       )}
@@ -486,8 +361,8 @@ export default function EmailBuilderPage() {
 
             {/* AI Generate Panel */}
             {sidebarTab === 'ai' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginBottom: 4 }}>
+              <div className="flex flex-col gap-2.5">
+                <div className="text-xs text-core-text-muted mb-1">
                   Describe the email you want and AI will generate it.
                 </div>
                 <textarea
@@ -495,39 +370,23 @@ export default function EmailBuilderPage() {
                   value={aiDescription}
                   onChange={(e) => setAiDescription(e.target.value)}
                   rows={4}
-                  style={{
-                    width: '100%',
-                    padding: 10,
-                    background: 'var(--jp-bg-input)',
-                    border: '1px solid var(--jp-border)',
-                    borderRadius: 'var(--jp-radius-xs)',
-                    color: 'var(--jp-text)',
-                    fontSize: '0.8125rem',
-                    resize: 'vertical',
-                    outline: 'none',
-                    fontFamily: 'inherit',
-                  }}
+                  className="w-full p-2.5 bg-core-card border border-core-border rounded text-core-text text-[0.8125rem] resize-y outline-none font-inherit"
                 />
 
                 {/* Tone selector */}
                 <div>
-                  <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--jp-text-secondary)', display: 'block', marginBottom: 4 }}>Tone</label>
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  <label className="text-[0.6875rem] font-semibold text-core-text-dim block mb-1">Tone</label>
+                  <div className="flex gap-1 flex-wrap">
                     {(['professional', 'casual', 'urgent', 'friendly'] as Tone[]).map((t) => (
                       <button
                         key={t}
                         onClick={() => setAiTone(t)}
-                        style={{
-                          padding: '4px 10px',
-                          fontSize: '0.6875rem',
-                          fontWeight: 600,
-                          borderRadius: 20,
-                          border: aiTone === t ? '1px solid var(--jp-green)' : '1px solid var(--jp-border)',
-                          background: aiTone === t ? 'var(--jp-green-glow)' : 'transparent',
-                          color: aiTone === t ? 'var(--jp-green)' : 'var(--jp-text-muted)',
-                          cursor: 'pointer',
-                          textTransform: 'capitalize',
-                        }}
+                        className={[
+                          'px-2.5 py-1 text-[0.6875rem] font-semibold rounded-full border cursor-pointer capitalize transition-colors',
+                          aiTone === t
+                            ? 'border-core-green bg-core-green/10 text-core-green'
+                            : 'border-core-border bg-transparent text-core-text-muted hover:border-core-green/50',
+                        ].join(' ')}
                       >
                         {t}
                       </button>
@@ -537,23 +396,18 @@ export default function EmailBuilderPage() {
 
                 {/* Industry selector */}
                 <div>
-                  <label style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--jp-text-secondary)', display: 'block', marginBottom: 4 }}>Industry</label>
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  <label className="text-[0.6875rem] font-semibold text-core-text-dim block mb-1">Industry</label>
+                  <div className="flex gap-1 flex-wrap">
                     {(['saas', 'ecommerce', 'agency', 'realestate', 'general'] as Industry[]).map((ind) => (
                       <button
                         key={ind}
                         onClick={() => setAiIndustry(ind)}
-                        style={{
-                          padding: '4px 10px',
-                          fontSize: '0.6875rem',
-                          fontWeight: 600,
-                          borderRadius: 20,
-                          border: aiIndustry === ind ? '1px solid var(--jp-green)' : '1px solid var(--jp-border)',
-                          background: aiIndustry === ind ? 'var(--jp-green-glow)' : 'transparent',
-                          color: aiIndustry === ind ? 'var(--jp-green)' : 'var(--jp-text-muted)',
-                          cursor: 'pointer',
-                          textTransform: 'capitalize',
-                        }}
+                        className={[
+                          'px-2.5 py-1 text-[0.6875rem] font-semibold rounded-full border cursor-pointer capitalize transition-colors',
+                          aiIndustry === ind
+                            ? 'border-core-green bg-core-green/10 text-core-green'
+                            : 'border-core-border bg-transparent text-core-text-muted hover:border-core-green/50',
+                        ].join(' ')}
                       >
                         {ind === 'realestate' ? 'Real Estate' : ind === 'saas' ? 'SaaS' : ind === 'ecommerce' ? 'E-commerce' : ind}
                       </button>
@@ -564,39 +418,21 @@ export default function EmailBuilderPage() {
                 <button
                   onClick={handleAiGenerate}
                   disabled={aiGenerating || !aiDescription.trim()}
-                  style={{
-                    width: '100%',
-                    padding: '10px 16px',
-                    background: aiGenerating || !aiDescription.trim() ? 'var(--jp-border)' : 'var(--jp-green)',
-                    color: aiGenerating || !aiDescription.trim() ? 'var(--jp-text-muted)' : '#000',
-                    border: 'none',
-                    borderRadius: 'var(--jp-radius-xs)',
-                    fontSize: '0.8125rem',
-                    fontWeight: 700,
-                    cursor: aiGenerating || !aiDescription.trim() ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                  }}
+                  className={[
+                    'w-full px-4 py-2.5 rounded text-[0.8125rem] font-bold flex items-center justify-center gap-1.5 transition-colors',
+                    aiGenerating || !aiDescription.trim()
+                      ? 'bg-core-border text-core-text-muted cursor-not-allowed'
+                      : 'bg-core-green text-black cursor-pointer hover:opacity-90',
+                  ].join(' ')}
                 >
                   {aiGenerating ? (
                     <>
-                      <div style={{
-                        width: 14,
-                        height: 14,
-                        border: '2px solid #000',
-                        borderTopColor: 'transparent',
-                        borderRadius: '50%',
-                        animation: 'spin 1s linear infinite',
-                      }} />
+                      <Loader2 size={14} className="animate-spin" />
                       Generating...
                     </>
                   ) : (
                     <>
-                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
+                      <Zap size={14} />
                       Generate
                     </>
                   )}
@@ -604,38 +440,22 @@ export default function EmailBuilderPage() {
 
                 {/* AI Preview */}
                 {aiPreviewHtml && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--jp-green)' }}>
+                  <div className="flex flex-col gap-2">
+                    <div className="text-[0.6875rem] font-semibold text-core-green">
                       Generated Preview
                     </div>
                     {aiSubject && (
-                      <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-secondary)' }}>
+                      <div className="text-xs text-core-text-dim">
                         Subject: {aiSubject}
                       </div>
                     )}
                     <div
-                      style={{
-                        background: '#fff',
-                        borderRadius: 'var(--jp-radius-xs)',
-                        overflow: 'hidden',
-                        maxHeight: 200,
-                        overflowY: 'auto',
-                      }}
+                      className="bg-white rounded overflow-hidden max-h-[200px] overflow-y-auto"
                       dangerouslySetInnerHTML={{ __html: aiPreviewHtml }}
                     />
                     <button
                       onClick={useAiResult}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: 'var(--jp-green)',
-                        color: '#000',
-                        border: 'none',
-                        borderRadius: 'var(--jp-radius-xs)',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
+                      className="w-full px-3 py-2 bg-core-green text-black border-none rounded text-xs font-bold cursor-pointer hover:opacity-90 transition-opacity"
                     >
                       Use This
                     </button>
@@ -646,182 +466,89 @@ export default function EmailBuilderPage() {
 
             {/* Design Tools Panel */}
             {sidebarTab === 'design' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="flex flex-col gap-3">
                 {/* Canva Card */}
-                <div style={{
-                  padding: 12,
-                  background: 'var(--jp-bg-card)',
-                  border: '1px solid var(--jp-border)',
-                  borderRadius: 'var(--jp-radius-xs)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <div style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: 'linear-gradient(135deg, #00C4CC, #7B2FF7)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.6875rem',
-                      fontWeight: 800,
-                      color: '#fff',
-                    }}>
+                <div className="p-3 bg-core-card border border-core-border rounded">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-[6px] bg-gradient-to-br from-[#00C4CC] to-[#7B2FF7] flex items-center justify-center text-[0.6875rem] font-extrabold text-white">
                       C
                     </div>
-                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>Canva</span>
+                    <span className="text-[0.8125rem] font-semibold text-core-text">Canva</span>
                   </div>
                   <input
                     type="text"
                     placeholder="Describe header image..."
                     value={canvaPrompt}
                     onChange={(e) => setCanvaPrompt(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      background: 'var(--jp-bg-input)',
-                      border: '1px solid var(--jp-border)',
-                      borderRadius: 'var(--jp-radius-xs)',
-                      color: 'var(--jp-text)',
-                      fontSize: '0.75rem',
-                      outline: 'none',
-                      marginBottom: 6,
-                    }}
+                    className="w-full px-2.5 py-1.5 bg-core-bg border border-core-border rounded text-core-text text-xs outline-none mb-1.5"
                   />
                   <button
                     onClick={() => handleDesignTool('canva', canvaPrompt)}
                     disabled={!canvaPrompt.trim()}
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      background: canvaPrompt.trim() ? 'linear-gradient(135deg, #00C4CC, #7B2FF7)' : 'var(--jp-border)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 'var(--jp-radius-xs)',
-                      fontSize: '0.6875rem',
-                      fontWeight: 600,
-                      cursor: canvaPrompt.trim() ? 'pointer' : 'not-allowed',
-                    }}
+                    className={[
+                      'w-full px-2.5 py-1.5 text-white border-none rounded text-[0.6875rem] font-semibold transition-opacity',
+                      canvaPrompt.trim()
+                        ? 'bg-gradient-to-r from-[#00C4CC] to-[#7B2FF7] cursor-pointer hover:opacity-90'
+                        : 'bg-core-border cursor-not-allowed',
+                    ].join(' ')}
                   >
                     Generate Header Image
                   </button>
                 </div>
 
                 {/* Figma Card */}
-                <div style={{
-                  padding: 12,
-                  background: 'var(--jp-bg-card)',
-                  border: '1px solid var(--jp-border)',
-                  borderRadius: 'var(--jp-radius-xs)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <div style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: 'linear-gradient(135deg, #F24E1E, #A259FF)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.6875rem',
-                      fontWeight: 800,
-                      color: '#fff',
-                    }}>
+                <div className="p-3 bg-core-card border border-core-border rounded">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-[6px] bg-gradient-to-br from-[#F24E1E] to-[#A259FF] flex items-center justify-center text-[0.6875rem] font-extrabold text-white">
                       F
                     </div>
-                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>Figma</span>
+                    <span className="text-[0.8125rem] font-semibold text-core-text">Figma</span>
                   </div>
                   <input
                     type="text"
                     placeholder="Paste Figma URL..."
                     value={figmaUrl}
                     onChange={(e) => setFigmaUrl(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      background: 'var(--jp-bg-input)',
-                      border: '1px solid var(--jp-border)',
-                      borderRadius: 'var(--jp-radius-xs)',
-                      color: 'var(--jp-text)',
-                      fontSize: '0.75rem',
-                      outline: 'none',
-                      marginBottom: 6,
-                    }}
+                    className="w-full px-2.5 py-1.5 bg-core-bg border border-core-border rounded text-core-text text-xs outline-none mb-1.5"
                   />
                   <button
                     onClick={() => handleDesignTool('figma', figmaUrl)}
                     disabled={!figmaUrl.trim()}
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      background: figmaUrl.trim() ? 'linear-gradient(135deg, #F24E1E, #A259FF)' : 'var(--jp-border)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 'var(--jp-radius-xs)',
-                      fontSize: '0.6875rem',
-                      fontWeight: 600,
-                      cursor: figmaUrl.trim() ? 'pointer' : 'not-allowed',
-                    }}
+                    className={[
+                      'w-full px-2.5 py-1.5 text-white border-none rounded text-[0.6875rem] font-semibold transition-opacity',
+                      figmaUrl.trim()
+                        ? 'bg-gradient-to-r from-[#F24E1E] to-[#A259FF] cursor-pointer hover:opacity-90'
+                        : 'bg-core-border cursor-not-allowed',
+                    ].join(' ')}
                   >
                     Import from Figma
                   </button>
                 </div>
 
                 {/* Gamma Card */}
-                <div style={{
-                  padding: 12,
-                  background: 'var(--jp-bg-card)',
-                  border: '1px solid var(--jp-border)',
-                  borderRadius: 'var(--jp-radius-xs)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <div style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: 'linear-gradient(135deg, #FFB800, #FF6B00)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.6875rem',
-                      fontWeight: 800,
-                      color: '#fff',
-                    }}>
+                <div className="p-3 bg-core-card border border-core-border rounded">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-[6px] bg-gradient-to-br from-[#FFB800] to-[#FF6B00] flex items-center justify-center text-[0.6875rem] font-extrabold text-white">
                       G
                     </div>
-                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>Gamma</span>
+                    <span className="text-[0.8125rem] font-semibold text-core-text">Gamma</span>
                   </div>
                   <input
                     type="text"
                     placeholder="Describe email layout..."
                     value={gammaPrompt}
                     onChange={(e) => setGammaPrompt(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      background: 'var(--jp-bg-input)',
-                      border: '1px solid var(--jp-border)',
-                      borderRadius: 'var(--jp-radius-xs)',
-                      color: 'var(--jp-text)',
-                      fontSize: '0.75rem',
-                      outline: 'none',
-                      marginBottom: 6,
-                    }}
+                    className="w-full px-2.5 py-1.5 bg-core-bg border border-core-border rounded text-core-text text-xs outline-none mb-1.5"
                   />
                   <button
                     onClick={() => handleDesignTool('gamma', gammaPrompt)}
                     disabled={!gammaPrompt.trim()}
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      background: gammaPrompt.trim() ? 'linear-gradient(135deg, #FFB800, #FF6B00)' : 'var(--jp-border)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 'var(--jp-radius-xs)',
-                      fontSize: '0.6875rem',
-                      fontWeight: 600,
-                      cursor: gammaPrompt.trim() ? 'pointer' : 'not-allowed',
-                    }}
+                    className={[
+                      'w-full px-2.5 py-1.5 text-white border-none rounded text-[0.6875rem] font-semibold transition-opacity',
+                      gammaPrompt.trim()
+                        ? 'bg-gradient-to-r from-[#FFB800] to-[#FF6B00] cursor-pointer hover:opacity-90'
+                        : 'bg-core-border cursor-not-allowed',
+                    ].join(' ')}
                   >
                     Generate Layout
                   </button>
@@ -829,16 +556,11 @@ export default function EmailBuilderPage() {
 
                 {/* Design Result */}
                 {designResult && (
-                  <div style={{
-                    padding: 12,
-                    background: 'var(--jp-green-glow)',
-                    border: '1px solid rgba(126, 217, 87, 0.3)',
-                    borderRadius: 'var(--jp-radius-xs)',
-                  }}>
-                    <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--jp-green)', marginBottom: 6 }}>
+                  <div className="p-3 bg-core-green/10 border border-core-green/30 rounded">
+                    <div className="text-[0.6875rem] font-semibold text-core-green mb-1.5">
                       {designResult.tool.charAt(0).toUpperCase() + designResult.tool.slice(1)} Response
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-secondary)', lineHeight: 1.5 }}>
+                    <div className="text-xs text-core-text-dim leading-relaxed">
                       {designResult.message}
                     </div>
                     {designResult.html && (
@@ -846,18 +568,7 @@ export default function EmailBuilderPage() {
                         onClick={() => {
                           // Insert HTML snippet placeholder
                         }}
-                        style={{
-                          marginTop: 8,
-                          width: '100%',
-                          padding: '6px 10px',
-                          background: 'var(--jp-green)',
-                          color: '#000',
-                          border: 'none',
-                          borderRadius: 'var(--jp-radius-xs)',
-                          fontSize: '0.6875rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
+                        className="mt-2 w-full px-2.5 py-1.5 bg-core-green text-black border-none rounded text-[0.6875rem] font-bold cursor-pointer hover:opacity-90 transition-opacity"
                       >
                         Insert into Email
                       </button>

@@ -2,6 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import {
+  Layers,
+  Tag,
+  GitBranch,
+  Brain,
+  Workflow,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Rocket,
+  ChevronRight,
+} from 'lucide-react'
 
 interface DeployedItem {
   type: string
@@ -35,13 +47,25 @@ const MASTER_SNAPSHOT = {
   knowledgeBases: ['K1: Platform', 'K2: Brand & Design', 'K3: Company', 'K4: 0nAI Security'],
 }
 
+const TYPE_CLASSES: Record<string, { badge: string; label: string }> = {
+  pipeline:      { badge: 'bg-core-purple/10 text-core-purple border-core-purple/20',      label: 'text-core-purple' },
+  customField:   { badge: 'bg-core-cyan/10 text-core-cyan border-core-cyan/20',            label: 'text-core-cyan' },
+  tag:           { badge: 'bg-core-green/10 text-core-green border-core-green/20',         label: 'text-core-green' },
+  workflow:      { badge: 'bg-core-amber/10 text-core-amber border-core-amber/20',         label: 'text-core-amber' },
+  knowledgeBase: { badge: 'bg-core-cyan/10 text-core-cyan border-core-cyan/20',            label: 'text-core-cyan' },
+  voiceAgent:    { badge: 'bg-core-red/10 text-core-red border-core-red/20',               label: 'text-core-red' },
+}
+
+function typeBadgeClass(type: string) {
+  return TYPE_CLASSES[type]?.badge ?? 'bg-core-surface text-core-text-muted border-core-border'
+}
+
 export default function SnapshotsPage() {
   const [locationId, setLocationId] = useState('')
   const [customLocationId, setCustomLocationId] = useState('')
   const [deploying, setDeploying] = useState(false)
   const [deployResult, setDeployResult] = useState<{ success: boolean; deployed: DeployedItem[]; errors: string[] } | null>(null)
   const [history, setHistory] = useState<DeployHistory[]>([])
-  const [search, setSearch] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
@@ -52,7 +76,6 @@ export default function SnapshotsPage() {
         setCustomLocationId(loc)
       }
     })
-    // Load deployment history
     loadHistory()
   }, [])
 
@@ -94,116 +117,143 @@ export default function SnapshotsPage() {
     setDeploying(false)
   }
 
-  const typeColor = (type: string) => {
-    const map: Record<string, string> = {
-      pipeline: '#8b5cf6',
-      customField: '#14b8a6',
-      tag: '#7ed957',
-      workflow: '#f59e0b',
-      knowledgeBase: '#60a5fa',
-      voiceAgent: '#ec4899',
-    }
-    return map[type] || 'var(--text-muted, #6b7280)'
-  }
-
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 8px' }}>
+    <div className="max-w-[1100px] mx-auto px-2">
+
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0, display: 'flex', alignItems: 'center' }}>
+          <h1 className="text-[22px] font-bold text-core-text m-0 flex items-center gap-2">
             Snapshot Manager
-            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(126,217,87,0.12)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)', marginLeft: 8 }}>DEPLOY</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-core-green/10 text-core-green border border-core-green/20">
+              DEPLOY
+            </span>
           </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', marginTop: 4 }}>Deploy pre-configured CRM setups to any sub-location</p>
+          <p className="text-[13px] text-core-text-muted mt-1">
+            Deploy pre-configured CRM setups to any sub-location
+          </p>
         </div>
       </div>
 
       {/* Master Snapshot Card */}
-      <div style={{
-        background: 'var(--bg-card, #1f2937)', border: '1px solid rgba(126,217,87,0.2)',
-        borderRadius: 16, padding: 28, marginBottom: 24,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+      <div className="bg-core-card border border-core-green/20 rounded-2xl p-7 mb-6">
+        <div className="flex justify-between items-start mb-5">
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px' }}>
+            <h2 className="text-lg font-bold text-core-text m-0 mb-1">
               {MASTER_SNAPSHOT.name}
             </h2>
-            <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: 0 }}>{MASTER_SNAPSHOT.description}</p>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#7ed957', marginTop: 8, display: 'inline-block' }}>v{MASTER_SNAPSHOT.version}</span>
+            <p className="text-[13px] text-core-text-muted m-0">
+              {MASTER_SNAPSHOT.description}
+            </p>
+            <span className="text-[10px] font-bold text-core-green mt-2 inline-block">
+              v{MASTER_SNAPSHOT.version}
+            </span>
           </div>
         </div>
 
-        {/* Snapshot Contents */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12, marginBottom: 24 }}>
-          <div style={{ background: 'rgba(139,92,246,0.06)', borderRadius: 10, padding: 14, border: '1px solid rgba(139,92,246,0.15)' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Pipeline</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)', marginBottom: 6 }}>{MASTER_SNAPSHOT.pipeline.name}</div>
+        {/* Snapshot Contents Grid */}
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3 mb-6">
+
+          {/* Pipeline */}
+          <div className="bg-core-purple/5 rounded-xl p-3.5 border border-core-purple/15">
+            <div className="flex items-center gap-1.5 mb-2">
+              <GitBranch className="w-3 h-3 text-core-purple" />
+              <span className="text-[10px] font-bold text-core-purple uppercase tracking-[0.06em]">Pipeline</span>
+            </div>
+            <div className="text-[13px] font-semibold text-core-text mb-1.5">
+              {MASTER_SNAPSHOT.pipeline.name}
+            </div>
             {MASTER_SNAPSHOT.pipeline.stages.map(s => (
-              <div key={s} style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', padding: '1px 0' }}>{s}</div>
+              <div key={s} className="flex items-center gap-1 text-[11px] text-core-text-muted py-px">
+                <ChevronRight className="w-3 h-3 shrink-0 opacity-50" />
+                {s}
+              </div>
             ))}
           </div>
 
-          <div style={{ background: 'rgba(45,212,191,0.06)', borderRadius: 10, padding: 14, border: '1px solid rgba(45,212,191,0.15)' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#14b8a6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Custom Fields</div>
+          {/* Custom Fields */}
+          <div className="bg-core-cyan/5 rounded-xl p-3.5 border border-core-cyan/15">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Layers className="w-3 h-3 text-core-cyan" />
+              <span className="text-[10px] font-bold text-core-cyan uppercase tracking-[0.06em]">Custom Fields</span>
+            </div>
             {MASTER_SNAPSHOT.customFields.map(f => (
-              <div key={f} style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', padding: '1px 0' }}>{f}</div>
+              <div key={f} className="flex items-center gap-1 text-[11px] text-core-text-muted py-px">
+                <ChevronRight className="w-3 h-3 shrink-0 opacity-50" />
+                {f}
+              </div>
             ))}
           </div>
 
-          <div style={{ background: 'rgba(126,217,87,0.06)', borderRadius: 10, padding: 14, border: '1px solid rgba(126,217,87,0.15)' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#7ed957', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Tags</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          {/* Tags */}
+          <div className="bg-core-green/5 rounded-xl p-3.5 border border-core-green/15">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Tag className="w-3 h-3 text-core-green" />
+              <span className="text-[10px] font-bold text-core-green uppercase tracking-[0.06em]">Tags</span>
+            </div>
+            <div className="flex flex-wrap gap-1">
               {MASTER_SNAPSHOT.tags.map(t => (
-                <span key={t} style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(126,217,87,0.1)', color: '#7ed957' }}>{t}</span>
+                <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-core-green/10 text-core-green">
+                  {t}
+                </span>
               ))}
             </div>
           </div>
 
-          <div style={{ background: 'rgba(96,165,250,0.06)', borderRadius: 10, padding: 14, border: '1px solid rgba(96,165,250,0.15)' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>K-Layers</div>
+          {/* K-Layers */}
+          <div className="bg-core-cyan/5 rounded-xl p-3.5 border border-core-cyan/15">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Brain className="w-3 h-3 text-core-cyan" />
+              <span className="text-[10px] font-bold text-core-cyan uppercase tracking-[0.06em]">K-Layers</span>
+            </div>
             {MASTER_SNAPSHOT.knowledgeBases.map(kb => (
-              <div key={kb} style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', padding: '1px 0' }}>{kb}</div>
+              <div key={kb} className="flex items-center gap-1 text-[11px] text-core-text-muted py-px">
+                <ChevronRight className="w-3 h-3 shrink-0 opacity-50" />
+                {kb}
+              </div>
             ))}
           </div>
 
-          <div style={{ background: 'rgba(245,158,11,0.06)', borderRadius: 10, padding: 14, border: '1px solid rgba(245,158,11,0.15)' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Workflows</div>
+          {/* Workflows */}
+          <div className="bg-core-amber/5 rounded-xl p-3.5 border border-core-amber/15">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Workflow className="w-3 h-3 text-core-amber" />
+              <span className="text-[10px] font-bold text-core-amber uppercase tracking-[0.06em]">Workflows</span>
+            </div>
             {MASTER_SNAPSHOT.workflows.map(w => (
-              <div key={w} style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', padding: '1px 0' }}>{w}</div>
+              <div key={w} className="flex items-center gap-1 text-[11px] text-core-text-muted py-px">
+                <ChevronRight className="w-3 h-3 shrink-0 opacity-50" />
+                {w}
+              </div>
             ))}
           </div>
         </div>
 
         {/* Deploy Controls */}
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div className="flex gap-2.5 items-end">
+          <div className="flex-1">
+            <label className="block text-[11px] text-core-text-muted font-semibold mb-1 uppercase tracking-[0.05em]">
               Target Location ID
             </label>
             <input
-              type="text" value={customLocationId}
+              type="text"
+              value={customLocationId}
               onChange={e => setCustomLocationId(e.target.value)}
               placeholder={locationId || 'Enter CRM location ID'}
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: 8,
-                border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
-                color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box',
-              }}
+              className="w-full px-3 py-2.5 rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none focus:border-core-green/50 transition-colors"
             />
           </div>
           <button
             onClick={deploySnapshot}
             disabled={deploying || !(customLocationId.trim() || locationId)}
-            style={{
-              padding: '10px 28px', height: 42,
-              background: deploying ? '#374151' : 'linear-gradient(135deg, #7ed957, #5cb83a)',
-              color: '#0c1220', fontWeight: 700, fontSize: 14, borderRadius: 10, border: 'none',
-              cursor: deploying ? 'wait' : 'pointer', fontFamily: 'inherit',
-              opacity: !(customLocationId.trim() || locationId) ? 0.5 : 1,
-              whiteSpace: 'nowrap',
-            }}
+            className={[
+              'flex items-center gap-2 px-7 h-[42px] rounded-xl font-bold text-sm whitespace-nowrap transition-all',
+              deploying || !(customLocationId.trim() || locationId)
+                ? 'bg-core-surface text-core-text-muted cursor-not-allowed opacity-60'
+                : 'bg-core-green text-core-bg cursor-pointer hover:opacity-90',
+            ].join(' ')}
           >
+            <Rocket className="w-4 h-4" />
             {deploying ? 'Deploying...' : 'Deploy Snapshot'}
           </button>
         </div>
@@ -211,33 +261,50 @@ export default function SnapshotsPage() {
 
       {/* Deploy Result */}
       {deployResult && (
-        <div style={{
-          background: deployResult.success ? 'rgba(126,217,87,0.06)' : 'rgba(248,113,113,0.06)',
-          border: `1px solid ${deployResult.success ? 'rgba(126,217,87,0.2)' : 'rgba(248,113,113,0.2)'}`,
-          borderRadius: 14, padding: 20, marginBottom: 24,
-        }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: deployResult.success ? '#7ed957' : '#f87171', marginBottom: 12 }}>
+        <div className={[
+          'rounded-2xl p-5 mb-6 border',
+          deployResult.success
+            ? 'bg-core-green/5 border-core-green/20'
+            : 'bg-core-red/5 border-core-red/20',
+        ].join(' ')}>
+          <h3 className={[
+            'flex items-center gap-2 text-[15px] font-bold mb-3',
+            deployResult.success ? 'text-core-green' : 'text-core-red',
+          ].join(' ')}>
+            {deployResult.success
+              ? <CheckCircle2 className="w-4 h-4" />
+              : <XCircle className="w-4 h-4" />}
             {deployResult.success ? 'Deployment Successful' : 'Deployment Completed with Errors'}
           </h3>
+
           {deployResult.deployed.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted, #6b7280)', textTransform: 'uppercase', marginBottom: 8 }}>Deployed Items</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div className="mb-3">
+              <div className="text-[11px] font-semibold text-core-text-muted uppercase tracking-wide mb-2">
+                Deployed Items
+              </div>
+              <div className="flex flex-col gap-1">
                 {deployResult.deployed.map((item, i) => (
-                  <div key={i} style={{ fontSize: 12, color: 'var(--text-secondary, #9ca3af)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: `${typeColor(item.type)}15`, color: typeColor(item.type) }}>{item.type}</span>
+                  <div key={i} className="flex items-center gap-2 text-[12px] text-core-text-dim">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${typeBadgeClass(item.type)}`}>
+                      {item.type}
+                    </span>
                     {item.name}
-                    {item.id && <code style={{ fontSize: 10, color: 'var(--text-muted, #6b7280)' }}>{item.id}</code>}
+                    {item.id && (
+                      <code className="text-[10px] text-core-text-muted font-mono">{item.id}</code>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
           )}
+
           {deployResult.errors.length > 0 && (
             <div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#f87171', textTransform: 'uppercase', marginBottom: 8 }}>Errors</div>
+              <div className="text-[11px] font-semibold text-core-red uppercase tracking-wide mb-2">
+                Errors
+              </div>
               {deployResult.errors.map((err, i) => (
-                <div key={i} style={{ fontSize: 12, color: '#f87171', padding: '2px 0' }}>{err}</div>
+                <div key={i} className="text-[12px] text-core-red py-0.5">{err}</div>
               ))}
             </div>
           )}
@@ -246,29 +313,38 @@ export default function SnapshotsPage() {
 
       {/* Deployment History */}
       {history.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: 12 }}>Deployment History</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="mb-6">
+          <h3 className="flex items-center gap-2 text-[15px] font-bold text-core-text mb-3">
+            <Clock className="w-4 h-4 text-core-text-muted" />
+            Deployment History
+          </h3>
+          <div className="flex flex-col gap-2">
             {history.map((h, i) => (
-              <div key={h.id || i} style={{
-                background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-                borderRadius: 12, padding: '14px 18px',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}>
+              <div
+                key={h.id || i}
+                className="bg-core-card border border-core-border rounded-xl px-4 py-3.5 flex justify-between items-center"
+              >
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>
-                    {h.snapshot_id} <span style={{ fontSize: 10, color: 'var(--text-muted, #6b7280)' }}>v{h.snapshot_version}</span>
+                  <div className="text-[13px] font-semibold text-core-text">
+                    {h.snapshot_id}{' '}
+                    <span className="text-[10px] text-core-text-muted">v{h.snapshot_version}</span>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', marginTop: 2 }}>
-                    Location: {h.location_id} | {h.deployed_items?.length || 0} items deployed
-                    {h.created_at && ` | ${new Date(h.created_at).toLocaleString()}`}
+                  <div className="text-[11px] text-core-text-muted mt-0.5">
+                    Location: {h.location_id} &middot; {h.deployed_items?.length || 0} items deployed
+                    {h.created_at && ` \u00b7 ${new Date(h.created_at).toLocaleString()}`}
                   </div>
                 </div>
-                <span style={{
-                  fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
-                  background: h.success ? 'rgba(126,217,87,0.12)' : 'rgba(248,113,113,0.12)',
-                  color: h.success ? '#7ed957' : '#f87171',
-                }}>{h.success ? 'SUCCESS' : 'ERRORS'}</span>
+                <span className={[
+                  'flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md',
+                  h.success
+                    ? 'bg-core-green/10 text-core-green'
+                    : 'bg-core-red/10 text-core-red',
+                ].join(' ')}>
+                  {h.success
+                    ? <CheckCircle2 className="w-3 h-3" />
+                    : <XCircle className="w-3 h-3" />}
+                  {h.success ? 'SUCCESS' : 'ERRORS'}
+                </span>
               </div>
             ))}
           </div>

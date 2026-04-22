@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { RefreshCw, Inbox } from 'lucide-react'
 
 interface Contact {
   id: string
@@ -19,7 +20,15 @@ interface Pipeline {
   id: string
   name: string
   stages?: { id: string; name: string }[]
-  opportunities?: { id: string; name?: string; contact?: { firstName?: string; lastName?: string }; monetaryValue?: number; status?: string; stageId?: string; dateAdded?: string }[]
+  opportunities?: {
+    id: string
+    name?: string
+    contact?: { firstName?: string; lastName?: string }
+    monetaryValue?: number
+    status?: string
+    stageId?: string
+    dateAdded?: string
+  }[]
 }
 
 interface Conversation {
@@ -101,37 +110,34 @@ export default function CRMLivePage() {
   ]
 
   return (
-    <div style={{ padding: '0 0 40px' }}>
+    <div className="pb-10">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--jp-green)', margin: 0, letterSpacing: -0.5 }}>
+          <h1 className="text-[28px] font-bold text-core-green tracking-tight m-0">
             CRM Live Dashboard
           </h1>
-          <p style={{ color: 'var(--jp-text-muted)', fontSize: 13, margin: '4px 0 0' }}>
+          <p className="text-core-text-muted text-[13px] mt-1 mb-0">
             Real-time data from your CRM location — auto-refreshes every 60s
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="flex items-center gap-3">
           {lastRefresh && (
-            <span style={{ color: 'var(--jp-text-muted)', fontSize: 11 }}>
+            <span className="text-core-text-muted text-[11px]">
               Updated: {new Date(lastRefresh).toLocaleTimeString()}
             </span>
           )}
           <button
             onClick={fetchAll}
             disabled={loading}
-            style={{
-              padding: '8px 16px',
-              background: loading ? 'var(--jp-bg)' : 'linear-gradient(135deg, #7ed957, #5cb83a)',
-              color: loading ? 'var(--jp-text-muted)' : '#000',
-              border: loading ? '1px solid var(--jp-border)' : 'none',
-              borderRadius: 'var(--jp-radius-xs)',
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: loading ? 'default' : 'pointer',
-            }}
+            className={[
+              'flex items-center gap-2 px-4 py-2 rounded text-xs font-bold transition-colors',
+              loading
+                ? 'bg-core-bg text-core-text-muted border border-core-border cursor-default'
+                : 'bg-core-green text-black border-0 cursor-pointer hover:opacity-90',
+            ].join(' ')}
           >
+            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
             {loading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
@@ -139,17 +145,12 @@ export default function CRMLivePage() {
 
       {/* Errors */}
       {errors.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
+        <div className="mb-4 flex flex-col gap-1">
           {errors.map((err, i) => (
-            <div key={i} style={{
-              padding: '8px 14px',
-              background: 'rgba(248, 113, 113, 0.06)',
-              border: '1px solid rgba(248, 113, 113, 0.2)',
-              borderRadius: 'var(--jp-radius-xs)',
-              color: 'var(--jp-red)',
-              fontSize: 12,
-              marginBottom: 4,
-            }}>
+            <div
+              key={i}
+              className="px-[14px] py-2 bg-core-red/[.06] border border-core-red/20 rounded text-core-red text-xs"
+            >
               {err}
             </div>
           ))}
@@ -157,60 +158,48 @@ export default function CRMLivePage() {
       )}
 
       {/* Stats Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3 mb-6">
         {[
-          { label: 'Total Contacts', value: contacts.length, color: 'var(--jp-green)' },
-          { label: 'Pipelines', value: pipelines.length, color: 'var(--jp-cyan)' },
-          { label: 'Opportunities', value: totalOpps, color: 'var(--jp-purple)' },
-          { label: 'Pipeline Value', value: `$${totalPipelineValue.toLocaleString()}`, color: 'var(--jp-amber)' },
-          { label: 'Conversations', value: conversations.length, color: 'var(--jp-cyan)' },
+          { label: 'Total Contacts', value: contacts.length, colorClass: 'text-core-green' },
+          { label: 'Pipelines', value: pipelines.length, colorClass: 'text-core-cyan' },
+          { label: 'Opportunities', value: totalOpps, colorClass: 'text-core-purple' },
+          { label: 'Pipeline Value', value: `$${totalPipelineValue.toLocaleString()}`, colorClass: 'text-core-amber' },
+          { label: 'Conversations', value: conversations.length, colorClass: 'text-core-cyan' },
         ].map((s, i) => (
-          <div key={i} style={{
-            background: 'var(--jp-bg-card)',
-            border: '1px solid var(--jp-border)',
-            borderRadius: 'var(--jp-radius)',
-            padding: 16,
-          }}>
-            <div style={{ color: 'var(--jp-text-muted)', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>{s.label}</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: s.color }}>{s.value}</div>
+          <div
+            key={i}
+            className="bg-core-card border border-core-border rounded-lg p-4"
+          >
+            <div className="text-core-text-muted text-[11px] font-medium uppercase tracking-wide mb-1.5">
+              {s.label}
+            </div>
+            <div className={`text-[28px] font-bold ${s.colorClass}`}>{s.value}</div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div style={{
-        display: 'flex',
-        gap: 4,
-        borderBottom: '1px solid var(--jp-border)',
-        marginBottom: 20,
-      }}>
+      <div className="flex gap-1 border-b border-core-border mb-5">
         {tabs.map(t => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            style={{
-              padding: '10px 16px',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === t.key ? '2px solid var(--jp-green)' : '2px solid transparent',
-              color: activeTab === t.key ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
+            className={[
+              'flex items-center gap-1.5 px-4 py-2.5 bg-transparent border-0 border-b-2 text-[13px] font-semibold cursor-pointer transition-colors',
+              activeTab === t.key
+                ? 'border-core-green text-core-green'
+                : 'border-transparent text-core-text-dim',
+            ].join(' ')}
           >
             {t.label}
-            <span style={{
-              padding: '1px 6px',
-              background: activeTab === t.key ? 'rgba(126, 217, 87, 0.12)' : 'var(--jp-bg)',
-              borderRadius: 10,
-              fontSize: 10,
-              fontWeight: 700,
-              color: activeTab === t.key ? 'var(--jp-green)' : 'var(--jp-text-muted)',
-            }}>
+            <span
+              className={[
+                'px-1.5 py-px rounded-full text-[10px] font-bold',
+                activeTab === t.key
+                  ? 'bg-core-green/10 text-core-green'
+                  : 'bg-core-bg text-core-text-muted',
+              ].join(' ')}
+            >
               {t.count}
             </span>
           </button>
@@ -220,23 +209,13 @@ export default function CRMLivePage() {
       {/* Contacts Tab */}
       {activeTab === 'contacts' && (
         <div>
-          <div style={{ marginBottom: 16 }}>
+          <div className="mb-4">
             <input
               type="text"
               placeholder="Search contacts..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                maxWidth: 400,
-                padding: '10px 14px',
-                background: 'var(--jp-bg-input)',
-                border: '1px solid var(--jp-border)',
-                borderRadius: 'var(--jp-radius-xs)',
-                color: 'var(--jp-text)',
-                fontSize: 13,
-                outline: 'none',
-              }}
+              className="w-full max-w-[400px] px-[14px] py-2.5 bg-core-surface border border-core-border rounded text-core-text text-[13px] outline-none focus:border-core-green/50 transition-colors"
             />
           </div>
 
@@ -245,28 +224,16 @@ export default function CRMLivePage() {
           ) : filteredContacts.length === 0 ? (
             <EmptyState message="No contacts found" />
           ) : (
-            <div style={{
-              background: 'var(--jp-bg-card)',
-              border: '1px solid var(--jp-border)',
-              borderRadius: 'var(--jp-radius)',
-              overflow: 'hidden',
-            }}>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <div className="bg-core-card border border-core-border rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-xs">
                   <thead>
                     <tr>
                       {['Name', 'Email', 'Phone', 'Tags', 'Source', 'Added'].map(col => (
-                        <th key={col} style={{
-                          padding: '10px 14px',
-                          textAlign: 'left',
-                          color: 'var(--jp-text-muted)',
-                          fontWeight: 600,
-                          borderBottom: '1px solid var(--jp-border)',
-                          fontSize: 11,
-                          textTransform: 'uppercase',
-                          letterSpacing: 0.5,
-                          whiteSpace: 'nowrap',
-                        }}>
+                        <th
+                          key={col}
+                          className="px-[14px] py-2.5 text-left text-core-text-muted font-semibold border-b border-core-border text-[11px] uppercase tracking-wide whitespace-nowrap"
+                        >
                           {col}
                         </th>
                       ))}
@@ -274,52 +241,38 @@ export default function CRMLivePage() {
                   </thead>
                   <tbody>
                     {filteredContacts.map(c => (
-                      <tr key={c.id} style={{ borderBottom: '1px solid var(--jp-border)' }}>
-                        <td style={{ padding: '10px 14px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div style={{
-                              width: 28,
-                              height: 28,
-                              borderRadius: '50%',
-                              background: 'rgba(126, 217, 87, 0.08)',
-                              border: '1px solid rgba(126, 217, 87, 0.2)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'var(--jp-green)',
-                              fontSize: 11,
-                              fontWeight: 700,
-                              flexShrink: 0,
-                            }}>
+                      <tr key={c.id} className="border-b border-core-border">
+                        <td className="px-[14px] py-2.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-core-green/[.08] border border-core-green/20 flex items-center justify-center text-core-green text-[11px] font-bold shrink-0">
                               {(c.firstName || '?')[0].toUpperCase()}
                             </div>
-                            <span style={{ color: 'var(--jp-text)', fontWeight: 500 }}>
+                            <span className="text-core-text font-medium">
                               {`${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Unknown'}
                             </span>
                           </div>
                         </td>
-                        <td style={{ padding: '10px 14px', color: 'var(--jp-text-secondary)' }}>{c.email || '-'}</td>
-                        <td style={{ padding: '10px 14px', color: 'var(--jp-text-secondary)' }}>{c.phone || '-'}</td>
-                        <td style={{ padding: '10px 14px' }}>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                        <td className="px-[14px] py-2.5 text-core-text-dim">{c.email || '-'}</td>
+                        <td className="px-[14px] py-2.5 text-core-text-dim">{c.phone || '-'}</td>
+                        <td className="px-[14px] py-2.5">
+                          <div className="flex flex-wrap gap-[3px]">
                             {(c.tags || []).slice(0, 3).map((tag, ti) => (
-                              <span key={ti} style={{
-                                padding: '1px 6px',
-                                background: 'rgba(0, 212, 255, 0.08)',
-                                borderRadius: 4,
-                                color: 'var(--jp-cyan)',
-                                fontSize: 10,
-                              }}>
+                              <span
+                                key={ti}
+                                className="px-1.5 py-px bg-core-cyan/[.08] rounded text-core-cyan text-[10px]"
+                              >
                                 {tag}
                               </span>
                             ))}
                             {(c.tags || []).length > 3 && (
-                              <span style={{ color: 'var(--jp-text-muted)', fontSize: 10 }}>+{(c.tags || []).length - 3}</span>
+                              <span className="text-core-text-muted text-[10px]">
+                                +{(c.tags || []).length - 3}
+                              </span>
                             )}
                           </div>
                         </td>
-                        <td style={{ padding: '10px 14px', color: 'var(--jp-text-muted)', fontSize: 11 }}>{c.source || '-'}</td>
-                        <td style={{ padding: '10px 14px', color: 'var(--jp-text-muted)', fontSize: 11, whiteSpace: 'nowrap' }}>
+                        <td className="px-[14px] py-2.5 text-core-text-muted text-[11px]">{c.source || '-'}</td>
+                        <td className="px-[14px] py-2.5 text-core-text-muted text-[11px] whitespace-nowrap">
                           {c.dateAdded ? new Date(c.dateAdded).toLocaleDateString() : '-'}
                         </td>
                       </tr>
@@ -340,27 +293,19 @@ export default function CRMLivePage() {
           ) : pipelines.length === 0 ? (
             <EmptyState message="No pipelines found in CRM" />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div className="flex flex-col gap-5">
               {pipelines.map(pipeline => (
-                <div key={pipeline.id} style={{
-                  background: 'var(--jp-bg-card)',
-                  border: '1px solid var(--jp-border)',
-                  borderRadius: 'var(--jp-radius)',
-                  overflow: 'hidden',
-                }}>
-                  <div style={{
-                    padding: '14px 20px',
-                    borderBottom: '1px solid var(--jp-border)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}>
-                    <h3 style={{ color: 'var(--jp-text)', fontSize: 16, fontWeight: 700, margin: 0 }}>{pipeline.name}</h3>
-                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                      <span style={{ color: 'var(--jp-text-muted)', fontSize: 12 }}>
+                <div
+                  key={pipeline.id}
+                  className="bg-core-card border border-core-border rounded-lg overflow-hidden"
+                >
+                  <div className="px-5 py-[14px] border-b border-core-border flex justify-between items-center">
+                    <h3 className="text-core-text text-base font-bold m-0">{pipeline.name}</h3>
+                    <div className="flex gap-3 items-center">
+                      <span className="text-core-text-muted text-xs">
                         {(pipeline.opportunities || []).length} opportunities
                       </span>
-                      <span style={{ color: 'var(--jp-amber)', fontSize: 14, fontWeight: 700 }}>
+                      <span className="text-core-amber text-sm font-bold">
                         ${(pipeline.opportunities || []).reduce((s, o) => s + Number(o.monetaryValue || 0), 0).toLocaleString()}
                       </span>
                     </div>
@@ -368,52 +313,34 @@ export default function CRMLivePage() {
 
                   {/* Stages as columns */}
                   {pipeline.stages && pipeline.stages.length > 0 && (
-                    <div style={{ padding: 16, overflowX: 'auto' }}>
-                      <div style={{ display: 'flex', gap: 12, minWidth: 'max-content' }}>
+                    <div className="p-4 overflow-x-auto">
+                      <div className="flex gap-3 min-w-max">
                         {pipeline.stages.map(stage => {
                           const stageOpps = (pipeline.opportunities || []).filter(o => o.stageId === stage.id)
                           return (
-                            <div key={stage.id} style={{
-                              minWidth: 220,
-                              background: 'var(--jp-bg)',
-                              border: '1px solid var(--jp-border)',
-                              borderRadius: 'var(--jp-radius-sm)',
-                              overflow: 'hidden',
-                            }}>
-                              <div style={{
-                                padding: '8px 12px',
-                                borderBottom: '1px solid var(--jp-border)',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                              }}>
-                                <span style={{ color: 'var(--jp-text-secondary)', fontSize: 12, fontWeight: 600 }}>{stage.name}</span>
-                                <span style={{
-                                  padding: '1px 6px',
-                                  background: 'rgba(126, 217, 87, 0.1)',
-                                  borderRadius: 10,
-                                  color: 'var(--jp-green)',
-                                  fontSize: 10,
-                                  fontWeight: 700,
-                                }}>
+                            <div
+                              key={stage.id}
+                              className="min-w-[220px] bg-core-bg border border-core-border rounded-md overflow-hidden"
+                            >
+                              <div className="px-3 py-2 border-b border-core-border flex justify-between items-center">
+                                <span className="text-core-text-dim text-xs font-semibold">{stage.name}</span>
+                                <span className="px-1.5 py-px bg-core-green/10 rounded-full text-core-green text-[10px] font-bold">
                                   {stageOpps.length}
                                 </span>
                               </div>
-                              <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
+                              <div className="p-2 flex flex-col gap-1.5 max-h-[300px] overflow-y-auto">
                                 {stageOpps.length === 0 ? (
-                                  <div style={{ padding: 12, textAlign: 'center', color: 'var(--jp-text-muted)', fontSize: 11 }}>Empty</div>
+                                  <div className="p-3 text-center text-core-text-muted text-[11px]">Empty</div>
                                 ) : stageOpps.map(opp => (
-                                  <div key={opp.id} style={{
-                                    padding: '8px 10px',
-                                    background: 'var(--jp-bg-card)',
-                                    border: '1px solid var(--jp-border)',
-                                    borderRadius: 'var(--jp-radius-xs)',
-                                  }}>
-                                    <div style={{ color: 'var(--jp-text)', fontSize: 12, fontWeight: 500 }}>
+                                  <div
+                                    key={opp.id}
+                                    className="px-2.5 py-2 bg-core-card border border-core-border rounded"
+                                  >
+                                    <div className="text-core-text text-xs font-medium">
                                       {opp.name || opp.contact?.firstName || 'Untitled'}
                                     </div>
                                     {opp.monetaryValue && (
-                                      <div style={{ color: 'var(--jp-amber)', fontSize: 11, fontWeight: 600, marginTop: 2 }}>
+                                      <div className="text-core-amber text-[11px] font-semibold mt-0.5">
                                         ${Number(opp.monetaryValue).toLocaleString()}
                                       </div>
                                     )}
@@ -429,17 +356,14 @@ export default function CRMLivePage() {
 
                   {/* Fallback: list view if no stages */}
                   {(!pipeline.stages || pipeline.stages.length === 0) && (pipeline.opportunities || []).length > 0 && (
-                    <div style={{ padding: 16 }}>
+                    <div className="p-4">
                       {(pipeline.opportunities || []).map(opp => (
-                        <div key={opp.id} style={{
-                          padding: '10px 14px',
-                          borderBottom: '1px solid var(--jp-border)',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}>
-                          <span style={{ color: 'var(--jp-text)', fontSize: 13 }}>{opp.name || 'Untitled'}</span>
-                          <span style={{ color: 'var(--jp-amber)', fontSize: 13, fontWeight: 600 }}>
+                        <div
+                          key={opp.id}
+                          className="px-[14px] py-2.5 border-b border-core-border flex justify-between items-center last:border-b-0"
+                        >
+                          <span className="text-core-text text-[13px]">{opp.name || 'Untitled'}</span>
+                          <span className="text-core-amber text-[13px] font-semibold">
                             ${Number(opp.monetaryValue || 0).toLocaleString()}
                           </span>
                         </div>
@@ -461,70 +385,45 @@ export default function CRMLivePage() {
           ) : conversations.length === 0 ? (
             <EmptyState message="No conversations found in CRM" />
           ) : (
-            <div style={{
-              background: 'var(--jp-bg-card)',
-              border: '1px solid var(--jp-border)',
-              borderRadius: 'var(--jp-radius)',
-              overflow: 'hidden',
-            }}>
+            <div className="bg-core-card border border-core-border rounded-lg overflow-hidden">
               {conversations.map((c, i) => (
                 <div
                   key={c.id}
-                  style={{
-                    padding: '14px 20px',
-                    borderBottom: i < conversations.length - 1 ? '1px solid var(--jp-border)' : 'none',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: 16,
-                  }}
+                  className={[
+                    'px-5 py-[14px] flex justify-between items-center gap-4',
+                    i < conversations.length - 1 ? 'border-b border-core-border' : '',
+                  ].join(' ')}
                 >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ color: 'var(--jp-text)', fontSize: 14, fontWeight: 600 }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-core-text text-sm font-semibold">
                         {c.contactName || c.contactId || 'Unknown'}
                       </span>
                       {c.type && (
-                        <span style={{
-                          padding: '1px 6px',
-                          background: c.type === 'Email' ? 'rgba(0, 212, 255, 0.08)' : c.type === 'SMS' ? 'rgba(167, 139, 250, 0.08)' : 'rgba(126, 217, 87, 0.08)',
-                          borderRadius: 4,
-                          color: c.type === 'Email' ? 'var(--jp-cyan)' : c.type === 'SMS' ? 'var(--jp-purple)' : 'var(--jp-green)',
-                          fontSize: 10,
-                          fontWeight: 600,
-                        }}>
+                        <span
+                          className={[
+                            'px-1.5 py-px rounded text-[10px] font-semibold',
+                            c.type === 'Email'
+                              ? 'bg-core-cyan/[.08] text-core-cyan'
+                              : c.type === 'SMS'
+                              ? 'bg-core-purple/[.08] text-core-purple'
+                              : 'bg-core-green/[.08] text-core-green',
+                          ].join(' ')}
+                        >
                           {c.type}
                         </span>
                       )}
                       {c.unreadCount && c.unreadCount > 0 && (
-                        <span style={{
-                          width: 18,
-                          height: 18,
-                          borderRadius: '50%',
-                          background: 'var(--jp-green)',
-                          color: '#000',
-                          fontSize: 10,
-                          fontWeight: 700,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}>
+                        <span className="w-[18px] h-[18px] rounded-full bg-core-green text-black text-[10px] font-bold flex items-center justify-center">
                           {c.unreadCount}
                         </span>
                       )}
                     </div>
-                    <div style={{
-                      color: 'var(--jp-text-secondary)',
-                      fontSize: 12,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      maxWidth: 500,
-                    }}>
+                    <div className="text-core-text-dim text-xs overflow-hidden text-ellipsis whitespace-nowrap max-w-[500px]">
                       {c.lastMessageBody || 'No messages'}
                     </div>
                   </div>
-                  <div style={{ color: 'var(--jp-text-muted)', fontSize: 11, whiteSpace: 'nowrap' }}>
+                  <div className="text-core-text-muted text-[11px] whitespace-nowrap">
                     {c.lastMessageDate ? new Date(c.lastMessageDate).toLocaleDateString() : ''}
                   </div>
                 </div>
@@ -539,35 +438,18 @@ export default function CRMLivePage() {
 
 function LoadingState() {
   return (
-    <div style={{ padding: 60, textAlign: 'center' }}>
-      <div style={{
-        width: 32,
-        height: 32,
-        border: '2px solid var(--jp-border)',
-        borderTopColor: 'var(--jp-green)',
-        borderRadius: '50%',
-        animation: 'spin 0.8s linear infinite',
-        margin: '0 auto 12px',
-      }} />
-      <div style={{ color: 'var(--jp-text-muted)', fontSize: 13 }}>Loading CRM data...</div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div className="py-16 flex flex-col items-center gap-3">
+      <RefreshCw size={32} className="animate-spin text-core-green" />
+      <div className="text-core-text-muted text-[13px]">Loading CRM data...</div>
     </div>
   )
 }
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div style={{
-      padding: 60,
-      textAlign: 'center',
-      background: 'var(--jp-bg-card)',
-      border: '1px solid var(--jp-border)',
-      borderRadius: 'var(--jp-radius)',
-    }}>
-      <svg width={40} height={40} fill="none" stroke="var(--jp-text-muted)" viewBox="0 0 24 24" strokeWidth={1.5} style={{ margin: '0 auto 12px', display: 'block' }}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-      </svg>
-      <div style={{ color: 'var(--jp-text-muted)', fontSize: 14 }}>{message}</div>
+    <div className="py-16 text-center bg-core-card border border-core-border rounded-lg flex flex-col items-center gap-3">
+      <Inbox size={40} className="text-core-text-muted" />
+      <div className="text-core-text-muted text-sm">{message}</div>
     </div>
   )
 }

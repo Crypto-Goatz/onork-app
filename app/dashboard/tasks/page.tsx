@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { Plus, X } from 'lucide-react'
 import TaskBoard from './components/TaskBoard'
 import type { Task as BoardTask } from './components/TaskBoard'
 import ChatWindow from './components/ChatWindow'
@@ -109,37 +110,48 @@ function RecurringTasksPanel() {
     } catch {}
   }
 
-  const inp: React.CSSProperties = {
-    width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #1e293b', background: '#0d1117',
-    color: '#f0f4f8', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
-  }
+  const inputClass = 'w-full px-3 py-2.5 rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none box-border font-sans'
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+    <div className="flex-1 overflow-auto p-6">
       {/* Create Modal */}
       {showCreate && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 100,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-        }} onClick={() => setShowCreate(false)}>
-          <div style={{
-            background: '#161b22', border: '1px solid #1e293b',
-            borderRadius: 16, padding: 28, maxWidth: 460, width: '100%',
-          }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#f0f4f8', margin: '0 0 20px' }}>New Recurring Task</h2>
-            <label style={{ display: 'block', marginBottom: 12 }}>
-              <span style={{ fontSize: 11, color: '#4b5563', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>Title *</span>
-              <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Weekly report" style={inp} />
+        <div
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+          onClick={() => setShowCreate(false)}
+        >
+          <div
+            className="bg-core-surface border border-core-border rounded-2xl p-7 max-w-[460px] w-full"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-core-text mb-5">New Recurring Task</h2>
+            <label className="block mb-3">
+              <span className="block text-[11px] text-core-text-muted font-semibold mb-1 uppercase tracking-wider">Title *</span>
+              <input
+                type="text"
+                value={form.title}
+                onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                placeholder="Weekly report"
+                className={inputClass}
+              />
             </label>
-            <label style={{ display: 'block', marginBottom: 12 }}>
-              <span style={{ fontSize: 11, color: '#4b5563', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>Description</span>
-              <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Optional details..." rows={2} style={{ ...inp, resize: 'vertical' }} />
+            <label className="block mb-3">
+              <span className="block text-[11px] text-core-text-muted font-semibold mb-1 uppercase tracking-wider">Description</span>
+              <textarea
+                value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="Optional details..."
+                rows={2}
+                className={`${inputClass} resize-y`}
+              />
             </label>
-            <label style={{ display: 'block', marginBottom: 20 }}>
-              <span style={{ fontSize: 11, color: '#4b5563', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase' }}>Frequency</span>
-              <select value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} style={inp}>
+            <label className="block mb-5">
+              <span className="block text-[11px] text-core-text-muted font-semibold mb-1 uppercase tracking-wider">Frequency</span>
+              <select
+                value={form.frequency}
+                onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}
+                className={inputClass}
+              >
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
                 <option value="biweekly">Bi-weekly</option>
@@ -147,65 +159,74 @@ function RecurringTasksPanel() {
                 <option value="quarterly">Quarterly</option>
               </select>
             </label>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={createTask} disabled={creating || !form.title.trim()} style={{
-                flex: 1, padding: 12, background: creating ? '#374151' : '#7ed957',
-                color: '#0d1117', fontWeight: 700, fontSize: 14, borderRadius: 10, border: 'none', cursor: creating ? 'wait' : 'pointer',
-                opacity: !form.title.trim() ? 0.5 : 1, fontFamily: 'inherit',
-              }}>{creating ? 'Creating...' : 'Create'}</button>
-              <button onClick={() => setShowCreate(false)} style={{
-                padding: '12px 20px', borderRadius: 10, border: '1px solid #1e293b',
-                background: 'transparent', color: '#4b5563', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-              }}>Cancel</button>
+            <div className="flex gap-2.5">
+              <button
+                onClick={createTask}
+                disabled={creating || !form.title.trim()}
+                className="flex-1 py-3 bg-core-green text-core-bg font-bold text-sm rounded-xl border-none cursor-pointer disabled:opacity-50 disabled:cursor-wait font-sans"
+              >
+                {creating ? 'Creating...' : 'Create'}
+              </button>
+              <button
+                onClick={() => setShowCreate(false)}
+                className="px-5 py-3 rounded-xl border border-core-border bg-transparent text-core-text-muted text-sm cursor-pointer font-sans"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="flex justify-between items-center mb-5">
         <div>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Recurring Tasks</h2>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#7ed957', opacity: 0.8 }}>CRM recurring task automation</p>
+          <h2 className="m-0 text-[22px] font-extrabold text-core-text">Recurring Tasks</h2>
+          <p className="mt-1 mb-0 text-[13px] text-core-green opacity-80">CRM recurring task automation</p>
         </div>
-        <button onClick={() => setShowCreate(true)} style={{
-          width: 36, height: 36, borderRadius: 8, background: '#7ed957', color: '#0d1117',
-          border: 'none', cursor: 'pointer', fontSize: 20, fontWeight: 700,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>+</button>
+        <button
+          onClick={() => setShowCreate(true)}
+          className="w-9 h-9 rounded-lg bg-core-green text-core-bg border-none cursor-pointer text-xl font-bold flex items-center justify-center"
+        >
+          <Plus size={18} />
+        </button>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#3d4654' }}>Loading recurring tasks...</div>
+        <div className="text-center py-16 text-core-text-muted">Loading recurring tasks...</div>
       ) : recurringTasks.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#3d4654' }}>
+        <div className="text-center py-16 text-core-text-muted">
           <p>No recurring tasks. Create one to automate repetitive work.</p>
-          <button onClick={() => setShowCreate(true)} style={{
-            marginTop: 12, padding: '10px 20px', background: '#7ed957', color: '#0d1117',
-            fontWeight: 700, fontSize: 13, borderRadius: 10, border: 'none', cursor: 'pointer',
-          }}>+ New Recurring Task</button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="mt-3 px-5 py-2.5 bg-core-green text-core-bg font-bold text-[13px] rounded-xl border-none cursor-pointer"
+          >
+            + New Recurring Task
+          </button>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="flex flex-col gap-2">
           {recurringTasks.map(t => (
-            <div key={t.id} style={{
-              background: '#161b22', border: '1px solid #1e293b', borderRadius: 12,
-              padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            }}>
+            <div
+              key={t.id}
+              className="bg-core-surface border border-core-border rounded-xl px-[18px] py-3.5 flex justify-between items-center"
+            >
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f4f8' }}>{t.title}</div>
-                <div style={{ fontSize: 11, color: '#4b5563', marginTop: 2 }}>
-                  {t.frequency && <span style={{
-                    padding: '1px 6px', borderRadius: 4, fontSize: 10, fontWeight: 700,
-                    background: 'rgba(126,217,87,0.1)', color: '#7ed957', marginRight: 8,
-                  }}>{t.frequency}</span>}
+                <div className="text-sm font-semibold text-core-text">{t.title}</div>
+                <div className="text-[11px] text-core-text-muted mt-0.5">
+                  {t.frequency && (
+                    <span className="px-1.5 py-px rounded text-[10px] font-bold bg-core-green/10 text-core-green mr-2">
+                      {t.frequency}
+                    </span>
+                  )}
                   {t.description && <span>{t.description}</span>}
                 </div>
               </div>
-              <button onClick={() => deleteTask(t.id)} style={{
-                padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                background: 'rgba(248,113,113,0.1)', color: '#f87171',
-                border: '1px solid rgba(248,113,113,0.2)', cursor: 'pointer',
-              }}>Delete</button>
+              <button
+                onClick={() => deleteTask(t.id)}
+                className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-core-red/10 text-core-red border border-core-red/20 cursor-pointer"
+              >
+                Delete
+              </button>
             </div>
           ))}
         </div>
@@ -465,104 +486,119 @@ export default function TasksPage() {
   ]
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0d1117', color: '#f0f4f8' }}>
+    <div className="h-full flex flex-col bg-core-bg text-core-text">
       {/* Header */}
-      <div style={{
-        padding: '12px 24px', borderBottom: '1px solid #1e293b',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>Task Manager</h1>
-          <span style={{
-            fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5,
-            padding: '3px 8px', borderRadius: 6, background: 'rgba(126,217,87,0.15)', color: '#7ed957',
-          }}>UNLIMITED</span>
+      <div className="px-6 py-3 border-b border-core-border flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-extrabold m-0">Task Manager</h1>
+          <span className="text-[10px] font-extrabold uppercase tracking-[1.5px] px-2 py-0.5 rounded-md bg-core-green/15 text-core-green">
+            UNLIMITED
+          </span>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="flex gap-2 items-center">
           {/* Clock + Session Timer */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginRight: 8 }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace', color: '#f0f4f8', letterSpacing: '0.03em', lineHeight: 1 }}>
+          <div className="flex items-center gap-3 mr-2">
+            <div className="text-right">
+              <div className="text-base font-bold font-mono text-core-text tracking-[0.03em] leading-none">
                 {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
-              <div style={{ fontSize: 10, color: '#4b5563', lineHeight: 1, marginTop: 2 }}>
+              <div className="text-[10px] text-core-text-muted leading-none mt-0.5">
                 {currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </div>
             </div>
-            <div style={{ width: 1, height: 28, background: '#1e293b' }} />
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'monospace', color: '#7ed957', lineHeight: 1 }}>
+            <div className="w-px h-7 bg-core-border" />
+            <div className="text-center">
+              <div className="text-[13px] font-bold font-mono text-core-green leading-none">
                 {sessionElapsed}
               </div>
-              <div style={{ fontSize: 9, color: '#4b5563', lineHeight: 1, marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              <div className="text-[9px] text-core-text-muted leading-none mt-0.5 uppercase tracking-[0.08em]">
                 session
               </div>
             </div>
-            <div style={{ width: 1, height: 28, background: '#1e293b' }} />
+            <div className="w-px h-7 bg-core-border" />
           </div>
           {/* Toolbar buttons */}
           <button
             onClick={() => setShowAutoPlan(true)}
-            style={{ padding: '5px 10px', background: 'rgba(126,217,87,0.1)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-          >AutoPlan</button>
+            className="px-2.5 py-1.5 bg-core-green/10 text-core-green border border-core-green/20 rounded-md text-[11px] font-bold cursor-pointer"
+          >
+            AutoPlan
+          </button>
           <button
             onClick={() => setShowOptimize(true)}
-            style={{ padding: '5px 10px', background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-          >Optimize</button>
+            className="px-2.5 py-1.5 bg-core-purple/10 text-core-purple border border-core-purple/20 rounded-md text-[11px] font-bold cursor-pointer"
+          >
+            Optimize
+          </button>
           <button
             onClick={() => { setShowSocial(true); setSocialContent(undefined) }}
-            style={{ padding: '5px 10px', background: 'rgba(59,130,246,0.1)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-          >Social</button>
-          <div style={{ width: 1, height: 20, background: '#1e293b', margin: '0 4px' }} />
-          {todoCount > 0 && <span style={{ fontSize: 12, color: '#8b95a5' }}><strong style={{ color: '#f59e0b' }}>{todoCount}</strong> to do</span>}
-          {inProgressCount > 0 && <span style={{ fontSize: 12, color: '#8b95a5' }}><strong style={{ color: '#00d4ff' }}>{inProgressCount}</strong> in progress</span>}
-          <span style={{ fontSize: 11, color: '#3d4654' }}>
-            <kbd style={{ padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: 4, border: '1px solid #1e293b', fontSize: 10, fontWeight: 700 }}>Cmd+K</kbd>
+            className="px-2.5 py-1.5 bg-core-cyan/10 text-core-cyan border border-core-cyan/20 rounded-md text-[11px] font-bold cursor-pointer"
+          >
+            Social
+          </button>
+          <div className="w-px h-5 bg-core-border mx-1" />
+          {todoCount > 0 && (
+            <span className="text-xs text-core-text-dim">
+              <strong className="text-core-amber">{todoCount}</strong> to do
+            </span>
+          )}
+          {inProgressCount > 0 && (
+            <span className="text-xs text-core-text-dim">
+              <strong className="text-core-cyan">{inProgressCount}</strong> in progress
+            </span>
+          )}
+          <span className="text-[11px] text-core-text-muted">
+            <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-core-border text-[10px] font-bold">
+              Cmd+K
+            </kbd>
           </span>
         </div>
       </div>
 
       {/* View Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #1e293b', padding: '0 24px', flexShrink: 0 }}>
+      <div className="flex border-b border-core-border px-6 shrink-0">
         {VIEW_TABS.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveView(tab.key)}
-            style={{
-              padding: '10px 18px', background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: 13, fontWeight: 700, color: activeView === tab.key ? '#7ed957' : '#3d4654',
-              borderBottom: activeView === tab.key ? '2px solid #7ed957' : '2px solid transparent',
-              transition: 'all 0.15s',
-            }}
-          >{tab.label}</button>
+            className={[
+              'px-[18px] py-2.5 bg-transparent border-none cursor-pointer text-[13px] font-bold transition-all duration-150',
+              activeView === tab.key
+                ? 'text-core-green border-b-2 border-core-green'
+                : 'text-core-text-muted border-b-2 border-transparent',
+            ].join(' ')}
+          >
+            {tab.label}
+          </button>
         ))}
       </div>
 
       {/* Mobile Tab Switcher (dashboard only) */}
       {activeView === 'dashboard' && (
-        <div style={{ display: 'none', borderBottom: '1px solid #1e293b', padding: '0 16px' }} className="mobile-tabs">
+        <div className="hidden mobile-tabs border-b border-core-border px-4">
           {(['board', 'chat'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setMobileTab(tab)}
-              style={{
-                flex: 1, padding: '10px 0', fontSize: 13, fontWeight: 700,
-                textTransform: 'uppercase', letterSpacing: 1,
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: mobileTab === tab ? '#7ed957' : '#3d4654',
-                borderBottom: mobileTab === tab ? '2px solid #7ed957' : '2px solid transparent',
-              }}
-            >{tab === 'board' ? 'Tasks' : 'AI Chat'}</button>
+              className={[
+                'flex-1 py-2.5 text-[13px] font-bold uppercase tracking-[1px] bg-transparent border-none cursor-pointer transition-all duration-150',
+                mobileTab === tab
+                  ? 'text-core-green border-b-2 border-core-green'
+                  : 'text-core-text-muted border-b-2 border-transparent',
+              ].join(' ')}
+            >
+              {tab === 'board' ? 'Tasks' : 'AI Chat'}
+            </button>
           ))}
         </div>
       )}
 
       {/* Main Content */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+      <div className="flex-1 overflow-hidden flex">
         {activeView === 'dashboard' && (
           <>
             {/* Task Board */}
-            <div style={{ flex: 1, overflow: 'hidden', borderRight: '1px solid #1e293b' }} className="task-board-panel">
+            <div className="flex-1 overflow-hidden border-r border-core-border task-board-panel">
               <TaskBoard
                 tasks={tasks}
                 onToggleTask={handleToggleTask}
@@ -573,7 +609,7 @@ export default function TasksPage() {
               />
             </div>
             {/* Chat Sidebar */}
-            <div style={{ width: 380, flexShrink: 0, overflow: 'hidden', background: 'rgba(255,255,255,0.01)' }} className="chat-panel">
+            <div className="w-[380px] shrink-0 overflow-hidden bg-white/[0.01] chat-panel">
               <ChatWindow
                 messages={messages}
                 onSendMessage={handleSendMessage}
@@ -585,7 +621,7 @@ export default function TasksPage() {
         )}
 
         {activeView === 'clients' && (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
+          <div className="flex-1 overflow-hidden">
             <ClientManager
               clients={clients}
               projects={projects}
@@ -599,11 +635,11 @@ export default function TasksPage() {
         )}
 
         {activeView === 'projects' && (
-          <div style={{ flex: 1, overflow: 'auto', background: '#0d1117', padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div className="flex-1 overflow-auto bg-core-bg p-6">
+            <div className="flex justify-between items-center mb-5">
               <div>
-                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Projects</h2>
-                <p style={{ margin: '4px 0 0', fontSize: 13, color: '#7ed957', opacity: 0.8 }}>Visual node-based project planning.</p>
+                <h2 className="m-0 text-[22px] font-extrabold text-core-text">Projects</h2>
+                <p className="mt-1 mb-0 text-[13px] text-core-green opacity-80">Visual node-based project planning.</p>
               </div>
               <button
                 onClick={() => {
@@ -615,33 +651,38 @@ export default function TasksPage() {
                   }
                   setProjects(prev => [...prev, p])
                 }}
-                style={{ width: 36, height: 36, borderRadius: 8, background: '#7ed957', color: '#0d1117', border: 'none', cursor: 'pointer', fontSize: 20, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >+</button>
+                className="w-9 h-9 rounded-lg bg-core-green text-core-bg border-none cursor-pointer text-xl font-bold flex items-center justify-center"
+              >
+                <Plus size={18} />
+              </button>
             </div>
             {projects.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 60, color: '#3d4654' }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>{'\uD83D\uDCCB'}</div>
+              <div className="text-center py-16 text-core-text-muted">
                 <p>No projects yet. Create one to start planning.</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+              <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
                 {projects.map(p => (
                   <div
                     key={p.id}
                     onClick={() => setSelectedProjectId(p.id)}
-                    style={{
-                      background: '#161b22', border: '1px solid #1e293b', borderRadius: 12, padding: 18, cursor: 'pointer',
-                      transition: 'border-color 0.2s, transform 0.15s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#7ed957'; e.currentTarget.style.transform = 'scale(1.02)' }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.transform = 'scale(1)' }}
+                    className="bg-core-surface border border-core-border rounded-xl p-[18px] cursor-pointer transition-all duration-200 hover:border-core-green hover:scale-[1.02]"
                   >
-                    <h3 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700 }}>{p.title}</h3>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 6, background: p.status === 'active' ? 'rgba(126,217,87,0.15)' : 'rgba(139,149,165,0.15)', color: p.status === 'active' ? '#7ed957' : '#8b95a5' }}>{p.status}</span>
-                      <span style={{ fontSize: 11, color: '#3d4654' }}>{p.canvasNodes.length} nodes</span>
+                    <h3 className="m-0 mb-1.5 text-base font-bold text-core-text">{p.title}</h3>
+                    <div className="flex gap-2 items-center">
+                      <span className={[
+                        'text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md',
+                        p.status === 'active'
+                          ? 'bg-core-green/15 text-core-green'
+                          : 'bg-core-text-dim/15 text-core-text-dim',
+                      ].join(' ')}>
+                        {p.status}
+                      </span>
+                      <span className="text-[11px] text-core-text-muted">{p.canvasNodes.length} nodes</span>
                     </div>
-                    {p.description && <p style={{ margin: '8px 0 0', fontSize: 12, color: '#8b95a5' }}>{p.description}</p>}
+                    {p.description && (
+                      <p className="mt-2 mb-0 text-xs text-core-text-dim">{p.description}</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -650,7 +691,7 @@ export default function TasksPage() {
         )}
 
         {activeView === 'inbox' && (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
+          <div className="flex-1 overflow-hidden">
             <Inbox
               emails={emails}
               onRefresh={() => {/* CRM conversations API will be wired later */}}
@@ -661,7 +702,7 @@ export default function TasksPage() {
         )}
 
         {activeView === 'calendar' && (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
+          <div className="flex-1 overflow-hidden">
             <CalendarView
               events={events}
               onAddEvent={ev => setEvents(prev => [...prev, ev])}

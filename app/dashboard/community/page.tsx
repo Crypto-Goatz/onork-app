@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { MessageCircle, ExternalLink as ExternalLinkIcon } from 'lucide-react'
 
 type CommunityTab = 'forum' | 'announcements' | 'support'
 
@@ -27,7 +28,7 @@ export default function CommunityPage() {
   const announcementsUrl = `https://0nmcp.com/forum/c/announcements${userEmail ? `?sso_email=${encodeURIComponent(userEmail)}` : ''}`
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)', margin: '-24px' }}>
+    <div className="flex flex-col h-[calc(100vh-64px)] -m-6">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-3">
@@ -59,7 +60,7 @@ export default function CommunityPage() {
             className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
           >
             Open in new tab
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+            <ExternalLinkIcon className="size-3" />
           </a>
         </div>
       </div>
@@ -87,7 +88,7 @@ export default function CommunityPage() {
         {tab === 'support' && (
           <div className="flex items-center justify-center h-full p-8">
             <div className="max-w-md text-center">
-              <div className="text-4xl mb-4">💬</div>
+              <div className="flex items-center justify-center mb-4"><MessageCircle className="size-10 text-core-text-muted" /></div>
               <h2 className="text-lg font-bold mb-2">Need Help?</h2>
               <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                 Get help from the 0nCore team and community. Post in the forum or reach out directly.

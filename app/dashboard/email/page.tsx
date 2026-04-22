@@ -1,6 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import {
+  Inbox,
+  Send,
+  FileText,
+  Star,
+  Trash2,
+  Plus,
+  Search,
+  Reply,
+  Forward,
+  Trash,
+  Mail,
+  X,
+} from 'lucide-react'
 
 interface Email {
   id: string
@@ -58,52 +72,12 @@ function mapCrmConversations(conversations: any[]): Email[] {
 
 type Folder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'trash'
 
-const folders: { key: Folder; label: string; icon: React.ReactNode; count?: number }[] = [
-  {
-    key: 'inbox',
-    label: 'Inbox',
-    icon: (
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-      </svg>
-    ),
-  },
-  {
-    key: 'sent',
-    label: 'Sent',
-    icon: (
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-      </svg>
-    ),
-  },
-  {
-    key: 'drafts',
-    label: 'Drafts',
-    icon: (
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-      </svg>
-    ),
-  },
-  {
-    key: 'starred',
-    label: 'Starred',
-    icon: (
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-      </svg>
-    ),
-  },
-  {
-    key: 'trash',
-    label: 'Trash',
-    icon: (
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-      </svg>
-    ),
-  },
+const folders: { key: Folder; label: string; icon: React.ReactNode }[] = [
+  { key: 'inbox',   label: 'Inbox',   icon: <Inbox   size={16} /> },
+  { key: 'sent',    label: 'Sent',    icon: <Send    size={16} /> },
+  { key: 'drafts',  label: 'Drafts',  icon: <FileText size={16} /> },
+  { key: 'starred', label: 'Starred', icon: <Star    size={16} /> },
+  { key: 'trash',   label: 'Trash',   icon: <Trash2  size={16} /> },
 ]
 
 export default function EmailPage() {
@@ -136,7 +110,6 @@ export default function EmailPage() {
         setEmails(mapped)
         setSelectedEmail(mapped[0].id)
       } else {
-        // No conversations available
         setSelectedEmail(null)
       }
     } catch (err) {
@@ -155,7 +128,7 @@ export default function EmailPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contactId: composeTo, // In practice this would be a contact ID lookup
+          contactId: composeTo,
           message: composeBody,
           subject: composeSubject,
           type: 'Email',
@@ -193,7 +166,6 @@ export default function EmailPage() {
 
   const selected = emails.find((e) => e.id === selectedEmail)
 
-  // Dynamic folder counts
   const folderCounts: Record<Folder, number | undefined> = {
     inbox: unreadCount || undefined,
     sent: undefined,
@@ -207,317 +179,212 @@ export default function EmailPage() {
       <div className="jp-page-header">
         <h1 className="jp-page-title">Email</h1>
         <p className="jp-page-subtitle">
-          {loading ? 'Loading conversations...' : error ? 'No conversations yet' : 'CRM conversations and email management'}
+          {loading
+            ? 'Loading conversations...'
+            : error
+              ? 'No conversations yet'
+              : 'CRM conversations and email management'}
         </p>
       </div>
 
       {error && (
-        <div style={{ marginBottom: 16, padding: '8px 14px', borderRadius: 8, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', fontSize: '0.8125rem', color: 'var(--jp-red)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="mb-4 px-3.5 py-2 rounded-lg bg-core-red/10 border border-core-red/20 text-[0.8125rem] text-core-red flex items-center justify-between">
           <span>{error}</span>
-          <button onClick={fetchConversations} style={{ background: 'none', border: 'none', color: 'var(--jp-cyan)', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>Retry</button>
+          <button
+            onClick={fetchConversations}
+            className="bg-transparent border-none text-core-cyan text-[0.8125rem] font-semibold cursor-pointer"
+          >
+            Retry
+          </button>
         </div>
       )}
 
       {/* Search Bar */}
-      <div style={{ marginBottom: 16 }}>
-        <div className="jp-search" style={{ width: '100%', maxWidth: 480 }}>
+      <div className="mb-4">
+        <div className="jp-search w-full max-w-[480px]">
           <span className="jp-search-icon">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <Search size={16} />
           </span>
           <input
             type="text"
-            className="jp-search-input"
+            className="jp-search-input w-full"
             placeholder="Search emails..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ width: '100%' }}
           />
         </div>
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-          <div style={{ width: 32, height: 32, border: '2px solid var(--jp-green)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <div className="flex justify-center p-10">
+          <div className="w-8 h-8 border-2 border-core-green border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 240px)', minHeight: 500 }}>
+        <div className="flex gap-4 min-h-[500px]" style={{ height: 'calc(100vh - 240px)' }}>
           {/* Folder List */}
-          <div className="jp-card" style={{ width: 200, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--jp-border)' }}>
+          <div className="jp-card w-[200px] shrink-0 flex flex-col">
+            <div className="px-4 py-3 border-b border-core-border">
               <button
                 onClick={() => setShowCompose(true)}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px',
-                  background: 'var(--jp-green)',
-                  color: '#000',
-                  border: 'none',
-                  borderRadius: 'var(--jp-radius-sm)',
-                  fontSize: '0.8125rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
+                className="w-full px-4 py-2.5 bg-core-green text-black border-none rounded-[var(--jp-radius-sm)] text-[0.8125rem] font-bold cursor-pointer flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90"
               >
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
+                <Plus size={14} strokeWidth={2.5} />
                 Compose
               </button>
             </div>
-            <div style={{ padding: '8px' }}>
-              {folders.map((folder) => (
-                <div
-                  key={folder.key}
-                  onClick={() => { setActiveFolder(folder.key); setSelectedEmail(null) }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '9px 12px',
-                    borderRadius: 'var(--jp-radius-sm)',
-                    cursor: 'pointer',
-                    color: activeFolder === folder.key ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-                    background: activeFolder === folder.key ? 'var(--jp-green-glow)' : 'transparent',
-                    fontSize: '0.8125rem',
-                    fontWeight: 500,
-                    transition: 'all var(--jp-transition)',
-                  }}
-                >
-                  <span style={{ display: 'flex', flexShrink: 0 }}>{folder.icon}</span>
-                  <span style={{ flex: 1 }}>{folder.label}</span>
-                  {folderCounts[folder.key] && (
-                    <span style={{
-                      fontSize: '0.6875rem',
-                      fontWeight: 700,
-                      background: activeFolder === folder.key ? 'var(--jp-green)' : 'var(--jp-border-hi)',
-                      color: activeFolder === folder.key ? '#000' : 'var(--jp-text-secondary)',
-                      padding: '1px 7px',
-                      borderRadius: 10,
-                    }}>
-                      {folderCounts[folder.key]}
-                    </span>
-                  )}
-                </div>
-              ))}
+            <div className="p-2">
+              {folders.map((folder) => {
+                const isActive = activeFolder === folder.key
+                return (
+                  <div
+                    key={folder.key}
+                    onClick={() => { setActiveFolder(folder.key); setSelectedEmail(null) }}
+                    className={[
+                      'flex items-center gap-2.5 px-3 py-[9px] rounded-[var(--jp-radius-sm)] cursor-pointer text-[0.8125rem] font-medium transition-all',
+                      isActive
+                        ? 'text-core-green bg-core-green/10'
+                        : 'text-core-text-dim hover:bg-core-card-hover',
+                    ].join(' ')}
+                  >
+                    <span className="flex shrink-0">{folder.icon}</span>
+                    <span className="flex-1">{folder.label}</span>
+                    {folderCounts[folder.key] && (
+                      <span className={[
+                        'text-[0.6875rem] font-bold px-1.5 py-px rounded-full',
+                        isActive
+                          ? 'bg-core-green text-black'
+                          : 'bg-core-border text-core-text-dim',
+                      ].join(' ')}>
+                        {folderCounts[folder.key]}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
 
           {/* Email List */}
-          <div className="jp-card" style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--jp-border)', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>
+          <div className="jp-card w-[340px] shrink-0 flex flex-col overflow-hidden">
+            <div className="px-4 py-3.5 border-b border-core-border text-[0.8125rem] font-semibold text-core-text">
               {folders.find(f => f.key === activeFolder)?.label} ({filteredEmails.length})
             </div>
-            <div style={{ flex: 1, overflow: 'auto' }}>
+            <div className="flex-1 overflow-auto">
               {filteredEmails.length === 0 ? (
-                <div style={{ padding: 24, textAlign: 'center', color: 'var(--jp-text-muted)', fontSize: '0.8125rem' }}>
+                <div className="p-6 text-center text-core-text-muted text-[0.8125rem]">
                   No emails in this folder
                 </div>
               ) : (
-                filteredEmails.map((email) => (
-                  <div
-                    key={email.id}
-                    onClick={() => setSelectedEmail(email.id)}
-                    style={{
-                      padding: '14px 16px',
-                      borderBottom: '1px solid var(--jp-border)',
-                      cursor: 'pointer',
-                      background: selectedEmail === email.id ? 'var(--jp-green-glow)' : 'transparent',
-                      transition: 'background var(--jp-transition)',
-                      borderLeft: selectedEmail === email.id ? '3px solid var(--jp-green)' : '3px solid transparent',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                      <div style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        background: !email.read ? 'var(--jp-green)' : 'var(--jp-border-hi)',
-                        color: !email.read ? '#000' : 'var(--jp-text-secondary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.6875rem',
-                        fontWeight: 700,
-                        flexShrink: 0,
-                      }}>
-                        {email.initials}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          fontSize: '0.8125rem',
-                          fontWeight: email.read ? 500 : 700,
-                          color: email.read ? 'var(--jp-text-secondary)' : 'var(--jp-text)',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}>
-                          {email.from}
+                filteredEmails.map((email) => {
+                  const isSelected = selectedEmail === email.id
+                  return (
+                    <div
+                      key={email.id}
+                      onClick={() => setSelectedEmail(email.id)}
+                      className={[
+                        'px-4 py-3.5 border-b border-core-border cursor-pointer transition-colors border-l-[3px]',
+                        isSelected
+                          ? 'bg-core-green/10 border-l-core-green'
+                          : 'bg-transparent border-l-transparent hover:bg-core-card-hover',
+                      ].join(' ')}
+                    >
+                      <div className="flex items-center gap-2.5 mb-1">
+                        <div className={[
+                          'w-8 h-8 rounded-full flex items-center justify-center text-[0.6875rem] font-bold shrink-0',
+                          !email.read
+                            ? 'bg-core-green text-black'
+                            : 'bg-core-border text-core-text-dim',
+                        ].join(' ')}>
+                          {email.initials}
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={[
+                            'text-[0.8125rem] truncate',
+                            email.read
+                              ? 'font-medium text-core-text-dim'
+                              : 'font-bold text-core-text',
+                          ].join(' ')}>
+                            {email.from}
+                          </div>
+                        </div>
+                        <span className="text-[0.6875rem] text-core-text-muted shrink-0">
+                          {email.time}
+                        </span>
                       </div>
-                      <span style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)', flexShrink: 0 }}>
-                        {email.time}
-                      </span>
+                      <div className={[
+                        'text-[0.8125rem] truncate mb-0.5 pl-[42px]',
+                        email.read ? 'font-normal text-core-text' : 'font-semibold text-core-text',
+                      ].join(' ')}>
+                        {email.subject}
+                      </div>
+                      <div className="text-xs text-core-text-muted truncate pl-[42px]">
+                        {email.preview}
+                      </div>
+                      <div className="flex gap-1.5 mt-1.5 pl-[42px]">
+                        {!email.read && (
+                          <span className="w-2 h-2 rounded-full bg-core-green inline-block mt-0.5" />
+                        )}
+                        {email.starred && (
+                          <Star size={12} className="fill-core-amber text-core-amber" />
+                        )}
+                      </div>
                     </div>
-                    <div style={{
-                      fontSize: '0.8125rem',
-                      fontWeight: email.read ? 400 : 600,
-                      color: 'var(--jp-text)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      marginBottom: 2,
-                      paddingLeft: 42,
-                    }}>
-                      {email.subject}
-                    </div>
-                    <div style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--jp-text-muted)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      paddingLeft: 42,
-                    }}>
-                      {email.preview}
-                    </div>
-                    <div style={{ display: 'flex', gap: 6, marginTop: 6, paddingLeft: 42 }}>
-                      {!email.read && (
-                        <span style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          background: 'var(--jp-green)',
-                          display: 'inline-block',
-                          marginTop: 2,
-                        }} />
-                      )}
-                      {email.starred && (
-                        <svg width="12" height="12" fill="var(--jp-amber)" stroke="var(--jp-amber)" viewBox="0 0 24 24" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                        </svg>
-                      )}
-                    </div>
-                  </div>
-                ))
+                  )
+                })
               )}
             </div>
           </div>
 
           {/* Email Detail */}
-          <div className="jp-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div className="jp-card flex-1 flex flex-col overflow-hidden">
             {selected ? (
               <>
-                <div style={{
-                  padding: '16px 20px',
-                  borderBottom: '1px solid var(--jp-border)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}>
+                <div className="px-5 py-4 border-b border-core-border flex items-center justify-between">
                   <div>
-                    <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--jp-text)', margin: 0 }}>{selected.subject}</h2>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginTop: 2 }}>{selected.date}</div>
+                    <h2 className="text-base font-bold text-core-text m-0">{selected.subject}</h2>
+                    <div className="text-xs text-core-text-muted mt-0.5">{selected.date}</div>
                   </div>
-                  <div style={{ display: 'flex', gap: 4 }}>
+                  <div className="flex gap-1">
                     <button className="jp-header-btn" title="Reply">
-                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                      </svg>
+                      <Reply size={16} />
                     </button>
                     <button className="jp-header-btn" title="Forward">
-                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
-                      </svg>
+                      <Forward size={16} />
                     </button>
                     <button className="jp-header-btn" title="Delete">
-                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      <Trash size={16} />
                     </button>
                   </div>
                 </div>
-                <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid var(--jp-border)' }}>
-                  <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    background: 'var(--jp-green)',
-                    color: '#000',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.8125rem',
-                    fontWeight: 700,
-                    flexShrink: 0,
-                  }}>
+                <div className="px-5 py-4 flex items-center gap-3 border-b border-core-border">
+                  <div className="w-10 h-10 rounded-full bg-core-green text-black flex items-center justify-center text-[0.8125rem] font-bold shrink-0">
                     {selected.initials}
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)' }}>{selected.from}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>to me</div>
+                    <div className="text-sm font-semibold text-core-text">{selected.from}</div>
+                    <div className="text-xs text-core-text-muted">to me</div>
                   </div>
                 </div>
-                <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
-                  <pre style={{
-                    whiteSpace: 'pre-wrap',
-                    fontFamily: 'inherit',
-                    fontSize: '0.875rem',
-                    lineHeight: 1.7,
-                    color: 'var(--jp-text-secondary)',
-                    margin: 0,
-                  }}>
+                <div className="flex-1 overflow-auto px-6 py-5">
+                  <pre className="whitespace-pre-wrap font-[inherit] text-sm leading-[1.7] text-core-text-dim m-0">
                     {selected.body}
                   </pre>
                 </div>
-                <div style={{ padding: '12px 20px', borderTop: '1px solid var(--jp-border)' }}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button style={{
-                      padding: '8px 20px',
-                      background: 'var(--jp-green)',
-                      color: '#000',
-                      border: 'none',
-                      borderRadius: 'var(--jp-radius-sm)',
-                      fontSize: '0.8125rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}>
+                <div className="px-5 py-3 border-t border-core-border">
+                  <div className="flex gap-2">
+                    <button className="px-5 py-2 bg-core-green text-black border-none rounded-[var(--jp-radius-sm)] text-[0.8125rem] font-semibold cursor-pointer hover:opacity-90 transition-opacity">
                       Reply
                     </button>
-                    <button style={{
-                      padding: '8px 20px',
-                      background: 'transparent',
-                      color: 'var(--jp-text-secondary)',
-                      border: '1px solid var(--jp-border)',
-                      borderRadius: 'var(--jp-radius-sm)',
-                      fontSize: '0.8125rem',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                    }}>
+                    <button className="px-5 py-2 bg-transparent text-core-text-dim border border-core-border rounded-[var(--jp-radius-sm)] text-[0.8125rem] font-medium cursor-pointer hover:bg-core-card-hover transition-colors">
                       Forward
                     </button>
                   </div>
                 </div>
               </>
             ) : (
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'column',
-                gap: 8,
-                color: 'var(--jp-text-muted)',
-              }}>
-                <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span style={{ fontSize: '0.875rem' }}>Select an email to read</span>
+              <div className="flex-1 flex items-center justify-center flex-col gap-2 text-core-text-muted">
+                <Mail size={48} strokeWidth={1} />
+                <span className="text-sm">Select an email to read</span>
               </div>
             )}
           </div>
@@ -526,94 +393,53 @@ export default function EmailPage() {
 
       {/* Compose Modal */}
       {showCompose && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000,
-        }}
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"
           onClick={() => setShowCompose(false)}
         >
           <div
-            className="jp-card"
-            style={{ width: 560, maxWidth: '90vw' }}
+            className="jp-card w-[560px] max-w-[90vw]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="jp-card-header">
-              <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>New Email</h3>
+              <h3 className="text-sm font-semibold text-core-text m-0">New Email</h3>
               <button className="jp-header-btn" onClick={() => setShowCompose(false)}>
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X size={16} strokeWidth={2} />
               </button>
             </div>
-            <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="jp-card-body flex flex-col gap-3">
               <input
                 type="text"
                 placeholder="To (Contact ID or email)"
-                className="jp-search-input"
+                className="jp-search-input w-full pl-3.5"
                 value={composeTo}
                 onChange={(e) => setComposeTo(e.target.value)}
-                style={{ width: '100%', paddingLeft: 14 }}
               />
               <input
                 type="text"
                 placeholder="Subject"
-                className="jp-search-input"
+                className="jp-search-input w-full pl-3.5"
                 value={composeSubject}
                 onChange={(e) => setComposeSubject(e.target.value)}
-                style={{ width: '100%', paddingLeft: 14 }}
               />
               <textarea
                 placeholder="Write your message..."
                 rows={8}
                 value={composeBody}
                 onChange={(e) => setComposeBody(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: 14,
-                  background: 'var(--jp-bg-input)',
-                  border: '1px solid var(--jp-border)',
-                  borderRadius: 'var(--jp-radius-sm)',
-                  color: 'var(--jp-text)',
-                  fontSize: '0.875rem',
-                  resize: 'vertical',
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                }}
+                className="w-full p-3.5 bg-[var(--jp-bg-input)] border border-core-border rounded-[var(--jp-radius-sm)] text-core-text text-sm resize-y outline-none font-[inherit] focus:border-core-green transition-colors"
               />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setShowCompose(false)}
-                  style={{
-                    padding: '8px 20px',
-                    background: 'transparent',
-                    color: 'var(--jp-text-secondary)',
-                    border: '1px solid var(--jp-border)',
-                    borderRadius: 'var(--jp-radius-sm)',
-                    fontSize: '0.8125rem',
-                    cursor: 'pointer',
-                  }}
+                  className="px-5 py-2 bg-transparent text-core-text-dim border border-core-border rounded-[var(--jp-radius-sm)] text-[0.8125rem] cursor-pointer hover:bg-core-card-hover transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSend}
                   disabled={sending}
-                  style={{
-                    padding: '8px 24px',
-                    background: 'var(--jp-green)',
-                    color: '#000',
-                    border: 'none',
-                    borderRadius: 'var(--jp-radius-sm)',
-                    fontSize: '0.8125rem',
-                    fontWeight: 700,
-                    cursor: sending ? 'wait' : 'pointer',
-                    opacity: sending ? 0.7 : 1,
-                  }}
+                  className="px-6 py-2 bg-core-green text-black border-none rounded-[var(--jp-radius-sm)] text-[0.8125rem] font-bold cursor-pointer transition-opacity disabled:opacity-70 disabled:cursor-wait hover:opacity-90"
                 >
                   {sending ? 'Sending...' : 'Send'}
                 </button>

@@ -1,6 +1,22 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import {
+  Building2,
+  Users,
+  Puzzle,
+  ShieldCheck,
+  RefreshCw,
+  LayoutDashboard,
+  MapPin,
+  Briefcase,
+  Zap,
+  Archive,
+  X,
+  ChevronRight,
+  Check,
+  Circle,
+} from 'lucide-react'
 
 interface Location {
   id: string
@@ -202,27 +218,23 @@ export default function AgencyCommandCenter() {
 
   const totalContacts = locations.reduce((sum, l) => sum + l.contactCount, 0)
 
-  const tabs: { key: TabKey; label: string; icon: string }[] = [
-    { key: 'overview', label: 'Overview', icon: '◎' },
-    { key: 'locations', label: 'Locations', icon: '◉' },
-    { key: 'workforce', label: 'Workforce', icon: '◈' },
-    { key: 'operations', label: 'Bulk Ops', icon: '⚡' },
-    { key: 'snapshots', label: 'Snapshots', icon: '◆' },
+  const tabs: { key: TabKey; label: string; Icon: React.ElementType }[] = [
+    { key: 'overview', label: 'Overview', Icon: LayoutDashboard },
+    { key: 'locations', label: 'Locations', Icon: MapPin },
+    { key: 'workforce', label: 'Workforce', Icon: Briefcase },
+    { key: 'operations', label: 'Bulk Ops', Icon: Zap },
+    { key: 'snapshots', label: 'Snapshots', Icon: Archive },
   ]
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+    <div className="max-w-[1200px] mx-auto animate-fade-in">
       {/* Header */}
-      <div className="jp-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="jp-page-header flex items-center justify-between">
         <div>
-          <h1 className="jp-page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg, rgba(110,224,90,0.15), rgba(0,212,255,0.10))',
-              border: '1px solid rgba(110,224,90,0.25)',
-              fontSize: 18,
-            }}>⌘</span>
+          <h1 className="jp-page-title flex items-center gap-2.5">
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-[10px] bg-gradient-to-br from-core-green/15 to-core-cyan/10 border border-core-green/25 text-lg">
+              <Building2 className="w-5 h-5 text-core-green" />
+            </span>
             Agency Command Center
           </h1>
           <p className="jp-page-subtitle">
@@ -232,67 +244,33 @@ export default function AgencyCommandCenter() {
         <button
           onClick={fetchLocations}
           disabled={loading}
-          style={{
-            padding: '8px 16px',
-            borderRadius: 8,
-            border: '1px solid var(--jp-border)',
-            background: 'var(--jp-surface)',
-            color: 'var(--jp-text-secondary)',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            opacity: loading ? 0.5 : 1,
-          }}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-core-border bg-core-surface text-core-text-dim text-xs font-semibold cursor-pointer transition-opacity disabled:opacity-50"
         >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Syncing...' : 'Refresh'}
         </button>
       </div>
 
       {error && (
-        <div style={{
-          padding: '12px 16px',
-          borderRadius: 10,
-          background: 'rgba(239,68,68,0.08)',
-          border: '1px solid rgba(239,68,68,0.2)',
-          color: '#ef4444',
-          fontSize: '0.85rem',
-          marginBottom: 16,
-        }}>
+        <div className="px-4 py-3 rounded-[10px] bg-core-red/8 border border-core-red/20 text-core-red text-sm mb-4">
           {error}
         </div>
       )}
 
       {/* Tab Bar */}
-      <div style={{
-        display: 'flex',
-        gap: 4,
-        padding: 4,
-        marginBottom: 20,
-        borderRadius: 12,
-        background: 'var(--jp-surface)',
-        border: '1px solid var(--jp-border)',
-      }}>
+      <div className="flex gap-1 p-1 mb-5 rounded-xl bg-core-surface border border-core-border">
         {tabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            style={{
-              flex: 1,
-              padding: '10px 16px',
-              borderRadius: 8,
-              border: 'none',
-              background: activeTab === tab.key ? 'var(--jp-surface-elevated)' : 'transparent',
-              color: activeTab === tab.key ? 'var(--jp-green)' : 'var(--jp-text-muted)',
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'all 0.15s',
-              boxShadow: activeTab === tab.key ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-            }}
+            className={[
+              'flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-none text-[0.8125rem] font-semibold cursor-pointer transition-all duration-150',
+              activeTab === tab.key
+                ? 'bg-core-card text-core-green shadow-sm'
+                : 'bg-transparent text-core-text-muted',
+            ].join(' ')}
           >
-            <span style={{ marginRight: 6 }}>{tab.icon}</span>
+            <tab.Icon className="w-3.5 h-3.5" />
             {tab.label}
           </button>
         ))}
@@ -307,46 +285,29 @@ export default function AgencyCommandCenter() {
 
       {/* Location Detail Drawer */}
       {selectedLocation && (
-        <div style={{
-          position: 'fixed', top: 0, right: 0, bottom: 0,
-          width: 480, maxWidth: '90vw',
-          background: 'var(--jp-surface-elevated)',
-          borderLeft: '1px solid var(--jp-border)',
-          boxShadow: '-8px 0 30px rgba(0,0,0,0.08)',
-          zIndex: 1000,
-          overflowY: 'auto',
-          padding: 24,
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--jp-text)', margin: 0 }}>
+        <div className="fixed top-0 right-0 bottom-0 w-[480px] max-w-[90vw] bg-core-card border-l border-core-border shadow-[-8px_0_30px_rgba(0,0,0,0.08)] z-[1000] overflow-y-auto p-6">
+          <div className="flex justify-between items-center mb-5">
+            <h2 className="text-[1.1rem] font-bold text-core-text m-0">
               Location Details
             </h2>
             <button
               onClick={() => setSelectedLocation(null)}
-              style={{
-                width: 32, height: 32, borderRadius: 8,
-                border: '1px solid var(--jp-border)',
-                background: 'transparent',
-                color: 'var(--jp-text-muted)',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
+              className="w-8 h-8 rounded-lg border border-core-border bg-transparent text-core-text-muted cursor-pointer text-base flex items-center justify-center hover:bg-core-card-hover transition-colors"
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           </div>
 
           {detailLoading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--jp-text-muted)' }}>
+            <div className="py-10 text-center text-core-text-muted">
               Loading location data...
             </div>
           ) : locationDetail ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="flex flex-col gap-4">
               {/* Info */}
               <div className="jp-card">
-                <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--jp-text)', margin: 0 }}>
+                <div className="jp-card-body flex flex-col gap-2.5">
+                  <h3 className="text-base font-bold text-core-text m-0">
                     {locationDetail.name}
                   </h3>
                   {[
@@ -357,9 +318,9 @@ export default function AgencyCommandCenter() {
                     { label: 'Timezone', value: locationDetail.timezone },
                     { label: 'Address', value: [locationDetail.address, locationDetail.city, locationDetail.state, locationDetail.postalCode].filter(Boolean).join(', ') },
                   ].map(row => row.value ? (
-                    <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
-                      <span style={{ color: 'var(--jp-text-muted)' }}>{row.label}</span>
-                      <span style={{ color: 'var(--jp-text-secondary)', fontFamily: 'var(--jp-font-mono)', fontSize: '0.75rem', maxWidth: 260, textAlign: 'right', wordBreak: 'break-all' }}>{row.value}</span>
+                    <div key={row.label} className="flex justify-between text-[0.8125rem]">
+                      <span className="text-core-text-muted">{row.label}</span>
+                      <span className="text-core-text-dim font-mono text-xs max-w-[260px] text-right break-all">{row.value}</span>
                     </div>
                   ) : null)}
                 </div>
@@ -369,24 +330,15 @@ export default function AgencyCommandCenter() {
               {locationPipelines.length > 0 && (
                 <div className="jp-card">
                   <div className="jp-card-header"><h6>Pipelines ({locationPipelines.length})</h6></div>
-                  <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div className="jp-card-body flex flex-col gap-2">
                     {locationPipelines.map(p => (
-                      <div key={p.id} style={{
-                        padding: '10px 12px',
-                        borderRadius: 8,
-                        background: 'var(--jp-surface)',
-                        border: '1px solid var(--jp-border)',
-                      }}>
-                        <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>{p.name}</div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+                      <div key={p.id} className="px-3 py-2.5 rounded-lg bg-core-surface border border-core-border">
+                        <div className="text-[0.8125rem] font-semibold text-core-text">{p.name}</div>
+                        <div className="flex flex-wrap gap-1 mt-1.5">
                           {p.stages?.map((s: any) => (
-                            <span key={s.id} style={{
-                              padding: '2px 8px', borderRadius: 6,
-                              background: 'rgba(110,224,90,0.08)',
-                              border: '1px solid rgba(110,224,90,0.15)',
-                              color: 'var(--jp-green)',
-                              fontSize: '0.6875rem',
-                            }}>{s.name}</span>
+                            <span key={s.id} className="px-2 py-0.5 rounded-md bg-core-green/8 border border-core-green/15 text-core-green text-[0.6875rem]">
+                              {s.name}
+                            </span>
                           ))}
                         </div>
                       </div>
@@ -399,19 +351,21 @@ export default function AgencyCommandCenter() {
               {locationUsers.length > 0 && (
                 <div className="jp-card">
                   <div className="jp-card-header"><h6>Users ({locationUsers.length})</h6></div>
-                  <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div className="jp-card-body flex flex-col gap-1.5">
                     {locationUsers.map(u => (
-                      <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8125rem' }}>
+                      <div key={u.id} className="flex justify-between items-center text-[0.8125rem]">
                         <div>
-                          <div style={{ fontWeight: 600, color: 'var(--jp-text)' }}>{u.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>{u.email}</div>
+                          <div className="font-semibold text-core-text">{u.name}</div>
+                          <div className="text-xs text-core-text-muted">{u.email}</div>
                         </div>
-                        <span style={{
-                          padding: '2px 8px', borderRadius: 6,
-                          background: u.role === 'admin' ? 'rgba(167,139,250,0.10)' : 'rgba(0,212,255,0.08)',
-                          color: u.role === 'admin' ? 'var(--jp-purple)' : 'var(--jp-cyan)',
-                          fontSize: '0.6875rem', fontWeight: 600,
-                        }}>{u.role || u.type || 'user'}</span>
+                        <span className={[
+                          'px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold',
+                          u.role === 'admin'
+                            ? 'bg-core-purple/10 text-core-purple'
+                            : 'bg-core-cyan/8 text-core-cyan',
+                        ].join(' ')}>
+                          {u.role || u.type || 'user'}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -422,11 +376,11 @@ export default function AgencyCommandCenter() {
               {locationCalendars.length > 0 && (
                 <div className="jp-card">
                   <div className="jp-card-header"><h6>Calendars ({locationCalendars.length})</h6></div>
-                  <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div className="jp-card-body flex flex-col gap-1.5">
                     {locationCalendars.map(c => (
-                      <div key={c.id} style={{ fontSize: '0.8125rem' }}>
-                        <div style={{ fontWeight: 600, color: 'var(--jp-text)' }}>{c.name}</div>
-                        {c.description && <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>{c.description}</div>}
+                      <div key={c.id} className="text-[0.8125rem]">
+                        <div className="font-semibold text-core-text">{c.name}</div>
+                        {c.description && <div className="text-xs text-core-text-muted">{c.description}</div>}
                       </div>
                     ))}
                   </div>
@@ -434,7 +388,7 @@ export default function AgencyCommandCenter() {
               )}
             </div>
           ) : (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--jp-text-muted)' }}>
+            <div className="py-10 text-center text-core-text-muted">
               No detail available
             </div>
           )}
@@ -445,11 +399,7 @@ export default function AgencyCommandCenter() {
       {selectedLocation && (
         <div
           onClick={() => setSelectedLocation(null)}
-          style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.2)',
-            zIndex: 999,
-          }}
+          className="fixed inset-0 bg-black/20 z-[999]"
         />
       )}
     </div>
@@ -458,19 +408,21 @@ export default function AgencyCommandCenter() {
   // ── Tab: Overview ─────────────────────────────────────────
   function renderOverview() {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="flex flex-col gap-4">
         {/* Stats Grid */}
         <div className="jp-stat-grid">
           {[
-            { label: 'Locations', value: locations.length.toString(), change: 'Active', colorClass: 'green', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" /></svg> },
-            { label: 'Total Contacts', value: totalContacts.toLocaleString(), change: 'Synced', colorClass: 'cyan', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
-            { label: '0nMCP Tools', value: '1,183', change: '99 Services', colorClass: 'purple', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg> },
-            { label: 'Patents', value: '5', change: 'Filed', colorClass: 'amber', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg> },
+            { label: 'Locations', value: locations.length.toString(), change: 'Active', colorClass: 'green', Icon: Building2 },
+            { label: 'Total Contacts', value: totalContacts.toLocaleString(), change: 'Synced', colorClass: 'cyan', Icon: Users },
+            { label: '0nMCP Tools', value: '1,183', change: '99 Services', colorClass: 'purple', Icon: Puzzle },
+            { label: 'Patents', value: '5', change: 'Filed', colorClass: 'amber', Icon: ShieldCheck },
           ].map(card => (
             <div key={card.label} className={`jp-stat-card ${card.colorClass}`}>
               <div className="jp-stat-header">
                 <span className="jp-stat-label">{card.label}</span>
-                <div className={`jp-stat-icon ${card.colorClass}`}>{card.icon}</div>
+                <div className={`jp-stat-icon ${card.colorClass}`}>
+                  <card.Icon className="w-4 h-4" />
+                </div>
               </div>
               <div className="jp-stat-value">{card.value}</div>
               <span className="jp-stat-change up">{card.change}</span>
@@ -482,45 +434,31 @@ export default function AgencyCommandCenter() {
         <div className="jp-card">
           <div className="jp-card-header">
             <h6>All Sub-Locations</h6>
-            <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>{locations.length} total</span>
+            <span className="text-xs text-core-text-muted">{locations.length} total</span>
           </div>
           <div className="jp-card-body">
             {loading ? (
-              <div style={{ padding: 30, textAlign: 'center', color: 'var(--jp-text-muted)' }}>Loading locations...</div>
+              <div className="py-8 text-center text-core-text-muted">Loading locations...</div>
             ) : locations.length === 0 ? (
-              <div style={{ padding: 30, textAlign: 'center', color: 'var(--jp-text-muted)' }}>No locations found. Check Agency PIT configuration.</div>
+              <div className="py-8 text-center text-core-text-muted">No locations found. Check Agency PIT configuration.</div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+              <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
                 {locations.map(loc => (
                   <button
                     key={loc.id}
                     onClick={() => loadLocationDetail(loc.id)}
-                    style={{
-                      padding: '14px 16px',
-                      borderRadius: 10,
-                      border: '1px solid var(--jp-border)',
-                      background: 'var(--jp-surface)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontFamily: 'inherit',
-                      transition: 'all 0.15s',
-                    }}
+                    className="p-[14px_16px] rounded-[10px] border border-core-border bg-core-surface cursor-pointer text-left transition-all duration-150 hover:border-core-border-hi hover:bg-core-card-hover"
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div className="flex justify-between items-start">
                       <div>
-                        <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--jp-text)', marginBottom: 4 }}>{loc.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>{loc.email}</div>
+                        <div className="text-sm font-bold text-core-text mb-1">{loc.name}</div>
+                        <div className="text-xs text-core-text-muted">{loc.email}</div>
                       </div>
-                      <span style={{
-                        padding: '2px 8px', borderRadius: 6,
-                        background: 'rgba(0,212,255,0.08)',
-                        color: 'var(--jp-cyan)',
-                        fontSize: '0.6875rem', fontWeight: 700,
-                      }}>
+                      <span className="px-2 py-0.5 rounded-md bg-core-cyan/8 text-core-cyan text-[0.6875rem] font-bold">
                         {loc.contactCount.toLocaleString()}
                       </span>
                     </div>
-                    <div style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)', marginTop: 6, fontFamily: 'var(--jp-font-mono)' }}>
+                    <div className="text-[0.6875rem] text-core-text-muted mt-1.5 font-mono">
                       {loc.id.slice(0, 20)}...
                     </div>
                   </button>
@@ -531,24 +469,24 @@ export default function AgencyCommandCenter() {
         </div>
 
         {/* Quick Access */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="grid grid-cols-2 gap-4">
           <div className="jp-card">
             <div className="jp-card-header"><h6>Ecosystem Products</h6></div>
-            <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="jp-card-body flex flex-col gap-2">
               {[
-                { name: '0nMCP', desc: 'Universal AI API Orchestrator', status: 'v4.5.0', color: 'var(--jp-green)' },
-                { name: '0nCore', desc: 'AI-Powered CRM', status: 'Live', color: 'var(--jp-cyan)' },
-                { name: '0nAI', desc: 'Command Center', status: 'Live', color: 'var(--jp-purple)' },
-                { name: '0nmcp.com', desc: 'Marketing + Community', status: '824+ pages', color: 'var(--jp-amber)' },
-                { name: 'Marketplace', desc: 'Workflow Store', status: 'Live', color: 'var(--jp-green)' },
-                { name: '0nDefender', desc: 'Security & Patents', status: '5 Patents', color: '#ef4444' },
+                { name: '0nMCP', desc: 'Universal AI API Orchestrator', status: 'v4.5.0', colorClass: 'text-core-green' },
+                { name: '0nCore', desc: 'AI-Powered CRM', status: 'Live', colorClass: 'text-core-cyan' },
+                { name: '0nAI', desc: 'Command Center', status: 'Live', colorClass: 'text-core-purple' },
+                { name: '0nmcp.com', desc: 'Marketing + Community', status: '824+ pages', colorClass: 'text-core-amber' },
+                { name: 'Marketplace', desc: 'Workflow Store', status: 'Live', colorClass: 'text-core-green' },
+                { name: '0nDefender', desc: 'Security & Patents', status: '5 Patents', colorClass: 'text-core-red' },
               ].map(p => (
-                <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--jp-border)' }}>
+                <div key={p.name} className="flex justify-between items-center py-2 border-b border-core-border last:border-b-0">
                   <div>
-                    <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>{p.name}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--jp-text-muted)' }}>{p.desc}</div>
+                    <div className="text-[0.8125rem] font-semibold text-core-text">{p.name}</div>
+                    <div className="text-[0.7rem] text-core-text-muted">{p.desc}</div>
                   </div>
-                  <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: p.color }}>{p.status}</span>
+                  <span className={`text-[0.6875rem] font-bold ${p.colorClass}`}>{p.status}</span>
                 </div>
               ))}
             </div>
@@ -586,41 +524,42 @@ export default function AgencyCommandCenter() {
       <div className="jp-card">
         <div className="jp-card-header">
           <h6>All CRM Locations</h6>
-          <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)' }}>Click to inspect</span>
+          <span className="text-xs text-core-text-muted">Click to inspect</span>
         </div>
-        <div className="jp-card-body" style={{ overflow: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+        <div className="jp-card-body overflow-auto">
+          <table className="w-full border-collapse text-[0.8125rem]">
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--jp-border)' }}>
+              <tr className="border-b border-core-border">
                 {['Name', 'Email', 'Phone', 'Contacts', 'Timezone', ''].map(h => (
-                  <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: 'var(--jp-text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>{h}</th>
+                  <th key={h} className="px-2.5 py-2 text-left text-core-text-muted text-xs font-semibold">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {locations.map(loc => (
-                <tr key={loc.id} style={{ borderBottom: '1px solid var(--jp-border)', cursor: 'pointer' }} onClick={() => loadLocationDetail(loc.id)}>
-                  <td style={{ padding: '10px', fontWeight: 600, color: 'var(--jp-text)' }}>{loc.name}</td>
-                  <td style={{ padding: '10px', color: 'var(--jp-text-secondary)' }}>{loc.email}</td>
-                  <td style={{ padding: '10px', color: 'var(--jp-text-secondary)' }}>{loc.phone || '—'}</td>
-                  <td style={{ padding: '10px' }}>
-                    <span style={{
-                      padding: '2px 8px', borderRadius: 6,
-                      background: 'rgba(0,212,255,0.08)',
-                      color: 'var(--jp-cyan)',
-                      fontSize: '0.75rem', fontWeight: 700,
-                    }}>{loc.contactCount.toLocaleString()}</span>
+                <tr
+                  key={loc.id}
+                  className="border-b border-core-border cursor-pointer hover:bg-core-card-hover transition-colors"
+                  onClick={() => loadLocationDetail(loc.id)}
+                >
+                  <td className="px-2.5 py-2.5 font-semibold text-core-text">{loc.name}</td>
+                  <td className="px-2.5 py-2.5 text-core-text-dim">{loc.email}</td>
+                  <td className="px-2.5 py-2.5 text-core-text-dim">{loc.phone || '—'}</td>
+                  <td className="px-2.5 py-2.5">
+                    <span className="px-2 py-0.5 rounded-md bg-core-cyan/8 text-core-cyan text-xs font-bold">
+                      {loc.contactCount.toLocaleString()}
+                    </span>
                   </td>
-                  <td style={{ padding: '10px', color: 'var(--jp-text-muted)', fontSize: '0.75rem' }}>{loc.settings?.timezone || '—'}</td>
-                  <td style={{ padding: '10px' }}>
-                    <span style={{ color: 'var(--jp-green)', fontSize: '0.75rem' }}>→</span>
+                  <td className="px-2.5 py-2.5 text-core-text-muted text-xs">{loc.settings?.timezone || '—'}</td>
+                  <td className="px-2.5 py-2.5">
+                    <ChevronRight className="w-3.5 h-3.5 text-core-green" />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
           {locations.length === 0 && !loading && (
-            <div style={{ padding: 30, textAlign: 'center', color: 'var(--jp-text-muted)' }}>No locations found</div>
+            <div className="py-8 text-center text-core-text-muted">No locations found</div>
           )}
         </div>
       </div>
@@ -630,26 +569,21 @@ export default function AgencyCommandCenter() {
   // ── Tab: Workforce ────────────────────────────────────────
   function renderWorkforce() {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="flex flex-col gap-4">
         <div className="jp-card">
           <div className="jp-card-header"><h6>Workforce — Select a Location</h6></div>
           <div className="jp-card-body">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div className="flex flex-wrap gap-2">
               {locations.map(loc => (
                 <button
                   key={loc.id}
                   onClick={() => loadLocationDetail(loc.id)}
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: 8,
-                    border: selectedLocation === loc.id ? '1px solid var(--jp-green-dim)' : '1px solid var(--jp-border)',
-                    background: selectedLocation === loc.id ? 'var(--jp-green-glow)' : 'var(--jp-surface)',
-                    color: selectedLocation === loc.id ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                  }}
+                  className={[
+                    'px-3.5 py-2 rounded-lg text-[0.8rem] font-semibold cursor-pointer transition-all duration-150',
+                    selectedLocation === loc.id
+                      ? 'border border-core-green-dim bg-core-green/8 text-core-green'
+                      : 'border border-core-border bg-core-surface text-core-text-dim',
+                  ].join(' ')}
                 >
                   {loc.name}
                 </button>
@@ -659,37 +593,39 @@ export default function AgencyCommandCenter() {
         </div>
 
         {selectedLocation && !detailLoading && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="grid grid-cols-2 gap-4">
             <div className="jp-card">
               <div className="jp-card-header"><h6>Users</h6></div>
-              <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="jp-card-body flex flex-col gap-2">
                 {locationUsers.length === 0 ? (
-                  <div style={{ color: 'var(--jp-text-muted)', fontSize: '0.8125rem' }}>No users found</div>
+                  <div className="text-core-text-muted text-[0.8125rem]">No users found</div>
                 ) : locationUsers.map(u => (
-                  <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--jp-border)' }}>
+                  <div key={u.id} className="flex justify-between items-center py-2 border-b border-core-border last:border-b-0">
                     <div>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>{u.name}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--jp-text-muted)' }}>{u.email}</div>
+                      <div className="text-[0.8125rem] font-semibold text-core-text">{u.name}</div>
+                      <div className="text-[0.7rem] text-core-text-muted">{u.email}</div>
                     </div>
-                    <span style={{
-                      padding: '2px 8px', borderRadius: 6,
-                      background: u.role === 'admin' ? 'rgba(167,139,250,0.10)' : 'rgba(0,212,255,0.08)',
-                      color: u.role === 'admin' ? 'var(--jp-purple)' : 'var(--jp-cyan)',
-                      fontSize: '0.6875rem', fontWeight: 600,
-                    }}>{u.role || 'user'}</span>
+                    <span className={[
+                      'px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold',
+                      u.role === 'admin'
+                        ? 'bg-core-purple/10 text-core-purple'
+                        : 'bg-core-cyan/8 text-core-cyan',
+                    ].join(' ')}>
+                      {u.role || 'user'}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="jp-card">
               <div className="jp-card-header"><h6>Calendars</h6></div>
-              <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="jp-card-body flex flex-col gap-2">
                 {locationCalendars.length === 0 ? (
-                  <div style={{ color: 'var(--jp-text-muted)', fontSize: '0.8125rem' }}>No calendars found</div>
+                  <div className="text-core-text-muted text-[0.8125rem]">No calendars found</div>
                 ) : locationCalendars.map(c => (
-                  <div key={c.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--jp-border)' }}>
-                    <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>{c.name}</div>
-                    {c.description && <div style={{ fontSize: '0.7rem', color: 'var(--jp-text-muted)' }}>{c.description}</div>}
+                  <div key={c.id} className="py-2 border-b border-core-border last:border-b-0">
+                    <div className="text-[0.8125rem] font-semibold text-core-text">{c.name}</div>
+                    {c.description && <div className="text-[0.7rem] text-core-text-muted">{c.description}</div>}
                   </div>
                 ))}
               </div>
@@ -698,7 +634,7 @@ export default function AgencyCommandCenter() {
         )}
 
         {detailLoading && (
-          <div style={{ padding: 30, textAlign: 'center', color: 'var(--jp-text-muted)' }}>Loading workforce data...</div>
+          <div className="py-8 text-center text-core-text-muted">Loading workforce data...</div>
         )}
       </div>
     )
@@ -707,70 +643,63 @@ export default function AgencyCommandCenter() {
   // ── Tab: Bulk Ops ─────────────────────────────────────────
   function renderOperations() {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="flex flex-col gap-4">
         <div className="jp-card">
           <div className="jp-card-header">
             <h6>Bulk Operations</h6>
             <button
               onClick={selectAllLocations}
-              style={{
-                padding: '4px 12px', borderRadius: 6,
-                border: '1px solid var(--jp-border)',
-                background: bulkSelection.size === locations.length ? 'var(--jp-green-glow)' : 'transparent',
-                color: bulkSelection.size === locations.length ? 'var(--jp-green)' : 'var(--jp-text-muted)',
-                fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-              }}
+              className={[
+                'px-3 py-1 rounded-md border text-xs font-semibold cursor-pointer transition-all',
+                bulkSelection.size === locations.length
+                  ? 'border-core-border bg-core-green/8 text-core-green'
+                  : 'border-core-border bg-transparent text-core-text-muted',
+              ].join(' ')}
             >
               {bulkSelection.size === locations.length ? 'Deselect All' : 'Select All'}
             </button>
           </div>
           <div className="jp-card-body">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+            <div className="flex flex-wrap gap-1.5 mb-4">
               {locations.map(loc => (
                 <button
                   key={loc.id}
                   onClick={() => toggleBulkSelect(loc.id)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 8,
-                    border: bulkSelection.has(loc.id) ? '1px solid var(--jp-green-dim)' : '1px solid var(--jp-border)',
-                    background: bulkSelection.has(loc.id) ? 'var(--jp-green-glow)' : 'transparent',
-                    color: bulkSelection.has(loc.id) ? 'var(--jp-green)' : 'var(--jp-text-muted)',
-                    fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                  }}
+                  className={[
+                    'flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all',
+                    bulkSelection.has(loc.id)
+                      ? 'border border-core-green-dim bg-core-green/8 text-core-green'
+                      : 'border border-core-border bg-transparent text-core-text-muted',
+                  ].join(' ')}
                 >
-                  {bulkSelection.has(loc.id) ? '✓' : '○'} {loc.name}
+                  {bulkSelection.has(loc.id)
+                    ? <Check className="w-3 h-3" />
+                    : <Circle className="w-3 h-3" />
+                  }
+                  {loc.name}
                 </button>
               ))}
             </div>
 
-            <div style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)', marginBottom: 12 }}>
+            <div className="text-[0.8125rem] text-core-text-dim mb-3">
               {bulkSelection.size} location{bulkSelection.size !== 1 ? 's' : ''} selected
             </div>
 
             {/* Action Buttons */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div className="flex flex-wrap gap-2">
               {[
-                { label: 'Tag: 0nmcp-connected', tagId: '0nmcp-connected', color: 'var(--jp-green)' },
-                { label: 'Tag: vip-access', tagId: 'vip-access', color: 'var(--jp-purple)' },
-                { label: 'Tag: newsletter-signup', tagId: 'newsletter-signup', color: 'var(--jp-cyan)' },
+                { label: 'Tag: 0nmcp-connected', tagId: '0nmcp-connected', cls: 'border-core-green/20 bg-core-green/10 text-core-green' },
+                { label: 'Tag: vip-access', tagId: 'vip-access', cls: 'border-core-purple/20 bg-core-purple/10 text-core-purple' },
+                { label: 'Tag: newsletter-signup', tagId: 'newsletter-signup', cls: 'border-core-cyan/20 bg-core-cyan/10 text-core-cyan' },
               ].map(a => (
                 <button
                   key={a.tagId}
                   onClick={() => runBulkTag(a.tagId)}
                   disabled={bulkRunning || bulkSelection.size === 0}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: `1px solid ${a.color}33`,
-                    background: `${a.color}10`,
-                    color: a.color,
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: bulkRunning || bulkSelection.size === 0 ? 'not-allowed' : 'pointer',
-                    fontFamily: 'inherit',
-                    opacity: bulkRunning || bulkSelection.size === 0 ? 0.5 : 1,
-                  }}
+                  className={[
+                    'px-4 py-2 rounded-lg border text-[0.8rem] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed',
+                    a.cls,
+                  ].join(' ')}
                 >
                   {a.label}
                 </button>
@@ -786,31 +715,25 @@ export default function AgencyCommandCenter() {
               <h6>Operation Log</h6>
               <button
                 onClick={() => setBulkLog([])}
-                style={{
-                  padding: '4px 10px', borderRadius: 6,
-                  border: '1px solid var(--jp-border)',
-                  background: 'transparent',
-                  color: 'var(--jp-text-muted)',
-                  fontSize: '0.7rem', cursor: 'pointer', fontFamily: 'inherit',
-                }}
+                className="px-2.5 py-1 rounded-md border border-core-border bg-transparent text-core-text-muted text-[0.7rem] cursor-pointer"
               >
                 Clear
               </button>
             </div>
-            <div className="jp-card-body" style={{
-              maxHeight: 300, overflowY: 'auto',
-              fontFamily: 'var(--jp-font-mono)',
-              fontSize: '0.75rem',
-              color: 'var(--jp-text-secondary)',
-            }}>
+            <div className="jp-card-body max-h-[300px] overflow-y-auto font-mono text-xs text-core-text-dim">
               {bulkLog.map((line, i) => (
-                <div key={i} style={{
-                  padding: '4px 0',
-                  borderBottom: '1px solid var(--jp-border)',
-                  color: line.includes('Error') || line.includes('Failed') ? '#ef4444' :
-                    line.includes('complete') ? 'var(--jp-green)' : undefined,
-                }}>
-                  <span style={{ color: 'var(--jp-text-muted)', marginRight: 8 }}>[{String(i + 1).padStart(2, '0')}]</span>
+                <div
+                  key={i}
+                  className={[
+                    'py-1 border-b border-core-border',
+                    line.includes('Error') || line.includes('Failed')
+                      ? 'text-core-red'
+                      : line.includes('complete')
+                        ? 'text-core-green'
+                        : '',
+                  ].join(' ')}
+                >
+                  <span className="text-core-text-muted mr-2">[{String(i + 1).padStart(2, '0')}]</span>
                   {line}
                 </div>
               ))}
@@ -824,15 +747,15 @@ export default function AgencyCommandCenter() {
   // ── Tab: Snapshots ────────────────────────────────────────
   function renderSnapshots() {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="flex flex-col gap-4">
         <div className="jp-card">
           <div className="jp-card-header"><h6>Vault Snapshots</h6></div>
           <div className="jp-card-body">
-            <p style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)', marginBottom: 16 }}>
+            <p className="text-[0.8125rem] text-core-text-dim mb-4 leading-relaxed">
               Deploy Vault Data snapshots across locations. Each snapshot captures tags, custom values, pipelines, and workflow configurations from a source location and replicates them to target locations.
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <div className="grid grid-cols-3 gap-3">
               {[
                 {
                   name: '0nMCP Standard',
@@ -853,22 +776,14 @@ export default function AgencyCommandCenter() {
                   status: 'Ready',
                 },
               ].map(snap => (
-                <div key={snap.name} style={{
-                  padding: 16,
-                  borderRadius: 10,
-                  border: '1px solid var(--jp-border)',
-                  background: 'var(--jp-surface)',
-                }}>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--jp-text)', marginBottom: 4 }}>{snap.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginBottom: 8, lineHeight: 1.5 }}>{snap.desc}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)' }}>{snap.locations}</span>
-                    <span style={{
-                      padding: '2px 8px', borderRadius: 6,
-                      background: 'rgba(110,224,90,0.08)',
-                      color: 'var(--jp-green)',
-                      fontSize: '0.6875rem', fontWeight: 600,
-                    }}>{snap.status}</span>
+                <div key={snap.name} className="p-4 rounded-[10px] border border-core-border bg-core-surface">
+                  <div className="text-sm font-bold text-core-text mb-1">{snap.name}</div>
+                  <div className="text-xs text-core-text-muted mb-2 leading-relaxed">{snap.desc}</div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[0.6875rem] text-core-text-muted">{snap.locations}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-core-green/8 text-core-green text-[0.6875rem] font-semibold">
+                      {snap.status}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -880,29 +795,20 @@ export default function AgencyCommandCenter() {
         <div className="jp-card">
           <div className="jp-card-header"><h6>Known PIT Tokens</h6></div>
           <div className="jp-card-body">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="flex flex-col gap-2">
               {[
-                { label: 'Agency PIT', id: process.env.NEXT_PUBLIC_CRM_AGENCY_PIT ? 'Connected' : 'pit-e789...a316', scope: 'All Locations', color: 'var(--jp-green)' },
-                { label: '0nMCP Sub-location', id: 'pit-bd4e...2675', scope: 'nphConTwfHcVE1oA0uep', color: 'var(--jp-cyan)' },
-                { label: 'Spa Ligonier', id: 'pit-8860...5e44', scope: 'F76MNKOMQCMruMrumtdf', color: 'var(--jp-purple)' },
+                { label: 'Agency PIT', id: process.env.NEXT_PUBLIC_CRM_AGENCY_PIT ? 'Connected' : 'pit-e789...a316', scope: 'All Locations', colorClass: 'bg-core-green/15 text-core-green border-core-green/20' },
+                { label: '0nMCP Sub-location', id: 'pit-bd4e...2675', scope: 'nphConTwfHcVE1oA0uep', colorClass: 'bg-core-cyan/15 text-core-cyan border-core-cyan/20' },
+                { label: 'Spa Ligonier', id: 'pit-8860...5e44', scope: 'F76MNKOMQCMruMrumtdf', colorClass: 'bg-core-purple/15 text-core-purple border-core-purple/20' },
               ].map(pit => (
-                <div key={pit.label} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '10px 12px', borderRadius: 8,
-                  background: 'var(--jp-surface)',
-                  border: '1px solid var(--jp-border)',
-                }}>
+                <div key={pit.label} className="flex justify-between items-center px-3 py-2.5 rounded-lg bg-core-surface border border-core-border">
                   <div>
-                    <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>{pit.label}</div>
-                    <div style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)', fontFamily: 'var(--jp-font-mono)' }}>{pit.scope}</div>
+                    <div className="text-[0.8125rem] font-semibold text-core-text">{pit.label}</div>
+                    <div className="text-[0.6875rem] text-core-text-muted font-mono">{pit.scope}</div>
                   </div>
-                  <span style={{
-                    padding: '2px 10px', borderRadius: 6,
-                    background: `${pit.color}15`,
-                    color: pit.color,
-                    fontSize: '0.6875rem', fontWeight: 600,
-                    fontFamily: 'var(--jp-font-mono)',
-                  }}>{pit.id}</span>
+                  <span className={`px-2.5 py-0.5 rounded-md border text-[0.6875rem] font-semibold font-mono ${pit.colorClass}`}>
+                    {pit.id}
+                  </span>
                 </div>
               ))}
             </div>

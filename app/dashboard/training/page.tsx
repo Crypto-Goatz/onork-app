@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { X, RefreshCw, Upload, Globe } from 'lucide-react'
 import { useLocation } from '@/lib/location-context'
 
 interface KBEntry {
@@ -39,6 +40,27 @@ const DEFAULT_LAYERS: KLayer[] = [
   { slot: 14, name: 'Available', description: 'Purchasable layer', status: 'available', documentCount: 0, lastUpdated: '' },
   { slot: 15, name: 'Reserved', description: 'System reserved', status: 'locked', badge: 'Reserved', documentCount: 0, lastUpdated: '' },
 ]
+
+const statusTextClass: Record<string, string> = {
+  active: 'text-core-green',
+  locked: 'text-core-text-muted',
+  available: 'text-core-cyan',
+  auto: 'text-core-purple',
+}
+
+const statusBgClass: Record<string, string> = {
+  active: 'bg-core-green/10',
+  locked: 'bg-core-text-muted/10',
+  available: 'bg-core-cyan/10',
+  auto: 'bg-core-purple/10',
+}
+
+const statusLabel: Record<string, string> = {
+  active: 'Active',
+  locked: 'Locked',
+  available: 'Available',
+  auto: 'Auto',
+}
 
 export default function TrainingPage() {
   const { locationId, refreshKey } = useLocation()
@@ -85,7 +107,6 @@ export default function TrainingPage() {
       if (res.ok) {
         setCreateMsg('Knowledge base created')
         await fetchKBs()
-        // Update the layer name
         if (selectedSlot) {
           setLayers(prev => prev.map(l =>
             l.slot === selectedSlot
@@ -114,143 +135,99 @@ export default function TrainingPage() {
     setCreateMsg('')
   }
 
-  const statusColor: Record<string, string> = {
-    active: '#7ed957',
-    locked: '#6b7280',
-    available: '#00d4ff',
-    auto: '#a78bfa',
-  }
-
-  const statusLabel: Record<string, string> = {
-    active: 'Active',
-    locked: 'Locked',
-    available: 'Available',
-    auto: 'Auto',
-  }
-
   const selectedLayer = selectedSlot ? layers.find(l => l.slot === selectedSlot) : null
   const activeLayers = layers.filter(l => l.status === 'active' || l.status === 'locked' || l.status === 'auto').length
+  const isError = createMsg.includes('Error') || createMsg.includes('Failed')
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 8px' }}>
+    <div className="max-w-[1200px] mx-auto px-2">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#f0f4f8', margin: 0 }}>Knowledge Base</h1>
-            <span style={{
-              padding: '3px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700,
-              background: 'rgba(126,217,87,0.1)', color: '#7ed957',
-              border: '1px solid rgba(126,217,87,0.2)', letterSpacing: '0.06em',
-            }}>
+          <div className="flex items-center gap-3">
+            <h1 className="text-[22px] font-bold text-core-text m-0">Knowledge Base</h1>
+            <span className="px-[10px] py-[3px] rounded-md text-[10px] font-bold bg-core-green/10 text-core-green border border-core-green/20 tracking-[0.06em]">
               UNLIMITED
             </span>
           </div>
-          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+          <p className="text-[13px] text-core-text-muted mt-1">
             15 Layers Available — {activeLayers} active
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, color: '#6b7280' }}>{kbs.length} CRM Knowledge Bases</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] text-core-text-muted">{kbs.length} CRM Knowledge Bases</span>
           <button
             onClick={fetchKBs}
-            style={{
-              padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-              background: 'rgba(126,217,87,0.08)', border: '1px solid rgba(126,217,87,0.2)',
-              color: '#7ed957', cursor: 'pointer',
-            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-core-green/[0.08] border border-core-green/20 text-core-green cursor-pointer"
           >
+            <RefreshCw size={12} />
             Refresh
           </button>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 20 }}>
+      <div className="flex gap-5">
         {/* K-Layer Grid */}
-        <div style={{ flex: 1 }}>
+        <div className="flex-1">
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-              <div style={{
-                width: 32, height: 32, border: '3px solid #1e293b',
-                borderTopColor: '#7ed957', borderRadius: '50%',
-                animation: 'spin 0.8s linear infinite',
-              }} />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <div className="flex justify-center py-16">
+              <div className="w-8 h-8 border-[3px] border-core-border border-t-core-green rounded-full animate-spin" />
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+            <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))]">
               {layers.map(layer => {
                 const isSelected = selectedSlot === layer.slot
                 const isLocked = layer.status === 'locked'
-                const color = statusColor[layer.status]
+                const textClass = statusTextClass[layer.status]
+                const bgClass = statusBgClass[layer.status]
                 return (
                   <div
                     key={layer.slot}
                     onClick={() => openLayer(layer.slot)}
-                    style={{
-                      background: isSelected ? 'rgba(126,217,87,0.04)' : '#161b22',
-                      border: `1px solid ${isSelected ? 'rgba(126,217,87,0.3)' : '#1e293b'}`,
-                      borderRadius: 12, padding: '16px',
-                      cursor: isLocked ? 'not-allowed' : 'pointer',
-                      opacity: isLocked ? 0.6 : 1,
-                      transition: 'all 0.15s',
-                    }}
+                    className={[
+                      'rounded-xl p-4 border transition-all duration-150',
+                      isSelected
+                        ? 'bg-core-green/[0.04] border-core-green/30'
+                        : 'bg-core-surface border-core-border',
+                      isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+                    ].join(' ')}
                   >
                     {/* Top row: slot + status */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                      <span style={{
-                        fontSize: 10, fontWeight: 800, color: color,
-                        background: `${color}15`, padding: '2px 8px', borderRadius: 4,
-                        letterSpacing: '0.05em',
-                      }}>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className={`text-[10px] font-extrabold ${textClass} ${bgClass} px-2 py-[2px] rounded tracking-[0.05em]`}>
                         K{layer.slot}
                       </span>
-                      <span style={{
-                        fontSize: 9, fontWeight: 600, color: color,
-                        textTransform: 'uppercase', letterSpacing: '0.06em',
-                      }}>
+                      <span className={`text-[9px] font-semibold ${textClass} uppercase tracking-[0.06em]`}>
                         {statusLabel[layer.status]}
                       </span>
                     </div>
 
                     {/* Name */}
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#f0f4f8', marginBottom: 4 }}>
+                    <div className="text-[14px] font-semibold text-core-text mb-1">
                       {layer.name}
                     </div>
 
                     {/* Description */}
-                    <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 10 }}>
+                    <div className="text-[11px] text-core-text-muted mb-2.5">
                       {layer.description}
                     </div>
 
                     {/* Badge */}
                     {layer.badge && (
-                      <span style={{
-                        display: 'inline-block', fontSize: 9, fontWeight: 700,
-                        padding: '2px 8px', borderRadius: 4, marginBottom: 8,
-                        background: 'rgba(126,217,87,0.08)', color: '#7ed957',
-                        border: '1px solid rgba(126,217,87,0.15)',
-                      }}>
+                      <span className="inline-block text-[9px] font-bold px-2 py-[2px] rounded mb-2 bg-core-green/[0.08] text-core-green border border-core-green/15">
                         {layer.badge}
                       </span>
                     )}
 
                     {/* Stats */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#4b5563' }}>
+                    <div className="flex justify-between text-[10px] text-core-text-muted/70">
                       <span>{layer.documentCount} docs</span>
                       <span>{layer.lastUpdated}</span>
                     </div>
 
                     {/* Action button for configurable layers */}
-                    {(layer.status === 'available') && (
-                      <button
-                        style={{
-                          width: '100%', marginTop: 10, padding: '7px 0',
-                          borderRadius: 6, fontSize: 11, fontWeight: 600,
-                          background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)',
-                          color: '#00d4ff', cursor: 'pointer',
-                        }}
-                      >
+                    {layer.status === 'available' && (
+                      <button className="w-full mt-2.5 py-[7px] rounded-md text-[11px] font-semibold bg-core-cyan/[0.06] border border-core-cyan/15 text-core-cyan cursor-pointer">
                         {layer.name === 'Available' ? 'Activate' : 'Configure'}
                       </button>
                     )}
@@ -263,52 +240,35 @@ export default function TrainingPage() {
 
         {/* Detail Panel */}
         {selectedLayer && (
-          <div style={{
-            width: 360, flexShrink: 0,
-            background: '#161b22', border: '1px solid #1e293b', borderRadius: 14,
-            padding: '20px', position: 'sticky', top: 80,
-            maxHeight: 'calc(100vh - 120px)', overflowY: 'auto',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <span style={{
-                fontSize: 11, fontWeight: 800, color: statusColor[selectedLayer.status],
-                background: `${statusColor[selectedLayer.status]}15`,
-                padding: '3px 10px', borderRadius: 5,
-              }}>
+          <div className="w-[360px] shrink-0 bg-core-surface border border-core-border rounded-[14px] p-5 sticky top-20 max-h-[calc(100vh-120px)] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <span className={`text-[11px] font-extrabold ${statusTextClass[selectedLayer.status]} ${statusBgClass[selectedLayer.status]} px-[10px] py-[3px] rounded-md`}>
                 K{selectedLayer.slot}
               </span>
               <button
                 onClick={() => setSelectedSlot(null)}
-                style={{
-                  background: 'none', border: 'none', color: '#4b5563',
-                  cursor: 'pointer', fontSize: 16, padding: '0 4px',
-                }}
+                className="bg-transparent border-none text-core-text-muted cursor-pointer p-1 rounded hover:text-core-text transition-colors"
               >
-                x
+                <X size={16} />
               </button>
             </div>
 
             {/* Name input */}
-            <label style={{ display: 'block', marginBottom: 12 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <label className="block mb-3">
+              <span className="block text-[10px] font-bold text-core-text-muted mb-1 uppercase tracking-[0.06em]">
                 Name
               </span>
               <input
                 value={detailName}
                 onChange={e => setDetailName(e.target.value)}
                 placeholder="Layer name..."
-                style={{
-                  width: '100%', padding: '10px 12px', borderRadius: 8,
-                  background: '#0d1117', border: '1px solid #1e293b',
-                  color: '#f0f4f8', fontSize: 13, outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                className="w-full px-3 py-2.5 rounded-lg bg-core-bg border border-core-border text-core-text text-[13px] outline-none box-border"
               />
             </label>
 
             {/* Description */}
-            <label style={{ display: 'block', marginBottom: 16 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <label className="block mb-4">
+              <span className="block text-[10px] font-bold text-core-text-muted mb-1 uppercase tracking-[0.06em]">
                 Description
               </span>
               <textarea
@@ -316,53 +276,40 @@ export default function TrainingPage() {
                 onChange={e => setDetailDesc(e.target.value)}
                 placeholder="What this layer does..."
                 rows={2}
-                style={{
-                  width: '100%', padding: '10px 12px', borderRadius: 8,
-                  background: '#0d1117', border: '1px solid #1e293b',
-                  color: '#f0f4f8', fontSize: 13, outline: 'none', resize: 'vertical',
-                  boxSizing: 'border-box', fontFamily: 'inherit',
-                }}
+                className="w-full px-3 py-2.5 rounded-lg bg-core-bg border border-core-border text-core-text text-[13px] outline-none resize-y box-border font-inherit"
               />
             </label>
 
             {/* Documents from CRM KB */}
-            <div style={{ marginBottom: 16 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <div className="mb-4">
+              <span className="block text-[10px] font-bold text-core-text-muted mb-2 uppercase tracking-[0.06em]">
                 Documents ({kbs.length} knowledge bases)
               </span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="flex flex-col gap-1.5">
                 {kbs.length > 0 ? kbs.map(kb => (
-                  <div key={kb.id} style={{
-                    padding: '8px 12px', borderRadius: 8,
-                    background: '#0d1117', border: '1px solid #1e293b',
-                    fontSize: 12, color: '#d1d5db',
-                  }}>
-                    <div style={{ fontWeight: 600 }}>{kb.name}</div>
+                  <div key={kb.id} className="px-3 py-2 rounded-lg bg-core-bg border border-core-border text-[12px] text-core-text-dim">
+                    <div className="font-semibold">{kb.name}</div>
                     {kb.description && (
-                      <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>{kb.description}</div>
+                      <div className="text-[10px] text-core-text-muted mt-0.5">{kb.description}</div>
                     )}
                   </div>
                 )) : (
-                  <div style={{ fontSize: 11, color: '#4b5563', textAlign: 'center', padding: 12 }}>
+                  <div className="text-[11px] text-core-text-muted/70 text-center p-3">
                     No knowledge bases linked
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Upload Document placeholder */}
-            <button style={{
-              width: '100%', padding: '10px 0', borderRadius: 8,
-              background: 'rgba(126,217,87,0.06)', border: '1px solid rgba(126,217,87,0.15)',
-              color: '#7ed957', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-              marginBottom: 12,
-            }}>
+            {/* Upload Document */}
+            <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-core-green/[0.06] border border-core-green/15 text-core-green text-[12px] font-semibold cursor-pointer mb-3">
+              <Upload size={13} />
               Upload Document
             </button>
 
             {/* Paste Content */}
-            <label style={{ display: 'block', marginBottom: 12 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <label className="block mb-3">
+              <span className="block text-[10px] font-bold text-core-text-muted mb-1 uppercase tracking-[0.06em]">
                 Paste Content
               </span>
               <textarea
@@ -370,67 +317,51 @@ export default function TrainingPage() {
                 onChange={e => setPasteContent(e.target.value)}
                 placeholder="Paste knowledge content here..."
                 rows={4}
-                style={{
-                  width: '100%', padding: '10px 12px', borderRadius: 8,
-                  background: '#0d1117', border: '1px solid #1e293b',
-                  color: '#f0f4f8', fontSize: 12, outline: 'none', resize: 'vertical',
-                  boxSizing: 'border-box', fontFamily: 'inherit',
-                }}
+                className="w-full px-3 py-2.5 rounded-lg bg-core-bg border border-core-border text-core-text text-[12px] outline-none resize-y box-border font-inherit"
               />
             </label>
 
             {/* Scrape URL */}
-            <label style={{ display: 'block', marginBottom: 16 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <label className="block mb-4">
+              <span className="block text-[10px] font-bold text-core-text-muted mb-1 uppercase tracking-[0.06em]">
                 Scrape URL
               </span>
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div className="flex gap-1.5">
                 <input
                   value={scrapeUrl}
                   onChange={e => setScrapeUrl(e.target.value)}
                   placeholder="https://..."
-                  style={{
-                    flex: 1, padding: '9px 12px', borderRadius: 8,
-                    background: '#0d1117', border: '1px solid #1e293b',
-                    color: '#f0f4f8', fontSize: 12, outline: 'none',
-                  }}
+                  className="flex-1 px-3 py-[9px] rounded-lg bg-core-bg border border-core-border text-core-text text-[12px] outline-none"
                 />
-                <button style={{
-                  padding: '9px 14px', borderRadius: 8,
-                  background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)',
-                  color: '#00d4ff', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}>
+                <button className="flex items-center gap-1.5 px-3.5 py-[9px] rounded-lg bg-core-cyan/[0.06] border border-core-cyan/15 text-core-cyan text-[11px] font-semibold cursor-pointer whitespace-nowrap">
+                  <Globe size={12} />
                   Scrape
                 </button>
               </div>
             </label>
 
-            {/* Create/Save button */}
+            {/* Status message */}
             {createMsg && (
-              <div style={{
-                padding: '8px 12px', borderRadius: 8, marginBottom: 10,
-                background: createMsg.includes('Error') || createMsg.includes('Failed')
-                  ? 'rgba(239,68,68,0.08)' : 'rgba(126,217,87,0.08)',
-                border: `1px solid ${createMsg.includes('Error') || createMsg.includes('Failed')
-                  ? 'rgba(239,68,68,0.2)' : 'rgba(126,217,87,0.2)'}`,
-                color: createMsg.includes('Error') || createMsg.includes('Failed') ? '#f87171' : '#7ed957',
-                fontSize: 12,
-              }}>
+              <div className={[
+                'px-3 py-2 rounded-lg mb-2.5 text-[12px] border',
+                isError
+                  ? 'bg-core-red/[0.08] border-core-red/20 text-core-red'
+                  : 'bg-core-green/[0.08] border-core-green/20 text-core-green',
+              ].join(' ')}>
                 {createMsg}
               </div>
             )}
 
+            {/* Create/Save button */}
             <button
               onClick={createKB}
               disabled={creating || !detailName.trim()}
-              style={{
-                width: '100%', padding: '12px 0', borderRadius: 8,
-                background: creating || !detailName.trim() ? '#1e293b' : '#7ed957',
-                border: 'none',
-                color: creating || !detailName.trim() ? '#4b5563' : '#000',
-                fontSize: 13, fontWeight: 700, cursor: creating ? 'not-allowed' : 'pointer',
-              }}
+              className={[
+                'w-full py-3 rounded-lg text-[13px] font-bold border-none transition-colors',
+                creating || !detailName.trim()
+                  ? 'bg-core-border text-core-text-muted cursor-not-allowed'
+                  : 'bg-core-green text-black cursor-pointer',
+              ].join(' ')}
             >
               {creating ? 'Creating...' : 'Create Knowledge Base'}
             </button>

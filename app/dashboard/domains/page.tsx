@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Globe, CheckCircle, XCircle, Star, Loader2 } from 'lucide-react'
 
 interface DomainResult {
   domain: string
@@ -60,68 +61,116 @@ export default function DomainsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 700, margin: '0 auto' }}>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px' }}>Domains</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)' }}>Find and register a domain for your business.</p>
+    <div className="max-w-[700px] mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-[22px] font-bold text-core-text m-0 mb-1">Domains</h1>
+        <p className="text-[13px] text-core-text-muted">Find and register a domain for your business.</p>
       </div>
 
       {/* Search */}
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginBottom: 32 }}>
+      <form onSubmit={handleSearch} className="flex gap-2.5 mb-8">
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search for a domain name..."
-          style={{
-            flex: 1, padding: '14px 16px',
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 10, color: 'var(--text-primary, #f0f4f8)', fontSize: 15, outline: 'none',
-          }}
-          onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-          onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
+          className="
+            flex-1 px-4 py-3.5
+            bg-core-card border border-core-border
+            rounded-[10px] text-core-text text-[15px]
+            outline-none transition-colors
+            focus:border-core-cyan
+            placeholder:text-core-text-muted
+          "
         />
-        <button type="submit" disabled={loading} style={{
-          padding: '14px 24px',
-          background: loading ? 'var(--border, #30363d)' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-          color: loading ? 'var(--text-muted, #6b7280)' : '#0c1220',
-          fontWeight: 700, fontSize: 14, borderRadius: 10,
-          border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-        }}>{loading ? 'Searching...' : 'Search'}</button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="
+            px-6 py-3.5
+            bg-core-cyan text-core-bg
+            font-bold text-sm rounded-[10px]
+            border-none cursor-pointer transition-opacity
+            disabled:opacity-50 disabled:cursor-not-allowed
+            flex items-center gap-2
+          "
+        >
+          {loading ? (
+            <>
+              <Loader2 size={14} className="animate-spin" />
+              Searching...
+            </>
+          ) : (
+            'Search'
+          )}
+        </button>
       </form>
 
       {/* Results */}
       {results.map(r => (
-        <div key={r.domain} style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: '20px 24px', marginBottom: 12,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>
+        <div
+          key={r.domain}
+          className="
+            bg-core-card border border-core-border
+            rounded-[14px] px-6 py-5 mb-3
+            flex justify-between items-center
+          "
+        >
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)' }}>{r.domain}</div>
-            <div style={{
-              fontSize: 12, fontWeight: 600, marginTop: 4,
-              color: r.available ? '#34d399' : '#f87171',
-            }}>
-              {r.available ? '✓ Available' : '✗ Taken'}
-              {r.premium && <span style={{ color: '#fbbf24', marginLeft: 8 }}>Premium</span>}
+            <div className="text-lg font-bold text-core-text">{r.domain}</div>
+            <div className="flex items-center gap-2 mt-1">
+              {r.available ? (
+                <span className="flex items-center gap-1 text-xs font-semibold text-core-green">
+                  <CheckCircle size={12} />
+                  Available
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs font-semibold text-core-red">
+                  <XCircle size={12} />
+                  Taken
+                </span>
+              )}
+              {r.premium && (
+                <span className="flex items-center gap-1 text-xs font-semibold text-core-amber">
+                  <Star size={11} />
+                  Premium
+                </span>
+              )}
             </div>
           </div>
+
           {r.available && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {r.price && <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-cyan, #14b8a6)' }}>${r.price}</span>}
+            <div className="flex items-center gap-3">
+              {r.price && (
+                <span className="text-xl font-bold text-core-cyan">${r.price}</span>
+              )}
               {registered.includes(r.domain) ? (
-                <span style={{ color: '#34d399', fontWeight: 600, fontSize: 13 }}>✓ Registered</span>
+                <span className="flex items-center gap-1 text-core-green font-semibold text-[13px]">
+                  <CheckCircle size={14} />
+                  Registered
+                </span>
               ) : (
                 <button
                   onClick={() => handleRegister(r.domain)}
                   disabled={registering === r.domain}
-                  style={{
-                    padding: '10px 20px',
-                    background: registering === r.domain ? 'var(--border, #30363d)' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-                    color: '#0c1220', fontWeight: 700, fontSize: 13,
-                    borderRadius: 8, border: 'none', cursor: 'pointer',
-                  }}
-                >{registering === r.domain ? 'Registering...' : 'Register'}</button>
+                  className="
+                    px-5 py-2.5
+                    bg-core-cyan text-core-bg
+                    font-bold text-[13px] rounded-lg
+                    border-none cursor-pointer transition-opacity
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    flex items-center gap-1.5
+                  "
+                >
+                  {registering === r.domain ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin" />
+                      Registering...
+                    </>
+                  ) : (
+                    'Register'
+                  )}
+                </button>
               )}
             </div>
           )}
@@ -130,22 +179,25 @@ export default function DomainsPage() {
 
       {/* Suggestions */}
       {suggestions.length > 0 && (
-        <div style={{ marginTop: 24 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary, #9ca3af)', marginBottom: 12 }}>Also available</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-core-text-dim mb-3">Also available</h3>
+          <div className="grid grid-cols-2 gap-2">
             {suggestions.map(s => (
-              <div key={s.domain} style={{
-                background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-                borderRadius: 10, padding: '14px 16px',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                cursor: 'pointer', transition: 'all 0.15s',
-              }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = '#2dd4bf40'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border, #30363d)'}
+              <div
+                key={s.domain}
+                className="
+                  bg-core-card border border-core-border
+                  rounded-[10px] px-4 py-3.5
+                  flex justify-between items-center
+                  cursor-pointer transition-colors
+                  hover:border-core-cyan/25
+                "
                 onClick={() => { setSearch(s.domain); handleSearch(new Event('submit') as any) }}
               >
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>{s.domain}</span>
-                {s.price && <span style={{ fontSize: 13, color: 'var(--color-cyan, #14b8a6)', fontWeight: 600 }}>${s.price}</span>}
+                <span className="text-sm font-semibold text-core-text">{s.domain}</span>
+                {s.price && (
+                  <span className="text-[13px] text-core-cyan font-semibold">${s.price}</span>
+                )}
               </div>
             ))}
           </div>
@@ -154,15 +206,16 @@ export default function DomainsPage() {
 
       {/* Empty state */}
       {!loading && results.length === 0 && (
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: '48px 24px', textAlign: 'center',
-        }}>
-          <div style={{ fontSize: 36, marginBottom: 12, opacity: 0.3 }}>🌐</div>
-          <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: 14 }}>
+        <div className="
+          bg-core-card border border-core-border
+          rounded-[14px] px-6 py-12
+          text-center
+        ">
+          <Globe size={36} className="mx-auto mb-3 text-core-text-muted opacity-30" />
+          <p className="text-core-text-muted text-sm">
             Search for your perfect domain name above.
           </p>
-          <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: 12, marginTop: 8 }}>
+          <p className="text-core-text-muted text-xs mt-2">
             Auto-configures DNS, enables privacy, and connects to your site.
           </p>
         </div>

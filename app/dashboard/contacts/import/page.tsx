@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { Upload, ArrowRight, Download } from 'lucide-react'
 
 interface ColumnMapping {
   csvColumn: string
@@ -54,6 +55,8 @@ export default function ImportContactsPage() {
     setMappings(prev => prev.map((m, i) => i === index ? { ...m, mapTo: value } : m))
   }
 
+  const stepKeys = ['upload', 'mapping', 'preview'] as const
+
   return (
     <div>
       <div className="jp-page-header">
@@ -62,40 +65,20 @@ export default function ImportContactsPage() {
       </div>
 
       {/* Step Indicator */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
+      <div className="flex gap-2 mb-8">
         {['Upload', 'Map Columns', 'Preview & Import'].map((label, i) => {
-          const stepKeys = ['upload', 'mapping', 'preview'] as const
           const isActive = stepKeys.indexOf(step) >= i
+          const isConnectorActive = isActive && stepKeys.indexOf(step) > i
           return (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                background: isActive ? 'var(--jp-green)' : 'var(--jp-border-hi)',
-                color: isActive ? '#000' : 'var(--jp-text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-              }}>
+            <div key={label} className="flex items-center gap-2">
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isActive ? 'bg-core-green text-black' : 'bg-core-border text-core-text-muted'}`}>
                 {i + 1}
               </div>
-              <span style={{
-                fontSize: '0.8125rem',
-                fontWeight: 500,
-                color: isActive ? 'var(--jp-text)' : 'var(--jp-text-muted)',
-              }}>
+              <span className={`text-[0.8125rem] font-medium ${isActive ? 'text-core-text' : 'text-core-text-muted'}`}>
                 {label}
               </span>
               {i < 2 && (
-                <div style={{
-                  width: 40,
-                  height: 2,
-                  background: isActive && stepKeys.indexOf(step) > i ? 'var(--jp-green)' : 'var(--jp-border)',
-                  marginLeft: 8,
-                }} />
+                <div className={`w-10 h-0.5 ml-2 ${isConnectorActive ? 'bg-core-green' : 'bg-core-border'}`} />
               )}
             </div>
           )
@@ -112,9 +95,7 @@ export default function ImportContactsPage() {
           onClick={handleFileSelect}
         >
           <div className="jp-import-dropzone-icon">
-            <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.25}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
+            <Upload size={48} strokeWidth={1.25} />
           </div>
           <div className="jp-import-dropzone-title">
             {isDragOver ? 'Drop your CSV file here' : 'Drag & drop a CSV file here'}
@@ -133,51 +114,30 @@ export default function ImportContactsPage() {
         <div className="jp-card">
           <div className="jp-card-header">
             <h4>Map Columns — {fileName}</h4>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)' }}>5 columns detected</span>
+            <span className="text-[0.8125rem] text-core-text-dim">5 columns detected</span>
           </div>
           <div className="jp-card-body">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="flex flex-col gap-4">
               {mappings.map((m, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{
-                    flex: 1,
-                    padding: '10px 14px',
-                    background: 'var(--jp-bg-input)',
-                    border: '1px solid var(--jp-border)',
-                    borderRadius: 'var(--jp-radius-sm)',
-                    fontSize: '0.875rem',
-                    color: 'var(--jp-text)',
-                    fontFamily: 'monospace',
-                  }}>
+                <div key={i} className="flex items-center gap-4">
+                  <div className="flex-1 px-3.5 py-2.5 bg-core-bg border border-core-border rounded-[var(--jp-radius-sm)] text-sm text-core-text font-mono">
                     {m.csvColumn}
                   </div>
-                  <svg width="20" height="20" fill="none" stroke="var(--jp-green)" viewBox="0 0 24 24" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
+                  <ArrowRight size={20} strokeWidth={2} className="text-core-green shrink-0" />
                   <select
                     value={m.mapTo}
                     onChange={(e) => updateMapping(i, e.target.value)}
-                    style={{
-                      flex: 1,
-                      padding: '10px 14px',
-                      background: 'var(--jp-bg-input)',
-                      border: '1px solid var(--jp-border)',
-                      borderRadius: 'var(--jp-radius-sm)',
-                      fontSize: '0.875rem',
-                      color: 'var(--jp-text)',
-                      outline: 'none',
-                      cursor: 'pointer',
-                    }}
+                    className="flex-1 px-3.5 py-2.5 bg-core-bg border border-core-border rounded-[var(--jp-radius-sm)] text-sm text-core-text outline-none cursor-pointer"
                   >
                     {fieldOptions.map(opt => (
-                      <option key={opt} value={opt} style={{ background: 'var(--jp-bg-card)' }}>{opt}</option>
+                      <option key={opt} value={opt} className="bg-core-card">{opt}</option>
                     ))}
                   </select>
                 </div>
               ))}
             </div>
           </div>
-          <div className="jp-card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+          <div className="jp-card-footer flex justify-end gap-3">
             <button className="jp-btn jp-btn-outline" onClick={() => setStep('upload')}>Back</button>
             <button className="jp-btn jp-btn-primary" onClick={() => setStep('preview')}>Preview Import</button>
           </div>
@@ -189,11 +149,11 @@ export default function ImportContactsPage() {
         <div className="jp-card">
           <div className="jp-card-header">
             <h4>Import Preview</h4>
-            <span style={{ fontSize: '0.875rem', color: 'var(--jp-green)', fontWeight: 600 }}>
+            <span className="text-sm text-core-green font-semibold">
               {mockPreviewData.length} contacts ready
             </span>
           </div>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="overflow-x-auto">
             <table className="jp-table">
               <thead>
                 <tr>
@@ -207,12 +167,12 @@ export default function ImportContactsPage() {
               <tbody>
                 {mockPreviewData.map((row, i) => (
                   <tr key={i}>
-                    <td style={{ fontWeight: 500 }}>{row.Name}</td>
+                    <td className="font-medium">{row.Name}</td>
                     <td>{row['Email Address']}</td>
                     <td>{row.Phone}</td>
                     <td>{row.Company}</td>
                     <td>
-                      <div style={{ display: 'flex', gap: 4 }}>
+                      <div className="flex gap-1">
                         {row.Tags.split(',').map(tag => (
                           <span key={tag} className="jp-contact-tag">{tag.trim()}</span>
                         ))}
@@ -223,12 +183,10 @@ export default function ImportContactsPage() {
               </tbody>
             </table>
           </div>
-          <div className="jp-card-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="jp-card-footer flex justify-between items-center">
             <button className="jp-btn jp-btn-outline" onClick={() => setStep('mapping')}>Back to Mapping</button>
-            <button className="jp-btn jp-btn-primary" style={{ padding: '10px 24px' }}>
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
+            <button className="jp-btn jp-btn-primary px-6 py-2.5">
+              <Download size={16} strokeWidth={2} />
               Import {mockPreviewData.length} Contacts
             </button>
           </div>

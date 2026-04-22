@@ -109,6 +109,11 @@ function formatPrice(price: string, type: string): string {
   }
 }
 
+// Shared class strings
+const inpCls = 'w-full px-3 py-2.5 rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none font-[inherit] transition-colors focus:border-core-border-hi'
+const labelCls = 'block text-[0.6875rem] font-semibold text-core-text-muted uppercase tracking-[0.06em] mb-1'
+const cardCls = 'bg-core-card border border-core-border rounded-[14px] p-5 mb-4'
+
 export default function BrandBuilder() {
   const [tab, setTab] = useState<TabKey>('import')
   const [brand, setBrand] = useState<BrandProfile>(JSON.parse(JSON.stringify(DEFAULT_BRAND)))
@@ -311,45 +316,16 @@ export default function BrandBuilder() {
   const currentYear = new Date().getFullYear()
   const foundedAge = brand.business.founded ? currentYear - parseInt(brand.business.founded) : null
 
-  // Shared input style
-  const inp = {
-    width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid var(--jp-border, #1E293B)',
-    background: 'var(--jp-surface, #0B0F19)',
-    color: 'var(--jp-text, #E8EAED)',
-    fontSize: '0.875rem', outline: 'none',
-    fontFamily: 'inherit',
-    transition: 'border-color 0.2s',
-  } as React.CSSProperties
-
-  const label = {
-    fontSize: '0.6875rem', fontWeight: 600,
-    color: 'var(--jp-text-muted, #4A5568)',
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.06em',
-    marginBottom: 4, display: 'block',
-  } as React.CSSProperties
-
-  const card = {
-    background: 'var(--jp-surface, #111827)',
-    border: '1px solid var(--jp-border, #1E293B)',
-    borderRadius: 14, padding: '1.25rem',
-    marginBottom: '1rem',
-  } as React.CSSProperties
-
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div className="max-w-[900px] mx-auto animate-fade-in">
       {/* Header */}
-      <div className="jp-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="jp-page-header flex items-center justify-between">
         <div>
-          <h1 className="jp-page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg, rgba(110,224,90,0.15), rgba(167,139,250,0.10))',
-              border: '1px solid rgba(110,224,90,0.25)',
-            }}>
-              <svg width="18" height="18" fill="none" stroke="#7ed957" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+          <h1 className="jp-page-title flex items-center gap-2.5">
+            <span className="inline-flex items-center justify-center w-9 h-9 rounded-[10px] bg-gradient-to-br from-core-green/15 to-core-purple/10 border border-core-green/25">
+              <svg width="18" height="18" fill="none" stroke="#6EE05A" viewBox="0 0 24 24" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
             </span>
             0nBrandBuilder
           </h1>
@@ -357,48 +333,58 @@ export default function BrandBuilder() {
             {brand.business.name || 'New Brand'} {brand.sub_location_id ? `· ${brand.sub_location_id}` : ''}
           </p>
         </div>
-        <button onClick={save} disabled={saving} style={{
-          padding: '8px 20px', borderRadius: 8,
-          background: saved ? 'rgba(110,224,90,0.15)' : 'var(--jp-green, #7ed957)',
-          color: saved ? 'var(--jp-green)' : '#000',
-          border: saved ? '1px solid rgba(110,224,90,0.3)' : 'none',
-          fontSize: '0.8125rem', fontWeight: 700,
-          cursor: 'pointer', fontFamily: 'inherit',
-          transition: 'all 0.2s',
-        }}>
-          {saving ? 'Saving...' : saved ? 'Saved' : 'Save Brand'}
-        </button>
-        <button onClick={syncToCRM} disabled={syncing} style={{
-          padding: '8px 20px', borderRadius: 8,
-          background: synced ? 'rgba(45,212,191,0.15)' : 'rgba(45,212,191,0.1)',
-          color: synced ? '#14b8a6' : 'var(--jp-cyan, #14b8a6)',
-          border: `1px solid ${synced ? 'rgba(45,212,191,0.3)' : 'rgba(45,212,191,0.2)'}`,
-          fontSize: '0.8125rem', fontWeight: 700,
-          cursor: syncing ? 'wait' : 'pointer', fontFamily: 'inherit',
-          transition: 'all 0.2s',
-        }}>
-          {syncing ? 'Syncing...' : synced ? 'Synced to CRM' : 'Sync to CRM'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={save}
+            disabled={saving}
+            className={`px-5 py-2 rounded-lg text-[0.8125rem] font-bold transition-all font-[inherit] ${
+              saved
+                ? 'bg-core-green/15 text-core-green border border-core-green/30'
+                : 'bg-core-green text-black border-none'
+            }`}
+          >
+            {saving ? 'Saving...' : saved ? 'Saved' : 'Save Brand'}
+          </button>
+          <button
+            onClick={syncToCRM}
+            disabled={syncing}
+            className={`px-5 py-2 rounded-lg text-[0.8125rem] font-bold transition-all font-[inherit] border ${
+              synced
+                ? 'bg-core-cyan/15 text-core-cyan border-core-cyan/30'
+                : 'bg-core-cyan/10 text-core-cyan border-core-cyan/20'
+            } ${syncing ? 'cursor-wait' : 'cursor-pointer'}`}
+          >
+            {syncing ? 'Syncing...' : synced ? 'Synced to CRM' : 'Sync to CRM'}
+          </button>
+        </div>
       </div>
 
       {/* Sub-location ID */}
-      <div style={{ marginBottom: 16 }}>
-        <span style={label}>Sub-Location ID</span>
-        <input value={brand.sub_location_id} onChange={e => deepSet('sub_location_id', e.target.value)} placeholder="loc_abc123" style={{ ...inp, maxWidth: 300 }} />
+      <div className="mb-4">
+        <span className={labelCls}>Sub-Location ID</span>
+        <input
+          value={brand.sub_location_id}
+          onChange={e => deepSet('sub_location_id', e.target.value)}
+          placeholder="loc_abc123"
+          className={`${inpCls} max-w-[300px]`}
+        />
       </div>
 
       {/* Tab Bar */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 20, borderRadius: 12, background: 'var(--jp-surface, #111827)', border: '1px solid var(--jp-border, #1E293B)', padding: 4 }}>
+      <div className="flex gap-0.5 mb-5 rounded-xl bg-core-card border border-core-border p-1">
         {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{
-            flex: 1, padding: '10px 8px', borderRadius: 8, border: 'none',
-            background: tab === t.key ? 'var(--jp-surface-elevated, #162032)' : 'transparent',
-            color: tab === t.key ? 'var(--jp-green, #7ed957)' : 'var(--jp-text-muted, #4A5568)',
-            fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            boxShadow: tab === t.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-          }}>
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d={t.icon} /></svg>
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`flex-1 py-2.5 px-2 rounded-lg border-none text-[0.75rem] font-semibold cursor-pointer font-[inherit] transition-all flex items-center justify-center gap-1.5 ${
+              tab === t.key
+                ? 'bg-core-card-hover text-core-green shadow-sm'
+                : 'bg-transparent text-core-text-muted'
+            }`}
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d={t.icon} />
+            </svg>
             {t.label}
           </button>
         ))}
@@ -407,46 +393,50 @@ export default function BrandBuilder() {
       {/* ═══ TAB: IMPORT ═══ */}
       {tab === 'import' && (
         <div>
-          <div style={card}>
-            <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--jp-text)', margin: '0 0 0.75rem' }}>Import from URL</h3>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)', marginBottom: 12, lineHeight: 1.5 }}>
+          <div className={cardCls}>
+            <h3 className="text-[0.9375rem] font-bold text-core-text mt-0 mb-3">Import from URL</h3>
+            <p className="text-[0.8125rem] text-core-text-dim mb-3 leading-relaxed">
               Enter a website URL and AI will extract brand colors, fonts, logos, and business details automatically.
             </p>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input value={importUrl} onChange={e => setImportUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleImportUrl()} placeholder="https://example.com" style={{ ...inp, flex: 1 }} />
-              <button onClick={handleImportUrl} disabled={importing} style={{
-                padding: '10px 20px', borderRadius: 8, background: 'var(--jp-green, #7ed957)',
-                color: '#000', fontWeight: 700, fontSize: '0.8125rem', border: 'none', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
-              }}>
+            <div className="flex gap-2">
+              <input
+                value={importUrl}
+                onChange={e => setImportUrl(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleImportUrl()}
+                placeholder="https://example.com"
+                className={`${inpCls} flex-1`}
+              />
+              <button
+                onClick={handleImportUrl}
+                disabled={importing}
+                className="px-5 py-2.5 rounded-lg bg-core-green text-black font-bold text-[0.8125rem] border-none cursor-pointer font-[inherit] whitespace-nowrap"
+              >
                 {importing ? 'Extracting...' : 'Extract Brand'}
               </button>
             </div>
-            {importError && <p style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: 8 }}>{importError}</p>}
+            {importError && <p className="text-[0.75rem] text-core-red mt-2">{importError}</p>}
           </div>
 
-          <div style={card}>
-            <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--jp-text)', margin: '0 0 0.75rem' }}>Import from File</h3>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)', marginBottom: 12, lineHeight: 1.5 }}>
+          <div className={cardCls}>
+            <h3 className="text-[0.9375rem] font-bold text-core-text mt-0 mb-3">Import from File</h3>
+            <p className="text-[0.8125rem] text-core-text-dim mb-3 leading-relaxed">
               Upload a .0n brand file, .json, or .txt document.
             </p>
-            <input ref={fileRef} type="file" accept=".0n,.json,.txt" onChange={handleFileImport} style={{ display: 'none' }} />
-            <button onClick={() => fileRef.current?.click()} style={{
-              padding: '10px 20px', borderRadius: 8,
-              background: 'var(--jp-surface-elevated, #162032)',
-              border: '1px solid var(--jp-border)',
-              color: 'var(--jp-text-secondary)', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
+            <input ref={fileRef} type="file" accept=".0n,.json,.txt" onChange={handleFileImport} className="hidden" />
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="px-5 py-2.5 rounded-lg bg-core-card-hover border border-core-border text-core-text-dim text-[0.8125rem] font-semibold cursor-pointer font-[inherit]"
+            >
               Choose File
             </button>
           </div>
 
-          <div style={card}>
-            <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--jp-text)', margin: '0 0 0.75rem' }}>Start Fresh</h3>
-            <button onClick={() => setTab('identity')} style={{
-              padding: '10px 20px', borderRadius: 8,
-              background: 'transparent', border: '1px solid var(--jp-border)',
-              color: 'var(--jp-text-secondary)', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
+          <div className={cardCls}>
+            <h3 className="text-[0.9375rem] font-bold text-core-text mt-0 mb-3">Start Fresh</h3>
+            <button
+              onClick={() => setTab('identity')}
+              className="px-5 py-2.5 rounded-lg bg-transparent border border-core-border text-core-text-dim text-[0.8125rem] font-semibold cursor-pointer font-[inherit]"
+            >
               Build from Scratch
             </button>
           </div>
@@ -457,27 +447,53 @@ export default function BrandBuilder() {
       {tab === 'identity' && (
         <div>
           {/* Business Info */}
-          <div style={card}>
-            <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--jp-text)', margin: '0 0 1rem' }}>Business Info</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div><span style={label}>Business Name</span><input value={brand.business.name} onChange={e => deepSet('business.name', e.target.value)} style={inp} /></div>
-              <div><span style={label}>Founded Year {foundedAge !== null && foundedAge > 0 ? `(${foundedAge} years)` : ''}</span><input value={brand.business.founded} onChange={e => deepSet('business.founded', e.target.value)} placeholder="2005" style={inp} /></div>
-              <div style={{ gridColumn: 'span 2' }}><span style={label}>Tagline</span><input value={brand.business.tagline} onChange={e => deepSet('business.tagline', e.target.value)} style={inp} /></div>
-              <div style={{ gridColumn: 'span 2' }}><span style={label}>Description</span><textarea value={brand.business.description} onChange={e => deepSet('business.description', e.target.value)} rows={2} style={{ ...inp, resize: 'vertical' as const }} /></div>
+          <div className={cardCls}>
+            <h3 className="text-[0.9375rem] font-bold text-core-text mt-0 mb-4">Business Info</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <span className={labelCls}>Business Name</span>
+                <input value={brand.business.name} onChange={e => deepSet('business.name', e.target.value)} className={inpCls} />
+              </div>
+              <div>
+                <span className={labelCls}>
+                  Founded Year {foundedAge !== null && foundedAge > 0 ? `(${foundedAge} years)` : ''}
+                </span>
+                <input value={brand.business.founded} onChange={e => deepSet('business.founded', e.target.value)} placeholder="2005" className={inpCls} />
+              </div>
+              <div className="col-span-2">
+                <span className={labelCls}>Tagline</span>
+                <input value={brand.business.tagline} onChange={e => deepSet('business.tagline', e.target.value)} className={inpCls} />
+              </div>
+              <div className="col-span-2">
+                <span className={labelCls}>Description</span>
+                <textarea value={brand.business.description} onChange={e => deepSet('business.description', e.target.value)} rows={2} className={`${inpCls} resize-y`} />
+              </div>
             </div>
           </div>
 
           {/* Logos */}
-          <div style={card}>
-            <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--jp-text)', margin: '0 0 1rem' }}>Logos</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className={cardCls}>
+            <h3 className="text-[0.9375rem] font-bold text-core-text mt-0 mb-4">Logos</h3>
+            <div className="grid grid-cols-2 gap-3">
               {(['primary', 'icon', 'dark', 'light'] as const).map(slot => (
                 <div key={slot}>
-                  <span style={label}>{slot} Logo URL</span>
-                  <input value={brand.identity.logos[slot].url} onChange={e => deepSet(`identity.logos.${slot}.url`, e.target.value)} placeholder="https://..." style={inp} />
+                  <span className={labelCls}>{slot} Logo URL</span>
+                  <input
+                    value={brand.identity.logos[slot].url}
+                    onChange={e => deepSet(`identity.logos.${slot}.url`, e.target.value)}
+                    placeholder="https://..."
+                    className={inpCls}
+                  />
                   {brand.identity.logos[slot].url && (
-                    <div style={{ marginTop: 8, padding: 12, borderRadius: 8, background: slot === 'dark' ? '#fff' : slot === 'light' ? '#000' : 'var(--jp-surface-elevated)', border: '1px solid var(--jp-border)', textAlign: 'center' }}>
-                      <img src={brand.identity.logos[slot].url} alt={slot} style={{ maxHeight: 40, maxWidth: '100%' }} onError={e => (e.currentTarget.style.display = 'none')} />
+                    <div className={`mt-2 p-3 rounded-lg border border-core-border text-center ${
+                      slot === 'dark' ? 'bg-white' : slot === 'light' ? 'bg-black' : 'bg-core-card-hover'
+                    }`}>
+                      <img
+                        src={brand.identity.logos[slot].url}
+                        alt={slot}
+                        className="max-h-10 max-w-full"
+                        onError={e => (e.currentTarget.style.display = 'none')}
+                      />
                     </div>
                   )}
                 </div>
@@ -486,30 +502,42 @@ export default function BrandBuilder() {
           </div>
 
           {/* Colors */}
-          <div style={card}>
-            <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--jp-text)', margin: '0 0 1rem' }}>Colors</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+          <div className={cardCls}>
+            <h3 className="text-[0.9375rem] font-bold text-core-text mt-0 mb-4">Colors</h3>
+            <div className="grid grid-cols-5 gap-3">
               {(['primary', 'secondary', 'accent', 'background', 'text_color'] as const).map(key => (
-                <div key={key} style={{ textAlign: 'center' }}>
-                  <span style={{ ...label, textAlign: 'center' }}>{key.replace('_', ' ')}</span>
-                  <input type="color" value={brand.identity.colors[key]} onChange={e => deepSet(`identity.colors.${key}`, e.target.value)} style={{ width: '100%', height: 40, borderRadius: 8, border: '1px solid var(--jp-border)', cursor: 'pointer', background: 'transparent' }} />
-                  <input value={brand.identity.colors[key]} onChange={e => deepSet(`identity.colors.${key}`, e.target.value)} style={{ ...inp, fontSize: '0.6875rem', fontFamily: "'JetBrains Mono', monospace", textAlign: 'center', marginTop: 4, padding: '6px 4px' }} />
+                <div key={key} className="text-center">
+                  <span className={`${labelCls} text-center`}>{key.replace('_', ' ')}</span>
+                  <input
+                    type="color"
+                    value={brand.identity.colors[key]}
+                    onChange={e => deepSet(`identity.colors.${key}`, e.target.value)}
+                    className="w-full h-10 rounded-lg border border-core-border cursor-pointer bg-transparent"
+                  />
+                  <input
+                    value={brand.identity.colors[key]}
+                    onChange={e => deepSet(`identity.colors.${key}`, e.target.value)}
+                    className={`${inpCls} text-[0.6875rem] font-mono text-center mt-1 py-1.5 px-1`}
+                  />
                 </div>
               ))}
             </div>
           </div>
 
           {/* Fonts */}
-          <div style={card}>
-            <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--jp-text)', margin: '0 0 1rem' }}>Typography</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          <div className={cardCls}>
+            <h3 className="text-[0.9375rem] font-bold text-core-text mt-0 mb-4">Typography</h3>
+            <div className="grid grid-cols-3 gap-3">
               {(['display', 'body', 'mono'] as const).map(role => (
                 <div key={role}>
-                  <span style={label}>{role} Font</span>
-                  <input value={brand.identity.fonts[role].family} onChange={e => deepSet(`identity.fonts.${role}.family`, e.target.value)} style={inp} />
-                  <span style={{ ...label, marginTop: 8 }}>Weight</span>
-                  <input value={brand.identity.fonts[role].weight} onChange={e => deepSet(`identity.fonts.${role}.weight`, e.target.value)} style={inp} />
-                  <div style={{ marginTop: 8, padding: 10, borderRadius: 6, background: 'var(--jp-surface-elevated)', fontFamily: brand.identity.fonts[role].family, fontWeight: parseInt(brand.identity.fonts[role].weight) || 400, fontSize: '0.875rem', color: 'var(--jp-text)' }}>
+                  <span className={labelCls}>{role} Font</span>
+                  <input value={brand.identity.fonts[role].family} onChange={e => deepSet(`identity.fonts.${role}.family`, e.target.value)} className={inpCls} />
+                  <span className={`${labelCls} mt-2`}>Weight</span>
+                  <input value={brand.identity.fonts[role].weight} onChange={e => deepSet(`identity.fonts.${role}.weight`, e.target.value)} className={inpCls} />
+                  <div
+                    className="mt-2 p-2.5 rounded-md bg-core-card-hover text-[0.875rem] text-core-text"
+                    style={{ fontFamily: brand.identity.fonts[role].family, fontWeight: parseInt(brand.identity.fonts[role].weight) || 400 }}
+                  >
                     The quick brown fox
                   </div>
                 </div>
@@ -523,33 +551,56 @@ export default function BrandBuilder() {
       {tab === 'facts' && (
         <div>
           {brand.dynamic_facts.map(f => (
-            <div key={f.id} style={{ ...card, opacity: f.enabled ? 1 : 0.5 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={() => updFact(f.id, 'enabled', !f.enabled)} style={{ width: 36, height: 20, borderRadius: 10, border: 'none', background: f.enabled ? '#7ed957' : 'var(--jp-border)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
-                    <span style={{ position: 'absolute', top: 2, left: f.enabled ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+            <div key={f.id} className={`${cardCls} ${f.enabled ? 'opacity-100' : 'opacity-50'}`}>
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  {/* Toggle */}
+                  <button
+                    onClick={() => updFact(f.id, 'enabled', !f.enabled)}
+                    className={`relative w-9 h-5 rounded-full border-none cursor-pointer transition-colors ${f.enabled ? 'bg-core-green' : 'bg-core-border'}`}
+                  >
+                    <span
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${f.enabled ? 'left-[18px]' : 'left-0.5'}`}
+                    />
                   </button>
-                  <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>{f.label || 'New Fact'}</span>
+                  <span className="text-[0.8125rem] font-semibold text-core-text">{f.label || 'New Fact'}</span>
                 </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--jp-green)', fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{computeFact(f)}</span>
-                  <button onClick={() => rmFact(f.id)} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)', color: '#ef4444', fontSize: '0.6875rem', cursor: 'pointer', fontFamily: 'inherit' }}>Remove</button>
+                <div className="flex gap-2 items-center">
+                  <span className="text-[0.75rem] text-core-green font-bold font-mono">{computeFact(f)}</span>
+                  <button
+                    onClick={() => rmFact(f.id)}
+                    className="px-2 py-1 rounded-md border border-core-red/20 bg-core-red/5 text-core-red text-[0.6875rem] cursor-pointer font-[inherit]"
+                  >
+                    Remove
+                  </button>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
-                <div><span style={label}>Label</span><input value={f.label} onChange={e => updFact(f.id, 'label', e.target.value)} style={inp} /></div>
+              <div className="grid grid-cols-4 gap-2.5">
                 <div>
-                  <span style={label}>Type</span>
-                  <select value={f.type} onChange={e => updFact(f.id, 'type', e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+                  <span className={labelCls}>Label</span>
+                  <input value={f.label} onChange={e => updFact(f.id, 'label', e.target.value)} className={inpCls} />
+                </div>
+                <div>
+                  <span className={labelCls}>Type</span>
+                  <select value={f.type} onChange={e => updFact(f.id, 'type', e.target.value)} className={`${inpCls} cursor-pointer`}>
                     {FACT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
-                <div><span style={label}>Value</span><input value={f.value} onChange={e => updFact(f.id, 'value', e.target.value)} style={inp} /></div>
-                <div><span style={label}>Suffix</span><input value={f.suffix} onChange={e => updFact(f.id, 'suffix', e.target.value)} style={inp} /></div>
+                <div>
+                  <span className={labelCls}>Value</span>
+                  <input value={f.value} onChange={e => updFact(f.id, 'value', e.target.value)} className={inpCls} />
+                </div>
+                <div>
+                  <span className={labelCls}>Suffix</span>
+                  <input value={f.suffix} onChange={e => updFact(f.id, 'suffix', e.target.value)} className={inpCls} />
+                </div>
               </div>
             </div>
           ))}
-          <button onClick={addFact} style={{ padding: '10px 20px', borderRadius: 8, border: '1px dashed var(--jp-border)', background: 'transparent', color: 'var(--jp-green)', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', width: '100%' }}>
+          <button
+            onClick={addFact}
+            className="w-full px-5 py-2.5 rounded-lg border border-dashed border-core-border bg-transparent text-core-green text-[0.8125rem] font-semibold cursor-pointer font-[inherit]"
+          >
             + Add Fact
           </button>
         </div>
@@ -559,28 +610,51 @@ export default function BrandBuilder() {
       {tab === 'services' && (
         <div>
           {brand.services.map(s => (
-            <div key={s.id} style={{ ...card, opacity: s.enabled ? 1 : 0.5 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={() => updSvc(s.id, 'enabled', !s.enabled)} style={{ width: 36, height: 20, borderRadius: 10, border: 'none', background: s.enabled ? '#7ed957' : 'var(--jp-border)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
-                    <span style={{ position: 'absolute', top: 2, left: s.enabled ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+            <div key={s.id} className={`${cardCls} ${s.enabled ? 'opacity-100' : 'opacity-50'}`}>
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  {/* Toggle */}
+                  <button
+                    onClick={() => updSvc(s.id, 'enabled', !s.enabled)}
+                    className={`relative w-9 h-5 rounded-full border-none cursor-pointer transition-colors ${s.enabled ? 'bg-core-green' : 'bg-core-border'}`}
+                  >
+                    <span
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${s.enabled ? 'left-[18px]' : 'left-0.5'}`}
+                    />
                   </button>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--jp-text)' }}>Service {s.id}</span>
+                  <span className="text-[0.875rem] font-bold text-core-text">Service {s.id}</span>
                 </div>
-                {s.price && <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--jp-green)', fontFamily: "'JetBrains Mono', monospace" }}>{formatPrice(s.price, s.price_type)}</span>}
+                {s.price && (
+                  <span className="text-[0.8125rem] font-bold text-core-green font-mono">{formatPrice(s.price, s.price_type)}</span>
+                )}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div><span style={label}>Service Name</span><input value={s.name} onChange={e => updSvc(s.id, 'name', e.target.value)} style={inp} /></div>
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <span style={label}>Price Type</span>
-                  <select value={s.price_type} onChange={e => updSvc(s.id, 'price_type', e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+                  <span className={labelCls}>Service Name</span>
+                  <input value={s.name} onChange={e => updSvc(s.id, 'name', e.target.value)} className={inpCls} />
+                </div>
+                <div>
+                  <span className={labelCls}>Price Type</span>
+                  <select value={s.price_type} onChange={e => updSvc(s.id, 'price_type', e.target.value)} className={`${inpCls} cursor-pointer`}>
                     {PRICE_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
-                <div style={{ gridColumn: 'span 2' }}><span style={label}>Description</span><textarea value={s.description} onChange={e => updSvc(s.id, 'description', e.target.value)} rows={2} style={{ ...inp, resize: 'vertical' as const }} /></div>
-                <div><span style={label}>Price</span><input value={s.price} onChange={e => updSvc(s.id, 'price', e.target.value)} style={inp} /></div>
-                <div><span style={label}>Units Label</span><input value={s.units_label} onChange={e => updSvc(s.id, 'units_label', e.target.value)} placeholder="projects" style={inp} /></div>
-                <div><span style={label}>Units Completed</span><input value={s.units_conducted} onChange={e => updSvc(s.id, 'units_conducted', e.target.value)} style={inp} /></div>
+                <div className="col-span-2">
+                  <span className={labelCls}>Description</span>
+                  <textarea value={s.description} onChange={e => updSvc(s.id, 'description', e.target.value)} rows={2} className={`${inpCls} resize-y`} />
+                </div>
+                <div>
+                  <span className={labelCls}>Price</span>
+                  <input value={s.price} onChange={e => updSvc(s.id, 'price', e.target.value)} className={inpCls} />
+                </div>
+                <div>
+                  <span className={labelCls}>Units Label</span>
+                  <input value={s.units_label} onChange={e => updSvc(s.id, 'units_label', e.target.value)} placeholder="projects" className={inpCls} />
+                </div>
+                <div>
+                  <span className={labelCls}>Units Completed</span>
+                  <input value={s.units_conducted} onChange={e => updSvc(s.id, 'units_conducted', e.target.value)} className={inpCls} />
+                </div>
               </div>
             </div>
           ))}
@@ -589,12 +663,21 @@ export default function BrandBuilder() {
 
       {/* ═══ TAB: CONTACT ═══ */}
       {tab === 'contact' && (
-        <div style={card}>
-          <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--jp-text)', margin: '0 0 1rem' }}>Contact Information</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><span style={label}>Phone</span><input value={brand.business.phone} onChange={e => deepSet('business.phone', e.target.value)} placeholder="+1 (555) 555-5555" style={inp} /></div>
-            <div><span style={label}>Booking URL</span><input value={brand.business.booking_url} onChange={e => deepSet('business.booking_url', e.target.value)} placeholder="https://calendly.com/..." style={inp} /></div>
-            <div style={{ gridColumn: 'span 2' }}><span style={label}>Contact Page URL</span><input value={brand.business.contact_url} onChange={e => deepSet('business.contact_url', e.target.value)} placeholder="https://yoursite.com/contact" style={inp} /></div>
+        <div className={cardCls}>
+          <h3 className="text-[0.9375rem] font-bold text-core-text mt-0 mb-4">Contact Information</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <span className={labelCls}>Phone</span>
+              <input value={brand.business.phone} onChange={e => deepSet('business.phone', e.target.value)} placeholder="+1 (555) 555-5555" className={inpCls} />
+            </div>
+            <div>
+              <span className={labelCls}>Booking URL</span>
+              <input value={brand.business.booking_url} onChange={e => deepSet('business.booking_url', e.target.value)} placeholder="https://calendly.com/..." className={inpCls} />
+            </div>
+            <div className="col-span-2">
+              <span className={labelCls}>Contact Page URL</span>
+              <input value={brand.business.contact_url} onChange={e => deepSet('business.contact_url', e.target.value)} placeholder="https://yoursite.com/contact" className={inpCls} />
+            </div>
           </div>
         </div>
       )}
@@ -603,30 +686,43 @@ export default function BrandBuilder() {
       {tab === 'export' && (
         <div>
           {/* Preview */}
-          <div style={card}>
-            <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--jp-text)', margin: '0 0 1rem' }}>Brand Preview</h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              {brand.identity.logos.primary.url && <img src={brand.identity.logos.primary.url} alt="Logo" style={{ height: 32 }} onError={e => (e.currentTarget.style.display = 'none')} />}
+          <div className={cardCls}>
+            <h3 className="text-[0.9375rem] font-bold text-core-text mt-0 mb-4">Brand Preview</h3>
+            <div className="flex items-center gap-3 mb-4">
+              {brand.identity.logos.primary.url && (
+                <img
+                  src={brand.identity.logos.primary.url}
+                  alt="Logo"
+                  className="h-8"
+                  onError={e => (e.currentTarget.style.display = 'none')}
+                />
+              )}
               <div>
-                <div style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--jp-text)' }}>{brand.business.name || 'Business Name'}</div>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)' }}>{brand.business.tagline}</div>
+                <div className="text-lg font-extrabold text-core-text">{brand.business.name || 'Business Name'}</div>
+                <div className="text-[0.8125rem] text-core-text-dim">{brand.business.tagline}</div>
               </div>
             </div>
 
             {/* Color swatches */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+            <div className="flex gap-1.5 mb-4">
               {Object.entries(brand.identity.colors).map(([k, v]) => (
-                <div key={k} style={{ textAlign: 'center' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 8, background: v, border: '1px solid var(--jp-border)' }} />
-                  <div style={{ fontSize: '0.5625rem', color: 'var(--jp-text-muted)', marginTop: 4 }}>{k}</div>
+                <div key={k} className="text-center">
+                  <div
+                    className="w-10 h-10 rounded-lg border border-core-border"
+                    style={{ background: v }}
+                  />
+                  <div className="text-[0.5625rem] text-core-text-muted mt-1">{k}</div>
                 </div>
               ))}
             </div>
 
             {/* Active facts */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+            <div className="flex flex-wrap gap-1.5 mb-4">
               {brand.dynamic_facts.filter(f => f.enabled && f.value).map(f => (
-                <span key={f.id} style={{ padding: '4px 10px', borderRadius: 6, background: 'rgba(110,224,90,0.08)', border: '1px solid rgba(110,224,90,0.15)', color: 'var(--jp-green)', fontSize: '0.75rem', fontWeight: 600 }}>
+                <span
+                  key={f.id}
+                  className="px-2.5 py-1 rounded-md bg-core-green/[0.08] border border-core-green/15 text-core-green text-[0.75rem] font-semibold"
+                >
                   {computeFact(f)}
                 </span>
               ))}
@@ -634,48 +730,48 @@ export default function BrandBuilder() {
 
             {/* Active services */}
             {brand.services.filter(s => s.enabled && s.name).map(s => (
-              <div key={s.id} style={{ padding: '10px 12px', borderRadius: 8, background: 'var(--jp-surface-elevated)', border: '1px solid var(--jp-border)', marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)' }}>{s.name}</span>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--jp-green)', fontFamily: "'JetBrains Mono', monospace" }}>{formatPrice(s.price, s.price_type)}</span>
+              <div
+                key={s.id}
+                className="px-3 py-2.5 rounded-lg bg-core-card-hover border border-core-border mb-1.5 flex justify-between"
+              >
+                <span className="text-[0.8125rem] font-semibold text-core-text">{s.name}</span>
+                <span className="text-[0.8125rem] font-bold text-core-green font-mono">{formatPrice(s.price, s.price_type)}</span>
               </div>
             ))}
           </div>
 
           {/* Export actions */}
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button onClick={exportFile} style={{
-              padding: '12px 24px', borderRadius: 10, background: 'var(--jp-green, #7ed957)',
-              color: '#000', fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-            }}>
+          <div className="flex gap-2.5 flex-wrap">
+            <button
+              onClick={exportFile}
+              className="px-6 py-3 rounded-[10px] bg-core-green text-black font-bold text-[0.875rem] border-none cursor-pointer font-[inherit]"
+            >
               Download .0n File
             </button>
-            <button onClick={copyJson} style={{
-              padding: '12px 24px', borderRadius: 10,
-              background: copied ? 'rgba(110,224,90,0.15)' : 'var(--jp-surface-elevated)',
-              color: copied ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-              border: '1px solid var(--jp-border)',
-              fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit',
-            }}>
+            <button
+              onClick={copyJson}
+              className={`px-6 py-3 rounded-[10px] border border-core-border font-semibold text-[0.875rem] cursor-pointer font-[inherit] transition-all ${
+                copied
+                  ? 'bg-core-green/15 text-core-green'
+                  : 'bg-core-card-hover text-core-text-dim'
+              }`}
+            >
               {copied ? 'Copied!' : 'Copy JSON'}
             </button>
-            <button onClick={save} style={{
-              padding: '12px 24px', borderRadius: 10,
-              background: 'var(--jp-surface-elevated)',
-              color: 'var(--jp-text-secondary)',
-              border: '1px solid var(--jp-border)',
-              fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit',
-            }}>
+            <button
+              onClick={save}
+              className="px-6 py-3 rounded-[10px] bg-core-card-hover text-core-text-dim border border-core-border font-semibold text-[0.875rem] cursor-pointer font-[inherit]"
+            >
               Save to Cloud
             </button>
           </div>
 
           {/* Danger zone */}
-          <div style={{ marginTop: 32, padding: 16, borderRadius: 10, border: '1px solid rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.03)' }}>
-            <button onClick={() => { setBrand(JSON.parse(JSON.stringify(DEFAULT_BRAND))); setTab('import') }} style={{
-              padding: '8px 16px', borderRadius: 8, background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444',
-              fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
+          <div className="mt-8 p-4 rounded-[10px] border border-core-red/20 bg-core-red/[0.03]">
+            <button
+              onClick={() => { setBrand(JSON.parse(JSON.stringify(DEFAULT_BRAND))); setTab('import') }}
+              className="px-4 py-2 rounded-lg bg-core-red/10 border border-core-red/20 text-core-red text-[0.8125rem] font-semibold cursor-pointer font-[inherit]"
+            >
               Reset Brand Profile
             </button>
           </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { Check, Loader2, ExternalLink } from 'lucide-react'
 
 interface BillingData {
   tier: { level: number; name: string }
@@ -19,8 +20,14 @@ const TIER_PRICES: Record<number, string> = {
   0: 'Free', 1: '$29/mo', 2: '$79/mo', 3: '$149/mo', 4: '$299/mo', 5: '$499/mo',
 }
 
-const TIER_COLORS: Record<number, string> = {
-  0: '#8b95a5', 1: '#60a5fa', 2: '#a78bfa', 3: '#f5c518', 4: '#f97316', 5: '#6EE05A',
+// Tailwind-safe color classes mapped per tier
+const TIER_COLOR_CLASS: Record<number, { text: string; border: string; bg: string; bar: string; badge: string; badgeBorder: string }> = {
+  0: { text: 'text-core-text-muted', border: 'border-core-border', bg: 'bg-transparent', bar: 'bg-core-text-muted', badge: 'bg-core-text-muted/10', badgeBorder: 'border-core-text-muted/30' },
+  1: { text: 'text-blue-400', border: 'border-blue-400/30', bg: 'bg-blue-400/5', bar: 'bg-blue-400', badge: 'bg-blue-400/10', badgeBorder: 'border-blue-400/30' },
+  2: { text: 'text-violet-400', border: 'border-violet-400/30', bg: 'bg-violet-400/5', bar: 'bg-violet-400', badge: 'bg-violet-400/10', badgeBorder: 'border-violet-400/30' },
+  3: { text: 'text-amber-400', border: 'border-amber-400/30', bg: 'bg-amber-400/5', bar: 'bg-amber-400', badge: 'bg-amber-400/10', badgeBorder: 'border-amber-400/30' },
+  4: { text: 'text-orange-400', border: 'border-orange-400/30', bg: 'bg-orange-400/5', bar: 'bg-orange-400', badge: 'bg-orange-400/10', badgeBorder: 'border-orange-400/30' },
+  5: { text: 'text-core-green', border: 'border-core-green/30', bg: 'bg-core-green/5', bar: 'bg-core-green', badge: 'bg-core-green/10', badgeBorder: 'border-core-green/30' },
 }
 
 const TIER_FEATURES: Record<number, string[]> = {
@@ -32,13 +39,11 @@ const TIER_FEATURES: Record<number, string[]> = {
 }
 
 const SPARK_PACKS = [
-  { id: 'starter', name: 'Starter', sparks: 50, price: '$5', color: '#60a5fa' },
-  { id: 'builder', name: 'Builder', sparks: 250, price: '$20', color: '#a78bfa', popular: true },
-  { id: 'pro', name: 'Pro', sparks: 750, price: '$50', color: '#f5c518' },
-  { id: 'unlimited', name: 'Unlimited', sparks: 2000, price: '$100', color: '#6EE05A' },
+  { id: 'starter', name: 'Starter', sparks: 50, price: '$5', colorText: 'text-blue-400', colorBg: 'bg-blue-400/10', colorBorder: 'border-blue-400/30', colorBar: 'bg-blue-400', popular: false },
+  { id: 'builder', name: 'Builder', sparks: 250, price: '$20', colorText: 'text-violet-400', colorBg: 'bg-violet-400/10', colorBorder: 'border-violet-400/30', colorBar: 'bg-violet-400', popular: true },
+  { id: 'pro', name: 'Pro', sparks: 750, price: '$50', colorText: 'text-amber-400', colorBg: 'bg-amber-400/10', colorBorder: 'border-amber-400/30', colorBar: 'bg-amber-400', popular: false },
+  { id: 'unlimited', name: 'Unlimited', sparks: 2000, price: '$100', colorText: 'text-core-green', colorBg: 'bg-core-green/10', colorBorder: 'border-core-green/30', colorBar: 'bg-core-green', popular: false },
 ]
-
-const M = "'JetBrains Mono', monospace"
 
 export default function BillingPage() {
   const supabase = createClient()
@@ -95,122 +100,108 @@ export default function BillingPage() {
   }
 
   const currentTier = data?.tier.level ?? 0
+  const tierColors = TIER_COLOR_CLASS[currentTier]
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
-        <div style={{ width: 32, height: 32, border: '3px solid var(--jp-border, #30363d)', borderTopColor: '#6EE05A', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex justify-center pt-16">
+        <Loader2 className="w-8 h-8 animate-spin text-core-green" />
       </div>
     )
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', margin: '0 0 4px' }}>Billing</h1>
-        <p style={{ fontSize: 13, color: 'var(--jp-text-muted, #8b95a5)', margin: 0 }}>Manage your subscription, credits, and payment.</p>
+    <div className="max-w-[900px] mx-auto">
+      {/* Header */}
+      <div className="mb-7">
+        <h1 className="text-[22px] font-bold text-core-text mb-1">Billing</h1>
+        <p className="text-[13px] text-core-text-muted">Manage your subscription, credits, and payment.</p>
       </div>
 
-      {/* ── Current Plan ── */}
-      <div style={{
-        background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16,
-        padding: 24, marginBottom: 20, position: 'relative', overflow: 'hidden',
-      }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${TIER_COLORS[currentTier]}, transparent)` }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', margin: 0 }}>Current Plan</h2>
-          <span style={{
-            fontFamily: M, fontSize: 11, padding: '4px 14px', borderRadius: 20,
-            background: `${TIER_COLORS[currentTier]}15`, border: `1px solid ${TIER_COLORS[currentTier]}30`,
-            color: TIER_COLORS[currentTier], fontWeight: 600,
-          }}>
+      {/* Current Plan */}
+      <div className="relative overflow-hidden bg-white/[0.02] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-6 mb-5">
+        {/* Top accent bar */}
+        <div className={`absolute top-0 left-0 right-0 h-0.5 ${tierColors.bar}`} />
+
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="text-base font-bold text-core-text">Current Plan</h2>
+          <span className={`font-mono text-[11px] px-3.5 py-1 rounded-full font-semibold ${tierColors.badge} border ${tierColors.badgeBorder} ${tierColors.text}`}>
             {TIER_NAMES[currentTier]}
           </span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <div className="grid grid-cols-4 gap-3">
           {[
-            { label: 'Tier', value: String(currentTier), sub: TIER_NAMES[currentTier], color: '#00d4ff' },
-            { label: 'Price', value: TIER_PRICES[currentTier], sub: '', color: 'var(--jp-text, #f0f4f8)' },
-            { label: 'Status', value: data?.subscription?.status === 'active' ? 'Active' : 'Free', sub: '', color: data?.subscription?.status === 'active' ? '#6EE05A' : '#8b95a5' },
-            { label: 'K-Layers', value: `${data?.kLayers || 0}/7`, sub: '', color: '#00d4ff' },
+            { label: 'Tier', value: String(currentTier), sub: TIER_NAMES[currentTier], colorClass: 'text-core-cyan' },
+            { label: 'Price', value: TIER_PRICES[currentTier], sub: '', colorClass: 'text-core-text' },
+            { label: 'Status', value: data?.subscription?.status === 'active' ? 'Active' : 'Free', sub: '', colorClass: data?.subscription?.status === 'active' ? 'text-core-green' : 'text-core-text-muted' },
+            { label: 'K-Layers', value: `${data?.kLayers || 0}/7`, sub: '', colorClass: 'text-core-cyan' },
           ].map(s => (
-            <div key={s.label} style={{
-              background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.04)',
-              borderRadius: 12, padding: '16px 14px',
-            }}>
-              <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 6 }}>{s.label}</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: s.color, fontFamily: M }}>{s.value}</div>
-              {s.sub && <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', marginTop: 4 }}>{s.sub}</div>}
+            <div key={s.label} className="bg-black/20 border border-white/[0.04] rounded-xl px-3.5 py-4">
+              <div className="text-[11px] text-core-text-muted mb-1.5">{s.label}</div>
+              <div className={`text-2xl font-extrabold font-mono ${s.colorClass}`}>{s.value}</div>
+              {s.sub && <div className="text-[11px] text-core-text-muted mt-1">{s.sub}</div>}
             </div>
           ))}
         </div>
 
         {data?.subscription?.current_period_end && (
-          <p style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', marginTop: 12 }}>
+          <p className="text-[11px] text-core-text-muted mt-3">
             Renews: {new Date(data.subscription.current_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
         )}
       </div>
 
-      {/* ── Subscription Tiers ── */}
-      <div style={{
-        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: 16, padding: 24, marginBottom: 20,
-      }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', margin: '0 0 16px' }}>Subscription Tiers</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+      {/* Subscription Tiers */}
+      <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 mb-5">
+        <h2 className="text-base font-bold text-core-text mb-4">Subscription Tiers</h2>
+        <div className="grid grid-cols-5 gap-3">
           {[1, 2, 3, 4, 5].map(tier => {
             const isActive = currentTier >= tier
-            const color = TIER_COLORS[tier]
+            const tc = TIER_COLOR_CLASS[tier]
             return (
-              <div key={tier} style={{
-                background: isActive ? `${color}08` : 'rgba(0,0,0,0.2)',
-                border: `1px solid ${isActive ? color + '30' : 'rgba(255,255,255,0.04)'}`,
-                borderRadius: 14, padding: 18, position: 'relative', overflow: 'hidden',
-                transition: 'all 0.2s',
-              }}
-                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.borderColor = color + '40'; e.currentTarget.style.transform = 'translateY(-2px)' } }}
-                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.transform = 'none' } }}
+              <div
+                key={tier}
+                className={[
+                  'relative overflow-hidden rounded-[14px] p-[18px] transition-all duration-200',
+                  isActive
+                    ? `${tc.bg} border ${tc.border}`
+                    : 'bg-black/20 border border-white/[0.04] hover:-translate-y-0.5',
+                ].join(' ')}
               >
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: color, opacity: isActive ? 1 : 0.3 }} />
-                <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? color : 'var(--jp-text, #f0f4f8)', marginBottom: 4 }}>
+                {/* Top accent bar */}
+                <div className={`absolute top-0 left-0 right-0 h-0.5 ${tc.bar} ${isActive ? 'opacity-100' : 'opacity-30'}`} />
+
+                <div className={`text-[13px] font-bold mb-1 ${isActive ? tc.text : 'text-core-text'}`}>
                   {TIER_NAMES[tier]}
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--jp-text, #f0f4f8)', fontFamily: M, marginBottom: 12 }}>
+                <div className="text-[22px] font-extrabold text-core-text font-mono mb-3">
                   {TIER_PRICES[tier]}
                 </div>
 
-                <div style={{ marginBottom: 14 }}>
+                <div className="mb-3.5">
                   {(TIER_FEATURES[tier] || []).map(f => (
-                    <div key={f} style={{ fontSize: 10, color: 'var(--jp-text-muted, #8b95a5)', lineHeight: 1.8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ color: color, fontSize: 8 }}>●</span> {f}
+                    <div key={f} className="flex items-center gap-1.5 text-[10px] text-core-text-muted leading-[1.8]">
+                      <span className={`text-[8px] ${tc.text}`}>●</span> {f}
                     </div>
                   ))}
                 </div>
 
                 {isActive ? (
-                  <div style={{
-                    width: '100%', padding: '8px 0', textAlign: 'center',
-                    fontFamily: M, fontSize: 10, color: color, fontWeight: 600,
-                    letterSpacing: '0.06em',
-                  }}>
-                    ✓ ACTIVE
+                  <div className={`w-full py-2 text-center font-mono text-[10px] font-semibold tracking-[0.06em] flex items-center justify-center gap-1.5 ${tc.text}`}>
+                    <Check className="w-3 h-3" />
+                    ACTIVE
                   </div>
                 ) : (
                   <button
                     onClick={() => handleUpgrade(tier)}
                     disabled={upgrading === tier}
-                    style={{
-                      width: '100%', padding: '9px 0', borderRadius: 8, border: 'none',
-                      background: upgrading === tier ? '#1a2332' : color,
-                      color: upgrading === tier ? '#8b95a5' : '#04060d',
-                      fontSize: 12, fontWeight: 700, fontFamily: M,
-                      cursor: upgrading === tier ? 'wait' : 'pointer',
-                      letterSpacing: '0.04em', transition: 'all 0.15s',
-                    }}
+                    className={[
+                      'w-full py-[9px] rounded-lg text-[12px] font-bold font-mono tracking-[0.04em] transition-all duration-150',
+                      upgrading === tier
+                        ? 'bg-core-surface text-core-text-muted cursor-wait'
+                        : `${tc.bg} border ${tc.border} ${tc.text} hover:brightness-125 cursor-pointer`,
+                    ].join(' ')}
                   >
                     {upgrading === tier ? 'REDIRECTING...' : 'UPGRADE'}
                   </button>
@@ -221,67 +212,50 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* ── Spark Credits ── */}
-      <div style={{
-        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: 16, padding: 24, marginBottom: 20,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      {/* Spark Credits */}
+      <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 mb-5">
+        <div className="flex justify-between items-center mb-5">
           <div>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', margin: '0 0 4px' }}>Spark Credits</h2>
-            <p style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', margin: 0 }}>$0.01 per MCP tool call · Buy packs for bulk savings</p>
+            <h2 className="text-base font-bold text-core-text mb-1">Spark Credits</h2>
+            <p className="text-[11px] text-core-text-muted">$0.01 per MCP tool call · Buy packs for bulk savings</p>
           </div>
-          <div style={{
-            background: 'rgba(110,224,90,0.08)', border: '1px solid rgba(110,224,90,0.2)',
-            borderRadius: 12, padding: '10px 20px', textAlign: 'center',
-          }}>
-            <div style={{ fontFamily: M, fontSize: 9, color: '#6EE05A', letterSpacing: '0.08em', marginBottom: 2 }}>BALANCE</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#6EE05A', fontFamily: M }}>
+          <div className="bg-core-green/[0.08] border border-core-green/20 rounded-xl px-5 py-2.5 text-center">
+            <div className="font-mono text-[9px] text-core-green tracking-[0.08em] mb-0.5">BALANCE</div>
+            <div className="text-[26px] font-extrabold text-core-green font-mono">
               {data?.balance?.balance?.toLocaleString() || '0'}
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+        <div className="grid grid-cols-4 gap-3 mb-5">
           {SPARK_PACKS.map(pack => (
-            <div key={pack.id} style={{
-              background: 'rgba(0,0,0,0.2)', border: `1px solid ${pack.popular ? pack.color + '30' : 'rgba(255,255,255,0.04)'}`,
-              borderRadius: 14, padding: '20px 16px', textAlign: 'center',
-              position: 'relative', overflow: 'hidden',
-              transition: 'all 0.2s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = pack.color + '50'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = pack.popular ? pack.color + '30' : 'rgba(255,255,255,0.04)'; e.currentTarget.style.transform = 'none' }}
+            <div
+              key={pack.id}
+              className={[
+                'relative overflow-hidden rounded-[14px] px-4 py-5 text-center transition-all duration-200 bg-black/20 border hover:-translate-y-0.5',
+                pack.popular ? pack.colorBorder : 'border-white/[0.04]',
+              ].join(' ')}
             >
               {pack.popular && (
-                <div style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-                  background: pack.color,
-                }} />
+                <div className={`absolute top-0 left-0 right-0 h-0.5 ${pack.colorBar}`} />
               )}
               {pack.popular && (
-                <span style={{
-                  position: 'absolute', top: 6, right: 6,
-                  fontFamily: M, fontSize: 7, padding: '2px 6px', borderRadius: 4,
-                  background: `${pack.color}20`, color: pack.color, fontWeight: 700,
-                  letterSpacing: '0.06em',
-                }}>BEST</span>
+                <span className={`absolute top-1.5 right-1.5 font-mono text-[7px] px-1.5 py-0.5 rounded font-bold tracking-[0.06em] ${pack.colorBg} ${pack.colorText}`}>
+                  BEST
+                </span>
               )}
-              <div style={{ fontSize: 10, color: 'var(--jp-text-muted, #8b95a5)', fontFamily: M, marginBottom: 4, letterSpacing: '0.04em' }}>{pack.name}</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: pack.color, fontFamily: M, marginBottom: 2 }}>{pack.sparks.toLocaleString()}</div>
-              <div style={{ fontSize: 10, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 14 }}>sparks</div>
+              <div className={`text-[10px] font-mono mb-1 tracking-[0.04em] text-core-text-muted`}>{pack.name}</div>
+              <div className={`text-[28px] font-extrabold font-mono mb-0.5 ${pack.colorText}`}>{pack.sparks.toLocaleString()}</div>
+              <div className="text-[10px] text-core-text-muted mb-3.5">sparks</div>
               <button
                 onClick={() => handleBuyPack(pack.id)}
                 disabled={buyingPack === pack.id}
-                style={{
-                  width: '100%', padding: '8px 0', borderRadius: 8,
-                  border: `1px solid ${pack.color}30`,
-                  background: buyingPack === pack.id ? '#1a2332' : `${pack.color}12`,
-                  color: buyingPack === pack.id ? '#8b95a5' : pack.color,
-                  fontSize: 13, fontWeight: 700, fontFamily: M,
-                  cursor: buyingPack === pack.id ? 'wait' : 'pointer',
-                  transition: 'all 0.15s',
-                }}
+                className={[
+                  'w-full py-2 rounded-lg font-mono font-bold text-[13px] transition-all duration-150 border',
+                  buyingPack === pack.id
+                    ? 'bg-core-surface text-core-text-muted border-core-border cursor-wait'
+                    : `${pack.colorBg} ${pack.colorBorder} ${pack.colorText} hover:brightness-125 cursor-pointer`,
+                ].join(' ')}
               >
                 {buyingPack === pack.id ? '...' : pack.price}
               </button>
@@ -290,30 +264,24 @@ export default function BillingPage() {
         </div>
 
         {/* Lifetime stats */}
-        <div style={{
-          display: 'flex', gap: 32, paddingTop: 16,
-          borderTop: '1px solid rgba(255,255,255,0.04)',
-        }}>
+        <div className="flex gap-8 pt-4 border-t border-white/[0.04]">
           {[
             { label: 'Lifetime Earned', value: data?.balance?.lifetime_earned?.toLocaleString() || '0' },
             { label: 'Lifetime Spent', value: data?.balance?.lifetime_spent?.toLocaleString() || '0' },
             { label: 'Stripe Customer', value: data?.balance?.stripe_customer_id ? data.balance.stripe_customer_id.slice(0, 14) + '...' : 'Not set' },
           ].map(s => (
             <div key={s.label}>
-              <div style={{ fontSize: 10, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 4 }}>{s.label}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', fontFamily: M }}>{s.value}</div>
+              <div className="text-[10px] text-core-text-muted mb-1">{s.label}</div>
+              <div className="text-[13px] font-bold text-core-text font-mono">{s.value}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── Manage Billing ── */}
-      <div style={{
-        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: 16, padding: 24,
-      }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', margin: '0 0 12px' }}>Manage Billing</h2>
-        <p style={{ fontSize: 13, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 16 }}>
+      {/* Manage Billing */}
+      <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6">
+        <h2 className="text-base font-bold text-core-text mb-3">Manage Billing</h2>
+        <p className="text-[13px] text-core-text-muted mb-4">
           Update payment methods, view invoices, or cancel your subscription through Stripe.
         </p>
         <button
@@ -322,15 +290,10 @@ export default function BillingPage() {
             const { url } = await res.json()
             if (url) window.location.href = url
           }}
-          style={{
-            padding: '10px 24px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.04)', color: 'var(--jp-text, #f0f4f8)',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg border border-white/10 bg-white/[0.04] text-core-text text-[13px] font-semibold cursor-pointer transition-all duration-150 hover:bg-white/[0.08] hover:border-white/20"
         >
-          Open Billing Portal →
+          Open Billing Portal
+          <ExternalLink className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

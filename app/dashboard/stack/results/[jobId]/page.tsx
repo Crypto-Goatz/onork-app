@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { ArrowLeft, Download } from 'lucide-react'
 
 interface JobMeta {
   source_filename: string
@@ -55,15 +56,15 @@ export default function StackResults() {
   const fetchContacts = useCallback(async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({
+      const qs = new URLSearchParams({
         jobId,
         page: String(page),
         limit: String(PAGE_SIZE),
       })
-      if (filter !== 'All') params.set('filter', filter.toLowerCase().replace(/ /g, '_'))
-      if (search) params.set('search', search)
+      if (filter !== 'All') qs.set('filter', filter.toLowerCase().replace(/ /g, '_'))
+      if (search) qs.set('search', search)
 
-      const res = await fetch(`/api/stack/contacts?${params}`)
+      const res = await fetch(`/api/stack/contacts?${qs}`)
       const data = await res.json()
       if (res.ok) {
         setContacts(data.contacts || [])
@@ -81,7 +82,6 @@ export default function StackResults() {
     fetchContacts()
   }, [fetchContacts])
 
-  // Reset page on filter/search change
   useEffect(() => { setPage(1) }, [filter, search])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -93,11 +93,11 @@ export default function StackResults() {
     return CRM_COLORS[key] || '#6EE05A'
   }
 
-  function scoreColor(score: number): string {
-    if (score >= 80) return '#6EE05A'
-    if (score >= 60) return '#fbbf24'
-    if (score >= 40) return '#fb923c'
-    return '#f87171'
+  function scoreColorClass(score: number): string {
+    if (score >= 80) return 'text-core-green'
+    if (score >= 60) return 'text-core-amber'
+    if (score >= 40) return 'text-orange-400'
+    return 'text-core-red'
   }
 
   function renderCRMBars(breakdown: Record<string, number>) {
@@ -106,30 +106,32 @@ export default function StackResults() {
     const max = entries[0][1]
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="flex flex-col gap-2">
         {entries.map(([crm, count]) => {
           const isNoCrm = crm === 'no_crm' || crm === 'none'
           const pct = max > 0 ? (count / max) * 100 : 0
           return (
-            <div key={crm} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{
-                width: 110, fontSize: 12, fontWeight: 600, fontFamily: 'monospace',
-                color: isNoCrm ? '#f87171' : 'var(--text-primary, #f0f4f8)',
-                textTransform: 'capitalize', flexShrink: 0,
-              }}>
+            <div key={crm} className="flex items-center gap-3">
+              <span
+                className={[
+                  'w-[110px] shrink-0 text-xs font-semibold font-mono capitalize',
+                  isNoCrm ? 'text-core-red' : 'text-core-text',
+                ].join(' ')}
+              >
                 {crm.replace(/_/g, ' ')}
               </span>
-              <div style={{ flex: 1, height: 8, borderRadius: 4, background: '#1c2b42', overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%', borderRadius: 4, width: `${pct}%`,
-                  background: isNoCrm ? '#f87171' : '#6EE05A',
-                  transition: 'width 0.4s ease',
-                }} />
+              <div className="flex-1 h-2 rounded-full bg-core-bg overflow-hidden">
+                <div
+                  className={['h-full rounded-full transition-all duration-300', isNoCrm ? 'bg-core-red' : 'bg-core-green'].join(' ')}
+                  style={{ width: `${pct}%` }}
+                />
               </div>
-              <span style={{
-                width: 48, fontSize: 13, fontFamily: 'monospace', fontWeight: 700,
-                color: isNoCrm ? '#f87171' : '#6EE05A', textAlign: 'right', flexShrink: 0,
-              }}>
+              <span
+                className={[
+                  'w-12 shrink-0 text-right text-[13px] font-bold font-mono',
+                  isNoCrm ? 'text-core-red' : 'text-core-green',
+                ].join(' ')}
+              >
                 {count}
               </span>
             </div>
@@ -140,172 +142,134 @@ export default function StackResults() {
   }
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 8px' }}>
+    <div className="max-w-[1200px] mx-auto px-2">
 
-      {/* ═══ HEADER ═══ */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 24, flexWrap: 'wrap', gap: 12,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* HEADER */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div className="flex items-center gap-3">
           <Link
             href="/dashboard/stack"
-            style={{
-              width: 32, height: 32, borderRadius: 8,
-              border: '1px solid #1c2b42', background: 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--text-muted, #6b7280)', textDecoration: 'none',
-              fontSize: 16,
-            }}
+            className="w-8 h-8 rounded-lg border border-core-border bg-transparent flex items-center justify-center text-core-text-muted hover:text-core-text transition-colors"
           >
-            &larr;
+            <ArrowLeft size={15} />
           </Link>
           <div>
-            <h1 style={{
-              fontSize: 20, fontWeight: 800, color: 'var(--text-primary, #f0f4f8)',
-              margin: 0, letterSpacing: '-0.02em',
-            }}>
+            <h1 className="text-xl font-extrabold text-core-text tracking-tight leading-none">
               Results
             </h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: '2px 0 0' }}>
+            <p className="text-[13px] text-core-text-muted mt-0.5">
               {meta?.source_filename || '...'} &mdash; {meta?.total_contacts.toLocaleString() || '...'} contacts
             </p>
           </div>
         </div>
         <a
           href={`/api/stack/bulk/${jobId}/export`}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '10px 20px', borderRadius: 10,
-            background: '#6EE05A', color: '#0c1220',
-            fontWeight: 700, fontSize: 14, textDecoration: 'none',
-          }}
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-[10px] bg-core-green text-[#0c1220] font-bold text-sm no-underline hover:opacity-90 transition-opacity"
         >
+          <Download size={14} />
           Export Enriched CSV
         </a>
       </div>
 
-      {/* ═══ KPI CARDS ═══ */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-        gap: 12, marginBottom: 24,
-      }}>
+      {/* KPI CARDS */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3 mb-6">
         {[
-          { label: 'Total', value: meta?.total_contacts, color: 'var(--text-primary, #f0f4f8)', suffix: '' },
-          { label: 'No CRM', value: meta?.no_crm_count, color: '#f87171', suffix: meta ? ` (${Math.round((meta.no_crm_count / meta.total_contacts) * 100)}%)` : '' },
-          { label: 'CRM Detected', value: meta?.crm_detected, color: '#6EE05A', suffix: '' },
-          { label: 'Skipped', value: meta?.skipped, color: 'var(--text-muted, #6b7280)', suffix: '' },
-          { label: 'Avg Confidence', value: meta?.avg_confidence != null ? `${meta.avg_confidence}%` : undefined, color: '#60a5fa', suffix: '' },
+          { label: 'Total', value: meta?.total_contacts, cls: 'text-core-text', suffix: '' },
+          {
+            label: 'No CRM',
+            value: meta?.no_crm_count,
+            cls: 'text-core-red',
+            suffix: meta ? ` (${Math.round((meta.no_crm_count / meta.total_contacts) * 100)}%)` : '',
+          },
+          { label: 'CRM Detected', value: meta?.crm_detected, cls: 'text-core-green', suffix: '' },
+          { label: 'Skipped', value: meta?.skipped, cls: 'text-core-text-muted', suffix: '' },
+          {
+            label: 'Avg Confidence',
+            value: meta?.avg_confidence != null ? `${meta.avg_confidence}%` : undefined,
+            cls: 'text-core-cyan',
+            suffix: '',
+          },
         ].map((kpi) => (
-          <div key={kpi.label} style={{
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 12, padding: '16px', textAlign: 'center',
-          }}>
-            <div style={{
-              fontSize: 26, fontWeight: 800, fontFamily: 'monospace', color: kpi.color,
-              marginBottom: 2,
-            }}>
+          <div
+            key={kpi.label}
+            className="bg-core-card border border-core-border rounded-xl p-4 text-center"
+          >
+            <div className={`text-[26px] font-extrabold font-mono mb-0.5 ${kpi.cls}`}>
               {kpi.value != null ? `${kpi.value}` : '---'}{kpi.suffix}
             </div>
-            <div style={{
-              fontSize: 11, fontWeight: 600, color: 'var(--text-muted, #6b7280)',
-              textTransform: 'uppercase', letterSpacing: '0.05em',
-            }}>
+            <div className="text-[11px] font-semibold text-core-text-muted uppercase tracking-[0.05em]">
               {kpi.label}
             </div>
           </div>
         ))}
       </div>
 
-      {/* ═══ CRM DISTRIBUTION ═══ */}
+      {/* CRM DISTRIBUTION */}
       {meta?.crm_breakdown && Object.keys(meta.crm_breakdown).length > 0 && (
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: '20px 24px', marginBottom: 24,
-        }}>
-          <h3 style={{
-            fontSize: 13, fontWeight: 700, color: 'var(--text-secondary, #94a3b8)',
-            margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.05em',
-          }}>
+        <div className="bg-core-card border border-core-border rounded-[14px] px-6 py-5 mb-6">
+          <h3 className="text-[13px] font-bold text-core-text-dim uppercase tracking-[0.05em] mb-3.5">
             CRM Distribution
           </h3>
           {renderCRMBars(meta.crm_breakdown)}
         </div>
       )}
 
-      {/* ═══ FILTERS + SEARCH ═══ */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
-        flexWrap: 'wrap',
-      }}>
+      {/* FILTERS + SEARCH */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
         {FILTER_OPTIONS.map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            style={{
-              padding: '6px 14px', borderRadius: 8,
-              border: filter === f ? '1px solid #6EE05A' : '1px solid #1c2b42',
-              background: filter === f ? 'rgba(110,224,90,0.1)' : 'transparent',
-              color: filter === f ? '#6EE05A' : 'var(--text-muted, #6b7280)',
-              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-              transition: 'all 0.15s ease',
-            }}
+            className={[
+              'px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer',
+              filter === f
+                ? 'border-core-green bg-core-green/10 text-core-green'
+                : 'border-core-border bg-transparent text-core-text-muted hover:text-core-text',
+            ].join(' ')}
           >
             {f}
           </button>
         ))}
 
-        <div style={{ flex: 1 }} />
+        <div className="flex-1" />
 
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search email or domain..."
-          style={{
-            padding: '8px 14px', borderRadius: 8, width: 240,
-            border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
-            color: 'var(--text-primary, #f0f4f8)', fontSize: 13, outline: 'none',
-            fontFamily: 'inherit',
-          }}
+          className="px-3.5 py-2 rounded-lg w-60 border border-core-border bg-core-bg text-core-text text-[13px] outline-none placeholder:text-core-text-muted focus:border-core-green/50 transition-colors"
         />
       </div>
 
-      {/* ═══ RESULTS TABLE ═══ */}
-      <div style={{
-        background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-        borderRadius: 14, overflow: 'hidden', marginBottom: 24,
-      }}>
+      {/* RESULTS TABLE */}
+      <div className="bg-core-card border border-core-border rounded-[14px] overflow-hidden mb-6">
         {loading ? (
-          <div style={{ padding: 48, textAlign: 'center' }}>
-            <div style={{
-              width: 28, height: 28, margin: '0 auto 12px',
-              border: '2px solid #1c2b42', borderTopColor: '#6EE05A',
-              borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-            }} />
+          <div className="p-12 flex flex-col items-center gap-3">
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-            <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: 0 }}>Loading results...</p>
+            <div
+              className="w-7 h-7 rounded-full border-2 border-core-border border-t-core-green"
+              style={{ animation: 'spin 0.8s linear infinite' }}
+            />
+            <p className="text-[13px] text-core-text-muted m-0">Loading results...</p>
           </div>
         ) : contacts.length === 0 ? (
-          <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 4px' }}>
-              No contacts match
-            </p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', margin: 0 }}>
+          <div className="py-12 px-6 text-center">
+            <p className="text-[15px] font-semibold text-core-text mb-1">No contacts match</p>
+            <p className="text-[13px] text-core-text-muted">
               Try adjusting your filters or search query.
             </p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse min-w-[800px]">
               <thead>
-                <tr style={{ borderBottom: '1px solid #1c2b42' }}>
+                <tr className="border-b border-core-border">
                   {['Email / Domain', 'CRM', 'Automation', 'Reviews', 'Opportunity', 'Score'].map((h) => (
-                    <th key={h} style={{
-                      padding: '10px 16px', textAlign: 'left',
-                      fontSize: 11, fontWeight: 600, color: 'var(--text-muted, #6b7280)',
-                      textTransform: 'uppercase', letterSpacing: '0.05em',
-                    }}>
+                    <th
+                      key={h}
+                      className="px-4 py-2.5 text-left text-[11px] font-semibold text-core-text-muted uppercase tracking-[0.05em]"
+                    >
                       {h}
                     </th>
                   ))}
@@ -313,79 +277,71 @@ export default function StackResults() {
               </thead>
               <tbody>
                 {contacts.map((c) => (
-                  <tr key={c.id} style={{ borderBottom: '1px solid #1c2b42' }}>
+                  <tr key={c.id} className="border-b border-core-border hover:bg-core-card-hover transition-colors">
+
                     {/* Email / Domain */}
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{
-                        fontSize: 13, fontWeight: 600, fontFamily: 'monospace',
-                        color: 'var(--text-primary, #f0f4f8)',
-                        maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
+                    <td className="px-4 py-3">
+                      <div className="text-[13px] font-semibold font-mono text-core-text max-w-[220px] overflow-hidden text-ellipsis whitespace-nowrap">
                         {c.email}
                       </div>
                       {c.domain && (
-                        <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', marginTop: 1, fontFamily: 'monospace' }}>
+                        <div className="text-[11px] text-core-text-muted mt-px font-mono">
                           {c.domain}
                         </div>
                       )}
                     </td>
 
                     {/* CRM pill */}
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{
-                        display: 'inline-block', padding: '3px 10px', borderRadius: 6,
-                        fontSize: 12, fontWeight: 700,
-                        background: `${crmColor(c.crm)}20`,
-                        color: crmColor(c.crm),
-                        textTransform: 'capitalize',
-                      }}>
+                    <td className="px-4 py-3">
+                      <span
+                        className="inline-block px-2.5 py-0.5 rounded-md text-xs font-bold capitalize"
+                        style={{
+                          background: `${crmColor(c.crm)}20`,
+                          color: crmColor(c.crm),
+                        }}
+                      >
                         {c.crm ? c.crm.replace(/_/g, ' ') : 'Unknown'}
                       </span>
                     </td>
 
                     {/* Automation */}
-                    <td style={{
-                      padding: '12px 16px', fontSize: 13, fontFamily: 'monospace',
-                      color: c.automation_platform ? 'var(--text-secondary, #94a3b8)' : 'var(--text-muted, #6b7280)',
-                    }}>
+                    <td className={[
+                      'px-4 py-3 text-[13px] font-mono',
+                      c.automation_platform ? 'text-core-text-dim' : 'text-core-text-muted',
+                    ].join(' ')}>
                       {c.automation_platform || '\u2014'}
                     </td>
 
                     {/* Reviews */}
-                    <td style={{
-                      padding: '12px 16px', fontSize: 13, fontFamily: 'monospace',
-                      color: c.review_platform ? 'var(--text-secondary, #94a3b8)' : 'var(--text-muted, #6b7280)',
-                    }}>
+                    <td className={[
+                      'px-4 py-3 text-[13px] font-mono',
+                      c.review_platform ? 'text-core-text-dim' : 'text-core-text-muted',
+                    ].join(' ')}>
                       {c.review_platform || '\u2014'}
                     </td>
 
                     {/* Opportunity type badge */}
-                    <td style={{ padding: '12px 16px' }}>
+                    <td className="px-4 py-3">
                       {c.opportunity_type ? (
-                        <span style={{
-                          display: 'inline-block', padding: '3px 10px', borderRadius: 6,
-                          fontSize: 11, fontWeight: 700,
-                          background: c.opportunity_type === 'migration'
-                            ? 'rgba(251,191,36,0.15)' : c.opportunity_type === 'new'
-                            ? 'rgba(110,224,90,0.15)' : 'rgba(96,165,250,0.15)',
-                          color: c.opportunity_type === 'migration'
-                            ? '#fbbf24' : c.opportunity_type === 'new'
-                            ? '#6EE05A' : '#60a5fa',
-                          textTransform: 'uppercase', letterSpacing: '0.05em',
-                        }}>
+                        <span
+                          className={[
+                            'inline-block px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-[0.05em]',
+                            c.opportunity_type === 'migration'
+                              ? 'bg-core-amber/15 text-core-amber'
+                              : c.opportunity_type === 'new'
+                              ? 'bg-core-green/15 text-core-green'
+                              : 'bg-core-cyan/15 text-core-cyan',
+                          ].join(' ')}
+                        >
                           {c.opportunity_type}
                         </span>
                       ) : (
-                        <span style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)' }}>&mdash;</span>
+                        <span className="text-[13px] text-core-text-muted">&mdash;</span>
                       )}
                     </td>
 
                     {/* Score */}
-                    <td style={{
-                      padding: '12px 16px', fontFamily: 'monospace',
-                      fontSize: 15, fontWeight: 800,
-                      color: scoreColor(c.score),
-                    }}>
+                    <td className={`px-4 py-3 font-mono text-[15px] font-extrabold ${scoreColorClass(c.score)}`}>
                       {c.score}
                     </td>
                   </tr>
@@ -397,37 +353,32 @@ export default function StackResults() {
 
         {/* Pagination */}
         {total > PAGE_SIZE && (
-          <div style={{
-            padding: '12px 16px', borderTop: '1px solid #1c2b42',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)' }}>
+          <div className="px-4 py-3 border-t border-core-border flex items-center justify-between">
+            <span className="text-xs text-core-text-muted">
               Showing {showStart}&ndash;{showEnd} of {total.toLocaleString()}
             </span>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="flex gap-2">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                style={{
-                  padding: '6px 14px', borderRadius: 8,
-                  border: '1px solid #1c2b42', background: 'transparent',
-                  color: page <= 1 ? '#374151' : 'var(--text-secondary, #94a3b8)',
-                  fontSize: 12, fontWeight: 600, cursor: page <= 1 ? 'not-allowed' : 'pointer',
-                  fontFamily: 'inherit',
-                }}
+                className={[
+                  'px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors',
+                  page <= 1
+                    ? 'border-core-border text-[#374151] cursor-not-allowed'
+                    : 'border-core-border text-core-text-dim hover:text-core-text cursor-pointer',
+                ].join(' ')}
               >
                 Prev
               </button>
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
-                style={{
-                  padding: '6px 14px', borderRadius: 8,
-                  border: '1px solid #1c2b42', background: 'transparent',
-                  color: page >= totalPages ? '#374151' : 'var(--text-secondary, #94a3b8)',
-                  fontSize: 12, fontWeight: 600, cursor: page >= totalPages ? 'not-allowed' : 'pointer',
-                  fontFamily: 'inherit',
-                }}
+                className={[
+                  'px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors',
+                  page >= totalPages
+                    ? 'border-core-border text-[#374151] cursor-not-allowed'
+                    : 'border-core-border text-core-text-dim hover:text-core-text cursor-pointer',
+                ].join(' ')}
               >
                 Next
               </button>

@@ -1,16 +1,29 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import {
+  BarChart2,
+  Mail,
+  Folder,
+  Table2,
+  CalendarDays,
+  FileText,
+  Search,
+  CheckSquare,
+  Check,
+  ChevronRight,
+  Loader2,
+} from 'lucide-react'
 
 const GOOGLE_SERVICES = [
-  { key: 'analytics', label: 'Google Analytics', icon: '📊', desc: 'Website traffic, conversions, and audience data' },
-  { key: 'gmail', label: 'Gmail', icon: '✉️', desc: 'Read, send, and manage email' },
-  { key: 'drive', label: 'Google Drive', icon: '📁', desc: 'Files, folders, and document storage' },
-  { key: 'sheets', label: 'Google Sheets', icon: '📋', desc: 'Spreadsheet data and reporting' },
-  { key: 'calendar', label: 'Google Calendar', icon: '📅', desc: 'Events, scheduling, and availability' },
-  { key: 'docs', label: 'Google Docs', icon: '📝', desc: 'Document creation and editing' },
-  { key: 'search_console', label: 'Search Console', icon: '🔍', desc: 'Search performance and indexing' },
-  { key: 'tasks', label: 'Google Tasks', icon: '✓', desc: 'Task lists and to-do management' },
+  { key: 'analytics', label: 'Google Analytics', Icon: BarChart2, desc: 'Website traffic, conversions, and audience data' },
+  { key: 'gmail', label: 'Gmail', Icon: Mail, desc: 'Read, send, and manage email' },
+  { key: 'drive', label: 'Google Drive', Icon: Folder, desc: 'Files, folders, and document storage' },
+  { key: 'sheets', label: 'Google Sheets', Icon: Table2, desc: 'Spreadsheet data and reporting' },
+  { key: 'calendar', label: 'Google Calendar', Icon: CalendarDays, desc: 'Events, scheduling, and availability' },
+  { key: 'docs', label: 'Google Docs', Icon: FileText, desc: 'Document creation and editing' },
+  { key: 'search_console', label: 'Search Console', Icon: Search, desc: 'Search performance and indexing' },
+  { key: 'tasks', label: 'Google Tasks', Icon: CheckSquare, desc: 'Task lists and to-do management' },
 ]
 
 export default function AnalyticsSettingsPage() {
@@ -31,7 +44,6 @@ export default function AnalyticsSettingsPage() {
 
   useEffect(() => {
     checkStatus()
-    // Check for OAuth callback result
     const params = new URLSearchParams(window.location.search)
     if (params.get('google') === 'connected') {
       setSuccess('Google account connected successfully')
@@ -68,13 +80,10 @@ export default function AnalyticsSettingsPage() {
       const res = await fetch('/api/auth/google-connect')
       const data = await res.json()
       if (data.url) {
-        // Open OAuth in popup
         const w = 500, h = 600
         const left = window.screenX + (window.innerWidth - w) / 2
         const top = window.screenY + (window.innerHeight - h) / 2
         const popup = window.open(data.url, 'google-oauth', `width=${w},height=${h},left=${left},top=${top}`)
-
-        // Poll for popup close (OAuth callback redirects back)
         const poll = setInterval(() => {
           if (popup?.closed) {
             clearInterval(poll)
@@ -146,9 +155,8 @@ export default function AnalyticsSettingsPage() {
 
   if (loading) {
     return (
-      <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 8px', display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
-        <div style={{ width: 32, height: 32, border: '3px solid var(--border, #30363d)', borderTopColor: 'var(--primary, #6EE05A)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="max-w-[700px] mx-auto px-2 flex justify-center pt-20">
+        <Loader2 className="w-8 h-8 text-core-green animate-spin" />
       </div>
     )
   }
@@ -156,88 +164,82 @@ export default function AnalyticsSettingsPage() {
   const isConnected = googleConnected || saConnected
 
   return (
-    <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 8px' }}>
+    <div className="max-w-[700px] mx-auto px-2">
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--foreground, #f0f4f8)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="mb-6">
+        <h1 className="text-[22px] font-bold text-core-text m-0 flex items-center gap-2">
           Google Integration
-          <span style={{
-            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
-            background: isConnected ? 'rgba(110,224,90,0.12)' : 'rgba(248,113,113,0.12)',
-            color: isConnected ? 'var(--primary, #6EE05A)' : '#f87171',
-            border: `1px solid ${isConnected ? 'rgba(110,224,90,0.2)' : 'rgba(248,113,113,0.2)'}`,
-          }}>{isConnected ? 'CONNECTED' : 'NOT CONNECTED'}</span>
+          <span className={[
+            'text-[10px] font-bold px-2 py-0.5 rounded-full border',
+            isConnected
+              ? 'bg-core-green/10 text-core-green border-core-green/20'
+              : 'bg-core-red/10 text-core-red border-core-red/20',
+          ].join(' ')}>
+            {isConnected ? 'CONNECTED' : 'NOT CONNECTED'}
+          </span>
         </h1>
-        <p style={{ fontSize: 13, color: 'var(--muted-foreground, #6b7280)', marginTop: 4 }}>
+        <p className="text-[13px] text-core-text-muted mt-1">
           Connect your Google account to unlock Analytics, Gmail, Drive, Sheets, Calendar, and more.
         </p>
       </div>
 
       {/* Status messages */}
       {error && (
-        <div style={{ padding: '10px 16px', borderRadius: 8, background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.15)', color: '#f87171', fontSize: 13, marginBottom: 12 }}>{error}</div>
+        <div className="px-4 py-2.5 rounded-lg bg-core-red/5 border border-core-red/15 text-core-red text-[13px] mb-3">
+          {error}
+        </div>
       )}
       {success && (
-        <div style={{ padding: '10px 16px', borderRadius: 8, background: 'rgba(110,224,90,0.06)', border: '1px solid rgba(110,224,90,0.15)', color: 'var(--primary, #6EE05A)', fontSize: 13, marginBottom: 12 }}>{success}</div>
+        <div className="px-4 py-2.5 rounded-lg bg-core-green/5 border border-core-green/15 text-core-green text-[13px] mb-3">
+          {success}
+        </div>
       )}
 
-      {/* ═══ Primary: Google OAuth Connect ═══ */}
-      <div style={{
-        background: 'var(--card, #161b22)', border: '1px solid var(--border, #30363d)', borderRadius: 12,
-        padding: '24px', marginBottom: 20,
-      }}>
+      {/* Primary: Google OAuth Connect */}
+      <div className="bg-core-card border border-core-border rounded-xl p-6 mb-5">
         {googleConnected ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(110,224,90,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary, #6EE05A)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-[10px] bg-core-green/10 flex items-center justify-center shrink-0">
+              <Check className="w-5 h-5 text-core-green" strokeWidth={2.5} />
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--foreground, #f0f4f8)' }}>Google Account Connected</div>
-              <div style={{ fontSize: 12, color: 'var(--muted-foreground, #6b7280)', fontFamily: 'monospace' }}>{googleEmail}</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[14px] font-semibold text-core-text">Google Account Connected</div>
+              <div className="text-[12px] text-core-text-muted font-mono truncate">{googleEmail}</div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="flex gap-2 shrink-0">
               <button
                 onClick={testConnection}
                 disabled={testing}
-                style={{
-                  padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border, #30363d)',
-                  background: 'transparent', color: '#00d4ff', fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', opacity: testing ? 0.6 : 1,
-                }}
-              >{testing ? 'Testing...' : 'Test'}</button>
+                className="px-3.5 py-1.5 rounded-lg border border-core-border bg-transparent text-core-cyan text-[12px] font-semibold cursor-pointer disabled:opacity-60"
+              >
+                {testing ? 'Testing...' : 'Test'}
+              </button>
               <button
                 onClick={disconnectGoogle}
-                style={{
-                  padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(248,113,113,0.2)',
-                  background: 'transparent', color: '#f87171', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                }}
-              >Disconnect</button>
+                className="px-3.5 py-1.5 rounded-lg border border-core-red/20 bg-transparent text-core-red text-[12px] font-semibold cursor-pointer"
+              >
+                Disconnect
+              </button>
             </div>
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" style={{ margin: '0 auto' }}>
+          <div className="text-center py-5">
+            <div className="flex justify-center mb-3">
+              <svg width="40" height="40" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
             </div>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--foreground, #f0f4f8)', marginBottom: 6 }}>Connect Google Account</h3>
-            <p style={{ fontSize: 13, color: 'var(--muted-foreground, #6b7280)', marginBottom: 20, maxWidth: 400, margin: '0 auto 20px' }}>
+            <h3 className="text-[16px] font-bold text-core-text mb-1.5">Connect Google Account</h3>
+            <p className="text-[13px] text-core-text-muted mb-5 max-w-[400px] mx-auto">
               One click connects Analytics, Gmail, Drive, Sheets, Calendar, Docs, Search Console, and Tasks.
             </p>
             <button
               onClick={connectGoogle}
               disabled={connecting}
-              style={{
-                padding: '12px 32px', borderRadius: 10,
-                background: 'var(--primary, #6EE05A)', color: 'var(--primary-foreground, #0d1117)',
-                fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none',
-                opacity: connecting ? 0.7 : 1,
-                boxShadow: '0 0 20px rgba(110,224,90,0.2)',
-              }}
+              className="px-8 py-3 rounded-[10px] bg-core-green text-core-bg text-[14px] font-bold cursor-pointer border-none disabled:opacity-70 shadow-[0_0_20px_rgba(110,224,90,0.2)]"
             >
               {connecting ? 'Connecting...' : 'Connect Google'}
             </button>
@@ -247,62 +249,57 @@ export default function AnalyticsSettingsPage() {
 
       {/* Test result */}
       {testResult && (
-        <div style={{
-          padding: '10px 16px', borderRadius: 8, marginBottom: 16,
-          background: testResult.ok ? 'rgba(110,224,90,0.06)' : 'rgba(248,113,113,0.06)',
-          border: `1px solid ${testResult.ok ? 'rgba(110,224,90,0.15)' : 'rgba(248,113,113,0.15)'}`,
-          color: testResult.ok ? 'var(--primary, #6EE05A)' : '#f87171', fontSize: 13,
-        }}>{testResult.message}</div>
+        <div className={[
+          'px-4 py-2.5 rounded-lg border text-[13px] mb-4',
+          testResult.ok
+            ? 'bg-core-green/5 border-core-green/15 text-core-green'
+            : 'bg-core-red/5 border-core-red/15 text-core-red',
+        ].join(' ')}>
+          {testResult.message}
+        </div>
       )}
 
-      {/* ═══ Connected Services Grid ═══ */}
+      {/* Connected Services Grid */}
       {googleConnected && (
-        <div style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--foreground, #f0f4f8)', marginBottom: 12 }}>Connected Services</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
-            {GOOGLE_SERVICES.map(svc => (
-              <div key={svc.key} style={{
-                background: 'var(--card, #161b22)', border: '1px solid var(--border, #30363d)',
-                borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <span style={{ fontSize: 20 }}>{svc.icon}</span>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground, #f0f4f8)' }}>{svc.label}</div>
-                  <div style={{ fontSize: 10, color: 'var(--muted-foreground, #6b7280)' }}>{svc.desc}</div>
+        <div className="mb-6">
+          <h3 className="text-[14px] font-semibold text-core-text mb-3">Connected Services</h3>
+          <div className="grid gap-2.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+            {GOOGLE_SERVICES.map(({ key, label, Icon, desc }) => (
+              <div
+                key={key}
+                className="bg-core-card border border-core-border rounded-[10px] px-4 py-3.5 flex items-center gap-2.5"
+              >
+                <Icon className="w-5 h-5 text-core-text-muted shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-[12px] font-semibold text-core-text">{label}</div>
+                  <div className="text-[10px] text-core-text-muted leading-tight">{desc}</div>
                 </div>
-                <div style={{ marginLeft: 'auto', width: 8, height: 8, borderRadius: '50%', background: 'var(--primary, #6EE05A)' }} />
+                <div className="ml-auto w-2 h-2 rounded-full bg-core-green shrink-0" />
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* ═══ Advanced: Service Account (collapsible) ═══ */}
-      <div style={{ borderTop: '1px solid var(--border, #30363d)', paddingTop: 16 }}>
+      {/* Advanced: Service Account (collapsible) */}
+      <div className="border-t border-core-border pt-4">
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none',
-            color: 'var(--muted-foreground, #6b7280)', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0,
-          }}
+          className="flex items-center gap-2 bg-transparent border-none text-core-text-muted text-[12px] font-semibold cursor-pointer p-0"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-            style={{ transition: 'transform 0.2s', transform: showAdvanced ? 'rotate(90deg)' : 'rotate(0)' }}>
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
+          <ChevronRight
+            className={['w-3 h-3 transition-transform duration-200', showAdvanced ? 'rotate-90' : ''].join(' ')}
+          />
           Advanced: Service Account Key
         </button>
 
         {showAdvanced && (
-          <div style={{ marginTop: 16 }}>
+          <div className="mt-4">
             {saConnected && (
-              <div style={{
-                background: 'var(--card, #161b22)', border: '1px solid rgba(110,224,90,0.2)', borderRadius: 10,
-                padding: '12px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary, #6EE05A)" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
-                <span style={{ fontSize: 12, color: 'var(--foreground, #f0f4f8)' }}>SA: </span>
-                <span style={{ fontSize: 11, color: 'var(--muted-foreground, #6b7280)', fontFamily: 'monospace' }}>{saEmail}</span>
+              <div className="bg-core-card border border-core-green/20 rounded-[10px] px-4 py-3 mb-3 flex items-center gap-2.5">
+                <Check className="w-3.5 h-3.5 text-core-green shrink-0" strokeWidth={2.5} />
+                <span className="text-[12px] text-core-text">SA: </span>
+                <span className="text-[11px] text-core-text-muted font-mono">{saEmail}</span>
               </div>
             )}
 
@@ -311,17 +308,22 @@ export default function AnalyticsSettingsPage() {
               onDragLeave={() => setDragOver(false)}
               onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
               onClick={() => fileRef.current?.click()}
-              style={{
-                background: dragOver ? 'rgba(110,224,90,0.04)' : 'var(--card, #161b22)',
-                border: `2px dashed ${dragOver ? 'var(--primary, #6EE05A)' : 'var(--border, #30363d)'}`,
-                borderRadius: 10, padding: '24px 16px', textAlign: 'center', cursor: 'pointer',
-              }}
+              className={[
+                'rounded-[10px] px-4 py-6 text-center cursor-pointer border-2 border-dashed transition-colors',
+                dragOver ? 'bg-core-green/[0.04] border-core-green' : 'bg-core-card border-core-border',
+              ].join(' ')}
             >
-              <input ref={fileRef} type="file" accept=".json" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} style={{ display: 'none' }} />
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground, #f0f4f8)' }}>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".json"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+                className="hidden"
+              />
+              <div className="text-[13px] font-semibold text-core-text">
                 {uploading ? 'Uploading...' : 'Drop service account JSON here'}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--muted-foreground, #6b7280)', marginTop: 4 }}>or click to browse</div>
+              <div className="text-[11px] text-core-text-muted mt-1">or click to browse</div>
             </div>
           </div>
         )}

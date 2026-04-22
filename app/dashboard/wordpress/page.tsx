@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { FileText, Puzzle, Image, Palette, Globe } from 'lucide-react'
 
 interface WPSite {
   id: string
@@ -12,135 +13,177 @@ interface WPSite {
   lastSync?: string
 }
 
+const FEATURES = [
+  { title: 'Posts & Pages', desc: 'Create, edit, and publish content', icon: FileText },
+  { title: 'Plugins', desc: 'Install, activate, and manage plugins', icon: Puzzle },
+  { title: 'Media Library', desc: 'Upload and manage media files', icon: Image },
+  { title: 'Themes', desc: 'Switch and customize themes', icon: Palette },
+]
+
+function statusColor(status: WPSite['status']) {
+  if (status === 'connected') return 'text-core-green'
+  if (status === 'error') return 'text-core-red'
+  return 'text-core-text-muted'
+}
+
 export default function WordPressPage() {
   const [sites] = useState<WPSite[]>([])
   const [showConnect, setShowConnect] = useState(false)
   const [form, setForm] = useState({ url: '', apiKey: '', username: '' })
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 8px' }}>
+    <div className="max-w-[1100px] mx-auto px-2">
+
       {/* Connect Modal */}
       {showConnect && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 100,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-        }} onClick={() => setShowConnect(false)}>
-          <div style={{
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 16, padding: 28, maxWidth: 460, width: '100%',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-          }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 20px' }}>
+        <div
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+          onClick={() => setShowConnect(false)}
+        >
+          <div
+            className="bg-core-card border border-core-border rounded-2xl p-7 max-w-[460px] w-full shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-core-text mb-5">
               Connect WordPress Site
             </h2>
-            <label style={{ display: 'block', marginBottom: 12 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Site URL</span>
-              <input type="url" value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} placeholder="https://mysite.com"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)', color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+
+            <label className="block mb-3">
+              <span className="block text-[11px] font-semibold text-core-text-muted uppercase tracking-wide mb-1">
+                Site URL
+              </span>
+              <input
+                type="url"
+                value={form.url}
+                onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
+                placeholder="https://mysite.com"
+                className="w-full px-3 py-2.5 rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none box-border"
+              />
             </label>
-            <label style={{ display: 'block', marginBottom: 12 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Username</span>
-              <input type="text" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} placeholder="admin"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)', color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+
+            <label className="block mb-3">
+              <span className="block text-[11px] font-semibold text-core-text-muted uppercase tracking-wide mb-1">
+                Username
+              </span>
+              <input
+                type="text"
+                value={form.username}
+                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+                placeholder="admin"
+                className="w-full px-3 py-2.5 rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none box-border"
+              />
             </label>
-            <label style={{ display: 'block', marginBottom: 20 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Application Password</span>
-              <input type="password" value={form.apiKey} onChange={e => setForm(f => ({ ...f, apiKey: e.target.value }))} placeholder="xxxx xxxx xxxx xxxx xxxx xxxx"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)', color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+
+            <label className="block mb-5">
+              <span className="block text-[11px] font-semibold text-core-text-muted uppercase tracking-wide mb-1">
+                Application Password
+              </span>
+              <input
+                type="password"
+                value={form.apiKey}
+                onChange={e => setForm(f => ({ ...f, apiKey: e.target.value }))}
+                placeholder="xxxx xxxx xxxx xxxx xxxx xxxx"
+                className="w-full px-3 py-2.5 rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none box-border"
+              />
             </label>
-            <p style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', marginBottom: 16, lineHeight: 1.5 }}>
+
+            <p className="text-[11px] text-core-text-muted mb-4 leading-relaxed">
               Generate an Application Password in WordPress under Users &rarr; Profile &rarr; Application Passwords.
             </p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button style={{
-                flex: 1, padding: 12, background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-                color: '#0c1220', fontWeight: 700, fontSize: 14, borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-              }}>Connect Site</button>
-              <button onClick={() => setShowConnect(false)} style={{
-                padding: '12px 20px', borderRadius: 10, border: '1px solid #1c2b42',
-                background: 'transparent', color: 'var(--text-muted, #6b7280)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-              }}>Cancel</button>
+
+            <div className="flex gap-2.5">
+              <button className="flex-1 py-3 bg-gradient-to-br from-core-cyan to-teal-600 text-core-bg font-bold text-sm rounded-xl border-none cursor-pointer">
+                Connect Site
+              </button>
+              <button
+                onClick={() => setShowConnect(false)}
+                className="px-5 py-3 rounded-xl border border-core-border bg-transparent text-core-text-muted text-sm cursor-pointer"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0, display: 'flex', alignItems: 'center' }}>
+          <h1 className="text-[22px] font-bold text-core-text m-0 flex items-center gap-2">
             WordPress Manager
-            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(126,217,87,0.12)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)', marginLeft: 8 }}>UNLIMITED</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-core-green/10 text-core-green border border-core-green/20">
+              UNLIMITED
+            </span>
           </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', marginTop: 4 }}>Connect and manage your WordPress sites</p>
+          <p className="text-[13px] text-core-text-muted mt-1">
+            Connect and manage your WordPress sites
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#7ed957' }}>Activated</span>
-          <button onClick={() => setShowConnect(true)} style={{
-            padding: '10px 20px', background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-            color: '#0c1220', fontWeight: 700, fontSize: 13, borderRadius: 10, border: 'none', cursor: 'pointer',
-          }}>+ Connect Site</button>
+
+        <div className="flex gap-2 items-center">
+          <span className="text-[11px] font-semibold text-core-green">Activated</span>
+          <button
+            onClick={() => setShowConnect(true)}
+            className="px-5 py-2.5 bg-gradient-to-br from-core-cyan to-teal-600 text-core-bg font-bold text-[13px] rounded-xl border-none cursor-pointer"
+          >
+            + Connect Site
+          </button>
         </div>
       </div>
 
-      {/* Features */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16, marginBottom: 24 }}>
-        {[
-          { title: 'Posts & Pages', desc: 'Create, edit, and publish content', icon: '&#128196;' },
-          { title: 'Plugins', desc: 'Install, activate, and manage plugins', icon: '&#128268;' },
-          { title: 'Media Library', desc: 'Upload and manage media files', icon: '&#127912;' },
-          { title: 'Themes', desc: 'Switch and customize themes', icon: '&#127912;' },
-        ].map(f => (
-          <div key={f.title} style={{
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 12, padding: 20,
-          }}>
-            <div style={{ fontSize: 24, marginBottom: 12, opacity: 0.5 }} dangerouslySetInnerHTML={{ __html: f.icon }} />
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)', marginBottom: 4 }}>{f.title}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)' }}>{f.desc}</div>
+      {/* Features Grid */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4 mb-6">
+        {FEATURES.map(f => (
+          <div
+            key={f.title}
+            className="bg-core-card border border-core-border rounded-xl p-5"
+          >
+            <f.icon className="w-6 h-6 text-core-text-muted opacity-50 mb-3" />
+            <div className="text-sm font-semibold text-core-text mb-1">{f.title}</div>
+            <div className="text-xs text-core-text-muted">{f.desc}</div>
           </div>
         ))}
       </div>
 
       {/* Sites List */}
       {sites.length === 0 ? (
-        <div style={{ background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 14, padding: '60px 40px', textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>&#127760;</div>
-          <p style={{ color: 'var(--text-secondary, #9ca3af)', fontSize: 14, marginBottom: 8 }}>No WordPress sites connected.</p>
-          <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: 13, marginBottom: 16 }}>
+        <div className="bg-core-card border border-core-border rounded-2xl px-10 py-16 text-center">
+          <Globe className="w-10 h-10 text-core-text-muted opacity-30 mx-auto mb-4" />
+          <p className="text-core-text-dim text-sm mb-2">No WordPress sites connected.</p>
+          <p className="text-core-text-muted text-[13px] mb-4">
             Connect a WordPress site to manage content, plugins, and settings from here.
           </p>
-          <button onClick={() => setShowConnect(true)} style={{
-            padding: '10px 20px', background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-            color: '#0c1220', fontWeight: 700, fontSize: 13, borderRadius: 10, border: 'none', cursor: 'pointer',
-          }}>+ Connect Site</button>
+          <button
+            onClick={() => setShowConnect(true)}
+            className="px-5 py-2.5 bg-gradient-to-br from-core-cyan to-teal-600 text-core-bg font-bold text-[13px] rounded-xl border-none cursor-pointer"
+          >
+            + Connect Site
+          </button>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="flex flex-col gap-3">
           {sites.map(s => (
-            <div key={s.id} style={{
-              background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-              borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10,
-                  background: 'linear-gradient(135deg, #21759b20, #21759b10)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 18, color: '#21759b',
-                }}>W</div>
+            <div
+              key={s.id}
+              className="bg-core-card border border-core-border rounded-xl px-5 py-4 flex justify-between items-center"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#21759b]/10 flex items-center justify-center text-lg font-bold text-[#21759b]">
+                  W
+                </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>{s.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)' }}>{s.url}</div>
+                  <div className="text-sm font-semibold text-core-text">{s.name}</div>
+                  <div className="text-xs text-core-text-muted">{s.url}</div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                {s.wpVersion && <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>WP {s.wpVersion}</span>}
-                <span style={{
-                  fontSize: 11, fontWeight: 600,
-                  color: s.status === 'connected' ? '#7ed957' : s.status === 'error' ? '#f87171' : 'var(--text-muted, #6b7280)',
-                }}>{s.status}</span>
+
+              <div className="flex gap-3 items-center">
+                {s.wpVersion && (
+                  <span className="text-[11px] text-core-text-muted">WP {s.wpVersion}</span>
+                )}
+                <span className={`text-[11px] font-semibold ${statusColor(s.status)}`}>
+                  {s.status}
+                </span>
               </div>
             </div>
           ))}

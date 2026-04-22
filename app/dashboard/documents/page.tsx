@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { FileText, Search, Send, Plus, X } from 'lucide-react'
 
 interface Document {
   id: string
@@ -16,6 +17,13 @@ interface Template {
   id: string
   name: string
   type: string
+}
+
+function statusClass(s: string): string {
+  if (s === 'signed' || s === 'completed') return 'text-core-green'
+  if (s === 'pending' || s === 'sent') return 'text-core-amber'
+  if (s === 'draft') return 'text-core-text-muted'
+  return 'text-core-red'
 }
 
 export default function DocumentsPage() {
@@ -87,55 +95,66 @@ export default function DocumentsPage() {
     return true
   })
 
-  const statusColor = (s: string) => {
-    if (s === 'signed' || s === 'completed') return '#7ed957'
-    if (s === 'pending' || s === 'sent') return '#fbbf24'
-    if (s === 'draft') return 'var(--text-muted, #6b7280)'
-    return '#f87171'
-  }
+  const inputClass =
+    'w-full px-3 py-2.5 rounded-lg border border-core-border bg-core-bg text-core-text text-sm outline-none focus:border-core-cyan transition-colors'
 
-  const inp: React.CSSProperties = {
-    width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
-    color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none', boxSizing: 'border-box',
-  }
+  const labelSpanClass =
+    'block text-[11px] font-semibold uppercase tracking-[0.05em] text-core-text-muted mb-1'
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 8px' }}>
+    <div className="max-w-[1100px] mx-auto px-2">
+
       {/* Send Modal */}
       {showSend && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 100,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-        }} onClick={() => setShowSend(null)}>
-          <div style={{
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 16, padding: 28, maxWidth: 460, width: '100%',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-          }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 8px' }}>
+        <div
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+          onClick={() => setShowSend(null)}
+        >
+          <div
+            className="bg-core-card border border-core-border rounded-2xl p-7 max-w-[460px] w-full shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-core-text mb-2">
               Send {showSend.isTemplate ? 'Template' : 'Document'}
             </h2>
-            <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', marginBottom: 20 }}>{showSend.name}</p>
-            <label style={{ display: 'block', marginBottom: 12 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipient Email</span>
-              <input type="email" value={sendForm.email} onChange={e => setSendForm(f => ({ ...f, email: e.target.value }))} placeholder="client@company.com" style={inp} />
+            <p className="text-[13px] text-core-text-muted mb-5">{showSend.name}</p>
+
+            <label className="block mb-3">
+              <span className={labelSpanClass}>Recipient Email</span>
+              <input
+                type="email"
+                value={sendForm.email}
+                onChange={e => setSendForm(f => ({ ...f, email: e.target.value }))}
+                placeholder="client@company.com"
+                className={inputClass}
+              />
             </label>
-            <label style={{ display: 'block', marginBottom: 20 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipient Name</span>
-              <input type="text" value={sendForm.name} onChange={e => setSendForm(f => ({ ...f, name: e.target.value }))} placeholder="John Doe" style={inp} />
+
+            <label className="block mb-5">
+              <span className={labelSpanClass}>Recipient Name</span>
+              <input
+                type="text"
+                value={sendForm.name}
+                onChange={e => setSendForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="John Doe"
+                className={inputClass}
+              />
             </label>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={sendDocument} disabled={sending || !sendForm.email} style={{
-                flex: 1, padding: 12, background: sending ? '#374151' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-                color: '#0c1220', fontWeight: 700, fontSize: 14, borderRadius: 10, border: 'none', cursor: sending ? 'wait' : 'pointer', fontFamily: 'inherit',
-                opacity: !sendForm.email ? 0.5 : 1,
-              }}>{sending ? 'Sending...' : 'Send Link'}</button>
-              <button onClick={() => setShowSend(null)} style={{
-                padding: '12px 20px', borderRadius: 10, border: '1px solid #1c2b42',
-                background: 'transparent', color: 'var(--text-muted, #6b7280)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-              }}>Cancel</button>
+
+            <div className="flex gap-2.5">
+              <button
+                onClick={sendDocument}
+                disabled={sending || !sendForm.email}
+                className="flex-1 py-3 rounded-xl font-bold text-sm bg-gradient-to-br from-core-cyan to-teal-600 text-[#0c1220] disabled:opacity-50 disabled:cursor-wait cursor-pointer transition-opacity"
+              >
+                {sending ? 'Sending...' : 'Send Link'}
+              </button>
+              <button
+                onClick={() => setShowSend(null)}
+                className="px-5 py-3 rounded-xl border border-core-border bg-transparent text-core-text-muted text-sm cursor-pointer hover:text-core-text transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -143,166 +162,220 @@ export default function DocumentsPage() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 100,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-        }} onClick={() => setShowCreate(false)}>
-          <div style={{
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 16, padding: 28, maxWidth: 460, width: '100%',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-          }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 20px' }}>New Document</h2>
-            <label style={{ display: 'block', marginBottom: 12 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Document Name</span>
-              <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Service Agreement" style={inp} />
+        <div
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+          onClick={() => setShowCreate(false)}
+        >
+          <div
+            className="bg-core-card border border-core-border rounded-2xl p-7 max-w-[460px] w-full shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-core-text mb-5">New Document</h2>
+
+            <label className="block mb-3">
+              <span className={labelSpanClass}>Document Name</span>
+              <input
+                type="text"
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Service Agreement"
+                className={inputClass}
+              />
             </label>
-            <label style={{ display: 'block', marginBottom: 12 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</span>
-              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} style={inp}>
+
+            <label className="block mb-3">
+              <span className={labelSpanClass}>Type</span>
+              <select
+                value={form.type}
+                onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                className={inputClass}
+              >
                 <option value="contract">Contract</option>
                 <option value="proposal">Proposal</option>
                 <option value="invoice">Invoice</option>
                 <option value="agreement">Agreement</option>
               </select>
             </label>
-            <label style={{ display: 'block', marginBottom: 20 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recipient Email</span>
-              <input type="email" value={form.recipient} onChange={e => setForm(f => ({ ...f, recipient: e.target.value }))} placeholder="client@company.com" style={inp} />
+
+            <label className="block mb-5">
+              <span className={labelSpanClass}>Recipient Email</span>
+              <input
+                type="email"
+                value={form.recipient}
+                onChange={e => setForm(f => ({ ...f, recipient: e.target.value }))}
+                placeholder="client@company.com"
+                className={inputClass}
+              />
             </label>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button style={{
-                flex: 1, padding: 12, background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-                color: '#0c1220', fontWeight: 700, fontSize: 14, borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-              }}>Create Document</button>
-              <button onClick={() => setShowCreate(false)} style={{
-                padding: '12px 20px', borderRadius: 10, border: '1px solid #1c2b42',
-                background: 'transparent', color: 'var(--text-muted, #6b7280)', fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-              }}>Cancel</button>
+
+            <div className="flex gap-2.5">
+              <button className="flex-1 py-3 rounded-xl font-bold text-sm bg-gradient-to-br from-core-cyan to-teal-600 text-[#0c1220] cursor-pointer">
+                Create Document
+              </button>
+              <button
+                onClick={() => setShowCreate(false)}
+                className="px-5 py-3 rounded-xl border border-core-border bg-transparent text-core-text-muted text-sm cursor-pointer hover:text-core-text transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0, display: 'flex', alignItems: 'center' }}>
-            Documents & Contracts
-            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(126,217,87,0.12)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)', marginLeft: 8 }}>UNLIMITED</span>
+          <h1 className="text-[22px] font-bold text-core-text flex items-center gap-2 m-0">
+            Documents &amp; Contracts
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-core-green/10 text-core-green border border-core-green/20">
+              UNLIMITED
+            </span>
           </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', marginTop: 4 }}>Create, send, and track documents</p>
+          <p className="text-[13px] text-core-text-muted mt-1">Create, send, and track documents</p>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {loading && <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>Loading...</span>}
-          <button onClick={() => setShowCreate(true)} style={{
-            padding: '10px 20px', background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-            color: '#0c1220', fontWeight: 700, fontSize: 13, borderRadius: 10, border: 'none', cursor: 'pointer',
-          }}>+ New Document</button>
+        <div className="flex gap-2 items-center">
+          {loading && <span className="text-[11px] text-core-text-muted">Loading...</span>}
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-br from-core-cyan to-teal-600 text-[#0c1220] font-bold text-[13px] rounded-xl border-none cursor-pointer"
+          >
+            <Plus size={14} />
+            New Document
+          </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input type="text" placeholder="Search documents..." value={search} onChange={e => setSearch(e.target.value)}
-          style={{
-            flex: 1, minWidth: 200, padding: '12px 16px 12px 40px',
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 10, color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23556880' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat', backgroundPosition: '14px center',
-          }} />
+      <div className="flex gap-2 mb-5 flex-wrap items-center">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-core-text-muted pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search documents..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 bg-core-card border border-core-border rounded-xl text-core-text text-sm outline-none focus:border-core-cyan transition-colors"
+          />
+        </div>
         {['all', 'draft', 'sent', 'signed'].map(f => (
-          <button key={f} onClick={() => setFilter(f)} style={{
-            padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer',
-            background: filter === f ? 'rgba(45,212,191,0.15)' : 'var(--bg-card, #1f2937)',
-            color: filter === f ? 'var(--color-cyan, #14b8a6)' : 'var(--text-muted, #6b7280)',
-          }}>{f.charAt(0).toUpperCase() + f.slice(1)}</button>
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3.5 py-2 rounded-lg text-xs font-semibold border-none cursor-pointer transition-colors ${
+              filter === f
+                ? 'bg-core-cyan/15 text-core-cyan'
+                : 'bg-core-card text-core-text-muted hover:text-core-text'
+            }`}
+          >
+            {f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
         ))}
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 mb-6">
         {[
           { label: 'Total', value: documents.length },
           { label: 'Pending', value: documents.filter(d => d.status === 'sent' || d.status === 'pending').length },
           { label: 'Signed', value: documents.filter(d => d.status === 'signed' || d.status === 'completed').length },
           { label: 'Templates', value: templates.length },
         ].map(s => (
-          <div key={s.label} style={{
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 12, padding: 20,
-          }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)' }}>{s.value}</div>
+          <div key={s.label} className="bg-core-card border border-core-border rounded-xl p-5">
+            <div className="text-[11px] text-core-text-muted uppercase tracking-[0.06em] mb-2">{s.label}</div>
+            <div className="text-[28px] font-bold text-core-text">{s.value}</div>
           </div>
         ))}
       </div>
 
       {/* Templates Section */}
       {templates.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: 12 }}>Templates</h3>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div className="mb-6">
+          <h3 className="text-[14px] font-bold text-core-text mb-3">Templates</h3>
+          <div className="flex gap-2.5 flex-wrap">
             {templates.map(t => (
-              <div key={t.id} style={{
-                background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-                borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>{t.name}</span>
-                <button onClick={() => setShowSend({ id: t.id, name: t.name, isTemplate: true })} style={{
-                  padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                  background: 'rgba(126,217,87,0.1)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)', cursor: 'pointer',
-                }}>Send</button>
+              <div
+                key={t.id}
+                className="bg-core-card border border-core-border rounded-xl px-4 py-3 flex items-center gap-2.5"
+              >
+                <span className="text-[13px] font-semibold text-core-text">{t.name}</span>
+                <button
+                  onClick={() => setShowSend({ id: t.id, name: t.name, isTemplate: true })}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-core-green/10 text-core-green border border-core-green/20 cursor-pointer hover:bg-core-green/20 transition-colors"
+                >
+                  <Send size={10} />
+                  Send
+                </button>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Documents Table */}
+      {/* Documents Table / Empty State */}
       {filtered.length === 0 ? (
-        <div style={{ background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 14, padding: '60px 40px', textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>&#128196;</div>
-          <p style={{ color: 'var(--text-secondary, #9ca3af)', fontSize: 14, marginBottom: 8 }}>{loading ? 'Loading documents...' : 'No documents yet.'}</p>
-          <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: 13, marginBottom: 16 }}>
+        <div className="bg-core-card border border-core-border rounded-2xl px-10 py-16 text-center">
+          <div className="flex justify-center mb-4 opacity-30">
+            <FileText size={48} className="text-core-text" />
+          </div>
+          <p className="text-core-text-dim text-[14px] mb-2">
+            {loading ? 'Loading documents...' : 'No documents yet.'}
+          </p>
+          <p className="text-core-text-muted text-[13px] mb-4">
             Create contracts, proposals, and agreements to send for e-signature.
           </p>
-          <button onClick={() => setShowCreate(true)} style={{
-            padding: '10px 20px', background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-            color: '#0c1220', fontWeight: 700, fontSize: 13, borderRadius: 10, border: 'none', cursor: 'pointer',
-          }}>+ New Document</button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-br from-core-cyan to-teal-600 text-[#0c1220] font-bold text-[13px] rounded-xl border-none cursor-pointer"
+          >
+            <Plus size={14} />
+            New Document
+          </button>
         </div>
       ) : (
-        <div style={{ background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 14, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="bg-core-card border border-core-border rounded-2xl overflow-hidden">
+          <table className="w-full border-collapse">
             <thead>
-              <tr style={{ borderBottom: '1px solid #1c2b42' }}>
+              <tr className="border-b border-core-border">
                 {['Document', 'Type', 'Recipient', 'Status', 'Created', ''].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '12px 20px', fontSize: 11, fontWeight: 600, color: 'var(--text-muted, #6b7280)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                  <th
+                    key={h}
+                    className="text-left px-5 py-3 text-[11px] font-semibold text-core-text-muted uppercase tracking-[0.06em]"
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map(d => (
-                <tr key={d.id} style={{ borderBottom: '1px solid rgba(28,43,66,0.5)' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#1a2740'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <td style={{ padding: '14px 20px', fontSize: 14, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>{d.name}</td>
-                  <td style={{ padding: '14px 20px' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, background: 'rgba(45,212,191,0.1)', color: 'var(--color-cyan, #14b8a6)' }}>{d.type}</span>
+                <tr
+                  key={d.id}
+                  className="border-b border-core-border/50 hover:bg-[#1a2740] transition-colors"
+                >
+                  <td className="px-5 py-3.5 text-[14px] font-semibold text-core-text">{d.name}</td>
+                  <td className="px-5 py-3.5">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-core-cyan/10 text-core-cyan">
+                      {d.type}
+                    </span>
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--text-secondary, #9ca3af)' }}>{d.recipient || '--'}</td>
-                  <td style={{ padding: '14px 20px' }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: statusColor(d.status) }}>{d.status}</span>
+                  <td className="px-5 py-3.5 text-[13px] text-core-text-dim">{d.recipient || '--'}</td>
+                  <td className="px-5 py-3.5">
+                    <span className={`text-[11px] font-semibold ${statusClass(d.status)}`}>
+                      {d.status}
+                    </span>
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 12, color: 'var(--text-muted, #6b7280)' }}>{new Date(d.createdAt).toLocaleDateString()}</td>
-                  <td style={{ padding: '14px 20px' }}>
-                    <button onClick={() => setShowSend({ id: d.id, name: d.name, isTemplate: false })} style={{
-                      padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                      background: 'rgba(126,217,87,0.1)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)', cursor: 'pointer',
-                    }}>Send</button>
+                  <td className="px-5 py-3.5 text-[12px] text-core-text-muted">
+                    {new Date(d.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <button
+                      onClick={() => setShowSend({ id: d.id, name: d.name, isTemplate: false })}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-core-green/10 text-core-green border border-core-green/20 cursor-pointer hover:bg-core-green/20 transition-colors"
+                    >
+                      <Send size={10} />
+                      Send
+                    </button>
                   </td>
                 </tr>
               ))}

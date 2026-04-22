@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { RefreshCw, ChevronRight, X } from 'lucide-react'
 
 // ── Module types ────────────────────────────────────────────
 
@@ -198,14 +199,14 @@ export default function DashboardHome() {
     saveLayout([...DEFAULT_MODULES])
   }
 
-  // ── Module Size → CSS ────────────────────────────────────
+  // ── Module Size → Tailwind col-span ─────────────────────
 
-  function sizeToSpan(size: string) {
+  function sizeToColSpan(size: string) {
     switch (size) {
-      case 'full': return 'span 3'
-      case 'half': return 'span 2'
-      case 'third': return 'span 1'
-      default: return 'span 1'
+      case 'full':  return 'col-span-3'
+      case 'half':  return 'col-span-2'
+      case 'third': return 'col-span-1'
+      default:      return 'col-span-1'
     }
   }
 
@@ -239,18 +240,28 @@ export default function DashboardHome() {
 
       case 'chart':
         return (
-          <div className="jp-card" style={{ height: '100%' }}>
+          <div className="jp-card h-full">
             <div className="jp-card-header">
               <h6>Execution Overview</h6>
-              <div style={{ display: 'flex', gap: 4 }}>
+              <div className="flex gap-1">
                 {['7D', '30D', '90D'].map(p => (
-                  <button key={p} className="jp-btn-outline" style={{ padding: '4px 12px', fontSize: '0.75rem', borderRadius: 6, ...(p === '30D' ? { borderColor: 'var(--jp-green-dim)', color: 'var(--jp-green)' } : {}) }}>{p}</button>
+                  <button
+                    key={p}
+                    className={[
+                      'jp-btn-outline px-3 py-1 text-xs rounded-md',
+                      p === '30D' ? 'border-core-green-dim text-core-green' : '',
+                    ].join(' ')}
+                  >
+                    {p}
+                  </button>
                 ))}
               </div>
             </div>
             <div className="jp-card-body">
               <div className="jp-chart-area">
-                {chartBars.map((h, i) => <div key={i} className="jp-chart-bar" style={{ height: `${h}%` }} />)}
+                {chartBars.map((_, i) => (
+                  <div key={i} className="jp-chart-bar" style={{ height: '0%' }} />
+                ))}
               </div>
             </div>
           </div>
@@ -258,18 +269,22 @@ export default function DashboardHome() {
 
       case 'actions':
         return (
-          <div className="jp-card" style={{ height: '100%' }}>
+          <div className="jp-card h-full">
             <div className="jp-card-header"><h6>Quick Actions</h6></div>
-            <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="jp-card-body flex flex-col gap-2">
               {[
-                { label: 'New Contact', href: '/dashboard/contacts', bg: 'rgba(0,212,255,0.10)', color: 'var(--jp-cyan)', border: '1px solid rgba(0,212,255,0.2)' },
-                { label: 'Run Workflow', href: '/dashboard/workflows', bg: 'var(--jp-green-glow)', color: 'var(--jp-green)', border: '1px solid rgba(110,224,90,0.2)' },
-                { label: 'Chat with Jaxx', href: '/dashboard/chat', bg: 'rgba(167,139,250,0.10)', color: 'var(--jp-purple)', border: '1px solid rgba(167,139,250,0.2)' },
-                { label: 'Training Center', href: '/dashboard/training', bg: 'rgba(255,181,71,0.10)', color: 'var(--jp-amber)', border: '1px solid rgba(251,191,36,0.2)' },
+                { label: 'New Contact',     href: '/dashboard/contacts',  className: 'bg-core-cyan/10 text-core-cyan border border-core-cyan/20' },
+                { label: 'Run Workflow',    href: '/dashboard/workflows', className: 'bg-core-green/10 text-core-green border border-core-green/20' },
+                { label: 'Chat with Jaxx', href: '/dashboard/chat',      className: 'bg-core-purple/10 text-core-purple border border-core-purple/20' },
+                { label: 'Training Center', href: '/dashboard/training', className: 'bg-core-amber/10 text-core-amber border border-core-amber/20' },
               ].map(a => (
-                <Link key={a.label} href={a.href} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--jp-radius-sm)', textDecoration: 'none', fontSize: '0.875rem', fontWeight: 600, background: a.bg, color: a.color, border: a.border }}>
+                <Link
+                  key={a.label}
+                  href={a.href}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg no-underline text-sm font-semibold transition-opacity hover:opacity-80 ${a.className}`}
+                >
                   {a.label}
-                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
               ))}
             </div>
@@ -278,21 +293,28 @@ export default function DashboardHome() {
 
       case 'status':
         return (
-          <div className="jp-card" style={{ height: '100%' }}>
+          <div className="jp-card h-full">
             <div className="jp-card-header"><h6>System Status</h6></div>
-            <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="jp-card-body flex flex-col gap-3.5">
               {[
-                { label: '0nMCP Engine', active: mcpStatus === 'online' },
+                { label: '0nMCP Engine',    active: mcpStatus === 'online' },
                 { label: 'Vault Encryption', active: true },
                 { label: 'Webhook Handlers', active: true },
-                { label: 'CRM Sync', active: false },
+                { label: 'CRM Sync',         active: false },
               ].map(s => (
                 <div key={s.label}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)' }}>{s.label}</span>
-                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: s.active ? 'var(--jp-green)' : 'var(--jp-text-muted)' }}>{s.active ? 'Active' : 'Inactive'}</span>
+                  <div className="flex justify-between mb-1.5">
+                    <span className="text-[0.8125rem] text-core-text-dim">{s.label}</span>
+                    <span className={`text-[0.6875rem] font-semibold ${s.active ? 'text-core-green' : 'text-core-text-muted'}`}>
+                      {s.active ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
-                  <div className="jp-progress"><div className={`jp-progress-bar ${s.active ? 'green' : ''}`} style={{ width: s.active ? '100%' : '0%', background: s.active ? undefined : 'var(--jp-border-hi)' }} /></div>
+                  <div className="jp-progress">
+                    <div
+                      className={`jp-progress-bar ${s.active ? 'green' : ''}`}
+                      style={{ width: s.active ? '100%' : '0%', background: s.active ? undefined : 'var(--jp-border-hi)' }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -301,22 +323,22 @@ export default function DashboardHome() {
 
       case 'activity':
         return (
-          <div className="jp-card" style={{ height: '100%' }}>
+          <div className="jp-card h-full">
             <div className="jp-card-header"><h6>Recent Activity</h6></div>
             <ul className="jp-activity-list">
               {activity.length === 0 ? (
-                <li className="jp-activity-item" style={{ justifyContent: 'center', color: 'var(--jp-text-muted)', fontSize: '0.8125rem' }}>
+                <li className="jp-activity-item justify-center text-core-text-muted text-[0.8125rem]">
                   No recent activity
                 </li>
               ) : (
                 activity.map((a, i) => (
                   <li key={i} className="jp-activity-item">
                     <span className={`jp-activity-dot ${a.dot}`} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text-primary)' }}>{a.text}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.meta}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[0.8125rem] font-semibold text-core-text">{a.text}</div>
+                      <div className="text-xs text-core-text-muted truncate">{a.meta}</div>
                     </div>
-                    <span style={{ fontSize: '0.6875rem', color: 'var(--jp-text-muted)', flexShrink: 0 }}>{a.time}</span>
+                    <span className="text-[0.6875rem] text-core-text-muted shrink-0">{a.time}</span>
                   </li>
                 ))
               )}
@@ -326,22 +348,22 @@ export default function DashboardHome() {
 
       case 'training':
         return (
-          <div className="jp-card" style={{ height: '100%' }}>
+          <div className="jp-card h-full">
             <div className="jp-card-header">
               <h6>Training Center</h6>
-              <Link href="/dashboard/training" className="jp-btn-outline" style={{ fontSize: '0.75rem', padding: '4px 12px', textDecoration: 'none' }}>View All</Link>
+              <Link href="/dashboard/training" className="jp-btn-outline text-xs px-3 py-1 no-underline">View All</Link>
             </div>
             <div className="jp-card-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: 'K-Layers', value: String(kLayerCount), color: 'var(--jp-cyan)' },
-                  { label: 'Contacts', value: stats.contacts > 0 ? stats.contacts.toLocaleString() : '0', color: 'var(--jp-green)' },
-                  { label: 'Pipelines', value: String(stats.pipelines), color: 'var(--jp-amber)' },
-                  { label: 'Tier', value: String(stats.tierLevel ?? 0), color: 'var(--jp-purple)' },
+                  { label: 'K-Layers',  value: String(kLayerCount),                                    colorClass: 'text-core-cyan' },
+                  { label: 'Contacts',  value: stats.contacts > 0 ? stats.contacts.toLocaleString() : '0', colorClass: 'text-core-green' },
+                  { label: 'Pipelines', value: String(stats.pipelines),                                 colorClass: 'text-core-amber' },
+                  { label: 'Tier',      value: String(stats.tierLevel ?? 0),                            colorClass: 'text-core-purple' },
                 ].map(s => (
-                  <div key={s.label} style={{ padding: '12px', borderRadius: 8, background: 'var(--jp-surface-elevated)', border: '1px solid var(--jp-border)' }}>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: s.color }}>{s.value}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', marginTop: 2 }}>{s.label}</div>
+                  <div key={s.label} className="p-3 rounded-lg bg-core-card-hover border border-core-border">
+                    <div className={`text-xl font-bold ${s.colorClass}`}>{s.value}</div>
+                    <div className="text-xs text-core-text-muted mt-0.5">{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -351,21 +373,21 @@ export default function DashboardHome() {
 
       case 'integrations':
         return (
-          <div className="jp-card" style={{ height: '100%' }}>
+          <div className="jp-card h-full">
             <div className="jp-card-header">
               <h6>Integrations</h6>
-              <Link href="/dashboard/integrations" className="jp-btn-outline" style={{ fontSize: '0.75rem', padding: '4px 12px', textDecoration: 'none' }}>Manage</Link>
+              <Link href="/dashboard/integrations" className="jp-btn-outline text-xs px-3 py-1 no-underline">Manage</Link>
             </div>
-            <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="jp-card-body flex flex-col gap-2">
               {[
-                { name: 'CRM', status: 'Connected', color: 'var(--jp-green)' },
-                { name: 'Stripe', status: 'Connected', color: 'var(--jp-green)' },
-                { name: 'Supabase', status: 'Connected', color: 'var(--jp-green)' },
-                { name: '0nMCP', status: mcpStatus === 'online' ? 'Online' : 'Offline', color: mcpStatus === 'online' ? 'var(--jp-green)' : 'var(--jp-red)' },
+                { name: 'CRM',     status: 'Connected',                                      online: true },
+                { name: 'Stripe',  status: 'Connected',                                      online: true },
+                { name: 'Supabase', status: 'Connected',                                     online: true },
+                { name: '0nMCP',   status: mcpStatus === 'online' ? 'Online' : 'Offline',    online: mcpStatus === 'online' },
               ].map(s => (
-                <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--jp-border)' }}>
-                  <span style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)' }}>{s.name}</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: s.color }}>{s.status}</span>
+                <div key={s.name} className="flex justify-between py-2 border-b border-core-border">
+                  <span className="text-[0.8125rem] text-core-text-dim">{s.name}</span>
+                  <span className={`text-xs font-semibold ${s.online ? 'text-core-green' : 'text-core-red'}`}>{s.status}</span>
                 </div>
               ))}
             </div>
@@ -374,21 +396,21 @@ export default function DashboardHome() {
 
       case 'crm':
         return (
-          <div className="jp-card" style={{ height: '100%' }}>
+          <div className="jp-card h-full">
             <div className="jp-card-header">
               <h6>CRM Overview</h6>
-              <Link href="/dashboard/contacts" className="jp-btn-outline" style={{ fontSize: '0.75rem', padding: '4px 12px', textDecoration: 'none' }}>View All</Link>
+              <Link href="/dashboard/contacts" className="jp-btn-outline text-xs px-3 py-1 no-underline">View All</Link>
             </div>
-            <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="jp-card-body flex flex-col gap-3">
               {[
-                { label: 'Contacts', value: stats.contacts.toLocaleString() },
-                { label: 'Pipelines', value: stats.pipelines.toLocaleString() },
+                { label: 'Contacts',      value: stats.contacts.toLocaleString() },
+                { label: 'Pipelines',     value: stats.pipelines.toLocaleString() },
                 { label: 'Opportunities', value: stats.opportunities.toLocaleString() },
                 { label: 'Conversations', value: stats.conversations.toLocaleString() },
               ].map(s => (
-                <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)' }}>{s.label}</span>
-                  <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--jp-text)' }}>{s.value}</span>
+                <div key={s.label} className="flex justify-between items-center">
+                  <span className="text-[0.8125rem] text-core-text-dim">{s.label}</span>
+                  <span className="text-base font-bold text-core-text">{s.value}</span>
                 </div>
               ))}
             </div>
@@ -403,88 +425,79 @@ export default function DashboardHome() {
   const visibleModules = modules.filter(m => m.visible)
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+    <div className="max-w-[1200px] mx-auto animate-fade-in">
       {/* Page Header */}
-      <div className="jp-page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="jp-page-header flex items-center justify-between">
         <div>
           <h1 className="jp-page-title">
-            Welcome back, <span style={{ color: 'var(--jp-green)' }}>{userName}</span>
+            Welcome back, <span className="text-core-green">{userName}</span>
           </h1>
           <p className="jp-page-subtitle">
             Your command center overview
             {debugInfo.locationId ? (
-              <span style={{ marginLeft: 12, fontSize: '0.65rem', color: 'var(--jp-text-muted)', fontFamily: 'var(--font-mono)' }}>
+              <span className="ml-3 text-[0.65rem] text-core-text-muted font-mono">
                 {'Location: ' + String(debugInfo.locationId).slice(0, 20) + (String(debugInfo.locationId).length > 20 ? '...' : '')}
                 {debugInfo.pitAvailable ? ' · PIT ✓' : ' · PIT ✗'}
               </span>
             ) : null}
             {debugInfo.debug ? (
-              <span style={{ marginLeft: 8, fontSize: '0.65rem', color: 'var(--jp-amber)', fontFamily: 'var(--font-mono)' }}>
+              <span className="ml-2 text-[0.65rem] text-core-amber font-mono">
                 {'(' + String((debugInfo.debug as Record<string, string>)?.userEmail || 'unknown') + ')'}
               </span>
             ) : null}
             {debugInfo.error ? (
-              <span style={{ marginLeft: 8, fontSize: '0.65rem', color: 'var(--jp-red)', fontFamily: 'var(--font-mono)' }}>
+              <span className="ml-2 text-[0.65rem] text-core-red font-mono">
                 {'Error: ' + String(debugInfo.error).slice(0, 40)}
               </span>
             ) : null}
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
+        <div className="flex items-center gap-3">
           {/* Refresh Button */}
           <button
             onClick={loadDashboardData}
             disabled={refreshing}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 8,
-              border: '1px solid var(--jp-border)',
-              background: refreshing ? 'var(--jp-green-glow)' : 'transparent',
-              color: refreshing ? 'var(--jp-green)' : 'var(--jp-text-muted)',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              cursor: refreshing ? 'not-allowed' : 'pointer',
-              fontFamily: 'inherit',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              transition: 'all 0.2s',
-            }}
+            className={[
+              'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border text-[0.8rem] font-semibold transition-all',
+              refreshing
+                ? 'border-core-green-dim bg-core-green/10 text-core-green cursor-not-allowed'
+                : 'border-core-border bg-transparent text-core-text-muted hover:text-core-text cursor-pointer',
+            ].join(' ')}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }}>
-              <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
-              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-            </svg>
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
+
           {lastRefresh && (
-            <span style={{ fontSize: '0.65rem', color: 'var(--jp-text-muted)' }}>
+            <span className="text-[0.65rem] text-core-text-muted">
               Last: {lastRefresh}
             </span>
           )}
+
           <button
             onClick={() => setEditMode(!editMode)}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 8,
-              border: editMode ? '1px solid var(--jp-green-dim)' : '1px solid var(--jp-border)',
-              background: editMode ? 'var(--jp-green-glow)' : 'transparent',
-              color: editMode ? 'var(--jp-green)' : 'var(--jp-text-muted)',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
+            className={[
+              'px-3.5 py-1.5 rounded-lg border text-[0.8rem] font-semibold cursor-pointer transition-all',
+              editMode
+                ? 'border-core-green-dim bg-core-green/10 text-core-green'
+                : 'border-core-border bg-transparent text-core-text-muted hover:text-core-text',
+            ].join(' ')}
           >
             {editMode ? 'Done' : 'Customize'}
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{
-              width: 8, height: 8, borderRadius: '50%',
-              background: mcpStatus === 'online' ? 'var(--jp-green)' : mcpStatus === 'offline' ? 'var(--jp-red)' : 'var(--jp-amber)',
-              boxShadow: mcpStatus === 'online' ? '0 0 8px rgba(110,224,90,0.4)' : undefined,
-            }} />
-            <span style={{ fontSize: '0.8125rem', color: 'var(--jp-text-secondary)' }}>
+
+          {/* MCP Status Indicator */}
+          <div className="flex items-center gap-2">
+            <span
+              className={[
+                'w-2 h-2 rounded-full',
+                mcpStatus === 'online'  ? 'bg-core-green shadow-[0_0_8px_rgba(110,224,90,0.4)]' : '',
+                mcpStatus === 'offline' ? 'bg-core-red'   : '',
+                mcpStatus === 'checking'? 'bg-core-amber' : '',
+              ].join(' ')}
+            />
+            <span className="text-[0.8125rem] text-core-text-dim">
               0nMCP {mcpStatus === 'checking' ? '...' : mcpStatus}
             </span>
           </div>
@@ -493,50 +506,25 @@ export default function DashboardHome() {
 
       {/* Edit Mode: Module toggle bar */}
       {editMode && (
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 6,
-          padding: '12px 16px',
-          marginBottom: 16,
-          borderRadius: 12,
-          background: 'var(--jp-surface)',
-          border: '1px solid var(--jp-border)',
-        }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--jp-text-muted)', fontWeight: 600, marginRight: 8, alignSelf: 'center' }}>MODULES:</span>
+        <div className="flex flex-wrap gap-1.5 px-4 py-3 mb-4 rounded-xl bg-core-surface border border-core-border">
+          <span className="text-xs text-core-text-muted font-semibold mr-2 self-center">MODULES:</span>
           {modules.map(m => (
             <button
               key={m.id}
               onClick={() => toggleModule(m.id)}
-              style={{
-                padding: '4px 12px',
-                borderRadius: 6,
-                border: m.visible ? '1px solid rgba(110,224,90,0.3)' : '1px solid var(--jp-border)',
-                background: m.visible ? 'rgba(110,224,90,0.10)' : 'transparent',
-                color: m.visible ? 'var(--jp-green)' : 'var(--jp-text-muted)',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
+              className={[
+                'px-3 py-1 rounded-md border text-xs font-semibold cursor-pointer transition-all',
+                m.visible
+                  ? 'border-core-green/30 bg-core-green/10 text-core-green'
+                  : 'border-core-border bg-transparent text-core-text-muted',
+              ].join(' ')}
             >
               {m.visible ? '✓' : '○'} {m.title}
             </button>
           ))}
           <button
             onClick={resetLayout}
-            style={{
-              padding: '4px 12px',
-              borderRadius: 6,
-              border: '1px solid rgba(238,93,80,0.3)',
-              background: 'rgba(238,93,80,0.08)',
-              color: 'var(--jp-red)',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              marginLeft: 'auto',
-            }}
+            className="px-3 py-1 rounded-md border border-core-red/30 bg-core-red/8 text-core-red text-xs font-semibold cursor-pointer ml-auto transition-all hover:bg-core-red/15"
           >
             Reset
           </button>
@@ -544,11 +532,7 @@ export default function DashboardHome() {
       )}
 
       {/* Module Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 16,
-      }}>
+      <div className="grid grid-cols-3 gap-4">
         {visibleModules.map(mod => (
           <div
             key={mod.id}
@@ -557,64 +541,30 @@ export default function DashboardHome() {
             onDragEnd={handleDragEnd}
             onDragOver={e => handleDragOver(e, mod.id)}
             onDrop={e => handleDrop(e, mod.id)}
-            style={{
-              gridColumn: sizeToSpan(mod.size),
-              position: 'relative',
-              transition: 'transform 0.15s, box-shadow 0.15s',
-              cursor: editMode ? 'grab' : 'default',
-              outline: dragOverId === mod.id ? '2px solid var(--jp-green)' : 'none',
-              outlineOffset: 2,
-              borderRadius: 'var(--jp-radius)',
-              opacity: dragId === mod.id ? 0.4 : 1,
-            }}
+            className={[
+              sizeToColSpan(mod.size),
+              'relative transition-[transform,box-shadow] duration-150 rounded-xl',
+              editMode ? 'cursor-grab' : 'cursor-default',
+              dragOverId === mod.id ? 'outline outline-2 outline-core-green outline-offset-2' : '',
+              dragId === mod.id ? 'opacity-40' : 'opacity-100',
+            ].join(' ')}
           >
             {/* Edit mode controls */}
             {editMode && (
-              <div style={{
-                position: 'absolute',
-                top: 6,
-                right: 6,
-                display: 'flex',
-                gap: 4,
-                zIndex: 10,
-              }}>
+              <div className="absolute top-1.5 right-1.5 flex gap-1 z-10">
                 <button
                   onClick={() => cycleSize(mod.id)}
                   title={`Size: ${mod.size}`}
-                  style={{
-                    width: 24, height: 24,
-                    borderRadius: 4,
-                    border: '1px solid var(--jp-border)',
-                    background: 'var(--jp-surface)',
-                    color: 'var(--jp-text-muted)',
-                    fontSize: '0.6rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontFamily: 'var(--jp-font-mono)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  className="w-6 h-6 rounded flex items-center justify-center border border-core-border bg-core-surface text-core-text-muted text-[0.6rem] font-bold cursor-pointer font-mono"
                 >
                   {mod.size === 'full' ? '3' : mod.size === 'half' ? '2' : '1'}
                 </button>
                 <button
                   onClick={() => toggleModule(mod.id)}
                   title="Hide module"
-                  style={{
-                    width: 24, height: 24,
-                    borderRadius: 4,
-                    border: '1px solid rgba(238,93,80,0.3)',
-                    background: 'rgba(238,93,80,0.08)',
-                    color: 'var(--jp-red)',
-                    fontSize: '0.7rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  className="w-6 h-6 rounded flex items-center justify-center border border-core-red/30 bg-core-red/8 text-core-red cursor-pointer hover:bg-core-red/15"
                 >
-                  ✕
+                  <X className="w-3 h-3" />
                 </button>
               </div>
             )}

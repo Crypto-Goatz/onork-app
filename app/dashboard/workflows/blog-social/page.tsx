@@ -3,6 +3,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useLocation } from '@/lib/location-context'
+import {
+  CheckCircle2,
+  XCircle,
+  MinusCircle,
+  Loader2,
+  ChevronDown,
+  Rss,
+  Share2,
+  Mail,
+} from 'lucide-react'
 
 type Tab = 'create' | 'history'
 type Tone = 'professional' | 'casual' | 'thought-leader' | 'educational'
@@ -46,12 +56,12 @@ interface ExecutionRecord {
 }
 
 const PLATFORMS = [
-  { key: 'linkedin', label: 'LinkedIn', color: '#0A66C2', icon: 'in' },
-  { key: 'twitter', label: 'X / Twitter', color: '#000', icon: 'X' },
-  { key: 'facebook', label: 'Facebook', color: '#1877F2', icon: 'f' },
-  { key: 'instagram', label: 'Instagram', color: '#E4405F', icon: 'ig' },
-  { key: 'google', label: 'Google Business', color: '#4285F4', icon: 'G' },
-  { key: 'tiktok', label: 'TikTok', color: '#00F2EA', icon: 'TT' },
+  { key: 'linkedin', label: 'LinkedIn', color: 'bg-[#0A66C2]', abbr: 'in' },
+  { key: 'twitter', label: 'X / Twitter', color: 'bg-black', abbr: 'X' },
+  { key: 'facebook', label: 'Facebook', color: 'bg-[#1877F2]', abbr: 'f' },
+  { key: 'instagram', label: 'Instagram', color: 'bg-[#E4405F]', abbr: 'ig' },
+  { key: 'google', label: 'Google Business', color: 'bg-[#4285F4]', abbr: 'G' },
+  { key: 'tiktok', label: 'TikTok', color: 'bg-[#00F2EA]', abbr: 'TT' },
 ]
 
 const TONES: { key: Tone; label: string; desc: string }[] = [
@@ -77,6 +87,42 @@ const STEP_LABELS: Record<string, string> = {
   'Reply to Conversation': 'Sending summary to CRM chat...',
 }
 
+function StepIndicator({ step, running }: { step: WorkflowStep; running: boolean }) {
+  return (
+    <div className="flex items-center gap-3 py-2.5">
+      <div className="shrink-0 w-7 h-7 flex items-center justify-center">
+        {step.status === 'pending' && running ? (
+          <Loader2 className="w-5 h-5 text-core-green animate-spin" />
+        ) : step.status === 'completed' ? (
+          <CheckCircle2 className="w-5 h-5 text-core-green" />
+        ) : step.status === 'failed' ? (
+          <XCircle className="w-5 h-5 text-core-red" />
+        ) : step.status === 'skipped' ? (
+          <MinusCircle className="w-5 h-5 text-core-text-muted" />
+        ) : (
+          <div className="w-5 h-5 rounded-full border-2 border-core-border" />
+        )}
+      </div>
+      <div className="flex-1">
+        <div className="text-[13px] font-semibold text-core-text">{step.name}</div>
+        {step.status === 'pending' && running && (
+          <div className="text-[11px] text-core-text-muted mt-0.5">
+            {STEP_LABELS[step.name] || 'Processing...'}
+          </div>
+        )}
+        {step.status === 'completed' && step.duration_ms > 0 && (
+          <div className="text-[11px] text-core-green mt-0.5">
+            Completed in {(step.duration_ms / 1000).toFixed(1)}s
+          </div>
+        )}
+        {step.status === 'failed' && step.detail && (
+          <div className="text-[11px] text-core-red mt-0.5">{step.detail}</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function BlogSocialWorkflowPage() {
   const { locationId } = useLocation()
   const supabase = createClient()
@@ -97,7 +143,6 @@ export default function BlogSocialWorkflowPage() {
   const [historyLoading, setHistoryLoading] = useState(false)
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null)
 
-  // Load history
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true)
     const { data: { session } } = await supabase.auth.getSession()
@@ -174,109 +219,41 @@ export default function BlogSocialWorkflowPage() {
     }
   }
 
-  // -- Rendering helpers ---
-
-  function StepIndicator({ step }: { step: WorkflowStep }) {
-    const colors: Record<string, string> = {
-      pending: '#3b4252',
-      completed: '#7ed957',
-      failed: '#ef4444',
-      skipped: '#6b7280',
-    }
-    const icons: Record<string, string> = {
-      pending: '',
-      completed: '',
-      failed: '!',
-      skipped: '-',
-    }
-
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0' }}>
-        <div style={{
-          width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-          background: step.status === 'pending' ? 'transparent' : colors[step.status],
-          border: step.status === 'pending' ? `2px solid ${colors.pending}` : 'none',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, fontWeight: 700, color: step.status === 'completed' ? '#000' : '#fff',
-          transition: 'all 0.3s ease',
-        }}>
-          {step.status === 'pending' && running ? (
-            <div style={{
-              width: 12, height: 12,
-              border: '2px solid #7ed957',
-              borderTopColor: 'transparent',
-              borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite',
-            }} />
-          ) : icons[step.status] || ''}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--jp-text, #f0f4f8)' }}>
-            {step.name}
-          </div>
-          {step.status === 'pending' && running && (
-            <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', marginTop: 2 }}>
-              {STEP_LABELS[step.name] || 'Processing...'}
-            </div>
-          )}
-          {step.status === 'completed' && step.duration_ms > 0 && (
-            <div style={{ fontSize: 11, color: '#7ed957', marginTop: 2 }}>
-              Completed in {(step.duration_ms / 1000).toFixed(1)}s
-            </div>
-          )}
-          {step.status === 'failed' && step.detail && (
-            <div style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>
-              {step.detail}
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+    <div className="max-w-[960px] mx-auto px-4 py-6">
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <div style={{
-          width: 40, height: 40, borderRadius: 10,
-          background: 'linear-gradient(135deg, #7ed957, #5cb83a)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 16, fontWeight: 900, color: '#000',
-        }}>B</div>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-core-green to-[#5cb83a] flex items-center justify-center shrink-0">
+          <Rss className="w-5 h-5 text-black" />
+        </div>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h1 style={{ fontSize: 20, fontWeight: 800, color: 'var(--jp-text, #f0f4f8)', margin: 0 }}>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-extrabold text-core-text m-0">
               Blog to Social + Email
             </h1>
-            <span style={{
-              fontSize: 9, fontWeight: 800, padding: '3px 8px', borderRadius: 4,
-              background: 'linear-gradient(135deg, #7ed957, #00d4ff)',
-              color: '#000', letterSpacing: '0.08em',
-            }}>UNLIMITED</span>
+            <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-gradient-to-r from-core-green to-core-cyan text-black tracking-widest">
+              UNLIMITED
+            </span>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--jp-text-muted, #8b95a5)', marginTop: 2 }}>
+          <div className="text-[12px] text-core-text-muted mt-0.5">
             AI writes a blog, posts to social, and emails your contacts — one click.
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 24, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--jp-border, #1e293b)' }}>
+      <div className="flex gap-0.5 mb-6 rounded-lg overflow-hidden border border-core-border">
         {(['create', 'history'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            style={{
-              flex: 1, padding: '10px 16px', border: 'none', cursor: 'pointer',
-              fontSize: 13, fontWeight: 700, textTransform: 'capitalize',
-              background: tab === t ? 'var(--jp-bg-card, #161b22)' : 'transparent',
-              color: tab === t ? '#7ed957' : 'var(--jp-text-muted, #8b95a5)',
-              borderBottom: tab === t ? '2px solid #7ed957' : '2px solid transparent',
-              transition: 'all 0.2s',
-            }}
+            className={[
+              'flex-1 px-4 py-2.5 border-none cursor-pointer text-[13px] font-bold capitalize transition-all duration-200',
+              tab === t
+                ? 'bg-core-card text-core-green border-b-2 border-core-green'
+                : 'bg-transparent text-core-text-muted border-b-2 border-transparent',
+            ].join(' ')}
           >
             {t === 'create' ? 'Create Workflow' : 'Execution History'}
           </button>
@@ -285,11 +262,11 @@ export default function BlogSocialWorkflowPage() {
 
       {/* CREATE TAB */}
       {tab === 'create' && (
-        <div style={{ display: 'grid', gap: 20 }}>
+        <div className="grid gap-5">
 
           {/* Topic */}
-          <div style={{ background: 'var(--jp-bg-card, #161b22)', borderRadius: 12, border: '1px solid var(--jp-border, #1e293b)', padding: 20 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <div className="bg-core-card rounded-xl border border-core-border p-5">
+            <label className="block text-[12px] font-bold text-core-text-muted mb-2 uppercase tracking-[0.06em]">
               Blog Topic
             </label>
             <textarea
@@ -297,73 +274,59 @@ export default function BlogSocialWorkflowPage() {
               onChange={e => setTopic(e.target.value)}
               placeholder="e.g. How AI automation is transforming small business operations in 2026"
               rows={3}
-              style={{
-                width: '100%', padding: '12px 14px', borderRadius: 8, resize: 'vertical',
-                background: 'var(--jp-bg-primary, #0d1117)',
-                border: '1px solid var(--jp-border, #1e293b)',
-                color: 'var(--jp-text, #f0f4f8)', fontSize: 14,
-                outline: 'none', fontFamily: 'inherit',
-              }}
+              className="w-full px-3.5 py-3 rounded-lg resize-y bg-core-bg border border-core-border text-core-text text-[14px] outline-none font-inherit placeholder:text-core-text-muted"
             />
           </div>
 
           {/* Tone */}
-          <div style={{ background: 'var(--jp-bg-card, #161b22)', borderRadius: 12, border: '1px solid var(--jp-border, #1e293b)', padding: 20 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <div className="bg-core-card rounded-xl border border-core-border p-5">
+            <label className="block text-[12px] font-bold text-core-text-muted mb-3 uppercase tracking-[0.06em]">
               Tone
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
+            <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
               {TONES.map(t => (
                 <button
                   key={t.key}
                   onClick={() => setTone(t.key)}
-                  style={{
-                    padding: '10px 14px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
-                    background: tone === t.key ? 'rgba(126, 217, 87, 0.1)' : 'var(--jp-bg-primary, #0d1117)',
-                    border: tone === t.key ? '1px solid #7ed957' : '1px solid var(--jp-border, #1e293b)',
-                    transition: 'all 0.2s',
-                  }}
+                  className={[
+                    'px-3.5 py-2.5 rounded-lg cursor-pointer text-left transition-all duration-200',
+                    tone === t.key
+                      ? 'bg-core-green/10 border border-core-green'
+                      : 'bg-core-bg border border-core-border',
+                  ].join(' ')}
                 >
-                  <div style={{ fontSize: 13, fontWeight: 700, color: tone === t.key ? '#7ed957' : 'var(--jp-text, #f0f4f8)' }}>
+                  <div className={`text-[13px] font-bold ${tone === t.key ? 'text-core-green' : 'text-core-text'}`}>
                     {t.label}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', marginTop: 2 }}>
-                    {t.desc}
-                  </div>
+                  <div className="text-[11px] text-core-text-muted mt-0.5">{t.desc}</div>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Platforms */}
-          <div style={{ background: 'var(--jp-bg-card, #161b22)', borderRadius: 12, border: '1px solid var(--jp-border, #1e293b)', padding: 20 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <div className="bg-core-card rounded-xl border border-core-border p-5">
+            <label className="block text-[12px] font-bold text-core-text-muted mb-3 uppercase tracking-[0.06em]">
               Social Platforms
             </label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div className="flex flex-wrap gap-2">
               {PLATFORMS.map(p => {
                 const selected = selectedPlatforms.includes(p.key)
                 return (
                   <button
                     key={p.key}
                     onClick={() => togglePlatform(p.key)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '8px 14px', borderRadius: 8, cursor: 'pointer',
-                      background: selected ? 'rgba(126, 217, 87, 0.1)' : 'var(--jp-bg-primary, #0d1117)',
-                      border: selected ? '1px solid #7ed957' : '1px solid var(--jp-border, #1e293b)',
-                      transition: 'all 0.2s',
-                    }}
+                    className={[
+                      'flex items-center gap-2 px-3.5 py-2 rounded-lg cursor-pointer transition-all duration-200',
+                      selected
+                        ? 'bg-core-green/10 border border-core-green'
+                        : 'bg-core-bg border border-core-border',
+                    ].join(' ')}
                   >
-                    <span style={{
-                      width: 22, height: 22, borderRadius: 5,
-                      background: selected ? p.color : 'var(--jp-border, #1e293b)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 9, fontWeight: 800, color: '#fff',
-                    }}>
-                      {p.icon}
+                    <span className={`w-[22px] h-[22px] rounded-[5px] ${selected ? p.color : 'bg-core-border'} flex items-center justify-center text-[9px] font-extrabold text-white`}>
+                      {p.abbr}
                     </span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: selected ? '#7ed957' : 'var(--jp-text-muted, #8b95a5)' }}>
+                    <span className={`text-[13px] font-semibold ${selected ? 'text-core-green' : 'text-core-text-muted'}`}>
                       {p.label}
                     </span>
                   </button>
@@ -373,37 +336,33 @@ export default function BlogSocialWorkflowPage() {
           </div>
 
           {/* Email Segment */}
-          <div style={{ background: 'var(--jp-bg-card, #161b22)', borderRadius: 12, border: '1px solid var(--jp-border, #1e293b)', padding: 20 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <div className="bg-core-card rounded-xl border border-core-border p-5">
+            <label className="block text-[12px] font-bold text-core-text-muted mb-3 uppercase tracking-[0.06em]">
               Email Segment
             </label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div className="flex flex-wrap gap-2">
               {SEGMENTS.map(s => (
                 <button
                   key={s.key}
                   onClick={() => setEmailSegment(s.key)}
-                  style={{
-                    padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
-                    background: emailSegment === s.key ? 'rgba(126, 217, 87, 0.1)' : 'var(--jp-bg-primary, #0d1117)',
-                    border: emailSegment === s.key ? '1px solid #7ed957' : '1px solid var(--jp-border, #1e293b)',
-                    fontSize: 13, fontWeight: 600,
-                    color: emailSegment === s.key ? '#7ed957' : 'var(--jp-text-muted, #8b95a5)',
-                    transition: 'all 0.2s',
-                  }}
+                  className={[
+                    'px-4 py-2 rounded-lg cursor-pointer text-[13px] font-semibold transition-all duration-200',
+                    emailSegment === s.key
+                      ? 'bg-core-green/10 border border-core-green text-core-green'
+                      : 'bg-core-bg border border-core-border text-core-text-muted',
+                  ].join(' ')}
                 >
                   {s.label}
                 </button>
               ))}
               <button
                 onClick={() => setEmailSegment('custom')}
-                style={{
-                  padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
-                  background: emailSegment === 'custom' ? 'rgba(126, 217, 87, 0.1)' : 'var(--jp-bg-primary, #0d1117)',
-                  border: emailSegment === 'custom' ? '1px solid #7ed957' : '1px solid var(--jp-border, #1e293b)',
-                  fontSize: 13, fontWeight: 600,
-                  color: emailSegment === 'custom' ? '#7ed957' : 'var(--jp-text-muted, #8b95a5)',
-                  transition: 'all 0.2s',
-                }}
+                className={[
+                  'px-4 py-2 rounded-lg cursor-pointer text-[13px] font-semibold transition-all duration-200',
+                  emailSegment === 'custom'
+                    ? 'bg-core-green/10 border border-core-green text-core-green'
+                    : 'bg-core-bg border border-core-border text-core-text-muted',
+                ].join(' ')}
               >
                 Custom Tag
               </button>
@@ -413,13 +372,7 @@ export default function BlogSocialWorkflowPage() {
                 value={customSegment}
                 onChange={e => setCustomSegment(e.target.value)}
                 placeholder="Enter tag name..."
-                style={{
-                  marginTop: 10, width: '100%', maxWidth: 300, padding: '8px 12px', borderRadius: 8,
-                  background: 'var(--jp-bg-primary, #0d1117)',
-                  border: '1px solid var(--jp-border, #1e293b)',
-                  color: 'var(--jp-text, #f0f4f8)', fontSize: 13,
-                  outline: 'none', fontFamily: 'inherit',
-                }}
+                className="mt-2.5 w-full max-w-[300px] px-3 py-2 rounded-lg bg-core-bg border border-core-border text-core-text text-[13px] outline-none font-inherit placeholder:text-core-text-muted"
               />
             )}
           </div>
@@ -428,63 +381,58 @@ export default function BlogSocialWorkflowPage() {
           <button
             onClick={runWorkflow}
             disabled={running || !topic.trim() || selectedPlatforms.length === 0}
-            style={{
-              padding: '14px 24px', borderRadius: 10, border: 'none', cursor: running ? 'not-allowed' : 'pointer',
-              background: running ? 'var(--jp-border, #1e293b)' : 'linear-gradient(135deg, #7ed957, #5cb83a)',
-              color: running ? 'var(--jp-text-muted, #8b95a5)' : '#000',
-              fontSize: 15, fontWeight: 800, letterSpacing: '-0.01em',
-              opacity: (!topic.trim() || selectedPlatforms.length === 0) ? 0.5 : 1,
-              transition: 'all 0.2s',
-            }}
+            className={[
+              'px-6 py-3.5 rounded-xl border-none text-[15px] font-extrabold tracking-tight transition-all duration-200',
+              running
+                ? 'bg-core-border text-core-text-muted cursor-not-allowed'
+                : 'bg-gradient-to-br from-core-green to-[#5cb83a] text-black cursor-pointer',
+              (!topic.trim() || selectedPlatforms.length === 0) ? 'opacity-50' : 'opacity-100',
+            ].join(' ')}
           >
-            {running ? 'Running Workflow...' : 'Generate & Publish'}
+            {running ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Running Workflow...
+              </span>
+            ) : (
+              'Generate & Publish'
+            )}
           </button>
 
           {/* Live Progress */}
           {liveSteps.length > 0 && (
-            <div style={{ background: 'var(--jp-bg-card, #161b22)', borderRadius: 12, border: '1px solid var(--jp-border, #1e293b)', padding: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <div className="bg-core-card rounded-xl border border-core-border p-5">
+              <div className="text-[12px] font-bold text-core-text-muted mb-3 uppercase tracking-[0.06em]">
                 Workflow Progress
               </div>
               {liveSteps.map((step, i) => (
-                <StepIndicator key={i} step={step} />
+                <StepIndicator key={i} step={step} running={running} />
               ))}
             </div>
           )}
 
           {/* Error */}
           {error && (
-            <div style={{
-              padding: 16, borderRadius: 10,
-              background: 'rgba(239, 68, 68, 0.08)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#ef4444', fontSize: 13,
-            }}>
+            <div className="p-4 rounded-xl bg-core-red/[0.08] border border-core-red/30 text-core-red text-[13px]">
               {error}
             </div>
           )}
 
           {/* Results */}
           {result && (
-            <div style={{ display: 'grid', gap: 16 }}>
+            <div className="grid gap-4">
 
               {/* Blog Preview */}
               {result.blogPost && (
-                <div style={{ background: 'var(--jp-bg-card, #161b22)', borderRadius: 12, border: '1px solid var(--jp-border, #1e293b)', padding: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#7ed957' }} />
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Blog Post</span>
+                <div className="bg-core-card rounded-xl border border-core-border p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-core-green" />
+                    <span className="text-[12px] font-bold text-core-text-muted uppercase tracking-[0.06em]">Blog Post</span>
                   </div>
-                  <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--jp-text, #f0f4f8)', margin: '0 0 8px 0' }}>
+                  <h3 className="text-[18px] font-extrabold text-core-text m-0 mb-2">
                     {result.blogPost.title}
                   </h3>
-                  <div style={{
-                    maxHeight: 200, overflow: 'auto', padding: 12, borderRadius: 8,
-                    background: 'var(--jp-bg-primary, #0d1117)',
-                    border: '1px solid var(--jp-border, #1e293b)',
-                    fontSize: 13, color: 'var(--jp-text-secondary, #c9d1d9)',
-                    lineHeight: 1.6, whiteSpace: 'pre-wrap',
-                  }}>
+                  <div className="max-h-[200px] overflow-auto p-3 rounded-lg bg-core-bg border border-core-border text-[13px] text-core-text-dim leading-relaxed whitespace-pre-wrap">
                     {result.blogPost.content?.slice(0, 1000)}
                     {(result.blogPost.content?.length || 0) > 1000 ? '...' : ''}
                   </div>
@@ -493,41 +441,33 @@ export default function BlogSocialWorkflowPage() {
 
               {/* Social Posts */}
               {result.socialPosts && result.socialPosts.length > 0 && (
-                <div style={{ background: 'var(--jp-bg-card, #161b22)', borderRadius: 12, border: '1px solid var(--jp-border, #1e293b)', padding: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00d4ff' }} />
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Social Posts</span>
+                <div className="bg-core-card rounded-xl border border-core-border p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-core-cyan" />
+                    <span className="text-[12px] font-bold text-core-text-muted uppercase tracking-[0.06em]">Social Posts</span>
                   </div>
-                  <div style={{ display: 'grid', gap: 10 }}>
+                  <div className="grid gap-2.5">
                     {result.socialPosts.map((p, i) => {
                       const plat = PLATFORMS.find(x => x.key === p.platform)
                       return (
-                        <div key={i} style={{
-                          padding: 12, borderRadius: 8,
-                          background: 'var(--jp-bg-primary, #0d1117)',
-                          border: '1px solid var(--jp-border, #1e293b)',
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                            <span style={{
-                              width: 20, height: 20, borderRadius: 4,
-                              background: plat?.color || '#333',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 8, fontWeight: 800, color: '#fff',
-                            }}>
-                              {plat?.icon || p.platform[0]}
+                        <div key={i} className="p-3 rounded-lg bg-core-bg border border-core-border">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className={`w-5 h-5 rounded ${plat?.color || 'bg-core-border'} flex items-center justify-center text-[8px] font-extrabold text-white`}>
+                              {plat?.abbr || p.platform[0]}
                             </span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)' }}>
+                            <span className="text-[12px] font-bold text-core-text">
                               {plat?.label || p.platform}
                             </span>
-                            <span style={{
-                              marginLeft: 'auto', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-                              background: p.posted ? 'rgba(126, 217, 87, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                              color: p.posted ? '#7ed957' : '#ef4444',
-                            }}>
+                            <span className={[
+                              'ml-auto text-[10px] font-bold px-2 py-0.5 rounded',
+                              p.posted
+                                ? 'bg-core-green/10 text-core-green'
+                                : 'bg-core-red/10 text-core-red',
+                            ].join(' ')}>
                               {p.posted ? 'POSTED' : p.error || 'NOT POSTED'}
                             </span>
                           </div>
-                          <div style={{ fontSize: 12, color: 'var(--jp-text-secondary, #c9d1d9)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                          <div className="text-[12px] text-core-text-dim leading-relaxed whitespace-pre-wrap">
                             {p.content?.slice(0, 400)}
                           </div>
                         </div>
@@ -539,23 +479,23 @@ export default function BlogSocialWorkflowPage() {
 
               {/* Email Campaign */}
               {result.emailCampaign && (
-                <div style={{ background: 'var(--jp-bg-card, #161b22)', borderRadius: 12, border: '1px solid var(--jp-border, #1e293b)', padding: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#a78bfa' }} />
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--jp-text-muted, #8b95a5)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Email Campaign</span>
+                <div className="bg-core-card rounded-xl border border-core-border p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-core-purple" />
+                    <span className="text-[12px] font-bold text-core-text-muted uppercase tracking-[0.06em]">Email Campaign</span>
                   </div>
-                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                    <div style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--jp-bg-primary, #0d1117)', border: '1px solid var(--jp-border, #1e293b)' }}>
-                      <div style={{ fontSize: 10, color: 'var(--jp-text-muted, #8b95a5)', fontWeight: 600, textTransform: 'uppercase' }}>Subject</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', marginTop: 2 }}>{result.emailCampaign.subject}</div>
+                  <div className="flex gap-4 flex-wrap">
+                    <div className="px-3.5 py-2 rounded-lg bg-core-bg border border-core-border">
+                      <div className="text-[10px] text-core-text-muted font-semibold uppercase">Subject</div>
+                      <div className="text-[13px] font-bold text-core-text mt-0.5">{result.emailCampaign.subject}</div>
                     </div>
-                    <div style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--jp-bg-primary, #0d1117)', border: '1px solid var(--jp-border, #1e293b)' }}>
-                      <div style={{ fontSize: 10, color: 'var(--jp-text-muted, #8b95a5)', fontWeight: 600, textTransform: 'uppercase' }}>Sent</div>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: '#7ed957', marginTop: 2 }}>{result.emailCampaign.sent}</div>
+                    <div className="px-3.5 py-2 rounded-lg bg-core-bg border border-core-border">
+                      <div className="text-[10px] text-core-text-muted font-semibold uppercase">Sent</div>
+                      <div className="text-[20px] font-extrabold text-core-green mt-0.5">{result.emailCampaign.sent}</div>
                     </div>
-                    <div style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--jp-bg-primary, #0d1117)', border: '1px solid var(--jp-border, #1e293b)' }}>
-                      <div style={{ fontSize: 10, color: 'var(--jp-text-muted, #8b95a5)', fontWeight: 600, textTransform: 'uppercase' }}>Segment</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)', marginTop: 2 }}>{result.emailCampaign.segment}</div>
+                    <div className="px-3.5 py-2 rounded-lg bg-core-bg border border-core-border">
+                      <div className="text-[10px] text-core-text-muted font-semibold uppercase">Segment</div>
+                      <div className="text-[13px] font-bold text-core-text mt-0.5">{result.emailCampaign.segment}</div>
                     </div>
                   </div>
                 </div>
@@ -567,95 +507,79 @@ export default function BlogSocialWorkflowPage() {
 
       {/* HISTORY TAB */}
       {tab === 'history' && (
-        <div style={{ display: 'grid', gap: 12 }}>
+        <div className="grid gap-3">
           {historyLoading && (
-            <div style={{ textAlign: 'center', padding: 40, color: 'var(--jp-text-muted, #8b95a5)' }}>
-              <div style={{ width: 20, height: 20, margin: '0 auto 10px', border: '2px solid #7ed957', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <div className="text-center py-10 text-core-text-muted flex flex-col items-center gap-2.5">
+              <Loader2 className="w-5 h-5 animate-spin text-core-green" />
               Loading history...
             </div>
           )}
 
           {!historyLoading && history.length === 0 && (
-            <div style={{
-              textAlign: 'center', padding: 60,
-              background: 'var(--jp-bg-card, #161b22)',
-              borderRadius: 12, border: '1px solid var(--jp-border, #1e293b)',
-              color: 'var(--jp-text-muted, #8b95a5)',
-            }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>No executions yet</div>
-              <div style={{ fontSize: 12, marginTop: 4 }}>Run your first Blog to Social workflow to see results here.</div>
+            <div className="text-center py-16 bg-core-card rounded-xl border border-core-border text-core-text-muted">
+              <div className="text-[14px] font-semibold">No executions yet</div>
+              <div className="text-[12px] mt-1">Run your first Blog to Social workflow to see results here.</div>
             </div>
           )}
 
           {history.map(exec => {
             const expanded = expandedHistory === exec.id
-            const statusColor: Record<string, string> = {
-              completed: '#7ed957',
-              partial: '#f59e0b',
-              running: '#00d4ff',
-              failed: '#ef4444',
+            const statusColorMap: Record<string, string> = {
+              completed: 'bg-core-green',
+              partial: 'bg-core-amber',
+              running: 'bg-core-cyan',
+              failed: 'bg-core-red',
             }
+            const dotColor = statusColorMap[exec.status] || 'bg-core-text-muted'
 
             return (
               <div
                 key={exec.id}
-                style={{
-                  background: 'var(--jp-bg-card, #161b22)',
-                  borderRadius: 12,
-                  border: '1px solid var(--jp-border, #1e293b)',
-                  overflow: 'hidden',
-                }}
+                className="bg-core-card rounded-xl border border-core-border overflow-hidden"
               >
                 <button
                   onClick={() => setExpandedHistory(expanded ? null : exec.id)}
-                  style={{
-                    width: '100%', padding: '14px 18px', border: 'none', cursor: 'pointer',
-                    background: 'transparent', textAlign: 'left',
-                    display: 'flex', alignItems: 'center', gap: 12,
-                  }}
+                  className="w-full px-[18px] py-3.5 border-none cursor-pointer bg-transparent text-left flex items-center gap-3"
                 >
-                  <div style={{
-                    width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-                    background: statusColor[exec.status] || '#6b7280',
-                  }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--jp-text, #f0f4f8)' }}>
+                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotColor}`} />
+                  <div className="flex-1">
+                    <div className="text-[14px] font-bold text-core-text">
                       {exec.result?.blogPost?.title || exec.input?.topic || 'Untitled'}
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', marginTop: 2 }}>
+                    <div className="text-[11px] text-core-text-muted mt-0.5">
                       {new Date(exec.started_at).toLocaleString()} — {exec.status}
                     </div>
                   </div>
-                  <span style={{ fontSize: 11, color: 'var(--jp-text-muted, #8b95a5)', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                    V
-                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-core-text-muted transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+                  />
                 </button>
 
                 {expanded && (
-                  <div style={{ padding: '0 18px 14px', borderTop: '1px solid var(--jp-border, #1e293b)' }}>
-                    {/* Steps */}
-                    <div style={{ marginTop: 12 }}>
+                  <div className="px-[18px] pb-3.5 border-t border-core-border">
+                    <div className="mt-3">
                       {(exec.result?.steps || exec.steps || []).map((step: WorkflowStep, i: number) => (
-                        <StepIndicator key={i} step={step} />
+                        <StepIndicator key={i} step={step} running={false} />
                       ))}
                     </div>
 
-                    {/* Quick stats */}
-                    <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+                    <div className="flex gap-3 mt-3 flex-wrap">
                       {exec.result?.socialPosts && (
-                        <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, background: 'rgba(0, 212, 255, 0.08)', color: '#00d4ff', fontWeight: 600 }}>
+                        <span className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-core-cyan/[0.08] text-core-cyan font-semibold">
+                          <Share2 className="w-3 h-3" />
                           {exec.result.socialPosts.filter(p => p.posted).length}/{exec.result.socialPosts.length} social posted
                         </span>
                       )}
                       {exec.result?.emailCampaign && (
-                        <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, background: 'rgba(167, 139, 250, 0.08)', color: '#a78bfa', fontWeight: 600 }}>
+                        <span className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md bg-core-purple/[0.08] text-core-purple font-semibold">
+                          <Mail className="w-3 h-3" />
                           {exec.result.emailCampaign.sent} emails sent
                         </span>
                       )}
                     </div>
 
                     {exec.error && (
-                      <div style={{ marginTop: 10, fontSize: 12, color: '#ef4444' }}>
+                      <div className="mt-2.5 text-[12px] text-core-red">
                         Error: {exec.error}
                       </div>
                     )}

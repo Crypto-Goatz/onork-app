@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { Settings, Paperclip, Send, Plus } from 'lucide-react'
 
 // ── Types ──
 
@@ -315,48 +316,38 @@ export default function ChatPage() {
   // ── Current crew prompts ──
   const prompts = CREW_PROMPTS[activeCrew?.id] || CREW_PROMPTS['__my0n__']
 
+  const crewColor = activeCrew?.avatar_color || '#6EE05A'
+
   // ── Render ──
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column',
-      height: 'calc(100vh - 64px)',
-      background: 'var(--jp-bg, #0d1117)',
-      color: 'var(--jp-text, #f0f4f8)',
-      overflow: 'hidden',
-      position: 'relative',
-    }}>
+    <div
+      className="flex flex-col overflow-hidden relative"
+      style={{ height: 'calc(100vh - 64px)', background: 'var(--core-bg)', color: 'var(--core-text)' }}
+    >
 
       {/* ═══ TOP TAB BAR ═══ */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: '10px 20px',
-        borderBottom: '1px solid var(--jp-border, #30363d)',
-        overflowX: 'auto',
-        flexShrink: 0,
-      }}>
+      <div
+        className="flex items-center gap-1.5 px-5 py-2.5 overflow-x-auto flex-shrink-0"
+        style={{ borderBottom: '1px solid var(--core-border)' }}
+      >
         {crews.filter(c => c.status !== 'archived').map(crew => {
           const isActive = activeCrew?.id === crew.id
           return (
             <button
               key={crew.id}
               onClick={() => { setActiveCrew(crew); inputRef.current?.focus() }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer whitespace-nowrap transition-all duration-150 flex-shrink-0"
               style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '8px 16px', borderRadius: 8,
                 border: isActive ? `2px solid ${crew.avatar_color}` : '2px solid transparent',
-                background: isActive ? `${crew.avatar_color}14` : 'var(--jp-bg-card, #161b22)',
-                color: isActive ? crew.avatar_color : 'var(--jp-text-secondary, #9ca3af)',
-                fontSize: 13, fontWeight: 600,
-                cursor: 'pointer', whiteSpace: 'nowrap',
-                transition: 'all 0.15s',
+                background: isActive ? `${crew.avatar_color}14` : 'var(--core-card)',
+                color: isActive ? crew.avatar_color : 'var(--core-text-dim)',
               }}
             >
-              <span style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: crew.avatar_color,
-                flexShrink: 0,
-              }} />
+              <span
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ background: crew.avatar_color }}
+              />
               {crew.name}
             </button>
           )
@@ -365,158 +356,149 @@ export default function ChatPage() {
         {/* Add crew + Settings */}
         <button
           onClick={() => setShowNewCrew(true)}
+          className="flex items-center justify-center px-3 py-2 rounded-lg text-[13px] font-semibold cursor-pointer whitespace-nowrap transition-colors"
           style={{
-            padding: '8px 12px', borderRadius: 8,
-            border: '1px dashed var(--jp-border, #30363d)',
+            border: '1px dashed var(--core-border)',
             background: 'transparent',
-            color: 'var(--jp-text-muted, #6b7280)',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            whiteSpace: 'nowrap',
+            color: 'var(--core-text-muted)',
           }}
         >
-          +
+          <Plus size={14} />
         </button>
-        <div style={{ flex: 1 }} />
+        <div className="flex-1" />
         <button
           onClick={() => setShowSettings(p => !p)}
+          className="p-2 rounded-lg border-none cursor-pointer transition-colors"
           style={{
-            padding: 8, borderRadius: 8,
-            background: showSettings ? 'var(--jp-bg-card, #161b22)' : 'transparent',
-            border: 'none', cursor: 'pointer',
-            color: showSettings ? '#6EE05A' : 'var(--jp-text-muted, #6b7280)',
+            background: showSettings ? 'var(--core-card)' : 'transparent',
+            color: showSettings ? crewColor : 'var(--core-text-muted)',
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-          </svg>
+          <Settings size={18} />
         </button>
       </div>
 
       {/* ═══ MAIN AREA ═══ */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div className="flex flex-1 overflow-hidden">
 
         {/* ═══ CENTER PANEL ═══ */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div className="flex-1 flex flex-col min-w-0">
 
           {/* Crew Header */}
-          <div style={{
-            padding: '14px 24px',
-            display: 'flex', alignItems: 'center', gap: 12,
-            borderBottom: '1px solid var(--jp-border, #30363d)',
-            flexShrink: 0,
-          }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: activeCrew?.avatar_color || '#6EE05A',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 13, fontWeight: 700, color: '#0d1117',
-            }}>
+          <div
+            className="px-6 py-3.5 flex items-center gap-3 flex-shrink-0"
+            style={{ borderBottom: '1px solid var(--core-border)' }}
+          >
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold flex-shrink-0"
+              style={{ background: crewColor, color: '#0d1117' }}
+            >
               {initials(activeCrew?.name || '')}
             </div>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>{activeCrew?.name}</div>
-              <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #6b7280)' }}>
+              <div className="text-base font-bold">{activeCrew?.name}</div>
+              <div className="text-[11px]" style={{ color: 'var(--core-text-muted)' }}>
                 {activeCrew?.description}
                 {' · '}
-                <span style={{ color: activeCrew?.avatar_color }}>
+                <span style={{ color: crewColor }}>
                   {activeCrew?.k_layers?.map(k => K_LAYER_DEPARTMENTS[k]?.label).filter(Boolean).join(', ')}
                 </span>
               </div>
             </div>
-            <div style={{ flex: 1 }} />
+            <div className="flex-1" />
             {/* K-Layer badges */}
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div className="flex gap-1">
               {activeCrew?.k_layers?.map(k => (
-                <span key={k} title={K_LAYER_DEPARTMENTS[k]?.description} style={{
-                  fontSize: 10, fontWeight: 700, padding: '3px 8px',
-                  borderRadius: 4,
-                  background: `${activeCrew.avatar_color}18`,
-                  color: activeCrew.avatar_color,
-                  border: `1px solid ${activeCrew.avatar_color}30`,
-                }}>{k}</span>
+                <span
+                  key={k}
+                  title={K_LAYER_DEPARTMENTS[k]?.description}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded"
+                  style={{
+                    background: `${crewColor}18`,
+                    color: crewColor,
+                    border: `1px solid ${crewColor}30`,
+                  }}
+                >
+                  {k}
+                </span>
               ))}
             </div>
           </div>
 
           {/* Messages */}
-          <div style={{
-            flex: 1, overflowY: 'auto', padding: '20px 24px',
-            display: 'flex', flexDirection: 'column', gap: 16,
-          }}>
+          <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
             {currentMessages.length === 0 && (
-              <div style={{
-                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexDirection: 'column', gap: 12, color: 'var(--jp-text-muted, #6b7280)',
-              }}>
-                <div style={{
-                  width: 56, height: 56, borderRadius: '50%',
-                  background: activeCrew?.avatar_color || '#6EE05A',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 20, fontWeight: 700, color: '#0d1117', opacity: 0.6,
-                }}>
+              <div className="flex-1 flex items-center justify-center flex-col gap-3" style={{ color: 'var(--core-text-muted)' }}>
+                <div
+                  className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold opacity-60"
+                  style={{ background: crewColor, color: '#0d1117' }}
+                >
                   {initials(activeCrew?.name || '')}
                 </div>
-                <span style={{ fontSize: 14 }}>Start a conversation with {activeCrew?.name}</span>
+                <span className="text-sm">Start a conversation with {activeCrew?.name}</span>
               </div>
             )}
 
             {currentMessages.map(msg => {
               const isUser = msg.role === 'user'
               return (
-                <div key={msg.id} style={{
-                  display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start',
-                  gap: 8, alignItems: 'flex-end',
-                }}>
+                <div
+                  key={msg.id}
+                  className={`flex gap-2 items-end ${isUser ? 'justify-end' : 'justify-start'}`}
+                >
                   {!isUser && (
-                    <div style={{
-                      width: 30, height: 30, borderRadius: '50%',
-                      background: activeCrew?.avatar_color || '#6EE05A',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, fontWeight: 700, color: '#0d1117', flexShrink: 0,
-                    }}>
+                    <div
+                      className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                      style={{ background: crewColor, color: '#0d1117' }}
+                    >
                       {initials(activeCrew?.name || '')}
                     </div>
                   )}
-                  <div style={{
-                    maxWidth: '65%', padding: '10px 14px',
-                    borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                    background: isUser ? activeCrew?.avatar_color || '#6EE05A' : 'var(--jp-bg-card, #161b22)',
-                    color: isUser ? '#0d1117' : 'var(--jp-text, #f0f4f8)',
-                    fontSize: 13.5, lineHeight: 1.55, wordBreak: 'break-word', whiteSpace: 'pre-wrap',
-                    border: isUser ? 'none' : `1px solid ${activeCrew?.avatar_color || '#6EE05A'}25`,
-                  }}>
+                  <div
+                    className="max-w-[65%] px-3.5 py-2.5 text-[13.5px] leading-[1.55] break-words whitespace-pre-wrap"
+                    style={{
+                      borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                      background: isUser ? crewColor : 'var(--core-card)',
+                      color: isUser ? '#0d1117' : 'var(--core-text)',
+                      border: isUser ? 'none' : `1px solid ${crewColor}25`,
+                    }}
+                  >
                     {msg.content}
-                    <div style={{ fontSize: 10, marginTop: 4, opacity: 0.5, textAlign: isUser ? 'right' : 'left' }}>
+                    <div
+                      className="text-[10px] mt-1 opacity-50"
+                      style={{ textAlign: isUser ? 'right' : 'left' }}
+                    >
                       {msg.time}
                     </div>
                   </div>
                   {isUser && (
-                    <div style={{
-                      width: 30, height: 30, borderRadius: '50%',
-                      background: 'var(--jp-bg-card, #161b22)',
-                      border: '1px solid var(--jp-border, #30363d)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, fontWeight: 700, color: 'var(--jp-text-secondary, #9ca3af)', flexShrink: 0,
-                    }}>U</div>
+                    <div
+                      className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                      style={{
+                        background: 'var(--core-card)',
+                        border: '1px solid var(--core-border)',
+                        color: 'var(--core-text-dim)',
+                      }}
+                    >
+                      U
+                    </div>
                   )}
                 </div>
               )
             })}
 
             {loading && (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                <div style={{
-                  width: 30, height: 30, borderRadius: '50%',
-                  background: activeCrew?.avatar_color || '#6EE05A',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 700, color: '#0d1117', flexShrink: 0,
-                }}>
+              <div className="flex gap-2 items-end">
+                <div
+                  className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                  style={{ background: crewColor, color: '#0d1117' }}
+                >
                   {initials(activeCrew?.name || '')}
                 </div>
-                <div style={{
-                  padding: '12px 18px', borderRadius: '16px 16px 16px 4px',
-                  background: 'var(--jp-bg-card, #161b22)', display: 'flex', gap: 4, alignItems: 'center',
-                }}>
+                <div
+                  className="px-4 py-3 flex gap-1 items-center"
+                  style={{ borderRadius: '16px 16px 16px 4px', background: 'var(--core-card)' }}
+                >
                   <span className="chat-typing-dot" style={{ animationDelay: '0ms' }} />
                   <span className="chat-typing-dot" style={{ animationDelay: '200ms' }} />
                   <span className="chat-typing-dot" style={{ animationDelay: '400ms' }} />
@@ -529,29 +511,17 @@ export default function ChatPage() {
 
           {/* Suggested Prompts */}
           {currentMessages.length <= 1 && (
-            <div style={{
-              padding: '0 24px 12px',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-            }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--jp-text-muted, #6b7280)', letterSpacing: '0.04em' }}>
+            <div className="px-6 pb-3 flex flex-col items-center gap-2">
+              <span className="text-[12px] font-semibold tracking-[0.04em]" style={{ color: 'var(--core-text-muted)' }}>
                 Suggested Prompts
               </span>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <div className="flex gap-2 flex-wrap justify-center">
                 {prompts.map(p => (
                   <button
                     key={p.label}
                     onClick={() => { setInput(p.prompt); inputRef.current?.focus() }}
-                    style={{
-                      padding: '7px 16px', borderRadius: 20,
-                      border: 'none',
-                      background: p.color,
-                      color: '#0d1117',
-                      fontSize: 12, fontWeight: 700,
-                      cursor: 'pointer',
-                      transition: 'transform 0.1s, box-shadow 0.15s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.boxShadow = `0 0 12px ${p.color}40` }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none' }}
+                    className="px-4 py-1.5 rounded-full text-[12px] font-bold cursor-pointer transition-transform duration-100 hover:scale-[1.04]"
+                    style={{ background: p.color, color: '#0d1117', border: 'none' }}
                   >
                     {p.label}
                   </button>
@@ -561,21 +531,19 @@ export default function ChatPage() {
           )}
 
           {/* Input Bar */}
-          <div style={{
-            padding: '12px 20px 16px',
-            borderTop: '1px solid var(--jp-border, #30363d)',
-            display: 'flex', gap: 10, alignItems: 'flex-end',
-          }}>
-            <button style={{
-              background: 'var(--jp-bg-card, #161b22)',
-              border: '1px solid var(--jp-border, #30363d)',
-              borderRadius: 8, width: 40, height: 40,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--jp-text-muted, #6b7280)', cursor: 'pointer', flexShrink: 0,
-            }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-              </svg>
+          <div
+            className="px-5 pt-3 pb-4 flex gap-2.5 items-end"
+            style={{ borderTop: '1px solid var(--core-border)' }}
+          >
+            <button
+              className="flex items-center justify-center rounded-lg w-10 h-10 cursor-pointer flex-shrink-0 transition-colors"
+              style={{
+                background: 'var(--core-card)',
+                border: '1px solid var(--core-border)',
+                color: 'var(--core-text-muted)',
+              }}
+            >
+              <Paperclip size={16} />
             </button>
             <textarea
               ref={inputRef}
@@ -584,117 +552,119 @@ export default function ChatPage() {
               onKeyDown={handleKeyDown}
               placeholder={`Message ${activeCrew?.name || 'crew'}...`}
               rows={1}
+              className="flex-1 rounded-xl px-3.5 py-2.5 text-[13.5px] resize-none outline-none min-h-[40px] max-h-[120px] leading-[1.45] font-[inherit] transition-colors duration-150"
               style={{
-                flex: 1,
-                background: 'var(--jp-bg-card, #161b22)',
-                border: `1px solid ${input.trim() ? (activeCrew?.avatar_color || '#6EE05A') + '50' : 'var(--jp-border, #30363d)'}`,
-                borderRadius: 12, padding: '10px 14px',
-                color: 'var(--jp-text, #f0f4f8)',
-                fontSize: 13.5, resize: 'none', outline: 'none',
-                minHeight: 40, maxHeight: 120,
-                lineHeight: 1.45, fontFamily: 'inherit',
-                transition: 'border-color 0.15s',
+                background: 'var(--core-card)',
+                border: `1px solid ${input.trim() ? `${crewColor}50` : 'var(--core-border)'}`,
+                color: 'var(--core-text)',
               }}
             />
             <button
               onClick={sendMessage}
               disabled={!input.trim() || loading}
+              className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 border-none transition-all duration-150"
               style={{
-                width: 40, height: 40, borderRadius: 10, border: 'none',
-                background: input.trim() ? activeCrew?.avatar_color || '#6EE05A' : 'var(--jp-bg-card, #161b22)',
-                color: input.trim() ? '#0d1117' : 'var(--jp-text-muted, #6b7280)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: input.trim() ? 'pointer' : 'default', flexShrink: 0,
-                transition: 'background 0.15s, color 0.15s',
+                background: input.trim() ? crewColor : 'var(--core-card)',
+                color: input.trim() ? '#0d1117' : 'var(--core-text-muted)',
+                cursor: input.trim() ? 'pointer' : 'default',
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-              </svg>
+              <Send size={18} />
             </button>
           </div>
         </div>
 
         {/* ═══ RIGHT PANEL — History ═══ */}
-        <div style={{
-          width: 280, minWidth: 280,
-          borderLeft: '1px solid var(--jp-border, #30363d)',
-          background: 'var(--jp-bg, #0d1117)',
-          display: 'flex', flexDirection: 'column',
-          overflow: 'hidden',
-        }}>
+        <div
+          className="w-[280px] min-w-[280px] flex flex-col overflow-hidden"
+          style={{
+            borderLeft: '1px solid var(--core-border)',
+            background: 'var(--core-bg)',
+          }}
+        >
           {/* Panel header */}
-          <div style={{
-            padding: '14px 16px',
-            borderBottom: '1px solid var(--jp-border, #30363d)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
+          <div
+            className="px-4 py-3.5 flex items-center justify-between flex-shrink-0"
+            style={{ borderBottom: '1px solid var(--core-border)' }}
+          >
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: activeCrew?.avatar_color }}>
+              <div className="text-sm font-bold" style={{ color: crewColor }}>
                 {activeCrew?.name}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--jp-text-muted, #6b7280)' }}>
+              <div className="text-[11px]" style={{ color: 'var(--core-text-muted)' }}>
                 {showSettings ? 'Settings' : 'History'}
               </div>
             </div>
-            <button onClick={() => setShowSettings(p => !p)} style={{
-              padding: '4px 10px', borderRadius: 6,
-              background: 'var(--jp-bg-card, #161b22)',
-              border: '1px solid var(--jp-border, #30363d)',
-              color: 'var(--jp-text-secondary, #9ca3af)',
-              fontSize: 11, fontWeight: 600, cursor: 'pointer',
-            }}>
+            <button
+              onClick={() => setShowSettings(p => !p)}
+              className="px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-colors"
+              style={{
+                background: 'var(--core-card)',
+                border: '1px solid var(--core-border)',
+                color: 'var(--core-text-dim)',
+              }}
+            >
               {showSettings ? 'History' : 'Settings'}
             </button>
           </div>
 
           {showSettings ? (
             /* ── Settings View ── */
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+            <div className="flex-1 overflow-y-auto p-4">
               {/* Avatar + info */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <div style={{
-                  width: 56, height: 56, borderRadius: '50%',
-                  background: activeCrew?.avatar_color || '#6EE05A',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 20, fontWeight: 700, color: '#0d1117',
-                }}>
+              <div className="flex flex-col items-center gap-2.5 mb-5">
+                <div
+                  className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold"
+                  style={{ background: crewColor, color: '#0d1117' }}
+                >
                   {initials(activeCrew?.name || '')}
                 </div>
-                <span style={{
-                  fontSize: 11, padding: '3px 10px', borderRadius: 12,
-                  background: `${activeCrew?.avatar_color}18`, color: activeCrew?.avatar_color,
-                  fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em',
-                }}>
+                <span
+                  className="text-[11px] px-2.5 py-0.5 rounded-xl font-semibold uppercase tracking-[0.04em]"
+                  style={{
+                    background: `${crewColor}18`,
+                    color: crewColor,
+                  }}
+                >
                   {activeCrew?.role}
                 </span>
               </div>
 
               {/* K-Layers */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--jp-text-muted, #6b7280)', textTransform: 'uppercase', marginBottom: 8 }}>
+              <div className="mb-4">
+                <div
+                  className="text-[10px] font-bold tracking-[0.08em] uppercase mb-2"
+                  style={{ color: 'var(--core-text-muted)' }}
+                >
                   K-Layers (Department Knowledge)
                 </div>
                 {['K1', 'K2', 'K3', 'K4', 'K5', 'K6', 'K7'].map(k => {
                   const active = activeCrew?.k_layers?.includes(k)
                   const dept = K_LAYER_DEPARTMENTS[k]
                   return (
-                    <div key={k} style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '6px 8px', marginBottom: 4, borderRadius: 6,
-                      background: active ? `${activeCrew?.avatar_color}10` : 'transparent',
-                    }}>
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                        background: active ? `${activeCrew?.avatar_color}20` : 'var(--jp-bg-card, #161b22)',
-                        color: active ? activeCrew?.avatar_color : 'var(--jp-text-muted, #6b7280)',
-                        border: `1px solid ${active ? activeCrew?.avatar_color + '30' : 'var(--jp-border, #30363d)'}`,
-                      }}>{k}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: active ? 'var(--jp-text, #f0f4f8)' : 'var(--jp-text-muted, #6b7280)' }}>
+                    <div
+                      key={k}
+                      className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md"
+                      style={{ background: active ? `${crewColor}10` : 'transparent' }}
+                    >
+                      <span
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                        style={{
+                          background: active ? `${crewColor}20` : 'var(--core-card)',
+                          color: active ? crewColor : 'var(--core-text-muted)',
+                          border: `1px solid ${active ? crewColor + '30' : 'var(--core-border)'}`,
+                        }}
+                      >
+                        {k}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className="text-[11px] font-semibold"
+                          style={{ color: active ? 'var(--core-text)' : 'var(--core-text-muted)' }}
+                        >
                           {dept?.label}
                         </div>
-                        <div style={{ fontSize: 10, color: 'var(--jp-text-muted, #6b7280)' }}>
+                        <div className="text-[10px]" style={{ color: 'var(--core-text-muted)' }}>
                           {dept?.integrations.join(', ')}
                         </div>
                       </div>
@@ -704,57 +674,77 @@ export default function ChatPage() {
               </div>
 
               {/* Tools */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--jp-text-muted, #6b7280)', textTransform: 'uppercase', marginBottom: 8 }}>
+              <div className="mb-4">
+                <div
+                  className="text-[10px] font-bold tracking-[0.08em] uppercase mb-2"
+                  style={{ color: 'var(--core-text-muted)' }}
+                >
                   Tools
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                <div className="flex flex-wrap gap-1.5">
                   {(activeCrew?.tools?.length ? activeCrew.tools : ['none']).map(t => (
-                    <span key={t} style={{
-                      fontSize: 11, padding: '3px 8px', borderRadius: 5,
-                      background: 'var(--jp-bg-card, #161b22)',
-                      color: 'var(--jp-text-secondary, #9ca3af)',
-                      border: '1px solid var(--jp-border, #30363d)',
-                    }}>{t}</span>
+                    <span
+                      key={t}
+                      className="text-[11px] px-2 py-0.5 rounded-[5px]"
+                      style={{
+                        background: 'var(--core-card)',
+                        color: 'var(--core-text-dim)',
+                        border: '1px solid var(--core-border)',
+                      }}
+                    >
+                      {t}
+                    </span>
                   ))}
                 </div>
               </div>
 
               {/* Actions */}
               {activeCrew && !activeCrew.id.startsWith('__') && (
-                <div style={{ marginTop: 'auto' }}>
+                <div className="mt-auto">
                   {deleteConfirm === activeCrew.id ? (
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => deleteCrew(activeCrew.id)} style={{
-                        flex: 1, padding: '9px 0', borderRadius: 8, border: 'none',
-                        background: '#dc2626', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                      }}>Confirm</button>
-                      <button onClick={() => setDeleteConfirm(null)} style={{
-                        flex: 1, padding: '9px 0', borderRadius: 8,
-                        border: '1px solid var(--jp-border, #30363d)',
-                        background: 'transparent', color: 'var(--jp-text-secondary, #9ca3af)',
-                        fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                      }}>Cancel</button>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => deleteCrew(activeCrew.id)}
+                        className="flex-1 py-2 rounded-lg border-none bg-red-600 text-white text-[12px] font-semibold cursor-pointer"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm(null)}
+                        className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer"
+                        style={{
+                          border: '1px solid var(--core-border)',
+                          background: 'transparent',
+                          color: 'var(--core-text-dim)',
+                        }}
+                      >
+                        Cancel
+                      </button>
                     </div>
                   ) : (
-                    <button onClick={() => setDeleteConfirm(activeCrew.id)} style={{
-                      width: '100%', padding: '9px 0', borderRadius: 8,
-                      border: '1px solid rgba(220,38,38,0.3)',
-                      background: 'rgba(220,38,38,0.08)', color: '#f87171',
-                      fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                    }}>Delete Crew</button>
+                    <button
+                      onClick={() => setDeleteConfirm(activeCrew.id)}
+                      className="w-full py-2 rounded-lg text-[13px] font-semibold cursor-pointer"
+                      style={{
+                        border: '1px solid rgba(220,38,38,0.3)',
+                        background: 'rgba(220,38,38,0.08)',
+                        color: '#f87171',
+                      }}
+                    >
+                      Delete Crew
+                    </button>
                   )}
                 </div>
               )}
             </div>
           ) : (
             /* ── History View ── */
-            <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+            <div className="flex-1 overflow-y-auto p-2">
               {currentMessages.filter(m => m.id !== 'welcome-' + activeCrew?.id).length === 0 ? (
-                <div style={{
-                  padding: '40px 16px', textAlign: 'center',
-                  color: 'var(--jp-text-muted, #6b7280)', fontSize: 12,
-                }}>
+                <div
+                  className="py-10 px-4 text-center text-[12px]"
+                  style={{ color: 'var(--core-text-muted)' }}
+                >
                   No conversation history yet.
                   <br />Start chatting to see messages here.
                 </div>
@@ -762,33 +752,36 @@ export default function ChatPage() {
                 currentMessages
                   .filter(m => m.id !== 'welcome-' + activeCrew?.id)
                   .map(msg => (
-                    <div key={msg.id} style={{
-                      padding: '10px 12px', marginBottom: 4,
-                      borderRadius: 8, cursor: 'pointer',
-                      background: 'transparent',
-                      borderLeft: msg.role === 'user' ? `3px solid ${activeCrew?.avatar_color || '#6EE05A'}` : '3px solid var(--jp-border, #30363d)',
-                    }}>
-                      <div style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        marginBottom: 4,
-                      }}>
-                        <span style={{
-                          fontSize: 10, fontWeight: 700,
-                          color: msg.role === 'user' ? activeCrew?.avatar_color : 'var(--jp-text-muted, #6b7280)',
-                          textTransform: 'uppercase', letterSpacing: '0.04em',
-                        }}>
+                    <div
+                      key={msg.id}
+                      className="px-3 py-2.5 mb-1 rounded-lg cursor-pointer"
+                      style={{
+                        background: 'transparent',
+                        borderLeft: msg.role === 'user'
+                          ? `3px solid ${crewColor}`
+                          : '3px solid var(--core-border)',
+                      }}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-[0.04em]"
+                          style={{ color: msg.role === 'user' ? crewColor : 'var(--core-text-muted)' }}
+                        >
                           {msg.role === 'user' ? 'You' : activeCrew?.name}
                         </span>
-                        <span style={{ fontSize: 10, color: 'var(--jp-text-muted, #6b7280)' }}>
+                        <span className="text-[10px]" style={{ color: 'var(--core-text-muted)' }}>
                           {msg.time}
                         </span>
                       </div>
-                      <div style={{
-                        fontSize: 12, color: 'var(--jp-text-secondary, #9ca3af)',
-                        overflow: 'hidden', textOverflow: 'ellipsis',
-                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                        lineHeight: 1.4,
-                      }}>
+                      <div
+                        className="text-[12px] leading-[1.4] overflow-hidden"
+                        style={{
+                          color: 'var(--core-text-dim)',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                        }}
+                      >
                         {msg.content}
                       </div>
                     </div>
@@ -802,35 +795,41 @@ export default function ChatPage() {
       {/* ═══ NEW CREW MODAL ═══ */}
       {showNewCrew && (
         <div
-          style={{
-            position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
-          }}
+          className="absolute inset-0 bg-black/60 flex items-center justify-center z-50"
           onClick={() => setShowNewCrew(false)}
         >
-          <div onClick={e => e.stopPropagation()} style={{
-            width: 380, background: 'var(--jp-bg-card, #161b22)',
-            border: '1px solid var(--jp-border, #30363d)', borderRadius: 14, padding: 24,
-          }}>
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Create New Crew</div>
+          <div
+            onClick={e => e.stopPropagation()}
+            className="w-[380px] rounded-2xl p-6"
+            style={{
+              background: 'var(--core-card)',
+              border: '1px solid var(--core-border)',
+            }}
+          >
+            <div className="text-base font-bold mb-5">Create New Crew</div>
 
-            <label style={{ fontSize: 11, color: 'var(--jp-text-secondary, #9ca3af)', fontWeight: 600 }}>NAME</label>
-            <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Content Writer"
+            <label className="text-[11px] font-semibold" style={{ color: 'var(--core-text-dim)' }}>NAME</label>
+            <input
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              placeholder="e.g. Content Writer"
+              className="w-full rounded-lg px-3 py-2 text-[13px] outline-none mt-1.5 mb-3.5"
               style={{
-                width: '100%', background: 'var(--jp-bg, #0d1117)',
-                border: '1px solid var(--jp-border, #30363d)', borderRadius: 8,
-                padding: '9px 12px', color: 'var(--jp-text, #f0f4f8)',
-                fontSize: 13, outline: 'none', marginTop: 6, marginBottom: 14,
+                background: 'var(--core-bg)',
+                border: '1px solid var(--core-border)',
+                color: 'var(--core-text)',
               }}
             />
 
-            <label style={{ fontSize: 11, color: 'var(--jp-text-secondary, #9ca3af)', fontWeight: 600 }}>DEPARTMENT</label>
-            <select value={newRole} onChange={e => setNewRole(e.target.value)}
+            <label className="text-[11px] font-semibold" style={{ color: 'var(--core-text-dim)' }}>DEPARTMENT</label>
+            <select
+              value={newRole}
+              onChange={e => setNewRole(e.target.value)}
+              className="w-full rounded-lg px-3 py-2 text-[13px] outline-none mt-1.5 mb-3.5"
               style={{
-                width: '100%', background: 'var(--jp-bg, #0d1117)',
-                border: '1px solid var(--jp-border, #30363d)', borderRadius: 8,
-                padding: '9px 12px', color: 'var(--jp-text, #f0f4f8)',
-                fontSize: 13, outline: 'none', marginTop: 6, marginBottom: 14,
+                background: 'var(--core-bg)',
+                border: '1px solid var(--core-border)',
+                color: 'var(--core-text)',
               }}
             >
               <option value="general">General</option>
@@ -844,49 +843,66 @@ export default function ChatPage() {
               <option value="support">Customer Service</option>
             </select>
 
-            <label style={{ fontSize: 11, color: 'var(--jp-text-secondary, #9ca3af)', fontWeight: 600 }}>COLOR</label>
-            <div style={{ display: 'flex', gap: 8, marginTop: 6, marginBottom: 14 }}>
+            <label className="text-[11px] font-semibold" style={{ color: 'var(--core-text-dim)' }}>COLOR</label>
+            <div className="flex gap-2 mt-1.5 mb-3.5">
               {['#6EE05A', '#3b82f6', '#a78bfa', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'].map(c => (
-                <button key={c} onClick={() => setNewColor(c)} style={{
-                  width: 28, height: 28, borderRadius: '50%', background: c,
-                  border: newColor === c ? '2px solid #fff' : '2px solid transparent',
-                  cursor: 'pointer',
-                }} />
+                <button
+                  key={c}
+                  onClick={() => setNewColor(c)}
+                  className="w-7 h-7 rounded-full cursor-pointer transition-transform"
+                  style={{
+                    background: c,
+                    border: newColor === c ? '2px solid #fff' : '2px solid transparent',
+                  }}
+                />
               ))}
             </div>
 
-            <label style={{ fontSize: 11, color: 'var(--jp-text-secondary, #9ca3af)', fontWeight: 600 }}>K-LAYERS</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6, marginBottom: 20 }}>
+            <label className="text-[11px] font-semibold" style={{ color: 'var(--core-text-dim)' }}>K-LAYERS</label>
+            <div className="flex flex-wrap gap-1.5 mt-1.5 mb-5">
               {['K1', 'K2', 'K3', 'K4', 'K5', 'K6', 'K7'].map(k => {
                 const selected = newKLayers.includes(k)
                 return (
-                  <button key={k}
+                  <button
+                    key={k}
                     onClick={() => setNewKLayers(prev => selected ? prev.filter(l => l !== k) : [...prev, k])}
+                    className="text-[11px] font-semibold px-2.5 py-1 rounded-md cursor-pointer transition-colors"
                     style={{
-                      fontSize: 11, fontWeight: 600, padding: '5px 10px', borderRadius: 6,
-                      background: selected ? 'rgba(110,224,90,0.12)' : 'var(--jp-bg, #0d1117)',
-                      color: selected ? '#6EE05A' : 'var(--jp-text-muted, #6b7280)',
-                      border: selected ? '1px solid rgba(110,224,90,0.25)' : '1px solid var(--jp-border, #30363d)',
-                      cursor: 'pointer',
+                      background: selected ? 'rgba(110,224,90,0.12)' : 'var(--core-bg)',
+                      color: selected ? '#6EE05A' : 'var(--core-text-muted)',
+                      border: selected ? '1px solid rgba(110,224,90,0.25)' : '1px solid var(--core-border)',
                     }}
-                  >{k}</button>
+                  >
+                    {k}
+                  </button>
                 )
               })}
             </div>
 
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setShowNewCrew(false)} style={{
-                flex: 1, padding: '10px 0', borderRadius: 8,
-                border: '1px solid var(--jp-border, #30363d)',
-                background: 'transparent', color: 'var(--jp-text-secondary, #9ca3af)',
-                fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              }}>Cancel</button>
-              <button onClick={createCrew} disabled={!newName.trim()} style={{
-                flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
-                background: newName.trim() ? '#6EE05A' : 'var(--jp-bg, #0d1117)',
-                color: newName.trim() ? '#0d1117' : 'var(--jp-text-muted, #6b7280)',
-                fontSize: 13, fontWeight: 700, cursor: newName.trim() ? 'pointer' : 'default',
-              }}>Create Crew</button>
+            <div className="flex gap-2.5">
+              <button
+                onClick={() => setShowNewCrew(false)}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer transition-colors"
+                style={{
+                  border: '1px solid var(--core-border)',
+                  background: 'transparent',
+                  color: 'var(--core-text-dim)',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createCrew}
+                disabled={!newName.trim()}
+                className="flex-1 py-2.5 rounded-lg border-none text-[13px] font-bold transition-colors"
+                style={{
+                  background: newName.trim() ? '#6EE05A' : 'var(--core-bg)',
+                  color: newName.trim() ? '#0d1117' : 'var(--core-text-muted)',
+                  cursor: newName.trim() ? 'pointer' : 'default',
+                }}
+              >
+                Create Crew
+              </button>
             </div>
           </div>
         </div>
@@ -894,8 +910,10 @@ export default function ChatPage() {
 
       <style>{`
         .chat-typing-dot {
-          width: 7px; height: 7px; border-radius: 50%;
-          background: ${activeCrew?.avatar_color || '#6EE05A'};
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: ${crewColor};
           display: inline-block;
           animation: chatTypingBounce 1.2s infinite ease-in-out;
         }

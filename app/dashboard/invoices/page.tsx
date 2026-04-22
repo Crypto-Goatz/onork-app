@@ -1,6 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import {
+  Plus,
+  Search,
+  DollarSign,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  Eye,
+  Send,
+  Download,
+  X,
+} from 'lucide-react'
 
 type InvoiceStatus = 'paid' | 'pending' | 'overdue' | 'draft'
 
@@ -21,11 +33,11 @@ interface Invoice {
   items: InvoiceItem[]
 }
 
-const statusStyles: Record<InvoiceStatus, { color: string; bg: string }> = {
-  paid: { color: 'var(--jp-green)', bg: 'var(--jp-green-glow)' },
-  pending: { color: 'var(--jp-amber)', bg: 'rgba(251, 191, 36, 0.12)' },
-  overdue: { color: 'var(--jp-red)', bg: 'rgba(248, 113, 113, 0.12)' },
-  draft: { color: 'var(--jp-text-muted)', bg: 'rgba(96, 96, 96, 0.12)' },
+const statusClasses: Record<InvoiceStatus, string> = {
+  paid: 'bg-core-green/10 text-core-green',
+  pending: 'bg-core-amber/10 text-core-amber',
+  overdue: 'bg-core-red/10 text-core-red',
+  draft: 'bg-core-text-muted/10 text-core-text-muted',
 }
 
 const mockInvoices: Invoice[] = []
@@ -150,9 +162,17 @@ export default function InvoicesPage() {
 
   const addItem = () => setNewItems([...newItems, { description: '', amount: 0 }])
 
+  const stats = [
+    { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString()}`, accent: 'green', Icon: DollarSign },
+    { label: 'Paid', value: `$${paidTotal.toLocaleString()}`, accent: 'green', Icon: CheckCircle },
+    { label: 'Pending', value: `$${pendingTotal.toLocaleString()}`, accent: 'amber', Icon: Clock },
+    { label: 'Overdue', value: `$${overdueTotal.toLocaleString()}`, accent: 'purple', Icon: AlertTriangle },
+  ]
+
   return (
     <div>
-      <div className="jp-page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      {/* Page Header */}
+      <div className="jp-page-header flex items-start justify-between">
         <div>
           <h1 className="jp-page-title">Invoices</h1>
           <p className="jp-page-subtitle">
@@ -161,88 +181,76 @@ export default function InvoicesPage() {
         </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          style={{
-            padding: '10px 22px',
-            background: 'var(--jp-green)',
-            color: '#000',
-            border: 'none',
-            borderRadius: 'var(--jp-radius-sm)',
-            fontSize: '0.8125rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
+          className="flex items-center gap-1.5 px-[22px] py-2.5 bg-core-green text-black rounded-[var(--jp-radius-sm)] text-[0.8125rem] font-bold cursor-pointer border-none"
         >
-          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
+          <Plus size={14} strokeWidth={2.5} />
           Create Invoice
         </button>
       </div>
 
+      {/* Error Banner */}
       {error && (
-        <div style={{ marginBottom: 16, padding: '8px 14px', borderRadius: 8, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', fontSize: '0.8125rem', color: 'var(--jp-red)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="flex items-center justify-between mb-4 px-3.5 py-2 rounded-lg bg-core-red/[0.08] border border-core-red/20 text-[0.8125rem] text-core-red">
           <span>{error}</span>
-          <button onClick={fetchInvoices} style={{ background: 'none', border: 'none', color: 'var(--jp-cyan)', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}>Retry</button>
+          <button
+            onClick={fetchInvoices}
+            className="bg-transparent border-none text-core-cyan text-[0.8125rem] font-semibold cursor-pointer"
+          >
+            Retry
+          </button>
         </div>
       )}
 
       {/* Stats */}
-      <div className="jp-stat-grid" style={{ marginBottom: 24 }}>
-        {[
-          { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString()}`, accent: 'green', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /> },
-          { label: 'Paid', value: `$${paidTotal.toLocaleString()}`, accent: 'green', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /> },
-          { label: 'Pending', value: `$${pendingTotal.toLocaleString()}`, accent: 'amber', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /> },
-          { label: 'Overdue', value: `$${overdueTotal.toLocaleString()}`, accent: 'purple', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" /> },
-        ].map((stat) => (
-          <div key={stat.label} className={`jp-stat-card ${stat.accent}`}>
+      <div className="jp-stat-grid mb-6">
+        {stats.map(({ label, value, accent, Icon }) => (
+          <div key={label} className={`jp-stat-card ${accent}`}>
             <div className="jp-stat-header">
-              <span className="jp-stat-label">{stat.label}</span>
-              <div className={`jp-stat-icon ${stat.accent}`}>
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                  {stat.icon}
-                </svg>
+              <span className="jp-stat-label">{label}</span>
+              <div className={`jp-stat-icon ${accent}`}>
+                <Icon size={18} strokeWidth={1.75} />
               </div>
             </div>
-            <div className="jp-stat-value">{stat.value}</div>
+            <div className="jp-stat-value">{value}</div>
           </div>
         ))}
       </div>
 
       {/* Create Invoice Form */}
       {showCreate && (
-        <div className="jp-card" style={{ marginBottom: 24 }}>
+        <div className="jp-card mb-6">
           <div className="jp-card-header">
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)', margin: 0 }}>New Invoice</h3>
+            <h3 className="text-[0.875rem] font-semibold text-core-text m-0">New Invoice</h3>
             <button className="jp-header-btn" onClick={() => setShowCreate(false)}>
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X size={16} strokeWidth={2} />
             </button>
           </div>
-          <div className="jp-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="jp-card-body flex flex-col gap-4">
+            {/* Client Name */}
             <div>
-              <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 6, display: 'block' }}>Client Name</label>
+              <label className="block text-[0.8125rem] font-semibold text-core-text mb-1.5">
+                Client Name
+              </label>
               <input
                 type="text"
-                className="jp-search-input"
+                className="jp-search-input w-full max-w-[400px] pl-3.5"
                 placeholder="Enter client name"
                 value={newClient}
                 onChange={(e) => setNewClient(e.target.value)}
-                style={{ width: '100%', maxWidth: 400, paddingLeft: 14 }}
               />
             </div>
 
+            {/* Line Items */}
             <div>
-              <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--jp-text)', marginBottom: 6, display: 'block' }}>Line Items</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label className="block text-[0.8125rem] font-semibold text-core-text mb-1.5">
+                Line Items
+              </label>
+              <div className="flex flex-col gap-2">
                 {newItems.map((item, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <div key={i} className="flex gap-2 items-center">
                     <input
                       type="text"
-                      className="jp-search-input"
+                      className="jp-search-input flex-1 pl-3.5"
                       placeholder="Description"
                       value={item.description}
                       onChange={(e) => {
@@ -250,11 +258,10 @@ export default function InvoicesPage() {
                         copy[i].description = e.target.value
                         setNewItems(copy)
                       }}
-                      style={{ flex: 1, paddingLeft: 14 }}
                     />
                     <input
                       type="number"
-                      className="jp-search-input"
+                      className="jp-search-input w-[120px] pl-3.5"
                       placeholder="Amount"
                       value={item.amount || ''}
                       onChange={(e) => {
@@ -262,33 +269,20 @@ export default function InvoicesPage() {
                         copy[i].amount = parseFloat(e.target.value) || 0
                         setNewItems(copy)
                       }}
-                      style={{ width: 120, paddingLeft: 14 }}
                     />
                     {newItems.length > 1 && (
                       <button
-                        className="jp-header-btn"
+                        className="jp-header-btn w-8 h-8 shrink-0"
                         onClick={() => setNewItems(newItems.filter((_, j) => j !== i))}
-                        style={{ width: 32, height: 32, flexShrink: 0 }}
                       >
-                        <svg width="14" height="14" fill="none" stroke="var(--jp-red)" viewBox="0 0 24 24" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <X size={14} strokeWidth={2} className="text-core-red" />
                       </button>
                     )}
                   </div>
                 ))}
                 <button
                   onClick={addItem}
-                  style={{
-                    padding: '7px 14px',
-                    background: 'transparent',
-                    color: 'var(--jp-cyan)',
-                    border: '1px dashed var(--jp-border)',
-                    borderRadius: 'var(--jp-radius-sm)',
-                    fontSize: '0.8125rem',
-                    cursor: 'pointer',
-                    width: 'fit-content',
-                  }}
+                  className="px-3.5 py-[7px] bg-transparent text-core-cyan border border-dashed border-core-border rounded-[var(--jp-radius-sm)] text-[0.8125rem] cursor-pointer w-fit"
                 >
                   + Add Item
                 </button>
@@ -296,59 +290,33 @@ export default function InvoicesPage() {
             </div>
 
             {/* Totals */}
-            <div style={{
-              background: 'var(--jp-bg)',
-              borderRadius: 'var(--jp-radius-sm)',
-              padding: 16,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-              maxWidth: 300,
-              marginLeft: 'auto',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', color: 'var(--jp-text-secondary)' }}>
+            <div className="bg-core-bg rounded-[var(--jp-radius-sm)] p-4 flex flex-col gap-1.5 max-w-[300px] ml-auto">
+              <div className="flex justify-between text-[0.8125rem] text-core-text-dim">
                 <span>Subtotal</span>
                 <span>${newSubtotal.toFixed(2)}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', color: 'var(--jp-text-secondary)' }}>
+              <div className="flex justify-between text-[0.8125rem] text-core-text-dim">
                 <span>Tax (7%)</span>
                 <span>${newTax.toFixed(2)}</span>
               </div>
-              <div style={{ borderTop: '1px solid var(--jp-border)', paddingTop: 6, display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 700, color: 'var(--jp-text)' }}>
+              <div className="flex justify-between text-base font-bold text-core-text pt-1.5 border-t border-core-border">
                 <span>Total</span>
                 <span>${newTotal.toFixed(2)}</span>
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            {/* Actions */}
+            <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowCreate(false)}
-                style={{
-                  padding: '9px 20px',
-                  background: 'transparent',
-                  color: 'var(--jp-text-secondary)',
-                  border: '1px solid var(--jp-border)',
-                  borderRadius: 'var(--jp-radius-sm)',
-                  fontSize: '0.8125rem',
-                  cursor: 'pointer',
-                }}
+                className="px-5 py-[9px] bg-transparent text-core-text-dim border border-core-border rounded-[var(--jp-radius-sm)] text-[0.8125rem] cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateInvoice}
                 disabled={creating}
-                style={{
-                  padding: '9px 24px',
-                  background: 'var(--jp-green)',
-                  color: '#000',
-                  border: 'none',
-                  borderRadius: 'var(--jp-radius-sm)',
-                  fontSize: '0.8125rem',
-                  fontWeight: 700,
-                  cursor: creating ? 'wait' : 'pointer',
-                  opacity: creating ? 0.7 : 1,
-                }}
+                className="px-6 py-[9px] bg-core-green text-black border-none rounded-[var(--jp-radius-sm)] text-[0.8125rem] font-bold cursor-pointer disabled:opacity-70 disabled:cursor-wait"
               >
                 {creating ? 'Creating...' : 'Send Invoice'}
               </button>
@@ -358,38 +326,30 @@ export default function InvoicesPage() {
       )}
 
       {/* Filters */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        <div className="jp-search" style={{ flex: 1, minWidth: 200, maxWidth: 360 }}>
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <div className="jp-search flex-1 min-w-[200px] max-w-[360px]">
           <span className="jp-search-icon">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <Search size={16} strokeWidth={1.75} />
           </span>
           <input
             type="text"
-            className="jp-search-input"
+            className="jp-search-input w-full"
             placeholder="Search invoices..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ width: '100%' }}
           />
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="flex gap-1.5">
           {(['all', 'paid', 'pending', 'overdue', 'draft'] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              style={{
-                padding: '7px 14px',
-                background: statusFilter === s ? 'var(--jp-green-glow)' : 'transparent',
-                color: statusFilter === s ? 'var(--jp-green)' : 'var(--jp-text-secondary)',
-                border: `1px solid ${statusFilter === s ? 'var(--jp-green-dim)' : 'var(--jp-border)'}`,
-                borderRadius: 'var(--jp-radius-sm)',
-                fontSize: '0.8125rem',
-                fontWeight: 500,
-                cursor: 'pointer',
-                textTransform: 'capitalize',
-              }}
+              className={[
+                'px-3.5 py-[7px] rounded-[var(--jp-radius-sm)] text-[0.8125rem] font-medium cursor-pointer capitalize border transition-colors',
+                statusFilter === s
+                  ? 'bg-core-green/10 text-core-green border-core-green/30'
+                  : 'bg-transparent text-core-text-dim border-core-border',
+              ].join(' ')}
             >
               {s}
             </button>
@@ -397,29 +357,20 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      {/* Loading */}
+      {/* Loading Spinner */}
       {loading && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-          <div style={{ width: 32, height: 32, border: '2px solid var(--jp-green)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <div className="flex justify-center p-10">
+          <div className="w-8 h-8 border-2 border-core-green border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
       {/* Invoice Table */}
       {!loading && (
         <div className="jp-card">
-          {/* Header */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '100px 1fr 100px 90px 120px 120px',
-            gap: 12,
-            padding: '12px 20px',
-            borderBottom: '1px solid var(--jp-border)',
-            fontSize: '0.6875rem',
-            fontWeight: 600,
-            color: 'var(--jp-text-muted)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-          }}>
+          {/* Table Header */}
+          <div className="grid gap-3 px-5 py-3 border-b border-core-border text-[0.6875rem] font-semibold text-core-text-muted uppercase tracking-[0.05em]"
+            style={{ gridTemplateColumns: '100px 1fr 100px 90px 120px 120px' }}
+          >
             <span>Invoice #</span>
             <span>Client</span>
             <span>Amount</span>
@@ -429,79 +380,41 @@ export default function InvoicesPage() {
           </div>
 
           {filtered.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--jp-text-muted)', fontSize: '0.875rem' }}>
+            <div className="p-10 text-center text-core-text-muted text-[0.875rem]">
               No invoices found
             </div>
           ) : (
             filtered.map((inv) => (
               <div
                 key={inv.id}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '100px 1fr 100px 90px 120px 120px',
-                  gap: 12,
-                  padding: '14px 20px',
-                  borderBottom: '1px solid var(--jp-border)',
-                  alignItems: 'center',
-                  transition: 'background var(--jp-transition)',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = 'var(--jp-bg-card-hover)'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                className="grid gap-3 px-5 py-3.5 border-b border-core-border items-center transition-colors hover:bg-core-card-hover"
+                style={{ gridTemplateColumns: '100px 1fr 100px 90px 120px 120px' }}
               >
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-cyan)' }}>
+                <span className="text-[0.875rem] font-semibold text-core-cyan">
                   {inv.number}
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    background: 'var(--jp-border-hi)',
-                    color: 'var(--jp-text-secondary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.6875rem',
-                    fontWeight: 700,
-                    flexShrink: 0,
-                  }}>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-core-border flex items-center justify-center text-[0.6875rem] font-bold text-core-text-dim shrink-0">
                     {inv.clientInitials}
                   </div>
-                  <span style={{ fontSize: '0.875rem', color: 'var(--jp-text)' }}>{inv.client}</span>
+                  <span className="text-[0.875rem] text-core-text">{inv.client}</span>
                 </div>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--jp-text)' }}>
+                <span className="text-[0.875rem] font-semibold text-core-text">
                   ${inv.amount.toLocaleString()}
                 </span>
-                <span style={{
-                  fontSize: '0.6875rem',
-                  fontWeight: 600,
-                  padding: '3px 10px',
-                  borderRadius: 6,
-                  background: statusStyles[inv.status].bg,
-                  color: statusStyles[inv.status].color,
-                  textTransform: 'capitalize',
-                  display: 'inline-block',
-                  width: 'fit-content',
-                }}>
+                <span className={`text-[0.6875rem] font-semibold px-2.5 py-[3px] rounded-[6px] capitalize inline-block w-fit ${statusClasses[inv.status]}`}>
                   {inv.status}
                 </span>
-                <span style={{ fontSize: '0.8125rem', color: 'var(--jp-text-muted)' }}>{inv.date}</span>
-                <div style={{ display: 'flex', gap: 2 }}>
-                  <button className="jp-header-btn" title="View" style={{ width: 30, height: 30 }}>
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
+                <span className="text-[0.8125rem] text-core-text-muted">{inv.date}</span>
+                <div className="flex gap-0.5">
+                  <button className="jp-header-btn w-[30px] h-[30px]" title="View">
+                    <Eye size={14} strokeWidth={1.75} />
                   </button>
-                  <button className="jp-header-btn" title="Send" style={{ width: 30, height: 30 }}>
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
+                  <button className="jp-header-btn w-[30px] h-[30px]" title="Send">
+                    <Send size={14} strokeWidth={1.75} />
                   </button>
-                  <button className="jp-header-btn" title="Download" style={{ width: 30, height: 30 }}>
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
+                  <button className="jp-header-btn w-[30px] h-[30px]" title="Download">
+                    <Download size={14} strokeWidth={1.75} />
                   </button>
                 </div>
               </div>

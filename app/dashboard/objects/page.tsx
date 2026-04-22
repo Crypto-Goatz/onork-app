@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Search, X, Boxes, ArrowRight, Layers } from 'lucide-react'
 
 interface CustomObject {
   id: string
@@ -61,62 +62,70 @@ export default function ObjectsPage() {
   const filtered = schemas.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()))
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 8px' }}>
+    <div className="max-w-[1100px] mx-auto px-2">
       {/* Records Modal */}
       {selectedSchema && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 100,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-        }} onClick={() => setSelectedSchema(null)}>
-          <div style={{
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 16, padding: 28, maxWidth: 700, width: '100%',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.4)', maxHeight: '80vh', overflow: 'auto',
-          }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+          onClick={() => setSelectedSchema(null)}
+        >
+          <div
+            className="bg-core-card border border-core-border rounded-2xl p-7 max-w-[700px] w-full shadow-[0_20px_60px_rgba(0,0,0,0.4)] max-h-[80vh] overflow-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex justify-between items-center mb-5">
               <div>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0 }}>{selectedSchema.name}</h2>
-                <p style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)', marginTop: 4 }}>Key: {selectedSchema.key}</p>
+                <h2 className="text-lg font-bold text-core-text m-0">{selectedSchema.name}</h2>
+                <p className="text-xs text-core-text-muted mt-1">Key: {selectedSchema.key}</p>
               </div>
-              <button onClick={() => setSelectedSchema(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted, #6b7280)', cursor: 'pointer', fontSize: 18 }}>&times;</button>
+              <button
+                onClick={() => setSelectedSchema(null)}
+                className="text-core-text-muted hover:text-core-text bg-transparent border-0 cursor-pointer p-1 rounded transition-colors"
+              >
+                <X size={18} />
+              </button>
             </div>
 
+            {/* Fields */}
             {selectedSchema.fields && selectedSchema.fields.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Fields</div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <div className="mb-5">
+                <div className="text-[11px] text-core-text-muted font-semibold uppercase tracking-[0.06em] mb-2">Fields</div>
+                <div className="flex gap-1.5 flex-wrap">
                   {selectedSchema.fields.map(f => (
-                    <span key={f.key} style={{
-                      padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                      background: 'rgba(45,212,191,0.1)', color: 'var(--color-cyan, #14b8a6)',
-                      border: '1px solid rgba(45,212,191,0.15)',
-                    }}>{f.name} <span style={{ opacity: 0.6 }}>({f.type})</span></span>
+                    <span
+                      key={f.key}
+                      className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-core-cyan/10 text-core-cyan border border-core-cyan/15"
+                    >
+                      {f.name}{' '}
+                      <span className="opacity-60">({f.type})</span>
+                    </span>
                   ))}
                 </div>
               </div>
             )}
 
-            <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Records</div>
+            {/* Records */}
+            <div className="text-[11px] text-core-text-muted font-semibold uppercase tracking-[0.06em] mb-2">Records</div>
             {loadingRecords ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-                <div style={{ width: 24, height: 24, border: '3px solid #1c2b42', borderTopColor: 'var(--color-cyan, #14b8a6)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              <div className="flex justify-center py-10">
+                <div className="w-6 h-6 rounded-full border-[3px] border-core-border border-t-core-cyan animate-spin" />
               </div>
             ) : records.length === 0 ? (
-              <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: 13, textAlign: 'center', padding: 20 }}>No records yet.</p>
+              <p className="text-core-text-muted text-sm text-center py-5">No records yet.</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="flex flex-col gap-2">
                 {records.map(r => (
-                  <div key={r.id} style={{
-                    padding: '12px 16px', borderRadius: 10, border: '1px solid #1c2b42',
-                    background: 'var(--bg-primary, #0f172a)',
-                  }}>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)', marginBottom: 6 }}>ID: {r.id}</div>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <div
+                    key={r.id}
+                    className="px-4 py-3 rounded-[10px] border border-core-border bg-core-bg"
+                  >
+                    <div className="text-xs text-core-text-muted mb-1.5">ID: {r.id}</div>
+                    <div className="flex gap-3 flex-wrap">
                       {Object.entries(r.properties || {}).slice(0, 5).map(([k, v]) => (
-                        <div key={k} style={{ fontSize: 12 }}>
-                          <span style={{ color: 'var(--text-muted, #6b7280)' }}>{k}: </span>
-                          <span style={{ color: 'var(--text-primary, #f0f4f8)', fontWeight: 600 }}>{String(v)}</span>
+                        <div key={k} className="text-xs">
+                          <span className="text-core-text-muted">{k}: </span>
+                          <span className="text-core-text font-semibold">{String(v)}</span>
                         </div>
                       ))}
                     </div>
@@ -129,73 +138,87 @@ export default function ObjectsPage() {
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0, display: 'flex', alignItems: 'center' }}>
+          <h1 className="text-[22px] font-bold text-core-text m-0 flex items-center gap-2">
             Custom Objects
-            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: 'rgba(126,217,87,0.12)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)', marginLeft: 8 }}>UNLIMITED</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-[10px] bg-core-green/12 text-core-green border border-core-green/20">
+              UNLIMITED
+            </span>
           </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', marginTop: 4 }}>
+          <p className="text-[13px] text-core-text-muted mt-1">
             {schemas.length > 0 ? `${schemas.length} custom objects` : 'Manage custom object schemas and records'}
           </p>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#7ed957' }}>Activated</span>
+        <span className="text-[11px] font-semibold text-core-green">Activated</span>
       </div>
 
       {/* Search */}
-      <div style={{ marginBottom: 20 }}>
-        <input type="text" placeholder="Search objects..." value={search} onChange={e => setSearch(e.target.value)}
-          style={{
-            width: '100%', padding: '12px 16px 12px 40px',
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 10, color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23556880' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat', backgroundPosition: '14px center',
-          }} />
+      <div className="relative mb-5">
+        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-core-text-dim pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Search objects..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-3 bg-core-card border border-core-border rounded-[10px] text-core-text text-sm outline-none placeholder:text-core-text-muted focus:border-core-cyan/50 transition-colors"
+        />
       </div>
 
       {/* Content */}
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-          <div style={{ width: 32, height: 32, border: '3px solid #1c2b42', borderTopColor: 'var(--color-cyan, #14b8a6)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div className="flex justify-center py-[60px]">
+          <div className="w-8 h-8 rounded-full border-[3px] border-core-border border-t-core-cyan animate-spin" />
         </div>
       ) : error ? (
-        <div style={{ background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 14, padding: 40, textAlign: 'center' }}>
-          <p style={{ color: '#f87171', fontSize: 14, marginBottom: 12 }}>{error}</p>
-          <button onClick={fetchSchemas} style={{ color: 'var(--color-cyan, #14b8a6)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Try again</button>
+        <div className="bg-core-card border border-core-border rounded-2xl p-10 text-center">
+          <p className="text-core-red text-sm mb-3">{error}</p>
+          <button
+            onClick={fetchSchemas}
+            className="text-core-cyan bg-transparent border-0 cursor-pointer text-[13px] font-semibold hover:underline"
+          >
+            Try again
+          </button>
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 14, padding: '60px 40px', textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>&#128451;</div>
-          <p style={{ color: 'var(--text-secondary, #9ca3af)', fontSize: 14, marginBottom: 8 }}>
+        <div className="bg-core-card border border-core-border rounded-2xl px-10 py-[60px] text-center">
+          <Boxes size={40} className="mx-auto mb-4 text-core-text-muted opacity-30" />
+          <p className="text-core-text-dim text-sm mb-2">
             {search ? 'No objects match your search.' : 'No custom objects yet.'}
           </p>
-          <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: 13 }}>Custom objects created in your CRM will appear here.</p>
+          <p className="text-core-text-muted text-[13px]">Custom objects created in your CRM will appear here.</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
           {filtered.map(s => (
-            <div key={s.id} style={{
-              background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-              borderRadius: 12, padding: 20, cursor: 'pointer', transition: 'border-color 0.2s',
-            }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = '#2dd4bf'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = '#1c2b42'}
-              onClick={() => viewRecords(s)}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+            <div
+              key={s.id}
+              className="bg-core-card border border-core-border rounded-xl p-5 cursor-pointer transition-colors duration-200 hover:border-core-cyan/60 group"
+              onClick={() => viewRecords(s)}
+            >
+              <div className="flex justify-between items-start mb-3">
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>{s.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', marginTop: 2 }}>Key: {s.key}</div>
+                  <div className="text-[15px] font-semibold text-core-text">{s.name}</div>
+                  <div className="text-[11px] text-core-text-muted mt-0.5">Key: {s.key}</div>
                 </div>
-                <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, background: 'rgba(45,212,191,0.1)', color: 'var(--color-cyan, #14b8a6)' }}>
+                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-core-cyan/10 text-core-cyan">
                   {s.fields?.length || 0} fields
                 </span>
               </div>
-              {s.description && <p style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)', marginBottom: 12 }}>{s.description}</p>}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 12, color: 'var(--text-muted, #6b7280)' }}>{s.recordCount || 0} records</span>
-                <span style={{ fontSize: 12, color: 'var(--color-cyan, #14b8a6)', fontWeight: 600 }}>View Records &rarr;</span>
+
+              {s.description && (
+                <p className="text-xs text-core-text-muted mb-3">{s.description}</p>
+              )}
+
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-core-text-muted flex items-center gap-1">
+                  <Layers size={12} />
+                  {s.recordCount || 0} records
+                </span>
+                <span className="text-xs text-core-cyan font-semibold flex items-center gap-1 group-hover:gap-1.5 transition-all">
+                  View Records
+                  <ArrowRight size={12} />
+                </span>
               </div>
             </div>
           ))}

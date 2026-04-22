@@ -1,6 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import {
+  ChevronRight,
+  CheckCircle2,
+  Circle,
+  XCircle,
+  Zap,
+  ExternalLink,
+  CheckCheck,
+} from 'lucide-react'
 
 type TaskStatus = 'done' | 'active' | 'todo' | 'blocked'
 type TaskType = 'backend' | 'frontend' | 'zero-code'
@@ -194,18 +203,25 @@ const TASKS: Task[] = [
   },
 ]
 
-const STATUS_COLORS: Record<TaskStatus, { bg: string; text: string; label: string }> = {
-  done:    { bg: '#dcfce7', text: '#166534', label: 'DONE' },
-  active:  { bg: '#fef9c3', text: '#854d0e', label: 'ACTIVE' },
-  todo:    { bg: '#f1f5f9', text: '#475569', label: 'TODO' },
-  blocked: { bg: '#fee2e2', text: '#991b1b', label: 'BLOCKED' },
+const STATUS_CONFIG: Record<TaskStatus, { dotClass: string; badgeClass: string; label: string }> = {
+  done:    { dotClass: 'bg-core-green',   badgeClass: 'bg-core-green/15 text-core-green',   label: 'DONE' },
+  active:  { dotClass: 'bg-core-amber',   badgeClass: 'bg-core-amber/15 text-core-amber',   label: 'ACTIVE' },
+  todo:    { dotClass: 'bg-core-border',  badgeClass: 'bg-core-surface text-core-text-muted', label: 'TODO' },
+  blocked: { dotClass: 'bg-core-red',     badgeClass: 'bg-core-red/15 text-core-red',       label: 'BLOCKED' },
 }
 
-const TYPE_COLORS: Record<TaskType, { bg: string; text: string }> = {
-  backend:   { bg: '#dbeafe', text: '#1e40af' },
-  frontend:  { bg: '#f3e8ff', text: '#6b21a8' },
-  'zero-code': { bg: '#fef3c7', text: '#92400e' },
+const TYPE_CONFIG: Record<TaskType, { badgeClass: string }> = {
+  backend:    { badgeClass: 'bg-core-cyan/15 text-core-cyan' },
+  frontend:   { badgeClass: 'bg-core-purple/15 text-core-purple' },
+  'zero-code': { badgeClass: 'bg-core-amber/15 text-core-amber' },
 }
+
+const STATUS_BUTTONS: { status: TaskStatus; icon: React.ReactNode; label: string }[] = [
+  { status: 'done',    icon: <CheckCheck className="w-3 h-3" />,  label: 'Done' },
+  { status: 'active',  icon: <Zap className="w-3 h-3" />,         label: 'Active' },
+  { status: 'blocked', icon: <XCircle className="w-3 h-3" />,     label: 'Blocked' },
+  { status: 'todo',    icon: <Circle className="w-3 h-3" />,      label: 'Todo' },
+]
 
 export default function CommandCenterPage() {
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -225,30 +241,36 @@ export default function CommandCenterPage() {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: 960, margin: '0 auto', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="px-6 py-6 max-w-[960px] mx-auto">
+
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1f2937', margin: 0 }}>Command Center</h1>
-          <span style={{ fontSize: 12, color: '#6b7280' }}>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-xl font-bold text-core-text m-0">Command Center</h1>
+          <span className="text-xs text-core-text-muted">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </span>
         </div>
 
         {/* Progress bar */}
-        <div style={{ height: 6, borderRadius: 3, background: '#e5e7eb', overflow: 'hidden', marginBottom: 16 }}>
-          <div style={{ height: '100%', width: `${progressPct}%`, background: '#7ed957', borderRadius: 3, transition: 'width 0.5s ease' }} />
+        <div className="h-1.5 rounded-full bg-core-border overflow-hidden mb-4">
+          <div
+            className="h-full bg-core-green rounded-full transition-[width] duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
 
         {/* Stat cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <div className="grid grid-cols-4 gap-3">
           {[
-            { label: 'DONE', value: doneTasks, color: '#166534', bg: '#dcfce7' },
-            { label: 'ACTIVE', value: activeTasks, color: '#854d0e', bg: '#fef9c3' },
-            { label: 'BLOCKED', value: blockedTasks, color: '#991b1b', bg: '#fee2e2' },
-            { label: 'TOTAL', value: totalTasks, color: '#1f2937', bg: '#f1f5f9' },
+            { label: 'DONE',    value: doneTasks,    className: 'bg-core-green/10 text-core-green' },
+            { label: 'ACTIVE',  value: activeTasks,  className: 'bg-core-amber/10 text-core-amber' },
+            { label: 'BLOCKED', value: blockedTasks, className: 'bg-core-red/10 text-core-red' },
+            { label: 'TOTAL',   value: totalTasks,   className: 'bg-core-surface text-core-text' },
           ].map(s => (
-            <div key={s.label} style={{ background: s.bg, borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', color: s.color, opacity: 0.7 }}>{s.label}</div>
+            <div key={s.label} className={`${s.className} rounded-lg px-4 py-3 text-center`}>
+              <div className="text-2xl font-bold">{s.value}</div>
+              <div className="text-[10px] font-semibold tracking-wide opacity-70 uppercase">{s.label}</div>
             </div>
           ))}
         </div>
@@ -256,12 +278,15 @@ export default function CommandCenterPage() {
 
       {/* Active task banner */}
       {TASKS.filter(t => getStatus(t) === 'active').map(t => (
-        <div key={t.id} style={{ background: '#fefce8', border: '1px solid #fde68a', borderLeft: '4px solid #eab308', borderRadius: 8, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 18 }}>⚡</span>
+        <div
+          key={t.id}
+          className="bg-core-amber/10 border border-core-amber/30 border-l-4 border-l-core-amber rounded-lg px-4 py-3 mb-5 flex items-center gap-3"
+        >
+          <Zap className="w-5 h-5 text-core-amber shrink-0" />
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#854d0e' }}>CURRENT PRIORITY</div>
-            <div style={{ fontSize: 14, color: '#1f2937' }}>{t.title}</div>
-            <div style={{ fontSize: 11, color: '#92400e', marginTop: 2 }}>Assigned: {t.assigned} · {t.type}</div>
+            <div className="text-xs font-semibold text-core-amber uppercase tracking-wide">Current Priority</div>
+            <div className="text-sm text-core-text">{t.title}</div>
+            <div className="text-[11px] text-core-text-muted mt-0.5">Assigned: {t.assigned} · {t.type}</div>
           </div>
         </div>
       ))}
@@ -272,83 +297,104 @@ export default function CommandCenterPage() {
         const sectionDone = sectionTasks.filter(t => getStatus(t) === 'done').length
 
         return (
-          <div key={section} style={{ marginBottom: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #e5e7eb' }}>
-              <h2 style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: '#6b7280', margin: 0, textTransform: 'uppercase' }}>{section}</h2>
-              <span style={{ fontSize: 11, color: '#9ca3af' }}>{sectionDone}/{sectionTasks.length}</span>
+          <div key={section} className="mb-6">
+            <div className="flex items-center justify-between mb-2 pb-2 border-b border-core-border">
+              <h2 className="text-[11px] font-bold tracking-widest text-core-text-muted uppercase m-0">{section}</h2>
+              <span className="text-[11px] text-core-text-muted">{sectionDone}/{sectionTasks.length}</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="flex flex-col gap-1.5">
               {sectionTasks.map(task => {
                 const status = getStatus(task)
-                const sc = STATUS_COLORS[status]
-                const tc = TYPE_COLORS[task.type]
+                const sc = STATUS_CONFIG[status]
+                const tc = TYPE_CONFIG[task.type]
                 const isExpanded = expanded === task.id
                 const isDone = status === 'done'
 
                 return (
-                  <div key={task.id} style={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+                  <div key={task.id} className="bg-core-card border border-core-border rounded-lg overflow-hidden">
                     <button
                       onClick={() => setExpanded(isExpanded ? null : task.id)}
-                      style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', display: 'flex', alignItems: 'flex-start', gap: 12 }}
+                      className="w-full px-4 py-3 bg-transparent border-none cursor-pointer text-left font-[inherit] flex items-start gap-3 hover:bg-core-card-hover transition-colors"
                     >
                       {/* Status dot */}
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: sc.text, marginTop: 5, flexShrink: 0 }} />
+                      <span className={`w-2 h-2 rounded-full ${sc.dotClass} mt-[5px] shrink-0`} />
 
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: '#1f2937', textDecoration: isDone ? 'line-through' : 'none', opacity: isDone ? 0.6 : 1 }}>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-sm font-semibold text-core-text ${isDone ? 'line-through opacity-50' : ''}`}>
                           {task.title}
                         </div>
-                        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{task.sub}</div>
+                        <div className="text-[11px] text-core-text-muted mt-0.5">{task.sub}</div>
 
                         {/* Badges */}
-                        <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: sc.bg, color: sc.text, letterSpacing: '0.05em' }}>{sc.label}</span>
-                          <span style={{ fontSize: 9, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: tc.bg, color: tc.text }}>{task.type}</span>
-                          <span style={{ fontSize: 9, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: '#f1f5f9', color: '#64748b' }}>{task.assigned}</span>
+                        <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase ${sc.badgeClass}`}>
+                            {sc.label}
+                          </span>
+                          <span className={`text-[9px] font-semibold px-2 py-0.5 rounded ${tc.badgeClass}`}>
+                            {task.type}
+                          </span>
+                          <span className="text-[9px] font-semibold px-2 py-0.5 rounded bg-core-surface text-core-text-muted">
+                            {task.assigned}
+                          </span>
                         </div>
                       </div>
 
                       {/* Expand arrow */}
-                      <span style={{ fontSize: 14, color: '#9ca3af', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s', flexShrink: 0 }}>▶</span>
+                      <ChevronRight
+                        className={`w-4 h-4 text-core-text-muted shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                      />
                     </button>
 
                     {/* Expanded content */}
                     {isExpanded && (
-                      <div style={{ padding: '0 16px 16px', borderTop: '1px solid #f1f5f9' }}>
+                      <div className="px-4 pb-4 border-t border-core-border/50">
                         {/* Proof required */}
-                        <div style={{ marginTop: 12 }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#ef4444', marginBottom: 6 }}>PROOF REQUIRED</div>
+                        <div className="mt-3">
+                          <div className="text-[10px] font-bold tracking-widest text-core-red mb-1.5 uppercase">
+                            Proof Required
+                          </div>
                           {task.proof.map((p, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
-                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: isDone ? '#7ed957' : '#d1d5db', marginTop: 4, flexShrink: 0 }} />
-                              <span style={{ fontSize: 12, color: '#4b5563' }}>{p}</span>
+                            <div key={i} className="flex items-start gap-2 mb-1">
+                              {isDone
+                                ? <CheckCircle2 className="w-3 h-3 text-core-green mt-0.5 shrink-0" />
+                                : <Circle className="w-3 h-3 text-core-border mt-0.5 shrink-0" />
+                              }
+                              <span className="text-xs text-core-text-dim">{p}</span>
                             </div>
                           ))}
                         </div>
 
                         {/* URL */}
                         {task.url && (
-                          <a href={task.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 8, fontSize: 11, color: '#7ed957', textDecoration: 'none' }}>
-                            ↗ {task.urlLabel || task.url}
+                          <a
+                            href={task.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 mt-2 text-[11px] text-core-green no-underline hover:underline"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            {task.urlLabel || task.url}
                           </a>
                         )}
 
                         {/* Status buttons */}
-                        <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
-                          {(['done', 'active', 'todo', 'blocked'] as TaskStatus[]).map(s => (
+                        <div className="flex gap-1.5 mt-3">
+                          {STATUS_BUTTONS.map(({ status: s, icon, label }) => (
                             <button
                               key={s}
                               onClick={() => setStatus(task.id, s)}
-                              style={{
-                                padding: '4px 12px', borderRadius: 4, border: '1px solid #e5e7eb',
-                                background: status === s ? STATUS_COLORS[s].bg : '#ffffff',
-                                color: status === s ? STATUS_COLORS[s].text : '#9ca3af',
-                                fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                                textTransform: 'uppercase', letterSpacing: '0.05em',
-                              }}
+                              className={`
+                                inline-flex items-center gap-1 px-3 py-1 rounded border text-[10px] font-semibold
+                                uppercase tracking-wide cursor-pointer font-[inherit] transition-colors
+                                ${status === s
+                                  ? STATUS_CONFIG[s].badgeClass + ' border-transparent'
+                                  : 'bg-core-bg border-core-border text-core-text-muted hover:bg-core-surface'
+                                }
+                              `}
                             >
-                              {s === 'done' ? '✓ Done' : s === 'active' ? '● Active' : s === 'blocked' ? '✕ Blocked' : '○ Todo'}
+                              {icon}
+                              {label}
                             </button>
                           ))}
                         </div>
@@ -363,8 +409,8 @@ export default function CommandCenterPage() {
       })}
 
       {/* Footer */}
-      <div style={{ textAlign: 'center', padding: '24px 0', borderTop: '1px solid #e5e7eb', marginTop: 24 }}>
-        <div style={{ fontSize: 11, color: '#9ca3af' }}>
+      <div className="text-center py-6 border-t border-core-border mt-6">
+        <div className="text-[11px] text-core-text-muted">
           0nCore Command Center · Week 1 · {doneTasks}/{totalTasks} complete ({progressPct}%)
         </div>
       </div>
