@@ -325,8 +325,9 @@ Rules:
 // ---------------------------------------------------------------------------
 async function groq(prompt: string, opts: { max_tokens?: number; json?: boolean } = {}): Promise<string> {
   if (!GROQ_KEY) { console.warn('[HIPAA] groq: missing GROQ_API_KEY'); return '' }
-  // Retry once on 429/5xx or network blip — Groq can flake under load.
-  for (let attempt = 0; attempt < 2; attempt++) {
+  // Retry on 429/5xx or network blip with exponential backoff — hitting Groq
+  // hard (4 parallel calls × 14 findings ~ 56 req/min) bumps into RPM caps.
+  for (let attempt = 0; attempt < 4; attempt++) {
     try {
       const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -342,8 +343,13 @@ async function groq(prompt: string, opts: { max_tokens?: number; json?: boolean 
       })
       if (!r.ok) {
         const err = await r.text().catch(() => '')
-        console.warn(`[HIPAA] groq ${r.status}:`, err.slice(0, 200))
-        if (r.status >= 500 || r.status === 429) continue
+        const retryAfter = Number(r.headers.get('retry-after') || 0)
+        console.warn(`[HIPAA] groq ${r.status} (attempt ${attempt + 1}):`, err.slice(0, 200))
+        if (r.status >= 500 || r.status === 429) {
+          const wait = retryAfter > 0 ? retryAfter * 1000 : (500 * Math.pow(2, attempt))
+          await new Promise((res) => setTimeout(res, Math.min(wait, 8000)))
+          continue
+        }
         return ''
       }
       const j = await r.json()
@@ -351,6 +357,7 @@ async function groq(prompt: string, opts: { max_tokens?: number; json?: boolean 
       return opts.json ? stripOuterCodeFence(content) : content
     } catch (e) {
       console.warn('[HIPAA] groq attempt', attempt, 'exception:', (e as Error).message)
+      await new Promise((res) => setTimeout(res, 500 * Math.pow(2, attempt)))
     }
   }
   return ''
@@ -405,10 +412,21 @@ function stripOuterCodeFence(raw: string): string {
 
 function safeParse<T>(raw: string): T | null {
   if (!raw) return null
+  const cleaned = raw.trim().replace(/^```(?:json)?/, '').replace(/```$/, '').trim()
   try {
-    const cleaned = raw.trim().replace(/^```(?:json)?/, '').replace(/```$/, '').trim()
     return JSON.parse(cleaned) as T
-  } catch { return null }
+  } catch {
+    // Fallback: try to extract the first balanced JSON object in the string.
+    // Useful when a model prepends "Here is the JSON:" or trailing commentary.
+    const first = cleaned.indexOf('{')
+    const last = cleaned.lastIndexOf('}')
+    if (first >= 0 && last > first) {
+      try {
+        return JSON.parse(cleaned.slice(first, last + 1)) as T
+      } catch { /* fall through */ }
+    }
+    return null
+  }
 }
 
 function normStatus(s: string): 'required' | 'addressable' | 'not-specified' {
