@@ -16,9 +16,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { buildHipaaPdf } from '@/lib/hipaa/pdf'
 import { sendCustomerConfirmation, sendMikeNotification } from '@/lib/hipaa/email'
+import { generateReport } from '@/lib/hipaa/ai-generate'
+import { TIER_META, type Tier } from '@/lib/hipaa/report-types'
+import { randomBytes } from 'node:crypto'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -43,6 +46,10 @@ export async function POST(req: NextRequest) {
   const sourceSite   = body?.sourceSite ? String(body.sourceSite) : null
   const referralCode = body?.referralCode ? String(body.referralCode) : null
   const creditHidden = Boolean(body?.creditHidden)
+  const tierNum = Math.max(1, Math.min(4, Number(body?.tier) || 1)) as Tier
+  const tierMeta = TIER_META[tierNum]
+  const priceCents = Number.isFinite(body?.priceCents) ? Number(body.priceCents) : tierMeta.priceCents
+  const isFreeTest = Boolean(body?.freeTest) || priceCents === 0
 
   if (!assessmentId || !customerEmail) {
     return NextResponse.json({ error: 'assessmentId + customerEmail required' }, { status: 400 })
@@ -61,7 +68,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'assessment_not_found' }, { status: 404 })
   }
 
-  // 2) insert order row
+  // 2) insert order row — with tier + support-call expiry for tier 4
+  const supportCallExpiresAt = tierMeta.includesSupportCall
+    ? new Date(Date.now() + 60 * 86400 * 1000).toISOString()
+    : null
+
   const { data: order, error: oErr } = await sb
     .from('hipaa_orders')
     .insert({
@@ -72,8 +83,12 @@ export async function POST(req: NextRequest) {
       source_site: sourceSite,
       referral_code: referralCode,
       credit_hidden: creditHidden,
-      price_cents: 0,
+      price_cents: isFreeTest ? 0 : priceCents,
       status: 'processing',
+      tier: tierNum,
+      report_status: 'queued',
+      report_view_token: randomBytes(24).toString('base64url'),
+      support_call_expires_at: supportCallExpiresAt,
     })
     .select()
     .single()
@@ -177,12 +192,72 @@ export async function POST(req: NextRequest) {
     console.error('[HIPAA] Mike notification failed:', e)
   }
 
+  // 7) fire-and-forget: AI-generate the tier-specific full report
+  generateAndPersist(sb, {
+    orderId: order.id,
+    tier: tierNum,
+    customerEmail,
+    supportCallUrl: tierMeta.includesSupportCall
+      ? `https://rocketopp.com/hipaa/book-call?order=${order.id}`
+      : undefined,
+    supportCallExpiresAt: supportCallExpiresAt || undefined,
+    assessment: a,
+  }).catch((e) => console.error('[HIPAA] background report generation failed:', e))
+
+  const viewUrl = `https://rocketopp.com/hipaa/reports/${order.id}?t=${order.report_view_token}`
+
   return NextResponse.json({
     ok: true,
     orderId: order.id,
-    pdfUrl,
-    message: 'Order received. Full report within 60 minutes.',
+    tier: tierNum,
+    pdfUrl,                         // initial-findings laymen PDF
+    reportViewUrl: viewUrl,         // full AI-written report (usable as soon as generation completes)
+    reportStatus: 'queued',
+    supportCall: tierMeta.includesSupportCall ? {
+      url: `https://rocketopp.com/hipaa/book-call?order=${order.id}`,
+      expiresAt: supportCallExpiresAt,
+    } : null,
+    message: tierMeta.includesSupportCall
+      ? 'Order received. Full report within 15 minutes. Support call available for 60 days.'
+      : 'Order received. Full report within 15 minutes.',
   })
+}
+
+/** Background generator: writes hipaa_reports + flips hipaa_orders.report_status. */
+async function generateAndPersist(sb: SupabaseClient, args: {
+  orderId: string
+  tier: Tier
+  customerEmail: string
+  supportCallUrl?: string
+  supportCallExpiresAt?: string
+  assessment: Record<string, unknown>
+}) {
+  await sb.from('hipaa_orders').update({ report_status: 'generating' }).eq('id', args.orderId)
+  try {
+    const report = await generateReport(args as unknown as Parameters<typeof generateReport>[0])
+    await sb.from('hipaa_reports').insert({
+      order_id: args.orderId,
+      tier: args.tier,
+      executive_summary: report.executiveSummary,
+      findings: report.findings,
+      attestation_items: report.attestationItems,
+      nprm_delta: TIER_META[args.tier].includesNprmOverlay ? report.findings.filter((f) => f.nprmAnalysis).map((f) => ({ checkId: f.checkId, nprmAnalysis: f.nprmAnalysis })) : null,
+      remediation_plan: report.remediationPlan,
+      support_call_url: report.supportCallUrl,
+      generated_by: report.meta.generatedBy,
+      tokens_used: report.meta.tokensUsed,
+      duration_ms: report.meta.durationMs,
+    })
+    await sb.from('hipaa_orders').update({
+      report_status: 'ready',
+      report_generated_at: new Date().toISOString(),
+      status: 'delivered',
+      full_report_sent_at: new Date().toISOString(),
+    }).eq('id', args.orderId)
+  } catch (e) {
+    console.error('[HIPAA] generation failure', e)
+    await sb.from('hipaa_orders').update({ report_status: 'failed' }).eq('id', args.orderId)
+  }
 }
 
 function countBy(checks: { severity: string; status: string }[], sev: string): number {
