@@ -4,61 +4,50 @@
   Works alongside Tailwind — all classes prefixed with .jp-
 ------------------------------------------------------------------*/
 
-/* ======= CSS Variables — 0nMCP Brand System V3.0 ======= */
+/* ======= CSS Variables — ALL mapped to globals.css (shadcn) ======= */
+/* jp- vars now INHERIT from shadcn vars defined in globals.css */
+/* This prevents jampack from overriding the design system */
 :root {
   --jp-sidebar-width: 220px;
   --jp-sidebar-collapsed-width: 0px;
-  --jp-header-height: 64px;
-  --jp-green: #7ed957;
+  --jp-header-height: 48px;
+  --jp-green: var(--primary, #6EE05A);
   --jp-green-dim: #5cb83a;
-  --jp-green-glow: rgba(126, 217, 87, 0.12);
+  --jp-green-glow: rgba(110, 224, 90, 0.12);
   --jp-cyan: #14b8a6;
   --jp-cyan-dim: #0d9488;
   --jp-purple: #8b5cf6;
   --jp-amber: #d97706;
-  --jp-red: #b91c1c;
+  --jp-red: #ef4444;
   --jp-orange: #FF6B35;
   --jp-teal: #00C2C7;
   --jp-gold: #FFD700;
   --jp-flow: #7000FF;
   --jp-success: #10b981;
-  --jp-bg: #0d1117;
-  --jp-surface: #161b22;
-  --jp-surface-elevated: #1c2333;
-  --jp-bg-elevated: #161b22;
-  --jp-bg-card: #161b22;
-  --jp-bg-card-hover: #1c2333;
-  --jp-bg-input: #1c2333;
-  --jp-border: #30363d;
+  --jp-bg: var(--background, #0d1117);
+  --jp-surface: var(--card, #161b22);
+  --jp-surface-elevated: var(--secondary, #1c2333);
+  --jp-bg-elevated: var(--card, #161b22);
+  --jp-bg-card: var(--card, #161b22);
+  --jp-bg-card-hover: var(--secondary, #1c2333);
+  --jp-bg-input: var(--secondary, #1c2333);
+  --jp-border: var(--border, #30363d);
   --jp-border-hi: #484f58;
-  --jp-border-focus: #6EE05A;
-  --jp-text: #f0f4f8;
-  --jp-text-secondary: #c4cad4;
-  --jp-text-muted: #8b95a5;
-  --jp-radius: 16px;
-  --jp-radius-sm: 10px;
+  --jp-border-focus: var(--primary, #6EE05A);
+  --jp-text: var(--foreground, #f0f4f8);
+  --jp-text-secondary: var(--muted-foreground, #9ca3af);
+  --jp-text-muted: var(--muted-foreground, #6b7280);
+  --jp-radius: 12px;
+  --jp-radius-sm: 8px;
   --jp-radius-xs: 6px;
-  --jp-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --jp-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --jp-transition: 0.15s ease;
+  --jp-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
   --jp-font-mono: 'Roboto Mono', 'JetBrains Mono', monospace;
 }
 
-/* ======= Dark Mode Overrides ======= */
+/* Dark mode is always on — no separate theme class needed */
 .theme-dark {
-  --jp-bg: #0d1117;
-  --jp-surface: #161b22;
-  --jp-surface-elevated: #1c2333;
-  --jp-bg-elevated: #161b22;
-  --jp-bg-card: #1f2937;
-  --jp-bg-card-hover: #1c2333;
-  --jp-bg-input: #1c2333;
-  --jp-border: #30363d;
-  --jp-border-hi: #484f58;
-  --jp-border-focus: #7ed957;
-  --jp-text: #f0f4f8;
-  --jp-text-secondary: #c4cad4;
-  --jp-text-muted: #8b95a5;
-  --jp-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  /* All vars already dark by default via globals.css */
   color-scheme: dark;
 }
 
@@ -324,27 +313,32 @@
 /* ======= Header / Top Nav ======= */
 .jp-header {
   height: var(--jp-header-height);
-  background: var(--jp-bg);
-  border-bottom: none;
+  background: var(--background, #0d1117);
+  border-bottom: 1px solid var(--border, #30363d);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 16px;
   position: sticky;
   top: 0;
   z-index: 1020;
+  gap: 12px;
 }
 
 .jp-header-start {
   display: flex;
   align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
   gap: 16px;
 }
 
 .jp-header-end {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .jp-header-mobile-toggle {
@@ -403,25 +397,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--jp-radius-sm);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   background: none;
-  border: none;
-  color: var(--jp-text-secondary);
+  border: 1px solid transparent;
+  color: var(--muted-foreground, #6b7280);
   cursor: pointer;
-  transition: all var(--jp-transition);
+  transition: all 0.15s;
 }
-
 .jp-header-btn:hover {
-  background: var(--jp-bg-card);
-  color: var(--jp-text);
-  box-shadow: var(--jp-shadow);
+  color: var(--foreground, #f0f4f8);
+  border-color: var(--border, #30363d);
+  background: var(--secondary, #1c2333);
 }
 
 .jp-header-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .jp-header-indicator {
