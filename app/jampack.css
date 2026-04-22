@@ -361,43 +361,27 @@
   color: var(--jp-text);
 }
 
-/* Search Input */
+/* Search — DEPRECATED: use inline styles or shadcn Command */
+/* These classes are kept minimal to prevent layout conflicts */
 .jp-search {
-  position: relative;
-  width: 280px;
+  display: flex;
+  align-items: center;
 }
 
 .jp-search-input {
-  width: 100%;
-  height: 40px;
-  padding: 0 14px 0 38px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px;
-  color: var(--jp-text);
+  background: transparent;
+  border: none;
+  color: var(--jp-text, var(--foreground, #f0f4f8));
   font-size: 0.875rem;
   outline: none;
-  transition: all var(--jp-transition);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .jp-search-input::placeholder {
-  color: var(--jp-text-muted);
-}
-
-.jp-search-input:focus {
-  background: rgba(255,255,255,0.09);
-  border-color: rgba(110,224,90,0.3);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(110,224,90,0.08);
+  color: var(--jp-text-muted, var(--muted-foreground, #6b7280));
 }
 
 .jp-search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--jp-text-muted);
-  pointer-events: none;
+  color: var(--jp-text-muted, var(--muted-foreground, #6b7280));
 }
 
 .jp-search-icon svg {
@@ -406,16 +390,11 @@
 }
 
 .jp-search-shortcut {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
   font-size: 0.6875rem;
-  color: var(--jp-text-muted);
-  border: 1px solid var(--jp-border);
+  color: var(--jp-text-muted, var(--muted-foreground, #6b7280));
+  border: 1px solid var(--jp-border, var(--border, #30363d));
   border-radius: 4px;
   padding: 1px 6px;
-  pointer-events: none;
 }
 
 /* Header Icon Buttons */
