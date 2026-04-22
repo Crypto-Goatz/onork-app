@@ -15,7 +15,7 @@
  *   7. Return the order id + pdf url
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { buildHipaaPdf } from '@/lib/hipaa/pdf'
 import { sendCustomerConfirmation, sendMikeNotification } from '@/lib/hipaa/email'
@@ -24,7 +24,7 @@ import { TIER_META, type Tier } from '@/lib/hipaa/report-types'
 import { randomBytes } from 'node:crypto'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 300
 
 const WEBHOOK_SECRET = process.env.HIPAA_WEBHOOK_SECRET || ''
 const BUCKET = 'hipaa-reports'
@@ -192,17 +192,24 @@ export async function POST(req: NextRequest) {
     console.error('[HIPAA] Mike notification failed:', e)
   }
 
-  // 7) fire-and-forget: AI-generate the tier-specific full report
-  generateAndPersist(sb, {
-    orderId: order.id,
-    tier: tierNum,
-    customerEmail,
-    supportCallUrl: tierMeta.includesSupportCall
-      ? `https://rocketopp.com/hipaa/book-call?order=${order.id}`
-      : undefined,
-    supportCallExpiresAt: supportCallExpiresAt || undefined,
-    assessment: a,
-  }).catch((e) => console.error('[HIPAA] background report generation failed:', e))
+  // 7) background AI-generate the tier-specific full report — `after()` keeps
+  // the serverless function alive past the response until generation finishes.
+  after(async () => {
+    try {
+      await generateAndPersist(sb, {
+        orderId: order.id,
+        tier: tierNum,
+        customerEmail,
+        supportCallUrl: tierMeta.includesSupportCall
+          ? `https://rocketopp.com/hipaa/book-call?order=${order.id}`
+          : undefined,
+        supportCallExpiresAt: supportCallExpiresAt || undefined,
+        assessment: a,
+      })
+    } catch (e) {
+      console.error('[HIPAA] background report generation failed:', e)
+    }
+  })
 
   const viewUrl = `https://rocketopp.com/hipaa/reports/${order.id}?t=${order.report_view_token}`
 
