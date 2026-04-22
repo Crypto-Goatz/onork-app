@@ -151,6 +151,43 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
     window.location.reload()
   }
 
+  // ── Rotating "Did you know" tips ──
+  const TIPS = [
+    { text: 'Press / to search anything', color: '#6EE05A' },
+    { text: 'Cmd+K opens smart navigation', color: '#00B4FF' },
+    { text: 'Switch locations from the header', color: '#8b5cf6' },
+    { text: 'Ask Jaxx to create contacts for you', color: '#6EE05A' },
+    { text: 'Voice AI can handle intake calls', color: '#f59e0b' },
+    { text: 'Blog Engine writes SEO content with AI', color: '#00B4FF' },
+    { text: 'Connect Google in Settings → Analytics', color: '#6EE05A' },
+    { text: 'HIPAA Scanner checks 63 compliance points', color: '#ef4444' },
+    { text: 'Workflows automate your entire pipeline', color: '#8b5cf6' },
+    { text: 'Brand Board stores your design identity', color: '#f59e0b' },
+  ]
+  const [tipIdx, setTipIdx] = useState(0)
+  const [tipVisible, setTipVisible] = useState(false)
+
+  useEffect(() => {
+    // Detect platform for shortcut display
+    const isMac = typeof navigator !== 'undefined' && navigator.platform?.includes('Mac')
+    if (isMac) TIPS[1] = { text: '⌘K opens smart navigation', color: '#00B4FF' }
+    else TIPS[1] = { text: 'Ctrl+K opens smart navigation', color: '#00B4FF' }
+
+    const interval = setInterval(() => {
+      setTipVisible(true)
+      setTimeout(() => setTipVisible(false), 4000)
+      setTipIdx(prev => (prev + 1) % TIPS.length)
+    }, 30000)
+
+    // Show first tip after 5s
+    const first = setTimeout(() => {
+      setTipVisible(true)
+      setTimeout(() => setTipVisible(false), 4000)
+    }, 5000)
+
+    return () => { clearInterval(interval); clearTimeout(first) }
+  }, [])
+
   const initials = userName
     ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : userEmail?.slice(0, 2).toUpperCase() || '0N'
@@ -246,18 +283,42 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
           {/* ═══ Search Trigger ═══ */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="jp-search"
-            style={{ cursor: 'pointer' }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              height: 34, padding: '0 12px',
+              background: 'transparent',
+              border: '1px solid var(--border, #30363d)',
+              borderRadius: 8, cursor: 'pointer',
+              color: 'var(--muted-foreground, #6b7280)',
+              fontSize: 13, fontFamily: 'inherit',
+              transition: 'border-color 0.15s',
+              minWidth: 200,
+            }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary, #6EE05A)'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border, #30363d)'}
           >
-            <span className="jp-search-icon">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </span>
-            <span className="jp-search-input" style={{ pointerEvents: 'none', opacity: 0.4 }}>Search or navigate...</span>
-            <span className="jp-search-shortcut">/</span>
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} style={{ flexShrink: 0, opacity: 0.5 }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span style={{ opacity: 0.5, whiteSpace: 'nowrap' }}>Search or navigate...</span>
+            <kbd style={{ marginLeft: 'auto', padding: '1px 5px', fontSize: 10, borderRadius: 3, border: '1px solid var(--border, #30363d)', fontFamily: 'monospace', opacity: 0.5 }}>/</kbd>
           </button>
         </div>
+
+        {/* ═══ Did You Know Tips ═══ */}
+        {tipVisible && (
+          <div style={{
+            position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+            fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap',
+            color: TIPS[tipIdx].color,
+            opacity: tipVisible ? 1 : 0,
+            transition: 'opacity 0.6s ease',
+            pointerEvents: 'none',
+          }}>
+            <span style={{ opacity: 0.5, marginRight: 6 }}>💡</span>
+            {TIPS[tipIdx].text}
+          </div>
+        )}
 
         <div className="jp-header-end">
           <TokenButton />
@@ -394,6 +455,11 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
           `}</style>
         </>
       )}
+
+      {/* Tip fade CSS */}
+      <style>{`
+        @keyframes tipFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(2px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+      `}</style>
     </>
   )
 }
