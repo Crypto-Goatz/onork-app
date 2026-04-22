@@ -498,11 +498,19 @@ export default function Sidebar({ isOpen, onClose, isAdmin: isAdminProp }: Sideb
               : [...group.items]
 
             // Filter items based on role + installed add-ons
+            // These addons are ALWAYS visible regardless of plan (essential account features)
+            const ALWAYS_VISIBLE = new Set([
+              'location-settings', 'payment-processing', 'contact-manager', 'conversation-ai',
+            ])
+
             if (!role.loading) {
               items = items.filter(item => {
                 // Find if this nav item maps to an add-on
                 const addonEntry = Object.values(ADDON_NAV_MAP).find(a => a.href === item.href)
                 if (!addonEntry) return true // Not an add-on item — always show
+
+                // Essential features always visible
+                if (ALWAYS_VISIBLE.has(addonEntry.addonSlug)) return true
 
                 // VIP/Admin: show everything unless manually hidden
                 if (role.isVip || role.isAdmin) {
