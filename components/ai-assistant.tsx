@@ -52,7 +52,7 @@ function renderMarkdown(text: string) {
     // Numbered list
     if (/^\d+\.\s/.test(line)) {
       elements.push(
-        <div key={i} style={{ paddingLeft: 12, marginBottom: 2 }}>
+        <div key={i} className="pl-3 mb-0.5">
           {formatInline(line)}
         </div>
       )
@@ -62,7 +62,7 @@ function renderMarkdown(text: string) {
     // Bullet list
     if (/^[-*]\s/.test(line.trim())) {
       elements.push(
-        <div key={i} style={{ paddingLeft: 12, marginBottom: 2 }}>
+        <div key={i} className="pl-3 mb-0.5">
           {formatInline(line.trim())}
         </div>
       )
@@ -74,13 +74,10 @@ function renderMarkdown(text: string) {
       const level = line.match(/^(#+)/)?.[1].length || 1
       const headerText = line.replace(/^#+\s*/, '')
       elements.push(
-        <div key={i} style={{
-          fontWeight: 700,
-          fontSize: level === 1 ? 15 : level === 2 ? 14 : 13,
-          marginTop: 8,
-          marginBottom: 4,
-          color: '#f0f4f8',
-        }}>
+        <div
+          key={i}
+          className={`font-bold mt-2 mb-1 text-[#f0f4f8] ${level === 1 ? 'text-[15px]' : level === 2 ? 'text-[14px]' : 'text-[13px]'}`}
+        >
           {headerText}
         </div>
       )
@@ -89,13 +86,13 @@ function renderMarkdown(text: string) {
 
     // Empty line
     if (!line.trim()) {
-      elements.push(<div key={i} style={{ height: 6 }} />)
+      elements.push(<div key={i} className="h-1.5" />)
       continue
     }
 
     // Normal paragraph
     elements.push(
-      <div key={i} style={{ marginBottom: 2 }}>
+      <div key={i} className="mb-0.5">
         {formatInline(line)}
       </div>
     )
@@ -105,20 +102,20 @@ function renderMarkdown(text: string) {
 }
 
 function formatInline(text: string): React.ReactNode {
-  // Bold **text**
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/)
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} style={{ color: '#f0f4f8', fontWeight: 600 }}>{part.slice(2, -2)}</strong>
+      return <strong key={i} className="text-[#f0f4f8] font-semibold">{part.slice(2, -2)}</strong>
     }
     if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={i} style={{
-        background: 'rgba(126,217,87,0.1)',
-        padding: '1px 5px',
-        borderRadius: 3,
-        fontSize: '0.9em',
-        color: '#7ed957',
-      }}>{part.slice(1, -1)}</code>
+      return (
+        <code
+          key={i}
+          className="bg-[#6EE05A]/10 px-1 py-px rounded text-[0.9em] text-[#6EE05A]"
+        >
+          {part.slice(1, -1)}
+        </code>
+      )
     }
     return <span key={i}>{part}</span>
   })
@@ -146,19 +143,16 @@ export function AIAssistant() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Auto-scroll on new messages
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, thinking])
 
-  // Focus input when panel opens
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 100)
     }
   }, [open])
 
-  // Load settings on mount
   useEffect(() => {
     fetch('/api/engine/settings')
       .then(r => r.json())
@@ -168,10 +162,6 @@ export function AIAssistant() {
       })
       .catch(() => {})
   }, [])
-
-  // -------------------------------------------------------------------
-  // Send message
-  // -------------------------------------------------------------------
 
   const send = useCallback(async (text?: string) => {
     const msg = text || input.trim()
@@ -187,12 +177,7 @@ export function AIAssistant() {
       const res = await fetch('/api/engine', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: msg,
-          conversationId,
-          persona,
-          securityLevel,
-        }),
+        body: JSON.stringify({ message: msg, conversationId, persona, securityLevel }),
       })
 
       const data = await res.json()
@@ -207,12 +192,10 @@ export function AIAssistant() {
         return
       }
 
-      // Update conversation ID for multi-turn
       if (data.conversationId) {
         setConversationId(data.conversationId)
       }
 
-      // Add assistant message
       setMessages(prev => [...prev, {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -220,7 +203,6 @@ export function AIAssistant() {
         intent: data.intent,
       }])
 
-      // Update suggestions
       if (data.suggestions?.length) {
         setSuggestions(data.suggestions)
       } else {
@@ -237,34 +219,24 @@ export function AIAssistant() {
     setThinking(false)
   }, [input, thinking, conversationId, persona, securityLevel])
 
-  // -------------------------------------------------------------------
-  // New conversation
-  // -------------------------------------------------------------------
-
   const newConversation = useCallback(() => {
     setMessages([])
     setConversationId(null)
     setSuggestions(['What can you do?', 'Show me my pipeline', 'Help me build something'])
   }, [])
 
-  // -------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------
-
   return (
     <>
       {/* Floating button */}
       <button
         onClick={() => setOpen(!open)}
-        style={{
-          position: 'fixed', bottom: 24, right: 24, zIndex: 9000,
-          width: 52, height: 52, borderRadius: 16,
-          background: open ? '#1e293b' : 'linear-gradient(135deg, #7ed957 0%, #00d4ff 100%)',
-          border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: open ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 24px rgba(126,217,87,0.4), 0 0 40px rgba(126,217,87,0.15)',
-          transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
-        }}
+        className={[
+          'fixed bottom-6 right-6 z-[9000] w-[52px] h-[52px] rounded-2xl border-none cursor-pointer',
+          'flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          open
+            ? 'bg-[#1e293b] shadow-[0_4px_20px_rgba(0,0,0,0.3)]'
+            : 'bg-gradient-to-br from-[#6EE05A] to-[#14b8a6] shadow-[0_4px_24px_rgba(110,224,90,0.4),0_0_40px_rgba(110,224,90,0.15)]',
+        ].join(' ')}
       >
         {open ? (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f4f8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -280,47 +252,25 @@ export function AIAssistant() {
 
       {/* Chat panel */}
       {open && (
-        <div style={{
-          position: 'fixed', bottom: 88, right: 24, zIndex: 8999,
-          width: 380, height: 520,
-          background: '#0d1117',
-          border: '1px solid #1e293b',
-          borderRadius: 16,
-          display: 'flex', flexDirection: 'column',
-          overflow: 'hidden',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(126,217,87,0.05)',
-          animation: 'aiSlideUp 0.3s cubic-bezier(0.4,0,0.2,1)',
-        }}>
+        <div className="fixed bottom-[88px] right-6 z-[8999] w-[380px] h-[520px] bg-[#0d1117] border border-[#30363d] rounded-2xl flex flex-col overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_40px_rgba(110,224,90,0.05)] animate-[aiSlideUp_0.3s_cubic-bezier(0.4,0,0.2,1)]">
+
           {/* Header */}
-          <div style={{
-            padding: '10px 14px',
-            borderBottom: '1px solid #1e293b',
-            background: 'linear-gradient(135deg, rgba(126,217,87,0.06) 0%, rgba(0,212,255,0.03) 100%)',
-          }}>
-            {/* Top row: Title + Persona + New */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{
-                width: 26, height: 26, borderRadius: 7,
-                background: 'linear-gradient(135deg, #7ed957, #00d4ff)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 9, fontWeight: 900, color: '#000', flexShrink: 0,
-              }}>0n</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f4f8', lineHeight: 1.2 }}>
+          <div className="px-3.5 py-2.5 border-b border-[#30363d] bg-gradient-to-br from-[#6EE05A]/[.06] to-[#14b8a6]/[.03]">
+            <div className="flex items-center gap-2">
+              <div className="w-[26px] h-[26px] rounded-[7px] bg-gradient-to-br from-[#6EE05A] to-[#14b8a6] flex items-center justify-center text-[9px] font-black text-black shrink-0">
+                0n
+              </div>
+              <div className="flex-1">
+                <div className="text-[13px] font-bold text-[#f0f4f8] leading-tight">
                   0nAI Engine
                 </div>
               </div>
 
               {/* Persona dropdown */}
-              <div style={{ position: 'relative' }}>
+              <div className="relative">
                 <button
                   onClick={() => setShowPersonaDropdown(!showPersonaDropdown)}
-                  style={{
-                    padding: '3px 10px', borderRadius: 6,
-                    background: 'rgba(126,217,87,0.1)', border: '1px solid rgba(126,217,87,0.2)',
-                    color: '#7ed957', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: 4,
-                  }}
+                  className="flex items-center gap-1 px-2.5 py-[3px] rounded-md bg-[#6EE05A]/10 border border-[#6EE05A]/20 text-[#6EE05A] text-[11px] font-semibold cursor-pointer"
                 >
                   {PERSONA_LABELS[persona]}
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -329,27 +279,22 @@ export function AIAssistant() {
                 </button>
 
                 {showPersonaDropdown && (
-                  <div style={{
-                    position: 'absolute', top: '100%', right: 0, marginTop: 4,
-                    width: 220, background: '#161b22', border: '1px solid #1e293b',
-                    borderRadius: 10, overflow: 'hidden', zIndex: 100,
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
-                  }}>
+                  <div className="absolute top-full right-0 mt-1 w-[220px] bg-[#161b22] border border-[#30363d] rounded-[10px] overflow-hidden z-[100] shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
                     {(Object.keys(PERSONA_LABELS) as Persona[]).map(p => (
                       <button
                         key={p}
                         onClick={() => { setPersona(p); setShowPersonaDropdown(false) }}
-                        style={{
-                          width: '100%', padding: '8px 12px', border: 'none',
-                          background: p === persona ? 'rgba(126,217,87,0.08)' : 'transparent',
-                          cursor: 'pointer', textAlign: 'left',
-                          borderLeft: p === persona ? '2px solid #7ed957' : '2px solid transparent',
-                        }}
+                        className={[
+                          'w-full px-3 py-2 border-none text-left cursor-pointer',
+                          p === persona
+                            ? 'bg-[#6EE05A]/[.08] border-l-2 border-l-[#6EE05A]'
+                            : 'bg-transparent border-l-2 border-l-transparent',
+                        ].join(' ')}
                       >
-                        <div style={{ fontSize: 12, fontWeight: 600, color: p === persona ? '#7ed957' : '#d1d5db' }}>
+                        <div className={`text-[12px] font-semibold ${p === persona ? 'text-[#6EE05A]' : 'text-[#d1d5db]'}`}>
                           {PERSONA_LABELS[p]}
                         </div>
-                        <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>
+                        <div className="text-[10px] text-[#6b7280] mt-px">
                           {PERSONA_DESCRIPTIONS[p]}
                         </div>
                       </button>
@@ -362,11 +307,7 @@ export function AIAssistant() {
               <button
                 onClick={newConversation}
                 title="New conversation"
-                style={{
-                  width: 26, height: 26, borderRadius: 6,
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid #1e293b',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
+                className="w-[26px] h-[26px] rounded-md bg-white/[.04] border border-[#30363d] cursor-pointer flex items-center justify-center"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round">
                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -374,22 +315,21 @@ export function AIAssistant() {
               </button>
 
               {/* Green dot */}
-              <div style={{ width: 6, height: 6, borderRadius: 3, background: '#7ed957', boxShadow: '0 0 8px #7ed957', flexShrink: 0 }} />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#6EE05A] shadow-[0_0_8px_#6EE05A] shrink-0" />
             </div>
 
             {/* Security level pills */}
-            <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+            <div className="flex gap-1 mt-1.5">
               {(['low', 'default', 'strict'] as SecurityLevel[]).map(level => (
                 <button
                   key={level}
                   onClick={() => setSecurityLevel(level)}
-                  style={{
-                    padding: '2px 8px', borderRadius: 4, border: 'none',
-                    background: level === securityLevel ? 'rgba(126,217,87,0.12)' : 'transparent',
-                    color: level === securityLevel ? '#7ed957' : '#4b5563',
-                    fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                    transition: 'all 0.15s',
-                  }}
+                  className={[
+                    'px-2 py-0.5 rounded border-none text-[10px] font-semibold cursor-pointer transition-all duration-150',
+                    level === securityLevel
+                      ? 'bg-[#6EE05A]/[.12] text-[#6EE05A]'
+                      : 'bg-transparent text-[#4b5563]',
+                  ].join(' ')}
                 >
                   {level}
                 </button>
@@ -398,44 +338,35 @@ export function AIAssistant() {
           </div>
 
           {/* Messages */}
-          <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-2.5">
             {messages.length === 0 && (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 20 }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12, marginBottom: 14,
-                  background: 'linear-gradient(135deg, rgba(126,217,87,0.15), rgba(0,212,255,0.1))',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 20,
-                }}>&#10022;</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#f0f4f8', marginBottom: 4 }}>
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-5">
+                <div className="w-11 h-11 rounded-xl mb-3.5 bg-gradient-to-br from-[#6EE05A]/15 to-[#14b8a6]/10 flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6EE05A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                  </svg>
+                </div>
+                <div className="text-[15px] font-bold text-[#f0f4f8] mb-1">
                   0nAI Engine
                 </div>
-                <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.5, maxWidth: 260 }}>
+                <div className="text-[12px] text-[#6b7280] leading-relaxed max-w-[260px]">
                   Your complete AI brain. I can build workflows, manage contacts, create content, and automate your business.
                 </div>
               </div>
             )}
 
             {messages.map(m => (
-              <div key={m.id} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                <div style={{
-                  maxWidth: '88%', padding: '10px 14px', borderRadius: 12, fontSize: 13, lineHeight: 1.6,
-                  background: m.role === 'user' ? 'linear-gradient(135deg, #7ed957, #5cb83a)' : 'rgba(255,255,255,0.04)',
-                  color: m.role === 'user' ? '#000' : '#d1d5db',
-                  border: m.role === 'assistant' ? '1px solid #1e293b' : 'none',
-                  borderBottomRightRadius: m.role === 'user' ? 4 : 12,
-                  borderBottomLeftRadius: m.role === 'assistant' ? 4 : 12,
-                }}>
+              <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={[
+                  'max-w-[88%] px-3.5 py-2.5 rounded-xl text-[13px] leading-relaxed',
+                  m.role === 'user'
+                    ? 'bg-gradient-to-br from-[#6EE05A] to-[#4abe2e] text-black rounded-br-[4px]'
+                    : 'bg-white/[.04] text-[#d1d5db] border border-[#30363d] rounded-bl-[4px]',
+                ].join(' ')}>
                   {m.role === 'assistant' ? (
-                    <div style={{ margin: 0 }}>
-                      {/* Bridge intent indicator */}
+                    <div>
                       {m.intent?.detected && (
-                        <div style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 4,
-                          padding: '2px 8px', borderRadius: 4, marginBottom: 6,
-                          background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.15)',
-                          fontSize: 10, color: '#00d4ff', fontWeight: 600,
-                        }}>
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded mb-1.5 bg-[#14b8a6]/[.08] border border-[#14b8a6]/15 text-[10px] text-[#14b8a6] font-semibold">
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                           </svg>
@@ -445,39 +376,33 @@ export function AIAssistant() {
                       {renderMarkdown(m.content)}
                     </div>
                   ) : (
-                    <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{m.content}</p>
+                    <p className="m-0 whitespace-pre-wrap">{m.content}</p>
                   )}
                 </div>
               </div>
             ))}
 
             {thinking && (
-              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid #1e293b', borderBottomLeftRadius: 4 }}>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: 3, background: '#7ed957', opacity: 0.5, animation: 'aiBounce 1s infinite' }} />
-                    <div style={{ width: 6, height: 6, borderRadius: 3, background: '#7ed957', opacity: 0.5, animation: 'aiBounce 1s infinite 0.15s' }} />
-                    <div style={{ width: 6, height: 6, borderRadius: 3, background: '#7ed957', opacity: 0.5, animation: 'aiBounce 1s infinite 0.3s' }} />
+              <div className="flex justify-start">
+                <div className="px-3.5 py-2.5 rounded-xl rounded-bl-[4px] bg-white/[.04] border border-[#30363d]">
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#6EE05A] opacity-50 animate-[aiBounce_1s_infinite]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#6EE05A] opacity-50 animate-[aiBounce_1s_infinite_150ms]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#6EE05A] opacity-50 animate-[aiBounce_1s_infinite_300ms]" />
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Suggestions */}
+          {/* Suggestions (after messages) */}
           {suggestions.length > 0 && !thinking && messages.length > 0 && (
-            <div style={{ padding: '0 12px 6px', display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <div className="px-3 pb-1.5 flex gap-1 flex-wrap">
               {suggestions.map((s, i) => (
                 <button
                   key={i}
                   onClick={() => send(s)}
-                  style={{
-                    padding: '4px 10px', borderRadius: 6,
-                    background: 'rgba(255,255,255,0.02)', border: '1px solid #1e293b',
-                    color: '#8b95a5', fontSize: 11, cursor: 'pointer',
-                    transition: 'border-color 0.15s',
-                    whiteSpace: 'nowrap',
-                  }}
+                  className="px-2.5 py-1 rounded-md bg-white/[.02] border border-[#30363d] text-[#9ca3af] text-[11px] cursor-pointer transition-[border-color] duration-150 whitespace-nowrap"
                 >
                   {s}
                 </button>
@@ -487,14 +412,13 @@ export function AIAssistant() {
 
           {/* Empty state suggestions */}
           {messages.length === 0 && (
-            <div style={{ padding: '0 12px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div className="px-3 pb-2 flex flex-col gap-1">
               {suggestions.map((q, i) => (
-                <button key={i} onClick={() => send(q)} style={{
-                  padding: '8px 14px', borderRadius: 8,
-                  background: 'rgba(255,255,255,0.02)', border: '1px solid #1e293b',
-                  color: '#8b95a5', fontSize: 12, textAlign: 'left', cursor: 'pointer',
-                  transition: 'border-color 0.15s',
-                }}>
+                <button
+                  key={i}
+                  onClick={() => send(q)}
+                  className="px-3.5 py-2 rounded-lg bg-white/[.02] border border-[#30363d] text-[#9ca3af] text-[12px] text-left cursor-pointer transition-[border-color] duration-150"
+                >
                   {q}
                 </button>
               ))}
@@ -502,27 +426,26 @@ export function AIAssistant() {
           )}
 
           {/* Input */}
-          <div style={{ padding: '8px 12px', borderTop: '1px solid #1e293b', background: '#0a0e17' }}>
-            <form onSubmit={e => { e.preventDefault(); send() }} style={{ display: 'flex', gap: 8 }}>
+          <div className="px-3 py-2 border-t border-[#30363d] bg-[#0d1117]">
+            <form onSubmit={e => { e.preventDefault(); send() }} className="flex gap-2">
               <input
                 ref={inputRef}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 placeholder={`Ask ${PERSONA_LABELS[persona]}...`}
                 disabled={thinking}
-                style={{
-                  flex: 1, padding: '10px 14px', borderRadius: 10,
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid #1e293b',
-                  color: '#f0f4f8', fontSize: 13, outline: 'none', fontFamily: 'inherit',
-                }}
+                className="flex-1 px-3.5 py-2.5 rounded-[10px] bg-white/[.04] border border-[#30363d] text-[#f0f4f8] text-[13px] outline-none font-[inherit]"
               />
-              <button type="submit" disabled={thinking || !input.trim()} style={{
-                width: 38, height: 38, borderRadius: 10, border: 'none',
-                background: input.trim() ? 'linear-gradient(135deg, #7ed957, #00d4ff)' : '#1e293b',
-                cursor: input.trim() ? 'pointer' : 'default',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.2s',
-              }}>
+              <button
+                type="submit"
+                disabled={thinking || !input.trim()}
+                className={[
+                  'w-[38px] h-[38px] rounded-[10px] border-none flex items-center justify-center transition-all duration-200',
+                  input.trim()
+                    ? 'bg-gradient-to-br from-[#6EE05A] to-[#14b8a6] cursor-pointer'
+                    : 'bg-[#30363d] cursor-default',
+                ].join(' ')}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={input.trim() ? '#000' : '#4b5563'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
                 </svg>

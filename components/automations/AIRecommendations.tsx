@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { Bot } from 'lucide-react'
 import { CAPABILITIES, type Capability } from './capabilities'
 import type { CapabilityNodeType } from './CapabilityNode'
 
@@ -15,12 +16,20 @@ interface AIRecommendationsProps {
   onAdd: (capability: Capability) => void;
 }
 
-function getSuccessColor(rate: number): string {
-  if (rate >= 80) return '#34d399'
-  if (rate >= 60) return '#7ed957'
-  if (rate >= 40) return '#fbbf24'
-  if (rate >= 20) return '#f97316'
-  return '#ef4444'
+function getSuccessColorClass(rate: number): string {
+  if (rate >= 80) return 'text-emerald-400'
+  if (rate >= 60) return 'text-core-green'
+  if (rate >= 40) return 'text-core-amber'
+  if (rate >= 20) return 'text-orange-400'
+  return 'text-core-red'
+}
+
+function getSuccessBarColor(rate: number): string {
+  if (rate >= 80) return 'bg-emerald-400'
+  if (rate >= 60) return 'bg-core-green'
+  if (rate >= 40) return 'bg-core-amber'
+  if (rate >= 20) return 'bg-orange-400'
+  return 'bg-core-red'
 }
 
 function getRecommendations(nodes: CapabilityNodeType[]): Recommendation[] {
@@ -72,7 +81,7 @@ function getRecommendations(nodes: CapabilityNodeType[]): Recommendation[] {
   }
 
   if (nodes.length >= 3 && !nodes.some(n => n.data.capabilityId === 'daily_summary')) {
-    recs.push({ capability: CAPABILITIES.find(c => c.id === 'daily_summary')!, reason: 'Get a daily digest of this automation\'s performance', successRate: 55 })
+    recs.push({ capability: CAPABILITIES.find(c => c.id === 'daily_summary')!, reason: "Get a daily digest of this automation's performance", successRate: 55 })
   }
 
   // Fill remaining slots with popular capabilities not yet used
@@ -92,109 +101,55 @@ export default function AIRecommendations({ nodes, onAdd }: AIRecommendationsPro
   const recommendations = useMemo(() => getRecommendations(nodes), [nodes])
 
   return (
-    <div style={{
-      position: 'absolute',
-      left: 16,
-      top: 16,
-      bottom: 16,
-      width: 260,
-      background: 'rgba(14, 24, 37, 0.95)',
-      backdropFilter: 'blur(12px)',
-      border: '1px solid #1c2b42',
-      borderRadius: 14,
-      display: 'flex',
-      flexDirection: 'column',
-      zIndex: 10,
-      overflow: 'hidden',
-    }}>
+    <div className="absolute left-4 top-4 bottom-4 w-[260px] bg-[rgba(14,24,37,0.95)] backdrop-blur-md border border-[#1c2b42] rounded-[14px] flex flex-col z-10 overflow-hidden">
       {/* Header */}
-      <div style={{
-        padding: '14px 16px',
-        borderBottom: '1px solid #1c2b42',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-      }}>
-        <span style={{ fontSize: 16 }}>🤖</span>
-        <span style={{
-          fontSize: 13, fontWeight: 700, color: 'var(--color-cyan, #14b8a6)',
-          fontFamily: '-apple-system, sans-serif',
-        }}>AI Recommends</span>
+      <div className="px-4 py-[14px] border-b border-[#1c2b42] flex items-center gap-2">
+        <Bot className="w-4 h-4 text-core-cyan shrink-0" />
+        <span className="text-[13px] font-bold text-core-cyan">AI Recommends</span>
       </div>
 
       {/* Recommendations */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-        {recommendations.map((rec, i) => (
+      <div className="flex-1 overflow-y-auto p-2">
+        {recommendations.map((rec) => (
           <button
             key={rec.capability.id}
             onClick={() => onAdd(rec.capability)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              background: 'var(--bg-card, #1f2937)',
-              border: '1px solid transparent',
-              borderRadius: 10,
-              marginBottom: 6,
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.15s',
-              display: 'block',
-            }}
+            className="w-full p-3 bg-core-card border border-transparent rounded-[10px] mb-1.5 cursor-pointer text-left transition-all duration-150 block hover:bg-[#1a2740]"
+            style={{ borderColor: 'transparent' }}
             onMouseEnter={e => {
               e.currentTarget.style.borderColor = `${rec.capability.color}40`
               e.currentTarget.style.background = '#1a2740'
             }}
             onMouseLeave={e => {
               e.currentTarget.style.borderColor = 'transparent'
-              e.currentTarget.style.background = 'var(--bg-card, #1f2937)'
+              e.currentTarget.style.background = ''
             }}
           >
             {/* Top row: icon + name + success rate */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 16 }}>{rec.capability.icon}</span>
-              <span style={{
-                fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)', flex: 1,
-                fontFamily: '-apple-system, sans-serif',
-              }}>{rec.capability.name}</span>
-              <span style={{
-                fontSize: 11, fontWeight: 800,
-                color: getSuccessColor(rec.successRate),
-                fontFamily: '-apple-system, sans-serif',
-              }}>{rec.successRate}%</span>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-base shrink-0">{rec.capability.icon}</span>
+              <span className="text-[13px] font-semibold text-core-text flex-1">{rec.capability.name}</span>
+              <span className={`text-[11px] font-extrabold ${getSuccessColorClass(rec.successRate)}`}>
+                {rec.successRate}%
+              </span>
             </div>
 
             {/* Reason */}
-            <div style={{
-              fontSize: 11, color: 'var(--text-secondary, #9ca3af)', lineHeight: 1.5,
-              fontFamily: '-apple-system, sans-serif',
-            }}>{rec.reason}</div>
+            <div className="text-[11px] text-core-text-muted leading-relaxed">{rec.reason}</div>
 
             {/* Success bar */}
-            <div style={{
-              marginTop: 8, height: 3, borderRadius: 2,
-              background: 'var(--border, #30363d)', overflow: 'hidden',
-            }}>
-              <div style={{
-                width: `${rec.successRate}%`,
-                height: '100%',
-                borderRadius: 2,
-                background: `linear-gradient(90deg, ${getSuccessColor(rec.successRate)}, ${getSuccessColor(rec.successRate)}80)`,
-                transition: 'width 0.3s',
-              }} />
+            <div className="mt-2 h-[3px] rounded-sm bg-core-border overflow-hidden">
+              <div
+                className={`h-full rounded-sm transition-all duration-300 ${getSuccessBarColor(rec.successRate)}`}
+                style={{ width: `${rec.successRate}%` }}
+              />
             </div>
           </button>
         ))}
       </div>
 
       {/* Footer hint */}
-      <div style={{
-        padding: '10px 16px',
-        borderTop: '1px solid #1c2b42',
-        fontSize: 10,
-        color: 'var(--text-muted, #6b7280)',
-        textAlign: 'center',
-        fontFamily: '-apple-system, sans-serif',
-      }}>
+      <div className="px-4 py-2.5 border-t border-[#1c2b42] text-[10px] text-core-text-muted text-center">
         Click to add · Rates based on workflow data
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { UpgradeButton } from '@/components/UpgradeButton'
+import { Lock } from 'lucide-react'
 
 interface Feature {
   id: string
@@ -60,15 +61,8 @@ export default function ConsoleDashboard() {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: '#FFFFFF',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-      }}>
-        <p style={{ color: '#9CA3AF' }}>Loading dashboard...</p>
+      <div className="min-h-screen bg-[#0d1117] flex items-center justify-center">
+        <p className="text-[#9ca3af]">Loading dashboard...</p>
       </div>
     )
   }
@@ -84,45 +78,25 @@ export default function ConsoleDashboard() {
   })).filter(g => g.features.length > 0)
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#FFFFFF',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      padding: '24px',
-      maxWidth: '900px',
-      margin: '0 auto',
-    }}>
+    <div className="min-h-screen bg-[#0d1117] p-6 max-w-[900px] mx-auto">
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', marginBottom: '4px' }}>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-[#f0f4f8] mb-1">
           {businessName ? `${businessName} Dashboard` : '0nCore Dashboard'}
         </h1>
-        <p style={{ fontSize: '14px', color: '#6B7280' }}>
-          Current tier: <strong style={{ color: '#111827' }}>{TIER_NAMES[tierLevel]}</strong>
+        <p className="text-sm text-[#6b7280]">
+          Current tier: <strong className="text-[#f0f4f8]">{TIER_NAMES[tierLevel]}</strong>
           {tierLevel > 0 && ` (${TIER_PRICES[tierLevel]})`}
         </p>
       </div>
 
       {/* Room groups */}
       {grouped.map(group => (
-        <div key={group.tier} style={{ marginBottom: '24px' }}>
+        <div key={group.tier} className="mb-6">
           {/* Section header */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '12px',
-          }}>
-            <h2 style={{
-              fontSize: '16px',
-              fontWeight: 700,
-              color: group.unlocked ? '#111827' : '#9CA3AF',
-              margin: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}>
-              {!group.unlocked && <span style={{ fontSize: '14px' }}>🔒</span>}
+          <div className="flex items-center justify-between mb-3">
+            <h2 className={`text-base font-bold flex items-center gap-2 m-0 ${group.unlocked ? 'text-[#f0f4f8]' : 'text-[#9ca3af]'}`}>
+              {!group.unlocked && <Lock size={14} className="text-[#9ca3af]" />}
               {group.name}
             </h2>
             {!group.unlocked && group.price && (
@@ -135,52 +109,34 @@ export default function ConsoleDashboard() {
           </div>
 
           {/* Feature cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px' }}>
+          <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}>
             {group.features.map(feature => {
               const unlocked = tierLevel >= feature.tier_required
               return (
                 <div
                   key={feature.id}
-                  style={{
-                    background: unlocked ? '#FFFFFF' : '#F9FAFB',
-                    border: unlocked ? '1px solid #E5E7EB' : '1px solid #E5E7EB',
-                    borderLeft: unlocked ? '4px solid #6EE05A' : '4px solid #D1D5DB',
-                    borderRadius: '8px',
-                    padding: '16px',
-                    opacity: unlocked ? 1 : 0.6,
-                  }}
+                  className={`rounded-lg p-4 border border-[#30363d] transition-opacity ${
+                    unlocked
+                      ? 'bg-[#161b22] border-l-4 border-l-[#6EE05A]'
+                      : 'bg-[#161b22] border-l-4 border-l-[#30363d] opacity-60'
+                  }`}
                 >
-                  <h3 style={{
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: unlocked ? '#111827' : '#9CA3AF',
-                    marginBottom: '4px',
-                  }}>
+                  <h3 className={`text-sm font-semibold mb-1 ${unlocked ? 'text-[#f0f4f8]' : 'text-[#9ca3af]'}`}>
                     {feature.feature_name}
                   </h3>
-                  <p style={{
-                    fontSize: '12px',
-                    color: '#6B7280',
-                    marginBottom: '12px',
-                    lineHeight: '1.4',
-                  }}>
+                  <p className="text-xs text-[#6b7280] mb-3 leading-relaxed">
                     {feature.description}
                   </p>
                   {unlocked && feature.feature_key && (
                     <a
                       href={`/console/${feature.feature_key}`}
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        color: '#6EE05A',
-                        textDecoration: 'none',
-                      }}
+                      className="text-xs font-semibold text-[#6EE05A] no-underline hover:underline"
                     >
                       Open →
                     </a>
                   )}
                   {!unlocked && (
-                    <span style={{ fontSize: '11px', color: '#D1D5DB' }}>
+                    <span className="text-[11px] text-[#6b7280]">
                       Requires {TIER_NAMES[feature.tier_required]}
                     </span>
                   )}

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { Search, Mail, MessageSquare, Shield, BarChart2, Send, Target, FileText, Microscope, Zap } from 'lucide-react'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -30,14 +31,14 @@ interface SubLocation {
 const ALL_K_LAYERS = ['K1', 'K2', 'K3', 'K4', 'K5', 'K6', 'K7']
 
 const COMMANDS = [
-  { key: 'email', label: 'Write cold email', icon: '✉', desc: 'Personalized outreach for your ICP' },
-  { key: 'linkedin', label: 'Draft LinkedIn post', icon: '💬', desc: 'VPIS-optimized post in your brand tone' },
-  { key: 'objections', label: 'Handle objections', icon: '🛡', desc: 'Responses to common objections from K2' },
-  { key: 'strategy', label: 'Weekly strategy', icon: '📋', desc: 'What to focus on this week' },
-  { key: 'sequence', label: 'Email sequence', icon: '📧', desc: '3-touch follow-up sequence' },
-  { key: 'pitch', label: 'Elevator pitch', icon: '🎯', desc: 'Quick pitch from K1 + K3' },
-  { key: 'blog', label: 'Blog post draft', icon: '📝', desc: 'SEO-optimized article outline' },
-  { key: 'competitor', label: 'Competitor analysis', icon: '🔍', desc: 'Positioning vs competitors from K4' },
+  { key: 'email', label: 'Write cold email', Icon: Mail, desc: 'Personalized outreach for your ICP' },
+  { key: 'linkedin', label: 'Draft LinkedIn post', Icon: MessageSquare, desc: 'VPIS-optimized post in your brand tone' },
+  { key: 'objections', label: 'Handle objections', Icon: Shield, desc: 'Responses to common objections from K2' },
+  { key: 'strategy', label: 'Weekly strategy', Icon: BarChart2, desc: 'What to focus on this week' },
+  { key: 'sequence', label: 'Email sequence', Icon: Send, desc: '3-touch follow-up sequence' },
+  { key: 'pitch', label: 'Elevator pitch', Icon: Target, desc: 'Quick pitch from K1 + K3' },
+  { key: 'blog', label: 'Blog post draft', Icon: FileText, desc: 'SEO-optimized article outline' },
+  { key: 'competitor', label: 'Competitor analysis', Icon: Microscope, desc: 'Positioning vs competitors from K4' },
 ]
 
 const COMMAND_PROMPTS: Record<string, string> = {
@@ -208,99 +209,63 @@ export default function ChatPage() {
     : COMMANDS
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#FFFFFF',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-    }}>
+    <div className="min-h-screen bg-[#0d1117] flex flex-col relative">
 
-      {/* ═══ ONBOARDING MODAL ═══ */}
+      {/* ONBOARDING MODAL */}
       {showOnboardingModal && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 100,
-          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '24px',
-        }}>
-          <div style={{
-            background: '#FFFFFF', borderRadius: '16px', padding: '32px',
-            maxWidth: '440px', width: '100%',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-          }}>
-            <div style={{
-              width: '56px', height: '56px', borderRadius: '14px',
-              background: 'linear-gradient(135deg, #6EE05A, #4ecb3a)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '22px', fontWeight: 800, color: '#080B0F',
-              marginBottom: '20px',
-            }}>
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-8 max-w-[440px] w-full shadow-2xl">
+            <div className="w-14 h-14 rounded-[14px] bg-[#6EE05A] flex items-center justify-center text-[22px] font-extrabold text-[#0d1117] mb-5">
               0n
             </div>
-            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', marginBottom: '8px' }}>
+            <h2 className="text-xl font-bold text-[#f0f4f8] mb-2">
               Complete your setup
             </h2>
-            <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: 1.6, marginBottom: '20px' }}>
+            <p className="text-sm text-[#9ca3af] leading-relaxed mb-5">
               Your AI gets smarter with every K-Layer you fill in.
-              Right now you have <strong style={{ color: '#111827' }}>{activeKLayers.length} of 7</strong> layers active.
+              Right now you have <strong className="text-[#f0f4f8]">{activeKLayers.length} of 7</strong> layers active.
             </p>
 
             {/* Progress bar */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{
-                height: '8px', background: '#F3F4F6', borderRadius: '4px', overflow: 'hidden',
-              }}>
-                <div style={{
-                  height: '100%', width: `${onboardingPct}%`,
-                  background: 'linear-gradient(90deg, #6EE05A, #4ecb3a)',
-                  borderRadius: '4px', transition: 'width 0.3s',
-                }} />
+            <div className="mb-5">
+              <div className="h-2 bg-[#30363d] rounded overflow-hidden">
+                <div
+                  className="h-full bg-[#6EE05A] rounded transition-all duration-300"
+                  style={{ width: `${onboardingPct}%` }}
+                />
               </div>
-              <div style={{
-                display: 'flex', justifyContent: 'space-between', marginTop: '6px',
-                fontSize: '11px', color: '#9CA3AF',
-              }}>
+              <div className="flex justify-between mt-1.5 text-[11px] text-[#6b7280]">
                 <span>{onboardingPct}% complete</span>
                 <span>{missingLayers.length} layers remaining</span>
               </div>
             </div>
 
-            {/* Missing layers */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '24px' }}>
+            {/* K-layer badges */}
+            <div className="flex flex-wrap gap-1.5 mb-6">
               {ALL_K_LAYERS.map(k => (
-                <span key={k} style={{
-                  fontSize: '11px', padding: '4px 10px', borderRadius: '6px', fontWeight: 600,
-                  background: activeKLayers.includes(k) ? '#F0FDF4' : '#FEF3C7',
-                  color: activeKLayers.includes(k) ? '#166534' : '#92400E',
-                  border: `1px solid ${activeKLayers.includes(k) ? '#BBF7D0' : '#FDE68A'}`,
-                }}>
+                <span
+                  key={k}
+                  className={`text-[11px] px-2.5 py-1 rounded font-semibold border ${
+                    activeKLayers.includes(k)
+                      ? 'bg-[#6EE05A]/10 text-[#6EE05A] border-[#6EE05A]/40'
+                      : 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/40'
+                  }`}
+                >
                   {k} {activeKLayers.includes(k) ? '✓' : '○'}
                 </span>
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div className="flex gap-2.5">
               <a
                 href="/console/welcome"
-                style={{
-                  flex: 1, padding: '12px', borderRadius: '10px',
-                  background: '#6EE05A', color: '#080B0F',
-                  textDecoration: 'none', textAlign: 'center',
-                  fontWeight: 600, fontSize: '14px',
-                }}
+                className="flex-1 py-3 rounded-xl bg-[#6EE05A] text-[#0d1117] no-underline text-center font-semibold text-sm"
               >
                 Complete Onboarding
               </a>
               <button
                 onClick={() => setShowOnboardingModal(false)}
-                style={{
-                  padding: '12px 20px', borderRadius: '10px',
-                  border: '1px solid #E5E7EB', background: '#FFFFFF',
-                  color: '#6B7280', fontSize: '14px', cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
+                className="px-5 py-3 rounded-xl border border-[#30363d] bg-[#161b22] text-[#9ca3af] text-sm cursor-pointer"
               >
                 Skip for now
               </button>
@@ -309,89 +274,53 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* ═══ COMMAND PALETTE ═══ */}
+      {/* COMMAND PALETTE */}
       {showCommandPalette && (
         <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 90,
-            background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)',
-            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-            paddingTop: '15vh',
-          }}
+          className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm flex items-start justify-center pt-[15vh]"
           onClick={() => setShowCommandPalette(false)}
         >
           <div
-            style={{
-              background: '#FFFFFF', borderRadius: '14px',
-              maxWidth: '520px', width: '100%',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-              overflow: 'hidden',
-            }}
+            className="bg-[#161b22] border border-[#30363d] rounded-2xl max-w-[520px] w-full shadow-2xl overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             {/* Search input */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              padding: '14px 18px', borderBottom: '1px solid #F3F4F6',
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+            <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-[#30363d]">
+              <Search size={18} className="text-[#6b7280] shrink-0" />
               <input
                 ref={cmdInputRef}
                 type="text"
                 value={commandSearch}
                 onChange={e => setCommandSearch(e.target.value)}
                 placeholder="Search ANYTHING..."
-                style={{
-                  flex: 1, border: 'none', outline: 'none',
-                  fontSize: '15px', color: '#111827', fontFamily: 'inherit',
-                  background: 'transparent',
-                }}
+                className="flex-1 border-none outline-none text-[15px] text-[#f0f4f8] bg-transparent placeholder:text-[#6b7280]"
               />
-              <span style={{
-                fontSize: '10px', padding: '3px 6px', borderRadius: '4px',
-                border: '1px solid #E5E7EB', color: '#9CA3AF',
-                fontFamily: "'JetBrains Mono', monospace",
-              }}>
+              <span className="text-[10px] px-1.5 py-0.5 rounded border border-[#30363d] text-[#6b7280] font-mono">
                 ESC
               </span>
             </div>
 
             {/* Quick actions */}
-            <div style={{ padding: '8px' }}>
-              <div style={{
-                fontSize: '10px', color: '#9CA3AF', fontWeight: 600,
-                padding: '6px 10px', letterSpacing: '0.08em', textTransform: 'uppercase',
-              }}>
+            <div className="p-2">
+              <div className="text-[10px] text-[#6b7280] font-semibold px-2.5 py-1.5 tracking-widest uppercase">
                 Commands
               </div>
-              {filteredCommands.map((cmd, i) => (
+              {filteredCommands.map((cmd) => (
                 <button
                   key={cmd.key}
                   onClick={() => runCommand(cmd.key)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '10px 12px', borderRadius: '8px',
-                    border: 'none', background: i === 0 ? '#F9FAFB' : 'transparent',
-                    cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
-                    transition: 'background 0.1s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                  onMouseLeave={e => (e.currentTarget.style.background = i === 0 ? '#F9FAFB' : 'transparent')}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border-none bg-transparent cursor-pointer text-left hover:bg-[#1c2333] transition-colors"
                 >
-                  <span style={{ fontSize: '18px', width: '28px', textAlign: 'center' }}>{cmd.icon}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>{cmd.label}</div>
-                    <div style={{ fontSize: '11px', color: '#9CA3AF' }}>{cmd.desc}</div>
+                  <cmd.Icon size={18} className="text-[#6b7280] shrink-0" />
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold text-[#f0f4f8]">{cmd.label}</div>
+                    <div className="text-[11px] text-[#6b7280]">{cmd.desc}</div>
                   </div>
                 </button>
               ))}
 
               {filteredCommands.length === 0 && (
-                <div style={{
-                  padding: '20px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px',
-                }}>
+                <div className="py-5 text-center text-[#6b7280] text-[13px]">
                   No commands match. Type your question and press Enter to ask AI directly.
                 </div>
               )}
@@ -400,30 +329,21 @@ export default function ChatPage() {
               {commandSearch.trim() && (
                 <button
                   onClick={() => { setShowCommandPalette(false); sendMessage(commandSearch); setCommandSearch('') }}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '10px 12px', borderRadius: '8px', marginTop: '4px',
-                    border: '1px dashed #D1D5DB', background: 'transparent',
-                    cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
-                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg mt-1 border border-dashed border-[#30363d] bg-transparent cursor-pointer text-left"
                 >
-                  <span style={{ fontSize: '18px', width: '28px', textAlign: 'center' }}>🔮</span>
+                  <Zap size={18} className="text-[#6EE05A] shrink-0" />
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#6EE05A' }}>Ask AI: "{commandSearch}"</div>
-                    <div style={{ fontSize: '11px', color: '#9CA3AF' }}>Send as a free-form question</div>
+                    <div className="text-[13px] font-semibold text-[#6EE05A]">Ask AI: &quot;{commandSearch}&quot;</div>
+                    <div className="text-[11px] text-[#6b7280]">Send as a free-form question</div>
                   </div>
                 </button>
               )}
             </div>
 
             {/* Footer */}
-            <div style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '10px 18px', borderTop: '1px solid #F3F4F6',
-              fontSize: '10px', color: '#D1D5DB',
-            }}>
+            <div className="flex justify-between items-center px-4 py-2.5 border-t border-[#30363d] text-[10px] text-[#6b7280]">
               <span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", padding: '1px 4px', border: '1px solid #E5E7EB', borderRadius: '3px', marginRight: '4px' }}>⌘K</span>
+                <span className="font-mono px-1 border border-[#30363d] rounded mr-1">⌘K</span>
                 to toggle
               </span>
               <span>{meta.provider === 'anthropic' ? 'Claude' : meta.provider === 'groq' ? 'Groq' : 'AI'} powered</span>
@@ -432,30 +352,17 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* ═══ HEADER ═══ */}
-      <div style={{
-        padding: '12px 24px',
-        borderBottom: '1px solid #E5E7EB',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexShrink: 0,
-        gap: '12px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            width: '32px', height: '32px', borderRadius: '8px',
-            background: 'linear-gradient(135deg, #6EE05A, #4ecb3a)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '12px', fontWeight: 800, color: '#080B0F',
-          }}>
+      {/* HEADER */}
+      <div className="px-6 py-3 border-b border-[#30363d] flex items-center justify-between shrink-0 gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-[#6EE05A] flex items-center justify-center text-xs font-extrabold text-[#0d1117]">
             0n
           </div>
           <div>
-            <h1 style={{ fontSize: '16px', fontWeight: 700, color: '#111827', margin: 0 }}>
+            <h1 className="text-base font-bold text-[#f0f4f8] m-0">
               0nCore AI
             </h1>
-            <p style={{ fontSize: '11px', color: '#9CA3AF', margin: 0 }}>
+            <p className="text-[11px] text-[#9ca3af] m-0">
               {meta.provider === 'anthropic' ? 'Claude Sonnet' : meta.provider === 'groq' ? 'Groq Llama' : 'Ready'}
               {activeKLayers.length > 0 && ` · ${activeKLayers.length} K-Layers`}
             </p>
@@ -463,18 +370,13 @@ export default function ChatPage() {
         </div>
 
         {/* Center: Sub-location switcher */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="flex items-center gap-2">
           {subLocations.length > 1 && (
             <select
               value={activeLocation}
               onChange={e => switchLocation(e.target.value)}
               disabled={switchingLocation}
-              style={{
-                padding: '6px 10px', borderRadius: '6px',
-                border: '1px solid #E5E7EB', background: '#FAFAFA',
-                fontSize: '12px', color: '#374151', fontFamily: 'inherit',
-                cursor: 'pointer', outline: 'none',
-              }}
+              className="px-2.5 py-1.5 rounded-md border border-[#30363d] bg-[#161b22] text-xs text-[#f0f4f8] cursor-pointer outline-none"
             >
               {subLocations.map(loc => (
                 <option key={loc.id} value={loc.id}>{loc.name}</option>
@@ -482,149 +384,100 @@ export default function ChatPage() {
             </select>
           )}
           {switchingLocation && (
-            <span style={{ fontSize: '11px', color: '#6EE05A' }}>Switching...</span>
+            <span className="text-[11px] text-[#6EE05A]">Switching...</span>
           )}
         </div>
 
         {/* Right: K-Layer badges + command palette trigger */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setShowCommandPalette(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '6px 12px', borderRadius: '8px',
-              border: '1px solid #E5E7EB', background: '#FAFAFA',
-              cursor: 'pointer', fontSize: '12px', color: '#9CA3AF',
-              fontFamily: 'inherit',
-            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#30363d] bg-[#161b22] cursor-pointer text-xs text-[#9ca3af] hover:bg-[#1c2333] transition-colors"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+            <Search size={14} />
             Search
-            <span style={{
-              fontSize: '9px', padding: '1px 5px', borderRadius: '3px',
-              border: '1px solid #E5E7EB', color: '#D1D5DB',
-              fontFamily: "'JetBrains Mono', monospace",
-            }}>
+            <span className="text-[9px] px-1 py-0.5 rounded border border-[#30363d] text-[#6b7280] font-mono">
               ⌘K
             </span>
           </button>
 
-          {activeKLayers.length > 0 ? (
-            <div style={{ display: 'flex', gap: '4px' }}>
+          {activeKLayers.length > 0 && (
+            <div className="flex gap-1">
               {activeKLayers.map(k => (
-                <span key={k} style={{
-                  fontSize: '9px', padding: '2px 6px', borderRadius: '8px',
-                  background: '#F0FDF4', color: '#166534', fontWeight: 600,
-                  border: '1px solid #BBF7D0',
-                }}>
+                <span
+                  key={k}
+                  className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#6EE05A]/10 text-[#6EE05A] font-semibold border border-[#6EE05A]/30"
+                >
                   {k}
                 </span>
               ))}
             </div>
-          ) : null}
+          )}
         </div>
       </div>
 
-      {/* ═══ PINNED ONBOARDING NOTIFICATION ═══ */}
+      {/* PINNED ONBOARDING NOTIFICATION */}
       {profile && !profile.onboarding_complete && !showOnboardingModal && (
-        <div style={{
-          padding: '8px 24px',
-          background: 'linear-gradient(90deg, #FFFBEB, #FEF3C7)',
-          borderBottom: '1px solid #FDE68A',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{
-              width: '24px', height: '24px', borderRadius: '50%',
-              background: '#FDE68A', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '12px',
-            }}>
+        <div className="px-6 py-2 bg-[#f59e0b]/5 border-b border-[#f59e0b]/30 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-full bg-[#f59e0b]/20 flex items-center justify-center text-xs text-[#f59e0b]">
               ○
             </div>
-            <span style={{ fontSize: '12px', color: '#92400E' }}>
+            <span className="text-xs text-[#f59e0b]">
               Onboarding {onboardingPct}% complete — {missingLayers.length} K-Layers remaining
             </span>
             {/* Mini progress */}
-            <div style={{
-              width: '60px', height: '4px', background: '#FDE68A', borderRadius: '2px', overflow: 'hidden',
-            }}>
-              <div style={{
-                height: '100%', width: `${onboardingPct}%`,
-                background: '#F59E0B', borderRadius: '2px',
-              }} />
+            <div className="w-15 h-1 bg-[#f59e0b]/20 rounded overflow-hidden">
+              <div
+                className="h-full bg-[#f59e0b] rounded"
+                style={{ width: `${onboardingPct}%` }}
+              />
             </div>
           </div>
           <a
             href="/console/welcome"
-            style={{
-              fontSize: '12px', fontWeight: 600, color: '#92400E',
-              textDecoration: 'none', padding: '4px 12px',
-              borderRadius: '6px', border: '1px solid #FDE68A',
-              background: '#FFFFFF',
-            }}
+            className="text-xs font-semibold text-[#f59e0b] no-underline px-3 py-1 rounded border border-[#f59e0b]/40 bg-[#161b22] hover:bg-[#1c2333] transition-colors"
           >
             Complete Setup
           </a>
         </div>
       )}
 
-      {/* ═══ MESSAGES ═══ */}
+      {/* MESSAGES */}
       <div
         ref={scrollRef}
-        style={{
-          flex: 1, overflowY: 'auto', padding: '24px',
-          display: 'flex', flexDirection: 'column', gap: '16px',
-        }}
+        className="flex-1 overflow-y-auto p-6 flex flex-col gap-4"
       >
         {messages.length === 0 && (
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', flex: 1, minHeight: '300px', gap: '16px',
-          }}>
-            <div style={{
-              width: '48px', height: '48px', borderRadius: '12px',
-              background: '#F0FDF4', border: '1px solid #BBF7D0',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '18px', fontWeight: 800, color: '#166534',
-            }}>
+          <div className="flex flex-col items-center justify-center flex-1 min-h-[300px] gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#6EE05A]/10 border border-[#6EE05A]/30 flex items-center justify-center text-lg font-extrabold text-[#6EE05A]">
               0n
             </div>
-            <div style={{ textAlign: 'center', maxWidth: '420px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#111827', marginBottom: '8px' }}>
+            <div className="text-center max-w-[420px]">
+              <h2 className="text-base font-semibold text-[#f0f4f8] mb-2">
                 {profile?.business_name ? `Hey, ${profile.business_name}` : 'Welcome to 0nCore AI'}
               </h2>
-              <p style={{ fontSize: '13px', color: '#6B7280', lineHeight: 1.5, marginBottom: '4px' }}>
+              <p className="text-[13px] text-[#9ca3af] leading-relaxed mb-1">
                 {activeKLayers.length > 0
                   ? `I have ${activeKLayers.length} K-Layers loaded. Ask me anything about your business.`
                   : 'Complete onboarding to unlock personalized AI. For now, I can help with general questions.'
                 }
               </p>
-              <p style={{ fontSize: '11px', color: '#D1D5DB' }}>
-                Press <span style={{ fontFamily: "'JetBrains Mono', monospace", padding: '1px 4px', border: '1px solid #E5E7EB', borderRadius: '3px' }}>⌘K</span> for commands
+              <p className="text-[11px] text-[#6b7280]">
+                Press <span className="font-mono px-1 border border-[#30363d] rounded text-[#9ca3af]">⌘K</span> for commands
               </p>
             </div>
 
             {/* Suggestion grid */}
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '8px', maxWidth: '420px', width: '100%',
-            }}>
+            <div className="grid grid-cols-2 gap-2 max-w-[420px] w-full">
               {COMMANDS.slice(0, 4).map(cmd => (
                 <button
                   key={cmd.key}
                   onClick={() => runCommand(cmd.key)}
-                  style={{
-                    padding: '10px 12px', borderRadius: '8px',
-                    border: '1px solid #E5E7EB', background: '#FAFAFA',
-                    color: '#374151', fontSize: '12px', textAlign: 'left',
-                    cursor: 'pointer', lineHeight: 1.4, fontFamily: 'inherit',
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                  }}
+                  className="p-2.5 rounded-lg border border-[#30363d] bg-[#161b22] text-[#9ca3af] text-xs text-left cursor-pointer leading-snug flex items-center gap-2 hover:bg-[#1c2333] transition-colors"
                 >
-                  <span style={{ fontSize: '16px' }}>{cmd.icon}</span>
-                  <span>{cmd.label}</span>
+                  <cmd.Icon size={16} className="text-[#6b7280] shrink-0" />
+                  <span className="text-[#f0f4f8]">{cmd.label}</span>
                 </button>
               ))}
             </div>
@@ -632,68 +485,53 @@ export default function ChatPage() {
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} style={{
-            display: 'flex', gap: '12px', maxWidth: '720px', width: '100%',
-            margin: msg.role === 'user' ? '0 0 0 auto' : '0',
-            flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
-          }}>
-            <div style={{
-              width: '28px', height: '28px', borderRadius: '50%',
-              background: msg.role === 'user' ? '#111827' : '#6EE05A',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '10px', fontWeight: 700,
-              color: msg.role === 'user' ? '#fff' : '#080B0F',
-              flexShrink: 0,
-            }}>
+          <div
+            key={i}
+            className={`flex gap-3 max-w-[720px] w-full ${
+              msg.role === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto flex-row'
+            }`}
+          >
+            <div
+              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                msg.role === 'user'
+                  ? 'bg-[#f0f4f8] text-[#0d1117]'
+                  : 'bg-[#6EE05A] text-[#0d1117]'
+              }`}
+            >
               {msg.role === 'user' ? 'U' : '0n'}
             </div>
-            <div style={{
-              padding: '12px 16px',
-              borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-              background: msg.role === 'user' ? '#111827' : '#F3F4F6',
-              color: msg.role === 'user' ? '#FFFFFF' : '#111827',
-              fontSize: '14px', lineHeight: 1.6, maxWidth: '85%',
-              whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-            }}>
+            <div
+              className={`px-4 py-3 text-sm leading-relaxed max-w-[85%] whitespace-pre-wrap break-words ${
+                msg.role === 'user'
+                  ? 'bg-[#f0f4f8] text-[#0d1117] rounded-2xl rounded-tr-sm'
+                  : 'bg-[#161b22] text-[#f0f4f8] border border-[#30363d] rounded-2xl rounded-tl-sm'
+              }`}
+            >
               {msg.content}
             </div>
           </div>
         ))}
 
         {loading && (
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div style={{
-              width: '28px', height: '28px', borderRadius: '50%',
-              background: '#6EE05A', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '10px', fontWeight: 700, color: '#080B0F',
-            }}>0n</div>
-            <div style={{
-              padding: '12px 16px', borderRadius: '16px 16px 16px 4px',
-              background: '#F3F4F6', display: 'flex', gap: '4px',
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#9CA3AF', animation: 'pulse 1.2s infinite' }} />
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#9CA3AF', animation: 'pulse 1.2s infinite 0.2s' }} />
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#9CA3AF', animation: 'pulse 1.2s infinite 0.4s' }} />
+          <div className="flex gap-3 items-center">
+            <div className="w-7 h-7 rounded-full bg-[#6EE05A] flex items-center justify-center text-[10px] font-bold text-[#0d1117]">
+              0n
             </div>
-            <style>{`@keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }`}</style>
+            <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-[#161b22] border border-[#30363d] flex gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#6b7280] animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#6b7280] animate-pulse [animation-delay:200ms]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#6b7280] animate-pulse [animation-delay:400ms]" />
+            </div>
           </div>
         )}
       </div>
 
-      {/* ═══ INPUT ═══ */}
-      <div style={{
-        padding: '16px 24px', borderTop: '1px solid #E5E7EB',
-        background: '#FFFFFF', flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', gap: '8px', maxWidth: '720px', margin: '0 auto' }}>
+      {/* INPUT */}
+      <div className="px-6 py-4 border-t border-[#30363d] bg-[#0d1117] shrink-0">
+        <div className="flex gap-2 max-w-[720px] mx-auto">
           <button
             onClick={() => setShowCommandPalette(true)}
-            style={{
-              width: '44px', height: '44px', borderRadius: '12px',
-              border: '1px solid #E5E7EB', background: '#FAFAFA',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, color: '#9CA3AF', fontSize: '18px',
-            }}
+            className="w-11 h-11 rounded-xl border border-[#30363d] bg-[#161b22] cursor-pointer flex items-center justify-center shrink-0 text-[#9ca3af] text-lg hover:bg-[#1c2333] transition-colors"
             title="Commands (⌘K)"
           >
             /
@@ -705,28 +543,21 @@ export default function ChatPage() {
             onKeyDown={handleKeyDown}
             placeholder="Ask 0nCore AI anything..."
             rows={1}
-            style={{
-              flex: 1, padding: '12px 16px', borderRadius: '12px',
-              border: '1px solid #D1D5DB', fontSize: '14px', color: '#111827',
-              outline: 'none', resize: 'none', fontFamily: 'inherit',
-              lineHeight: 1.5, minHeight: '44px', maxHeight: '120px',
-            }}
+            className="flex-1 px-4 py-3 rounded-xl border border-[#30363d] bg-[#161b22] text-sm text-[#f0f4f8] placeholder:text-[#6b7280] outline-none resize-none leading-relaxed min-h-[44px] max-h-[120px] focus:border-[#6EE05A]/50 transition-colors"
           />
           <button
             onClick={() => sendMessage(input)}
             disabled={loading || !input.trim()}
-            style={{
-              padding: '0 20px', borderRadius: '12px',
-              background: loading || !input.trim() ? '#D1D5DB' : '#6EE05A',
-              color: '#080B0F', border: 'none', fontSize: '14px', fontWeight: 600,
-              cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
-              flexShrink: 0,
-            }}
+            className={`px-5 rounded-xl text-sm font-semibold shrink-0 border-none transition-colors ${
+              loading || !input.trim()
+                ? 'bg-[#30363d] text-[#6b7280] cursor-not-allowed'
+                : 'bg-[#6EE05A] text-[#0d1117] cursor-pointer hover:bg-[#6EE05A]/90'
+            }`}
           >
             Send
           </button>
         </div>
-        <p style={{ fontSize: '10px', color: '#D1D5DB', textAlign: 'center', marginTop: '8px' }}>
+        <p className="text-[10px] text-[#6b7280] text-center mt-2">
           {activeKLayers.length > 0
             ? `K-Layers: ${activeKLayers.join(', ')} active · ${meta.provider === 'anthropic' ? 'Claude' : 'Groq'} powered`
             : 'No K-Layers active · Using Groq fallback · Complete onboarding for personalized AI'

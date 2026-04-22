@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type DragEvent } from 'react'
+import { ChevronRight } from 'lucide-react'
 import { CATEGORIES, CAPABILITIES, getCapabilitiesByCategory } from './capabilities'
 
 interface PaletteProps {
@@ -10,6 +11,7 @@ interface PaletteProps {
 export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
   const [search, setSearch] = useState('')
   const [expandedCat, setExpandedCat] = useState<string | null>('triggers')
+  const [focusedInput, setFocusedInput] = useState(false)
   const isCompact = size === 'compact'
 
   const filtered = search
@@ -27,80 +29,45 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
   }
 
   return (
-    <div style={{
-      width: isCompact ? 200 : 280,
-      background: 'var(--bg-secondary, #161b22)',
-      borderLeft: '1px solid #1c2b42',
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      flexShrink: 0,
-    }}>
+    <div
+      className="bg-core-surface border-l border-[#1c2b42] flex flex-col h-full shrink-0"
+      style={{ width: isCompact ? 200 : 280 }}
+    >
       {/* Header */}
-      <div style={{ padding: '16px', borderBottom: '1px solid #1c2b42' }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: isCompact ? 0 : 10, fontFamily: '-apple-system, sans-serif' }}>
+      <div className="p-4 border-b border-[#1c2b42]">
+        <div className={`text-sm font-bold text-core-text ${isCompact ? '' : 'mb-2.5'}`}>
           Menu
         </div>
-        {!isCompact && <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search capabilities..."
-          style={{
-            width: '100%',
-            padding: '9px 12px',
-            background: 'var(--bg-card, #1f2937)',
-            border: '1px solid #1c2b42',
-            borderRadius: 8,
-            color: 'var(--text-primary, #f0f4f8)',
-            fontSize: 13,
-            outline: 'none',
-            fontFamily: '-apple-system, sans-serif',
-          }}
-          onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-          onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
-        />}
+        {!isCompact && (
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search capabilities..."
+            className="w-full px-3 py-[9px] bg-core-card border rounded-lg text-core-text text-[13px] outline-none transition-colors duration-150"
+            style={{
+              borderColor: focusedInput ? '#14b8a6' : '#1c2b42',
+            }}
+            onFocus={() => setFocusedInput(true)}
+            onBlur={() => setFocusedInput(false)}
+          />
+        )}
       </div>
 
       {/* Categories + Items */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+      <div className="flex-1 overflow-y-auto py-2">
         {search && filtered ? (
           // Search results
-          <div style={{ padding: '0 12px' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', padding: '4px 4px 8px', fontFamily: '-apple-system, sans-serif' }}>
+          <div className="px-3">
+            <div className="text-[11px] text-core-text-muted px-1 pb-2 pt-1">
               {filtered.length} results
             </div>
             {filtered.map(cap => (
-              <div
+              <CapItem
                 key={cap.id}
-                draggable
-                onDragStart={e => onDragStart(e, cap.id)}
-                style={{
-                  padding: '10px 12px',
-                  background: 'var(--bg-card, #1f2937)',
-                  border: '1px solid #1c2b42',
-                  borderRadius: 10,
-                  marginBottom: 6,
-                  cursor: 'grab',
-                  transition: 'all 0.15s',
-                  display: 'flex',
-                  gap: 10,
-                  alignItems: 'flex-start',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = cap.color
-                  e.currentTarget.style.background = '#1a2740'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = 'var(--border, #30363d)'
-                  e.currentTarget.style.background = 'var(--bg-card, #1f2937)'
-                }}
-              >
-                <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>{cap.icon}</span>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)', marginBottom: 2, fontFamily: '-apple-system, sans-serif' }}>{cap.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', lineHeight: 1.4, fontFamily: '-apple-system, sans-serif' }}>{cap.description}</div>
-                </div>
-              </div>
+                cap={cap}
+                onDragStart={onDragStart}
+                showDescription
+              />
             ))}
           </div>
         ) : (
@@ -113,60 +80,31 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
               <div key={cat.id}>
                 <button
                   onClick={() => setExpandedCat(isOpen ? null : cat.id)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 16px',
-                    background: 'none',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    cursor: 'pointer',
-                    fontFamily: '-apple-system, sans-serif',
-                  }}
+                  className="w-full px-4 py-2.5 bg-transparent border-none flex items-center gap-2.5 cursor-pointer"
                 >
-                  <span style={{ fontSize: 16 }}>{cat.icon}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: isOpen ? cat.color : 'var(--text-secondary, #9ca3af)', flex: 1, textAlign: 'left' }}>
+                  <span className="text-base shrink-0">{cat.icon}</span>
+                  <span
+                    className="text-[13px] font-semibold flex-1 text-left"
+                    style={{ color: isOpen ? cat.color : '#9ca3af' }}
+                  >
                     {cat.name}
                   </span>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>{items.length}</span>
-                  <span style={{ color: 'var(--text-muted, #6b7280)', fontSize: 12, transition: 'transform 0.2s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+                  <span className="text-[11px] text-core-text-muted">{items.length}</span>
+                  <ChevronRight
+                    className="w-3 h-3 text-core-text-muted transition-transform duration-200"
+                    style={{ transform: isOpen ? 'rotate(90deg)' : 'none' }}
+                  />
                 </button>
 
                 {isOpen && (
-                  <div style={{ padding: '0 12px 8px' }}>
+                  <div className="px-3 pb-2">
                     {items.map(cap => (
-                      <div
+                      <CapItem
                         key={cap.id}
-                        draggable
-                        onDragStart={e => onDragStart(e, cap.id)}
-                        style={{
-                          padding: '10px 12px',
-                          background: 'var(--bg-card, #1f2937)',
-                          border: '1px solid transparent',
-                          borderRadius: 10,
-                          marginBottom: 4,
-                          cursor: 'grab',
-                          transition: 'all 0.15s',
-                          display: 'flex',
-                          gap: 10,
-                          alignItems: 'center',
-                        }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.borderColor = `${cap.color}40`
-                          e.currentTarget.style.background = '#1a2740'
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.borderColor = 'transparent'
-                          e.currentTarget.style.background = 'var(--bg-card, #1f2937)'
-                        }}
-                      >
-                        <span style={{ fontSize: 16, flexShrink: 0 }}>{cap.icon}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)', fontFamily: '-apple-system, sans-serif' }}>{cap.name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: '-apple-system, sans-serif' }}>{cap.description}</div>
-                        </div>
-                      </div>
+                        cap={cap}
+                        onDragStart={onDragStart}
+                        compact
+                      />
                     ))}
                   </div>
                 )}
@@ -177,15 +115,48 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
       </div>
 
       {/* Drag hint */}
-      <div style={{
-        padding: '12px 16px',
-        borderTop: '1px solid #1c2b42',
-        fontSize: 11,
-        color: 'var(--text-muted, #6b7280)',
-        textAlign: 'center',
-        fontFamily: '-apple-system, sans-serif',
-      }}>
-        ← Drag onto canvas
+      <div className="px-4 py-3 border-t border-[#1c2b42] text-[11px] text-core-text-muted text-center">
+        Drag onto canvas
+      </div>
+    </div>
+  )
+}
+
+interface CapItemProps {
+  cap: typeof CAPABILITIES[number];
+  onDragStart: (e: DragEvent, id: string) => void;
+  showDescription?: boolean;
+  compact?: boolean;
+}
+
+function CapItem({ cap, onDragStart, showDescription, compact }: CapItemProps) {
+  return (
+    <div
+      draggable
+      onDragStart={e => onDragStart(e, cap.id)}
+      className={`bg-core-card border border-transparent rounded-[10px] cursor-grab transition-all duration-150 flex gap-2.5 ${
+        showDescription ? 'p-3 mb-1.5 items-start' : 'p-2.5 mb-1 items-center'
+      }`}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = showDescription ? cap.color : `${cap.color}40`
+        e.currentTarget.style.background = '#1a2740'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = 'transparent'
+        e.currentTarget.style.background = ''
+      }}
+    >
+      <span className={`shrink-0 ${showDescription ? 'text-lg mt-0.5' : 'text-base'}`}>
+        {cap.icon}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="text-[13px] font-semibold text-core-text mb-0.5">{cap.name}</div>
+        {showDescription && (
+          <div className="text-[11px] text-core-text-muted leading-snug">{cap.description}</div>
+        )}
+        {compact && (
+          <div className="text-[11px] text-core-text-muted truncate">{cap.description}</div>
+        )}
       </div>
     </div>
   )

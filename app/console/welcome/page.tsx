@@ -53,45 +53,21 @@ export default function WelcomePage() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#FFFFFF',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-    }}>
-      <form onSubmit={handleSubmit} style={{
-        width: '100%',
-        maxWidth: '420px',
-        background: '#FFFFFF',
-        borderRadius: '12px',
-        padding: '40px 32px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.04)',
-        border: '1px solid #E5E7EB',
-      }}>
-        <h1 style={{
-          fontSize: '24px',
-          fontWeight: 700,
-          color: '#111827',
-          marginBottom: '4px',
-          textAlign: 'center',
-        }}>
+    <div className="min-h-screen bg-[#0d1117] flex items-center justify-center p-6">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-[420px] bg-[#161b22] rounded-xl px-8 py-10 border border-[#30363d]"
+      >
+        <h1 className="text-2xl font-bold text-[#f0f4f8] mb-1 text-center">
           Welcome to 0nCore
         </h1>
-        <p style={{
-          fontSize: '14px',
-          color: '#6B7280',
-          marginBottom: '32px',
-          textAlign: 'center',
-        }}>
+        <p className="text-sm text-[#9ca3af] mb-8 text-center">
           Tell us about your business so your AI knows who you are.
         </p>
 
         {/* Business Name */}
-        <label style={{ display: 'block', marginBottom: '16px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
+        <label className="block mb-4">
+          <span className="text-[13px] font-semibold text-[#f0f4f8] block mb-1.5">
             Business Name
           </span>
           <input
@@ -100,22 +76,13 @@ export default function WelcomePage() {
             onChange={e => setBusinessName(e.target.value)}
             placeholder="Acme Corp"
             required
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              borderRadius: '8px',
-              border: '1px solid #D1D5DB',
-              fontSize: '14px',
-              color: '#111827',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
+            className="w-full px-3 py-2.5 rounded-lg border border-[#30363d] bg-[#0d1117] text-sm text-[#f0f4f8] placeholder:text-[#6b7280] outline-none focus:border-[#6EE05A]/50 transition-colors box-border"
           />
         </label>
 
         {/* What We Do */}
-        <label style={{ display: 'block', marginBottom: '16px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
+        <label className="block mb-4">
+          <span className="text-[13px] font-semibold text-[#f0f4f8] block mb-1.5">
             What do you do?
           </span>
           <input
@@ -123,41 +90,26 @@ export default function WelcomePage() {
             value={whatWeDo}
             onChange={e => setWhatWeDo(e.target.value)}
             placeholder="We help small businesses automate their marketing"
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              borderRadius: '8px',
-              border: '1px solid #D1D5DB',
-              fontSize: '14px',
-              color: '#111827',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
+            className="w-full px-3 py-2.5 rounded-lg border border-[#30363d] bg-[#0d1117] text-sm text-[#f0f4f8] placeholder:text-[#6b7280] outline-none focus:border-[#6EE05A]/50 transition-colors box-border"
           />
         </label>
 
         {/* Brand Tone */}
-        <div style={{ marginBottom: '28px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '8px' }}>
+        <div className="mb-7">
+          <span className="text-[13px] font-semibold text-[#f0f4f8] block mb-2">
             Brand Tone
           </span>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          <div className="flex flex-wrap gap-2">
             {TONES.map(tone => (
               <button
                 key={tone}
                 type="button"
                 onClick={() => setBrandTone(tone)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  border: brandTone === tone ? '2px solid #6EE05A' : '1px solid #D1D5DB',
-                  background: brandTone === tone ? '#F0FDF4' : '#FFFFFF',
-                  color: brandTone === tone ? '#166534' : '#6B7280',
-                  fontSize: '13px',
-                  fontWeight: brandTone === tone ? 600 : 400,
-                  cursor: 'pointer',
-                  textTransform: 'capitalize',
-                }}
+                className={`px-3.5 py-1.5 rounded-full text-[13px] cursor-pointer capitalize transition-colors border ${
+                  brandTone === tone
+                    ? 'border-[#6EE05A] bg-[#6EE05A]/10 text-[#6EE05A] font-semibold'
+                    : 'border-[#30363d] bg-transparent text-[#9ca3af] font-normal hover:border-[#6EE05A]/40 hover:text-[#f0f4f8]'
+                }`}
               >
                 {tone}
               </button>
@@ -168,17 +120,11 @@ export default function WelcomePage() {
         <button
           type="submit"
           disabled={loading || !businessName.trim()}
-          style={{
-            width: '100%',
-            padding: '12px',
-            borderRadius: '8px',
-            background: loading ? '#9CA3AF' : '#6EE05A',
-            color: '#080B0F',
-            border: 'none',
-            fontSize: '15px',
-            fontWeight: 600,
-            cursor: loading ? 'not-allowed' : 'pointer',
-          }}
+          className={`w-full py-3 rounded-lg text-[15px] font-semibold border-none transition-colors ${
+            loading || !businessName.trim()
+              ? 'bg-[#30363d] text-[#6b7280] cursor-not-allowed'
+              : 'bg-[#6EE05A] text-[#0d1117] cursor-pointer hover:bg-[#6EE05A]/90'
+          }`}
         >
           {loading ? 'Setting up...' : 'Get Started'}
         </button>

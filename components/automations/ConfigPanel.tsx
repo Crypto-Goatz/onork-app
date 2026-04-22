@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { X, Trash2 } from 'lucide-react'
 import { getCapability } from './capabilities'
 import type { CapabilityNodeType } from './CapabilityNode'
 
@@ -13,64 +15,56 @@ interface ConfigPanelProps {
 export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: ConfigPanelProps) {
   const cap = getCapability(node.data.capabilityId)
   const config = node.data.config || {}
+  const [focusedField, setFocusedField] = useState<string | null>(null)
 
   function handleChange(key: string, value: string) {
     onUpdate(node.id, { ...config, [key]: value })
   }
 
   return (
-    <div style={{
-      width: 300,
-      background: 'var(--bg-secondary, #161b22)',
-      borderLeft: '1px solid #1c2b42',
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      flexShrink: 0,
-    }}>
+    <div className="w-[300px] bg-core-surface border-l border-[#1c2b42] flex flex-col h-full shrink-0">
       {/* Header */}
-      <div style={{
-        padding: '16px',
-        borderBottom: '1px solid #1c2b42',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 20 }}>{node.data.icon}</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', fontFamily: '-apple-system, sans-serif' }}>Configure</span>
+      <div className="p-4 border-b border-[#1c2b42] flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{node.data.icon}</span>
+          <span className="text-sm font-bold text-core-text">Configure</span>
         </div>
-        <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: 'var(--text-muted, #6b7280)', cursor: 'pointer', fontSize: 18,
-        }}>×</button>
+        <button
+          onClick={onClose}
+          className="text-core-text-muted hover:text-core-text transition-colors cursor-pointer bg-transparent border-none p-0"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+      <div className="flex-1 overflow-y-auto p-4">
         {/* Name + Description */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', marginBottom: 4, fontFamily: '-apple-system, sans-serif' }}>{node.data.name}</div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', lineHeight: 1.5, fontFamily: '-apple-system, sans-serif' }}>{node.data.description}</div>
+        <div className="mb-5">
+          <div className="text-base font-bold text-core-text mb-1">{node.data.name}</div>
+          <div className="text-[13px] text-core-text-muted leading-relaxed">{node.data.description}</div>
         </div>
 
         {/* What this does */}
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 11, color: node.data.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10, fontFamily: '-apple-system, sans-serif' }}>
+        <div className="mb-6">
+          <div
+            className="text-[11px] font-bold uppercase tracking-[0.06em] mb-2.5"
+            style={{ color: node.data.color }}
+          >
             What happens
           </div>
           {node.data.steps.map((step, i) => (
-            <div key={i} style={{
-              display: 'flex', gap: 10, alignItems: 'flex-start', padding: '6px 0',
-            }}>
-              <span style={{
-                width: 20, height: 20, borderRadius: 6,
-                background: `${node.data.color}20`,
-                color: node.data.color,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 10, fontWeight: 800, flexShrink: 0,
-                fontFamily: '-apple-system, sans-serif',
-              }}>{i + 1}</span>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary, #9ca3af)', lineHeight: 1.4, fontFamily: '-apple-system, sans-serif' }}>{step}</span>
+            <div key={i} className="flex gap-2.5 items-start py-1.5">
+              <span
+                className="w-5 h-5 rounded-[6px] flex items-center justify-center text-[10px] font-extrabold shrink-0"
+                style={{
+                  background: `${node.data.color}20`,
+                  color: node.data.color,
+                }}
+              >
+                {i + 1}
+              </span>
+              <span className="text-[13px] text-core-text-dim leading-snug">{step}</span>
             </div>
           ))}
         </div>
@@ -78,24 +72,20 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
         {/* Config fields */}
         {cap?.configFields && cap.configFields.length > 0 && (
           <div>
-            <div style={{ fontSize: 11, color: 'var(--color-cyan, #14b8a6)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12, fontFamily: '-apple-system, sans-serif' }}>
+            <div className="text-[11px] text-core-cyan font-bold uppercase tracking-[0.06em] mb-3">
               Settings
             </div>
             {cap.configFields.map(field => (
-              <div key={field.key} style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary, #9ca3af)', marginBottom: 4, fontWeight: 600, fontFamily: '-apple-system, sans-serif' }}>
-                  {field.label} {field.required && <span style={{ color: '#ef4444' }}>*</span>}
+              <div key={field.key} className="mb-3.5">
+                <label className="block text-xs text-core-text-dim mb-1 font-semibold">
+                  {field.label}{' '}
+                  {field.required && <span className="text-core-red">*</span>}
                 </label>
                 {field.type === 'select' ? (
                   <select
                     value={config[field.key] || field.default || ''}
                     onChange={e => handleChange(field.key, e.target.value)}
-                    style={{
-                      width: '100%', padding: '9px 12px',
-                      background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 8,
-                      color: 'var(--text-primary, #f0f4f8)', fontSize: 13, outline: 'none',
-                      fontFamily: '-apple-system, sans-serif',
-                    }}
+                    className="w-full px-3 py-[9px] bg-core-card border border-[#1c2b42] rounded-lg text-core-text text-[13px] outline-none"
                   >
                     {field.options?.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
@@ -105,12 +95,10 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
                     value={config[field.key] || field.default || ''}
                     onChange={e => handleChange(field.key, e.target.value)}
                     placeholder={field.placeholder}
-                    style={{
-                      width: '100%', padding: '9px 12px',
-                      background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 8,
-                      color: 'var(--text-primary, #f0f4f8)', fontSize: 13, outline: 'none',
-                      fontFamily: '-apple-system, sans-serif',
-                    }}
+                    className="w-full px-3 py-[9px] bg-core-card border border-[#1c2b42] rounded-lg text-core-text text-[13px] outline-none transition-colors duration-150"
+                    style={{ borderColor: focusedField === field.key ? '#14b8a6' : '' }}
+                    onFocus={() => setFocusedField(field.key)}
+                    onBlur={() => setFocusedField(null)}
                   />
                 ) : (
                   <input
@@ -118,14 +106,10 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
                     value={config[field.key] || ''}
                     onChange={e => handleChange(field.key, e.target.value)}
                     placeholder={field.placeholder}
-                    style={{
-                      width: '100%', padding: '9px 12px',
-                      background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42', borderRadius: 8,
-                      color: 'var(--text-primary, #f0f4f8)', fontSize: 13, outline: 'none',
-                      fontFamily: '-apple-system, sans-serif',
-                    }}
-                    onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-                    onBlur={e => e.target.style.borderColor = 'var(--border, #30363d)'}
+                    className="w-full px-3 py-[9px] bg-core-card border border-[#1c2b42] rounded-lg text-core-text text-[13px] outline-none transition-colors duration-150"
+                    style={{ borderColor: focusedField === field.key ? '#14b8a6' : '' }}
+                    onFocus={() => setFocusedField(field.key)}
+                    onBlur={() => setFocusedField(null)}
                   />
                 )}
               </div>
@@ -135,25 +119,14 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
       </div>
 
       {/* Footer */}
-      <div style={{
-        padding: '12px 16px',
-        borderTop: '1px solid #1c2b42',
-        display: 'flex',
-        gap: 8,
-      }}>
+      <div className="px-4 py-3 border-t border-[#1c2b42] flex gap-2">
         <button
           onClick={() => onDelete(node.id)}
-          style={{
-            padding: '9px 16px',
-            background: 'rgba(239,68,68,0.1)',
-            border: '1px solid rgba(239,68,68,0.2)',
-            borderRadius: 8,
-            color: '#f87171',
-            fontSize: 13,
-            cursor: 'pointer',
-            fontFamily: '-apple-system, sans-serif',
-          }}
-        >Delete</button>
+          className="flex items-center gap-1.5 px-4 py-[9px] bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-[13px] cursor-pointer hover:bg-red-500/20 transition-colors duration-150"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Delete
+        </button>
       </div>
     </div>
   )

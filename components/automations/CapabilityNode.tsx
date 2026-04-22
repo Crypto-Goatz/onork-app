@@ -23,25 +23,23 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
   const isTrigger = data.category === 'triggers'
 
   return (
-    <div style={{
-      background: 'var(--bg-card, #1f2937)',
-      border: `2px solid ${selected ? data.color : 'var(--border, #30363d)'}`,
-      borderRadius: 16,
-      padding: 0,
-      width: 240,
-      cursor: 'grab',
-      transition: 'all 0.2s',
-      boxShadow: selected ? `0 0 24px ${data.color}20` : '0 4px 12px rgba(0,0,0,0.3)',
-      overflow: 'hidden',
-    }}>
+    <div
+      className="rounded-2xl w-[240px] cursor-grab overflow-hidden transition-all duration-200"
+      style={{
+        background: '#161b22',
+        border: `2px solid ${selected ? data.color : '#30363d'}`,
+        boxShadow: selected ? `0 0 24px ${data.color}20` : '0 4px 12px rgba(0,0,0,0.3)',
+      }}
+    >
       {/* Input handle (not on triggers) */}
       {!isTrigger && (
         <Handle
           type="target"
           position={Position.Top}
           style={{
-            width: 12, height: 12,
-            background: 'var(--bg-primary, #0d1117)',
+            width: 12,
+            height: 12,
+            background: '#0d1117',
             border: `2px solid ${data.color}`,
             top: -6,
           }}
@@ -49,70 +47,46 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
       )}
 
       {/* Header bar */}
-      <div style={{
-        background: `${data.color}15`,
-        borderBottom: `1px solid ${data.color}20`,
-        padding: '10px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-      }}>
-        <span style={{ fontSize: 20 }}>{data.icon}</span>
-        <span style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: data.color,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          fontFamily: '-apple-system, sans-serif',
-        }}>
+      <div
+        className="px-4 py-2.5 flex items-center gap-2.5 border-b"
+        style={{
+          background: `${data.color}15`,
+          borderBottomColor: `${data.color}20`,
+        }}
+      >
+        <span className="text-xl shrink-0">{data.icon}</span>
+        <span
+          className="text-[13px] font-bold uppercase tracking-[0.05em]"
+          style={{ color: data.color }}
+        >
           {isTrigger ? 'TRIGGER' : data.category === 'ai' ? 'AI' : data.category.toUpperCase()}
         </span>
-        <div style={{ marginLeft: 'auto' }}>
-          <span style={{
-            width: 8, height: 8,
-            borderRadius: '50%',
-            background: isConfigured ? '#34d399' : '#fbbf24',
-            display: 'inline-block',
-          }} />
+        <div className="ml-auto">
+          <span
+            className="inline-block w-2 h-2 rounded-full"
+            style={{ background: isConfigured ? '#34d399' : '#fbbf24' }}
+          />
         </div>
       </div>
 
       {/* Body */}
-      <div style={{ padding: '14px 16px' }}>
-        <div style={{
-          fontSize: 15,
-          fontWeight: 700,
-          color: 'var(--text-primary, #f0f4f8)',
-          marginBottom: 6,
-          lineHeight: 1.3,
-          fontFamily: '-apple-system, sans-serif',
-        }}>
+      <div className="px-4 py-[14px]">
+        <div className="text-[15px] font-bold text-core-text mb-1.5 leading-[1.3]">
           {data.name}
         </div>
-        <div style={{
-          fontSize: 12,
-          color: 'var(--text-muted, #6b7280)',
-          lineHeight: 1.5,
-          fontFamily: '-apple-system, sans-serif',
-        }}>
+        <div className="text-xs text-core-text-muted leading-relaxed">
           {data.description}
         </div>
       </div>
 
       {/* Steps indicator */}
-      <div style={{
-        padding: '8px 16px 12px',
-        display: 'flex',
-        gap: 4,
-      }}>
+      <div className="px-4 pb-3 flex gap-1">
         {data.steps.map((_, i) => (
-          <div key={i} style={{
-            flex: 1,
-            height: 3,
-            borderRadius: 2,
-            background: `${data.color}${isConfigured ? '60' : '25'}`,
-          }} />
+          <div
+            key={i}
+            className="flex-1 h-[3px] rounded-sm"
+            style={{ background: `${data.color}${isConfigured ? '60' : '25'}` }}
+          />
         ))}
       </div>
 
@@ -121,8 +95,9 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
         type="source"
         position={Position.Bottom}
         style={{
-          width: 12, height: 12,
-          background: 'var(--bg-primary, #0d1117)',
+          width: 12,
+          height: 12,
+          background: '#0d1117',
           border: `2px solid ${data.color}`,
           bottom: -6,
         }}
