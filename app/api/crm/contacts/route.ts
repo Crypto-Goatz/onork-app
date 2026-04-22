@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { firstName, lastName, email, phone, tags, source } = body
+  const { firstName, lastName, email, phone, companyName, tags, source } = body
 
   if (!firstName && !email && !phone) {
     return NextResponse.json({ error: 'At least firstName, email, or phone is required' }, { status: 400 })
@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
       lastName: lastName || '',
       email: email || undefined,
       phone: phone || undefined,
+      companyName: companyName || undefined,
       tags: tags || ['0ncore-contact'],
       source: source || '0ncore',
     })

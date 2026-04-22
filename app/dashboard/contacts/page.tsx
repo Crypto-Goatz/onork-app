@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useLocation } from '@/lib/location-context'
+import { ResponsiveModal } from '@/components/ui/responsive-modal'
+import { UserPlus, Search, Loader2, AlertCircle, CheckCircle2, User } from 'lucide-react'
 
 interface Contact {
   id: string
@@ -19,11 +21,11 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
-  const [showAdd, setShowAdd] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const [adding, setAdding] = useState(false)
   const [addSuccess, setAddSuccess] = useState('')
   const [addError, setAddError] = useState('')
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', tags: '' })
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', company: '', tags: '' })
   const { locationId, refreshKey } = useLocation()
 
   useEffect(() => { fetchContacts() }, [refreshKey])
@@ -59,6 +61,7 @@ export default function ContactsPage() {
           lastName: form.lastName,
           email: form.email || undefined,
           phone: form.phone || undefined,
+          companyName: form.company || undefined,
           tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : ['0ncore-contact'],
         }),
       })
@@ -67,14 +70,12 @@ export default function ContactsPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to create contact')
 
       setAddSuccess(`${form.firstName} ${form.lastName} added successfully`)
-      setForm({ firstName: '', lastName: '', email: '', phone: '', tags: '' })
+      setForm({ firstName: '', lastName: '', email: '', phone: '', company: '', tags: '' })
 
-      // Refresh contacts list
       await fetchContacts()
 
-      // Close modal after 1.5s
       setTimeout(() => {
-        setShowAdd(false)
+        setShowCreateModal(false)
         setAddSuccess('')
       }, 1500)
     } catch (err) {
@@ -92,315 +93,241 @@ export default function ContactsPage() {
       (c.phone || '').includes(q)
   })
 
+  const inputClass = "w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none"
+
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 8px' }}>
+    <div className="mx-auto max-w-[1100px] px-2">
 
-      {/* ═══ ADD CONTACT MODAL ═══ */}
-      {showAdd && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 100,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '24px',
-        }} onClick={() => !adding && setShowAdd(false)}>
-          <div
-            style={{
-              background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-              borderRadius: 16, padding: '28px', maxWidth: 460, width: '100%',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: '0 0 20px' }}>
-              Add Contact
-            </h2>
-
-            {addSuccess && (
-              <div style={{
-                padding: '10px 14px', borderRadius: 8, marginBottom: 16,
-                background: 'rgba(110,224,90,0.1)', border: '1px solid rgba(110,224,90,0.3)',
-                color: '#6EE05A', fontSize: 13, fontWeight: 600,
-              }}>
-                {addSuccess}
-              </div>
-            )}
-
-            {addError && (
-              <div style={{
-                padding: '10px 14px', borderRadius: 8, marginBottom: 16,
-                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-                color: '#f87171', fontSize: 13,
-              }}>
-                {addError}
-              </div>
-            )}
-
-            <form onSubmit={handleAddContact}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                <label>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    First Name
-                  </span>
-                  <input
-                    type="text"
-                    value={form.firstName}
-                    onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
-                    placeholder="John"
-                    style={{
-                      width: '100%', padding: '10px 12px', borderRadius: 8,
-                      border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
-                      color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </label>
-                <label>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Last Name
-                  </span>
-                  <input
-                    type="text"
-                    value={form.lastName}
-                    onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
-                    placeholder="Doe"
-                    style={{
-                      width: '100%', padding: '10px 12px', borderRadius: 8,
-                      border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
-                      color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                </label>
-              </div>
-
-              <label style={{ display: 'block', marginBottom: 12 }}>
-                <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Email
-                </span>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  placeholder="john@company.com"
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: 8,
-                    border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
-                    color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </label>
-
-              <label style={{ display: 'block', marginBottom: 12 }}>
-                <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Phone
-                </span>
-                <input
-                  type="tel"
-                  value={form.phone}
-                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                  placeholder="+1 (412) 555-1234"
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: 8,
-                    border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
-                    color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </label>
-
-              <label style={{ display: 'block', marginBottom: 20 }}>
-                <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)', fontWeight: 600, display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Tags (comma separated)
-                </span>
-                <input
-                  type="text"
-                  value={form.tags}
-                  onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
-                  placeholder="lead, marketing, inbound"
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: 8,
-                    border: '1px solid #1c2b42', background: 'var(--bg-primary, #0f172a)',
-                    color: 'var(--text-primary, #f0f4f8)', fontSize: 14, outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </label>
-
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  type="submit"
-                  disabled={adding || (!form.firstName && !form.email && !form.phone)}
-                  style={{
-                    flex: 1, padding: '12px',
-                    background: adding ? '#374151' : 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-                    color: adding ? '#9CA3AF' : '#0c1220',
-                    fontWeight: 700, fontSize: 14, borderRadius: 10,
-                    border: 'none', cursor: adding ? 'not-allowed' : 'pointer',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  {adding ? 'Adding...' : 'Add Contact'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAdd(false)}
-                  disabled={adding}
-                  style={{
-                    padding: '12px 20px', borderRadius: 10,
-                    border: '1px solid #1c2b42', background: 'transparent',
-                    color: 'var(--text-muted, #6b7280)', fontSize: 14,
-                    cursor: 'pointer', fontFamily: 'inherit',
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+      {/* ═══ CREATE CONTACT MODAL ═══ */}
+      <ResponsiveModal
+        open={showCreateModal}
+        onOpenChange={(open) => { if (!adding) setShowCreateModal(open) }}
+        title="Create Contact"
+        description="Add a new contact to your CRM."
+        showCancel={false}
+      >
+        {addSuccess && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-400">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            {addSuccess}
           </div>
-        </div>
-      )}
+        )}
+
+        {addError && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {addError}
+          </div>
+        )}
+
+        <form onSubmit={handleAddContact} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                First Name
+              </span>
+              <input
+                type="text"
+                value={form.firstName}
+                onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
+                placeholder="John"
+                className={inputClass}
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Last Name
+              </span>
+              <input
+                type="text"
+                value={form.lastName}
+                onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
+                placeholder="Doe"
+                className={inputClass}
+              />
+            </label>
+          </div>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Email
+            </span>
+            <input
+              type="email"
+              value={form.email}
+              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              placeholder="john@company.com"
+              className={inputClass}
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Phone
+            </span>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+              placeholder="+1 (412) 555-1234"
+              className={inputClass}
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Company
+            </span>
+            <input
+              type="text"
+              value={form.company}
+              onChange={e => setForm(f => ({ ...f, company: e.target.value }))}
+              placeholder="Acme Inc."
+              className={inputClass}
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Tags (comma separated)
+            </span>
+            <input
+              type="text"
+              value={form.tags}
+              onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+              placeholder="lead, marketing, inbound"
+              className={inputClass}
+            />
+          </label>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={adding || (!form.firstName && !form.email && !form.phone)}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {adding ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4" />
+                  Create Contact
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(false)}
+              disabled={adding}
+              className="rounded-lg border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </ResponsiveModal>
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary, #f0f4f8)', margin: 0 }}>Contacts</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted, #6b7280)', marginTop: 4 }}>
+          <h1 className="text-xl font-bold text-foreground">Contacts</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             {contacts.length > 0 ? `${contacts.length} contacts` : 'Manage your contacts'}
           </p>
         </div>
         <button
-          onClick={() => setShowAdd(true)}
-          style={{
-            padding: '10px 20px',
-            background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-            color: '#0c1220', fontWeight: 700, fontSize: 13,
-            borderRadius: 10, border: 'none', cursor: 'pointer',
-          }}
+          onClick={() => { setAddError(''); setAddSuccess(''); setShowCreateModal(true) }}
+          className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
         >
-          + Add Contact
+          <UserPlus className="h-4 w-4" />
+          Add Contact
         </button>
       </div>
 
       {/* Search */}
-      <div style={{ marginBottom: 20 }}>
+      <div className="relative mb-5">
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           placeholder="Search contacts..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{
-            width: '100%', padding: '12px 16px 12px 40px',
-            background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-            borderRadius: 10, color: 'var(--text-primary, #f0f4f8)', fontSize: 14,
-            outline: 'none', transition: 'border-color 0.2s',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23556880' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: '14px center',
-          }}
-          onFocus={e => e.target.style.borderColor = 'var(--color-cyan, #14b8a6)'}
-          onBlur={e => e.target.style.borderColor = '#1c2b42'}
+          className="w-full rounded-lg border border-border bg-card py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none"
         />
       </div>
 
       {/* Content */}
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-          <div style={{
-            width: 32, height: 32, border: '3px solid #1c2b42',
-            borderTopColor: 'var(--color-cyan, #14b8a6)', borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite',
-          }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : error ? (
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: '40px', textAlign: 'center',
-        }}>
-          <p style={{ color: '#f87171', fontSize: 14, marginBottom: 12 }}>{error}</p>
-          <button onClick={fetchContacts} style={{
-            color: 'var(--color-cyan, #14b8a6)', background: 'none', border: 'none',
-            cursor: 'pointer', fontSize: 13, fontWeight: 600,
-          }}>Try again</button>
+        <div className="rounded-xl border border-border bg-card p-10 text-center">
+          <p className="mb-3 text-sm text-red-400">{error}</p>
+          <button onClick={fetchContacts} className="text-sm font-semibold text-primary hover:underline">
+            Try again
+          </button>
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, padding: '60px 40px', textAlign: 'center',
-        }}>
-          <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>👤</div>
-          <p style={{ color: 'var(--text-secondary, #9ca3af)', fontSize: 14, marginBottom: 16 }}>
+        <div className="rounded-xl border border-border bg-card px-10 py-16 text-center">
+          <User className="mx-auto mb-4 h-10 w-10 text-muted-foreground/30" />
+          <p className="mb-4 text-sm text-muted-foreground">
             {search ? 'No contacts match your search.' : 'No contacts yet. Add your first one.'}
           </p>
           {!search && (
             <button
-              onClick={() => setShowAdd(true)}
-              style={{
-                padding: '10px 20px',
-                background: 'linear-gradient(135deg, #2dd4bf, #14b8a6)',
-                color: '#0c1220', fontWeight: 700, fontSize: 13,
-                borderRadius: 10, border: 'none', cursor: 'pointer',
-              }}
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
             >
-              + Add Contact
+              <UserPlus className="h-4 w-4" />
+              Add Contact
             </button>
           )}
         </div>
       ) : (
-        <div style={{
-          background: 'var(--bg-card, #1f2937)', border: '1px solid #1c2b42',
-          borderRadius: 14, overflow: 'hidden',
-        }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <table className="w-full border-collapse">
             <thead>
-              <tr style={{ borderBottom: '1px solid #1c2b42' }}>
+              <tr className="border-b border-border">
                 {['Name', 'Email', 'Phone', 'Tags', 'Added'].map(h => (
-                  <th key={h} style={{
-                    textAlign: 'left', padding: '12px 20px',
-                    fontSize: 11, fontWeight: 600, color: 'var(--text-muted, #6b7280)',
-                    textTransform: 'uppercase', letterSpacing: '0.06em',
-                  }}>{h}</th>
+                  <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((c) => (
-                <tr key={c.id} style={{ borderBottom: '1px solid rgba(28,43,66,0.5)', cursor: 'pointer' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#1a2740'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <td style={{ padding: '14px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{
-                        width: 32, height: 32, borderRadius: 8,
-                        background: 'linear-gradient(135deg, #2dd4bf20, #8b5cf620)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 13, fontWeight: 700, color: 'var(--color-cyan, #14b8a6)', flexShrink: 0,
-                      }}>
+                <tr key={c.id} className="border-b border-border/50 transition-colors hover:bg-muted/30">
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
                         {(c.firstName?.[0] || c.contactName?.[0] || '?').toUpperCase()}
                       </div>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>
+                      <span className="text-sm font-semibold text-foreground">
                         {c.contactName || `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Unknown'}
                       </span>
                     </div>
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--text-secondary, #9ca3af)' }}>{c.email || '—'}</td>
-                  <td style={{ padding: '14px 20px', fontSize: 13, color: 'var(--text-secondary, #9ca3af)' }}>{c.phone || '—'}</td>
-                  <td style={{ padding: '14px 20px' }}>
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.email || '\u2014'}</td>
+                  <td className="px-5 py-3.5 text-sm text-muted-foreground">{c.phone || '\u2014'}</td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex flex-wrap gap-1">
                       {(c.tags || []).slice(0, 2).map(tag => (
-                        <span key={tag} style={{
-                          padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
-                          background: 'rgba(45,212,191,0.1)', color: 'var(--color-cyan, #14b8a6)',
-                        }}>{tag}</span>
+                        <span key={tag} className="rounded px-2 py-0.5 text-xs font-semibold bg-primary/10 text-primary">
+                          {tag}
+                        </span>
                       ))}
                       {(c.tags || []).length > 2 && (
-                        <span style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>+{c.tags.length - 2}</span>
+                        <span className="text-xs text-muted-foreground">+{c.tags.length - 2}</span>
                       )}
                     </div>
                   </td>
-                  <td style={{ padding: '14px 20px', fontSize: 12, color: 'var(--text-muted, #6b7280)' }}>
-                    {c.dateAdded ? new Date(c.dateAdded).toLocaleDateString() : '—'}
+                  <td className="px-5 py-3.5 text-xs text-muted-foreground">
+                    {c.dateAdded ? new Date(c.dateAdded).toLocaleDateString() : '\u2014'}
                   </td>
                 </tr>
               ))}
