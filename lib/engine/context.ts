@@ -191,6 +191,19 @@ export async function buildEngineContext(
     }
   }
 
+  // Google integration — check if user has connected Google OAuth
+  const googleTokens = profile.google_tokens as Record<string, string> | null
+  if (googleTokens?.access_token || googleTokens?.refresh_token) {
+    const googleServices = ['Google Analytics', 'Gmail', 'Google Drive', 'Google Sheets', 'Google Calendar', 'Google Docs', 'Search Console', 'Google Tasks']
+    connectedPlatforms.push(...googleServices)
+  }
+
+  // Service account — adds Analytics + Search Console
+  const saKey = profile.google_sa_key as Record<string, string> | null
+  if (saKey?.client_email && !googleTokens?.access_token) {
+    connectedPlatforms.push('Google Analytics (SA)', 'Search Console (SA)')
+  }
+
   // Recent activity
   const recentActivity: string[] = (activityResult.data || []).map(
     (row: { action: string; intent: string; created_at: string }) =>
