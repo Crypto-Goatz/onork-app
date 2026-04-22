@@ -321,16 +321,10 @@ export default function ChatPage() {
   // ── Render ──
 
   return (
-    <div
-      className="flex flex-col overflow-hidden relative"
-      style={{ height: 'calc(100vh - 64px)', background: 'var(--core-bg)', color: 'var(--core-text)' }}
-    >
+    <div className="flex flex-col overflow-hidden relative h-[calc(100vh-64px)] bg-core-bg text-core-text">
 
       {/* ═══ TOP TAB BAR ═══ */}
-      <div
-        className="flex items-center gap-1.5 px-5 py-2.5 overflow-x-auto flex-shrink-0"
-        style={{ borderBottom: '1px solid var(--core-border)' }}
-      >
+      <div className="flex items-center gap-1.5 px-5 py-2.5 overflow-x-auto flex-shrink-0 border-b border-core-border">
         {crews.filter(c => c.status !== 'archived').map(crew => {
           const isActive = activeCrew?.id === crew.id
           return (
@@ -356,12 +350,7 @@ export default function ChatPage() {
         {/* Add crew + Settings */}
         <button
           onClick={() => setShowNewCrew(true)}
-          className="flex items-center justify-center px-3 py-2 rounded-lg text-[13px] font-semibold cursor-pointer whitespace-nowrap transition-colors"
-          style={{
-            border: '1px dashed var(--core-border)',
-            background: 'transparent',
-            color: 'var(--core-text-muted)',
-          }}
+          className="flex items-center justify-center px-3 py-2 rounded-lg text-[13px] font-semibold cursor-pointer whitespace-nowrap transition-colors border border-dashed border-core-border bg-transparent text-core-text-muted"
         >
           <Plus size={14} />
         </button>
@@ -385,10 +374,7 @@ export default function ChatPage() {
         <div className="flex-1 flex flex-col min-w-0">
 
           {/* Crew Header */}
-          <div
-            className="px-6 py-3.5 flex items-center gap-3 flex-shrink-0"
-            style={{ borderBottom: '1px solid var(--core-border)' }}
-          >
+          <div className="px-6 py-3.5 flex items-center gap-3 flex-shrink-0 border-b border-core-border">
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold flex-shrink-0"
               style={{ background: crewColor, color: '#0d1117' }}
@@ -397,7 +383,7 @@ export default function ChatPage() {
             </div>
             <div>
               <div className="text-base font-bold">{activeCrew?.name}</div>
-              <div className="text-[11px]" style={{ color: 'var(--core-text-muted)' }}>
+              <div className="text-[11px] text-core-text-muted">
                 {activeCrew?.description}
                 {' · '}
                 <span style={{ color: crewColor }}>
@@ -428,7 +414,7 @@ export default function ChatPage() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
             {currentMessages.length === 0 && (
-              <div className="flex-1 flex items-center justify-center flex-col gap-3" style={{ color: 'var(--core-text-muted)' }}>
+              <div className="flex-1 flex items-center justify-center flex-col gap-3 text-core-text-muted">
                 <div
                   className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold opacity-60"
                   style={{ background: crewColor, color: '#0d1117' }}
@@ -472,14 +458,7 @@ export default function ChatPage() {
                     </div>
                   </div>
                   {isUser && (
-                    <div
-                      className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                      style={{
-                        background: 'var(--core-card)',
-                        border: '1px solid var(--core-border)',
-                        color: 'var(--core-text-dim)',
-                      }}
-                    >
+                    <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 bg-core-card border border-core-border text-core-text-dim">
                       U
                     </div>
                   )}
@@ -496,8 +475,8 @@ export default function ChatPage() {
                   {initials(activeCrew?.name || '')}
                 </div>
                 <div
-                  className="px-4 py-3 flex gap-1 items-center"
-                  style={{ borderRadius: '16px 16px 16px 4px', background: 'var(--core-card)' }}
+                  className="px-4 py-3 flex gap-1 items-center bg-core-card"
+                  style={{ borderRadius: '16px 16px 16px 4px' }}
                 >
                   <span className="chat-typing-dot" style={{ animationDelay: '0ms' }} />
                   <span className="chat-typing-dot" style={{ animationDelay: '200ms' }} />
@@ -512,7 +491,7 @@ export default function ChatPage() {
           {/* Suggested Prompts */}
           {currentMessages.length <= 1 && (
             <div className="px-6 pb-3 flex flex-col items-center gap-2">
-              <span className="text-[12px] font-semibold tracking-[0.04em]" style={{ color: 'var(--core-text-muted)' }}>
+              <span className="text-[12px] font-semibold tracking-[0.04em] text-core-text-muted">
                 Suggested Prompts
               </span>
               <div className="flex gap-2 flex-wrap justify-center">
@@ -520,8 +499,8 @@ export default function ChatPage() {
                   <button
                     key={p.label}
                     onClick={() => { setInput(p.prompt); inputRef.current?.focus() }}
-                    className="px-4 py-1.5 rounded-full text-[12px] font-bold cursor-pointer transition-transform duration-100 hover:scale-[1.04]"
-                    style={{ background: p.color, color: '#0d1117', border: 'none' }}
+                    className="px-4 py-1.5 rounded-full text-[12px] font-bold cursor-pointer transition-transform duration-100 hover:scale-[1.04] border-none"
+                    style={{ background: p.color, color: '#0d1117' }}
                   >
                     {p.label}
                   </button>
@@ -531,18 +510,8 @@ export default function ChatPage() {
           )}
 
           {/* Input Bar */}
-          <div
-            className="px-5 pt-3 pb-4 flex gap-2.5 items-end"
-            style={{ borderTop: '1px solid var(--core-border)' }}
-          >
-            <button
-              className="flex items-center justify-center rounded-lg w-10 h-10 cursor-pointer flex-shrink-0 transition-colors"
-              style={{
-                background: 'var(--core-card)',
-                border: '1px solid var(--core-border)',
-                color: 'var(--core-text-muted)',
-              }}
-            >
+          <div className="px-5 pt-3 pb-4 flex gap-2.5 items-end border-t border-core-border">
+            <button className="flex items-center justify-center rounded-lg w-10 h-10 cursor-pointer flex-shrink-0 transition-colors bg-core-card border border-core-border text-core-text-muted">
               <Paperclip size={16} />
             </button>
             <textarea
@@ -552,11 +521,9 @@ export default function ChatPage() {
               onKeyDown={handleKeyDown}
               placeholder={`Message ${activeCrew?.name || 'crew'}...`}
               rows={1}
-              className="flex-1 rounded-xl px-3.5 py-2.5 text-[13.5px] resize-none outline-none min-h-[40px] max-h-[120px] leading-[1.45] font-[inherit] transition-colors duration-150"
+              className="flex-1 rounded-xl px-3.5 py-2.5 text-[13.5px] resize-none outline-none min-h-[40px] max-h-[120px] leading-[1.45] font-[inherit] transition-colors duration-150 bg-core-card text-core-text"
               style={{
-                background: 'var(--core-card)',
                 border: `1px solid ${input.trim() ? `${crewColor}50` : 'var(--core-border)'}`,
-                color: 'var(--core-text)',
               }}
             />
             <button
@@ -575,34 +542,20 @@ export default function ChatPage() {
         </div>
 
         {/* ═══ RIGHT PANEL — History ═══ */}
-        <div
-          className="w-[280px] min-w-[280px] flex flex-col overflow-hidden"
-          style={{
-            borderLeft: '1px solid var(--core-border)',
-            background: 'var(--core-bg)',
-          }}
-        >
+        <div className="w-[280px] min-w-[280px] flex flex-col overflow-hidden border-l border-core-border bg-core-bg">
           {/* Panel header */}
-          <div
-            className="px-4 py-3.5 flex items-center justify-between flex-shrink-0"
-            style={{ borderBottom: '1px solid var(--core-border)' }}
-          >
+          <div className="px-4 py-3.5 flex items-center justify-between flex-shrink-0 border-b border-core-border">
             <div>
               <div className="text-sm font-bold" style={{ color: crewColor }}>
                 {activeCrew?.name}
               </div>
-              <div className="text-[11px]" style={{ color: 'var(--core-text-muted)' }}>
+              <div className="text-[11px] text-core-text-muted">
                 {showSettings ? 'Settings' : 'History'}
               </div>
             </div>
             <button
               onClick={() => setShowSettings(p => !p)}
-              className="px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-colors"
-              style={{
-                background: 'var(--core-card)',
-                border: '1px solid var(--core-border)',
-                color: 'var(--core-text-dim)',
-              }}
+              className="px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition-colors bg-core-card border border-core-border text-core-text-dim"
             >
               {showSettings ? 'History' : 'Settings'}
             </button>
@@ -632,10 +585,7 @@ export default function ChatPage() {
 
               {/* K-Layers */}
               <div className="mb-4">
-                <div
-                  className="text-[10px] font-bold tracking-[0.08em] uppercase mb-2"
-                  style={{ color: 'var(--core-text-muted)' }}
-                >
+                <div className="text-[10px] font-bold tracking-[0.08em] uppercase mb-2 text-core-text-muted">
                   K-Layers (Department Knowledge)
                 </div>
                 {['K1', 'K2', 'K3', 'K4', 'K5', 'K6', 'K7'].map(k => {
@@ -664,7 +614,7 @@ export default function ChatPage() {
                         >
                           {dept?.label}
                         </div>
-                        <div className="text-[10px]" style={{ color: 'var(--core-text-muted)' }}>
+                        <div className="text-[10px] text-core-text-muted">
                           {dept?.integrations.join(', ')}
                         </div>
                       </div>
@@ -675,22 +625,14 @@ export default function ChatPage() {
 
               {/* Tools */}
               <div className="mb-4">
-                <div
-                  className="text-[10px] font-bold tracking-[0.08em] uppercase mb-2"
-                  style={{ color: 'var(--core-text-muted)' }}
-                >
+                <div className="text-[10px] font-bold tracking-[0.08em] uppercase mb-2 text-core-text-muted">
                   Tools
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {(activeCrew?.tools?.length ? activeCrew.tools : ['none']).map(t => (
                     <span
                       key={t}
-                      className="text-[11px] px-2 py-0.5 rounded-[5px]"
-                      style={{
-                        background: 'var(--core-card)',
-                        color: 'var(--core-text-dim)',
-                        border: '1px solid var(--core-border)',
-                      }}
+                      className="text-[11px] px-2 py-0.5 rounded-[5px] bg-core-card text-core-text-dim border border-core-border"
                     >
                       {t}
                     </span>
@@ -711,12 +653,7 @@ export default function ChatPage() {
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(null)}
-                        className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer"
-                        style={{
-                          border: '1px solid var(--core-border)',
-                          background: 'transparent',
-                          color: 'var(--core-text-dim)',
-                        }}
+                        className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer border border-core-border bg-transparent text-core-text-dim"
                       >
                         Cancel
                       </button>
@@ -741,10 +678,7 @@ export default function ChatPage() {
             /* ── History View ── */
             <div className="flex-1 overflow-y-auto p-2">
               {currentMessages.filter(m => m.id !== 'welcome-' + activeCrew?.id).length === 0 ? (
-                <div
-                  className="py-10 px-4 text-center text-[12px]"
-                  style={{ color: 'var(--core-text-muted)' }}
-                >
+                <div className="py-10 px-4 text-center text-[12px] text-core-text-muted">
                   No conversation history yet.
                   <br />Start chatting to see messages here.
                 </div>
@@ -754,9 +688,8 @@ export default function ChatPage() {
                   .map(msg => (
                     <div
                       key={msg.id}
-                      className="px-3 py-2.5 mb-1 rounded-lg cursor-pointer"
+                      className="px-3 py-2.5 mb-1 rounded-lg cursor-pointer bg-transparent"
                       style={{
-                        background: 'transparent',
                         borderLeft: msg.role === 'user'
                           ? `3px solid ${crewColor}`
                           : '3px solid var(--core-border)',
@@ -769,14 +702,13 @@ export default function ChatPage() {
                         >
                           {msg.role === 'user' ? 'You' : activeCrew?.name}
                         </span>
-                        <span className="text-[10px]" style={{ color: 'var(--core-text-muted)' }}>
+                        <span className="text-[10px] text-core-text-muted">
                           {msg.time}
                         </span>
                       </div>
                       <div
-                        className="text-[12px] leading-[1.4] overflow-hidden"
+                        className="text-[12px] leading-[1.4] overflow-hidden text-core-text-dim"
                         style={{
-                          color: 'var(--core-text-dim)',
                           display: '-webkit-box',
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: 'vertical',
@@ -800,37 +732,23 @@ export default function ChatPage() {
         >
           <div
             onClick={e => e.stopPropagation()}
-            className="w-[380px] rounded-2xl p-6"
-            style={{
-              background: 'var(--core-card)',
-              border: '1px solid var(--core-border)',
-            }}
+            className="w-[380px] rounded-2xl p-6 bg-core-card border border-core-border"
           >
             <div className="text-base font-bold mb-5">Create New Crew</div>
 
-            <label className="text-[11px] font-semibold" style={{ color: 'var(--core-text-dim)' }}>NAME</label>
+            <label className="text-[11px] font-semibold text-core-text-dim">NAME</label>
             <input
               value={newName}
               onChange={e => setNewName(e.target.value)}
               placeholder="e.g. Content Writer"
-              className="w-full rounded-lg px-3 py-2 text-[13px] outline-none mt-1.5 mb-3.5"
-              style={{
-                background: 'var(--core-bg)',
-                border: '1px solid var(--core-border)',
-                color: 'var(--core-text)',
-              }}
+              className="w-full rounded-lg px-3 py-2 text-[13px] outline-none mt-1.5 mb-3.5 bg-core-bg border border-core-border text-core-text"
             />
 
-            <label className="text-[11px] font-semibold" style={{ color: 'var(--core-text-dim)' }}>DEPARTMENT</label>
+            <label className="text-[11px] font-semibold text-core-text-dim">DEPARTMENT</label>
             <select
               value={newRole}
               onChange={e => setNewRole(e.target.value)}
-              className="w-full rounded-lg px-3 py-2 text-[13px] outline-none mt-1.5 mb-3.5"
-              style={{
-                background: 'var(--core-bg)',
-                border: '1px solid var(--core-border)',
-                color: 'var(--core-text)',
-              }}
+              className="w-full rounded-lg px-3 py-2 text-[13px] outline-none mt-1.5 mb-3.5 bg-core-bg border border-core-border text-core-text"
             >
               <option value="general">General</option>
               <option value="sales">Sales</option>
@@ -843,7 +761,7 @@ export default function ChatPage() {
               <option value="support">Customer Service</option>
             </select>
 
-            <label className="text-[11px] font-semibold" style={{ color: 'var(--core-text-dim)' }}>COLOR</label>
+            <label className="text-[11px] font-semibold text-core-text-dim">COLOR</label>
             <div className="flex gap-2 mt-1.5 mb-3.5">
               {['#6EE05A', '#3b82f6', '#a78bfa', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'].map(c => (
                 <button
@@ -858,7 +776,7 @@ export default function ChatPage() {
               ))}
             </div>
 
-            <label className="text-[11px] font-semibold" style={{ color: 'var(--core-text-dim)' }}>K-LAYERS</label>
+            <label className="text-[11px] font-semibold text-core-text-dim">K-LAYERS</label>
             <div className="flex flex-wrap gap-1.5 mt-1.5 mb-5">
               {['K1', 'K2', 'K3', 'K4', 'K5', 'K6', 'K7'].map(k => {
                 const selected = newKLayers.includes(k)
@@ -882,12 +800,7 @@ export default function ChatPage() {
             <div className="flex gap-2.5">
               <button
                 onClick={() => setShowNewCrew(false)}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer transition-colors"
-                style={{
-                  border: '1px solid var(--core-border)',
-                  background: 'transparent',
-                  color: 'var(--core-text-dim)',
-                }}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold cursor-pointer transition-colors border border-core-border bg-transparent text-core-text-dim"
               >
                 Cancel
               </button>
