@@ -18,7 +18,12 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { buildHipaaPdf } from '@/lib/hipaa/pdf'
-import { sendCustomerConfirmation, sendMikeNotification } from '@/lib/hipaa/email'
+import {
+  sendCustomerConfirmation,
+  sendMikeNotification,
+  sendReportReady,
+  upsertHipaaContact,
+} from '@/lib/hipaa/email'
 import { generateReport } from '@/lib/hipaa/ai-generate'
 import { TIER_META, type Tier } from '@/lib/hipaa/report-types'
 import { randomBytes } from 'node:crypto'
@@ -157,26 +162,46 @@ export async function POST(req: NextRequest) {
     // Non-fatal: continue to send email without attachment link
   }
 
-  // 5) customer email
-  try {
-    await sendCustomerConfirmation({
-      to: customerEmail,
-      toName: customerName,
-      companyName: a.company_name,
-      orderId: order.id,
-      pdfUrl: pdfUrl || 'https://0ncore.com/dashboard/hipaa',
-      currentGrade: a.current_grade || 'F',
-      currentRuleScore: a.current_rule_score || 0,
-      criticalFindings: countBy(allChecks, 'critical'),
-      highFindings: countBy(allChecks, 'high'),
-      creditHidden,
-    })
-    await sb.from('hipaa_orders').update({ initial_email_sent_at: new Date().toISOString() }).eq('id', order.id)
-  } catch (e) {
-    console.error('[HIPAA] customer email failed:', e)
+  // 5) upsert the customer into the CRM so every downstream email has a
+  //    real contactId to attach to, and Mike can segment on the tag.
+  const customerContactId = await upsertHipaaContact({
+    email: customerEmail,
+    name: customerName,
+    companyName: a.company_name,
+    orderId: order.id,
+    tier: tierNum,
+    sourceSite,
+  })
+  if (customerContactId) {
+    await sb.from('hipaa_orders').update({ contact_id: customerContactId }).eq('id', order.id)
   }
 
-  // 6) Mike notification
+  // 6) customer confirmation email (initial findings + promise of full report)
+  if (customerContactId) {
+    try {
+      await sendCustomerConfirmation({
+        contactId: customerContactId,
+        toName: customerName,
+        companyName: a.company_name,
+        orderId: order.id,
+        pdfUrl: pdfUrl || 'https://0ncore.com/dashboard/hipaa',
+        currentGrade: a.current_grade || 'F',
+        currentRuleScore: a.current_rule_score || 0,
+        criticalFindings: countBy(allChecks, 'critical'),
+        highFindings: countBy(allChecks, 'high'),
+        creditHidden,
+        tier: tierNum,
+        tierName: tierMeta.name,
+      })
+      await sb.from('hipaa_orders').update({ initial_email_sent_at: new Date().toISOString() }).eq('id', order.id)
+    } catch (e) {
+      console.error('[HIPAA] customer email failed:', e)
+    }
+  } else {
+    console.warn('[HIPAA] no contactId for customer — confirmation email skipped')
+  }
+
+  // 7) Mike notification
   try {
     await sendMikeNotification({
       orderId: order.id,
@@ -187,12 +212,14 @@ export async function POST(req: NextRequest) {
       currentGrade: a.current_grade || 'F',
       criticalFindings: countBy(allChecks, 'critical'),
       highFindings: countBy(allChecks, 'high'),
+      tier: tierNum,
+      tierName: tierMeta.name,
     })
   } catch (e) {
     console.error('[HIPAA] Mike notification failed:', e)
   }
 
-  // 7) background AI-generate the tier-specific full report — `after()` keeps
+  // 8) background AI-generate the tier-specific full report — `after()` keeps
   // the serverless function alive past the response until generation finishes.
   after(async () => {
     try {
@@ -200,11 +227,15 @@ export async function POST(req: NextRequest) {
         orderId: order.id,
         tier: tierNum,
         customerEmail,
+        customerName,
         supportCallUrl: tierMeta.includesSupportCall
           ? `https://rocketopp.com/hipaa/book-call?order=${order.id}`
           : undefined,
         supportCallExpiresAt: supportCallExpiresAt || undefined,
         assessment: a,
+        viewToken: order.report_view_token,
+        contactId: customerContactId || undefined,
+        creditHidden,
       })
     } catch (e) {
       console.error('[HIPAA] background report generation failed:', e)
@@ -235,9 +266,13 @@ async function generateAndPersist(sb: SupabaseClient, args: {
   orderId: string
   tier: Tier
   customerEmail: string
+  customerName?: string | null
   supportCallUrl?: string
   supportCallExpiresAt?: string
   assessment: Record<string, unknown>
+  viewToken?: string
+  contactId?: string | null
+  creditHidden?: boolean
 }) {
   await sb.from('hipaa_orders').update({ report_status: 'generating' }).eq('id', args.orderId)
   try {
@@ -261,6 +296,30 @@ async function generateAndPersist(sb: SupabaseClient, args: {
       status: 'delivered',
       full_report_sent_at: new Date().toISOString(),
     }).eq('id', args.orderId)
+
+    // Send the "your report is ready" email via CRM.
+    if (args.contactId && args.viewToken) {
+      try {
+        await sendReportReady({
+          contactId: args.contactId,
+          toName: args.customerName,
+          companyName: report.companyName,
+          orderId: args.orderId,
+          reportViewUrl: `https://rocketopp.com/hipaa/reports/${args.orderId}?t=${args.viewToken}`,
+          supportCallUrl: args.supportCallUrl || null,
+          supportCallExpiresAt: args.supportCallExpiresAt || null,
+          tier: args.tier,
+          tierName: TIER_META[args.tier].name,
+          currentGrade: report.currentGrade,
+          nprmGrade: report.nprmGrade,
+          criticalFindings: report.findings.filter((f) => f.severity === 'critical').length,
+          findingsCount: report.findings.length,
+          creditHidden: args.creditHidden,
+        })
+      } catch (e) {
+        console.warn('[HIPAA] report-ready email failed:', (e as Error).message)
+      }
+    }
   } catch (e) {
     console.error('[HIPAA] generation failure', e)
     await sb.from('hipaa_orders').update({ report_status: 'failed' }).eq('id', args.orderId)
