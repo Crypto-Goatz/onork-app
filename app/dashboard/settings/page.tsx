@@ -2,12 +2,27 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { CheckCircle, XCircle, AlertCircle, Database, Layers, Crown, RefreshCw, Save, Trash2 } from 'lucide-react'
 
 interface ConnectionStatus {
   crm: { connected: boolean; locationId: string; contactCount: number | null; error: string }
   supabase: { connected: boolean; project: string }
   kLayers: { active: string[]; total: number }
   tier: { level: number; name: string }
+}
+
+const tierNames: Record<number, string> = {
+  0: 'Lobby', 1: 'Front Office', 2: 'Operations Wing',
+  3: 'Intelligence Suite', 4: 'The Vault', 5: 'The Penthouse',
+}
+
+function StatusDot({ status }: { status: 'connected' | 'error' | 'warning' }) {
+  const colors = {
+    connected: 'bg-core-green shadow-[0_0_6px_theme(colors.core-green)]',
+    error: 'bg-core-red shadow-[0_0_6px_theme(colors.core-red)]',
+    warning: 'bg-core-amber shadow-[0_0_6px_theme(colors.core-amber)]',
+  }
+  return <div className={`w-2 h-2 rounded-full ${colors[status]}`} />
 }
 
 export default function SettingsPage() {
@@ -41,7 +56,6 @@ export default function SettingsPage() {
         setBrandTone(profile.brand_tone || '')
       }
 
-      // Load K-layer status
       const { data: kData } = await supabase
         .from('kb_content_queue')
         .select('layer')
@@ -61,10 +75,7 @@ export default function SettingsPage() {
           contactCount: null,
           error: '',
         },
-        supabase: {
-          connected: true,
-          project: 'pwujhhmlrtxjmjzyttwn',
-        },
+        supabase: { connected: true, project: 'pwujhhmlrtxjmjzyttwn' },
         kLayers: {
           active: (kData || []).map(k => k.layer),
           total: 7,
@@ -89,13 +100,12 @@ export default function SettingsPage() {
       brand_tone: brandTone,
     }).eq('id', user.id)
 
-    // Also update K1 if it exists
     await supabase.from('kb_content_queue').upsert({
       user_id: user.id,
       layer: 'K1',
       content: {
         business_name: businessName,
-        what_we_do: '', // preserve existing
+        what_we_do: '',
         brand_tone: brandTone,
       },
       status: 'active',
@@ -129,13 +139,8 @@ export default function SettingsPage() {
     setCheckingCrm(false)
   }
 
-  const tierNames: Record<number, string> = {
-    0: 'Lobby', 1: 'Front Office', 2: 'Operations Wing',
-    3: 'Intelligence Suite', 4: 'The Vault', 5: 'The Penthouse',
-  }
-
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold text-core-text">Settings</h1>
         <p className="text-sm text-core-text-dim mt-1">Manage your account and connections.</p>
@@ -145,104 +150,74 @@ export default function SettingsPage() {
       <div className="bg-core-card border border-core-border rounded-xl p-6 space-y-4">
         <h2 className="text-lg font-semibold text-core-text">Connection Status</h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {/* CRM */}
-          <div style={{
-            padding: '14px 16px', borderRadius: 10,
-            border: `1px solid ${status?.crm.connected ? 'rgba(110,224,90,0.3)' : 'rgba(239,68,68,0.3)'}`,
-            background: status?.crm.connected ? 'rgba(110,224,90,0.05)' : 'rgba(239,68,68,0.05)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <div style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: status?.crm.connected ? '#6EE05A' : '#ef4444',
-                boxShadow: status?.crm.connected ? '0 0 6px #6EE05A' : '0 0 6px #ef4444',
-              }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>CRM</span>
+          <div className={`p-4 rounded-lg border ${status?.crm.connected ? 'border-core-green/30 bg-core-green/5' : 'border-core-red/30 bg-core-red/5'}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <StatusDot status={status?.crm.connected ? 'connected' : 'error'} />
+              <span className="text-sm font-semibold text-core-text">CRM</span>
             </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>
+            <p className="text-xs text-core-text-muted">
               {status?.crm.connected
                 ? `Location: ${status.crm.locationId.slice(0, 8)}...`
                 : 'Not connected'}
-            </div>
+            </p>
             {status?.crm.contactCount !== null && (
-              <div style={{ fontSize: 11, color: '#6EE05A', marginTop: 2 }}>
-                {status?.crm.contactCount} contacts
-              </div>
+              <p className="text-xs text-core-green mt-0.5">{status?.crm.contactCount} contacts</p>
             )}
           </div>
 
           {/* Supabase */}
-          <div style={{
-            padding: '14px 16px', borderRadius: 10,
-            border: '1px solid rgba(110,224,90,0.3)',
-            background: 'rgba(110,224,90,0.05)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#6EE05A', boxShadow: '0 0 6px #6EE05A' }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>Supabase</span>
+          <div className="p-4 rounded-lg border border-core-green/30 bg-core-green/5">
+            <div className="flex items-center gap-2 mb-1">
+              <StatusDot status="connected" />
+              <span className="text-sm font-semibold text-core-text">Supabase</span>
             </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>Connected</div>
+            <p className="text-xs text-core-text-muted">Connected</p>
           </div>
 
           {/* K-Layers */}
-          <div style={{
-            padding: '14px 16px', borderRadius: 10,
-            border: `1px solid ${(status?.kLayers.active.length || 0) > 0 ? 'rgba(110,224,90,0.3)' : 'rgba(245,197,24,0.3)'}`,
-            background: (status?.kLayers.active.length || 0) > 0 ? 'rgba(110,224,90,0.05)' : 'rgba(245,197,24,0.05)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <div style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: (status?.kLayers.active.length || 0) > 0 ? '#6EE05A' : '#f5c518',
-              }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>K-Layers</span>
+          <div className={`p-4 rounded-lg border ${(status?.kLayers.active.length || 0) > 0 ? 'border-core-green/30 bg-core-green/5' : 'border-core-amber/30 bg-core-amber/5'}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <StatusDot status={(status?.kLayers.active.length || 0) > 0 ? 'connected' : 'warning'} />
+              <span className="text-sm font-semibold text-core-text">K-Layers</span>
             </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted, #6b7280)' }}>
+            <p className="text-xs text-core-text-muted">
               {status?.kLayers.active.length || 0}/{status?.kLayers.total || 7} active
-            </div>
+            </p>
             {status?.kLayers.active.length ? (
-              <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+              <div className="flex gap-1 mt-1.5 flex-wrap">
                 {status.kLayers.active.map(k => (
-                  <span key={k} style={{
-                    fontSize: 9, padding: '1px 5px', borderRadius: 4,
-                    background: 'rgba(110,224,90,0.15)', color: '#6EE05A', fontWeight: 600,
-                  }}>{k}</span>
+                  <span key={k} className="text-[9px] px-1.5 py-px rounded bg-core-green/15 text-core-green font-semibold">{k}</span>
                 ))}
               </div>
             ) : null}
           </div>
 
           {/* Tier */}
-          <div style={{
-            padding: '14px 16px', borderRadius: 10,
-            border: '1px solid rgba(167,139,250,0.3)',
-            background: 'rgba(167,139,250,0.05)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#a78bfa' }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary, #f0f4f8)' }}>Tier</span>
+          <div className="p-4 rounded-lg border border-core-purple/30 bg-core-purple/5">
+            <div className="flex items-center gap-2 mb-1">
+              <Crown className="w-3 h-3 text-core-purple" />
+              <span className="text-sm font-semibold text-core-text">Tier</span>
             </div>
-            <div style={{ fontSize: 11, color: '#a78bfa', fontWeight: 600 }}>
+            <p className="text-xs text-core-purple font-semibold">
               {tierNames[status?.tier.level ?? 0] || 'Lobby'} (Level {status?.tier.level ?? 0})
-            </div>
+            </p>
           </div>
         </div>
 
         {/* CRM Test */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="flex items-center gap-3">
           <button
             onClick={testCrmConnection}
             disabled={checkingCrm}
-            className="bg-core-cyan/10 text-core-cyan border border-core-cyan/20 font-medium text-sm px-4 py-2 rounded-lg hover:bg-core-cyan/20 transition-all"
+            className="flex items-center gap-2 bg-core-cyan/10 text-core-cyan border border-core-cyan/20 font-medium text-sm px-4 py-2 rounded-lg hover:bg-core-cyan/20 transition-all disabled:opacity-50"
           >
+            <RefreshCw className={`w-3.5 h-3.5 ${checkingCrm ? 'animate-spin' : ''}`} />
             {checkingCrm ? 'Testing...' : 'Test CRM Connection'}
           </button>
           {crmTestResult && (
-            <span style={{
-              fontSize: 12,
-              color: crmTestResult.startsWith('Connected') ? '#6EE05A' : '#ef4444',
-            }}>
+            <span className={`text-xs ${crmTestResult.startsWith('Connected') ? 'text-core-green' : 'text-core-red'}`}>
               {crmTestResult}
             </span>
           )}
@@ -253,7 +228,7 @@ export default function SettingsPage() {
       <div className="bg-core-card border border-core-border rounded-xl p-6 space-y-4">
         <h2 className="text-lg font-semibold text-core-text">Profile</h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm text-core-text-dim mb-1.5">Full Name</label>
             <input
@@ -301,25 +276,27 @@ export default function SettingsPage() {
           </select>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="flex items-center gap-3">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-core-green text-core-bg font-medium text-sm px-4 py-2 rounded-lg hover:brightness-110 transition-all"
+            className="flex items-center gap-2 bg-core-green text-core-bg font-medium text-sm px-4 py-2 rounded-lg hover:brightness-110 transition-all disabled:opacity-50"
           >
+            <Save className="w-3.5 h-3.5" />
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
           {saved && (
-            <span style={{ fontSize: 12, color: '#6EE05A', fontWeight: 600 }}>Saved</span>
+            <span className="text-xs text-core-green font-semibold">Saved</span>
           )}
         </div>
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-core-card border border-red-500/20 rounded-xl p-6 space-y-4">
+      <div className="bg-core-card border border-core-red/20 rounded-xl p-6 space-y-3">
         <h2 className="text-lg font-semibold text-core-red">Danger Zone</h2>
         <p className="text-sm text-core-text-dim">Permanently delete your account and all associated data.</p>
-        <button className="bg-red-500/10 text-core-red border border-red-500/20 font-medium text-sm px-4 py-2 rounded-lg hover:bg-red-500/20 transition-all">
+        <button className="flex items-center gap-2 bg-core-red/10 text-core-red border border-core-red/20 font-medium text-sm px-4 py-2 rounded-lg hover:bg-core-red/20 transition-all">
+          <Trash2 className="w-3.5 h-3.5" />
           Delete Account
         </button>
       </div>
