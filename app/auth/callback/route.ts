@@ -30,9 +30,9 @@ export async function GET(request: Request) {
           .eq('id', user.id)
           .single()
 
-        // New user or hasn't completed onboarding → send to onboarding
+        // New user or hasn't completed onboarding → send to import (choose your path)
         if (!profile?.onboarding_complete) {
-          return NextResponse.redirect(`${origin}/dashboard/onboarding`)
+          return NextResponse.redirect(`${origin}/import`)
         }
       }
 
