@@ -141,23 +141,46 @@ async function authedFetch(url: string, init: RequestInit, auth: Auth): Promise<
     Version: CRM_VERSION,
     'Content-Type': 'application/json',
   }
-  let res = await fetch(url, { ...init, headers, cache: 'no-store' })
 
-  if (res.status === 401 && auth.source === 'oauth' && auth.installId) {
-    const { data } = await getAdmin()
-      .from('crm_installations')
-      .select('refresh_token')
-      .eq('id', auth.installId)
-      .maybeSingle()
-    if (data?.refresh_token) {
-      const fresh = await refreshInstall(auth.installId, data.refresh_token)
-      if (fresh) {
-        res = await fetch(url, {
-          ...init,
-          headers: { ...headers, Authorization: `Bearer ${fresh}` },
-          cache: 'no-store',
-        })
+  const startMs = Date.now()
+  let res = await fetch(url, { ...init, headers, cache: 'no-store' })
+  const durationMs = Date.now() - startMs
+
+  // Detailed logging on any error
+  if (!res.ok) {
+    const cloned = res.clone()
+    let errorBody = ''
+    try { errorBody = await cloned.text() } catch {}
+    console.error(`[CRM] ${res.status} ${init.method || 'GET'} ${url.replace(CRM_API, '')} (${durationMs}ms)`)
+    console.error(`[CRM] Auth: ${auth.source} | Token: ${auth.token.substring(0, 15)}... | Location: ${auth.locationId}`)
+    console.error(`[CRM] Response: ${errorBody.substring(0, 500)}`)
+
+    if (res.status === 401 && auth.source === 'oauth' && auth.installId) {
+      console.log(`[CRM] 401 on OAuth — attempting token refresh for install ${auth.installId}`)
+      const { data } = await getAdmin()
+        .from('crm_installations')
+        .select('refresh_token')
+        .eq('id', auth.installId)
+        .maybeSingle()
+      if (data?.refresh_token) {
+        const fresh = await refreshInstall(auth.installId, data.refresh_token)
+        if (fresh) {
+          console.log(`[CRM] Token refreshed — retrying request`)
+          res = await fetch(url, {
+            ...init,
+            headers: { ...headers, Authorization: `Bearer ${fresh}` },
+            cache: 'no-store',
+          })
+          if (!res.ok) {
+            const retryBody = await res.clone().text().catch(() => '')
+            console.error(`[CRM] Retry also failed: ${res.status} — ${retryBody.substring(0, 300)}`)
+          }
+        } else {
+          console.error(`[CRM] Token refresh failed — install ${auth.installId} marked expired`)
+        }
       }
+    } else if (res.status === 401 && auth.source === 'pit') {
+      console.error(`[CRM] 401 on PIT token — token may be expired or invalid. PIT: ${auth.token.substring(0, 20)}...`)
     }
   }
 
