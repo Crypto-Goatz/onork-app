@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/cro9",
       "schedule": "18 10 * * *"
+    },
+    {
+      "path": "/api/cron/use-cases",
+      "schedule": "0 8 * * *"
     }
   ]
 }
