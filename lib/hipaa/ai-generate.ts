@@ -314,9 +314,10 @@ Rules:
 // ---------------------------------------------------------------------------
 async function groq(prompt: string, opts: { max_tokens?: number; json?: boolean } = {}): Promise<string> {
   if (!GROQ_KEY) { console.warn('[HIPAA] groq: missing GROQ_API_KEY'); return '' }
-  // Retry on 429/5xx or network blip with exponential backoff — hitting Groq
-  // hard (4 parallel calls × 14 findings ~ 56 req/min) bumps into RPM caps.
-  for (let attempt = 0; attempt < 4; attempt++) {
+  // One attempt + one quick retry on 429/5xx. The serialized-by-finding loop
+  // (14 findings × 4 parallel calls) already spreads the load over time; deep
+  // retries here only push us past Vercel's 300s function ceiling.
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -328,15 +329,15 @@ async function groq(prompt: string, opts: { max_tokens?: number; json?: boolean 
           response_format: opts.json ? { type: 'json_object' } : undefined,
           messages: [{ role: 'user', content: prompt }],
         }),
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(20000),
       })
       if (!r.ok) {
         const err = await r.text().catch(() => '')
         const retryAfter = Number(r.headers.get('retry-after') || 0)
         console.warn(`[HIPAA] groq ${r.status} (attempt ${attempt + 1}):`, err.slice(0, 200))
         if (r.status >= 500 || r.status === 429) {
-          const wait = retryAfter > 0 ? retryAfter * 1000 : (500 * Math.pow(2, attempt))
-          await new Promise((res) => setTimeout(res, Math.min(wait, 8000)))
+          const wait = retryAfter > 0 ? Math.min(retryAfter * 1000, 1500) : 800
+          await new Promise((res) => setTimeout(res, wait))
           continue
         }
         return ''
@@ -346,7 +347,6 @@ async function groq(prompt: string, opts: { max_tokens?: number; json?: boolean 
       return opts.json ? stripOuterCodeFence(content) : content
     } catch (e) {
       console.warn('[HIPAA] groq attempt', attempt, 'exception:', (e as Error).message)
-      await new Promise((res) => setTimeout(res, 500 * Math.pow(2, attempt)))
     }
   }
   return ''
