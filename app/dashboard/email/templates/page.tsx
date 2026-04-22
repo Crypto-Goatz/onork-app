@@ -140,7 +140,7 @@ export default function EmailTemplatesPage() {
           <div className="size-8 border-2 border-core-green border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.length === 0 ? (
             <div className="col-span-full text-center py-10 text-core-text-muted">
               <Mail className="size-12 mx-auto mb-3 opacity-50" />

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ArrowLeft, Plus, X, Trash2, Eye, EyeOff, Briefcase, HardDrive, MessageSquare, Github } from 'lucide-react'
 import type { Client, Credential, Project, Task } from '../types'
 
 const uid = () => Math.random().toString(36).substr(2, 9)
@@ -13,6 +14,18 @@ interface ClientManagerProps {
   onUpdateClient: (client: Client) => void
   onDeleteClient: (id: string) => void
   onAddProject: (project: Project) => void
+}
+
+const INTEGRATION_META = [
+  { label: 'Drive', field: 'driveLink' as const, Icon: HardDrive },
+  { label: 'Slack', field: 'slackChannel' as const, Icon: MessageSquare },
+  { label: 'GitHub', field: 'githubRepo' as const, Icon: Github },
+]
+
+const PRIORITY_DOT: Record<string, string> = {
+  high: 'bg-core-red',
+  medium: 'bg-core-amber',
+  low: 'bg-core-green',
 }
 
 export default function ClientManager({
@@ -70,7 +83,8 @@ export default function ClientManager({
 
   const handleUpdateLink = (field: 'driveLink' | 'slackChannel' | 'githubRepo') => {
     if (!selected) return
-    const val = prompt(`Enter ${field === 'driveLink' ? 'Drive link' : field === 'slackChannel' ? 'Slack channel' : 'GitHub repo'}:`, (selected as any)[field] || '')
+    const label = field === 'driveLink' ? 'Drive link' : field === 'slackChannel' ? 'Slack channel' : 'GitHub repo'
+    const val = prompt(`Enter ${label}:`, (selected as any)[field] || '')
     if (val !== null) onUpdateClient({ ...selected, [field]: val })
   }
 
@@ -80,47 +94,40 @@ export default function ClientManager({
     const clientTasks = tasks.filter(t => t.clientId === selected.id)
 
     return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0d1117', color: '#f0f4f8', overflow: 'auto' }}>
+      <div className="h-full flex flex-col bg-core-bg text-core-text overflow-auto">
         {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button onClick={() => setSelectedId(null)} style={{ background: 'none', border: 'none', color: '#7ed957', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
-            &larr; Back
+        <div className="px-6 py-5 border-b border-core-border flex items-center gap-4">
+          <button onClick={() => setSelectedId(null)} className="flex items-center gap-1.5 bg-transparent border-0 text-core-green cursor-pointer text-sm font-semibold hover:opacity-80 transition-opacity">
+            <ArrowLeft size={16} /> Back
           </button>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: '#7ed957', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0d1117', fontSize: 22, fontWeight: 800 }}>
+          <div className="w-12 h-12 rounded-xl bg-core-green flex items-center justify-center text-core-bg text-[22px] font-extrabold shrink-0">
             {selected.name.charAt(0)}
           </div>
           <div>
-            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>{selected.name}</h2>
-            <span style={{ fontSize: 13, color: '#8b95a5' }}>{selected.industry || 'General'} {selected.description ? ` -- ${selected.description}` : ''}</span>
+            <h2 className="m-0 text-[22px] font-extrabold">{selected.name}</h2>
+            <span className="text-[13px] text-core-text-dim">
+              {selected.industry || 'General'}{selected.description ? ` — ${selected.description}` : ''}
+            </span>
           </div>
         </div>
 
-        <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, flex: 1 }}>
+        <div className="p-6 grid grid-cols-2 gap-6 flex-1">
           {/* Left: Integrations + Credentials */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="flex flex-col gap-5">
             {/* Integration links */}
             <div>
-              <h3 style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, color: '#7ed957', marginBottom: 12 }}>Integrations</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                {[
-                  { label: 'Drive', field: 'driveLink' as const, icon: '\u{1F4C1}' },
-                  { label: 'Slack', field: 'slackChannel' as const, icon: '\u{1F4AC}' },
-                  { label: 'GitHub', field: 'githubRepo' as const, icon: '\u{1F4BB}' },
-                ].map(item => (
+              <h3 className="text-[11px] font-extrabold uppercase tracking-[1.5px] text-core-green mb-3">Integrations</h3>
+              <div className="grid grid-cols-3 gap-2.5">
+                {INTEGRATION_META.map(({ label, field, Icon }) => (
                   <button
-                    key={item.field}
-                    onClick={() => handleUpdateLink(item.field)}
-                    style={{
-                      padding: '14px 12px', background: '#161b22', border: '1px solid #1e293b', borderRadius: 10,
-                      color: '#f0f4f8', cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.2s',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#7ed957')}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = '#1e293b')}
+                    key={field}
+                    onClick={() => handleUpdateLink(field)}
+                    className="p-3.5 bg-core-card border border-core-border rounded-[10px] text-core-text cursor-pointer text-left transition-colors hover:border-core-green"
                   >
-                    <span style={{ fontSize: 20 }}>{item.icon}</span>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginTop: 8 }}>{item.label}</div>
-                    <div style={{ fontSize: 10, color: (selected as any)[item.field] ? '#7ed957' : '#3d4654', marginTop: 2 }}>
-                      {(selected as any)[item.field] ? 'Connected' : 'Not set'}
+                    <Icon size={20} className="text-core-text-dim" />
+                    <div className="text-[13px] font-semibold mt-2">{label}</div>
+                    <div className={`text-[10px] mt-0.5 ${(selected as any)[field] ? 'text-core-green' : 'text-core-text-muted'}`}>
+                      {(selected as any)[field] ? 'Connected' : 'Not set'}
                     </div>
                   </button>
                 ))}
@@ -129,32 +136,40 @@ export default function ClientManager({
 
             {/* Credentials */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <h3 style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, color: '#7ed957', margin: 0 }}>Credentials Vault</h3>
-                <button onClick={() => setShowCredModal(true)} style={{ background: '#7ed957', color: '#0d1117', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add</button>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-[11px] font-extrabold uppercase tracking-[1.5px] text-core-green m-0">Credentials Vault</h3>
+                <button onClick={() => setShowCredModal(true)} className="bg-core-green text-core-bg border-0 rounded-[6px] px-2.5 py-1 text-[11px] font-bold cursor-pointer flex items-center gap-1">
+                  <Plus size={11} /> Add
+                </button>
               </div>
-              <div style={{ background: '#161b22', border: '1px solid #1e293b', borderRadius: 10, overflow: 'hidden' }}>
+              <div className="bg-core-card border border-core-border rounded-[10px] overflow-hidden">
                 {selected.credentials.length === 0 ? (
-                  <div style={{ padding: 20, textAlign: 'center', color: '#3d4654', fontSize: 13, fontStyle: 'italic' }}>No credentials stored.</div>
+                  <div className="p-5 text-center text-core-text-muted text-[13px] italic">No credentials stored.</div>
                 ) : (
                   selected.credentials.map(cred => (
-                    <div key={cred.id} style={{ padding: '12px 16px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={cred.id} className="px-4 py-3 border-b border-core-border flex justify-between items-center">
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f4f8' }}>{cred.service}</div>
-                        <div style={{ fontSize: 11, color: '#8b95a5', marginTop: 2 }}>User: <span style={{ fontFamily: 'monospace', color: '#a0aec0' }}>{cred.username}</span></div>
+                        <div className="text-[13px] font-bold text-core-text">{cred.service}</div>
+                        <div className="text-[11px] text-core-text-dim mt-0.5">
+                          User: <span className="font-mono text-core-text">{cred.username}</span>
+                        </div>
                         {cred.password && (
-                          <div style={{ fontSize: 11, color: '#8b95a5', marginTop: 2 }}>
-                            Pass: <span style={{ fontFamily: 'monospace', color: '#a0aec0' }}>{showPasswords[cred.id] ? cred.password : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}</span>
+                          <div className="text-[11px] text-core-text-dim mt-0.5 flex items-center gap-1">
+                            Pass: <span className="font-mono text-core-text">
+                              {showPasswords[cred.id] ? cred.password : '••••••••'}
+                            </span>
                             <button
                               onClick={() => setShowPasswords(p => ({ ...p, [cred.id]: !p[cred.id] }))}
-                              style={{ background: 'none', border: 'none', color: '#7ed957', cursor: 'pointer', fontSize: 10, marginLeft: 8 }}
+                              className="bg-transparent border-0 text-core-green cursor-pointer flex items-center ml-1"
                             >
-                              {showPasswords[cred.id] ? 'Hide' : 'Show'}
+                              {showPasswords[cred.id] ? <EyeOff size={11} /> : <Eye size={11} />}
                             </button>
                           </div>
                         )}
                       </div>
-                      <button onClick={() => handleDeleteCred(cred.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16 }}>x</button>
+                      <button onClick={() => handleDeleteCred(cred.id)} className="bg-transparent border-0 text-core-red cursor-pointer p-1 hover:opacity-80 transition-opacity">
+                        <Trash2 size={15} />
+                      </button>
                     </div>
                   ))
                 )}
@@ -163,28 +178,30 @@ export default function ClientManager({
 
             {/* Projects */}
             <div>
-              <h3 style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, color: '#7ed957', marginBottom: 12 }}>Projects</h3>
+              <h3 className="text-[11px] font-extrabold uppercase tracking-[1.5px] text-core-green mb-3">Projects</h3>
               {clientProjects.length === 0 ? (
-                <div style={{ color: '#3d4654', fontSize: 13, fontStyle: 'italic' }}>No projects yet.</div>
+                <div className="text-core-text-muted text-[13px] italic">No projects yet.</div>
               ) : clientProjects.map(p => (
-                <div key={p.id} style={{ background: '#161b22', border: '1px solid #1e293b', borderRadius: 8, padding: '10px 14px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 600, fontSize: 13 }}>{p.title}</span>
-                  <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 6, background: p.status === 'active' ? 'rgba(126,217,87,0.15)' : 'rgba(139,149,165,0.15)', color: p.status === 'active' ? '#7ed957' : '#8b95a5' }}>{p.status}</span>
+                <div key={p.id} className="bg-core-card border border-core-border rounded-lg px-3.5 py-2.5 mb-2 flex justify-between items-center">
+                  <span className="font-semibold text-[13px]">{p.title}</span>
+                  <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-[6px] ${
+                    p.status === 'active' ? 'bg-core-green/15 text-core-green' : 'bg-core-text-dim/15 text-core-text-dim'
+                  }`}>{p.status}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Right: Tasks */}
-          <div style={{ background: '#161b22', border: '1px solid #1e293b', borderRadius: 12, padding: 16, overflow: 'auto' }}>
-            <h3 style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, color: '#7ed957', marginBottom: 12 }}>Tasks ({clientTasks.length})</h3>
+          <div className="bg-core-card border border-core-border rounded-xl p-4 overflow-auto">
+            <h3 className="text-[11px] font-extrabold uppercase tracking-[1.5px] text-core-green mb-3">Tasks ({clientTasks.length})</h3>
             {clientTasks.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 40, color: '#3d4654', fontSize: 13 }}>No tasks for this client.</div>
+              <div className="text-center py-10 text-core-text-muted text-[13px]">No tasks for this client.</div>
             ) : clientTasks.map(t => (
-              <div key={t.id} style={{ padding: '10px 12px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 8, height: 8, borderRadius: 4, background: t.priority === 'high' ? '#ef4444' : t.priority === 'medium' ? '#f59e0b' : '#7ed957' }} />
-                <span style={{ flex: 1, fontSize: 13, color: t.status === 'done' ? '#3d4654' : '#f0f4f8', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>{t.title}</span>
-                <span style={{ fontSize: 10, color: '#8b95a5', textTransform: 'uppercase' }}>{t.status}</span>
+              <div key={t.id} className="px-3 py-2.5 border-b border-core-border flex items-center gap-2.5">
+                <div className={`w-2 h-2 rounded-full shrink-0 ${PRIORITY_DOT[t.priority]}`} />
+                <span className={`flex-1 text-[13px] ${t.status === 'done' ? 'text-core-text-muted line-through' : 'text-core-text'}`}>{t.title}</span>
+                <span className="text-[10px] text-core-text-dim uppercase">{t.status}</span>
               </div>
             ))}
           </div>
@@ -192,30 +209,40 @@ export default function ClientManager({
 
         {/* Add Credential Modal */}
         {showCredModal && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-            <div style={{ background: '#161b22', border: '1px solid #1e293b', borderRadius: 14, padding: 24, width: 360 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Add Credential</h3>
-                <button onClick={() => setShowCredModal(false)} style={{ background: 'none', border: 'none', color: '#8b95a5', cursor: 'pointer', fontSize: 18 }}>x</button>
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100]">
+            <div className="bg-core-card border border-core-border rounded-2xl p-6 w-[360px]">
+              <div className="flex justify-between mb-4">
+                <h3 className="m-0 text-base font-extrabold">Add Credential</h3>
+                <button onClick={() => setShowCredModal(false)} className="bg-transparent border-0 text-core-text-dim cursor-pointer hover:text-core-text">
+                  <X size={20} />
+                </button>
               </div>
               {[
                 { label: 'Service', val: credService, set: setCredService, placeholder: 'e.g. Stripe' },
                 { label: 'Username', val: credUser, set: setCredUser, placeholder: 'Username or email' },
                 { label: 'Password', val: credPass, set: setCredPass, placeholder: 'Password or API key' },
               ].map(f => (
-                <div key={f.label} style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2, color: '#8b95a5', marginBottom: 4 }}>{f.label}</label>
+                <div key={f.label} className="mb-3.5">
+                  <label className="block text-[10px] font-extrabold uppercase tracking-[1.2px] text-core-text-dim mb-1">{f.label}</label>
                   <input
                     value={f.val}
                     onChange={e => f.set(e.target.value)}
                     placeholder={f.placeholder}
-                    style={{ width: '100%', padding: '8px 12px', background: '#0d1117', border: '1px solid #1e293b', borderRadius: 8, color: '#f0f4f8', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                    className="w-full px-3 py-2 bg-core-bg border border-core-border rounded-lg text-core-text text-[13px] outline-none box-border"
                   />
                 </div>
               ))}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-                <button onClick={() => setShowCredModal(false)} style={{ padding: '8px 16px', background: 'none', border: '1px solid #1e293b', borderRadius: 8, color: '#8b95a5', cursor: 'pointer', fontSize: 12 }}>Cancel</button>
-                <button onClick={handleAddCred} disabled={!credService.trim()} style={{ padding: '8px 16px', background: credService.trim() ? '#7ed957' : '#1e293b', color: '#0d1117', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: credService.trim() ? 'pointer' : 'not-allowed' }}>Save</button>
+              <div className="flex justify-end gap-2 mt-2">
+                <button onClick={() => setShowCredModal(false)} className="px-4 py-2 bg-transparent border border-core-border rounded-lg text-core-text-dim cursor-pointer text-xs">Cancel</button>
+                <button
+                  onClick={handleAddCred}
+                  disabled={!credService.trim()}
+                  className={`px-4 py-2 border-0 rounded-lg text-xs font-bold transition-colors ${
+                    credService.trim() ? 'bg-core-green text-core-bg cursor-pointer' : 'bg-core-border text-core-text-muted cursor-not-allowed'
+                  }`}
+                >
+                  Save
+                </button>
               </div>
             </div>
           </div>
@@ -226,59 +253,58 @@ export default function ClientManager({
 
   // List view
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#0d1117', color: '#f0f4f8' }}>
+    <div className="h-full flex flex-col bg-core-bg text-core-text">
       {/* Header */}
-      <div style={{ padding: '20px 24px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="px-6 py-5 border-b border-core-border flex justify-between items-center">
         <div>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Clients</h2>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#7ed957', opacity: 0.8 }}>Manage your relationships and assets.</p>
+          <h2 className="m-0 text-[22px] font-extrabold">Clients</h2>
+          <p className="m-0 mt-1 text-[13px] text-core-green opacity-80">Manage your relationships and assets.</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          style={{ width: 36, height: 36, borderRadius: 8, background: '#7ed957', color: '#0d1117', border: 'none', cursor: 'pointer', fontSize: 20, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >+</button>
+          className="w-9 h-9 rounded-lg bg-core-green text-core-bg border-0 cursor-pointer flex items-center justify-center hover:opacity-90 transition-opacity"
+        >
+          <Plus size={18} />
+        </button>
       </div>
 
       {/* Search */}
-      <div style={{ padding: '12px 24px' }}>
+      <div className="px-6 py-3">
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search clients..."
-          style={{ width: '100%', padding: '10px 14px', background: '#161b22', border: '1px solid #1e293b', borderRadius: 10, color: '#f0f4f8', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+          className="w-full px-3.5 py-2.5 bg-core-card border border-core-border rounded-[10px] text-core-text text-[13px] outline-none box-border"
         />
       </div>
 
       {/* Client Grid */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '0 24px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14, alignContent: 'start' }}>
+      <div className="flex-1 overflow-auto px-6 pb-6 grid gap-3.5 content-start"
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}
+      >
         {filtered.length === 0 ? (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 60, color: '#3d4654' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>&#128188;</div>
-            <p>No clients yet. Add one to get started.</p>
+          <div className="col-span-full text-center py-16 text-core-text-muted flex flex-col items-center gap-3">
+            <Briefcase size={40} className="opacity-30" />
+            <p className="m-0 text-sm">No clients yet. Add one to get started.</p>
           </div>
         ) : filtered.map(client => (
           <div
             key={client.id}
             onClick={() => setSelectedId(client.id)}
-            style={{
-              background: '#161b22', border: '1px solid #1e293b', borderRadius: 12, padding: 18, cursor: 'pointer',
-              transition: 'border-color 0.2s, transform 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#7ed957'; e.currentTarget.style.transform = 'scale(1.02)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.transform = 'scale(1)' }}
+            className="bg-core-card border border-core-border rounded-xl p-[18px] cursor-pointer transition-all hover:border-core-green hover:scale-[1.02]"
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(126,217,87,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7ed957', fontSize: 18, fontWeight: 800 }}>
+            <div className="flex justify-between mb-3.5">
+              <div className="w-[42px] h-[42px] rounded-[10px] bg-core-green/15 flex items-center justify-center text-core-green text-lg font-extrabold">
                 {client.name.charAt(0)}
               </div>
             </div>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{client.name}</h3>
-            <p style={{ margin: '4px 0 12px', fontSize: 12, color: '#8b95a5' }}>{client.industry || 'General Industry'}</p>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: 6, color: '#8b95a5' }}>
+            <h3 className="m-0 text-base font-bold">{client.name}</h3>
+            <p className="m-0 mt-1 mb-3 text-xs text-core-text-dim">{client.industry || 'General Industry'}</p>
+            <div className="flex gap-2">
+              <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded-[6px] text-core-text-dim">
                 {projects.filter(p => p.clientId === client.id).length} Projects
               </span>
-              <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.05)', padding: '3px 8px', borderRadius: 6, color: '#8b95a5' }}>
+              <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded-[6px] text-core-text-dim">
                 {client.credentials.length} Creds
               </span>
             </div>
@@ -288,30 +314,40 @@ export default function ClientManager({
 
       {/* New Client Modal */}
       {showModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-          <div style={{ background: '#161b22', border: '1px solid #1e293b', borderRadius: 14, padding: 24, width: 380 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Add New Client</h3>
-              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: '#8b95a5', cursor: 'pointer', fontSize: 18 }}>x</button>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100]">
+          <div className="bg-core-card border border-core-border rounded-2xl p-6 w-[380px]">
+            <div className="flex justify-between mb-4">
+              <h3 className="m-0 text-base font-extrabold">Add New Client</h3>
+              <button onClick={() => setShowModal(false)} className="bg-transparent border-0 text-core-text-dim cursor-pointer hover:text-core-text">
+                <X size={20} />
+              </button>
             </div>
             {[
               { label: 'Client Name', val: newName, set: setNewName, placeholder: 'e.g. Acme Corp' },
               { label: 'Industry', val: newIndustry, set: setNewIndustry, placeholder: 'e.g. Technology' },
               { label: 'Description', val: newDesc, set: setNewDesc, placeholder: 'Brief description (optional)' },
             ].map(f => (
-              <div key={f.label} style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.2, color: '#8b95a5', marginBottom: 4 }}>{f.label}</label>
+              <div key={f.label} className="mb-3.5">
+                <label className="block text-[10px] font-extrabold uppercase tracking-[1.2px] text-core-text-dim mb-1">{f.label}</label>
                 <input
                   value={f.val}
                   onChange={e => f.set(e.target.value)}
                   placeholder={f.placeholder}
-                  style={{ width: '100%', padding: '8px 12px', background: '#0d1117', border: '1px solid #1e293b', borderRadius: 8, color: '#f0f4f8', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                  className="w-full px-3 py-2 bg-core-bg border border-core-border rounded-lg text-core-text text-[13px] outline-none box-border"
                 />
               </div>
             ))}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-              <button onClick={() => setShowModal(false)} style={{ padding: '8px 16px', background: 'none', border: '1px solid #1e293b', borderRadius: 8, color: '#8b95a5', cursor: 'pointer', fontSize: 12 }}>Cancel</button>
-              <button onClick={handleCreate} disabled={!newName.trim()} style={{ padding: '8px 16px', background: newName.trim() ? '#7ed957' : '#1e293b', color: '#0d1117', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: newName.trim() ? 'pointer' : 'not-allowed' }}>Create Client</button>
+            <div className="flex justify-end gap-2 mt-2">
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 bg-transparent border border-core-border rounded-lg text-core-text-dim cursor-pointer text-xs">Cancel</button>
+              <button
+                onClick={handleCreate}
+                disabled={!newName.trim()}
+                className={`px-4 py-2 border-0 rounded-lg text-xs font-bold transition-colors ${
+                  newName.trim() ? 'bg-core-green text-core-bg cursor-pointer' : 'bg-core-border text-core-text-muted cursor-not-allowed'
+                }`}
+              >
+                Create Client
+              </button>
             </div>
           </div>
         </div>
