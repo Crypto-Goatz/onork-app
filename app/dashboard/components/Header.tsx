@@ -4,6 +4,13 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { NotificationBell } from '@/components/NotificationBell'
 import { TokenButton } from '@/components/token-modal'
+import {
+  LayoutDashboard, MessageSquare, BarChart3, Users, Target, Calendar,
+  CreditCard, Tag, Mail, Share2, FileText, Link2, ClipboardList, Megaphone,
+  Mic, Bot, Brain, Zap, RefreshCw, Phone, FolderOpen, FileCheck, Globe,
+  GraduationCap, Palette, User, CheckSquare, Settings, Shield, Plug,
+  Building2, ShoppingCart, Download, UserPlus, PenLine, HeartPulse, type LucideIcon,
+} from 'lucide-react'
 
 export type LayoutMode = 'classic' | 'compact' | 'horizontal'
 
@@ -21,52 +28,44 @@ interface HeaderProps {
   onLayoutChange?: (mode: LayoutMode) => void
 }
 
-/* ─── Smart Search Navigation Items ─── */
-const NAV_ITEMS = [
-  // Core
-  { label: 'Dashboard', href: '/dashboard', keywords: 'home overview main', icon: '📊' },
-  { label: 'Chat with Jaxx', href: '/dashboard/chat', keywords: 'ai assistant conversation talk', icon: '💬' },
-  { label: 'Analytics', href: '/dashboard/analytics', keywords: 'stats data traffic visitors ga4 google', icon: '📈' },
-  // CRM
-  { label: 'Contacts', href: '/dashboard/contacts', keywords: 'people clients leads crm customers', icon: '👥' },
-  { label: 'Pipeline', href: '/dashboard/pipeline', keywords: 'deals opportunities sales stages funnel', icon: '🎯' },
-  { label: 'Calendar', href: '/dashboard/calendar', keywords: 'events booking appointments schedule', icon: '📅' },
-  { label: 'Invoices', href: '/dashboard/invoices', keywords: 'billing payments money charges', icon: '💳' },
-  { label: 'Products', href: '/dashboard/products', keywords: 'catalog items pricing store', icon: '🏷' },
-  // Marketing
-  { label: 'Email Campaigns', href: '/dashboard/email/campaigns', keywords: 'email marketing newsletter blast', icon: '✉️' },
-  { label: 'Social Planner', href: '/dashboard/social', keywords: 'social media posts facebook instagram linkedin', icon: '📱' },
-  { label: 'Blog Engine', href: '/dashboard/blog', keywords: 'blog posts articles content writing seo', icon: '📝' },
-  { label: 'Funnels', href: '/dashboard/funnels', keywords: 'funnel landing pages conversion', icon: '🔗' },
-  { label: 'Forms', href: '/dashboard/forms', keywords: 'form survey intake submission', icon: '📋' },
-  { label: 'Campaigns', href: '/dashboard/campaigns', keywords: 'campaign sms email drip sequence', icon: '📣' },
-  // AI & Automation
-  { label: 'Voice AI', href: '/dashboard/voice', keywords: 'voice agent phone call ai assistant', icon: '🎙' },
-  { label: 'Agent Studio', href: '/dashboard/ai', keywords: 'agent builder ai tools mcp', icon: '🤖' },
-  { label: 'Knowledge Base', href: '/dashboard/training', keywords: 'kb training knowledge brain docs', icon: '🧠' },
-  { label: 'Workflows', href: '/dashboard/workflows', keywords: 'workflow automation triggers switches', icon: '⚡' },
-  { label: 'Automations', href: '/dashboard/automations', keywords: 'automation sequence trigger workflow', icon: '🔄' },
-  // Communication
-  { label: 'Phone System', href: '/dashboard/phone', keywords: 'phone call sms numbers dialer', icon: '📞' },
-  // Content
-  { label: 'Media Manager', href: '/dashboard/files', keywords: 'files upload images media assets', icon: '📁' },
-  { label: 'Documents', href: '/dashboard/documents', keywords: 'documents contracts proposals esign', icon: '📄' },
-  { label: 'WordPress', href: '/dashboard/wordpress', keywords: 'wordpress site blog wp', icon: '🌐' },
-  { label: 'Courses', href: '/dashboard/courses', keywords: 'course builder education training lessons', icon: '🎓' },
-  // Admin
-  { label: 'Brand Board', href: '/dashboard/brand', keywords: 'brand colors fonts design identity', icon: '🎨' },
-  { label: 'Users', href: '/dashboard/users', keywords: 'users team members roles permissions', icon: '👤' },
-  { label: 'Tasks', href: '/dashboard/tasks', keywords: 'tasks todo project management board', icon: '✓' },
-  { label: 'Settings', href: '/dashboard/settings', keywords: 'settings configuration preferences account', icon: '⚙️' },
-  { label: 'Security', href: '/dashboard/security', keywords: 'security audit trust score hipaa', icon: '🛡' },
-  { label: 'Integrations', href: '/dashboard/integrations', keywords: 'integrations connect api services stripe', icon: '🔌' },
-  { label: 'Agency', href: '/dashboard/agency', keywords: 'agency locations sub-accounts management', icon: '🏢' },
-  { label: 'Marketplace', href: '/marketplace', keywords: 'marketplace addons plugins store buy', icon: '🛒' },
-  { label: 'Downloads', href: '/dashboard/downloads', keywords: 'downloads install cli mcp server', icon: '⬇️' },
-  // Quick actions
-  { label: 'New Contact', href: '/dashboard/contacts?action=new', keywords: 'create new contact add person', icon: '➕' },
-  { label: 'Send Email', href: '/dashboard/email/builder', keywords: 'compose new email send write', icon: '✏️' },
-  { label: 'HIPAA Scanner', href: '/dashboard/hipaa', keywords: 'hipaa scan compliance healthcare security', icon: '🏥' },
+/* ─── Smart Search Navigation Items — Lucide icons only ─── */
+const NAV_ITEMS: { label: string; href: string; keywords: string; Icon: LucideIcon }[] = [
+  { label: 'Dashboard', href: '/dashboard', keywords: 'home overview main', Icon: LayoutDashboard },
+  { label: 'Chat with Jaxx', href: '/dashboard/chat', keywords: 'ai assistant conversation talk', Icon: MessageSquare },
+  { label: 'Analytics', href: '/dashboard/analytics', keywords: 'stats data traffic visitors ga4 google', Icon: BarChart3 },
+  { label: 'Contacts', href: '/dashboard/contacts', keywords: 'people clients leads crm customers', Icon: Users },
+  { label: 'Pipeline', href: '/dashboard/pipeline', keywords: 'deals opportunities sales stages funnel', Icon: Target },
+  { label: 'Calendar', href: '/dashboard/calendar', keywords: 'events booking appointments schedule', Icon: Calendar },
+  { label: 'Invoices', href: '/dashboard/invoices', keywords: 'billing payments money charges', Icon: CreditCard },
+  { label: 'Products', href: '/dashboard/products', keywords: 'catalog items pricing store', Icon: Tag },
+  { label: 'Email Campaigns', href: '/dashboard/email/campaigns', keywords: 'email marketing newsletter blast', Icon: Mail },
+  { label: 'Social Planner', href: '/dashboard/social', keywords: 'social media posts facebook instagram linkedin', Icon: Share2 },
+  { label: 'Blog Engine', href: '/dashboard/blog', keywords: 'blog posts articles content writing seo', Icon: FileText },
+  { label: 'Funnels', href: '/dashboard/funnels', keywords: 'funnel landing pages conversion', Icon: Link2 },
+  { label: 'Forms', href: '/dashboard/forms', keywords: 'form survey intake submission', Icon: ClipboardList },
+  { label: 'Campaigns', href: '/dashboard/campaigns', keywords: 'campaign sms email drip sequence', Icon: Megaphone },
+  { label: 'Voice AI', href: '/dashboard/voice', keywords: 'voice agent phone call ai assistant', Icon: Mic },
+  { label: 'Agent Studio', href: '/dashboard/ai', keywords: 'agent builder ai tools mcp', Icon: Bot },
+  { label: 'Knowledge Base', href: '/dashboard/training', keywords: 'kb training knowledge brain docs', Icon: Brain },
+  { label: 'Workflows', href: '/dashboard/workflows', keywords: 'workflow automation triggers switches', Icon: Zap },
+  { label: 'Automations', href: '/dashboard/automations', keywords: 'automation sequence trigger workflow', Icon: RefreshCw },
+  { label: 'Phone System', href: '/dashboard/phone', keywords: 'phone call sms numbers dialer', Icon: Phone },
+  { label: 'Media Manager', href: '/dashboard/files', keywords: 'files upload images media assets', Icon: FolderOpen },
+  { label: 'Documents', href: '/dashboard/documents', keywords: 'documents contracts proposals esign', Icon: FileCheck },
+  { label: 'WordPress', href: '/dashboard/wordpress', keywords: 'wordpress site blog wp', Icon: Globe },
+  { label: 'Courses', href: '/dashboard/courses', keywords: 'course builder education training lessons', Icon: GraduationCap },
+  { label: 'Brand Board', href: '/dashboard/brand', keywords: 'brand colors fonts design identity', Icon: Palette },
+  { label: 'Users', href: '/dashboard/users', keywords: 'users team members roles permissions', Icon: User },
+  { label: 'Tasks', href: '/dashboard/tasks', keywords: 'tasks todo project management board', Icon: CheckSquare },
+  { label: 'Settings', href: '/dashboard/settings', keywords: 'settings configuration preferences account', Icon: Settings },
+  { label: 'Security', href: '/dashboard/security', keywords: 'security audit trust score hipaa', Icon: Shield },
+  { label: 'Integrations', href: '/dashboard/integrations', keywords: 'integrations connect api services stripe', Icon: Plug },
+  { label: 'Agency', href: '/dashboard/agency', keywords: 'agency locations sub-accounts management', Icon: Building2 },
+  { label: 'Marketplace', href: '/marketplace', keywords: 'marketplace addons plugins store buy', Icon: ShoppingCart },
+  { label: 'Downloads', href: '/dashboard/downloads', keywords: 'downloads install cli mcp server', Icon: Download },
+  { label: 'New Contact', href: '/dashboard/contacts?action=new', keywords: 'create new contact add person', Icon: UserPlus },
+  { label: 'Send Email', href: '/dashboard/email/builder', keywords: 'compose new email send write', Icon: PenLine },
+  { label: 'HIPAA Scanner', href: '/dashboard/hipaa', keywords: 'hipaa scan compliance healthcare security', Icon: HeartPulse },
 ]
 
 const layoutOptions: { mode: LayoutMode; label: string }[] = [
@@ -415,28 +414,31 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
               {filtered.length === 0 && (
                 <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--muted-foreground, #6b7280)', fontSize: 13 }}>No results for &ldquo;{searchQuery}&rdquo;</div>
               )}
-              {filtered.map((item, i) => (
-                <button
-                  key={item.href}
-                  onClick={() => handleSearchNav(item.href)}
-                  onMouseEnter={() => setSelectedIdx(i)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '10px 16px', border: 'none', cursor: 'pointer',
-                    background: i === selectedIdx ? 'rgba(110,224,90,0.06)' : 'transparent',
-                    color: i === selectedIdx ? 'var(--foreground, #f0f4f8)' : 'var(--muted-foreground, #9ca3af)',
-                    fontSize: 13, fontFamily: 'inherit', textAlign: 'left',
-                    transition: 'background 0.1s',
-                    borderLeft: i === selectedIdx ? '2px solid var(--primary, #6EE05A)' : '2px solid transparent',
-                  }}
-                >
-                  <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{item.icon}</span>
-                  <span style={{ fontWeight: i === selectedIdx ? 600 : 400 }}>{item.label}</span>
-                  {i === selectedIdx && (
-                    <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--muted-foreground)', fontFamily: 'monospace' }}>Enter ↵</span>
-                  )}
-                </button>
-              ))}
+              {filtered.map((item, i) => {
+                const ItemIcon = item.Icon
+                return (
+                  <button
+                    key={item.href}
+                    onClick={() => handleSearchNav(item.href)}
+                    onMouseEnter={() => setSelectedIdx(i)}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '10px 16px', border: 'none', cursor: 'pointer',
+                      background: i === selectedIdx ? 'rgba(110,224,90,0.06)' : 'transparent',
+                      color: i === selectedIdx ? 'var(--foreground, #f0f4f8)' : 'var(--muted-foreground, #9ca3af)',
+                      fontSize: 13, fontFamily: 'inherit', textAlign: 'left',
+                      transition: 'background 0.1s',
+                      borderLeft: i === selectedIdx ? '2px solid var(--primary, #6EE05A)' : '2px solid transparent',
+                    }}
+                  >
+                    <ItemIcon style={{ width: 16, height: 16, flexShrink: 0, opacity: i === selectedIdx ? 1 : 0.5 }} />
+                    <span style={{ fontWeight: i === selectedIdx ? 600 : 400 }}>{item.label}</span>
+                    {i === selectedIdx && (
+                      <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--muted-foreground)', fontFamily: 'monospace' }}>Enter ↵</span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
 
             {/* Footer hint */}
