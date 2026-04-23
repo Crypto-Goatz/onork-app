@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Bot } from 'lucide-react'
 import { CAPABILITIES, type Capability } from './capabilities'
 import type { CapabilityNodeType } from './CapabilityNode'
+import { LUCIDE_ICONS } from './CapabilityNode'
 
 interface Recommendation {
   capability: Capability;
@@ -99,17 +100,19 @@ function getRecommendations(nodes: CapabilityNodeType[]): Recommendation[] {
 
 export default function AIRecommendations({ nodes, onAdd }: AIRecommendationsProps) {
   const recommendations = useMemo(() => getRecommendations(nodes), [nodes])
+  const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <div className="absolute left-4 top-4 bottom-4 w-[260px] bg-[rgba(14,24,37,0.95)] backdrop-blur-md border border-[#1c2b42] rounded-[14px] flex flex-col z-10 overflow-hidden">
+    <div className={`absolute left-4 top-4 ${collapsed ? 'w-10' : 'w-[240px]'} bg-core-surface/95 backdrop-blur-md border border-core-border rounded-xl flex flex-col z-10 overflow-hidden transition-all duration-200`}>
       {/* Header */}
-      <div className="px-4 py-[14px] border-b border-[#1c2b42] flex items-center gap-2">
+      <button onClick={() => setCollapsed(!collapsed)} className="px-3 py-2.5 border-b border-core-border flex items-center gap-2 cursor-pointer bg-transparent w-full text-left">
         <Bot className="w-4 h-4 text-core-cyan shrink-0" />
-        <span className="text-[13px] font-bold text-core-cyan">AI Recommends</span>
-      </div>
+        {!collapsed && <span className="text-xs font-bold text-core-cyan flex-1">AI Recommends</span>}
+        {!collapsed && <span className="text-[10px] text-core-text-muted">{recommendations.length}</span>}
+      </button>
 
       {/* Recommendations */}
-      <div className="flex-1 overflow-y-auto p-2">
+      {collapsed ? null : <div className="flex-1 overflow-y-auto p-2">
         {recommendations.map((rec) => (
           <button
             key={rec.capability.id}
@@ -127,7 +130,7 @@ export default function AIRecommendations({ nodes, onAdd }: AIRecommendationsPro
           >
             {/* Top row: icon + name + success rate */}
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-base shrink-0">{rec.capability.icon}</span>
+              {(() => { const RIcon = LUCIDE_ICONS[rec.capability.icon]; return RIcon ? <RIcon className="w-4 h-4 shrink-0" style={{ color: rec.capability.color }} /> : <span className="text-base shrink-0">{rec.capability.icon}</span> })()}
               <span className="text-[13px] font-semibold text-core-text flex-1">{rec.capability.name}</span>
               <span className={`text-[11px] font-extrabold ${getSuccessColorClass(rec.successRate)}`}>
                 {rec.successRate}%
@@ -149,9 +152,10 @@ export default function AIRecommendations({ nodes, onAdd }: AIRecommendationsPro
       </div>
 
       {/* Footer hint */}
-      <div className="px-4 py-2.5 border-t border-[#1c2b42] text-[10px] text-core-text-muted text-center">
-        Click to add · Rates based on workflow data
-      </div>
+      {!collapsed && <div className="px-3 py-2 border-t border-core-border text-[10px] text-core-text-muted text-center">
+        Click to add
+      </div>}
+
     </div>
   )
 }
