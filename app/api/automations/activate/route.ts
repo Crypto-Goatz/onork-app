@@ -1,16 +1,81 @@
 /**
- * POST /api/automations/activate — Save and activate a visual builder workflow
+ * POST /api/automations/activate — Save, register trigger, and activate workflow
  *
- * Saves the workflow to user_workflows table with nodes, edges, and .0n file.
- * Marks it as active. Returns the saved workflow ID.
+ * Full activation flow:
+ * 1. Validate workflow (has trigger, all nodes configured)
+ * 2. Save to user_workflows table
+ * 3. Register the trigger (CRM webhook, Stripe webhook, or cron)
+ * 4. Return workflow ID + trigger registration
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 
+const CRM_API = 'https://services.leadconnectorhq.com'
+const CRM_VERSION = '2021-07-28'
+
 function getAdmin() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+}
+
+// ─── Trigger type → CRM webhook event mapping ───
+const TRIGGER_TO_CRM_EVENT: Record<string, string[]> = {
+  trigger_new_lead: ['ContactCreate'],
+  trigger_form_submit: ['FormSubmission'],
+  trigger_appointment_booked: ['AppointmentCreate'],
+  trigger_payment_received: ['InvoicePaymentReceived'],
+  trigger_tag_added: ['ContactTagUpdate'],
+  trigger_no_response: [], // handled by cron, not webhook
+}
+
+// ─── Register CRM webhook for a trigger ───
+async function registerCrmWebhook(
+  workflowId: string,
+  triggerType: string,
+  locationId: string,
+  crmPit: string,
+): Promise<{ webhookId?: string; cronSchedule?: string; error?: string }> {
+  const events = TRIGGER_TO_CRM_EVENT[triggerType]
+
+  // Time-based triggers use cron instead of webhooks
+  if (!events || events.length === 0) {
+    if (triggerType === 'trigger_no_response') {
+      return { cronSchedule: '0 9 * * *' } // daily at 9am
+    }
+    return { error: `Unknown trigger type: ${triggerType}` }
+  }
+
+  const webhookUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'}/api/webhooks/automation/${workflowId}`
+
+  try {
+    // Register webhook with CRM
+    const res = await fetch(`${CRM_API}/hooks/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${crmPit}`,
+        'Content-Type': 'application/json',
+        'Version': CRM_VERSION,
+      },
+      body: JSON.stringify({
+        url: webhookUrl,
+        events,
+        locationId,
+        name: `0nCore Automation: ${workflowId.slice(0, 8)}`,
+      }),
+    })
+
+    const data = await res.json()
+
+    if (data.webhook?.id || data.id) {
+      return { webhookId: data.webhook?.id || data.id }
+    }
+
+    // If webhook creation fails, workflow still activates but without auto-trigger
+    return { error: data.message || 'Webhook registration failed — workflow saved but trigger is manual' }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'CRM webhook registration failed' }
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -35,8 +100,10 @@ export async function POST(req: NextRequest) {
     .single()
 
   const locationId = profile?.crm_location_id || ''
+  const triggerType = dot_on_file?.triggers?.[0]?.type || 'manual'
+  const triggerConfig = dot_on_file?.triggers?.[0]?.config || {}
 
-  // Upsert to user_workflows
+  // ─── Save workflow ───
   const workflowData = {
     user_id: user.id,
     location_id: locationId,
@@ -46,19 +113,33 @@ export async function POST(req: NextRequest) {
     nodes: nodes || [],
     edges: edges || [],
     status: status || 'active',
-    trigger_type: dot_on_file?.triggers?.[0]?.type || 'manual',
+    trigger_type: triggerType,
+    trigger_config: triggerConfig,
     source_platform: 'visual_builder',
     source_channel: 'dashboard',
     last_executed_at: null,
+    webhook_id: null as string | null,
+    cron_schedule: null as string | null,
   }
 
-  // Check if workflow with same name exists for this user
+  // Check if workflow with same name exists
   const { data: existing } = await admin
     .from('user_workflows')
-    .select('id')
+    .select('id, webhook_id')
     .eq('user_id', user.id)
     .eq('name', name)
     .maybeSingle()
+
+  // If updating existing, clean up old webhook
+  if (existing?.webhook_id) {
+    const crmPit = process.env.CRM_PIT || ''
+    if (crmPit) {
+      await fetch(`${CRM_API}/hooks/${existing.webhook_id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${crmPit}`, 'Version': CRM_VERSION },
+      }).catch(() => {})
+    }
+  }
 
   let result
   if (existing) {
@@ -80,18 +161,51 @@ export async function POST(req: NextRequest) {
     result = data
   }
 
-  // Log activity
+  // ─── Register trigger ───
+  let triggerResult: { webhookId?: string; cronSchedule?: string; error?: string } = {}
+
+  if (triggerType !== 'manual' && locationId) {
+    const crmPit = process.env.CRM_PIT || ''
+    if (crmPit) {
+      triggerResult = await registerCrmWebhook(result.id, triggerType, locationId, crmPit)
+
+      // Save webhook/cron ID back to workflow
+      if (triggerResult.webhookId || triggerResult.cronSchedule) {
+        await admin.from('user_workflows').update({
+          webhook_id: triggerResult.webhookId || null,
+          cron_schedule: triggerResult.cronSchedule || null,
+        }).eq('id', result.id)
+      }
+    }
+  }
+
+  // ─── Log activity ───
   await admin.from('dashboard_notifications').insert({
     user_id: user.id,
     type: 'success',
     title: 'Automation Activated',
-    message: `"${name}" is now live with ${nodes.length} steps.`,
-    metadata: { workflow_id: result?.id, node_count: nodes.length },
+    message: `"${name}" is now live with ${nodes.length} steps. Trigger: ${triggerType}.${triggerResult.webhookId ? ' Webhook registered.' : ''}${triggerResult.cronSchedule ? ' Cron scheduled.' : ''}`,
+    metadata: {
+      workflow_id: result?.id,
+      node_count: nodes.length,
+      trigger_type: triggerType,
+      webhook_id: triggerResult.webhookId,
+      cron_schedule: triggerResult.cronSchedule,
+    },
   }).then(() => {}, () => {})
 
   return NextResponse.json({
     success: true,
     workflow: result,
+    trigger: {
+      type: triggerType,
+      webhookId: triggerResult.webhookId || null,
+      cronSchedule: triggerResult.cronSchedule || null,
+      webhookUrl: triggerResult.webhookId
+        ? `${process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'}/api/webhooks/automation/${result.id}`
+        : null,
+      error: triggerResult.error || null,
+    },
     message: `"${name}" activated with ${nodes.length} steps`,
   })
 }
