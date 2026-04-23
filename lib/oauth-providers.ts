@@ -140,6 +140,37 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
       provider_avatar: (data.picture as string) || null,
     }),
   },
+  slack: {
+    id: 'slack',
+    name: 'Slack',
+    authUrl: 'https://slack.com/oauth/v2/authorize',
+    tokenUrl: 'https://slack.com/api/oauth.v2.access',
+    scopes: [
+      'channels:read',
+      'channels:history',
+      'chat:write',
+      'users:read',
+      'users:read.email',
+      'team:read',
+      'groups:read',
+      'im:read',
+      'files:read',
+    ],
+    profileUrl: 'https://slack.com/api/users.identity',
+    clientIdEnv: 'SLACK_CLIENT_ID',
+    clientSecretEnv: 'SLACK_CLIENT_SECRET',
+    extraAuthParams: { user_scope: 'identity.basic,identity.email,identity.avatar' },
+    extractProfile: (data) => {
+      const user = (data.user || data) as Record<string, unknown>
+      const team = (data.team || {}) as Record<string, unknown>
+      return {
+        provider_account_id: String(user.id || ''),
+        provider_email: (user.email as string) || null,
+        provider_name: (user.name as string) || null,
+        provider_avatar: (user.image_72 as string) || (user.image_48 as string) || null,
+      }
+    },
+  },
 }
 
 export function getProvider(id: string): OAuthProvider | null {

@@ -36,10 +36,12 @@ export async function GET(
   // Decode state
   let userId: string
   let codeVerifier: string | undefined
+  let mode: string = 'connect'
   try {
     const decoded = JSON.parse(Buffer.from(state, 'base64url').toString())
     userId = decoded.userId
     codeVerifier = decoded.cv
+    mode = decoded.mode || 'connect'
   } catch {
     return NextResponse.redirect(`${settingsUrl}?error=invalid_state&provider=${providerId}`)
   }
@@ -82,13 +84,31 @@ export async function GET(
     }
 
     const tokens = await tokenRes.json()
-    const accessToken = tokens.access_token
-    const refreshToken = tokens.refresh_token || null
-    const expiresIn = tokens.expires_in ? Number(tokens.expires_in) : null
-    const expiresAt = expiresIn
-      ? new Date(Date.now() + expiresIn * 1000).toISOString()
-      : null
-    const scope = tokens.scope || provider.scopes.join(' ')
+
+    // Slack returns { ok: true, access_token, authed_user: { access_token, id } }
+    // Other providers return { access_token, refresh_token, expires_in }
+    let accessToken: string
+    let refreshToken: string | null = null
+    let expiresAt: string | null = null
+    let scope: string
+
+    if (providerId === 'slack') {
+      if (!tokens.ok) {
+        console.error(`[oauth/slack] Token exchange failed:`, tokens.error)
+        return NextResponse.redirect(`${settingsUrl}?error=token_exchange&provider=slack`)
+      }
+      // Use the bot token for API access, user token for identity
+      accessToken = tokens.access_token || tokens.authed_user?.access_token
+      scope = tokens.scope || ''
+    } else {
+      accessToken = tokens.access_token
+      refreshToken = tokens.refresh_token || null
+      const expiresIn = tokens.expires_in ? Number(tokens.expires_in) : null
+      expiresAt = expiresIn
+        ? new Date(Date.now() + expiresIn * 1000).toISOString()
+        : null
+      scope = tokens.scope || provider.scopes.join(' ')
+    }
 
     // Fetch user profile
     let profile = {
@@ -99,15 +119,30 @@ export async function GET(
     }
 
     try {
+      // Slack identity uses the authed_user token
+      const profileToken = providerId === 'slack'
+        ? (tokens.authed_user?.access_token || accessToken)
+        : accessToken
+
       const profileRes = await fetch(provider.profileUrl, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${profileToken}` },
       })
       if (profileRes.ok) {
         const profileData = await profileRes.json()
         profile = provider.extractProfile(profileData)
+
+        // Slack: also store team info in metadata
+        if (providerId === 'slack' && tokens.team) {
+          profile.provider_account_id = tokens.authed_user?.id || profile.provider_account_id
+        }
       }
     } catch {
       // Profile fetch is best-effort
+      // For Slack, we can extract from the token response directly
+      if (providerId === 'slack') {
+        profile.provider_account_id = tokens.authed_user?.id || tokens.bot_user_id || ''
+        profile.provider_name = tokens.team?.name || 'Slack Workspace'
+      }
     }
 
     // GitHub special case: email might be private, fetch from /user/emails
@@ -126,6 +161,41 @@ export async function GET(
         }
       } catch {
         // Best effort
+      }
+    }
+
+    // Slack login mode — find or create user, then sign them in
+    if (mode === 'login' && providerId === 'slack' && profile.provider_email) {
+      // Check if user exists with this email
+      const { data: existingUsers } = await supabase.auth.admin.listUsers()
+      const existingUser = existingUsers?.users?.find(u => u.email === profile.provider_email)
+
+      if (existingUser) {
+        userId = existingUser.id
+      } else {
+        // Create new user
+        const { data: newUser, error: createErr } = await supabase.auth.admin.createUser({
+          email: profile.provider_email,
+          email_confirm: true,
+          user_metadata: {
+            full_name: profile.provider_name,
+            avatar_url: profile.provider_avatar,
+            provider: 'slack',
+          },
+        })
+        if (createErr || !newUser.user) {
+          console.error('[oauth/slack] Failed to create user:', createErr)
+          return NextResponse.redirect(`${settingsUrl}?error=user_creation&provider=slack`)
+        }
+        userId = newUser.user.id
+
+        // Create profile
+        await supabase.from('profiles').upsert({
+          id: userId,
+          email: profile.provider_email,
+          full_name: profile.provider_name,
+          avatar_url: profile.provider_avatar,
+        }, { onConflict: 'id' })
       }
     }
 
@@ -157,6 +227,25 @@ export async function GET(
     if (dbError) {
       console.error(`[oauth/${providerId}] DB error:`, dbError)
       return NextResponse.redirect(`${settingsUrl}?error=db_error&provider=${providerId}`)
+    }
+
+    // For Slack login mode, generate a magic link to create a Supabase session
+    if (mode === 'login' && profile.provider_email) {
+      const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email: profile.provider_email,
+        options: { redirectTo: `${baseUrl}/dashboard` },
+      })
+
+      if (linkErr || !linkData?.properties?.hashed_token) {
+        console.error('[oauth/slack] Magic link generation failed:', linkErr)
+        // Fallback: redirect to login with success message
+        return NextResponse.redirect(`${baseUrl}/login?slack=connected&email=${encodeURIComponent(profile.provider_email)}`)
+      }
+
+      // Extract the token from the action link and redirect through Supabase auth
+      const actionLink = linkData.properties.action_link
+      return NextResponse.redirect(actionLink)
     }
 
     // Close popup and notify parent window

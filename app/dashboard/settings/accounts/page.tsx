@@ -74,6 +74,14 @@ const PROVIDERS = [
     icon: '/icons/linkedin.svg',
     features: ['Company Page', 'Posts', 'Analytics'],
   },
+  {
+    id: 'slack',
+    name: 'Slack',
+    description: 'Channels, messages, notifications, team data',
+    color: '#611F69',
+    icon: '/icons/slack.svg',
+    features: ['Channels', 'Messages', 'Notifications', 'Team Info'],
+  },
 ]
 
 export default function ConnectedAccountsPage() {

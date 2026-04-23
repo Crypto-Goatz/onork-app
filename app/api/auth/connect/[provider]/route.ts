@@ -11,7 +11,8 @@ export async function GET(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
+  // Slack can be used for login (no existing session required)
+  if (!user && providerId !== 'slack') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -31,8 +32,9 @@ export async function GET(
 
   // Build state with user ID + timestamp
   const stateData: Record<string, string> = {
-    userId: user.id,
+    userId: user?.id || 'login',
     ts: String(Date.now()),
+    mode: user ? 'connect' : 'login',
   }
 
   // PKCE for X/Twitter
