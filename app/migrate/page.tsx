@@ -7,6 +7,7 @@ import {
   Mail, BarChart3, GitBranch, Database, Shield, Sparkles,
   ArrowLeftRight
 } from 'lucide-react'
+import { getLogoSrc } from '@/lib/logo-map'
 
 interface Platform {
   id: string
@@ -176,9 +177,13 @@ export default function MigratePage() {
                   <span className="absolute top-3 right-3 text-[9px] font-bold text-core-green bg-core-green/10 px-2 py-0.5 rounded-full">LIVE</span>
                 )}
 
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 text-sm font-black"
-                  style={{ background: `${p.color}15`, color: p.color }}>
-                  {p.name.slice(0, 2).toUpperCase()}
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 overflow-hidden"
+                  style={{ background: `${p.color}12` }}>
+                  {getLogoSrc(p.id) ? (
+                    <img src={getLogoSrc(p.id)!} alt={p.name} className="w-6 h-6 object-contain" />
+                  ) : (
+                    <span className="text-sm font-black" style={{ color: p.color }}>{p.name.slice(0, 2).toUpperCase()}</span>
+                  )}
                 </div>
                 <div className="text-sm font-bold text-core-text mb-0.5">{p.name}</div>
                 <div className="text-[11px] text-core-text-muted mb-3">{p.tagline}</div>
@@ -202,9 +207,13 @@ export default function MigratePage() {
 
             <div className="bg-core-card border border-core-border rounded-xl p-6 mb-4">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-black"
-                  style={{ background: `${platform.color}15`, color: platform.color }}>
-                  {platform.name.slice(0, 2).toUpperCase()}
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden"
+                  style={{ background: `${platform.color}12` }}>
+                  {getLogoSrc(platform.id) ? (
+                    <img src={getLogoSrc(platform.id)!} alt={platform.name} className="w-7 h-7 object-contain" />
+                  ) : (
+                    <span className="text-lg font-black" style={{ color: platform.color }}>{platform.name.slice(0, 2).toUpperCase()}</span>
+                  )}
                 </div>
                 <div>
                   <div className="text-lg font-bold text-core-text">Migrate from {platform.name}</div>

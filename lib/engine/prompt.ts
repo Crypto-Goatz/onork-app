@@ -4,6 +4,7 @@
  */
 
 import type { EngineContext } from './context'
+import { buildServiceCapabilitiesPrompt } from './service-capabilities'
 
 // ---------------------------------------------------------------------------
 // Persona focus areas
@@ -93,6 +94,9 @@ KNOWLEDGE (K-Layers active):
 - K4 Security: Trust level "${context.trustState}" (score ${context.trustScore}/100).
 
 CONNECTED SERVICES: ${connectedBlock}
+
+${buildServiceCapabilitiesPrompt(context.connectedPlatforms)}
+
 PIPELINE: ${pipelineBlock}
 CONTACTS: ${context.contactCount} contacts in the system
 
