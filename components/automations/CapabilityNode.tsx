@@ -2,6 +2,20 @@
 
 import { memo } from 'react'
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react'
+import {
+  Zap, Mail, Calendar, DollarSign, Bot, BarChart3, Flame, Search, Star,
+  MessageSquare, RefreshCw, Bell, Repeat, Receipt, CreditCard, PenLine,
+  Brain, Target, Eye, Sun, FileText, Tag, Clock, Snowflake, Banknote,
+  CheckCircle, Smartphone, TrendingUp, type LucideIcon
+} from 'lucide-react'
+
+// Map icon name strings to Lucide components
+const LUCIDE_ICONS: Record<string, LucideIcon> = {
+  Zap, Mail, Calendar, DollarSign, Bot, BarChart3, Flame, Search, Star,
+  MessageSquare, RefreshCw, Bell, Repeat, Receipt, CreditCard, PenLine,
+  Brain, Target, Eye, Sun, FileText, Tag, Clock, Snowflake, Banknote,
+  CheckCircle, Smartphone, TrendingUp,
+}
 
 export interface CapabilityNodeData {
   capabilityId: string;
@@ -21,6 +35,7 @@ export type CapabilityNodeType = Node<CapabilityNodeData, 'capability'>
 function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeType>) {
   const isConfigured = data.configured
   const isTrigger = data.category === 'triggers'
+  const IconComponent = LUCIDE_ICONS[data.icon]
 
   return (
     <div
@@ -31,79 +46,47 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
         boxShadow: selected ? `0 0 24px ${data.color}20` : '0 4px 12px rgba(0,0,0,0.3)',
       }}
     >
-      {/* Input handle (not on triggers) */}
       {!isTrigger && (
-        <Handle
-          type="target"
-          position={Position.Top}
-          style={{
-            width: 12,
-            height: 12,
-            background: '#0d1117',
-            border: `2px solid ${data.color}`,
-            top: -6,
-          }}
-        />
+        <Handle type="target" position={Position.Top}
+          style={{ width: 12, height: 12, background: '#0d1117', border: `2px solid ${data.color}`, top: -6 }} />
       )}
 
-      {/* Header bar */}
-      <div
-        className="px-4 py-2.5 flex items-center gap-2.5 border-b"
-        style={{
-          background: `${data.color}15`,
-          borderBottomColor: `${data.color}20`,
-        }}
-      >
-        <span className="text-xl shrink-0">{data.icon}</span>
-        <span
-          className="text-[13px] font-bold uppercase tracking-[0.05em]"
-          style={{ color: data.color }}
-        >
+      {/* Header */}
+      <div className="px-4 py-2.5 flex items-center gap-2.5 border-b"
+        style={{ background: `${data.color}15`, borderBottomColor: `${data.color}20` }}>
+        {IconComponent
+          ? <IconComponent className="w-5 h-5 shrink-0" style={{ color: data.color }} />
+          : <span className="text-xl shrink-0">{data.icon}</span>
+        }
+        <span className="text-[13px] font-bold uppercase tracking-[0.05em]" style={{ color: data.color }}>
           {isTrigger ? 'TRIGGER' : data.category === 'ai' ? 'AI' : data.category.toUpperCase()}
         </span>
         <div className="ml-auto">
-          <span
-            className="inline-block w-2 h-2 rounded-full"
-            style={{ background: isConfigured ? '#34d399' : '#fbbf24' }}
-          />
+          <span className={`inline-block w-2 h-2 rounded-full ${isConfigured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
         </div>
       </div>
 
       {/* Body */}
-      <div className="px-4 py-[14px]">
-        <div className="text-[15px] font-bold text-core-text mb-1.5 leading-[1.3]">
-          {data.name}
-        </div>
-        <div className="text-xs text-core-text-muted leading-relaxed">
-          {data.description}
-        </div>
+      <div className="px-4 py-3.5">
+        <div className="text-[15px] font-bold text-core-text mb-1.5 leading-tight">{data.name}</div>
+        <div className="text-xs text-core-text-muted leading-relaxed">{data.description}</div>
       </div>
 
       {/* Steps indicator */}
       <div className="px-4 pb-3 flex gap-1">
         {data.steps.map((_, i) => (
-          <div
-            key={i}
-            className="flex-1 h-[3px] rounded-sm"
-            style={{ background: `${data.color}${isConfigured ? '60' : '25'}` }}
-          />
+          <div key={i} className="flex-1 h-[3px] rounded-sm"
+            style={{ background: `${data.color}${isConfigured ? '60' : '25'}` }} />
         ))}
       </div>
 
-      {/* Output handle */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        style={{
-          width: 12,
-          height: 12,
-          background: '#0d1117',
-          border: `2px solid ${data.color}`,
-          bottom: -6,
-        }}
-      />
+      <Handle type="source" position={Position.Bottom}
+        style={{ width: 12, height: 12, background: '#0d1117', border: `2px solid ${data.color}`, bottom: -6 }} />
     </div>
   )
 }
 
 export default memo(CapabilityNodeComponent)
+
+// Export the icon map for use by other components
+export { LUCIDE_ICONS }

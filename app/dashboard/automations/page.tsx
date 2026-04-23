@@ -15,18 +15,33 @@ import {
   Loader2,
   X,
   Check,
-  LayoutTemplate,
   Minimize2,
   Columns2,
   AlignJustify,
+  MessageSquare,
+  GitBranch,
+  Kanban,
+  FileJson,
 } from 'lucide-react'
 import CapabilityPalette from '@/components/automations/CapabilityPalette'
 import AutomationCanvas from '@/components/automations/AutomationCanvas'
 import ConfigPanel from '@/components/automations/ConfigPanel'
 import AIRecommendations from '@/components/automations/AIRecommendations'
 import GenerateBar from '@/components/automations/GenerateBar'
+import ChatView from '@/components/automations/ChatView'
+import PipelineView from '@/components/automations/PipelineView'
+import DotOnView from '@/components/automations/DotOnView'
 import type { CapabilityNodeType, CapabilityNodeData } from '@/components/automations/CapabilityNode'
 import type { Capability } from '@/components/automations/capabilities'
+
+type ViewMode = 'chat' | 'workflow' | 'pipeline' | 'doton'
+
+const VIEW_TABS: { key: ViewMode; label: string; icon: typeof MessageSquare }[] = [
+  { key: 'chat', label: 'Chat', icon: MessageSquare },
+  { key: 'workflow', label: 'Workflow', icon: GitBranch },
+  { key: 'pipeline', label: 'Pipeline', icon: Kanban },
+  { key: 'doton', label: '.0n File', icon: FileJson },
+]
 
 interface SavedAutomation {
   id: string;
@@ -51,6 +66,7 @@ export default function AutomationsPage() {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('unsaved')
   const [activating, setActivating] = useState(false)
   const [activateToast, setActivateToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('workflow')
 
   const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) : null
   const nodeCount = nodes.length
@@ -107,6 +123,14 @@ export default function AutomationsPage() {
     setStepCounter(newCounter)
     setSaveStatus('unsaved')
   }, [nodes, stepCounter])
+
+  const handleUpdateWorkflow = useCallback((newNodes: CapabilityNodeType[], newEdges: Edge[], name?: string) => {
+    setNodes(newNodes)
+    setEdges(newEdges)
+    setStepCounter(newNodes.length)
+    if (name) setAutomationName(name)
+    setSaveStatus('unsaved')
+  }, [])
 
   const handleSaveDraft = useCallback(() => {
     setSaveStatus('saving')
@@ -403,6 +427,28 @@ export default function AutomationsPage() {
         </div>
 
         <div className="flex gap-2">
+          {/* View mode toggle */}
+          <div className="flex bg-core-card border border-core-border rounded-lg overflow-hidden">
+            {VIEW_TABS.map(vt => {
+              const VIcon = vt.icon
+              return (
+                <button
+                  key={vt.key}
+                  onClick={() => setViewMode(vt.key)}
+                  className={[
+                    'flex items-center gap-1.5 px-3 py-1.5 border-none text-[11px] font-semibold cursor-pointer transition-colors',
+                    viewMode === vt.key
+                      ? 'bg-core-green/15 text-core-green'
+                      : 'bg-transparent text-core-text-muted hover:text-core-text',
+                  ].join(' ')}
+                >
+                  <VIcon className="w-3 h-3" />
+                  {vt.label}
+                </button>
+              )
+            })}
+          </div>
+
           {/* Menu size toggles */}
           <div className="flex bg-core-card border border-core-border rounded-lg overflow-hidden">
             {(['minimize', 'compact', 'expand'] as const).map(size => {
@@ -456,41 +502,90 @@ export default function AutomationsPage() {
       {/* Main Content */}
       <div className="flex flex-1 min-h-0 relative">
         <ReactFlowProvider>
-          {/* Canvas (full width) */}
-          <div className="flex-1 relative">
-            <AutomationCanvas
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={(n) => { setNodes(n); setSaveStatus('unsaved') }}
-              onEdgesChange={(e) => { setEdges(e); setSaveStatus('unsaved') }}
-              onNodeSelect={setSelectedNodeId}
-              stepCounter={stepCounter}
-              onStepCounterUpdate={setStepCounter}
-            />
 
-            {/* AI Recommendations — floating on left */}
-            <AIRecommendations nodes={nodes} onAdd={handleAddFromRecommendation} />
-
-            {/* Generate bar — floating on bottom center */}
-            <GenerateBar onGenerate={(newNodes, newEdges) => {
-              setNodes(newNodes)
-              setEdges(newEdges)
-              setStepCounter(newNodes.length)
-              setAutomationName(newNodes.length > 0 ? 'Generated Automation' : automationName)
-              setSaveStatus('unsaved')
-            }} />
-          </div>
-
-          {/* Right side: Menu + Config Panel */}
-          {menuSize !== 'minimize' && !selectedNode && <CapabilityPalette size={menuSize} />}
-          {selectedNode && (
-            <ConfigPanel
-              node={selectedNode}
-              onUpdate={handleNodeUpdate}
-              onClose={() => setSelectedNodeId(null)}
-              onDelete={handleNodeDelete}
-            />
+          {/* ═══ WORKFLOW VIEW ═══ */}
+          {viewMode === 'workflow' && (
+            <>
+              <div className="flex-1 relative">
+                <AutomationCanvas
+                  nodes={nodes}
+                  edges={edges}
+                  onNodesChange={(n) => { setNodes(n); setSaveStatus('unsaved') }}
+                  onEdgesChange={(e) => { setEdges(e); setSaveStatus('unsaved') }}
+                  onNodeSelect={setSelectedNodeId}
+                  stepCounter={stepCounter}
+                  onStepCounterUpdate={setStepCounter}
+                />
+                <AIRecommendations nodes={nodes} onAdd={handleAddFromRecommendation} />
+                <GenerateBar onGenerate={(newNodes, newEdges) => {
+                  setNodes(newNodes)
+                  setEdges(newEdges)
+                  setStepCounter(newNodes.length)
+                  setAutomationName(newNodes.length > 0 ? 'Generated Automation' : automationName)
+                  setSaveStatus('unsaved')
+                }} />
+              </div>
+              {menuSize !== 'minimize' && !selectedNode && <CapabilityPalette size={menuSize} />}
+              {selectedNode && (
+                <ConfigPanel
+                  node={selectedNode}
+                  onUpdate={handleNodeUpdate}
+                  onClose={() => setSelectedNodeId(null)}
+                  onDelete={handleNodeDelete}
+                />
+              )}
+            </>
           )}
+
+          {/* ═══ CHAT VIEW ═══ */}
+          {viewMode === 'chat' && (
+            <>
+              <div className="flex-1 relative">
+                <ChatView
+                  nodes={nodes}
+                  edges={edges}
+                  onUpdateWorkflow={handleUpdateWorkflow}
+                  automationName={automationName}
+                />
+              </div>
+              {menuSize !== 'minimize' && <CapabilityPalette size={menuSize} />}
+            </>
+          )}
+
+          {/* ═══ PIPELINE VIEW ═══ */}
+          {viewMode === 'pipeline' && (
+            <>
+              <div className="flex-1 overflow-auto p-4">
+                <PipelineView
+                  nodes={nodes}
+                  edges={edges}
+                  onNodeSelect={setSelectedNodeId}
+                  selectedNodeId={selectedNodeId}
+                />
+              </div>
+              {selectedNode && (
+                <ConfigPanel
+                  node={selectedNode}
+                  onUpdate={handleNodeUpdate}
+                  onClose={() => setSelectedNodeId(null)}
+                  onDelete={handleNodeDelete}
+                />
+              )}
+            </>
+          )}
+
+          {/* ═══ .0N FILE VIEW ═══ */}
+          {viewMode === 'doton' && (
+            <div className="flex-1 overflow-auto">
+              <DotOnView
+                nodes={nodes}
+                edges={edges}
+                automationName={automationName}
+                onImport={handleUpdateWorkflow}
+              />
+            </div>
+          )}
+
         </ReactFlowProvider>
       </div>
     </div>

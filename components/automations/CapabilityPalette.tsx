@@ -3,6 +3,7 @@
 import { useState, type DragEvent } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { CATEGORIES, CAPABILITIES, getCapabilitiesByCategory } from './capabilities'
+import { LUCIDE_ICONS } from './CapabilityNode'
 
 interface PaletteProps {
   size?: 'expand' | 'compact';
@@ -82,7 +83,7 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
                   onClick={() => setExpandedCat(isOpen ? null : cat.id)}
                   className="w-full px-4 py-2.5 bg-transparent border-none flex items-center gap-2.5 cursor-pointer"
                 >
-                  <span className="text-base shrink-0">{cat.icon}</span>
+                  {(() => { const CatIcon = LUCIDE_ICONS[cat.icon]; return CatIcon ? <CatIcon className="w-4 h-4 shrink-0" style={{ color: cat.color }} /> : <span className="text-base shrink-0">{cat.icon}</span> })()}
                   <span
                     className="text-[13px] font-semibold flex-1 text-left"
                     style={{ color: isOpen ? cat.color : '#9ca3af' }}
@@ -146,9 +147,7 @@ function CapItem({ cap, onDragStart, showDescription, compact }: CapItemProps) {
         e.currentTarget.style.background = ''
       }}
     >
-      <span className={`shrink-0 ${showDescription ? 'text-lg mt-0.5' : 'text-base'}`}>
-        {cap.icon}
-      </span>
+      {(() => { const CapIcon = LUCIDE_ICONS[cap.icon]; return CapIcon ? <CapIcon className={`shrink-0 ${showDescription ? 'w-5 h-5 mt-0.5' : 'w-4 h-4'}`} style={{ color: cap.color }} /> : <span className={`shrink-0 ${showDescription ? 'text-lg mt-0.5' : 'text-base'}`}>{cap.icon}</span> })()}
       <div className="flex-1 min-w-0">
         <div className="text-[13px] font-semibold text-core-text mb-0.5">{cap.name}</div>
         {showDescription && (
