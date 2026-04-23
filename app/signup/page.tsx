@@ -15,11 +15,35 @@ export default function SignupPage() {
   const supabase = createClient()
 
   async function handleOAuth(provider: 'google' | 'linkedin_oidc') {
+    const options: Record<string, unknown> = {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    }
+
+    if (provider === 'google') {
+      options.queryParams = {
+        access_type: 'offline',
+        prompt: 'consent',
+        scope: [
+          'openid',
+          'email',
+          'profile',
+          'https://www.googleapis.com/auth/analytics.readonly',
+          'https://www.googleapis.com/auth/webmasters.readonly',
+          'https://www.googleapis.com/auth/gmail.readonly',
+          'https://www.googleapis.com/auth/drive.readonly',
+          'https://www.googleapis.com/auth/spreadsheets',
+          'https://www.googleapis.com/auth/calendar',
+        ].join(' '),
+      }
+    }
+
+    if (provider === 'linkedin_oidc') {
+      options.scopes = 'openid profile email w_member_social'
+    }
+
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options,
     })
     if (oauthError) setError(oauthError.message)
   }
