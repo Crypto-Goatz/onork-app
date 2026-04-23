@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { google } from 'googleapis'
-import { getOAuthClient } from '@/lib/google/auth'
 
 // GET /api/google/analytics — Fetch GA4 reports using the user's own OAuth tokens
 export async function GET(req: NextRequest) {
@@ -64,7 +63,10 @@ export async function GET(req: NextRequest) {
   }
 
   // Create authenticated client from user's tokens
-  const oauth = getOAuthClient()
+  const oauth = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+  )
   oauth.setCredentials({
     access_token: accessToken,
     refresh_token: refreshToken,

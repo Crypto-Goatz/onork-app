@@ -12,6 +12,8 @@ export interface OAuthProvider {
   profileUrl: string
   clientIdEnv: string
   clientSecretEnv: string
+  /** Override the default callback URL pattern */
+  redirectUriOverride?: string
   /** Extra params to add to the auth URL */
   extraAuthParams?: Record<string, string>
   /** How to extract user info from the profile response */
@@ -48,6 +50,7 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
     profileUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
     clientIdEnv: 'GOOGLE_CLIENT_ID',
     clientSecretEnv: 'GOOGLE_CLIENT_SECRET',
+    redirectUriOverride: 'https://0ncore.com/api/auth/connect/google/callback',
     extraAuthParams: { access_type: 'offline', prompt: 'consent' },
     extractProfile: (data) => ({
       provider_account_id: String(data.id || ''),
@@ -144,6 +147,8 @@ export function getProvider(id: string): OAuthProvider | null {
 }
 
 export function getRedirectUri(provider: string): string {
+  const config = OAUTH_PROVIDERS[provider]
+  if (config?.redirectUriOverride) return config.redirectUriOverride
   const base = process.env.NEXT_PUBLIC_APP_URL || 'https://0ncore.com'
   return `${base}/api/auth/connect/${provider}/callback`
 }

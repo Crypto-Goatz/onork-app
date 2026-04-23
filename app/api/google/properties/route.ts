@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { google } from 'googleapis'
-import { getOAuthClient } from '@/lib/google/auth'
 
 // GET /api/google/properties — List user's GA4 properties
 export async function GET(req: NextRequest) {
@@ -22,7 +21,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Google not connected', code: 'NOT_CONNECTED' }, { status: 403 })
   }
 
-  const oauth = getOAuthClient()
+  const oauth = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+  )
   oauth.setCredentials({
     access_token: connection.access_token,
     refresh_token: connection.refresh_token,

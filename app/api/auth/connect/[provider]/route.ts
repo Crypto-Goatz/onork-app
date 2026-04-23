@@ -57,11 +57,8 @@ export async function GET(
 
   // Add PKCE challenge if needed
   if (codeVerifier) {
-    const pkce = generatePKCE()
-    // Regenerate with the same verifier we stored
-    const encoder = new TextEncoder()
-    const data = encoder.encode(codeVerifier)
-    const hashBuffer = require('crypto').createHash('sha256').update(data).digest()
+    const crypto = require('crypto')
+    const hashBuffer = crypto.createHash('sha256').update(codeVerifier).digest()
     const challenge = Buffer.from(hashBuffer).toString('base64url')
     authParams.set('code_challenge', challenge)
   }
