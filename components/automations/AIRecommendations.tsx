@@ -111,51 +111,40 @@ export default function AIRecommendations({ nodes, onAdd }: AIRecommendationsPro
         {!collapsed && <span className="text-[10px] text-core-text-muted">{recommendations.length}</span>}
       </button>
 
-      {/* Recommendations */}
-      {collapsed ? null : <div className="flex-1 overflow-y-auto p-2">
-        {recommendations.map((rec) => (
-          <button
-            key={rec.capability.id}
-            onClick={() => onAdd(rec.capability)}
-            className="w-full p-3 bg-core-card border border-transparent rounded-[10px] mb-1.5 cursor-pointer text-left transition-all duration-150 block hover:bg-[#1a2740]"
-            style={{ borderColor: 'transparent' }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = `${rec.capability.color}40`
-              e.currentTarget.style.background = '#1a2740'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'transparent'
-              e.currentTarget.style.background = ''
-            }}
-          >
-            {/* Top row: icon + name + success rate */}
-            <div className="flex items-center gap-2 mb-1.5">
-              {(() => { const RIcon = LUCIDE_ICONS[rec.capability.icon]; return RIcon ? <RIcon className="w-4 h-4 shrink-0" style={{ color: rec.capability.color }} /> : <span className="text-base shrink-0">{rec.capability.icon}</span> })()}
-              <span className="text-[13px] font-semibold text-core-text flex-1">{rec.capability.name}</span>
-              <span className={`text-[11px] font-extrabold ${getSuccessColorClass(rec.successRate)}`}>
-                {rec.successRate}%
-              </span>
-            </div>
-
-            {/* Reason */}
-            <div className="text-[11px] text-core-text-muted leading-relaxed">{rec.reason}</div>
-
-            {/* Success bar */}
-            <div className="mt-2 h-[3px] rounded-sm bg-core-border overflow-hidden">
-              <div
-                className={`h-full rounded-sm transition-all duration-300 ${getSuccessBarColor(rec.successRate)}`}
-                style={{ width: `${rec.successRate}%` }}
-              />
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Footer hint */}
-      {!collapsed && <div className="px-3 py-2 border-t border-core-border text-[10px] text-core-text-muted text-center">
-        Click to add
-      </div>}
-
+      {!collapsed && (
+        <>
+          <div className="flex-1 overflow-y-auto p-2">
+            {recommendations.map((rec) => {
+              const RIcon = LUCIDE_ICONS[rec.capability.icon]
+              return (
+                <button
+                  key={rec.capability.id}
+                  onClick={() => onAdd(rec.capability)}
+                  className="w-full p-3 bg-core-card border border-transparent rounded-[10px] mb-1.5 cursor-pointer text-left transition-all duration-150 block hover:bg-core-card-hover hover:border-core-border"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    {RIcon ? <RIcon className="w-4 h-4 shrink-0" style={{ color: rec.capability.color }} /> : null}
+                    <span className="text-[13px] font-semibold text-core-text flex-1">{rec.capability.name}</span>
+                    <span className={`text-[11px] font-extrabold ${getSuccessColorClass(rec.successRate)}`}>
+                      {rec.successRate}%
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-core-text-muted leading-relaxed">{rec.reason}</div>
+                  <div className="mt-2 h-[3px] rounded-sm bg-core-border overflow-hidden">
+                    <div
+                      className={`h-full rounded-sm transition-all duration-300 ${getSuccessBarColor(rec.successRate)}`}
+                      style={{ width: `${rec.successRate}%` }}
+                    />
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          <div className="px-3 py-2 border-t border-core-border text-[10px] text-core-text-muted text-center">
+            Click to add
+          </div>
+        </>
+      )}
     </div>
   )
 }
