@@ -234,16 +234,14 @@ export async function GET(
       const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
         type: 'magiclink',
         email: profile.provider_email,
-        options: { redirectTo: `${baseUrl}/dashboard` },
+        options: { redirectTo: `${baseUrl}/install/slack?connected=slack` },
       })
 
       if (linkErr || !linkData?.properties?.hashed_token) {
         console.error('[oauth/slack] Magic link generation failed:', linkErr)
-        // Fallback: redirect to login with success message
-        return NextResponse.redirect(`${baseUrl}/login?slack=connected&email=${encodeURIComponent(profile.provider_email)}`)
+        return NextResponse.redirect(`${baseUrl}/install/slack?error=auth_failed`)
       }
 
-      // Extract the token from the action link and redirect through Supabase auth
       const actionLink = linkData.properties.action_link
       return NextResponse.redirect(actionLink)
     }
