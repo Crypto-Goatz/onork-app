@@ -15,7 +15,52 @@ interface Message {
   timestamp?: string
 }
 
+interface ChatSession {
+  id: string
+  title: string
+  messages: Message[]
+  createdAt: string
+  updatedAt: string
+}
+
 type ChatMode = 'floating' | 'pinned-right' | 'pinned-bottom' | 'fullscreen'
+
+const SESSIONS_KEY = '0n_chat_sessions'
+const ACTIVE_SESSION_KEY = '0n_chat_active'
+const MAX_SESSIONS = 50
+
+function generateSessionId() { return `chat_${Date.now()}_${Math.random().toString(36).slice(2, 6)}` }
+
+function loadSessions(): ChatSession[] {
+  try { return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]') } catch { return [] }
+}
+
+function saveSessions(sessions: ChatSession[]) {
+  localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions.slice(0, MAX_SESSIONS)))
+}
+
+function simpleMarkdown(text: string): string {
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/### (.+)/g, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^\- (.+)/gm, '<li>$1</li>')
+    .replace(/^(\d+)\. (.+)/gm, '<li>$2</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, (match) => {
+      return match.includes('1.') ? `<ol>${match}</ol>` : `<ul>${match}</ul>`
+    })
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p>').replace(/$/, '</p>')
+    .replace(/<p><\/p>/g, '')
+}
+
+function getSessionTitle(messages: Message[]): string {
+  const firstUser = messages.find(m => m.role === 'user')
+  if (!firstUser) return 'New Chat'
+  const text = firstUser.content.slice(0, 40)
+  return text.length < firstUser.content.length ? text + '...' : text
+}
 
 const QUICK_ACTIONS = [
   { label: 'Create Contact', cmd: 'Create a new contact', icon: Users },
@@ -45,6 +90,9 @@ export function AIChatBox() {
   const [mode, setMode] = useState<ChatMode>('floating')
   const [showMenu, setShowMenu] = useState(false)
   const [showActions, setShowActions] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [activeSessionId, setActiveSessionId] = useState<string>('')
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const [size, setSize] = useState({ w: 400, h: 560 })
   const [isDragging, setIsDragging] = useState(false)
@@ -57,6 +105,82 @@ export function AIChatBox() {
   // Only show on dashboard pages
   if (!pathname?.startsWith('/dashboard')) return null
 
+  // Load sessions from localStorage on mount
+  useEffect(() => {
+    const stored = loadSessions()
+    setSessions(stored)
+    const activeId = localStorage.getItem(ACTIVE_SESSION_KEY)
+    const active = stored.find(s => s.id === activeId)
+    if (active) {
+      setActiveSessionId(active.id)
+      setMessages(active.messages)
+      setGreeted(true)
+    }
+  }, [])
+
+  // Auto-save current session on every message change
+  useEffect(() => {
+    if (!activeSessionId || messages.length === 0) return
+    setSessions(prev => {
+      const updated = prev.map(s =>
+        s.id === activeSessionId
+          ? { ...s, messages, title: getSessionTitle(messages), updatedAt: new Date().toISOString() }
+          : s
+      )
+      saveSessions(updated)
+      return updated
+    })
+  }, [messages, activeSessionId])
+
+  // Start new session
+  function startNewSession() {
+    const id = generateSessionId()
+    const greeting: Message = { role: 'assistant', content: "I'm Jaxx — your AI engine. I can manage contacts, run workflows, write content, check compliance, and navigate anywhere in 0nCore. What do you need?" }
+    const session: ChatSession = {
+      id,
+      title: 'New Chat',
+      messages: [greeting],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    setSessions(prev => {
+      const updated = [session, ...prev].slice(0, MAX_SESSIONS)
+      saveSessions(updated)
+      return updated
+    })
+    setActiveSessionId(id)
+    setMessages([greeting])
+    setGreeted(true)
+    setShowHistory(false)
+    localStorage.setItem(ACTIVE_SESSION_KEY, id)
+  }
+
+  // Switch to existing session
+  function switchSession(sessionId: string) {
+    const session = sessions.find(s => s.id === sessionId)
+    if (!session) return
+    setActiveSessionId(session.id)
+    setMessages(session.messages)
+    setGreeted(true)
+    setShowHistory(false)
+    localStorage.setItem(ACTIVE_SESSION_KEY, session.id)
+  }
+
+  // Delete a session
+  function deleteSession(sessionId: string) {
+    setSessions(prev => {
+      const updated = prev.filter(s => s.id !== sessionId)
+      saveSessions(updated)
+      return updated
+    })
+    if (activeSessionId === sessionId) {
+      setMessages([])
+      setActiveSessionId('')
+      setGreeted(false)
+      localStorage.removeItem(ACTIVE_SESSION_KEY)
+    }
+  }
+
   // Initialize position
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -66,8 +190,7 @@ export function AIChatBox() {
 
   useEffect(() => {
     if (open && !greeted) {
-      setMessages([{ role: 'assistant', content: "I'm Jaxx — your AI engine. I can manage contacts, run workflows, write content, check compliance, and navigate anywhere in 0nCore. What do you need?" }])
-      setGreeted(true)
+      startNewSession()
       setTimeout(() => inputRef.current?.focus(), 300)
     }
   }, [open, greeted])
@@ -111,6 +234,10 @@ export function AIChatBox() {
   async function sendMessage(text?: string) {
     const msg = (text || input).trim()
     if (!msg || loading) return
+
+    // Ensure we have an active session
+    if (!activeSessionId) startNewSession()
+
     setMessages(prev => [...prev, { role: 'user', content: msg, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }])
     setInput('')
     setShowActions(false)
@@ -215,11 +342,26 @@ export function AIChatBox() {
                     })}
                     <div className="border-t border-core-border my-1" />
                     <button
-                      onClick={() => { setMessages([]); setGreeted(false); setShowMenu(false) }}
+                      onClick={() => { startNewSession(); setShowMenu(false) }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-core-green bg-transparent hover:bg-core-card-hover rounded-md cursor-pointer border-none transition-colors text-left"
+                    >
+                      <Plus className="size-3.5" />
+                      New Chat
+                    </button>
+                    <button
+                      onClick={() => { setShowHistory(!showHistory); setShowMenu(false) }}
                       className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-core-text-muted hover:text-core-text bg-transparent hover:bg-core-card-hover rounded-md cursor-pointer border-none transition-colors text-left"
                     >
+                      <Search className="size-3.5" />
+                      Chat History ({sessions.length})
+                    </button>
+                    <div className="border-t border-core-border my-1" />
+                    <button
+                      onClick={() => { if (activeSessionId) deleteSession(activeSessionId); setShowMenu(false) }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-core-red bg-transparent hover:bg-core-card-hover rounded-md cursor-pointer border-none transition-colors text-left"
+                    >
                       <Trash2 className="size-3.5" />
-                      Clear Chat
+                      Delete Chat
                     </button>
                   </div>
                 </>
@@ -236,6 +378,42 @@ export function AIChatBox() {
           </div>
         </div>
 
+        {/* ═══ Session History Sidebar ═══ */}
+        {showHistory && (
+          <div className="absolute top-[49px] right-0 bottom-0 w-[220px] bg-core-surface border-l border-core-border z-[5] flex flex-col overflow-hidden">
+            <div className="px-3 py-2.5 border-b border-core-border flex items-center justify-between shrink-0">
+              <span className="text-[11px] font-bold text-core-text-muted uppercase tracking-wide">History</span>
+              <button onClick={() => setShowHistory(false)} className="text-core-text-muted hover:text-core-text transition-colors cursor-pointer bg-transparent border-none p-0">
+                <X className="size-3.5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <button onClick={startNewSession}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-core-green font-semibold bg-transparent hover:bg-core-green/[0.04] border-none border-b border-core-border cursor-pointer text-left transition-colors">
+                <Plus className="size-3" />
+                New Chat
+              </button>
+              {sessions.map(s => (
+                <button key={s.id} onClick={() => switchSession(s.id)}
+                  className={cn(
+                    'w-full text-left px-3 py-2 border-none border-b border-core-border/50 cursor-pointer transition-colors',
+                    s.id === activeSessionId
+                      ? 'bg-core-green/[0.06] text-core-text'
+                      : 'bg-transparent text-core-text-dim hover:bg-core-card-hover'
+                  )}>
+                  <div className="text-xs font-medium truncate">{s.title}</div>
+                  <div className="text-[9px] text-core-text-muted mt-0.5">
+                    {s.messages.length - 1} messages · {new Date(s.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                </button>
+              ))}
+              {sessions.length === 0 && (
+                <p className="text-[11px] text-core-text-muted text-center py-6">No chat history</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ═══ Messages ═══ */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-2.5">
           {messages.map((msg, i) => (
@@ -246,7 +424,10 @@ export function AIChatBox() {
                   ? 'bg-core-green/10 border border-core-green/15 rounded-br-sm'
                   : 'bg-white/[0.03] border border-core-border rounded-bl-sm'
               )}>
-                {msg.content}
+                {msg.role === 'assistant' ? (
+                  <div className="prose-sm [&_p]:mb-2 [&_ul]:mb-2 [&_ol]:mb-2 [&_li]:mb-0.5 [&_strong]:text-core-text [&_h3]:text-sm [&_h3]:font-bold [&_h3]:text-core-text [&_h3]:mt-3 [&_h3]:mb-1"
+                    dangerouslySetInnerHTML={{ __html: simpleMarkdown(msg.content) }} />
+                ) : msg.content}
               </div>
               {msg.timestamp && (
                 <span className="text-[9px] text-core-text-muted mt-0.5 px-1">{msg.timestamp}</span>
