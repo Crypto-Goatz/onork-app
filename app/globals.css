@@ -138,6 +138,12 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/*
+ * CRITICAL: DO NOT add margin: 0 or padding: 0 here.
+ * Tailwind's @layer base preflight handles resets.
+ * Adding them here BREAKS all spacing across the entire site.
+ * This was the root cause of the CSS spacing bug on April 22, 2026.
+ */
 * {
   box-sizing: border-box;
 }
