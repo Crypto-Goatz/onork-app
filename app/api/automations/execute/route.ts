@@ -210,8 +210,97 @@ async function executeStep(
       }
 
       case 'stripe_create_invoice': {
-        // Would call Stripe API — for now return placeholder
         output = { status: 'invoice_pending', amount: inputs.amount, contactId: inputs.contactId }
+        break
+      }
+
+      case 'learn_generate': {
+        const groqKey = process.env.GROQ_API_KEY
+        if (groqKey) {
+          // Build context from previous step outputs
+          const prevOutputs = Object.entries(context.outputs)
+            .map(([id, out]) => `Step ${id}: ${JSON.stringify(out).slice(0, 200)}`)
+            .join('\n')
+
+          const depthMap: Record<string, string> = {
+            'Quick overview': 'Give a brief 2-3 paragraph overview.',
+            'Detailed breakdown': 'Provide a detailed breakdown with examples, bullet points, and key takeaways.',
+            'Expert deep-dive': 'Provide an expert-level deep dive with technical details, edge cases, and best practices.',
+          }
+
+          const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              max_tokens: 1000,
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are an expert business educator. Generate a contextual micro-lesson based on what just happened in this automation workflow.
+
+${depthMap[inputs.depth] || depthMap['Detailed breakdown']}
+
+FORMAT:
+- Use **bold** for key terms
+- Use bullet points for lists
+- Use ### headings for sections
+- Keep paragraphs short (2-3 sentences)
+- Include one actionable takeaway at the end
+
+WORKFLOW CONTEXT (what just happened):
+${prevOutputs || 'No previous steps executed yet.'}`
+                },
+                {
+                  role: 'user',
+                  content: inputs.topic || inputs.prompt || 'Explain what this automation does and how to optimize it.',
+                },
+              ],
+            }),
+          })
+          const data = await res.json()
+          const lesson = data.choices?.[0]?.message?.content || 'Lesson generation unavailable.'
+
+          output = {
+            lesson,
+            topic: inputs.topic || 'Automation lesson',
+            depth: inputs.depth || 'Detailed breakdown',
+            delivery: inputs.delivery || 'In-app notification',
+            generatedAt: new Date().toISOString(),
+          }
+        } else {
+          output = { lesson: 'AI learning unavailable — no Groq key configured.', topic: inputs.topic }
+        }
+        break
+      }
+
+      case 'learn_explain': {
+        // Explain what the previous step did and why
+        const groqKey = process.env.GROQ_API_KEY
+        if (groqKey) {
+          const lastOutput = Object.values(context.outputs).pop()
+          const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              max_tokens: 500,
+              messages: [
+                { role: 'system', content: 'You explain automation results in plain language. Be specific about what happened and why. Use **bold**, bullet points, and short paragraphs.' },
+                { role: 'user', content: `Explain this automation step result:\n${JSON.stringify(lastOutput, null, 2)}` },
+              ],
+            }),
+          })
+          const data = await res.json()
+          output = { explanation: data.choices?.[0]?.message?.content || 'No explanation available.' }
+        } else {
+          output = { explanation: 'AI explanation unavailable.' }
+        }
+        break
+      }
+
+      case 'noop': {
+        output = { status: 'trigger_node', note: 'Trigger nodes do not execute — they are entry points.' }
         break
       }
 

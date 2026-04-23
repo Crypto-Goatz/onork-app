@@ -6,7 +6,8 @@ import {
   Zap, Mail, Calendar, DollarSign, Bot, BarChart3, Flame, Search, Star,
   MessageSquare, RefreshCw, Bell, Repeat, Receipt, CreditCard, PenLine,
   Brain, Target, Eye, Sun, FileText, Tag, Clock, Snowflake, Banknote,
-  CheckCircle, Smartphone, TrendingUp, type LucideIcon
+  CheckCircle, Smartphone, TrendingUp, GraduationCap, HelpCircle,
+  Lightbulb, Scan, BookOpen, type LucideIcon
 } from 'lucide-react'
 
 // Map icon name strings to Lucide components
@@ -14,7 +15,8 @@ const LUCIDE_ICONS: Record<string, LucideIcon> = {
   Zap, Mail, Calendar, DollarSign, Bot, BarChart3, Flame, Search, Star,
   MessageSquare, RefreshCw, Bell, Repeat, Receipt, CreditCard, PenLine,
   Brain, Target, Eye, Sun, FileText, Tag, Clock, Snowflake, Banknote,
-  CheckCircle, Smartphone, TrendingUp,
+  CheckCircle, Smartphone, TrendingUp, GraduationCap, HelpCircle,
+  Lightbulb, Scan, BookOpen,
 }
 
 export interface CapabilityNodeData {

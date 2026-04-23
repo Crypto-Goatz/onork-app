@@ -237,6 +237,13 @@ function mapCapabilityToTool(capabilityId: string): string {
     // Reports
     daily_summary: 'ai_generate_content',
     weekly_pipeline: 'ai_generate_content',
+
+    // Learn
+    learn_custom: 'learn_generate',
+    learn_why: 'learn_explain',
+    learn_improve: 'learn_generate',
+    learn_pattern: 'learn_generate',
+    learn_course: 'learn_generate',
   }
 
   return MAP[capabilityId] || capabilityId

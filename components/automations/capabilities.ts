@@ -34,6 +34,7 @@ export const CATEGORIES: CapabilityCategory[] = [
   { id: 'ai', name: 'AI Actions', icon: 'Bot', color: '#2dd4bf' },
   { id: 'social', name: 'Social Media', icon: 'Smartphone', color: '#ec4899' },
   { id: 'reports', name: 'Reports', icon: 'TrendingUp', color: '#eab308' },
+  { id: 'learn', name: 'Learn', icon: 'GraduationCap', color: '#06b6d4' },
   { id: 'triggers', name: 'Triggers', icon: 'Zap', color: '#ef4444' },
 ];
 
@@ -344,6 +345,68 @@ export const CAPABILITIES: Capability[] = [
     icon: 'BarChart3',
     color: '#eab308',
     steps: ['Query all pipeline stages', 'Calculate projections', 'Compare to last week', 'Email report'],
+  },
+
+  // ── Learn ──
+  {
+    id: 'learn_custom',
+    name: 'Learn Something',
+    description: 'Describe what you want to learn — AI generates a contextual micro-lesson',
+    category: 'learn',
+    icon: 'GraduationCap',
+    color: '#06b6d4',
+    steps: ['Analyze workflow context', 'Generate lesson content', 'Deliver to user'],
+    configFields: [
+      { key: 'topic', label: 'What do you want to learn?', type: 'text', placeholder: 'e.g. How does lead scoring work?', required: true },
+      { key: 'depth', label: 'Depth', type: 'select', options: ['Quick overview', 'Detailed breakdown', 'Expert deep-dive'], default: 'Detailed breakdown' },
+      { key: 'delivery', label: 'How to deliver', type: 'select', options: ['In-app notification', 'Email', 'Dashboard card'], default: 'In-app notification' },
+    ],
+  },
+  {
+    id: 'learn_why',
+    name: 'Explain Why This Happened',
+    description: 'After any step, adds an AI explanation of what happened and why',
+    category: 'learn',
+    icon: 'HelpCircle',
+    color: '#06b6d4',
+    steps: ['Read previous step output', 'AI explains the result', 'Deliver explanation'],
+    configFields: [
+      { key: 'delivery', label: 'How to deliver', type: 'select', options: ['In-app notification', 'Email', 'Dashboard card'], default: 'In-app notification' },
+    ],
+  },
+  {
+    id: 'learn_improve',
+    name: 'Suggest Improvements',
+    description: 'AI analyzes the workflow results and suggests optimizations',
+    category: 'learn',
+    icon: 'Lightbulb',
+    color: '#06b6d4',
+    steps: ['Analyze all step outputs', 'Identify bottlenecks', 'Generate improvement suggestions'],
+    configFields: [
+      { key: 'focus', label: 'Focus area', type: 'select', options: ['Speed', 'Conversion rate', 'Cost efficiency', 'Customer experience', 'All areas'], default: 'All areas' },
+    ],
+  },
+  {
+    id: 'learn_pattern',
+    name: 'Spot Patterns',
+    description: 'Over time, AI identifies recurring patterns in your automation data',
+    category: 'learn',
+    icon: 'Scan',
+    color: '#06b6d4',
+    steps: ['Pull execution history', 'Analyze trends', 'Report patterns', 'Suggest actions'],
+  },
+  {
+    id: 'learn_course',
+    name: 'Build Mini Course',
+    description: 'AI creates a 3-5 lesson micro-course based on what your automation does',
+    category: 'learn',
+    icon: 'BookOpen',
+    color: '#06b6d4',
+    steps: ['Analyze workflow structure', 'Generate lesson plan', 'Create lessons', 'Save to Knowledge Base'],
+    configFields: [
+      { key: 'audience', label: 'Who is this for?', type: 'select', options: ['Myself', 'My team', 'My clients'], default: 'Myself' },
+      { key: 'format', label: 'Format', type: 'select', options: ['Text lessons', 'Step-by-step guide', 'FAQ format', 'Video script'], default: 'Text lessons' },
+    ],
   },
 ];
 
