@@ -29,6 +29,7 @@ interface TestResult {
   error?: string
   exists?: boolean
   profile?: Record<string, unknown>
+  deleted?: boolean
 }
 
 export default function InstallPage() {
