@@ -211,6 +211,15 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
+        name: 'Accounts',
+        href: '/dashboard/settings/accounts',
+        icon: (
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.07-9.07a4.5 4.5 0 016.364 6.364l-4.5 4.5a4.5 4.5 0 01-7.244-1.242" />
+          </svg>
+        ),
+      },
+      {
         name: 'Settings',
         href: '/dashboard/settings',
         icon: (
