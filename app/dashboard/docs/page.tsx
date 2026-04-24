@@ -95,7 +95,32 @@ export default function DocsPage() {
       </div>
 
       <div className="flex gap-5">
-        {/* Sidebar nav */}
+        {/* Content — LEFT side */}
+        <div className="flex-1">
+          <div className="mb-6">
+            <h2 className="flex items-center gap-2 text-2xl font-extrabold text-core-text mb-1">
+              <activeData.Icon size={20} className="text-core-green" />
+              {activeData.title}
+            </h2>
+            <p className="text-sm text-core-text-muted">{activeData.description}</p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {DOCS[activeSection].map((doc, i) => (
+              <div
+                key={i}
+                className="px-5 py-4.5 rounded-xl bg-core-card border border-core-border"
+              >
+                <h3 className="text-sm font-bold text-core-text mb-2">{doc.title}</h3>
+                <p className="text-[13px] text-core-text-dim leading-relaxed m-0 whitespace-pre-wrap">
+                  {doc.content}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Sidebar nav — RIGHT side */}
         <div className="w-60 shrink-0">
           <div className="sticky top-[88px] flex flex-col gap-1">
             {SECTIONS.map(s => {
@@ -132,31 +157,6 @@ export default function DocsPage() {
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1">
-          <div className="mb-6">
-            <h2 className="flex items-center gap-2 text-2xl font-extrabold text-core-text mb-1">
-              <activeData.Icon size={20} className="text-core-green" />
-              {activeData.title}
-            </h2>
-            <p className="text-sm text-core-text-muted">{activeData.description}</p>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {DOCS[activeSection].map((doc, i) => (
-              <div
-                key={i}
-                className="px-5 py-4.5 rounded-xl bg-core-card border border-core-border"
-              >
-                <h3 className="text-sm font-bold text-core-text mb-2">{doc.title}</h3>
-                <p className="text-[13px] text-core-text-dim leading-relaxed m-0 whitespace-pre-wrap">
-                  {doc.content}
-                </p>
-              </div>
-            ))}
           </div>
         </div>
       </div>
