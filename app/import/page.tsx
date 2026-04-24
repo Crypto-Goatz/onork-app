@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   Upload, FileJson, CheckCircle, AlertCircle, ArrowRight,
-  Loader2, Copy, Check, Sparkles, Layers
+  Loader2, Copy, Check, Sparkles, Layers, Zap
 } from 'lucide-react'
 
-type ImportPhase = 'choose' | 'scan' | 'scan-results' | 'instructions' | 'dropzone' | 'importing' | 'done' | 'error'
+type ImportPhase = 'choose' | 'scan' | 'scan-results' | 'hsm' | 'instructions' | 'dropzone' | 'importing' | 'done' | 'error'
 
 interface ScanData {
   business_name: string
@@ -74,10 +74,55 @@ export default function ImportPage() {
     }
   }
 
+  const [hsmCommand, setHsmCommand] = useState('')
+  const [hsmLoading, setHsmLoading] = useState(false)
+  const [hsmResult, setHsmResult] = useState<string | null>(null)
+  const [userToken, setUserToken] = useState('')
+
   async function handleAcceptScan() {
     if (!scanData) return
+    // Move to HSM — the magic moment
+    setPhase('hsm')
 
-    // Mark onboarding complete and go to dashboard
+    // Fetch their token for display
+    try {
+      const res = await fetch('/api/auth/token')
+      if (res.ok) {
+        const data = await res.json()
+        setUserToken(data.token || '')
+      }
+    } catch {}
+
+    // Pre-suggest a command based on their business
+    if (scanData.services.length > 0) {
+      setHsmCommand(`Write a blog post about ${scanData.services[0]} for ${scanData.target_audience || 'my audience'}`)
+    } else if (scanData.business_name) {
+      setHsmCommand(`Write a social media post introducing ${scanData.business_name}`)
+    }
+  }
+
+  async function executeHSM() {
+    if (!hsmCommand.trim()) return
+    setHsmLoading(true)
+    setHsmResult(null)
+
+    try {
+      const res = await fetch('/api/ai/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: hsmCommand }),
+      })
+
+      const data = await res.json()
+      setHsmResult(data.output || data.message || data.content || JSON.stringify(data, null, 2))
+    } catch {
+      setHsmResult('Something went wrong — but your account is set up! Head to the dashboard to try again.')
+    } finally {
+      setHsmLoading(false)
+    }
+  }
+
+  async function finishOnboarding() {
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       await supabase
@@ -85,7 +130,6 @@ export default function ImportPage() {
         .update({ onboarding_complete: true })
         .eq('id', user.id)
     }
-
     router.push('/dashboard')
   }
 
@@ -427,6 +471,123 @@ export default function ImportPage() {
                 className="w-full py-2 text-core-text-muted text-xs hover:text-core-text transition-colors cursor-pointer bg-transparent border-none"
               >
                 Scan a different URL
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── HSM — Holy Shit Moment ─── */}
+        {phase === 'hsm' && (
+          <div className="animate-fade-in">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-full bg-core-green/15 flex items-center justify-center mx-auto mb-3">
+                <Zap className="w-6 h-6 text-core-green" />
+              </div>
+              <h1 className="text-xl font-bold text-core-text mb-1">Your account is ready</h1>
+              <p className="text-sm text-core-text-muted">
+                Try your first command — describe what you want and watch it happen live.
+              </p>
+            </div>
+
+            {/* Token display */}
+            {userToken && (
+              <div className="p-3 bg-core-card border border-core-border rounded-xl mb-4">
+                <div className="text-[10px] text-core-text-muted font-semibold uppercase tracking-wider mb-1">Your 0n Token</div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs text-core-green font-mono bg-core-bg rounded-md px-2 py-1.5 truncate">
+                    {userToken}
+                  </code>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(userToken); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+                    className="btn btn-ghost btn-sm shrink-0"
+                  >
+                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-core-text-muted mt-1.5">
+                  Use this token in the Chrome extension, Slack, WordPress, or any 0n integration.
+                </p>
+              </div>
+            )}
+
+            {/* Command input */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-core-text-dim font-semibold uppercase tracking-wider mb-2">
+                  Describe what you want
+                </label>
+                <textarea
+                  value={hsmCommand}
+                  onChange={e => setHsmCommand(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); executeHSM() } }}
+                  rows={2}
+                  placeholder="Write a blog post about AI tools for small businesses..."
+                  className="w-full px-4 py-3 bg-core-card border border-core-border rounded-xl text-core-text text-sm placeholder:text-core-text-muted outline-none focus:border-core-green/50 transition-colors resize-none"
+                />
+              </div>
+
+              {/* Suggestion pills */}
+              {!hsmResult && (
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    scanData?.services?.[0] ? `Write a blog about ${scanData.services[0]}` : 'Write a blog post for my business',
+                    'Show my CRM contacts',
+                    'Check my Stripe balance',
+                    `Create a social post for ${scanData?.business_name || 'my company'}`,
+                  ].map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setHsmCommand(s)}
+                      className="px-2.5 py-1 rounded-md bg-core-card border border-core-border text-[11px] text-core-text-muted hover:text-core-text hover:border-core-green/30 transition-colors cursor-pointer"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={executeHSM}
+                disabled={hsmLoading || !hsmCommand.trim()}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-core-green to-core-green/80 text-core-bg font-bold text-sm transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {hsmLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Executing...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4" />
+                    Run It
+                  </>
+                )}
+              </button>
+
+              {/* Result */}
+              {hsmResult && (
+                <div className="p-4 bg-core-card border border-core-green/20 rounded-xl">
+                  <div className="text-[10px] text-core-green font-semibold uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Result
+                  </div>
+                  <div className="text-sm text-core-text-dim leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto">
+                    {hsmResult}
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={finishOnboarding}
+                className={[
+                  'w-full py-3 rounded-xl font-bold text-sm transition-opacity flex items-center justify-center gap-2',
+                  hsmResult
+                    ? 'bg-gradient-to-r from-core-cyan to-core-cyan/80 text-core-bg hover:opacity-90'
+                    : 'bg-transparent border border-core-border text-core-text-muted hover:text-core-text',
+                ].join(' ')}
+              >
+                <ArrowRight className="w-4 h-4" />
+                {hsmResult ? 'Go to Dashboard' : 'Skip — go to Dashboard'}
               </button>
             </div>
           </div>
