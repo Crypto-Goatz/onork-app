@@ -171,9 +171,14 @@ export default function LoginPage() {
                 <label className="login-label">Email</label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com" className="login-input" />
               </div>
-              <div className="mb-5">
+              <div className="mb-2">
                 <label className="login-label">Password</label>
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Enter your password" className="login-input" />
+              </div>
+              <div className="mb-5 text-right">
+                <Link href="/forgot-password" className="text-[11px] text-white/30 hover:text-[#7ed957] no-underline transition-colors">
+                  Forgot password?
+                </Link>
               </div>
               <button type="submit" disabled={loading} className="login-submit">
                 {loading ? 'Signing in...' : 'Sign In'}
