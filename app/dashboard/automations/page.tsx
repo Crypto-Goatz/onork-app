@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { ReactFlowProvider, type Edge } from '@xyflow/react'
+import { toast } from 'sonner'
 import {
   Folder,
   ChevronDown,
@@ -28,7 +29,7 @@ import AutomationCanvas from '@/components/automations/AutomationCanvas'
 import ConfigPanel from '@/components/automations/ConfigPanel'
 import AIRecommendations from '@/components/automations/AIRecommendations'
 import GenerateBar from '@/components/automations/GenerateBar'
-import ChatView from '@/components/automations/ChatView'
+import ChatView, { type ChatMessage } from '@/components/automations/ChatView'
 import PipelineView from '@/components/automations/PipelineView'
 import DotOnView from '@/components/automations/DotOnView'
 import type { CapabilityNodeType, CapabilityNodeData } from '@/components/automations/CapabilityNode'
@@ -65,8 +66,35 @@ export default function AutomationsPage() {
   const [savedDrafts, setSavedDrafts] = useState<SavedAutomation[]>([])
   const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('unsaved')
   const [activating, setActivating] = useState(false)
-  const [activateToast, setActivateToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('workflow')
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
+  const pendingViewMode = useRef<ViewMode | null>(null)
+
+  // Chat messages lifted to parent — persists across tab switches
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { id: 'welcome', role: 'assistant', content: "I'm your automation builder. Describe what you want to automate and I'll build it step by step.", timestamp: new Date() },
+  ])
+
+  // Warn before leaving page with unsaved changes
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (saveStatus === 'unsaved' && nodes.length > 0) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [saveStatus, nodes.length])
+
+  // Tab switch with unsaved warning
+  const handleViewModeChange = useCallback((newMode: ViewMode) => {
+    if (saveStatus === 'unsaved' && nodes.length > 0 && newMode !== viewMode) {
+      pendingViewMode.current = newMode
+      setShowUnsavedWarning(true)
+    } else {
+      setViewMode(newMode)
+    }
+  }, [saveStatus, nodes.length, viewMode])
 
   const selectedNode = selectedNodeId ? nodes.find(n => n.id === selectedNodeId) : null
   const nodeCount = nodes.length
@@ -161,7 +189,10 @@ export default function AutomationsPage() {
       localStorage.setItem('0ncore-automations', JSON.stringify(all.slice(0, 50)))
     } catch {}
 
-    setTimeout(() => setSaveStatus('saved'), 300)
+    setTimeout(() => {
+      setSaveStatus('saved')
+      toast.success('Draft saved')
+    }, 300)
   }, [automationId, automationName, nodes, edges])
 
   const handleLoadDraft = useCallback((draft: SavedAutomation) => {
@@ -184,12 +215,15 @@ export default function AutomationsPage() {
     setSelectedNodeId(null)
     setShowWorkflowMenu(false)
     setSaveStatus('unsaved')
+    setChatMessages([
+      { id: 'welcome', role: 'assistant', content: "I'm your automation builder. Describe what you want to automate and I'll build it step by step.", timestamp: new Date() },
+    ])
   }, [])
 
   const handleActivate = useCallback(async () => {
     if (nodes.length === 0 || !hasTrigger || activating) return
     setActivating(true)
-    setActivateToast(null)
+
 
     const dotOnSteps = nodes.map((node, i) => ({
       id: node.id,
@@ -245,17 +279,16 @@ export default function AutomationsPage() {
           if (idx >= 0) { all[idx].status = 'active'; localStorage.setItem('0ncore-automations', JSON.stringify(all)) }
         } catch {}
 
-        setActivateToast({ type: 'success', text: `"${automationName}" activated! Workflow is now live.` })
+        toast.success(`"${automationName}" activated`, { description: 'Workflow is now live.' })
         setSaveStatus('saved')
       } else {
         const data = await res.json().catch(() => ({ error: 'Unknown error' }))
-        setActivateToast({ type: 'error', text: data.error || 'Activation failed' })
+        toast.error('Activation failed', { description: data.error || 'Unknown error' })
       }
     } catch (err) {
-      setActivateToast({ type: 'error', text: err instanceof Error ? err.message : 'Network error' })
+      toast.error('Network error', { description: err instanceof Error ? err.message : 'Could not reach server' })
     } finally {
       setActivating(false)
-      setTimeout(() => setActivateToast(null), 5000)
     }
   }, [nodes, edges, hasTrigger, activating, automationName, automationId])
 
@@ -276,23 +309,53 @@ export default function AutomationsPage() {
   return (
     <div className="flex flex-col bg-core-bg" style={{ height: 'calc(100vh - 64px)' }}>
 
-      {/* Activate Toast */}
-      {activateToast && (
-        <div
-          className={[
-            'fixed top-5 right-5 z-[10000] flex items-center gap-2',
-            'px-5 py-3 rounded-xl text-[13px] font-semibold',
-            'backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
-            'animate-[toastSlide_0.3s_ease-out]',
-            activateToast.type === 'success'
-              ? 'bg-core-green/10 border border-core-green/30 text-core-green'
-              : 'bg-core-red/10 border border-core-red/30 text-core-red',
-          ].join(' ')}
-        >
-          {activateToast.type === 'success'
-            ? <Check className="w-4 h-4 shrink-0" />
-            : <X className="w-4 h-4 shrink-0" />}
-          {activateToast.text}
+      {/* Unsaved Changes Warning Modal */}
+      {showUnsavedWarning && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-core-card border border-core-border rounded-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+            <div className="flex items-start gap-3 mb-4">
+              <AlertTriangle className="w-5 h-5 text-core-amber shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-[15px] font-bold text-core-text">Unsaved changes</h3>
+                <p className="text-[13px] text-core-text-dim mt-1">
+                  You have unsaved changes to this automation. Save before switching views?
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  setShowUnsavedWarning(false)
+                  pendingViewMode.current = null
+                }}
+                className="px-4 py-2 rounded-lg border border-core-border text-core-text-dim text-[13px] bg-transparent hover:bg-core-card-hover transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (pendingViewMode.current) setViewMode(pendingViewMode.current)
+                  setShowUnsavedWarning(false)
+                  pendingViewMode.current = null
+                  toast.warning('Changes not saved', { description: 'Your changes will be lost if you leave without saving.' })
+                }}
+                className="px-4 py-2 rounded-lg border border-core-amber/30 text-core-amber text-[13px] bg-core-amber/10 hover:bg-core-amber/20 transition-colors cursor-pointer"
+              >
+                Discard
+              </button>
+              <button
+                onClick={() => {
+                  handleSaveDraft()
+                  if (pendingViewMode.current) setViewMode(pendingViewMode.current)
+                  setShowUnsavedWarning(false)
+                  pendingViewMode.current = null
+                }}
+                className="px-4 py-2 rounded-lg bg-core-green text-core-bg text-[13px] font-bold hover:bg-core-green/90 transition-colors cursor-pointer"
+              >
+                Save & Switch
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -434,7 +497,7 @@ export default function AutomationsPage() {
               return (
                 <button
                   key={vt.key}
-                  onClick={() => setViewMode(vt.key)}
+                  onClick={() => handleViewModeChange(vt.key)}
                   className={[
                     'flex items-center gap-1.5 px-3 py-1.5 border-none text-[11px] font-semibold cursor-pointer transition-colors',
                     viewMode === vt.key
@@ -546,6 +609,8 @@ export default function AutomationsPage() {
                   edges={edges}
                   onUpdateWorkflow={handleUpdateWorkflow}
                   automationName={automationName}
+                  messages={chatMessages}
+                  onMessagesChange={setChatMessages}
                 />
               </div>
               {menuSize !== 'minimize' && <CapabilityPalette size={menuSize} />}

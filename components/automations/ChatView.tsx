@@ -6,14 +6,7 @@ import type { Edge } from '@xyflow/react'
 import type { CapabilityNodeType, CapabilityNodeData } from './CapabilityNode'
 import { CAPABILITIES } from './capabilities'
 
-interface ChatViewProps {
-  nodes: CapabilityNodeType[]
-  edges: Edge[]
-  onUpdateWorkflow: (nodes: CapabilityNodeType[], edges: Edge[], name?: string) => void
-  automationName: string
-}
-
-interface ChatMessage {
+export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
@@ -25,6 +18,15 @@ interface ChatMessage {
     addedNames: string[]
   }
   timestamp: Date
+}
+
+interface ChatViewProps {
+  nodes: CapabilityNodeType[]
+  edges: Edge[]
+  onUpdateWorkflow: (nodes: CapabilityNodeType[], edges: Edge[], name?: string) => void
+  automationName: string
+  messages: ChatMessage[]
+  onMessagesChange: (messages: ChatMessage[]) => void
 }
 
 // Tool ID → capability ID mapping (shared with GenerateBar)
@@ -122,16 +124,14 @@ function dotOnToNodes(workflow: Record<string, unknown>): { nodes: CapabilityNod
   return { nodes, edges }
 }
 
-const WELCOME_MESSAGE: ChatMessage = {
-  id: 'welcome',
-  role: 'assistant',
-  content:
-    "I'm your automation builder. Describe what you want to automate and I'll build it step by step.",
-  timestamp: new Date(),
-}
-
-export default function ChatView({ nodes, edges, onUpdateWorkflow, automationName }: ChatViewProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE])
+export default function ChatView({ nodes, edges, onUpdateWorkflow, automationName, messages, onMessagesChange }: ChatViewProps) {
+  const setMessages = useCallback((updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
+    if (typeof updater === 'function') {
+      onMessagesChange(updater(messages))
+    } else {
+      onMessagesChange(updater)
+    }
+  }, [messages, onMessagesChange])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [workflowUpdated, setWorkflowUpdated] = useState(false)
