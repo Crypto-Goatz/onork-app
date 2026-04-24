@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createHmac } from 'crypto'
 import { resolveChannelSession } from '@/lib/channel-adapter'
 
 /**
@@ -15,14 +15,35 @@ import { resolveChannelSession } from '@/lib/channel-adapter'
  * Everything else routes through the bridge for full AI processing.
  */
 
-const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN || ''
+function verifySlackSignature(req: NextRequest, rawBody: string): boolean {
+  const signingSecret = process.env.SLACK_SIGNING_SECRET
+  if (!signingSecret) return false
+
+  const timestamp = req.headers.get('x-slack-request-timestamp')
+  const slackSig = req.headers.get('x-slack-signature')
+  if (!timestamp || !slackSig) return false
+
+  // Reject requests older than 5 minutes (replay attack prevention)
+  const now = Math.floor(Date.now() / 1000)
+  if (Math.abs(now - parseInt(timestamp, 10)) > 300) return false
+
+  const sigBase = `v0:${timestamp}:${rawBody}`
+  const computed = `v0=${createHmac('sha256', signingSecret).update(sigBase).digest('hex')}`
+  return computed === slackSig
+}
 
 export async function POST(req: NextRequest) {
-  const formData = await req.formData()
-  const text = (formData.get('text') as string || '').trim()
-  const slackUserId = formData.get('user_id') as string
-  const channelId = formData.get('channel_id') as string
-  const responseUrl = formData.get('response_url') as string
+  const rawBody = await req.text()
+
+  if (!verifySlackSignature(req, rawBody)) {
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+  }
+
+  const formData = new URLSearchParams(rawBody)
+  const text = (formData.get('text') || '').trim()
+  const slackUserId = formData.get('user_id') || ''
+  const channelId = formData.get('channel_id') || ''
+  const responseUrl = formData.get('response_url') || ''
 
   // Respond immediately (Slack requires < 3 seconds)
   processCommand(text, slackUserId, channelId, responseUrl, req.url).catch(console.error)
