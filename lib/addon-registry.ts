@@ -1,0 +1,357 @@
+/**
+ * Add-on Registry — defines config schemas and execution handlers for every add-on.
+ *
+ * PROCESS FOR ADDING A NEW ADD-ON:
+ *
+ * 1. Define the add-on in lib/marketplace-data.ts (slug, name, price, capabilities)
+ * 2. Register it here with configSchema + execute function
+ * 3. Create dashboard page: app/dashboard/addons/[slug]/page.tsx
+ *    — Uses AddonConfigForm component with the schema
+ *    — Gated by hasAddon(slug) check
+ * 4. The execute function receives the user's config + connections and runs the AI workflow
+ * 5. Cron job (/api/cron/addons) calls execute() for all users on schedule
+ *
+ * That's it. The generic infrastructure handles:
+ * - Config CRUD (/api/addons/[slug]/config)
+ * - Manual execution (/api/addons/[slug]/execute)
+ * - Scheduled execution (/api/cron/addons)
+ * - Execution history tracking (addon_executions table)
+ * - Capability gating (product_keys table)
+ */
+
+export interface ConfigField {
+  key: string
+  label: string
+  type: 'text' | 'textarea' | 'number' | 'select' | 'multi-select' | 'toggle' | 'tags'
+  placeholder?: string
+  description?: string
+  options?: { value: string; label: string }[]
+  default?: unknown
+  required?: boolean
+}
+
+export interface AddonDefinition {
+  slug: string
+  name: string
+  schedule: 'daily' | 'weekly' | 'hourly' | 'manual'
+  configSchema: ConfigField[]
+  /** Execute the add-on workflow with user's config and context */
+  execute: (ctx: ExecutionContext) => Promise<ExecutionResult>
+}
+
+export interface ExecutionContext {
+  userId: string
+  locationId: string
+  config: Record<string, unknown>
+  connections: {
+    google?: { access_token: string; metadata?: Record<string, unknown> }
+    linkedin?: { access_token: string }
+    slack?: { access_token: string }
+    facebook?: { access_token: string }
+  }
+  crmPit: string
+}
+
+export interface ExecutionResult {
+  success: boolean
+  summary: string
+  outputs: Record<string, unknown>
+  /** Items produced (blog posts, social posts, emails, etc.) */
+  items?: { type: string; title: string; url?: string; status: string }[]
+}
+
+// ─── CONTENT ENGINE ────────────────────────────────────────────
+
+const contentEngine: AddonDefinition = {
+  slug: 'content-engine',
+  name: 'Content Engine',
+  schedule: 'daily',
+  configSchema: [
+    {
+      key: 'business_description',
+      label: 'What does your business do?',
+      type: 'textarea',
+      placeholder: 'We help small businesses automate their marketing with AI tools...',
+      description: 'The AI uses this to write content that sounds like you.',
+      required: true,
+    },
+    {
+      key: 'topics',
+      label: 'Content topics',
+      type: 'tags',
+      placeholder: 'Add topics (press Enter)',
+      description: 'What should the AI write about? e.g. AI automation, CRM tips, lead generation',
+      required: true,
+    },
+    {
+      key: 'tone',
+      label: 'Writing tone',
+      type: 'select',
+      options: [
+        { value: 'professional', label: 'Professional' },
+        { value: 'casual', label: 'Casual & friendly' },
+        { value: 'authoritative', label: 'Authoritative & expert' },
+        { value: 'conversational', label: 'Conversational' },
+        { value: 'bold', label: 'Bold & provocative' },
+      ],
+      default: 'professional',
+    },
+    {
+      key: 'blog_enabled',
+      label: 'Generate blog posts',
+      type: 'toggle',
+      default: true,
+      description: 'AI writes a blog post and publishes to your CRM blog',
+    },
+    {
+      key: 'blog_length',
+      label: 'Blog post length',
+      type: 'select',
+      options: [
+        { value: 'short', label: 'Short (500-800 words)' },
+        { value: 'medium', label: 'Medium (800-1200 words)' },
+        { value: 'long', label: 'Long (1200-2000 words)' },
+      ],
+      default: 'medium',
+    },
+    {
+      key: 'social_enabled',
+      label: 'Generate social posts',
+      type: 'toggle',
+      default: true,
+      description: 'AI creates and schedules posts to your connected platforms',
+    },
+    {
+      key: 'social_platforms',
+      label: 'Social platforms',
+      type: 'multi-select',
+      options: [
+        { value: 'linkedin', label: 'LinkedIn' },
+        { value: 'facebook', label: 'Facebook' },
+        { value: 'instagram', label: 'Instagram' },
+        { value: 'x', label: 'X (Twitter)' },
+        { value: 'tiktok', label: 'TikTok' },
+      ],
+      default: ['linkedin'],
+    },
+    {
+      key: 'social_posts_per_day',
+      label: 'Social posts per day',
+      type: 'number',
+      default: 2,
+      description: 'How many social posts to generate each day',
+    },
+    {
+      key: 'email_enabled',
+      label: 'Generate email campaigns',
+      type: 'toggle',
+      default: false,
+      description: 'AI creates email campaigns targeting your CRM contacts',
+    },
+    {
+      key: 'email_frequency',
+      label: 'Email frequency',
+      type: 'select',
+      options: [
+        { value: 'daily', label: 'Daily' },
+        { value: 'weekly', label: 'Weekly' },
+        { value: 'biweekly', label: 'Every 2 weeks' },
+      ],
+      default: 'weekly',
+    },
+    {
+      key: 'target_audience',
+      label: 'Target audience',
+      type: 'textarea',
+      placeholder: 'Small business owners, marketing managers, SaaS founders...',
+      description: 'Who are you writing for?',
+    },
+    {
+      key: 'cta_url',
+      label: 'Call-to-action URL',
+      type: 'text',
+      placeholder: 'https://yourdomain.com/book',
+      description: 'Where should blog/social CTAs point?',
+    },
+  ],
+
+  execute: async (ctx) => {
+    const {
+      business_description,
+      topics,
+      tone,
+      blog_enabled,
+      blog_length,
+      social_enabled,
+      social_platforms,
+      social_posts_per_day,
+      email_enabled,
+      target_audience,
+      cta_url,
+    } = ctx.config as Record<string, unknown>
+
+    const items: { type: string; title: string; url?: string; status: string }[] = []
+    const topicList = (topics as string[]) || []
+    const todayTopic = topicList[Math.floor(Math.random() * topicList.length)] || 'business automation'
+
+    // Build the AI prompt with user's config values
+    const systemPrompt = `You are a content marketing AI for a business.
+
+Business: ${business_description || 'A modern business'}
+Target audience: ${target_audience || 'business professionals'}
+Tone: ${tone || 'professional'}
+Topic for today: ${todayTopic}
+CTA URL: ${cta_url || ''}
+
+You generate content that drives engagement and leads. Every piece should provide genuine value, not fluff.`
+
+    // 1. Blog post
+    if (blog_enabled) {
+      try {
+        const lengthGuide = blog_length === 'short' ? '500-800' : blog_length === 'long' ? '1200-2000' : '800-1200'
+
+        const blogRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: `Write a ${lengthGuide} word blog post about "${todayTopic}". Return JSON: { "title": "...", "slug": "...", "content": "...(HTML)...", "meta_description": "...", "tags": ["..."] }` },
+            ],
+            temperature: 0.7,
+            response_format: { type: 'json_object' },
+          }),
+        })
+
+        if (blogRes.ok) {
+          const blogData = await blogRes.json()
+          const blog = JSON.parse(blogData.choices[0].message.content)
+
+          // Post to CRM blog
+          const crmRes = await fetch(`https://services.leadconnectorhq.com/blogs/posts`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${ctx.crmPit}`,
+              Version: '2021-07-28',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              locationId: ctx.locationId,
+              title: blog.title,
+              slug: blog.slug,
+              content: blog.content,
+              status: 'published',
+              tags: blog.tags,
+            }),
+          })
+
+          items.push({
+            type: 'blog',
+            title: blog.title,
+            url: crmRes.ok ? `/blog/${blog.slug}` : undefined,
+            status: crmRes.ok ? 'published' : 'draft',
+          })
+        }
+      } catch (err) {
+        items.push({ type: 'blog', title: 'Blog generation failed', status: 'error' })
+      }
+    }
+
+    // 2. Social posts
+    if (social_enabled) {
+      const platforms = (social_platforms as string[]) || ['linkedin']
+      const count = (social_posts_per_day as number) || 2
+
+      try {
+        const socialRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: `Write ${count} social media posts about "${todayTopic}" for ${platforms.join(', ')}. Each post should be platform-appropriate length. Return JSON array: [{ "platform": "...", "text": "...", "hashtags": ["..."] }]` },
+            ],
+            temperature: 0.8,
+            response_format: { type: 'json_object' },
+          }),
+        })
+
+        if (socialRes.ok) {
+          const socialData = await socialRes.json()
+          const parsed = JSON.parse(socialData.choices[0].message.content)
+          const posts = Array.isArray(parsed) ? parsed : parsed.posts || [parsed]
+
+          // Post each to CRM social planner
+          for (const post of posts) {
+            try {
+              await fetch(`https://services.leadconnectorhq.com/social-media-posting/post`, {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${ctx.crmPit}`,
+                  Version: '2021-07-28',
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  locationId: ctx.locationId,
+                  post: `${post.text}\n\n${(post.hashtags || []).map((h: string) => `#${h}`).join(' ')}`,
+                  platforms: [post.platform || platforms[0]],
+                  status: 'draft',
+                }),
+              })
+
+              items.push({
+                type: 'social',
+                title: `${post.platform}: ${(post.text || '').slice(0, 60)}...`,
+                status: 'scheduled',
+              })
+            } catch {
+              items.push({ type: 'social', title: `${post.platform} post failed`, status: 'error' })
+            }
+          }
+        }
+      } catch {
+        items.push({ type: 'social', title: 'Social generation failed', status: 'error' })
+      }
+    }
+
+    // 3. Email campaign (if enabled and on schedule)
+    if (email_enabled) {
+      // Email runs on its own frequency, tracked separately
+      items.push({ type: 'email', title: 'Email campaign queued', status: 'queued' })
+    }
+
+    const successCount = items.filter(i => i.status !== 'error').length
+    return {
+      success: successCount > 0,
+      summary: `Generated ${successCount} items: ${items.filter(i => i.type === 'blog').length} blog, ${items.filter(i => i.type === 'social').length} social, ${items.filter(i => i.type === 'email').length} email`,
+      outputs: { topic: todayTopic, items_count: items.length },
+      items,
+    }
+  },
+}
+
+// ─── REGISTRY ──────────────────────────────────────────────────
+
+const ADDON_REGISTRY: Record<string, AddonDefinition> = {
+  'content-engine': contentEngine,
+}
+
+export function getAddonDefinition(slug: string): AddonDefinition | null {
+  return ADDON_REGISTRY[slug] || null
+}
+
+export function getAllAddonDefinitions(): AddonDefinition[] {
+  return Object.values(ADDON_REGISTRY)
+}
+
+export function getAddonConfigSchema(slug: string): ConfigField[] {
+  return ADDON_REGISTRY[slug]?.configSchema || []
+}
