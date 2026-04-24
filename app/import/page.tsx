@@ -8,7 +8,25 @@ import {
   Loader2, Copy, Check, Sparkles, Layers
 } from 'lucide-react'
 
-type ImportPhase = 'choose' | 'instructions' | 'dropzone' | 'importing' | 'done' | 'error'
+type ImportPhase = 'choose' | 'scan' | 'scan-results' | 'instructions' | 'dropzone' | 'importing' | 'done' | 'error'
+
+interface ScanData {
+  business_name: string
+  tagline: string
+  description: string
+  industry: string
+  services: string[]
+  target_audience: string
+  contact_email: string
+  contact_phone: string
+  brand_colors: { primary: string; secondary: string; accent: string }
+  logo_url: string
+  social_links: Record<string, string>
+  tone: string
+  content_topics: string[]
+  site_url: string
+  pages_scanned: number
+}
 
 export default function ImportPage() {
   const [phase, setPhase] = useState<ImportPhase>('choose')
@@ -19,9 +37,57 @@ export default function ImportPage() {
   const [results, setResults] = useState<string[]>([])
   const [error, setError] = useState('')
   const [businessName, setBusinessName] = useState('')
+  const [websiteUrl, setWebsiteUrl] = useState('')
+  const [scanning, setScanning] = useState(false)
+  const [scanData, setScanData] = useState<ScanData | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const supabase = createClient()
+
+  async function handleScanWebsite() {
+    if (!websiteUrl.trim()) return
+    setScanning(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/onboarding/scan-website', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: websiteUrl }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Scan failed')
+        setScanning(false)
+        return
+      }
+
+      setScanData(data.scan)
+      setBusinessName(data.scan.business_name || '')
+      setPhase('scan-results')
+    } catch {
+      setError('Could not scan website. Please check the URL.')
+    } finally {
+      setScanning(false)
+    }
+  }
+
+  async function handleAcceptScan() {
+    if (!scanData) return
+
+    // Mark onboarding complete and go to dashboard
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ onboarding_complete: true })
+        .eq('id', user.id)
+    }
+
+    router.push('/dashboard')
+  }
 
   // Fetch instructions
   async function loadInstructions() {
@@ -104,6 +170,24 @@ export default function ImportPage() {
             </div>
 
             <div className="space-y-3">
+              {/* Option 0: Website Scan (PRIMARY) */}
+              <button onClick={() => setPhase('scan')}
+                className="w-full flex items-start gap-4 p-5 bg-gradient-to-r from-core-green/[0.06] to-core-cyan/[0.04] border border-core-green/30 rounded-xl hover:border-core-green/50 transition-all text-left group relative overflow-hidden">
+                <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-core-green/15 text-core-green text-[10px] font-bold">
+                  FASTEST
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-core-green/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <Sparkles className="w-5 h-5 text-core-green" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-core-text mb-1">Scan Your Website</div>
+                  <p className="text-xs text-core-text-muted leading-relaxed">
+                    Paste your URL and we'll auto-detect your branding, services, audience, and contacts. Everything pre-filled in 10 seconds.
+                  </p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-core-green mt-3 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+
               {/* Option 1: AI Bridge */}
               <button onClick={loadInstructions}
                 className="w-full flex items-start gap-4 p-5 bg-core-card border border-core-border rounded-xl hover:border-core-green/30 transition-all text-left group">
@@ -147,6 +231,202 @@ export default function ImportPage() {
                   </p>
                 </div>
                 <ArrowRight className="w-4 h-4 text-core-text-muted mt-3 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Website Scan Input ─── */}
+        {phase === 'scan' && (
+          <div className="animate-fade-in">
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-core-green/20 to-core-cyan/20 border border-core-green/30 flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-8 h-8 text-core-green" />
+              </div>
+              <h1 className="text-2xl font-bold text-core-text mb-2">Scan Your Website</h1>
+              <p className="text-sm text-core-text-muted">
+                We'll auto-detect your branding, services, and contact info to pre-fill your account.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-core-text-dim font-semibold uppercase tracking-wider mb-2">
+                  Website URL
+                </label>
+                <input
+                  type="url"
+                  value={websiteUrl}
+                  onChange={e => setWebsiteUrl(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleScanWebsite()}
+                  placeholder="yourbusiness.com"
+                  autoFocus
+                  className="w-full px-4 py-3 bg-core-card border border-core-border rounded-xl text-core-text text-sm placeholder:text-core-text-muted outline-none focus:border-core-green/50 transition-colors"
+                />
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 px-4 py-3 bg-core-red/8 border border-core-red/20 rounded-xl text-core-red text-sm">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {error}
+                </div>
+              )}
+
+              <button
+                onClick={handleScanWebsite}
+                disabled={scanning || !websiteUrl.trim()}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-core-green to-core-green/80 text-core-bg font-bold text-sm transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {scanning ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Scanning {websiteUrl.replace(/^https?:\/\//, '').split('/')[0]}...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Scan Website
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => { setPhase('choose'); setError('') }}
+                className="w-full py-2 text-core-text-muted text-xs hover:text-core-text transition-colors cursor-pointer bg-transparent border-none"
+              >
+                Back to options
+              </button>
+
+              <p className="text-center text-[11px] text-core-text-muted">
+                Optional — you can always set this up manually later.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Scan Results ─── */}
+        {phase === 'scan-results' && scanData && (
+          <div className="animate-fade-in">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-full bg-core-green/15 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle className="w-6 h-6 text-core-green" />
+              </div>
+              <h1 className="text-xl font-bold text-core-text mb-1">We found your business</h1>
+              <p className="text-sm text-core-text-muted">
+                {scanData.pages_scanned} pages scanned. Review what we detected:
+              </p>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              {/* Business name + industry */}
+              <div className="p-4 bg-core-card border border-core-border rounded-xl">
+                <div className="text-[10px] text-core-text-muted font-semibold uppercase tracking-wider mb-1">Business</div>
+                <div className="text-lg font-bold text-core-text">{scanData.business_name}</div>
+                {scanData.industry && (
+                  <div className="text-xs text-core-text-dim mt-0.5">{scanData.industry}</div>
+                )}
+                {scanData.tagline && (
+                  <div className="text-sm text-core-text-dim mt-1 italic">&ldquo;{scanData.tagline}&rdquo;</div>
+                )}
+              </div>
+
+              {/* Services */}
+              {scanData.services.length > 0 && (
+                <div className="p-4 bg-core-card border border-core-border rounded-xl">
+                  <div className="text-[10px] text-core-text-muted font-semibold uppercase tracking-wider mb-2">Services Detected</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {scanData.services.map((s, i) => (
+                      <span key={i} className="px-2.5 py-1 rounded-md bg-core-green/10 text-core-green text-xs font-medium border border-core-green/20">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Brand colors */}
+              {scanData.brand_colors && (
+                <div className="p-4 bg-core-card border border-core-border rounded-xl">
+                  <div className="text-[10px] text-core-text-muted font-semibold uppercase tracking-wider mb-2">Brand Colors</div>
+                  <div className="flex gap-3">
+                    {Object.entries(scanData.brand_colors).map(([name, color]) => (
+                      <div key={name} className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md border border-core-border" style={{ backgroundColor: color }} />
+                        <div>
+                          <div className="text-[11px] text-core-text capitalize">{name}</div>
+                          <div className="text-[10px] text-core-text-muted font-mono">{color}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Contact + social */}
+              <div className="grid grid-cols-2 gap-3">
+                {scanData.contact_email && (
+                  <div className="p-3 bg-core-card border border-core-border rounded-xl">
+                    <div className="text-[10px] text-core-text-muted font-semibold uppercase tracking-wider mb-1">Email</div>
+                    <div className="text-xs text-core-text truncate">{scanData.contact_email}</div>
+                  </div>
+                )}
+                {scanData.contact_phone && (
+                  <div className="p-3 bg-core-card border border-core-border rounded-xl">
+                    <div className="text-[10px] text-core-text-muted font-semibold uppercase tracking-wider mb-1">Phone</div>
+                    <div className="text-xs text-core-text">{scanData.contact_phone}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Audience + tone */}
+              {(scanData.target_audience || scanData.tone) && (
+                <div className="p-4 bg-core-card border border-core-border rounded-xl">
+                  <div className="grid grid-cols-2 gap-4">
+                    {scanData.target_audience && (
+                      <div>
+                        <div className="text-[10px] text-core-text-muted font-semibold uppercase tracking-wider mb-1">Target Audience</div>
+                        <div className="text-xs text-core-text-dim">{scanData.target_audience}</div>
+                      </div>
+                    )}
+                    {scanData.tone && (
+                      <div>
+                        <div className="text-[10px] text-core-text-muted font-semibold uppercase tracking-wider mb-1">Writing Tone</div>
+                        <div className="text-xs text-core-text-dim capitalize">{scanData.tone}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Content topics */}
+              {scanData.content_topics.length > 0 && (
+                <div className="p-4 bg-core-card border border-core-border rounded-xl">
+                  <div className="text-[10px] text-core-text-muted font-semibold uppercase tracking-wider mb-2">Content Topics</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {scanData.content_topics.map((t, i) => (
+                      <span key={i} className="px-2 py-0.5 rounded-md bg-core-cyan/10 text-core-cyan text-[11px] border border-core-cyan/20">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={handleAcceptScan}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-core-green to-core-green/80 text-core-bg font-bold text-sm transition-opacity hover:opacity-90 flex items-center justify-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Looks Good — Set Up My Account
+              </button>
+
+              <button
+                onClick={() => setPhase('scan')}
+                className="w-full py-2 text-core-text-muted text-xs hover:text-core-text transition-colors cursor-pointer bg-transparent border-none"
+              >
+                Scan a different URL
               </button>
             </div>
           </div>
