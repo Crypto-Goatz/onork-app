@@ -8,6 +8,8 @@ import {
   ExternalLink,
   ArrowRight,
   Clock,
+  Bot,
+  Sparkles,
 } from 'lucide-react'
 
 const DOWNLOADS = [
@@ -87,6 +89,32 @@ const DOWNLOADS = [
     href: 'https://www.npmjs.com/package/0nmcp',
     target: '_blank',
     secondary: 'npm install -g 0nmcp',
+    comingSoon: false,
+  },
+  {
+    key: 'chatgpt',
+    icon: Bot,
+    name: '0n for ChatGPT',
+    description: 'Custom GPT with 7 API Actions. Paste your 0n token, execute across 96 services from ChatGPT.',
+    badge: 'Free',
+    badgeColor: 'text-core-green bg-core-green/10 border-core-green/20',
+    cta: 'Setup Guide',
+    href: 'https://github.com/0nork/0n-core-skill/tree/main/extensions/chatgpt',
+    target: '_blank',
+    secondary: null,
+    comingSoon: false,
+  },
+  {
+    key: 'gemini',
+    icon: Sparkles,
+    name: '0n for Gemini',
+    description: 'Google Gemini Gem with function calling. 5 tool declarations, same 0n token, same power.',
+    badge: 'Free',
+    badgeColor: 'text-core-green bg-core-green/10 border-core-green/20',
+    cta: 'Setup Guide',
+    href: 'https://github.com/0nork/0n-core-skill/tree/main/extensions/gemini',
+    target: '_blank',
+    secondary: null,
     comingSoon: false,
   },
 ]
