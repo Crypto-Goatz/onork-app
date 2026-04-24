@@ -105,6 +105,22 @@ export function AIChatBox() {
   // Only show on dashboard pages
   if (!pathname?.startsWith('/dashboard')) return null
 
+  // Listen for deploy-chat event from header button
+  useEffect(() => {
+    function handleDeploy(e: Event) {
+      const detail = (e as CustomEvent).detail
+      if (detail?.open) {
+        setOpen(true)
+        setMode('fullscreen')
+      } else {
+        setOpen(false)
+        setMode('floating')
+      }
+    }
+    window.addEventListener('0ncore-deploy-chat', handleDeploy)
+    return () => window.removeEventListener('0ncore-deploy-chat', handleDeploy)
+  }, [])
+
   // Load sessions from localStorage on mount
   useEffect(() => {
     const stored = loadSessions()

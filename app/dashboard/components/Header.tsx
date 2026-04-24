@@ -83,7 +83,22 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedIdx, setSelectedIdx] = useState(0)
+  const [showChat, setShowChat] = useState(false)
+  const [currentTime, setCurrentTime] = useState('')
+  const [currentDate, setCurrentDate] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
+
+  // Live clock
+  useEffect(() => {
+    function tick() {
+      const now = new Date()
+      setCurrentTime(now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }))
+      setCurrentDate(now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }))
+    }
+    tick()
+    const iv = setInterval(tick, 30000)
+    return () => clearInterval(iv)
+  }, [])
 
   useEffect(() => {
     fetch('/api/console/locations').then(r => r.json()).then(d => {
@@ -178,7 +193,7 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
 
   return (
     <>
-      <header className="jp-header">
+      <header className="jp-header" style={{ background: 'linear-gradient(135deg, rgba(13,17,23,0.97) 0%, rgba(6,10,18,0.99) 50%, rgba(13,17,23,0.97) 100%)', borderBottom: '1px solid rgba(110,224,90,0.08)' }}>
         <div className="jp-header-start">
           {layoutMode !== 'horizontal' && (
             <button className="jp-header-mobile-toggle" onClick={onMenuToggle}>
@@ -194,38 +209,59 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
             </a>
           )}
 
-          {/* ═══ Locations — deliberate switcher (full-page picker) ═══ */}
+          {/* ═══ Location Switcher ═══ */}
           <button
             onClick={() => router.push('/dashboard/locations')}
-            className="mr-2 flex items-center gap-2 px-3 h-[34px] bg-transparent border border-core-border rounded-lg text-core-text text-[13px] font-medium cursor-pointer max-w-[220px] transition-colors duration-150 hover:border-core-green"
-            title="Switch location — opens the full locations page"
+            className="mr-2 flex items-center gap-2 px-3 h-[34px] bg-transparent border border-core-border rounded-lg text-core-text text-[13px] font-medium cursor-pointer max-w-[200px] transition-colors duration-150 hover:border-core-green"
+            title="Switch location"
           >
             <div className="w-1.5 h-1.5 rounded-full bg-core-green shrink-0 animate-pulse" />
             <span className="overflow-hidden text-ellipsis whitespace-nowrap">{activeName}</span>
-            <span className="text-[10px] text-core-text-muted uppercase tracking-widest font-bold shrink-0">Switch</span>
           </button>
 
-          {/* ═══ Search Trigger ═══ */}
+          {/* ═══ Deploy Chat Button ═══ */}
           <button
-            onClick={() => setSearchOpen(true)}
-            className="flex items-center gap-2 h-[34px] px-3 bg-transparent border border-core-border rounded-lg cursor-pointer text-core-text-muted text-[13px] font-[inherit] transition-colors duration-150 min-w-[200px] hover:border-core-green"
+            onClick={() => {
+              setShowChat(!showChat)
+              // Dispatch custom event for the AIChatBox component to listen to
+              window.dispatchEvent(new CustomEvent('0ncore-deploy-chat', { detail: { open: !showChat } }))
+            }}
+            className="flex items-center gap-2 h-[34px] px-3.5 rounded-lg border-none cursor-pointer text-[12px] font-bold transition-all duration-200"
+            style={{
+              background: showChat ? 'rgba(110,224,90,0.15)' : 'linear-gradient(135deg, rgba(110,224,90,0.12), rgba(0,212,255,0.08))',
+              color: showChat ? '#6EE05A' : '#b8cce0',
+              border: showChat ? '1px solid rgba(110,224,90,0.3)' : '1px solid rgba(110,224,90,0.12)',
+            }}
           >
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} className="shrink-0 opacity-50">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <span className="opacity-50 whitespace-nowrap">Search or navigate...</span>
-            <kbd className="ml-auto px-[5px] py-px text-[10px] rounded border border-core-border font-mono opacity-50">/</kbd>
+            <MessageSquare className="w-3.5 h-3.5" style={{ color: '#6EE05A' }} />
+            {showChat ? 'Close Chat' : 'Deploy Chat'}
           </button>
         </div>
 
-        {/* ═══ Did You Know Tips ═══ */}
-        {tipVisible && (
-          <div className={`absolute left-1/2 -translate-x-1/2 text-[11px] font-medium whitespace-nowrap pointer-events-none transition-opacity duration-600 ${TIPS[tipIdx].colorClass} ${tipVisible ? 'opacity-100' : 'opacity-0'}`}>
-            {TIPS[tipIdx].text}
-          </div>
-        )}
+        {/* ═══ Center: Search ═══ */}
+        <div className="absolute left-1/2 -translate-x-1/2 z-10">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2.5 h-[36px] px-4 rounded-xl cursor-pointer text-core-text-muted text-[13px] font-[inherit] transition-all duration-200 min-w-[320px] hover:border-core-green/30 hover:bg-white/[0.03]"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} className="shrink-0 opacity-40">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span className="opacity-40 whitespace-nowrap">Search pages, tools, actions...</span>
+            <kbd className="ml-auto px-1.5 py-0.5 text-[10px] rounded border border-white/[0.08] font-mono opacity-30 bg-white/[0.02]">/</kbd>
+          </button>
+        </div>
 
         <div className="jp-header-end">
+          {/* ═══ Date & Time ═══ */}
+          <div className="hidden md:flex flex-col items-end mr-1 select-none">
+            <span className="text-[12px] font-semibold text-core-text tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{currentTime}</span>
+            <span className="text-[10px] text-core-text-muted" style={{ fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.04em' }}>{currentDate}</span>
+          </div>
+
+          <div className="w-px h-5 bg-white/[0.06] mx-1 hidden md:block" />
+
           <TokenButton />
           <NotificationBell />
 
