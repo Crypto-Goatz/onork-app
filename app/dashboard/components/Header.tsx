@@ -78,7 +78,6 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
   const router = useRouter()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showLayoutMenu, setShowLayoutMenu] = useState(false)
-  const [showLocations, setShowLocations] = useState(false)
   const [locations, setLocations] = useState<Location[]>([])
   const [activeLocation, setActiveLocation] = useState<string>('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -139,17 +138,6 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
     if (e.key === 'Enter' && filtered[selectedIdx]) { handleSearchNav(filtered[selectedIdx].href) }
   }
 
-  async function switchLocation(id: string) {
-    setActiveLocation(id)
-    setShowLocations(false)
-    await fetch('/api/console/locations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ locationId: id }),
-    }).catch(() => {})
-    window.location.reload()
-  }
-
   // ── Rotating "Did you know" tips ──
   const TIPS = [
     { text: 'Press / to search anything', colorClass: 'text-core-green' },
@@ -206,50 +194,16 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
             </a>
           )}
 
-          {/* ═══ Location Switcher ═══ */}
-          <div className="relative mr-2">
-            <button
-              onClick={() => { setShowLocations(!showLocations); setShowUserMenu(false); setShowLayoutMenu(false) }}
-              className="flex items-center gap-2 px-3 h-[34px] bg-transparent border border-core-border rounded-lg text-core-text text-[13px] font-medium cursor-pointer max-w-[180px] transition-colors duration-150 hover:border-core-green"
-            >
-              <div className="w-1.5 h-1.5 rounded-full bg-core-green shrink-0" />
-              <span className="overflow-hidden text-ellipsis whitespace-nowrap">{activeName}</span>
-              <ChevronDown className="w-2.5 h-2.5 shrink-0 opacity-40" />
-            </button>
-            {showLocations && (
-              <>
-                <div className="fixed inset-0 z-[99]" onClick={() => setShowLocations(false)} />
-                <div className="absolute top-full left-0 mt-1 w-[280px] bg-core-card border border-core-border rounded-[10px] overflow-hidden z-[100] shadow-[0_12px_40px_rgba(0,0,0,0.5)] max-h-80 overflow-y-auto">
-                  <div className="px-3.5 py-2.5 text-[10px] font-bold text-core-text-muted uppercase tracking-widest border-b border-core-border">
-                    Locations
-                  </div>
-                  {locations.map(loc => (
-                    <button
-                      key={loc.id}
-                      onClick={() => switchLocation(loc.id)}
-                      className="w-full px-3.5 py-2.5 flex items-center gap-2.5 bg-transparent border-none border-b border-core-border text-core-text text-[13px] cursor-pointer text-left font-[inherit] transition-colors duration-150 hover:bg-white/[0.03]"
-                    >
-                      <div className={`w-2 h-2 rounded-full shrink-0 ${loc.id === activeLocation ? 'bg-core-green' : 'bg-core-border'}`} />
-                      <div className="flex-1 min-w-0">
-                        <div className={`${loc.id === activeLocation ? 'font-semibold text-core-green' : 'font-normal'}`}>
-                          {loc.name}
-                        </div>
-                        <div className="text-[10px] text-core-text-muted font-mono mt-px">
-                          {loc.id.substring(0, 20)}
-                        </div>
-                      </div>
-                      {loc.id === activeLocation && (
-                        <Check className="w-3.5 h-3.5 text-core-green" />
-                      )}
-                    </button>
-                  ))}
-                  {locations.length === 0 && (
-                    <div className="px-3.5 py-5 text-[12px] text-core-text-muted text-center">No locations linked</div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+          {/* ═══ Locations — deliberate switcher (full-page picker) ═══ */}
+          <button
+            onClick={() => router.push('/dashboard/locations')}
+            className="mr-2 flex items-center gap-2 px-3 h-[34px] bg-transparent border border-core-border rounded-lg text-core-text text-[13px] font-medium cursor-pointer max-w-[220px] transition-colors duration-150 hover:border-core-green"
+            title="Switch location — opens the full locations page"
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-core-green shrink-0 animate-pulse" />
+            <span className="overflow-hidden text-ellipsis whitespace-nowrap">{activeName}</span>
+            <span className="text-[10px] text-core-text-muted uppercase tracking-widest font-bold shrink-0">Switch</span>
+          </button>
 
           {/* ═══ Search Trigger ═══ */}
           <button
