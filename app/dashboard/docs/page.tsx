@@ -10,6 +10,7 @@ import {
   CreditCard,
   ShieldCheck,
   ExternalLink,
+  ChevronDown,
 } from 'lucide-react'
 import type { ComponentType, SVGProps } from 'react'
 
@@ -81,22 +82,38 @@ const DOCS: Record<DocSection, { title: string; content: string }[]> = {
 
 export default function DocsPage() {
   const [activeSection, setActiveSection] = useState<DocSection>('getting-started')
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set(['0']))
 
   const activeData = SECTIONS.find(s => s.key === activeSection)!
 
+  function toggleItem(key: string) {
+    setExpandedItems(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  // Reset expanded on section change — expand first item
+  function switchSection(key: DocSection) {
+    setActiveSection(key)
+    setExpandedItems(new Set(['0']))
+  }
+
   return (
-    <div>
+    <div className="px-8 py-6 max-w-[1100px] mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-2.5 mb-5">
+      <div className="flex items-center gap-2.5 mb-6">
         <h1 className="text-xl font-extrabold text-core-text m-0">Documentation</h1>
         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-core-green/[0.12] text-core-green">
           INTERNAL
         </span>
       </div>
 
-      <div className="flex gap-5">
+      <div className="flex gap-6">
         {/* Content — LEFT side */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="mb-6">
             <h2 className="flex items-center gap-2 text-2xl font-extrabold text-core-text mb-1">
               <activeData.Icon size={20} className="text-core-green" />
@@ -105,57 +122,89 @@ export default function DocsPage() {
             <p className="text-sm text-core-text-muted">{activeData.description}</p>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {DOCS[activeSection].map((doc, i) => (
-              <div
-                key={i}
-                className="px-5 py-4.5 rounded-xl bg-core-card border border-core-border"
-              >
-                <h3 className="text-sm font-bold text-core-text mb-2">{doc.title}</h3>
-                <p className="text-[13px] text-core-text-dim leading-relaxed m-0 whitespace-pre-wrap">
-                  {doc.content}
-                </p>
-              </div>
-            ))}
+          {/* Accordion items */}
+          <div className="flex flex-col gap-2">
+            {DOCS[activeSection].map((doc, i) => {
+              const key = String(i)
+              const isOpen = expandedItems.has(key)
+              return (
+                <div
+                  key={i}
+                  className="rounded-xl bg-core-card border border-core-border overflow-hidden transition-all duration-200"
+                >
+                  <button
+                    onClick={() => toggleItem(key)}
+                    className="w-full flex items-center justify-between px-5 py-4 bg-transparent border-none cursor-pointer text-left transition-colors hover:bg-white/[0.02]"
+                  >
+                    <h3 className="text-[14px] font-bold text-core-text m-0">{doc.title}</h3>
+                    <ChevronDown
+                      size={16}
+                      className={`text-core-text-muted shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  <div
+                    className="overflow-hidden transition-all duration-300"
+                    style={{ maxHeight: isOpen ? 500 : 0, opacity: isOpen ? 1 : 0 }}
+                  >
+                    <div className="px-5 pb-4 pt-0">
+                      <p className="text-[13px] text-core-text-dim leading-relaxed m-0 whitespace-pre-wrap">
+                        {doc.content}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
 
-        {/* Sidebar nav — RIGHT side */}
-        <div className="w-60 shrink-0">
-          <div className="sticky top-[88px] flex flex-col gap-1">
-            {SECTIONS.map(s => {
-              const active = activeSection === s.key
-              return (
-                <button
-                  key={s.key}
-                  onClick={() => setActiveSection(s.key)}
-                  className={[
-                    'flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border-0 text-sm cursor-pointer text-left w-full transition-all duration-150',
-                    active
-                      ? 'bg-core-green/[0.08] text-core-green font-semibold'
-                      : 'bg-transparent text-core-text-dim font-normal hover:bg-core-card',
-                  ].join(' ')}
-                >
-                  <s.Icon
-                    size={15}
-                    className={active ? 'text-core-green' : 'text-core-text-muted'}
-                  />
-                  {s.title}
-                </button>
-              )
-            })}
+        {/* Sidebar nav — RIGHT side, glassmorphic */}
+        <div className="w-56 shrink-0">
+          <div className="sticky top-[88px]">
+            <div className="rounded-2xl border border-white/[0.08] p-3 backdrop-blur-xl"
+              style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(110,224,90,0.03) 50%, rgba(0,212,255,0.02) 100%)' }}
+            >
+              <div className="text-[9px] font-bold text-white/25 uppercase tracking-[0.15em] px-3 mb-2">
+                Sections
+              </div>
+              <div className="flex flex-col gap-0.5">
+                {SECTIONS.map(s => {
+                  const active = activeSection === s.key
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => switchSection(s.key)}
+                      className={[
+                        'flex items-center gap-2.5 px-3 py-2.5 rounded-lg border-0 text-[13px] cursor-pointer text-left w-full transition-all duration-150',
+                        active
+                          ? 'bg-core-green/[0.12] text-white font-bold'
+                          : 'bg-transparent text-white/70 font-semibold hover:bg-white/[0.04] hover:text-white',
+                      ].join(' ')}
+                    >
+                      <s.Icon
+                        size={14}
+                        className={active ? 'text-core-green' : 'text-white/40'}
+                      />
+                      {s.title}
+                    </button>
+                  )
+                })}
+              </div>
 
-            <div className="mt-4 p-3.5 rounded-lg bg-white/[0.02] border border-core-border">
-              <div className="text-[11px] text-core-text-muted mb-1">Full API docs</div>
-              <a
-                href="https://0nmcp.com/docs"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs text-core-green no-underline font-semibold hover:opacity-80 transition-opacity"
-              >
-                0nmcp.com/docs
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                <div className="px-3 py-2.5 rounded-lg bg-white/[0.03]">
+                  <div className="text-[10px] text-white/30 font-semibold mb-1">Full API docs</div>
+                  <a
+                    href="https://0nmcp.com/docs"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-[12px] text-core-green no-underline font-bold hover:opacity-80 transition-opacity"
+                  >
+                    0nmcp.com/docs
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
