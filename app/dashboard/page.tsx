@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { RefreshCw, ChevronRight, X } from 'lucide-react'
+import { RefreshCw, ChevronRight, X, TrendingUp, TrendingDown, BarChart3, Search, Eye, MousePointer, ArrowUpRight, ArrowDownRight, ToggleLeft, ToggleRight } from 'lucide-react'
 
 // ── Module types ────────────────────────────────────────────
 
@@ -16,7 +16,7 @@ interface DashboardModule {
 
 const DEFAULT_MODULES: DashboardModule[] = [
   { id: 'stats', title: 'Stats Overview', size: 'full', visible: true },
-  { id: 'chart', title: 'Execution Overview', size: 'half', visible: true },
+  { id: 'cro9', title: 'CRO9 Analytics', size: 'full', visible: true },
   { id: 'actions', title: 'Quick Actions', size: 'third', visible: true },
   { id: 'status', title: 'System Status', size: 'third', visible: true },
   { id: 'activity', title: 'Recent Activity', size: 'half', visible: true },
@@ -53,6 +53,20 @@ export default function DashboardHome() {
   const [debugInfo, setDebugInfo] = useState<Record<string, unknown>>({})
   const dragRef = useRef<HTMLDivElement | null>(null)
   const supabase = createClient()
+
+  // CRO9 state
+  const [cro9Sites, setCro9Sites] = useState<{ id: string; domain: string; status: string; last_run_summary: Record<string, unknown> | null }[]>([])
+  const [cro9Tasks, setCro9Tasks] = useState<{ bucket: string; score: number; url: string; primary_keyword: string; status: string; clicks: number; impressions: number; position: number; ctr: number; ctr_gap: number }[]>([])
+  const [cro9Chart, setCro9Chart] = useState<{ date: string; clicks: number; impressions: number; position: number; ctr: number }[]>([])
+  const [cro9Toggles, setCro9Toggles] = useState<Record<string, boolean>>({
+    clicks: true,
+    impressions: true,
+    position: true,
+    ctr: false,
+    tasks: true,
+  })
+  const [cro9ActiveSite, setCro9ActiveSite] = useState<string | null>(null)
+  const [cro9Loading, setCro9Loading] = useState(false)
 
   // Load saved layout
   useEffect(() => {
@@ -124,9 +138,35 @@ export default function DashboardHome() {
       setKLayerCount(data?.length || 0)
     }
 
+    // CRO9 data
+    fetch('/api/cro9/sites')
+      .then(r => r.json())
+      .then(d => {
+        const sites = d.sites || []
+        setCro9Sites(sites)
+        if (sites.length > 0 && !cro9ActiveSite) {
+          setCro9ActiveSite(sites[0].id)
+          loadCro9SiteData(sites[0].id)
+        }
+      })
+      .catch(() => {})
+
     setLastRefresh(new Date().toLocaleTimeString())
     setTimeout(() => setRefreshing(false), 500)
-  }, [supabase])
+  }, [supabase, cro9ActiveSite])
+
+  const loadCro9SiteData = useCallback(async (siteId: string) => {
+    setCro9Loading(true)
+    try {
+      const [tasksRes, chartRes] = await Promise.all([
+        fetch(`/api/cro9/sites/${siteId}/tasks?limit=10`).then(r => r.json()).catch(() => ({ tasks: [] })),
+        fetch(`/api/cro9/sites/${siteId}/chart`).then(r => r.json()).catch(() => ({ rows: [] })),
+      ])
+      setCro9Tasks(tasksRes.tasks || [])
+      setCro9Chart(chartRes.rows || [])
+    } catch {}
+    setCro9Loading(false)
+  }, [])
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -210,9 +250,6 @@ export default function DashboardHome() {
     }
   }
 
-  // ── Chart data ────────────────────────────────────────────
-  const chartBars = Array(24).fill(0)
-
   // ── Render Module Content ─────────────────────────────────
 
   function renderModule(mod: DashboardModule) {
@@ -238,31 +275,181 @@ export default function DashboardHome() {
           </div>
         )
 
-      case 'chart':
+      case 'cro9':
         return (
           <div className="jp-card h-full">
             <div className="jp-card-header">
-              <h6>Execution Overview</h6>
-              <div className="flex gap-1">
-                {['7D', '30D', '90D'].map(p => (
-                  <button
-                    key={p}
-                    className={[
-                      'jp-btn-outline px-3 py-1 text-xs rounded-md',
-                      p === '30D' ? 'border-core-green-dim text-core-green' : '',
-                    ].join(' ')}
+              <h6 className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-core-green" />
+                CRO9 Analytics
+              </h6>
+              <div className="flex items-center gap-2">
+                {/* Site selector */}
+                {cro9Sites.length > 1 && (
+                  <select
+                    value={cro9ActiveSite || ''}
+                    onChange={e => { setCro9ActiveSite(e.target.value); loadCro9SiteData(e.target.value) }}
+                    className="bg-core-card border border-core-border rounded-md px-2 py-1 text-xs text-core-text-dim outline-none"
                   >
-                    {p}
-                  </button>
-                ))}
+                    {cro9Sites.map(s => (
+                      <option key={s.id} value={s.id}>{s.domain}</option>
+                    ))}
+                  </select>
+                )}
+                <Link href="/dashboard/cro9-engine" className="jp-btn-outline text-xs px-3 py-1 no-underline">
+                  Full View
+                </Link>
               </div>
             </div>
             <div className="jp-card-body">
-              <div className="jp-chart-area">
-                {chartBars.map((_, i) => (
-                  <div key={i} className="jp-chart-bar" style={{ height: '0%' }} />
-                ))}
-              </div>
+              {cro9Sites.length === 0 ? (
+                <div className="text-center py-8">
+                  <Search className="w-8 h-8 mx-auto text-core-border mb-3" />
+                  <p className="text-sm text-core-text-dim mb-2">No sites connected to CRO9</p>
+                  <Link href="/dashboard/cro9-engine/new" className="text-xs text-core-green hover:underline no-underline">
+                    Add your first site
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Metric toggles */}
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: 'clicks', label: 'Clicks', color: 'core-cyan' },
+                      { key: 'impressions', label: 'Impressions', color: 'core-green' },
+                      { key: 'position', label: 'Position', color: 'core-amber' },
+                      { key: 'ctr', label: 'CTR', color: 'core-purple' },
+                      { key: 'tasks', label: 'Tasks', color: 'core-red' },
+                    ].map(t => (
+                      <button
+                        key={t.key}
+                        onClick={() => setCro9Toggles(prev => ({ ...prev, [t.key]: !prev[t.key] }))}
+                        className={[
+                          'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-all cursor-pointer',
+                          cro9Toggles[t.key]
+                            ? `bg-${t.color}/10 text-${t.color} border-${t.color}/30`
+                            : 'bg-transparent text-core-text-muted border-core-border',
+                        ].join(' ')}
+                      >
+                        {cro9Toggles[t.key]
+                          ? <ToggleRight className="w-3 h-3" />
+                          : <ToggleLeft className="w-3 h-3" />}
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* KPI row */}
+                  {cro9Chart.length > 0 && (
+                    <div className="grid grid-cols-4 gap-3">
+                      {[
+                        {
+                          label: 'Clicks',
+                          value: cro9Chart.reduce((s, r) => s + (r.clicks || 0), 0),
+                          visible: cro9Toggles.clicks,
+                          icon: MousePointer,
+                          color: 'core-cyan',
+                        },
+                        {
+                          label: 'Impressions',
+                          value: cro9Chart.reduce((s, r) => s + (r.impressions || 0), 0),
+                          visible: cro9Toggles.impressions,
+                          icon: Eye,
+                          color: 'core-green',
+                        },
+                        {
+                          label: 'Avg Position',
+                          value: cro9Chart.length > 0
+                            ? (cro9Chart.reduce((s, r) => s + (r.position || 0), 0) / cro9Chart.length).toFixed(1)
+                            : '0',
+                          visible: cro9Toggles.position,
+                          icon: TrendingUp,
+                          color: 'core-amber',
+                        },
+                        {
+                          label: 'Avg CTR',
+                          value: cro9Chart.length > 0
+                            ? (cro9Chart.reduce((s, r) => s + (r.ctr || 0), 0) / cro9Chart.length * 100).toFixed(1) + '%'
+                            : '0%',
+                          visible: cro9Toggles.ctr,
+                          icon: ArrowUpRight,
+                          color: 'core-purple',
+                        },
+                      ]
+                        .filter(k => k.visible)
+                        .map(k => (
+                          <div key={k.label} className="p-3 rounded-lg bg-core-card-hover border border-core-border">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <k.icon className={`w-3.5 h-3.5 text-${k.color}`} />
+                              <span className="text-[11px] text-core-text-muted">{k.label}</span>
+                            </div>
+                            <div className={`text-lg font-bold text-${k.color}`}>
+                              {typeof k.value === 'number' ? k.value.toLocaleString() : k.value}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  {/* Mini sparkline chart */}
+                  {cro9Toggles.clicks && cro9Chart.length > 0 && (
+                    <div className="h-20 flex items-end gap-0.5">
+                      {cro9Chart.slice(-28).map((row, i) => {
+                        const max = Math.max(...cro9Chart.slice(-28).map(r => r.clicks || 1))
+                        const pct = max > 0 ? ((row.clicks || 0) / max) * 100 : 0
+                        return (
+                          <div
+                            key={i}
+                            className="flex-1 bg-core-cyan/30 rounded-t-sm hover:bg-core-cyan/50 transition-colors"
+                            style={{ height: `${Math.max(pct, 2)}%` }}
+                            title={`${row.date}: ${row.clicks} clicks`}
+                          />
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Top tasks */}
+                  {cro9Toggles.tasks && cro9Tasks.length > 0 && (
+                    <div>
+                      <div className="text-[11px] text-core-text-muted font-semibold uppercase tracking-wider mb-2">
+                        Top Opportunities
+                      </div>
+                      <div className="space-y-1.5">
+                        {cro9Tasks.slice(0, 5).map((task, i) => (
+                          <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-core-card-hover border border-core-border">
+                            <span className={[
+                              'px-1.5 py-0.5 rounded text-[10px] font-bold',
+                              task.bucket === 'CTR_FIX' ? 'bg-core-cyan/10 text-core-cyan' :
+                              task.bucket === 'POSITION_CLIMB' ? 'bg-core-amber/10 text-core-amber' :
+                              task.bucket === 'RELEVANCE_REBUILD' ? 'bg-core-purple/10 text-core-purple' :
+                              task.bucket === 'THIN_CONTENT' ? 'bg-core-red/10 text-core-red' :
+                              'bg-core-green/10 text-core-green',
+                            ].join(' ')}>
+                              {task.bucket.replace(/_/g, ' ')}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[12px] text-core-text truncate">{task.primary_keyword}</div>
+                              <div className="text-[10px] text-core-text-muted truncate">{task.url}</div>
+                            </div>
+                            <div className="flex gap-3 text-[11px] text-core-text-muted shrink-0">
+                              <span title="Score">{(task.score * 100).toFixed(0)}</span>
+                              <span title="Position">P{task.position?.toFixed(1)}</span>
+                              <span title="CTR Gap" className={task.ctr_gap > 0.1 ? 'text-core-red' : ''}>
+                                {task.ctr_gap > 0 ? `-${(task.ctr_gap * 100).toFixed(0)}%` : ''}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {cro9Loading && (
+                    <div className="text-center py-4 text-core-text-muted text-xs">Loading...</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )
