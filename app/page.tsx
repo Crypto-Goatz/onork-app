@@ -19,10 +19,46 @@ const PARTNERS = [
 ]
 
 const FEATURES = [
-  { num: '01', title: 'Security Vault', desc: 'AES-256 encrypted credential storage with hardware fingerprinting. Your API keys never leave the vault.', icon: '🔒' },
-  { num: '02', title: '2s Flow', desc: 'Describe what you want in plain English. 0nMCP executes across 96 services in under 2 seconds.', icon: '⚡' },
-  { num: '03', title: 'Integrations', desc: '1,554 tools across 96 services. CRM, email, social, payments, analytics — all connected through one brain.', icon: '🔗' },
-  { num: '04', title: 'Codeless', desc: 'Build AI workflows without writing code. Drag, connect, deploy. Your entire business on autopilot.', icon: '✨' },
+  {
+    num: '01',
+    title: 'Security Vault',
+    desc: 'AES-256 encrypted credential storage with hardware fingerprinting. Your API keys never leave the vault.',
+    gradient: 'from-emerald-500/20 via-emerald-400/5 to-transparent',
+    glow: 'group-hover:shadow-emerald-500/20',
+    accent: 'text-emerald-400',
+    border: 'group-hover:border-emerald-500/30',
+    iconPath: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
+  },
+  {
+    num: '02',
+    title: '2s Flow',
+    desc: 'Describe what you want in plain English. 0nMCP executes across 96 services in under 2 seconds.',
+    gradient: 'from-cyan-500/20 via-cyan-400/5 to-transparent',
+    glow: 'group-hover:shadow-cyan-500/20',
+    accent: 'text-cyan-400',
+    border: 'group-hover:border-cyan-500/30',
+    iconPath: 'M13 10V3L4 14h7v7l9-11h-7z',
+  },
+  {
+    num: '03',
+    title: 'Integrations',
+    desc: '1,554 tools across 96 services. CRM, email, social, payments, analytics — all connected through one brain.',
+    gradient: 'from-violet-500/20 via-violet-400/5 to-transparent',
+    glow: 'group-hover:shadow-violet-500/20',
+    accent: 'text-violet-400',
+    border: 'group-hover:border-violet-500/30',
+    iconPath: 'M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z',
+  },
+  {
+    num: '04',
+    title: 'Codeless',
+    desc: 'Build AI workflows without writing code. Drag, connect, deploy. Your entire business on autopilot.',
+    gradient: 'from-amber-500/20 via-amber-400/5 to-transparent',
+    glow: 'group-hover:shadow-amber-500/20',
+    accent: 'text-amber-400',
+    border: 'group-hover:border-amber-500/30',
+    iconPath: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+  },
 ]
 
 const INTEGRATIONS = [
@@ -178,22 +214,62 @@ export default function HomePage() {
       </section>
 
       {/* ═══ 4 FEATURES ═══ */}
-      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
-          {FEATURES.map(f => (
-            <div key={f.num} style={{
-              padding: 28, borderRadius: 16,
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#7ed957', marginBottom: 16, letterSpacing: '0.1em' }}>{f.num}</div>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>{f.icon}</div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{f.title}</h3>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>{f.desc}</p>
+      <section className="py-[clamp(48px,8vw,96px)] px-[clamp(16px,4vw,24px)] max-w-[1100px] mx-auto">
+        <div className="text-center mb-12">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#7ed957] mb-3">Why 0nCore</p>
+          <h2 className="text-[clamp(24px,4vw,36px)] font-extrabold text-white leading-tight">
+            The four pillars of<br />
+            <span className="bg-gradient-to-r from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">autonomous business</span>
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {FEATURES.map((f, i) => (
+            <div
+              key={f.num}
+              className={`group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-7 text-center transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl ${f.glow} ${f.border} cursor-default`}
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
+              {/* Gradient overlay on hover */}
+              <div className={`absolute inset-0 bg-gradient-to-b ${f.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
+
+              {/* Shimmer effect */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none overflow-hidden">
+                <div className="absolute -inset-full bg-gradient-to-r from-transparent via-white/[0.04] to-transparent skew-x-12 group-hover:animate-[shimmer_2s_ease-in-out_infinite]" />
+              </div>
+
+              {/* Content */}
+              <div className="relative z-10">
+                {/* Number badge */}
+                <div className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider mb-5 border ${f.accent} bg-white/[0.03] border-white/[0.08] group-hover:border-current/30 transition-colors`}>
+                  {f.num}
+                </div>
+
+                {/* Icon */}
+                <div className={`mx-auto mb-4 w-14 h-14 rounded-2xl flex items-center justify-center bg-white/[0.04] border border-white/[0.06] group-hover:bg-white/[0.08] group-hover:border-white/[0.12] transition-all duration-300 group-hover:scale-110`}>
+                  <svg className={`w-6 h-6 ${f.accent} transition-transform duration-300 group-hover:scale-110`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={f.iconPath} />
+                  </svg>
+                </div>
+
+                {/* Title */}
+                <h3 className="text-[16px] font-bold text-white mb-2 group-hover:text-white transition-colors">{f.title}</h3>
+
+                {/* Description */}
+                <p className="text-[13px] text-white/40 leading-relaxed group-hover:text-white/55 transition-colors">{f.desc}</p>
+              </div>
+
+              {/* Bottom glow line */}
+              <div className={`absolute bottom-0 left-[10%] right-[10%] h-px bg-gradient-to-r from-transparent ${f.accent.replace('text-', 'via-')}/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
             </div>
           ))}
         </div>
+
+        <style>{`
+          @keyframes shimmer {
+            0% { transform: translateX(-100%) skewX(-12deg); }
+            100% { transform: translateX(200%) skewX(-12deg); }
+          }
+        `}</style>
       </section>
 
       {/* ═══ INTEGRATION GRID ═══ */}
