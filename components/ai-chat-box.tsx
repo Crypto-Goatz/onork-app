@@ -91,6 +91,8 @@ export function AIChatBox() {
   const [showMenu, setShowMenu] = useState(false)
   const [showActions, setShowActions] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false)
+  const [tutorialStep, setTutorialStep] = useState(0)
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [activeSessionId, setActiveSessionId] = useState<string>('')
   const [pos, setPos] = useState({ x: 0, y: 0 })
@@ -105,16 +107,26 @@ export function AIChatBox() {
   // Only show on dashboard pages
   if (!pathname?.startsWith('/dashboard')) return null
 
-  // Listen for deploy-chat event from header button
+  // Listen for deploy-chat event from header button — opens as centered modal
   useEffect(() => {
     function handleDeploy(e: Event) {
       const detail = (e as CustomEvent).detail
       if (detail?.open) {
         setOpen(true)
-        setMode('fullscreen')
+        setMode('floating')
+        // Center the chat modal
+        const w = Math.min(520, window.innerWidth - 48)
+        const h = Math.min(640, window.innerHeight - 120)
+        setSize({ w, h })
+        setPos({
+          x: Math.round((window.innerWidth - w) / 2),
+          y: Math.round((window.innerHeight - h) / 2) - 20,
+        })
+        // Show tutorial on first deploy
+        const tutDone = localStorage.getItem('0n_chat_tutorial_done')
+        if (!tutDone) setShowTutorial(true)
       } else {
         setOpen(false)
-        setMode('floating')
       }
     }
     window.addEventListener('0ncore-deploy-chat', handleDeploy)
@@ -532,10 +544,128 @@ export function AIChatBox() {
         )}
       </div>
 
+      {/* ═══ Interactive Tutorial Overlay ═══ */}
+      {showTutorial && (
+        <div className="fixed inset-0 z-[99999] pointer-events-none">
+          {/* Dark backdrop with cutout */}
+          <div className="absolute inset-0 bg-black/60 pointer-events-auto" onClick={() => {}} />
+
+          {/* Tutorial card — positioned relative to the chat box */}
+          <div
+            className="absolute pointer-events-auto animate-[tutFadeIn_0.3s_ease-out]"
+            style={{
+              left: Math.max(16, (pos.x || window.innerWidth / 2 - 260) - 280),
+              top: Math.max(80, (pos.y || window.innerHeight / 2 - 320) + [0, 0, 160, 320, 400][tutorialStep] || 0),
+              width: 260,
+            }}
+          >
+            <div className="bg-[#161b22] border border-[#6EE05A]/20 rounded-2xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative">
+              {/* Animated arrow pointing right */}
+              <div className="absolute -right-6 top-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" className="text-[#6EE05A] animate-[arrowBounce_1s_ease-in-out_infinite]">
+                  <path d="M5 12h14m0 0l-6-6m6 6l-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
+              </div>
+
+              {/* Step content */}
+              {tutorialStep === 0 && (
+                <>
+                  <div className="text-[10px] font-bold text-[#6EE05A] uppercase tracking-widest mb-2">Step 1 of 5</div>
+                  <h4 className="text-[15px] font-bold text-white mb-1.5">Meet Jaxx, your AI assistant</h4>
+                  <p className="text-[12px] text-white/50 leading-relaxed">This is your command center. Type anything in plain English — Jaxx can manage your CRM, run reports, send emails, and execute 1,554 tools.</p>
+                </>
+              )}
+              {tutorialStep === 1 && (
+                <>
+                  <div className="text-[10px] font-bold text-[#00d4ff] uppercase tracking-widest mb-2">Step 2 of 5</div>
+                  <h4 className="text-[15px] font-bold text-white mb-1.5">Drag to move</h4>
+                  <p className="text-[12px] text-white/50 leading-relaxed">Grab the header bar and drag the chat anywhere on your screen. Put it wherever works best for your workflow.</p>
+                </>
+              )}
+              {tutorialStep === 2 && (
+                <>
+                  <div className="text-[10px] font-bold text-[#a78bfa] uppercase tracking-widest mb-2">Step 3 of 5</div>
+                  <h4 className="text-[15px] font-bold text-white mb-1.5">Resize to fit</h4>
+                  <p className="text-[12px] text-white/50 leading-relaxed">Grab the bottom-right corner to resize. Make it as big or small as you need. It remembers your preference.</p>
+                </>
+              )}
+              {tutorialStep === 3 && (
+                <>
+                  <div className="text-[10px] font-bold text-[#f5c518] uppercase tracking-widest mb-2">Step 4 of 5</div>
+                  <h4 className="text-[15px] font-bold text-white mb-1.5">Change the layout</h4>
+                  <p className="text-[12px] text-white/50 leading-relaxed">Click the <strong>three dots menu</strong> (top-right) to pin the chat to the right side, bottom, or go fullscreen. Pick what fits your screen.</p>
+                </>
+              )}
+              {tutorialStep === 4 && (
+                <>
+                  <div className="text-[10px] font-bold text-[#6EE05A] uppercase tracking-widest mb-2">Step 5 of 5</div>
+                  <h4 className="text-[15px] font-bold text-white mb-1.5">Try it now!</h4>
+                  <p className="text-[12px] text-white/50 leading-relaxed">Type something like <span className="text-[#6EE05A] font-medium">"show my contacts"</span> or <span className="text-[#6EE05A] font-medium">"write a blog post about AI"</span> and watch Jaxx work.</p>
+                </>
+              )}
+
+              {/* Navigation */}
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/[0.06]">
+                <div className="flex gap-1">
+                  {[0, 1, 2, 3, 4].map(i => (
+                    <div key={i} className={`h-1.5 rounded-full transition-all ${i === tutorialStep ? 'w-4 bg-[#6EE05A]' : i < tutorialStep ? 'w-1.5 bg-[#6EE05A]/40' : 'w-1.5 bg-white/10'}`} />
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setShowTutorial(false); localStorage.setItem('0n_chat_tutorial_done', 'true') }}
+                    className="px-3 py-1.5 text-[11px] text-white/30 hover:text-white/50 bg-transparent border-none cursor-pointer transition-colors"
+                  >
+                    Skip
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (tutorialStep < 4) {
+                        setTutorialStep(tutorialStep + 1)
+                      } else {
+                        setShowTutorial(false)
+                        localStorage.setItem('0n_chat_tutorial_done', 'true')
+                        inputRef.current?.focus()
+                      }
+                    }}
+                    className="px-4 py-1.5 rounded-lg bg-[#6EE05A] text-[#0d1117] text-[12px] font-bold hover:bg-[#6EE05A]/90 transition-colors cursor-pointer border-none"
+                  >
+                    {tutorialStep < 4 ? 'Next' : 'Start Chatting'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Pulsing ring around the target area */}
+          <div
+            className="absolute border-2 border-[#6EE05A]/40 rounded-xl pointer-events-none animate-[tutPulse_2s_ease-in-out_infinite]"
+            style={{
+              left: (pos.x || window.innerWidth / 2 - 260) - 4,
+              top: (pos.y || window.innerHeight / 2 - 320) + [0, -4, (size.h || 560) - 40, 0, (size.h || 560) - 80][tutorialStep],
+              width: (size.w || 520) + 8,
+              height: tutorialStep === 0 ? (size.h || 560) + 8 : tutorialStep === 1 ? 48 : tutorialStep === 2 ? 40 : tutorialStep === 3 ? 48 : 60,
+            }}
+          />
+        </div>
+      )}
+
       <style>{`
         @keyframes dotPulse {
           0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
           40% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes tutFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes arrowBounce {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(6px); }
+        }
+        @keyframes tutPulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
         }
       `}</style>
     </>
