@@ -453,7 +453,14 @@ export default function TasksPage() {
   if (focusTask) {
     const currentTask = tasks.find(t => t.id === focusTask.id) || focusTask
     return (
-      <FocusMode task={currentTask} onExit={() => setFocusTask(null)} onUpdateTask={handleUpdateTask} onComplete={handleCompleteTask} />
+      <FocusMode
+        task={currentTask}
+        allTasks={tasks}
+        onExit={() => setFocusTask(null)}
+        onUpdateTask={handleUpdateTask}
+        onComplete={handleCompleteTask}
+        onSwitchTask={setFocusTask}
+      />
     )
   }
 
