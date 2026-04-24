@@ -115,39 +115,26 @@ const AI_TICKS = [
 export default function ExecOrbitPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
-  const [contacts, setContacts] = useState<ExecContact[]>(DEMO_CONTACTS)
+  const [contacts, setContacts] = useState<ExecContact[]>([])
   const [stages] = useState<StageConfig[]>(DEFAULT_STAGES)
   const [selected, setSelected] = useState<ExecContact | null>(null)
-  const [ticks, setTicks] = useState<typeof AI_TICKS>([])
+  const [ticks, setTicks] = useState<{ icon: string; who: string; msg: string }[]>([])
+  const [loading, setLoading] = useState(true)
   const particlesRef = useRef<Particle[]>([])
   const selectedIdRef = useRef<string | null>(null)
   const timeRef = useRef(0)
   const animRef = useRef<number>(0)
   const sizeRef = useRef({ W: 0, H: 0, CX: 0, CY: 0 })
 
-  // Load real data (falls back to demo)
+  // Load real data — NO demo fallback
   useEffect(() => {
     fetch('/api/exec/contacts')
       .then(r => r.json())
-      .then(d => { if (d.contacts?.length) setContacts(d.contacts) })
-      .catch(() => {})
-  }, [])
-
-  // AI ticker
-  useEffect(() => {
-    let idx = 0
-    const add = () => {
-      setTicks(prev => {
-        const next = [AI_TICKS[idx % AI_TICKS.length], ...prev].slice(0, 3)
-        idx++
-        return next
+      .then(d => {
+        if (d.contacts?.length) setContacts(d.contacts)
       })
-    }
-    const t1 = setTimeout(add, 1500)
-    const t2 = setTimeout(add, 4000)
-    const t3 = setTimeout(add, 7000)
-    const iv = setInterval(add, 9000)
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearInterval(iv) }
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
   // Init particles when contacts change
@@ -491,8 +478,70 @@ export default function ExecOrbitPage() {
 
       <style>{`@keyframes breathe { 0%,100%{opacity:1} 50%{opacity:0.3} } @keyframes tickerIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }`}</style>
 
-      {/* Main */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      {/* Empty State — shown when no contacts */}
+      {!loading && contacts.length === 0 && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+          <div style={{ textAlign: 'center', maxWidth: 480 }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: 24, margin: '0 auto 24px',
+              background: 'rgba(110,224,90,0.06)', border: '1px solid rgba(110,224,90,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#6EE05A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <circle cx="12" cy="12" r="7" strokeDasharray="4 3" opacity="0.4" />
+                <circle cx="12" cy="12" r="11" strokeDasharray="3 5" opacity="0.2" />
+              </svg>
+            </div>
+
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: '#e4efff', marginBottom: 8 }}>
+              Your orbit is empty
+            </h2>
+            <p style={{ fontSize: 14, color: '#5a6f8a', lineHeight: 1.7, marginBottom: 32 }}>
+              0nExec visualizes your deals as orbiting particles. Each contact gets a health score — fast orbits mean healthy deals, slow orbits mean trouble.
+              <br /><br />
+              <strong style={{ color: '#8a9fc0' }}>To get started:</strong> Create a scoring formula, set up an orbit, and connect your CRM contacts. They'll appear here automatically.
+            </p>
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <a href="/console/exec/formulas/new" style={{
+                padding: '10px 20px', borderRadius: 10,
+                background: '#6EE05A', color: '#04060d',
+                fontSize: 13, fontWeight: 700, textDecoration: 'none',
+              }}>
+                Create Your First Formula
+              </a>
+              <a href="/console/exec/orbits" style={{
+                padding: '10px 20px', borderRadius: 10,
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                color: '#8a9fc0', fontSize: 13, fontWeight: 600, textDecoration: 'none',
+              }}>
+                Set Up an Orbit
+              </a>
+            </div>
+
+            <div style={{ marginTop: 40, padding: '16px 20px', borderRadius: 12, background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.12)', textAlign: 'left' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#00d4ff', letterSpacing: '0.1em', marginBottom: 8 }}>HOW IT WORKS</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {[
+                  { step: '1', text: 'Create a formula that scores what matters to your business' },
+                  { step: '2', text: 'Create an orbit (pipeline) and assign the formula to it' },
+                  { step: '3', text: 'Add contacts — they score automatically in real-time' },
+                  { step: '4', text: 'Watch the AI detect patterns and suggest actions' },
+                ].map(s => (
+                  <div key={s.step} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <span style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(0,212,255,0.1)', color: '#00d4ff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.step}</span>
+                    <span style={{ fontSize: 12, color: '#5a6f8a', lineHeight: 1.5 }}>{s.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main — only show when contacts exist */}
+      {contacts.length > 0 && <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* Canvas */}
         <div ref={wrapRef} style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
@@ -624,7 +673,7 @@ export default function ExecOrbitPage() {
             </>
           )}
         </div>
-      </div>
+      </div>}
     </div>
   )
 }
