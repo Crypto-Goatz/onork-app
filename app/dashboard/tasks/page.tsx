@@ -608,15 +608,7 @@ export default function TasksPage() {
                 onStartFocus={setFocusTask}
               />
             </div>
-            {/* Chat Sidebar */}
-            <div className="w-[380px] shrink-0 overflow-hidden bg-white/[0.01] chat-panel">
-              <ChatWindow
-                messages={messages}
-                onSendMessage={handleSendMessage}
-                isThinking={isThinking}
-                suggestedReplies={suggestedReplies}
-              />
-            </div>
+            {/* Chat sidebar removed — use dashboard AI chat instead */}
           </>
         )}
 

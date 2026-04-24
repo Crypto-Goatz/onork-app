@@ -148,13 +148,43 @@ export default function FormulasPage() {
         {/* Empty State */}
         {!loading && filtered.length === 0 && (
           <div style={{
-            textAlign: 'center', padding: '80px 20px',
-            background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.06)',
-            borderRadius: '16px',
+            textAlign: 'center', padding: '60px 24px',
+            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '16px', maxWidth: 540, margin: '0 auto',
           }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>&#x2B21;</div>
-            <p style={{ color: '#b8cce0', fontSize: '16px', marginBottom: '4px' }}>No formulas yet</p>
-            <p style={{ color: '#3a4f6a', fontSize: '13px' }}>Create your first scoring formula to start evaluating contacts.</p>
+            <div style={{
+              width: 64, height: 64, borderRadius: 16, margin: '0 auto 20px',
+              background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 3h6l1 7-4 2-4-2 1-7z" /><path d="M10 17v4" /><path d="M14 17v4" /><path d="M6 21h12" />
+              </svg>
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#e4efff', marginBottom: 8 }}>Create your first formula</h3>
+            <p style={{ color: '#5a6f8a', fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>
+              A formula tells 0nExec how to score your contacts. You pick the factors that matter —
+              like engagement, deal size, or response time — and assign weights. The AI calculates a health score for every contact automatically.
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 24 }}>
+              {[
+                { label: 'Sales Pipeline', desc: 'Score deals by close likelihood', color: '#6EE05A' },
+                { label: 'Lead Quality', desc: 'Rank leads by fit', color: '#00d4ff' },
+                { label: 'Churn Risk', desc: 'Flag customers about to leave', color: '#f97316' },
+              ].map(uc => (
+                <div key={uc.label} style={{ flex: 1, padding: 12, borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: `1px solid ${uc.color}20`, textAlign: 'left' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: uc.color, marginBottom: 3 }}>{uc.label}</div>
+                  <div style={{ fontSize: 11, color: '#5a6f8a', lineHeight: 1.4 }}>{uc.desc}</div>
+                </div>
+              ))}
+            </div>
+            <Link href="/console/exec/formulas/new" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '10px 24px', borderRadius: 10, background: '#6EE05A', color: '#04060d',
+              fontSize: 14, fontWeight: 700, textDecoration: 'none',
+            }}>
+              + Create Your First Formula
+            </Link>
           </div>
         )}
 

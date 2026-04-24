@@ -62,12 +62,11 @@ export default function InsightsPage() {
         return r.json()
       })
       .then(d => {
-        const fetched = d.patterns || []
-        setPatterns(fetched.length > 0 ? fetched : DEMO_PATTERNS)
+        setPatterns(d.patterns || [])
         setLoading(false)
       })
       .catch(() => {
-        setPatterns(DEMO_PATTERNS)
+        setPatterns([])
         setLoading(false)
       })
   }, [])
@@ -113,13 +112,46 @@ export default function InsightsPage() {
         {/* Empty */}
         {!loading && visiblePatterns.length === 0 && (
           <div style={{
-            textAlign: 'center', padding: '80px 20px',
-            background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.06)',
-            borderRadius: '16px',
+            textAlign: 'center', padding: '60px 24px',
+            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '16px', maxWidth: 540, margin: '0 auto',
           }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>&#x2B21;</div>
-            <p style={{ color: '#b8cce0', fontSize: '16px', marginBottom: '4px' }}>No patterns to show</p>
-            <p style={{ color: '#3a4f6a', fontSize: '13px' }}>Patterns will appear as the system analyzes your contact data.</p>
+            <div style={{
+              width: 64, height: 64, borderRadius: 16, margin: '0 auto 20px',
+              background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" opacity="0.3" /><path d="M12 16v-4" /><path d="M12 8h.01" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              </svg>
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#e4efff', marginBottom: 8 }}>AI is learning your patterns</h3>
+            <p style={{ color: '#5a6f8a', fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>
+              As you score contacts and close deals, the AI analyzes what's working and what isn't.
+              It detects patterns like "leads below score 40 almost never close" or "contacts with
+              high engagement close 3x faster."
+            </p>
+            <div style={{ padding: '14px 16px', borderRadius: 10, background: 'rgba(167,139,250,0.04)', border: '1px solid rgba(167,139,250,0.12)', textAlign: 'left' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#a78bfa', letterSpacing: '0.1em', marginBottom: 8 }}>WHAT THE AI LOOKS FOR</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {[
+                  'Which score ranges predict won vs lost deals',
+                  'Contacts that stall too long in a stage',
+                  'Variables that correlate most with success',
+                  'When to intervene before a deal goes cold',
+                ].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span style={{ width: 4, height: 4, borderRadius: 2, background: '#a78bfa', flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, color: '#5a6f8a' }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p style={{ fontSize: 11, color: '#3a4f6a', marginTop: 16 }}>
+              Start by creating a formula, adding contacts to an orbit, and scoring them.
+              Insights appear automatically.
+            </p>
           </div>
         )}
 
