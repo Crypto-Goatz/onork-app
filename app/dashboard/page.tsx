@@ -487,7 +487,7 @@ export default function DashboardHome() {
                 { label: '0nMCP Engine',    active: mcpStatus === 'online' },
                 { label: 'Vault Encryption', active: true },
                 { label: 'Webhook Handlers', active: true },
-                { label: 'CRM Sync',         active: false },
+                { label: 'CRM Sync',         active: stats.contacts > 0 || stats.pipelines > 0 },
               ].map(s => (
                 <div key={s.label}>
                   <div className="flex justify-between mb-1.5">
