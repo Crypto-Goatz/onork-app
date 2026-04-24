@@ -45,15 +45,17 @@ function getAdmin() {
 }
 
 export function getPitForLocation(locationId: string): string {
+  // Prefer 0nCore-named env vars; fall back to legacy names during transition.
+  const onCorePit = process.env.CRM_PIT_ONCORE || process.env.CRM_PIT_RAW
   const pits: Record<string, string | undefined> = {
     '6MSqx0trfxgLxeHBJE1k': process.env.CRM_PIT_ROCKETOPP,
-    'nphConTwfHcVE1oA0uep': process.env.CRM_PIT_RAW,
+    'nphConTwfHcVE1oA0uep': onCorePit,
     'AZLSL7r6X2tDV1A48Yrb': process.env.CRM_PIT_FAIRICE || process.env.CRM_AGENCY_PIT_NEW,
   }
   const specific = pits[locationId]
   if (specific) return specific
   if (process.env.CRM_AGENCY_PIT_NEW) return process.env.CRM_AGENCY_PIT_NEW
-  return process.env.CRM_PIT_RAW || process.env.CRM_PIT_ROCKETOPP || process.env.CRM_PIT || ''
+  return onCorePit || process.env.CRM_PIT_ROCKETOPP || process.env.CRM_PIT || ''
 }
 
 type Auth = { token: string; source: 'oauth' | 'pit'; installId?: string; locationId: string }
