@@ -9,10 +9,19 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+interface PendingAction {
+  type: string
+  label: string
+  description: string
+  params: Record<string, unknown>
+}
+
 interface Message {
   role: 'user' | 'assistant'
   content: string
   timestamp?: string
+  action?: PendingAction | null
+  actionStatus?: 'pending' | 'confirmed' | 'rejected' | 'executed'
 }
 
 interface ChatSession {
@@ -93,6 +102,12 @@ export function AIChatBox() {
   const [showHistory, setShowHistory] = useState(false)
   const [showTutorial, setShowTutorial] = useState(false)
   const [tutorialStep, setTutorialStep] = useState(0)
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
+  const [actionExecuting, setActionExecuting] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [chatPrefs, setChatPrefs] = useState<{ confirmActions: boolean; showNotifications: boolean; autoSuggest: boolean }>({
+    confirmActions: true, showNotifications: true, autoSuggest: true,
+  })
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [activeSessionId, setActiveSessionId] = useState<string>('')
   const [pos, setPos] = useState({ x: 0, y: 0 })
@@ -278,12 +293,91 @@ export function AIChatBox() {
         body: JSON.stringify({ message: msg, persona: 'engine' }),
       })
       const data = await res.json()
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply || data.error || 'Something went wrong.', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }])
+      const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+      // Check if the AI wants to execute an action
+      if (data.intent?.detected && data.intent?.action) {
+        const action: PendingAction = {
+          type: data.intent.action,
+          label: data.intent.action.replace(/_/g, ' '),
+          description: data.reply?.slice(0, 200) || '',
+          params: {},
+        }
+
+        setMessages(prev => [...prev, { role: 'assistant', content: data.reply || 'I can help with that.', timestamp: ts, action, actionStatus: 'pending' }])
+
+        // Show confirmation if enabled
+        if (chatPrefs.confirmActions) {
+          setPendingAction(action)
+        }
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', content: data.reply || data.error || 'Something went wrong.', timestamp: ts }])
+      }
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Please try again.' }])
     }
     setLoading(false)
     setTimeout(() => inputRef.current?.focus(), 100)
+  }
+
+  // Execute a confirmed action
+  async function executeAction(action: PendingAction) {
+    setActionExecuting(true)
+    setPendingAction(null)
+
+    try {
+      const res = await fetch('/api/ai/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: `${action.type}: ${JSON.stringify(action.params)}` }),
+      })
+      const data = await res.json()
+
+      setMessages(prev => {
+        const updated = [...prev]
+        // Find the last message with this pending action and mark it executed
+        for (let i = updated.length - 1; i >= 0; i--) {
+          if (updated[i].actionStatus === 'pending') {
+            updated[i] = { ...updated[i], actionStatus: 'executed' }
+            break
+          }
+        }
+        return [...updated, {
+          role: 'assistant' as const,
+          content: `Done! ${data.output || data.message || action.label + ' completed.'}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }]
+      })
+
+      if (chatPrefs.showNotifications) {
+        const { toast } = await import('sonner')
+        toast.success(action.label, { description: 'Action executed successfully' })
+      }
+    } catch {
+      setMessages(prev => [...prev, {
+        role: 'assistant' as const,
+        content: 'Action failed. Please try again or do it manually.',
+      }])
+    }
+    setActionExecuting(false)
+  }
+
+  function rejectAction() {
+    setPendingAction(null)
+    setMessages(prev => {
+      const updated = [...prev]
+      for (let i = updated.length - 1; i >= 0; i--) {
+        if (updated[i].actionStatus === 'pending') {
+          updated[i] = { ...updated[i], actionStatus: 'rejected' }
+          break
+        }
+      }
+      return [...updated, {
+        role: 'assistant' as const,
+        content: 'No problem — cancelled. Let me know if you need anything else.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }]
+    })
   }
 
   // Floating button (chat closed)
@@ -543,6 +637,54 @@ export function AIChatBox() {
           </div>
         )}
       </div>
+
+      {/* ═══ Action Confirmation Modal ═══ */}
+      {pendingAction && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm mx-4 bg-[#161b22] border border-core-green/20 rounded-2xl overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.6)] animate-[tutFadeIn_0.2s_ease-out]">
+            <div className="px-6 pt-5 pb-3 bg-gradient-to-b from-core-green/[0.06] to-transparent">
+              <div className="flex items-center gap-2 mb-1">
+                <Zap className="w-4 h-4 text-core-green" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-core-green">Confirm Action</span>
+              </div>
+              <h3 className="text-[16px] font-bold text-white capitalize">{pendingAction.label}</h3>
+            </div>
+            <div className="px-6 py-4">
+              <p className="text-[13px] text-white/50 leading-relaxed mb-4">{pendingAction.description}</p>
+              {Object.keys(pendingAction.params).length > 0 && (
+                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] mb-4">
+                  {Object.entries(pendingAction.params).map(([key, val]) => (
+                    <div key={key} className="flex justify-between py-1 text-[12px]">
+                      <span className="text-white/30 capitalize">{key.replace(/_/g, ' ')}</span>
+                      <span className="text-white/70">{String(val)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={rejectAction}
+                  className="flex-1 py-2.5 rounded-lg border border-white/[0.08] bg-transparent text-white/50 text-[13px] font-medium hover:bg-white/[0.03] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => executeAction(pendingAction)}
+                  disabled={actionExecuting}
+                  className="flex-1 py-2.5 rounded-lg bg-core-green text-core-bg text-[13px] font-bold hover:bg-core-green/90 transition-colors cursor-pointer border-none flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {actionExecuting ? (
+                    <div className="w-4 h-4 border-2 border-core-bg border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  {actionExecuting ? 'Executing...' : 'Yes, do it'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ Interactive Tutorial Overlay ═══ */}
       {showTutorial && (
