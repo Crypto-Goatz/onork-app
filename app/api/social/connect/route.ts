@@ -25,9 +25,20 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await supabase.from('profiles').select('crm_location_id').eq('id', user.id).single()
   const locationId = profile?.crm_location_id
-  if (!locationId) return NextResponse.json({ error: 'No CRM location linked. Go to Settings to connect your CRM.' }, { status: 400 })
 
   const { platform, reconnect } = await req.json()
+
+  // For platforms we support via direct OAuth (no CRM needed), redirect to our connect flow
+  const DIRECT_OAUTH_PLATFORMS: Record<string, boolean> = { linkedin: true, facebook: true, google: true }
+  if (!locationId && DIRECT_OAUTH_PLATFORMS[platform]) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://0ncore.com'
+    return NextResponse.json({ url: `${baseUrl}/api/auth/connect/${platform}`, platform })
+  }
+
+  if (!locationId) {
+    return NextResponse.json({ error: 'CRM not connected yet. Go to Settings → Connected Accounts to link Google, LinkedIn, or Facebook directly. For full social planner access, connect your CRM.' }, { status: 400 })
+  }
+
   const oauthPath = OAUTH_PATHS[platform]
   if (!oauthPath) return NextResponse.json({ error: `Unknown platform: ${platform}` }, { status: 400 })
 
