@@ -64,15 +64,15 @@ export default function CrmPage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [conversations, setConversations] = useState<{ id: string; contactName: string; lastMessage: string; updatedAt: string }[]>([])
 
-  const loadData = useCallback(async (module: string, params: Record<string, string> = {}) => {
+  const fetchCrm = useCallback(async (type: string, params: Record<string, string> = {}) => {
     setLoading(true)
     setError('')
     try {
-      const query = new URLSearchParams({ module, ...params })
-      const res = await fetch(`/api/crm/sdk?${query}`)
+      const query = new URLSearchParams({ type, ...params })
+      const res = await fetch(`/api/crm/data?${query}`)
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Failed')
-      return json.data
+      return json
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'CRM request failed'
       setError(msg)
@@ -83,29 +83,28 @@ export default function CrmPage() {
   }, [])
 
   const loadContacts = useCallback(async (query?: string) => {
-    const data = await loadData('contacts', { action: 'search', query: query || '', limit: '50' })
+    const data = await fetchCrm('contacts', { query: query || '', limit: '50' })
     if (data) {
       setContacts(data.contacts || [])
       setTotalContacts(data.meta?.total || data.contacts?.length || 0)
     }
-  }, [loadData])
+  }, [fetchCrm])
 
   const loadPipeline = useCallback(async () => {
-    const data = await loadData('opportunities', { action: 'pipelines' })
+    const data = await fetchCrm('pipelines')
     if (data) {
       setPipelines(data.pipelines || [])
-      // Load opportunities for the first pipeline
       if (data.pipelines?.[0]) {
-        const opps = await loadData('opportunities', { action: 'search', pipeline_id: data.pipelines[0].id })
+        const opps = await fetchCrm('opportunities', { pipeline_id: data.pipelines[0].id })
         if (opps) setOpportunities(opps.opportunities || [])
       }
     }
-  }, [loadData])
+  }, [fetchCrm])
 
   const loadConversations = useCallback(async () => {
-    const data = await loadData('conversations', { action: 'search', limit: '20' })
+    const data = await fetchCrm('conversations', { limit: '20' })
     if (data) setConversations(data.conversations || [])
-  }, [loadData])
+  }, [fetchCrm])
 
   useEffect(() => {
     switch (tab) {
