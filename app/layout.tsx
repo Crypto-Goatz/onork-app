@@ -69,15 +69,13 @@ export default function RootLayout({
         <Providers>
         {children}
         </Providers>
-        {/* 0nAI Voice Chat Widget — site-wide */}
-        {process.env.NEXT_PUBLIC_VOICE_AGENT_ID && (
-          <script
-            src="https://widgets.leadconnectorhq.com/loader.js"
-            data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
-            data-widget-id={process.env.NEXT_PUBLIC_VOICE_AGENT_ID}
-            async
-          />
-        )}
+        {/* CRM Chat Widget — site-wide */}
+        <script
+          src="https://beta.leadconnectorhq.com/loader.js"
+          data-resources-url="https://beta.leadconnectorhq.com/chat-widget/loader.js"
+          data-widget-id="69ec4dbacbb9f40b1bf401f0"
+          async
+        />
       </body>
     </html>
   );
