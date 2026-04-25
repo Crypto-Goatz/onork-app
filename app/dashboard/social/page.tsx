@@ -113,28 +113,81 @@ export default function SocialPage() {
 
   const [connectError, setConnectError] = useState('')
 
+  // Map social platform keys to our OAuth provider names
+  const OAUTH_MAP: Record<string, string> = {
+    google: 'google',
+    facebook: 'facebook',
+    linkedin: 'linkedin',
+    twitter: 'x',
+    instagram: 'facebook', // Instagram uses Facebook OAuth
+    tiktok: 'x',           // fallback — not yet supported directly
+    tiktok_business: 'x',  // fallback
+  }
+
   async function connectPlatform(key: string) {
     setConnecting(key)
     setConnectError('')
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setConnecting(null); setConnectError('Please log in'); return }
-    try {
-      const res = await fetch('/api/social/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ platform: key }),
-      })
-      const data = await res.json()
-      if (res.ok && data.url) {
-        window.open(data.url, '_blank', 'width=600,height=700')
-      } else {
-        setConnectError(data.error || `Failed to connect ${key}`)
+
+    // Use our direct OAuth system instead of CRM
+    const oauthProvider = OAUTH_MAP[key]
+    if (oauthProvider) {
+      try {
+        const res = await fetch(`/api/auth/connect/${oauthProvider}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.url) {
+            const popup = window.open(data.url, `connect-${key}`, 'width=600,height=700,left=200,top=100')
+            // Poll for popup close
+            const check = setInterval(() => {
+              if (popup?.closed) {
+                clearInterval(check)
+                setConnecting(null)
+                // Refresh connected accounts
+                supabase.auth.getSession().then(({ data: { session } }) => {
+                  if (session) {
+                    fetch('/api/auth/connections').then(r => r.json()).then(d => {
+                      const connected: Record<string, boolean> = {}
+                      for (const conn of (d.connections || [])) {
+                        connected[conn.provider] = true
+                        // Map provider back to platform keys
+                        if (conn.provider === 'facebook') { connected.facebook = true; connected.instagram = true }
+                        if (conn.provider === 'google') connected.google = true
+                        if (conn.provider === 'linkedin') connected.linkedin = true
+                        if (conn.provider === 'x') connected.twitter = true
+                      }
+                      setConnectedAccounts(connected)
+                    })
+                  }
+                })
+              }
+            }, 1000)
+            return
+          }
+        }
+        const errData = await res.json().catch(() => ({}))
+        setConnectError(errData.error || `${oauthProvider} not configured yet`)
+      } catch {
+        setConnectError('Connection failed — check your network')
       }
-    } catch (err) {
-      setConnectError('Connection failed — check your network')
+    } else {
+      setConnectError(`${key} connection coming soon`)
     }
     setConnecting(null)
   }
+
+  // Also load from user_connections (our OAuth system)
+  useEffect(() => {
+    fetch('/api/auth/connections').then(r => r.json()).then(d => {
+      const connected: Record<string, boolean> = {}
+      for (const conn of (d.connections || [])) {
+        if (conn.provider === 'google') connected.google = true
+        if (conn.provider === 'facebook') { connected.facebook = true; connected.instagram = true }
+        if (conn.provider === 'linkedin') connected.linkedin = true
+        if (conn.provider === 'x') { connected.twitter = true }
+      }
+      setConnectedAccounts(prev => ({ ...prev, ...connected }))
+    }).catch(() => {})
+  }, [])
 
   const [activeTab, setActiveTab] = useState<Tab>('compose')
   const [topic, setTopic] = useState('')
