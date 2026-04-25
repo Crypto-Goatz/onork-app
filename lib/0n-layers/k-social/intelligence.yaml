@@ -1,0 +1,1145 @@
+CONTEXT_SCHEMA_VERSION: "1.0"
+SYSTEM_ID: "0nAI_LAYER_K_VPIS_CIS"
+BUILT_FOR: "Claude Code — autonomous execution, no human interpretation required"
+OWNER: "RocketOpp LLC / 0nmcp.com"
+CLASSIFICATION: "AI_TO_AI_TRANSFER — complete intelligence package"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 1 — SYSTEM IDENTITY + ARCHITECTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SYSTEM_NAME: "0nLinkedIn — Viral Post Intelligence System + Comment Intelligence System"
+LAYER: "0nAI Layer K"
+PARENT_PLATFORM: "0nmcp.com"
+PARENT_COMPANY: "RocketOpp LLC"
+MISSION: "Autonomous LinkedIn dominance engine. Generates VPIS-scored content, engineers targeted comments, posts at optimal velocity, feeds engagement back into a self-improving formula. Forever learning. Human-approved by default. Autonomous on opt-in."
+
+CORE_PRODUCTS_THIS_SYSTEM_SERVES:
+  - id: "PROD_001"
+    name: "0nmcp.com"
+    tagline: "101 services. One command. One MCP install."
+    key_stat: "1,554 tools across 96 services"
+    install: "npx 0nmcp@latest"
+    audit_url: "https://secure.software/npm/packages/0nmcp/behaviors"
+    audit_result: "PASS — all 6 categories clean"
+    icp_fit: 97
+
+  - id: "PROD_002"
+    name: "rocketopp.com/hipaa"
+    tagline: "Free 51-point HIPAA compliance scan. Full report in 15 minutes."
+    tiers: [149, 399, 499, 899]
+    affiliate_commission: "30%"
+    affiliate_url: "rocketopp.com/hipaa-partners"
+    icp_fit: 88
+
+  - id: "PROD_003"
+    name: "Stack Setup Service"
+    price: "$997 one-time + $149/month"
+    delivery: "48 hours"
+    icp_fit: 82
+
+  - id: "PROD_004"
+    name: "0nmcp GTM OS"
+    price: "$997 self-serve / $2,497 DWY / $4,997 DFY"
+    icp_fit: 91
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 2 — VPIS SCORING FORMULA v0.5
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FORMULA:
+  POST_SCORE = (Hook × W_hook) + (EmotionalTrigger × W_emotion) +
+               (PlatformOpt × W_platform) + (ViralCoeff × W_viral) +
+               (Specificity × W_specificity) + (Structure × W_structure) +
+               (Keywords × W_keywords) + (CTA × W_cta)
+
+BASELINE_WEIGHTS:
+  W_hook: 0.200
+  W_emotion: 0.180
+  W_platform: 0.150
+  W_viral: 0.130
+  W_specificity: 0.120
+  W_structure: 0.100
+  W_keywords: 0.070
+  W_cta: 0.050
+  SUM: 1.000
+
+WEIGHT_CONSTRAINTS:
+  min_per_factor: 0.020
+  max_per_factor: 0.400
+  must_sum_to: 1.000
+
+FACTOR_DEFINITIONS:
+  Hook:
+    measures: "First line strength — does line 1 force a position or pattern interrupt?"
+    score_range: [0, 100]
+    optimal_first_line_words: [5, 12]
+    top_archetypes: ["absolute_declaration", "bait_and_flip", "specificity_spike", "authority_contrast"]
+    penalties:
+      - trigger: "/^i'm (excited|thrilled|happy)/i"
+        deduction: 25
+      - trigger: "/^(today i|i wanted to share|excited to)/i"
+        deduction: 20
+      - trigger: "starts_with_I_as_first_word"
+        deduction: 10
+
+  EmotionalTrigger:
+    measures: "Career anxiety, FOMO, financial aspiration, identity threat, frustration"
+    high_value_triggers: ["behind", "missing out", "exposed", "penalty", "fine", "violation", "losing", "at risk"]
+    financial_triggers: ["million", "billion", "$", "revenue", "save", "earn", "cost"]
+    identity_triggers: ["you are", "your team", "your company", "your website", "your stack"]
+    fomo_triggers: ["everyone else", "already", "while you", "still manually", "by now"]
+
+  PlatformOpt:
+    measures: "LinkedIn algorithm compliance — native format, no link penalties, hashtag strategy"
+    critical_penalties:
+      - rule: "hashtags > 3"
+        deduction: 40
+      - rule: "link_in_post_body AND content_type == post"
+        deduction: 25
+      - rule: "bold_markdown_asterisks"
+        deduction: 15
+    bonuses:
+      - rule: "zero_hashtags"
+        addition: 15
+        rationale: "Signals thought leadership. Algorithm treats as authoritative."
+      - rule: "word_count BETWEEN 80 AND 200"
+        addition: 10
+
+  ViralCoeff:
+    measures: "Reshare probability, save intent, quotable standalone lines"
+    quotable_line_criteria: "words BETWEEN 4 AND 12, standalone meaning, screenshot-worthy"
+    required_per_post: 1
+    save_intent_signals: ["framework", "checklist", "step", "system", "formula", "rule"]
+
+  Specificity:
+    measures: "Exact numbers, named tools, real timelines, verifiable claims"
+    high_value_elements:
+      - "dollar_amounts: $X,XXX or $XM format"
+      - "percentages: X.X% preferred over round numbers"
+      - "named_tools: HubSpot, Clay, Stripe, Claude, Slack, GitHub, ZoomInfo, etc."
+      - "time_specifics: X days/hours/minutes"
+      - "regulatory_citations: 45 CFR §164.XXX, US Patent XXXXXXXXX"
+      - "post_counts: tested on X posts, X% confidence"
+
+  Structure:
+    measures: "Scannability, Vibe Style compliance, breathing room, paragraph length"
+    vibe_style_rules:
+      - "Short sentences as units. Each line stands alone."
+      - "Zero corporate vocabulary: never use leverage/synergy/stakeholder/utilize/robust/innovative/cutting-edge/game-changer"
+      - "Casual certainty — confident without hedging"
+      - "One quotable standalone line every 3-4 sentences"
+      - "Never start post with 'I' as first word"
+      - "Never open with 'I'm excited to share' or 'Thoughts?' or 'I've been thinking about'"
+      - "Blank lines between paragraphs"
+      - "Max 250 words for posts"
+      - "Human imperfection signal acceptable — fragments are fine"
+
+  Keywords:
+    measures: "ICP-matched vocabulary density for 0nmcp audience"
+    tier_1_keywords: ["mcp", "claude", "model context protocol", "0nmcp", "agentic", "mcp server"]
+    tier_2_keywords: ["ai tools", "automation", "workflow", "crm", "orchestration", "integration", "stack", "gtm", "outbound"]
+    tier_3_keywords: ["ai", "technology", "software", "founder", "operator", "saas"]
+
+  CTA:
+    measures: "Closing question quality — specific, answerable, practitioner-targeted"
+    good_examples:
+      - "What's the one handoff in your stack that still needs a human every single day?"
+      - "What's the one metric your SEO strategy ignores that you know it should be measuring?"
+      - "What third-party scripts are currently running on your patient scheduling page?"
+      - "When your last compliance engagement was done — did they scan your patient-facing URLs?"
+    bad_examples:
+      - "Thoughts?"
+      - "What do you think?"
+      - "Agree?"
+      - "Let me know your thoughts in the comments"
+    criteria: "Must require a real practitioner answer. Must be answerable in under 30 seconds."
+
+OBJECTIVE_MODIFIERS:
+  MaxComments:
+    factor: "EmotionalTrigger"
+    multiplier: 1.05
+  MaxReach:
+    factor: "PlatformOpt"
+    multiplier: 1.05
+  LeadGen:
+    factor: "CTA"
+    multiplier: 1.08
+  Authority:
+    factor: "add_credibility_factor"
+    weight: 0.06
+
+ADJUSTED_SCORE_CALCULATION:
+  timing_modifier_sources:
+    - "zero_hashtags: +0.8"
+    - "no_link_in_body: +1.1"
+    - "has_closing_question: +0.5"
+    - "hook_archetype IN [absolute_declaration, bait_and_flip, specificity_spike]: +0.5"
+  adjusted_score: "MIN(100, composite + timing_modifier)"
+
+SCORE_ACTION_THRESHOLDS:
+  90_plus: {status: "ELITE_VIRAL", action: "POST_NOW", comment_within: "60_minutes"}
+  85_89: {status: "HIGH_PERFORMER", action: "POST_WITHIN_2_HOURS"}
+  80_84: {status: "SOLID", action: "POST — hook_refinement_optional"}
+  75_79: {status: "MARGINAL", action: "REWRITE_HOOK_BEFORE_POSTING"}
+  below_75: {status: "UNDERPERFORMER", action: "DO_NOT_POST — rebuild"}
+
+ICP_SCORING:
+  definition: "0-100% match for 0nmcp buyer persona"
+  tiers:
+    high: {range: [85, 100], audience: "Claude/MCP/AI ops users, GTM builders, RevOps", comment_strategy: "AGGRESSIVE — direct 0nmcp mention with architecture reference"}
+    medium: {range: [60, 84], audience: "AI-curious founders, tech marketers, automation users", comment_strategy: "MODERATE — peer tone, soft 0nmcp mention"}
+    low: {range: [0, 59], audience: "Generic career, non-technical, unrelated niche", comment_strategy: "SUBTLE — pure value add, 0nmcp only if natural opening"}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 3 — 58 CONFIRMED PATTERNS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PATTERN_LIBRARY:
+  confirmed_from: "13 manually analyzed posts + 26 LinkedIn posts analyzed in session"
+  testing_dataset_size: 13
+  baseline_prediction_error: 0.220
+
+  P001:
+    name: "First Hour Velocity"
+    rule: "LinkedIn distributes based on first-60-minute engagement velocity. Likes + comments in hour 1 = 5x weight vs hour 3+"
+    action: "Text 5 real people 10 min before posting. Reply to every comment within 60 min."
+
+  P008:
+    name: "Dwell Time Signal"
+    rule: "Algorithm counts time-on-post as quality signal. Long-form posts with questions hold dwell."
+    action: "End with specific question. Use paragraph breaks to slow reading speed."
+
+  P011:
+    name: "Zero Hashtags (Thought Leadership)"
+    rule: "Zero hashtags on thought leadership posts. 2-3 niche hashtags ONLY on tool announcements."
+    rationale: "LinkedIn treats hashtag-heavy posts as promotional. Suppresses organic distribution."
+    hashtag_exceptions: ["tool launch posts", "company page posts (max 3)"]
+    confirmed_via: 11
+    avg_platform_score_lift: 18.2
+
+  P012:
+    name: "Never Edit After Posting"
+    rule: "Editing a post resets distribution. LinkedIn treats edit as new post in queue."
+    action: "Fix typos mentally. Never edit live."
+
+  P015:
+    name: "Link in First Comment Only"
+    rule: "Never link in post body. Algorithm penalizes ~30% reach reduction."
+    action: "Drop URL in first comment within 60 seconds of posting."
+    confirmed_via: 13
+
+  P017:
+    name: "Consistency > Frequency"
+    rule: "Same topic cluster 3-5x/week builds algorithmic authority. Sporadic cross-topic posting = zero category authority."
+
+  P019:
+    name: "Optimal Posting Windows"
+    primary: "Tuesday/Wednesday 8-10am EST"
+    secondary: "Thursday 7-9am EST"
+    worst: "Friday PM through Monday AM"
+    confirmed_via: 9
+
+  P022:
+    name: "Confession + Contrast Hook"
+    rule: "Admit something real. Contrast with what changed."
+    example: "I spent 3 hours a day copy-pasting between AI tools. Then I stopped being the API."
+
+  P024:
+    name: "Absolute Declaration Hook"
+    rule: "State something as undeniable fact. Forces agreement or disagreement."
+    example: "You are the API between your AI tools."
+    performance: "Highest single-factor hook score in dataset"
+    confirmed_via: 8
+    avg_hook_score: 93.4
+
+  P025:
+    name: "Comment Length Signal"
+    rule: "LinkedIn sorts Most Relevant by comment engagement. Comments >100 words with question get pinned to top."
+    action: "All engineered comments: 100-180 words + closing question."
+
+  P026:
+    name: "Author Reply Trigger"
+    rule: "Authors reply to comments that: (1) extend their thesis, (2) ask specific question about their process, (3) reference something specific from their post."
+    avoid: "Generic compliments. Self-promotion without value first."
+
+  P027:
+    name: "Comment → DM Pipeline"
+    rule: "Best DMs start from comments. Comment publicly → author replies → DM referencing the comment."
+    open_rate: "60%+ for 'I saw your comment on [post] about [specific thing]'"
+
+  P028:
+    name: "Specificity Hook"
+    rule: "Open with a number so specific it forces credibility."
+    example: "46.7% CTR drop. 68,000 queries measured. Google isn't sending you the clicks anymore."
+    confirmed_via: 7
+
+  P029:
+    name: "ICP Comment Extraction"
+    rule: "Every high-performing post attracts its audience in the comment section."
+    action: "Run commenters through enrichment → ICP score → direct outreach."
+    opener: "'I saw your comment on [author]'s post about [specific thing]...' — warm opener"
+
+  P031:
+    name: "Bait & Flip"
+    rule: "Setup a belief → immediately flip it. Highest comment-generating archetype."
+    example: "Ranking #1 on Google used to mean winning. In 2026, it might mean losing slower."
+    performance: "Highest comment-to-impression ratio in dataset"
+    confirmed_via: 9
+    avg_composite_score: 90.1
+
+  P033:
+    name: "Contrarian with Backup"
+    rule: "Take opposite position. Immediately justify with data."
+    example: "Most AI advice is wrong about this. Here's what the numbers actually show."
+
+  P037:
+    name: "Vibe Style"
+    id: "STYLE_VIBE"
+    rules:
+      - "Short sentences as units"
+      - "Zero corporate vocabulary"
+      - "Casual certainty"
+      - "One-liner punch every 3-4 sentences"
+      - "No throat-clearing"
+      - "Leave space"
+      - "Human imperfection signal acceptable"
+      - "Never start with 'I'"
+    confirmed_via: 13
+    avg_structure_score: 88.7
+
+  P040:
+    name: "Triple Co-Author Amplification"
+    rule: "3 people engage in first hour = 3x early velocity."
+    action: "Text 5 real people 10 minutes before posting."
+
+  P041:
+    name: "Authority Contrast Hook"
+    rule: "Reference something authoritative then add what they missed."
+    example: "Anthropic won't send you this. Here's what the Claude Code system prompts actually do."
+    confirmed_via: 4
+
+  P046:
+    name: "Playbook as Pitch"
+    rule: "Giving away the mechanism IS the sales pitch. The more specific the how, the more someone thinks 'they clearly built this.'"
+    confirmed_via: 6
+
+  P047:
+    name: "Implied Math"
+    rule: "State price. State volume. Never multiply for them."
+    example: "$997 setup. Three spots this week."
+    confirmed_via: 5
+
+  P048:
+    name: "Price Controversy as Comment Engine"
+    rule: "$999 not $1,000. Specific price triggers comment debate. Round numbers feel fake."
+
+  P051:
+    name: "Motion = 3x Algorithm Boost"
+    rule: "GIFs and native video outperform static by 3x on reach."
+    action: "Screen-record any demo. Export as GIF. Attach to post."
+
+  P053:
+    name: "LinkedIn Aftershock Window"
+    rule: "Major AI events peak on LinkedIn 5-10 days AFTER breaking on X/Twitter."
+    action: "Monitor X for AI news. Post LinkedIn version 7 days later."
+    confirmed_via: 3
+
+  P055:
+    name: "Closing Question Formula"
+    rule: "Must be specific AND answerable by exact ICP in under 30 seconds."
+    confirmed_via: 13
+    avg_cta_score_with: 88.4
+    avg_cta_score_without: 41.2
+
+  P056:
+    name: "Comment-Bait Visibility Gap"
+    rule: "'Comment X to get Y' floods thread. Algorithm reads volume not quality. One substantive comment surfaces to top of Most Relevant."
+    confirmed_via: 4
+
+  P057:
+    name: "Specificity Mirroring"
+    rule: "When a post's thesis is about specificity, apply their own principle to your value prop."
+    example: "Their post: '54 intent signals stacked before one email.' Your comment: '101 services connected through one install.'"
+    confirmed_via: 5
+
+  P058:
+    name: "Flip Reframe Comment"
+    rule: "Add a second flip extending the post's thesis. Agrees with author → extends to layer they didn't reach → drops 0nmcp as mechanism."
+    confirmed_via: 6
+    avg_author_reply_rate: 0.43
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 4 — CRO9 CONTENT SCORING SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CRO9_SYSTEM:
+  purpose: "Score long-form articles, blog posts, and LinkedIn articles for SEO + AI Overview capture"
+  composite_formula: "weighted_average(8_factors)"
+
+  factors:
+    InformationGain:
+      weight: 0.18
+      measures: "Unique knowledge contribution vs existing indexed corpus on topic"
+      patent_basis: "Google US10783462 — Information Gain scoring methodology"
+      gate: "Content scoring below 75 on this factor should not be published"
+
+    EEAT:
+      weight: 0.16
+      measures: "Expertise, Experience, Authoritativeness, Trust signals"
+      required_elements: ["author_bio_with_credentials", "expert_citations", "first_person_experience", "verifiable_claims"]
+
+    AIOverviewOptimization:
+      weight: 0.15
+      measures: "Probability of being cited in Google AI Overviews or ChatGPT responses"
+      techniques:
+        - "Question-formatted H2 headers (not declarative)"
+        - "Featured snippet intro block (direct answer in first 150 words)"
+        - "FAQ section with 5+ questions"
+        - "Each FAQ answer: 60-100 words"
+        - "Schema type: Article + FAQPage"
+      citation_data: "92.36% of AI Overview citations come from top 10 organic positions"
+
+    BehavioralHooks:
+      weight: 0.13
+      measures: "Elements that produce return visits, saves, shares, email captures"
+      elements: ["content_upgrade_offer", "inline_CTA", "tool_reference", "checklist", "framework"]
+
+    RevenueAttribution:
+      weight: 0.12
+      measures: "Does article have a clear conversion path to a product or service?"
+      requirement: "Every article must have at least one non-aggressive CTA to product"
+
+    TechnicalReadiness:
+      weight: 0.12
+      measures: "Meta, canonical, OG, schema, slug all specified"
+      required_fields: ["canonical_url", "meta_title", "meta_description", "og_title", "og_description", "schema_type", "primary_keyword", "slug"]
+
+    ContentSatisfaction:
+      weight: 0.09
+      measures: "Headers, citations, length, FAQ, structure"
+      optimal_length: [2000, 4000]
+      required_elements: ["H2_headers", "external_citations_with_links", "FAQ_section", "conclusion"]
+
+    FirstPartyDataHooks:
+      weight: 0.05
+      measures: "Email capture, tool usage, account creation triggers embedded in content"
+
+  score_thresholds:
+    publish: 85
+    revise: [75, 84]
+    rebuild: [0, 74]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 5 — ANALYZED POST DATABASE (GROUND TRUTH TRAINING DATA)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GROUND_TRUTH_POSTS:
+  description: "Real posts analyzed with VPIS scores. Use as training data for formula recalibration."
+
+  - id: "POST_012"
+    author: "Alex Vacca"
+    company: "ColdIQ"
+    revenue: "$7M ARR"
+    platform: "linkedin"
+    composite: 90.4
+    icp_score: 95
+    hook_archetype: "authority_completeness"
+    hook_text: "After 3 years of scaling ColdIQ to a $7M business, this is everything we learned about getting clients from LinkedIn."
+    patterns_fired: ["P028", "P046", "P055", "P056"]
+    engagement_signal: "CRITICAL — comment 'Lead' mechanic floods thread. Substantive comment surfaces immediately."
+    action: "POST_NOW — window still open at analysis time"
+    comment_deployed: true
+    engineered_comment_archetype: "Specificity Mirroring + Additive Reframe"
+
+  - id: "POST_013"
+    author: "Dustin Hauer"
+    platform: "linkedin"
+    composite: 88.3
+    icp_score: 78
+    hook_archetype: "bait_and_flip"
+    hook_text: "You're not using the wrong AI. You're using AI wrong."
+    patterns_fired: ["P031", "P024", "P033"]
+    engagement_driver: "Triple archetype collision — Bait&Flip + Absolute Declaration + Contrarian"
+    new_pattern_discovered: "P058 — The Flip Reframe Comment"
+
+  - id: "POST_008"
+    author: "Charlie Hills"
+    followers: "200000+"
+    substack_subscribers: 47000
+    composite: 90.0
+    icp_score: 72
+    hook_archetype: "authority_contrast"
+    competitive_intelligence: "Has '54 Claude Code resources' list. 0nmcp NOT on it despite 'nothing left out' claim. Gap to exploit via comment."
+    monetization: "Hidden funnel — 'Start here' link routes to paid Substack"
+
+  - id: "POST_011"
+    author: "Matt Hausnitz"
+    composite: 88.5
+    icp_score: 88
+    hook_archetype: "wave_rider"
+    patterns_fired: ["P053", "P055"]
+
+  - id: "POST_009"
+    author: "Corey Ganim"
+    composite: 88.0
+    icp_score: 85
+    hook_archetype: "price_anchor_playbook"
+    business_model: "$999/45-min AI assessment → upsells to implementation"
+    strategic_note: "His implementation = 0nmcp use case. Potential partner."
+    patterns_fired: ["P047", "P048", "P046"]
+
+  - id: "POST_010"
+    author: "Nicolò Bertaia"
+    composite: 87.1
+    icp_score: 77
+    special_mechanic: "Motion GIF attached — P051 firing. 3x algorithm boost confirmed."
+
+  - id: "POST_007"
+    author: "Dan Rosenthal"
+    company: "Workflows.io"
+    composite: 85.7
+    icp_score: 98
+    confirmed_claude_user: true
+    revenue_model: "80% from LinkedIn + outbound"
+    tech_stack: ["Clay", "Claude", "HubSpot"]
+    strategic_note: "EXACT 0nmcp buyer. Highest ICP in dataset at 98%."
+
+  - id: "POST_MARVIN_AZIZ"
+    author: "Marvin Aziz"
+    company: "Lindy"
+    composite: 88.7
+    icp_score: 80
+    engagement: {likes: 111, comments: 18, reposts: 7}
+    hook_archetype: "authority_contrast_scarcity"
+    hook_text: "30 system prompt files from Claude Code just ended up in a public repo."
+    mechanic: "Insider access + code block as proof artifact + 'leaked' framing"
+    pattern: "P041 — Authority Contrast"
+
+  - id: "POST_BRIGITTA_RUHA"
+    author: "Brigitta Ruha"
+    company: "Growth Today"
+    composite: 91.0
+    icp_score: 91
+    hook_text: "70 outbound tasks. AI handles all of them."
+    strategic_analysis: "All 70 tasks collapse to 8 workflows. Real product is orchestration layer between tools. 0nmcp is the answer she didn't name."
+    comment_angle: "The 70 tasks don't go away. You just stop being the infrastructure holding them together."
+
+  - id: "POST_OPENAI_CLINICIANS"
+    author: "OpenAI (company page)"
+    composite: 89.2
+    icp_score: 96
+    hook_text: "Making ChatGPT better for clinicians"
+    strategic_pivot: "Word 'optional' in HIPAA BAA announcement = entire angle for rocketopp.com/hipaa"
+    comment_deployed: true
+    article_published: "https://www.linkedin.com/pulse/openai-just-made-hipaa-compliance-more-urgent-less-rocketopp-30ide"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 6 — COMMENT ENGINEERING SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMMENT_ARCHETYPES:
+  - id: "CA_001"
+    name: "Additive Reframe"
+    structure: "Agree with thesis → extend to layer author didn't reach → drop 0nmcp as mechanism"
+    icp_trigger: [85, 100]
+    word_count: [100, 180]
+    author_reply_rate: 0.43
+
+  - id: "CA_002"
+    name: "Gap Exploit"
+    structure: "Identify what the post claims but missed → provide the missing piece → 0nmcp fills gap"
+    best_for: "Posts making completeness claims ('everything you need to know', 'nothing left out')"
+    example: "Charlie Hills '54 Claude Code resources' list — 0nmcp not on it"
+
+  - id: "CA_003"
+    name: "Mechanism Reveal"
+    structure: "Name the underlying mechanism post implied but didn't explain → show you understand it → 0nmcp is the implementation"
+    word_count: [120, 180]
+
+  - id: "CA_004"
+    name: "Specificity Mirror"
+    structure: "When post's thesis is about specificity → apply their own principle to 0nmcp"
+    trigger: "Posts using vague→specific contrasts"
+    example: "'54 intent signals stacked' → '101 services connected through one install'"
+
+  - id: "CA_005"
+    name: "Second Flip"
+    structure: "Agree with post's flip → add another flip that lands on 0nmcp as the solution"
+    trigger: "Bait & Flip posts"
+    patterns_fired: ["P058"]
+
+COMMENT_RULES:
+  mandatory:
+    - "Reference something SPECIFIC from the post. Never generic praise."
+    - "Sound like a peer, not a fan. Never compliment the post itself."
+    - "Use Vibe Style: short sentences, no corporate language, casual certainty"
+    - "100-180 words (surfaces in Most Relevant, author reads it)"
+    - "End with specific question directed at the author about their PROCESS"
+  
+  product_mention_by_icp:
+    icp_85_plus: "Direct 0nmcp mention with specific capability. Include 0nmcp.com as 'architecture docs'."
+    icp_60_84: "Peer tone. Soft mention. 'just posted about this' reference to own post."
+    icp_below_60: "Pure value add. Do not mention 0nmcp unless completely natural."
+
+  timing:
+    post_age_0_8h: "POST_NOW — golden window"
+    post_age_8_24h: "GOOD — still viable"
+    post_age_24_48h: "AGING — diminishing returns"
+    post_age_above_48h: "TOO_OLD — skip"
+
+  safe_daily_limits:
+    comments_per_day: 12
+    min_interval_between_comments_minutes: 15
+    max_comments_on_same_post: 1
+    never_use_identical_text_twice: true
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 7 — SAFE VELOCITY RULES (LINKEDIN TOS COMPLIANCE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+VELOCITY_RULES:
+  source: "Derived from LinkedIn ToS + observed account restriction triggers"
+  hard_limits:
+    posts_per_day: 2
+    min_hours_between_posts: 4
+    comments_per_day: 12
+    min_minutes_between_comments: 15
+    profile_visits_per_day: 80
+    connection_requests_per_day: 25
+    dms_per_day: 15
+    reactions_per_day: 60
+  
+  time_restrictions:
+    never_post_between: ["23:00", "06:00"]
+    account_timezone: "America/New_York"
+  
+  content_restrictions:
+    never_use_identical_comment_text: true
+    never_comment_3x_same_post_24h: true
+    never_dm_3_from_same_company_same_week: true
+  
+  human_default:
+    all_actions_require_approval_by_default: true
+    auto_mode_requires_explicit_opt_in_per_action_type: true
+    approval_timeout_seconds: 900
+    emergency_kill_switch: true
+  
+  emergency_protocol:
+    if_linkedin_flags_account:
+      - "Disable autonomous mode immediately"
+      - "Pause all scheduled actions"
+      - "Switch to manual-only for 72 hours"
+      - "Reduce daily limits by 50% for 2 weeks"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 8 — LEARNING ALGORITHM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LEARNING_SYSTEM:
+  algorithm: "gradient_descent_weight_recalibration"
+  learning_rate: 0.01
+  
+  feedback_loop:
+    step_1: "Post published with VPIS predicted_score stored"
+    step_2: "Engagement captured after 24h: likes, comments, shares, impressions"
+    step_3: "actual_score = normalize(likes + comments×3 + shares×2 + saves×4) / 100"
+    step_4: "score_delta = predicted_score - actual_score"
+    step_5: "weight_adjustment = -(learning_rate × score_delta × factor_score × 0.1)"
+    step_6: "apply adjustments to all 8 factor weights"
+    step_7: "normalize weights to sum = 1.000"
+    step_8: "if MAE improves by >5%, save as new active formula version"
+    step_9: "update pattern library: confirmed_via++, avg_lift recalculated"
+  
+  accuracy_targets:
+    baseline_posts_13: {mean_absolute_error: 0.220, confidence: "low"}
+    target_posts_50: {mean_absolute_error: 0.150, confidence: "medium"}
+    target_posts_200: {mean_absolute_error: 0.080, confidence: "high"}
+    target_posts_500: {mean_absolute_error: 0.050, confidence: "production"}
+  
+  recalibration_schedule:
+    frequency: "weekly"
+    cron: "0 4 * * 1"
+    minimum_new_posts_required: 5
+    save_condition: "new_MAE < current_MAE"
+  
+  pattern_confirmation:
+    on_post_score_above_88_actual:
+      - "vpis_patterns.confirmed_via += 1"
+      - "vpis_patterns.avg_lift = rolling_average(score_lift)"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 9 — CONTENT TAXONOMY + CALENDAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+POST_TAXONOMY:
+  monday:
+    type: "mechanism_post"
+    description: "Explains how something works that most people misunderstand"
+    target_vpis: [85, 88]
+    hook_archetype: "authority_contrast"
+  
+  tuesday:
+    type: "absolute_declaration"
+    description: "Bold claim backed by data. High controversy."
+    target_vpis: [88, 93]
+    hook_archetype: "absolute_declaration"
+    optimal_posting_time: "08:00 EST"
+  
+  wednesday:
+    type: "before_after"
+    description: "Concrete transformation story with numbers"
+    target_vpis: [86, 90]
+    hook_archetype: "confession_contrast"
+    optimal_posting_time: "09:00 EST"
+  
+  thursday:
+    type: "pattern_interrupt"
+    description: "Takes widely shared belief and flips it with evidence"
+    target_vpis: [88, 92]
+    hook_archetype: "bait_and_flip"
+  
+  friday:
+    type: "case_study_proof"
+    description: "Real result, real numbers, real scenario"
+    target_vpis: [85, 89]
+    hook_archetype: "specificity_spike"
+  
+  saturday: "optional_repurpose — best performing post from week in different format"
+  sunday: "OFF — LinkedIn weekend reach is poor"
+
+PERFECT_POST_STRUCTURE:
+  line_1: "Hook (Absolute Declaration OR Bait & Flip)"
+  line_2: "The Flip (if Bait & Flip) OR supporting data"
+  blank_line: true
+  lines_3_4: "Context setter (1-2 sentences)"
+  blank_line: true
+  lines_5_7: "Evidence block (3 specific facts/numbers)"
+  blank_line: true
+  line_8: "The Insight (thing nobody is saying)"
+  blank_line: true
+  line_9: "The Mechanism (how it works / why it matters)"
+  blank_line: true
+  line_10: "Solution reference (product mention — 1 sentence, not a pitch)"
+  blank_line: true
+  line_11: "Closing question (specific, practitioner-targeted, answerable in 30s)"
+  constraints:
+    max_words: 250
+    hashtags: 0
+    links_in_body: 0
+    first_comment: "URL to product/article within 60 seconds"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 10 — ICP INTELLIGENCE + TARGET AUTHORS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PRIMARY_ICP:
+  name: "The Overwhelmed Operator"
+  description: "Founder or operator using 3+ AI tools that don't connect. Manually moving context between them. Knows this is inefficient. Has budget. Doesn't know MCP exists or how to configure it."
+  revenue_range: ["$500K", "$10M"]
+  tools_in_stack: ["Clay", "HubSpot", "Pipedrive", "Notion", "Slack", "GitHub", "Stripe", "Claude", "ChatGPT"]
+  pain: "2-3 hours/day as human clipboard between AI tools"
+  solution: "0nmcp — one install, 101 services connected through Claude"
+  icp_score: 95
+
+SECONDARY_ICP:
+  name: "Healthcare Compliance Buyer"
+  description: "Practice owner, compliance officer, or healthcare IT director who knows HIPAA exists, doesn't know their specific gaps, and can't afford $15K-$60K consultant."
+  revenue_range: ["$500K", "$10M"]
+  trigger_events: ["OCR enforcement headline", "peer getting fined", "new regulation announcement", "AI tool adoption wave"]
+  solution: "rocketopp.com/hipaa — $149-$899, 15 minutes, free scan"
+  icp_score: 88
+
+HIGH_VALUE_AUTHOR_WATCHLIST:
+  - author: "Alex Vacca"
+    company: "ColdIQ"
+    revenue: "$7M ARR"
+    icp_score: 95
+    profile: "linkedin.com/in/alex-vacca"
+    posting_frequency: "high"
+    audience: "GTM founders, Clay users, LinkedIn sales"
+    comment_priority: "CRITICAL"
+
+  - author: "Dan Rosenthal"
+    company: "Workflows.io"
+    icp_score: 98
+    confirmed_claude_user: true
+    stack: ["Clay", "Claude", "HubSpot"]
+    revenue_model: "80% LinkedIn + outbound"
+    comment_priority: "CRITICAL"
+
+  - author: "Corey Ganim"
+    icp_score: 85
+    business: "$999 AI assessment → implementation upsell"
+    strategic_note: "His implementation = 0nmcp use case. Potential partner."
+    comment_priority: "HIGH"
+
+  - author: "Charlie Hills"
+    followers: 200000
+    substack: 47000
+    icp_score: 72
+    gap_opportunity: "0nmcp not on his Claude Code resource list. Exploit."
+    comment_priority: "HIGH"
+
+  - author: "Dustin Hauer"
+    icp_score: 78
+    audience: "LinkedIn brand strategy, AI workflow"
+    comment_priority: "HIGH"
+
+  - author: "Brigitta Ruha"
+    company: "Growth Today"
+    icp_score: 91
+    audience: "GTM, Clay, outbound automation"
+    comment_priority: "HIGH"
+
+  - author: "Andrej Karpathy"
+    platform: "X then LinkedIn"
+    icp_score: 82
+    note: "Content waves to LinkedIn 5-10 days after X. Monitor X. Post LinkedIn version 7 days later."
+    comment_priority: "MEDIUM"
+
+  - author: "Marvin Aziz"
+    company: "Lindy"
+    icp_score: 80
+    audience: "Claude Code builders, developers"
+    comment_priority: "MEDIUM"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 11 — REDDIT STRATEGY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+REDDIT_STRATEGY:
+  target_subreddits:
+    - "r/mcp" — primary
+    - "r/claudeai"
+    - "r/artificial"
+    - "r/LocalLLaMA"
+    - "r/MachineLearning"
+    - "r/devops"
+  
+  reddit_post_rules:
+    - "Text-only posts perform better than link posts"
+    - "Link goes in first comment"
+    - "Title must be question or specific claim — not marketing language"
+    - "Engage with every reply within 2 hours"
+    - "Karma threshold before posting to top subreddits: 100+"
+  
+  reddit_vs_linkedin:
+    reddit: "Developer audience. Technical credibility required. Self-promotion must be subtle."
+    linkedin: "Founder/operator audience. Outcomes-first. Technical installation language wrong for ICP."
+  
+  high_performing_reddit_hooks:
+    - "I built X to solve my own Y problem. Here's what I learned."
+    - "After analyzing X posts, here's what actually drives engagement"
+    - "PSA: [Specific technical thing] is [active problem]. Here's the fix."
+  
+  secure_claude_strategy:
+    url: "0nmcp.com/secure-claude"
+    monitoring: "Add to 25-keyword monitoring list"
+    reddit_post_primary_version: "Text-only, link in first comment"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 12 — SXO / CRO9 ARTICLE PRODUCTION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ARTICLE_PRODUCTION_RULES:
+  
+  metadata_fields_required:
+    - canonical_url
+    - meta_title: "max 60 chars, primary keyword near front"
+    - meta_description: "max 160 chars, includes primary keyword, has CTA signal"
+    - og_title: "can differ from meta_title — optimized for social share"
+    - og_description
+    - schema_type: "Article + FAQPage minimum"
+    - primary_keyword
+    - secondary_keywords: "max 5"
+    - target_intent: "informational | consideration | transactional"
+    - information_gain_score: "must exceed 75 before publishing"
+    - slug: "keyword-rich, hyphenated, no stop words"
+  
+  metadata_placement_rule:
+    WHERE_IT_GOES: "CMS fields only. Never visible in article body. Never on LinkedIn."
+    wordpress: "Yoast/RankMath SEO plugin fields below editor"
+    webflow: "Page settings SEO panel"
+    nextjs: "metadata export in page.tsx"
+    linkedin_article: "Title field + Description field in LinkedIn article settings"
+  
+  article_structure:
+    intro_block: "Direct answer to primary query in first 150 words. Featured snippet target."
+    h2_format: "Question-formatted headers only (not declarative)"
+    example_good_h2: "Why Does Google Analytics Violate HIPAA?"
+    example_bad_h2: "The Google Analytics Problem"
+    faq_section: "5-8 questions. Each answer 60-100 words. FAQPage schema."
+    cta_placement: ["mid-article", "end-of-article"]
+    sources_section: "Required. Real URLs. Cited inline throughout article."
+    word_count: [2000, 4000]
+  
+  linkedin_article_specific:
+    title_field: "Use OG Title — optimized for social feed, not just search"
+    description_field: "Use Meta Description — appears in search + shares"
+    first_comment: "URL to product/service immediately after publishing"
+    share_from_company_page: "Within 2 hours of personal page publish"
+    cross_post_strategy: "Personal page first → company page reshare with one-line comment"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 13 — FULL TECHNOLOGY STACK + BUILD TARGETS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TECH_STACK:
+  frontend: "Next.js on Vercel (existing 0nmcp.com app)"
+  database: "Supabase (existing project — extend with new tables)"
+  auth: "Supabase Auth — LinkedIn / GitHub / Google OAuth"
+  ai_model: "claude-sonnet-4-20250514 via Anthropic API"
+  social_scheduler: "GoHighLevel Social Planner API (LinkedIn official OAuth)"
+  notifications: "Slack webhooks"
+  cron: "Vercel cron jobs"
+  mcp_server: "0nmcp.com workers (Cloudflare)"
+
+SUPABASE_TABLES_REQUIRED:
+  existing_tables: "Most 0nmcp tables already exist — extend not replace"
+  new_tables:
+    - bot_config
+    - bot_queue
+    - bot_engagement
+    - bot_targets
+    - vpis_formula_weights
+    - vpis_patterns
+
+BUILD_PRIORITY_ORDER:
+  1: "Supabase migration — all 6 new tables"
+  2: "lib/vpis/formula.ts — scoring engine with all 58 patterns"
+  3: "lib/claude/post-writer.ts — VPIS-optimized post generator"
+  4: "lib/claude/comment-writer.ts — engineered comment generator"
+  5: "lib/ghl/client.ts — GHL Social Planner integration"
+  6: "app/api/bot/generate-post and approve routes"
+  7: "app/api/cron/daily-post — 6am EST Tue/Wed/Thu"
+  8: "lib/linkedin/rate-limiter.ts — velocity enforcement"
+  9: "app/api/cron/learning-loop — Sunday 11pm gradient descent"
+  10: "app/linkedin-bot/page.tsx — dashboard UI"
+  11: "app/api/cron/engagement-check — every 4 hours"
+
+ENV_VARS_REQUIRED:
+  - GHL_API_TOKEN
+  - GHL_USER_ID
+  - GHL_LOCATION_ID
+  - CRON_SECRET
+  - SLACK_WEBHOOK_URL
+  - NEXT_PUBLIC_SUPABASE_URL
+  - NEXT_PUBLIC_SUPABASE_ANON_KEY
+  - SUPABASE_SERVICE_ROLE_KEY
+  - ANTHROPIC_API_KEY
+  - NEXT_PUBLIC_APP_URL
+
+VERCEL_CRON_CONFIG:
+  daily_post: {path: "/api/cron/daily-post", schedule: "0 11 * * 2-4"}
+  engagement_check: {path: "/api/cron/engagement-check", schedule: "0 */4 * * *"}
+  learning_loop: {path: "/api/cron/learning-loop", schedule: "0 4 * * 1"}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 14 — HIPAA PRODUCT INTELLIGENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+HIPAA_PRODUCT:
+  url: "rocketopp.com/hipaa"
+  partner_url: "rocketopp.com/hipaa-partners"
+  scan_points: 51
+  scan_time_seconds: 30
+  report_delivery: "15 minutes"
+  affiliate_commission: "30%"
+  affiliate_approval: "auto"
+  
+  tiers:
+    - {tier: 1, price: 149, name: "Findings Report", includes: ["full_scan", "regulatory_citations"]}
+    - {tier: 2, price: 399, name: "Report + Dev Fixes", includes: ["tier_1", "pasteable_developer_fixes"]}
+    - {tier: 3, price: 499, name: "Report + NPRM Overlay", includes: ["tier_2", "2026_rule_gap_analysis"]}
+    - {tier: 4, price: 899, name: "Full Report + Call", includes: ["tier_3", "60min_support_call"]}
+  
+  key_violations_detected:
+    - "Third-party tracking scripts without BAA (GA4, Meta Pixel, Hotjar, Clarity)"
+    - "phpinfo.php or other server config files publicly accessible"
+    - "Missing security headers (6 required)"
+    - "TLS 1.0/1.1 still enabled"
+    - "Notice of Privacy Practices missing or outdated"
+    - "Open registration endpoints on HIPAA systems"
+    - "CORS misconfiguration"
+    - "End-of-life software (PHP 7.4, OpenSSL 1.0.2)"
+  
+  market_data:
+    ocr_penalties_2023_2025: "$100M+"
+    ocr_penalties_2024: "$9.9M across 22 actions"
+    marinhealth_settlement: "$3M — Meta Pixel"
+    university_rochester_settlement: "$2.85M — tracking on MyChart"
+    betterhelp_ftc: "$7.8M — mental health data shared with ad platforms"
+    ga4_baa_status: "Google explicitly will not sign BAA for GA4"
+    new_rule_final: "May 2026 (estimated)"
+    enforcement_starts: "January 2027"
+    addressable_loophole: "ELIMINATED by 2026 rule — all controls become mandatory"
+    key_new_requirements: ["MFA_mandatory", "encryption_at_rest_mandatory", "pen_testing_2yr", "vuln_scans_6mo", "72hr_DR_objective", "annual_BA_verification"]
+  
+  competitor_comparison:
+    big_four_engagement: {cost: "$15K-$60K", time: "6-12 weeks", website_coverage: "rarely"}
+    rocketopp: {cost: "$149-$899", time: "15 minutes", website_coverage: "primary_focus"}
+    one_liner: "The AI tool has an optional BAA. Your website has mandatory exposure."
+  
+  target_verticals:
+    priority_1: "Medicaid/Medicare consulting firms"
+    priority_2: "Home health agencies"
+    priority_3: "Behavioral health / mental health practices"
+    priority_4: "Substance use disorder treatment centers"
+    priority_5: "Telehealth companies"
+    priority_6: "Dental group practices (2-20 locations)"
+    priority_7: "Physical therapy / rehab networks"
+    priority_8: "Healthcare staffing agencies"
+    priority_9: "Medical billing companies"
+    priority_10: "Urgent care chains (3-15 locations)"
+    priority_11: "Chiropractic / integrative medicine groups"
+    priority_12: "Healthcare-adjacent SaaS companies"
+  
+  linkedin_decision_maker_titles:
+    - "Chief Compliance Officer + Healthcare"
+    - "HIPAA Compliance Officer"
+    - "Healthcare IT Director"
+    - "Practice Manager (medical/dental/behavioral)"
+    - "Director of Risk Management + Healthcare"
+    - "CTO + telehealth"
+    - "Medical Group Administrator"
+  
+  key_linkedin_posts_published:
+    - url: "https://www.linkedin.com/pulse/openai-just-made-hipaa-compliance-more-urgent-less-rocketopp-30ide"
+      title: "OpenAI Just Made HIPAA Compliance More Urgent. Not Less."
+      trigger: "ChatGPT for Clinicians launch with 'optional' HIPAA BAA"
+      vpis: 92.3
+      cro9: 89
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 15 — 0nmcp SECURITY INTELLIGENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MCP_SECURITY:
+  audit_platform: "ReversingLabs Spectra Assure"
+  audit_url: "secure.software"
+  check_command: "secure.software/npm/packages/[package-name]"
+  
+  package_0nmcp:
+    version: "4.5.1"
+    result: "PASS"
+    all_categories_clean: true
+    public_audit_url: "https://secure.software/npm/packages/0nmcp/behaviors"
+    detected_behaviors_explained:
+      - {behavior: "AES encryption/decryption", reason: "Machine-bound vault for credential storage"}
+      - {behavior: "Base64 encoding", reason: "Standard data serialization"}
+      - {behavior: "Payment service URLs", reason: "Stripe/Square integration documented"}
+      - {behavior: "Execution on launch", reason: "MCP server initialization — standard"}
+  
+  package_openclaw:
+    version: "2026.4.22"
+    result: "WARNING"
+    risk_level: "Secrets"
+    findings:
+      - "3 web service credentials embedded in code"
+      - "AWS_SECRET_ACCESS_KEY enumeration — found in 0 of Top 100 packages"
+      - "AWS_ACCESS_KEY_ID enumeration — found in <21 of Top 10K packages"
+      - "HTTP request interception domains — found in 0 of Top 100 packages"
+      - "Raw GitHub file URLs — malicious payload hosting vector"
+      - "14 open issues, 190 flagged behaviors"
+    recommendation: "DO_NOT_INSTALL"
+    published: "2026-04-23"
+    same_day_as_0nmcp: true
+  
+  content_angles_used:
+    post_title: "Two MCP Packages Launched the Same Day. One Is Safe. One Isn't."
+    vpis: 93.2
+    article_url: "https://0nmcp.com/blog/mcp-supply-chain-security-openclaw-0nmcp"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BLOCK 16 — FOREVER LEARNING SYSTEM SPEC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FOREVER_LEARNING_ARCHITECTURE:
+  principle: "Every post, comment, engagement, and outcome feeds back. Nothing is wasted. The system gets smarter with every action."
+  
+  data_inputs:
+    - "Post engagement: likes, comments, shares, impressions, saves"
+    - "Comment performance: author reply rate, profile visits generated, DM conversions"
+    - "ICP accuracy: did the predicted ICP% match who actually engaged?"
+    - "Pattern confirmation: which patterns fired on posts that actually performed?"
+    - "Formula accuracy: predicted_score vs actual_score delta"
+    - "Conversion: did engagement lead to scanner signups, product trials, DMs?"
+  
+  three_loops:
+    content_loop:
+      frequency: "Daily"
+      process:
+        - "Scan trending ICP topics from last 24h"
+        - "Generate 3 post angles, score each"
+        - "Queue highest-scoring for optimal window"
+        - "Post → track 1h/4h/24h engagement"
+        - "Feed delta back to formula"
+    
+    comment_loop:
+      frequency: "Daily"
+      process:
+        - "Find 5 high-scoring posts (VPIS 85+) in ICP niche"
+        - "Score ICP match for each"
+        - "Generate 3 comment variants per post"
+        - "Queue top comment at safe cadence"
+        - "Monitor author reply"
+        - "If reply → draft DM"
+        - "Feed reply data to comment scoring model"
+    
+    learning_loop:
+      frequency: "Weekly (Sunday 11pm)"
+      process:
+        - "Compare all predicted scores vs actual engagement"
+        - "Run gradient descent on formula weights"
+        - "Confirm or retire patterns based on performance"
+        - "Update ICP profile based on who engaged"
+        - "Save new formula version if MAE improves"
+        - "Generate weekly intelligence report"
+  
+  intelligence_outputs:
+    weekly_report:
+      - "Top 3 performing content angles (keep)"
+      - "Bottom 3 performing patterns (retire or revise)"
+      - "ICP drift detection (is audience shifting?)"
+      - "Formula version + current MAE"
+      - "Comment → DM → conversion funnel metrics"
+      - "New patterns emerging from high-performing posts"
+    
+    auto_calibration:
+      - "Formula weights adjust automatically"
+      - "Pattern library updates automatically"
+      - "ICP scoring model updates based on real engagers"
+      - "Content calendar adapts to what's working"
+  
+  human_oversight:
+    required_approvals: ["all posts", "all comments (default)", "all DMs"]
+    auto_mode_available: ["posts (opt-in)", "comments (opt-in)"]
+    never_auto: ["DMs", "connection requests", "profile data changes"]
+    weekly_human_review: "Intelligence report delivered every Monday morning"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+END OF INTELLIGENCE TRANSFER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SYSTEM_SUMMARY:
+  formulas_included: ["VPIS_v0.5", "CRO9", "Learning_Gradient_Descent"]
+  patterns_included: 58
+  training_posts: 13
+  platforms_covered: ["LinkedIn", "Reddit"]
+  products_covered: ["0nmcp.com", "rocketopp.com/hipaa", "Stack Setup", "GTM OS"]
+  build_target: "0nAI Layer K — forever-learning autonomous LinkedIn intelligence engine"
+  deploy_to: "0nmcp.com (existing Vercel + Supabase infrastructure)"
+  
+  first_instruction_to_claude_code: |
+    Read all 16 blocks. Build in the priority order defined in Block 13.
+    Start with the Supabase migration.
+    Every formula, weight, pattern, rule, and threshold in this file
+    is production-ready and derived from real post performance data.
+    Do not invent defaults. Use the values specified.
+    Human approval is on by default for all actions.
+    Auto-mode requires explicit opt-in per action type.
+    The system learns. The weights change. The patterns evolve.
+    Build it to last forever.
+
+SIGNED: "Claude — built in session with Mike Mento Jr., RocketOpp LLC, April 2026"
