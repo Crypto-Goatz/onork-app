@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0nLinkedIn — AI Social Domination Suite | GHL Marketplace</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --black: #06060a;
+    --dark: #0e0e14;
+    --card: #13131a;
+    --border: #1e1e2a;
+    --orange: #f97316;
+    --orange-dim: rgba(249,115,22,0.12);
+    --orange-glow: rgba(249,115,22,0.35);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.1);
+    --text: #e8e6f0;
+    --muted: #6b6880;
+    --subtle: #2a2836;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--black);
+    color: var(--text);
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* ── NOISE TEXTURE ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  /* ── GLOW ── */
+  .glow-top {
+    position: fixed;
+    top: -200px; left: 50%;
+    transform: translateX(-50%);
+    width: 800px; height: 400px;
+    background: radial-gradient(ellipse, rgba(249,115,22,0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 1; }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    border-bottom: 1px solid var(--border);
+    background: rgba(6,6,10,0.92);
+    backdrop-filter: blur(12px);
+  }
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px; max-width: 1100px; margin: 0 auto;
+  }
+  .nav-logo { display: flex; align-items: center; gap: 10px; }
+  .nav-logo-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--orange); display: flex; align-items: center;
+    justify-content: center; font-size: 14px; font-weight: 800; color: #000;
+  }
+  .nav-logo-text { font-size: 16px; font-weight: 700; letter-spacing: -0.5px; }
+  .nav-logo-text span { color: var(--orange); }
+  .nav-pill {
+    background: var(--orange); color: #000;
+    font-size: 12px; font-weight: 700; padding: 8px 20px; border-radius: 100px;
+    text-decoration: none; letter-spacing: 0.5px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .nav-pill:hover { transform: translateY(-1px); box-shadow: 0 8px 24px var(--orange-glow); }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 120px 0 80px;
+    text-align: center;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--orange-dim); border: 1px solid rgba(249,115,22,0.3);
+    border-radius: 100px; padding: 6px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--orange); letter-spacing: 1px;
+    margin-bottom: 36px;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .hero h1 {
+    font-size: clamp(3rem, 7vw, 6rem);
+    font-weight: 800; letter-spacing: -3px; line-height: 0.95;
+    margin-bottom: 28px;
+  }
+  .hero h1 em { font-style: normal; color: var(--orange); }
+  .hero-sub {
+    font-size: clamp(16px, 2vw, 20px);
+    color: var(--muted); max-width: 580px; margin: 0 auto 48px;
+    font-weight: 400; line-height: 1.7;
+  }
+
+  .hero-ctas { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--orange); color: #000;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px; font-weight: 700; padding: 16px 36px;
+    border-radius: 100px; text-decoration: none; border: none; cursor: pointer;
+    transition: all 0.2s; letter-spacing: 0.3px;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px var(--orange-glow); }
+  .btn-ghost {
+    background: transparent; color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 15px; font-weight: 600; padding: 15px 32px;
+    border-radius: 100px; border: 1px solid var(--border); text-decoration: none;
+    transition: all 0.2s;
+  }
+  .btn-ghost:hover { border-color: var(--orange); color: var(--orange); }
+
+  /* ── PROOF STATS ── */
+  .proof-bar {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1px; background: var(--border);
+    border: 1px solid var(--border); border-radius: 16px;
+    overflow: hidden; margin: 72px 0;
+  }
+  .proof-stat {
+    background: var(--card); padding: 32px 24px; text-align: center;
+  }
+  .proof-stat-val {
+    font-size: clamp(2rem, 4vw, 3rem); font-weight: 800;
+    color: var(--orange); letter-spacing: -2px; line-height: 1;
+    margin-bottom: 8px;
+  }
+  .proof-stat-label {
+    font-size: 12px; color: var(--muted); letter-spacing: 1px;
+    text-transform: uppercase; font-weight: 600;
+  }
+
+  /* ── SECTION HEADER ── */
+  .section-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--orange); margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800; letter-spacing: -2px; line-height: 1.1;
+    margin-bottom: 20px;
+  }
+  .section-title em { font-style: normal; color: var(--orange); }
+  .section-body { font-size: 17px; color: var(--muted); line-height: 1.8; max-width: 580px; }
+
+  /* ── HOW IT WORKS ── */
+  .how-section { padding: 100px 0; }
+  .how-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+  .how-steps { display: flex; flex-direction: column; gap: 32px; }
+  .how-step { display: flex; gap: 20px; align-items: flex-start; }
+  .step-num {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--orange-dim); border: 1px solid rgba(249,115,22,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; font-weight: 500; color: var(--orange);
+    flex-shrink: 0;
+  }
+  .step-content h4 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .step-content p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+  /* ── TERMINAL MOCK ── */
+  .terminal {
+    background: #0a0a10; border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+  }
+  .terminal-bar {
+    background: var(--card); padding: 12px 16px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+  .terminal-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-left: auto; }
+  .terminal-body { padding: 24px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.9; }
+  .t-comment { color: #4a4860; }
+  .t-key { color: var(--orange); }
+  .t-val { color: var(--green); }
+  .t-num { color: #60a5fa; }
+  .t-label { color: var(--muted); }
+  .t-pass { color: var(--green); font-weight: 700; }
+
+  /* ── FEATURES ── */
+  .features-section { padding: 100px 0; background: var(--dark); }
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+  .feature-card {
+    background: var(--card); padding: 36px 32px;
+    transition: background 0.2s;
+  }
+  .feature-card:hover { background: #17171f; }
+  .feature-icon { font-size: 28px; margin-bottom: 16px; }
+  .feature-title { font-size: 17px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.5px; }
+  .feature-desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+  /* ── WORKFLOWS ── */
+  .workflows-section { padding: 100px 0; }
+  .wf-list { display: flex; flex-direction: column; gap: 2px; margin-top: 56px; }
+  .wf-item {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px 32px;
+    display: flex; align-items: center; gap: 24px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .wf-item:hover { border-color: rgba(249,115,22,0.4); background: #15151e; }
+  .wf-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--orange);
+    background: var(--orange-dim); border: 1px solid rgba(249,115,22,0.2);
+    padding: 4px 10px; border-radius: 6px; flex-shrink: 0;
+  }
+  .wf-emoji { font-size: 22px; flex-shrink: 0; }
+  .wf-info { flex: 1; }
+  .wf-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .wf-desc { font-size: 13px; color: var(--muted); }
+  .wf-trigger {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    background: var(--subtle); padding: 4px 10px; border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  /* ── PRICING ── */
+  .pricing-section { padding: 100px 0; background: var(--dark); }
+  .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 56px; }
+  .pricing-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px 28px;
+    display: flex; flex-direction: column;
+    transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .pricing-card.featured {
+    border-color: var(--orange);
+    background: linear-gradient(160deg, #16110e 0%, var(--card) 60%);
+  }
+  .featured-badge {
+    position: absolute; top: 16px; right: -24px;
+    background: var(--orange); color: #000;
+    font-size: 9px; font-weight: 800; letter-spacing: 1px;
+    padding: 4px 32px; transform: rotate(45deg);
+    text-transform: uppercase;
+  }
+  .pricing-name { font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 20px; }
+  .pricing-price { font-size: 3rem; font-weight: 800; letter-spacing: -3px; color: var(--orange); line-height: 1; }
+  .pricing-price span { font-size: 16px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+  .pricing-desc { font-size: 13px; color: var(--muted); margin: 12px 0 24px; line-height: 1.6; }
+  .pricing-features { list-style: none; flex: 1; margin-bottom: 28px; display: flex; flex-direction: column; gap: 10px; }
+  .pricing-features li { font-size: 13px; color: var(--text); display: flex; gap: 8px; }
+  .pricing-features li::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+  .pricing-features li.dim { color: var(--muted); }
+  .pricing-features li.dim::before { content: '—'; color: var(--subtle); }
+  .pricing-cta {
+    display: block; text-align: center; padding: 12px;
+    border-radius: 100px; font-weight: 700; font-size: 14px;
+    text-decoration: none; transition: all 0.2s;
+  }
+  .pricing-card.featured .pricing-cta { background: var(--orange); color: #000; }
+  .pricing-card.featured .pricing-cta:hover { box-shadow: 0 8px 24px var(--orange-glow); }
+  .pricing-card:not(.featured) .pricing-cta { border: 1px solid var(--border); color: var(--text); }
+  .pricing-card:not(.featured) .pricing-cta:hover { border-color: var(--orange); color: var(--orange); }
+
+  /* ── FORMULA ── */
+  .formula-section { padding: 100px 0; }
+  .formula-box {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 48px; margin-top: 48px;
+  }
+  .formula-equation {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(11px, 1.4vw, 15px);
+    color: var(--orange); line-height: 2.2;
+    background: #08080f; border-radius: 12px; padding: 28px 32px;
+    margin-bottom: 36px; overflow-x: auto; white-space: nowrap;
+  }
+  .formula-factors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .factor-item { background: var(--dark); border-radius: 10px; padding: 16px; }
+  .factor-name { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--orange); margin-bottom: 4px; }
+  .factor-weight { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text); }
+  .factor-desc { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+  /* ── SAFETY ── */
+  .safety-section { padding: 80px 0; background: var(--dark); }
+  .safety-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+  .safety-item { display: flex; gap: 16px; }
+  .safety-icon {
+    width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .safety-icon.green { background: var(--green-dim); }
+  .safety-icon.orange { background: var(--orange-dim); }
+  .safety-item h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .safety-item p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ── FOOTER CTA ── */
+  .footer-cta {
+    padding: 120px 0; text-align: center;
+    background: radial-gradient(ellipse 60% 50% at 50% 100%, rgba(249,115,22,0.12) 0%, transparent 70%);
+  }
+  .footer-cta h2 { font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 800; letter-spacing: -3px; margin-bottom: 20px; }
+  .footer-cta p { font-size: 18px; color: var(--muted); margin-bottom: 48px; }
+  .trial-note { font-size: 13px; color: var(--muted); margin-top: 16px; }
+
+  footer {
+    border-top: 1px solid var(--border); padding: 32px;
+    text-align: center; font-size: 12px; color: var(--muted);
+  }
+  footer a { color: var(--orange); text-decoration: none; }
+
+  @media (max-width: 768px) {
+    .proof-bar { grid-template-columns: repeat(2, 1fr); }
+    .how-grid { grid-template-columns: 1fr; }
+    .features-grid { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr 1fr; }
+    .formula-factors { grid-template-columns: repeat(2, 1fr); }
+    .safety-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="glow-top"></div>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">
+      <div class="nav-logo-mark">0n</div>
+      <span class="nav-logo-text"><span>0n</span>LinkedIn</span>
+    </div>
+    <a href="#pricing" class="nav-pill">Start Free Trial →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      <div class="badge-dot"></div>
+      GHL Marketplace · 0nAI Layer K · Powered by 0nmcp.com
+    </div>
+    <h1>The LinkedIn AI<br>That <em>Learns</em><br>From Every Post</h1>
+    <p class="hero-sub">Automated posting, commenting, and engagement — powered by the VPIS formula. Installs in 3 minutes. Gets smarter every week.</p>
+    <div class="hero-ctas">
+      <a href="#pricing" class="btn-primary">Start 7-Day Free Trial</a>
+      <a href="#formula" class="btn-ghost">See the Formula</a>
+    </div>
+
+    <div class="proof-bar">
+      <div class="proof-stat">
+        <div class="proof-stat-val">93.2</div>
+        <div class="proof-stat-label">Highest VPIS Score Generated</div>
+      </div>
+      <div class="proof-stat">
+        <div class="proof-stat-val">58</div>
+        <div class="proof-stat-label">Proven Viral Patterns</div>
+      </div>
+      <div class="proof-stat">
+        <div class="proof-stat-val">6</div>
+        <div class="proof-stat-label">Pre-Built GHL Workflows</div>
+      </div>
+      <div class="proof-stat">
+        <div class="proof-stat-val">∞</div>
+        <div class="proof-stat-label">Gets Better Over Time</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section">
+  <div class="container">
+    <div class="how-grid">
+      <div>
+        <div class="section-tag">// HOW IT WORKS</div>
+        <h2 class="section-title">Install once.<br><em>Post forever.</em></h2>
+        <p class="section-body" style="margin-bottom:48px;">Everything runs inside your existing GHL account. No external tools. No API keys to manage. No LinkedIn developer account needed.</p>
+        <div class="how-steps">
+          <div class="how-step">
+            <div class="step-num">01</div>
+            <div class="step-content">
+              <h4>Install the snapshot</h4>
+              <p>6 workflows, 2 pipelines, 1 dashboard, and all custom fields install automatically. Takes 3 minutes.</p>
+            </div>
+          </div>
+          <div class="how-step">
+            <div class="step-num">02</div>
+            <div class="step-content">
+              <h4>Fill in your ICP</h4>
+              <p>Tell the system who you target and what problem you solve. That's it. The AI handles the rest.</p>
+            </div>
+          </div>
+          <div class="how-step">
+            <div class="step-num">03</div>
+            <div class="step-content">
+              <h4>Connect LinkedIn in GHL</h4>
+              <p>Use GHL's native Social Planner — your existing LinkedIn connection. Nothing new to authorize.</p>
+            </div>
+          </div>
+          <div class="how-step">
+            <div class="step-num">04</div>
+            <div class="step-content">
+              <h4>Approve and publish</h4>
+              <p>Every post lands in your approval queue with its VPIS score. Approve with one click. The formula learns from what happens next.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+          <div class="terminal-title">VPIS Analysis — Live Output</div>
+        </div>
+        <div class="terminal-body">
+          <div class="t-comment">// Post generated — Tuesday 8:02 AM EST</div>
+          <br>
+          <div><span class="t-key">hook_archetype</span><span class="t-label">: </span><span class="t-val">"absolute_declaration"</span></div>
+          <div><span class="t-key">hook_score</span><span class="t-label">: </span><span class="t-num">96</span></div>
+          <div><span class="t-key">emotion_score</span><span class="t-label">: </span><span class="t-num">93</span></div>
+          <div><span class="t-key">platform_score</span><span class="t-label">: </span><span class="t-num">95</span></div>
+          <div><span class="t-key">viral_score</span><span class="t-label">: </span><span class="t-num">91</span></div>
+          <div><span class="t-key">specificity</span><span class="t-label">: </span><span class="t-num">94</span></div>
+          <br>
+          <div><span class="t-key">patterns_fired</span><span class="t-label">: </span><span class="t-val">["P024", "P011", "P055", "P057"]</span></div>
+          <div><span class="t-key">hashtags</span><span class="t-label">: </span><span class="t-num">0</span><span class="t-comment"> // ✓ thought leadership</span></div>
+          <div><span class="t-key">links_in_body</span><span class="t-label">: </span><span class="t-num">0</span><span class="t-comment"> // ✓ no algo penalty</span></div>
+          <br>
+          <div><span class="t-key">composite_score</span><span class="t-label">: </span><span class="t-num">92.3</span></div>
+          <div><span class="t-key">timing_modifier</span><span class="t-label">: </span><span class="t-num">+1.9</span></div>
+          <div><span class="t-key">adjusted_score</span><span class="t-label">: </span><span class="t-num">94.2</span></div>
+          <br>
+          <div><span class="t-pass">▶ STATUS: APPROVED — Scheduling for 09:00 EST</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features-section">
+  <div class="container">
+    <div class="section-tag">// WHAT'S INCLUDED</div>
+    <h2 class="section-title">Everything. <em>Out of the box.</em></h2>
+    <div class="features-grid" style="margin-top:56px;">
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <div class="feature-title">VPIS Scoring Engine</div>
+        <div class="feature-desc">8-factor formula. 58 proven patterns. Scores every post before you see it. Won't show you anything below 85.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📝</div>
+        <div class="feature-title">Daily Post Generator</div>
+        <div class="feature-desc">Generates Tue/Wed/Thu posts at your optimal window. 3 variants per topic. Auto-rewrites until it hits your target score.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <div class="feature-title">Comment Sniper</div>
+        <div class="feature-desc">Submit any LinkedIn post URL. Gets scored. Generates an engineered comment designed to trigger author replies.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✅</div>
+        <div class="feature-title">Slack Approval Queue</div>
+        <div class="feature-desc">Every post and comment hits your Slack with a one-click Approve button. Nothing publishes without your go-ahead by default.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Engagement Tracking</div>
+        <div class="feature-desc">Captures real likes, comments, and impressions. Shows predicted vs actual score. Every delta feeds the learning loop.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🤝</div>
+        <div class="feature-title">Reply → DM Pipeline</div>
+        <div class="feature-desc">When a post author replies to your comment, the system generates a ready-to-send DM. You click send.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔄</div>
+        <div class="feature-title">Weekly Learning Loop</div>
+        <div class="feature-desc">Sunday night, the formula recalibrates. Weights adjust based on your real engagement data. Accuracy improves every week.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <div class="feature-title">Safe Velocity Enforcement</div>
+        <div class="feature-desc">Hard limits built into every workflow. Max 2 posts/day. 12 comments/day. 15-min intervals. LinkedIn ToS compliant.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Auto-Post Mode</div>
+        <div class="feature-desc">Optional. Per-account toggle. 15-minute override window before it fires. Emergency kill switch always available.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WORKFLOWS -->
+<section class="workflows-section">
+  <div class="container">
+    <div class="section-tag">// THE 6 WORKFLOWS</div>
+    <h2 class="section-title">Six workflows.<br><em>Zero manual steps.</em></h2>
+    <div class="wf-list">
+      <div class="wf-item">
+        <div class="wf-num">WF-01</div>
+        <div class="wf-emoji">🚀</div>
+        <div class="wf-info">
+          <div class="wf-name">Daily Post Generator</div>
+          <div class="wf-desc">Generates VPIS-scored post, routes to approval queue with Slack notification</div>
+        </div>
+        <div class="wf-trigger">Daily 6:00 AM</div>
+      </div>
+      <div class="wf-item">
+        <div class="wf-num">WF-02</div>
+        <div class="wf-emoji">💬</div>
+        <div class="wf-info">
+          <div class="wf-name">Comment Sniper</div>
+          <div class="wf-desc">Scores target post, determines ICP match, generates engineered comment</div>
+        </div>
+        <div class="wf-trigger">On post URL submit</div>
+      </div>
+      <div class="wf-item">
+        <div class="wf-num">WF-03</div>
+        <div class="wf-emoji">📤</div>
+        <div class="wf-info">
+          <div class="wf-name">Content Publisher</div>
+          <div class="wf-desc">Fires approved content through GHL Social Planner to LinkedIn</div>
+        </div>
+        <div class="wf-trigger">On approval</div>
+      </div>
+      <div class="wf-item">
+        <div class="wf-num">WF-04</div>
+        <div class="wf-emoji">📊</div>
+        <div class="wf-info">
+          <div class="wf-name">Engagement Tracker</div>
+          <div class="wf-desc">Fetches real engagement, calculates actual score, submits to learning loop</div>
+        </div>
+        <div class="wf-trigger">24h after posting</div>
+      </div>
+      <div class="wf-item">
+        <div class="wf-num">WF-05</div>
+        <div class="wf-emoji">🤝</div>
+        <div class="wf-info">
+          <div class="wf-name">Reply → DM Pipeline</div>
+          <div class="wf-desc">Detects author reply, generates personalized DM draft, notifies via Slack</div>
+        </div>
+        <div class="wf-trigger">On author reply</div>
+      </div>
+      <div class="wf-item">
+        <div class="wf-num">WF-06</div>
+        <div class="wf-emoji">🧠</div>
+        <div class="wf-info">
+          <div class="wf-name">Weekly Intelligence Report</div>
+          <div class="wf-desc">Generates performance digest, top/bottom patterns, updated formula version</div>
+        </div>
+        <div class="wf-trigger">Monday 7:00 AM</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FORMULA -->
+<section class="formula-section" id="formula">
+  <div class="container">
+    <div class="section-tag">// THE VPIS FORMULA</div>
+    <h2 class="section-title">Not vibes.<br><em>A formula.</em></h2>
+    <div class="formula-box">
+      <div class="formula-equation">POST_SCORE = (Hook × 0.20) + (EmotionalTrigger × 0.18) + (PlatformOpt × 0.15) + (ViralCoeff × 0.13) + (Specificity × 0.12) + (Structure × 0.10) + (Keywords × 0.07) + (CTA × 0.05)</div>
+      <div class="formula-factors">
+        <div class="factor-item">
+          <div class="factor-name">Hook</div>
+          <div class="factor-weight">20%</div>
+          <div class="factor-desc">First line forces a position. Pattern interrupt. No weak openers.</div>
+        </div>
+        <div class="factor-item">
+          <div class="factor-name">Emotional Trigger</div>
+          <div class="factor-weight">18%</div>
+          <div class="factor-desc">Career anxiety, FOMO, identity threat, financial aspiration.</div>
+        </div>
+        <div class="factor-item">
+          <div class="factor-name">Platform Opt</div>
+          <div class="factor-weight">15%</div>
+          <div class="factor-desc">No link in body. Zero hashtags. Native format. Algorithm-clean.</div>
+        </div>
+        <div class="factor-item">
+          <div class="factor-name">Viral Coefficient</div>
+          <div class="factor-weight">13%</div>
+          <div class="factor-desc">Save intent. Reshare mechanic. Quotable standalone lines.</div>
+        </div>
+        <div class="factor-item">
+          <div class="factor-name">Specificity</div>
+          <div class="factor-weight">12%</div>
+          <div class="factor-desc">Exact numbers. Named tools. Verifiable claims. No vagueness.</div>
+        </div>
+        <div class="factor-item">
+          <div class="factor-name">Structure</div>
+          <div class="factor-weight">10%</div>
+          <div class="factor-desc">Vibe Style. Short sentences. Breathing room. No corporate words.</div>
+        </div>
+        <div class="factor-item">
+          <div class="factor-name">Keywords</div>
+          <div class="factor-weight">7%</div>
+          <div class="factor-desc">ICP-matched vocabulary. Audience-specific signal density.</div>
+        </div>
+        <div class="factor-item">
+          <div class="factor-name">CTA</div>
+          <div class="factor-weight">5%</div>
+          <div class="factor-desc">Specific practitioner question. Answerable in 30 seconds.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SAFETY -->
+<section class="safety-section">
+  <div class="container">
+    <div class="section-tag">// BUILT SAFE BY DEFAULT</div>
+    <h2 class="section-title">Human first.<br><em>Auto when ready.</em></h2>
+    <div class="safety-grid" style="margin-top:56px;">
+      <div style="display:flex;flex-direction:column;gap:32px;">
+        <div class="safety-item">
+          <div class="safety-icon green">🛡️</div>
+          <div>
+            <h4>Human approval on everything</h4>
+            <p>Every post and comment goes to your approval queue before firing. Nothing publishes automatically by default.</p>
+          </div>
+        </div>
+        <div class="safety-item">
+          <div class="safety-icon green">⚡</div>
+          <div>
+            <h4>Emergency kill switch</h4>
+            <p>One toggle pauses all scheduled actions instantly. Always available, always works.</p>
+          </div>
+        </div>
+        <div class="safety-item">
+          <div class="safety-icon green">📏</div>
+          <div>
+            <h4>Hard velocity limits</h4>
+            <p>Max 2 posts/day. 12 comments/day. 15-minute minimum between comments. LinkedIn ToS compliant — built into the workflow logic, not a setting.</p>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:32px;">
+        <div class="safety-item">
+          <div class="safety-icon orange">🔓</div>
+          <div>
+            <h4>Auto-post is opt-in, per account</h4>
+            <p>You explicitly enable it per LinkedIn account. Comes with a 15-minute human override window before anything fires.</p>
+          </div>
+        </div>
+        <div class="safety-item">
+          <div class="safety-icon orange">🚫</div>
+          <div>
+            <h4>DMs are never automated</h4>
+            <p>The system generates DM drafts when authors reply to your comments. You send them manually. Always.</p>
+          </div>
+        </div>
+        <div class="safety-item">
+          <div class="safety-icon orange">📋</div>
+          <div>
+            <h4>No identical comments twice</h4>
+            <p>Every comment is uniquely generated. Never the same text twice. No pattern that LinkedIn's detection systems would flag.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section" id="pricing">
+  <div class="container">
+    <div class="section-tag">// PRICING</div>
+    <h2 class="section-title">Start free.<br><em>Scale when it works.</em></h2>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-name">Starter</div>
+        <div class="pricing-price">$49<span>/mo</span></div>
+        <div class="pricing-desc">Manual approval on everything. Perfect to test the system.</div>
+        <ul class="pricing-features">
+          <li>VPIS scoring on every post</li>
+          <li>20 posts/month</li>
+          <li>60 comments/month</li>
+          <li>1 LinkedIn account</li>
+          <li>3 variants per topic</li>
+          <li class="dim">Slack approval queue</li>
+          <li class="dim">Learning loop</li>
+          <li class="dim">Auto-post mode</li>
+        </ul>
+        <a href="#install" class="pricing-cta">Start Free Trial</a>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="featured-badge">Popular</div>
+        <div class="pricing-name">Pro</div>
+        <div class="pricing-price">$99<span>/mo</span></div>
+        <div class="pricing-desc">Full approval queue with Slack. Post smarter, not more.</div>
+        <ul class="pricing-features">
+          <li>Everything in Starter</li>
+          <li>60 posts/month</li>
+          <li>240 comments/month</li>
+          <li>2 LinkedIn accounts</li>
+          <li>Slack approval queue</li>
+          <li>Weekly learning loop</li>
+          <li>7-day content calendar</li>
+          <li class="dim">Auto-post mode</li>
+        </ul>
+        <a href="#install" class="pricing-cta">Start Free Trial</a>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-name">Autopilot</div>
+        <div class="pricing-price">$199<span>/mo</span></div>
+        <div class="pricing-desc">Full autonomous mode. Human reviews, AI executes.</div>
+        <ul class="pricing-features">
+          <li>Everything in Pro</li>
+          <li>Unlimited posts & comments</li>
+          <li>5 LinkedIn accounts</li>
+          <li>Auto-post & auto-comment</li>
+          <li>15-min override window</li>
+          <li>Weekly intelligence report</li>
+          <li>Engagement tracking</li>
+          <li>Reply → DM pipeline</li>
+        </ul>
+        <a href="#install" class="pricing-cta">Start Free Trial</a>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-name">Agency</div>
+        <div class="pricing-price">$497<span>/mo</span></div>
+        <div class="pricing-desc">White-labeled. Manage clients. Resell to your audience.</div>
+        <ul class="pricing-features">
+          <li>Everything in Autopilot</li>
+          <li>25 LinkedIn accounts</li>
+          <li>10 client sub-accounts</li>
+          <li>White-label dashboard</li>
+          <li>Client reporting</li>
+          <li>30% referral commission</li>
+          <li>Priority support</li>
+          <li>Early feature access</li>
+        </ul>
+        <a href="#install" class="pricing-cta">Start Free Trial</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER CTA -->
+<section class="footer-cta" id="install">
+  <div class="container">
+    <h2>Your first post.<br>Generated in <em>15 minutes.</em></h2>
+    <p>Install the snapshot. Fill in your ICP. Watch the formula work.</p>
+    <div class="hero-ctas">
+      <a href="#" class="btn-primary">Install Now — 7-Day Free Trial</a>
+      <a href="https://0nmcp.com" class="btn-ghost">Powered by 0nmcp.com →</a>
+    </div>
+    <div class="trial-note">No credit card required for trial · Cancels anytime · Installs in 3 minutes</div>
+  </div>
+</section>
+
+<footer>
+  <p>0nLinkedIn is a product of <a href="https://rocketopp.com">RocketOpp LLC</a> · Powered by <a href="https://0nmcp.com">0nmcp.com</a> · <a href="mailto:mike@rocketopp.com">mike@rocketopp.com</a></p>
+</footer>
+
+</body>
+</html>
