@@ -67,6 +67,8 @@ export function ContactClient() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [voiceClarify, setVoiceClarify] = useState('')
+  const [voiceActive, setVoiceActive] = useState(false)
+  const voiceContainerRef = useRef<HTMLDivElement>(null)
   const [showCalendar, setShowCalendar] = useState(false)
   const [showContactForm, setShowContactForm] = useState(false)
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
@@ -78,6 +80,28 @@ export function ContactClient() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, loading])
+
+  // Load voice widget when offcanvas opens
+  useEffect(() => {
+    if (!voiceActive || !voiceContainerRef.current) return
+    const container = voiceContainerRef.current
+
+    // Don't re-add if already loaded
+    if (container.querySelector('script')) return
+
+    const script = document.createElement('script')
+    script.src = 'https://widgets.leadconnectorhq.com/loader.js'
+    script.setAttribute('data-resources-url', 'https://widgets.leadconnectorhq.com/chat-widget/loader.js')
+    script.setAttribute('data-widget-id', 'd01e99a1-ed3f-4f24-b4d8-407009a165a7')
+    script.async = true
+    container.appendChild(script)
+
+    return () => {
+      // Cleanup on close
+      const scripts = container.querySelectorAll('script')
+      scripts.forEach(s => s.remove())
+    }
+  }, [voiceActive])
 
   const send = useCallback(async (text?: string) => {
     const msg = (text || input).trim()
@@ -170,101 +194,56 @@ export function ContactClient() {
               </div>
             )}
 
-            {/* ═══ VOICE MODE ═══ */}
+            {/* ═══ VOICE MODE — placeholder in panel, real widget in offcanvas ═══ */}
             {chatMode === 'voice' && (
-              <div className="flex-1 flex flex-col">
-                {/* Header */}
-                <div className="px-5 py-3 border-b border-white/[0.06] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Mic className="w-4 h-4 text-[#7ed957]" />
-                    <span className="text-[13px] font-semibold text-white">Voice Mode</span>
-                    <span className="w-[6px] h-[6px] rounded-full bg-[#7ed957] shadow-[0_0_6px_#7ed957]" />
-                  </div>
-                  <button onClick={() => setChatMode('select')} className="text-[11px] text-white/30 hover:text-white/60 bg-transparent border-none cursor-pointer transition-colors">
-                    Switch mode
+              <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 gap-4">
+                {/* Circular equalizer visualization */}
+                <div className="relative w-[180px] h-[180px] flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border-2 border-[#14b8a6]/30" />
+                  <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
+                    {Array.from({ length: 32 }).map((_, i) => {
+                      const angle = (i / 32) * Math.PI * 2 - Math.PI / 2
+                      const cx = 100 + Math.cos(angle) * 82
+                      const cy = 100 + Math.sin(angle) * 82
+                      const dx = Math.cos(angle)
+                      const dy = Math.sin(angle)
+                      return (
+                        <line key={i} x1={cx - dx * 4} y1={cy - dy * 4} x2={cx + dx * 4} y2={cy + dy * 4}
+                          stroke={voiceActive ? '#7ed957' : '#14b8a6'} strokeWidth="2.5" strokeLinecap="round" opacity="0.3"
+                          style={{ animation: voiceActive ? `eqPulse ${0.4 + Math.random() * 0.5}s ease-in-out infinite alternate` : 'none', animationDelay: `${i * 0.03}s` }} />
+                      )
+                    })}
+                  </svg>
+                  <button onClick={() => setVoiceActive(!voiceActive)}
+                    className={`w-[100px] h-[100px] rounded-full border flex items-center justify-center z-10 cursor-pointer transition-all ${voiceActive ? 'bg-[#7ed957]/10 border-[#7ed957]/30' : 'bg-[#161b22] border-white/[0.06] hover:border-[#14b8a6]/40'}`}>
+                    <Mic className={`w-8 h-8 transition-colors ${voiceActive ? 'text-[#7ed957]' : 'text-[#14b8a6]'}`} />
+                  </button>
+                  {voiceActive && <div className="absolute inset-0 rounded-full border-2 border-[#7ed957]/20 animate-ping" />}
+                </div>
+
+                <p className="text-[13px] text-white/40 text-center">{voiceActive ? 'Jaxx is listening...' : 'Tap the mic to start'}</p>
+                <p className="text-[10px] text-white/20 text-center">
+                  <span className="inline-block w-2 h-2 rounded-full bg-[#7ed957] mr-1" />Jaxx
+                  <span className="inline-block w-2 h-2 rounded-full bg-[#a78bfa] mx-1 ml-3" />You
+                </p>
+
+                {/* Clarify input */}
+                <div className="w-full mt-4 flex gap-2">
+                  <input type="text" value={voiceClarify} onChange={e => setVoiceClarify(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && voiceClarify.trim()) { send(voiceClarify); setVoiceClarify('') } }}
+                    placeholder="Type to clarify (if needed)..."
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white text-[12px] placeholder:text-white/20 outline-none focus:border-[#7ed957]/20" />
+                  <button onClick={() => { if (voiceClarify.trim()) { send(voiceClarify); setVoiceClarify('') } }}
+                    className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center cursor-pointer hover:bg-[#7ed957]/10 transition-all">
+                    <Send className="w-3.5 h-3.5 text-white/40" />
                   </button>
                 </div>
 
-                {/* Voice Agent */}
-                <div className="flex-1 flex flex-col items-center justify-center px-6 relative">
-                  {/* Circular equalizer ring */}
-                  <div className="relative w-[180px] h-[180px] flex items-center justify-center mb-6">
-                    {/* Outer ring */}
-                    <div className="absolute inset-0 rounded-full border-2 border-[#14b8a6]/30" />
-                    {/* Animated equalizer bars around the circle */}
-                    <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
-                      {Array.from({ length: 32 }).map((_, i) => {
-                        const angle = (i / 32) * Math.PI * 2 - Math.PI / 2
-                        const cx = 100 + Math.cos(angle) * 82
-                        const cy = 100 + Math.sin(angle) * 82
-                        const dx = Math.cos(angle)
-                        const dy = Math.sin(angle)
-                        return (
-                          <line
-                            key={i}
-                            x1={cx - dx * 4}
-                            y1={cy - dy * 4}
-                            x2={cx + dx * 4}
-                            y2={cy + dy * 4}
-                            stroke="#7ed957"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            opacity="0.3"
-                            style={{
-                              animation: `eqPulse ${0.5 + Math.random() * 0.5}s ease-in-out infinite alternate`,
-                              animationDelay: `${i * 0.03}s`,
-                            }}
-                          />
-                        )
-                      })}
-                    </svg>
-                    {/* Inner circle with mic */}
-                    <div className="w-[100px] h-[100px] rounded-full bg-[#161b22] border border-white/[0.06] flex items-center justify-center z-10">
-                      <Mic className="w-8 h-8 text-[#14b8a6]" />
-                    </div>
-                  </div>
+                <button onClick={() => setChatMode('select')} className="text-[11px] text-white/20 hover:text-white/50 bg-transparent border-none cursor-pointer mt-2">
+                  Switch to text
+                </button>
 
-                  <p className="text-[13px] text-white/40 text-center mb-2">Speak naturally — Jaxx is listening</p>
-                  <p className="text-[10px] text-white/20 text-center">
-                    <span className="inline-block w-2 h-2 rounded-full bg-[#7ed957] mr-1" />Jaxx speaking
-                    <span className="inline-block w-2 h-2 rounded-full bg-[#a78bfa] mx-1 ml-3" />You speaking
-                  </p>
-
-                  {/* HeyGen Voice Agent Widget */}
-                  <script
-                    src="https://widgets.leadconnectorhq.com/loader.js"
-                    data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
-                    data-widget-id="d01e99a1-ed3f-4f24-b4d8-407009a165a7"
-                    async
-                  />
-                </div>
-
-                {/* Clarification input */}
-                <div className="px-4 py-3 border-t border-white/[0.06]">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={voiceClarify}
-                      onChange={e => setVoiceClarify(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && voiceClarify.trim()) { send(voiceClarify); setVoiceClarify('') } }}
-                      placeholder="Type to clarify (if needed)..."
-                      className="flex-1 px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white text-[12px] placeholder:text-white/20 outline-none focus:border-[#7ed957]/20 transition-colors"
-                    />
-                    <button
-                      onClick={() => { if (voiceClarify.trim()) { send(voiceClarify); setVoiceClarify('') } }}
-                      className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center cursor-pointer hover:bg-[#7ed957]/10 hover:border-[#7ed957]/20 transition-all"
-                    >
-                      <Send className="w-3.5 h-3.5 text-white/40" />
-                    </button>
-                  </div>
-                </div>
-
-                <style>{`
-                  @keyframes eqPulse {
-                    0% { transform: scaleX(1) scaleY(0.4); opacity: 0.2; }
-                    100% { transform: scaleX(1) scaleY(1.8); opacity: 0.6; }
-                  }
-                `}</style>
+                <style>{`@keyframes eqPulse { 0% { transform: scaleX(1) scaleY(0.4); opacity: 0.2; } 100% { transform: scaleX(1) scaleY(1.8); opacity: 0.6; } }`}</style>
               </div>
             )}
 
@@ -426,6 +405,52 @@ export function ContactClient() {
           </div>
         </div>
       </section>
+
+      {/* Voice Offcanvas — slides in from right */}
+      {voiceActive && (
+        <div className="fixed inset-0 z-[10000]">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setVoiceActive(false)} />
+          <div className="absolute top-0 right-0 bottom-0 w-full max-w-md bg-[#0d1117] border-l border-white/[0.06] shadow-[−20px_0_60px_rgba(0,0,0,0.5)] animate-[slideInRight_0.3s_ease-out] flex flex-col">
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#7ed957]/10 border border-[#7ed957]/20 flex items-center justify-center">
+                  <Mic className="w-5 h-5 text-[#7ed957]" />
+                </div>
+                <div>
+                  <h3 className="text-[14px] font-bold text-white flex items-center gap-1.5">
+                    Jaxx Voice <span className="w-[6px] h-[6px] rounded-full bg-[#7ed957] shadow-[0_0_8px_#7ed957] animate-pulse" />
+                  </h3>
+                  <p className="text-[10px] text-white/30">AI Voice Assistant</p>
+                </div>
+              </div>
+              <button onClick={() => setVoiceActive(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all bg-transparent border-none cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Voice widget container */}
+            <div ref={voiceContainerRef} className="flex-1 relative overflow-hidden" />
+
+            {/* Clarify input */}
+            <div className="px-4 py-3 border-t border-white/[0.06] shrink-0">
+              <div className="flex gap-2">
+                <input type="text" value={voiceClarify} onChange={e => setVoiceClarify(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && voiceClarify.trim()) { send(voiceClarify); setVoiceClarify('') } }}
+                  placeholder="Type to clarify (if needed)..."
+                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white text-[12px] placeholder:text-white/20 outline-none focus:border-[#7ed957]/20" />
+                <button onClick={() => { if (voiceClarify.trim()) { send(voiceClarify); setVoiceClarify('') } }}
+                  className="w-10 h-10 rounded-xl bg-[#7ed957] flex items-center justify-center cursor-pointer border-none hover:bg-[#7ed957]/90 transition-colors">
+                  <Send className="w-4 h-4 text-[#020810]" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <style>{`
+            @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+          `}</style>
+        </div>
+      )}
 
       {/* Calendar Modal */}
       <Modal open={showCalendar} onClose={() => setShowCalendar(false)}>
