@@ -296,7 +296,12 @@ export function AIChatBox() {
       const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
       // Check if the AI wants to execute an action
-      if (data.intent?.detected && data.intent?.action) {
+      // ONLY show confirmation when AI is confident AND not still asking questions
+      const isAskingQuestions = (data.reply || '').includes('?')
+      const isHighConfidence = data.intent?.confidence >= 0.85
+      const isReadyToExecute = data.intent?.detected && data.intent?.action && isHighConfidence && !isAskingQuestions
+
+      if (isReadyToExecute) {
         const action: PendingAction = {
           type: data.intent.action,
           label: data.intent.action.replace(/_/g, ' '),
@@ -306,11 +311,12 @@ export function AIChatBox() {
 
         setMessages(prev => [...prev, { role: 'assistant', content: data.reply || 'I can help with that.', timestamp: ts, action, actionStatus: 'pending' }])
 
-        // Show confirmation if enabled
+        // Show confirmation modal
         if (chatPrefs.confirmActions) {
           setPendingAction(action)
         }
       } else {
+        // AI is still gathering info or just conversing — no modal
         setMessages(prev => [...prev, { role: 'assistant', content: data.reply || data.error || 'Something went wrong.', timestamp: ts }])
       }
     } catch {
