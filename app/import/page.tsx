@@ -8,7 +8,7 @@ import {
   Loader2, Copy, Check, Sparkles, Layers, Zap
 } from 'lucide-react'
 
-type ImportPhase = 'choose' | 'scan' | 'scan-results' | 'hsm' | 'instructions' | 'dropzone' | 'importing' | 'done' | 'error'
+type ImportPhase = 'choose' | 'scan' | 'scan-results' | 'connect-accounts' | 'hsm' | 'instructions' | 'dropzone' | 'importing' | 'done' | 'error'
 
 interface ScanData {
   business_name: string
@@ -79,26 +79,50 @@ export default function ImportPage() {
   const [hsmResult, setHsmResult] = useState<string | null>(null)
   const [userToken, setUserToken] = useState('')
 
-  async function handleAcceptScan() {
-    if (!scanData) return
-    // Move to HSM — the magic moment
-    setPhase('hsm')
+  // Connected accounts state
+  const [connectedProviders, setConnectedProviders] = useState<Set<string>>(new Set())
+  const [connectingProvider, setConnectingProvider] = useState<string | null>(null)
 
-    // Fetch their token for display
+  async function handleConnectProvider(provider: string) {
+    setConnectingProvider(provider)
     try {
-      const res = await fetch('/api/auth/token')
+      const res = await fetch(`/api/auth/connect/${provider}`)
       if (res.ok) {
-        const data = await res.json()
-        setUserToken(data.token || '')
+        const { url } = await res.json()
+        const popup = window.open(url, `connect-${provider}`, 'width=600,height=700,left=200,top=100')
+        const check = setInterval(() => {
+          if (popup?.closed) {
+            clearInterval(check)
+            setConnectedProviders(prev => new Set([...prev, provider]))
+            setConnectingProvider(null)
+          }
+        }, 1000)
+      } else {
+        setConnectingProvider(null)
       }
-    } catch {}
+    } catch {
+      setConnectingProvider(null)
+    }
+  }
 
-    // Pre-suggest a command based on their business
-    if (scanData.services.length > 0) {
+  function handleSkipToHSM() {
+    setPhase('hsm')
+    // Fetch token for HSM step
+    fetch('/api/auth/token').then(r => r.json()).then(data => {
+      if (data.token) setUserToken(data.token)
+    }).catch(() => {})
+
+    // Pre-suggest based on scan data
+    if (scanData?.services?.[0]) {
       setHsmCommand(`Write a blog post about ${scanData.services[0]} for ${scanData.target_audience || 'my audience'}`)
-    } else if (scanData.business_name) {
+    } else if (scanData?.business_name) {
       setHsmCommand(`Write a social media post introducing ${scanData.business_name}`)
     }
+  }
+
+  async function handleAcceptScan() {
+    if (!scanData) return
+    setPhase('connect-accounts')
   }
 
   async function executeHSM() {
@@ -491,6 +515,83 @@ export default function ImportPage() {
               >
                 Scan a different URL
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Connect Accounts ─── */}
+        {phase === 'connect-accounts' && (
+          <div className="animate-fade-in">
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-full bg-[#00d4ff]/15 flex items-center justify-center mx-auto mb-3">
+                <Layers className="w-6 h-6 text-[#00d4ff]" />
+              </div>
+              <h1 className="text-xl font-bold text-core-text mb-1">Connect your accounts</h1>
+              <p className="text-sm text-core-text-muted">
+                Link your platforms so 0nCore can pull analytics, post content, and manage your business.
+              </p>
+            </div>
+
+            <div className="space-y-2.5 mb-6">
+              {[
+                { id: 'google', name: 'Google', desc: 'Analytics, Gmail, Drive, Calendar, Sheets', color: '#4285F4', icon: 'G' },
+                { id: 'linkedin', name: 'LinkedIn', desc: 'Company page, posts, lead intelligence', color: '#0A66C2', icon: 'in' },
+                { id: 'slack', name: 'Slack', desc: 'AI alerts and actions in your channels', color: '#611F69', icon: 'S' },
+                { id: 'facebook', name: 'Facebook', desc: 'Pages, ads, audience insights', color: '#1877F2', icon: 'f' },
+              ].map(p => {
+                const isConnected = connectedProviders.has(p.id)
+                const isConnecting = connectingProvider === p.id
+                return (
+                  <div key={p.id} className="flex items-center gap-4 p-4 rounded-xl bg-core-card border border-core-border">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0"
+                      style={{ backgroundColor: `${p.color}20`, color: p.color }}
+                    >
+                      {p.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14px] font-semibold text-core-text">{p.name}</div>
+                      <div className="text-[11px] text-core-text-muted">{p.desc}</div>
+                    </div>
+                    {isConnected ? (
+                      <span className="flex items-center gap-1 text-[12px] text-core-green font-semibold">
+                        <CheckCircle className="w-4 h-4" /> Connected
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleConnectProvider(p.id)}
+                        disabled={isConnecting}
+                        className="px-4 py-1.5 rounded-lg bg-core-green text-core-bg text-[12px] font-bold cursor-pointer border-none hover:bg-core-green/90 transition-colors disabled:opacity-50"
+                      >
+                        {isConnecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Connect'}
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={handleSkipToHSM}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-core-green to-core-green/80 text-core-bg font-bold text-sm transition-opacity hover:opacity-90 flex items-center justify-center gap-2 cursor-pointer border-none"
+              >
+                {connectedProviders.size > 0 ? (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    Continue — {connectedProviders.size} connected
+                  </>
+                ) : (
+                  <>
+                    <ArrowRight className="w-4 h-4" />
+                    Skip for now
+                  </>
+                )}
+              </button>
+
+              <p className="text-center text-[11px] text-core-text-muted">
+                You can always connect more accounts in Settings later.
+              </p>
             </div>
           </div>
         )}
