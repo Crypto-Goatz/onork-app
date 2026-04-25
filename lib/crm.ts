@@ -44,18 +44,38 @@ function getAdmin() {
   )
 }
 
+/**
+ * Validate that a PIT token looks correct (starts with "pit-").
+ * If it's encrypted/double-wrapped by Vercel, it will be a long Base64 blob.
+ * Log a CRITICAL warning so we catch this immediately.
+ */
+function validatePit(name: string, value: string | undefined): string {
+  if (!value) return ''
+  if (value.startsWith('pit-')) return value
+  // BROKEN — this token is encrypted/double-wrapped by Vercel
+  console.error(`[CRM] CRITICAL: ${name} is NOT a valid PIT token (starts with "${value.substring(0, 20)}..."). It must be type:plain on Vercel, not encrypted. THIS BREAKS ALL CRM CALLS.`)
+  return '' // Return empty so we fall through to a working token
+}
+
 export function getPitForLocation(locationId: string): string {
   // Prefer 0nCore-named env vars; fall back to legacy names during transition.
-  const onCorePit = process.env.CRM_PIT_ONCORE || process.env.CRM_PIT_RAW
-  const pits: Record<string, string | undefined> = {
-    '6MSqx0trfxgLxeHBJE1k': process.env.CRM_PIT_ROCKETOPP,
+  const onCorePit = validatePit('CRM_PIT_ONCORE', process.env.CRM_PIT_ONCORE)
+    || validatePit('CRM_PIT_RAW', process.env.CRM_PIT_RAW)
+  const pits: Record<string, string> = {
+    '6MSqx0trfxgLxeHBJE1k': validatePit('CRM_PIT_ROCKETOPP', process.env.CRM_PIT_ROCKETOPP),
     'nphConTwfHcVE1oA0uep': onCorePit,
-    'AZLSL7r6X2tDV1A48Yrb': process.env.CRM_PIT_FAIRICE || process.env.CRM_AGENCY_PIT_NEW,
+    'AZLSL7r6X2tDV1A48Yrb': validatePit('CRM_PIT_FAIRICE', process.env.CRM_PIT_FAIRICE)
+      || validatePit('CRM_AGENCY_PIT_NEW', process.env.CRM_AGENCY_PIT_NEW),
   }
   const specific = pits[locationId]
   if (specific) return specific
-  if (process.env.CRM_AGENCY_PIT_NEW) return process.env.CRM_AGENCY_PIT_NEW
-  return onCorePit || process.env.CRM_PIT_ROCKETOPP || process.env.CRM_PIT || ''
+
+  // Fallback chain — each validated
+  return validatePit('CRM_AGENCY_PIT_NEW', process.env.CRM_AGENCY_PIT_NEW)
+    || onCorePit
+    || validatePit('CRM_PIT_ROCKETOPP', process.env.CRM_PIT_ROCKETOPP)
+    || validatePit('CRM_PIT', process.env.CRM_PIT)
+    || ''
 }
 
 type Auth = { token: string; source: 'oauth' | 'pit'; installId?: string; locationId: string }

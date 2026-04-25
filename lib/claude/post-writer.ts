@@ -95,12 +95,8 @@ export async function generatePost(opts: GeneratePostOptions = {}): Promise<Gene
   for (let attempt = 0; attempt <= maxRewrites; attempt++) {
     const prompt = buildPrompt(opts, hookArchetype, attempt > 0 ? content : undefined, attempt > 0 ? lastScore : undefined)
     content = await callGroq(prompt)
-    vpis = await scoreContent(content, {
-      botConfigId: opts.botConfigId,
-      icpKeywords: opts.icpKeywords,
-      icpTitles: opts.icpTitles,
-      icpIndustries: opts.icpIndustries,
-      postHourEST: opts.postHourEST,
+    vpis = await scoreContent(content, 'post', {
+      targetKeywords: opts.icpKeywords,
     })
     lastScore = vpis.composite
     if (vpis.composite >= target) break
