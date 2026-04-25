@@ -117,8 +117,8 @@ export default function SignupPage() {
       <div className="w-full max-w-sm animate-fade-in relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-bold text-core-green">
-            0ncore
+          <Link href="/">
+            <img src="/brand/0ncore-logo.png" alt="0nCore" className="h-9 mx-auto object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
           </Link>
           <p className="text-core-text-muted text-sm mt-2">Create your account</p>
         </div>
