@@ -129,8 +129,9 @@ export default function HomePage() {
         <div className="oncore-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           <Link href="/platform" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Platform</Link>
           <Link href="/connections" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Connections</Link>
-          <Link href="/launch-party" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Launch Party</Link>
           <Link href="/pricing" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Pricing</Link>
+          <Link href="/blog" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Blog</Link>
+          <Link href="/contact" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Contact</Link>
           <Link href="/login" style={{
             fontSize: 13, fontWeight: 600, color: '#020810',
             background: '#7ed957', padding: '8px 20px', borderRadius: 8,

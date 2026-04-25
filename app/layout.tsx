@@ -69,13 +69,7 @@ export default function RootLayout({
         <Providers>
         {children}
         </Providers>
-        {/* CRM Chat Widget — site-wide */}
-        <script
-          src="https://beta.leadconnectorhq.com/loader.js"
-          data-resources-url="https://beta.leadconnectorhq.com/chat-widget/loader.js"
-          data-widget-id="69ec4dbacbb9f40b1bf401f0"
-          async
-        />
+        {/* Chat widget removed from global — lives on /contact page only */}
       </body>
     </html>
   );
