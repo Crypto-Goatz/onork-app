@@ -1,50 +1,41 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { crmGet, getAuthForLocation } from '@/lib/crm'
+import { getAuthContext } from '@/lib/auth-context'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+export async function GET(request: NextRequest) {
+  const ctx = await getAuthContext(request)
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('crm_location_id, business_name, tier_level')
-    .eq('id', user.id)
-    .single()
-
-  const locationId = profile?.crm_location_id || ''
+  const { locationId, businessName, tierLevel, email } = ctx
 
   const stats = {
     contacts: 0,
     opportunities: 0,
     conversations: 0,
     pipelines: 0,
-    businessName: profile?.business_name || '',
-    tierLevel: profile?.tier_level ?? 0,
+    businessName,
+    tierLevel,
   }
 
   if (!locationId) {
-    return NextResponse.json({ stats, debug: { userEmail: user.email, hasProfile: !!profile, locationId: 'none' } })
+    return NextResponse.json({ stats, locationId: '', debug: { userEmail: email, locationId: 'none' } })
   }
 
   const auth = await getAuthForLocation(locationId)
   if (!auth.token) {
-    return NextResponse.json({ stats, debug: { userEmail: user.email, locationId, authSource: 'none' } })
+    return NextResponse.json({ stats, locationId, debug: { userEmail: email, authSource: 'none' } })
   }
 
   try {
-    const contactsRes = await crmGet(`/contacts/?limit=1`, locationId)
+    const contactsRes = await crmGet('/contacts/?limit=1', locationId)
     if (contactsRes.ok) {
       const contactsData = await contactsRes.json()
       stats.contacts = contactsData.meta?.total || contactsData.total || contactsData.contacts?.length || 0
     }
 
-    const pipelinesRes = await crmGet(`/opportunities/pipelines`, locationId)
+    const pipelinesRes = await crmGet('/opportunities/pipelines', locationId)
     if (pipelinesRes.ok) {
       const pipelinesData = await pipelinesRes.json()
       const pipelines = pipelinesData.pipelines || []
@@ -59,13 +50,13 @@ export async function GET() {
       }
     }
 
-    const convoRes = await crmGet(`/conversations/search?limit=1`, locationId)
+    const convoRes = await crmGet('/conversations/search?limit=1', locationId)
     if (convoRes.ok) {
       const convoData = await convoRes.json()
       stats.conversations = convoData.total || convoData.conversations?.length || 0
     }
 
-    return NextResponse.json({ stats, locationId, authSource: auth.source })
+    return NextResponse.json({ stats, locationId, pitAvailable: true, authSource: auth.source })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Stats fetch failed'
     return NextResponse.json({ stats, error: message, locationId, authSource: auth.source })

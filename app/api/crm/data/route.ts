@@ -6,27 +6,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createClient as createAdmin } from '@supabase/supabase-js'
 import { getCrmClient } from '@/lib/crm-sdk'
-
-const admin = createAdmin(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-)
+import { getAuthContext } from '@/lib/auth-context'
 
 export async function GET(req: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const ctx = await getAuthContext(req)
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('crm_location_id')
-    .eq('id', user.id)
-    .single()
-
-  const locationId = profile?.crm_location_id
+  const locationId = ctx.locationId
   if (!locationId) {
     return NextResponse.json({ error: 'CRM not connected. Go to Settings to connect your CRM location.' }, { status: 400 })
   }

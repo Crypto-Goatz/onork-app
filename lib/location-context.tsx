@@ -83,3 +83,25 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 export function useLocation() {
   return useContext(LocationContext)
 }
+
+/**
+ * Helper: create fetch options that include the current location.
+ * Use this in any component that calls an API needing locationId.
+ *
+ * Usage:
+ *   const { locationId, fetchWithLocation } = useLocation()
+ *   const data = await fetchWithLocation('/api/crm/data?type=contacts')
+ */
+export function useLocationFetch() {
+  const { locationId } = useLocation()
+
+  async function fetchWithLocation(url: string, options: RequestInit = {}): Promise<Response> {
+    const headers = {
+      ...(options.headers as Record<string, string> || {}),
+      'x-location-id': locationId,
+    }
+    return fetch(url, { ...options, headers })
+  }
+
+  return { locationId, fetchWithLocation }
+}
