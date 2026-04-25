@@ -1,10 +1,11 @@
-import { getCRMToken } from '@/lib/crm'
+import { getAuthForLocation } from '@/lib/crm'
 
 const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
 
 async function crmFetch(path: string, locationId: string, options: RequestInit = {}) {
-  const token = await getCRMToken(locationId)
+  const auth = await getAuthForLocation(locationId)
+  const token = auth.token
   const res = await fetch(`${CRM_API}${path}`, {
     ...options,
     headers: {

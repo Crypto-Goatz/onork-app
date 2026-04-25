@@ -115,11 +115,12 @@ export async function getCrmClientForUser(userId: string): Promise<{ client: Hig
 export async function searchContacts(locationId: string, query?: string, limit = 20) {
   const client = await getCrmClient(locationId)
   try {
-    const res = await client.contacts.search({
+    // SDK method: getContacts (not 'search')
+    const res = await (client.contacts as any).getContacts({
       locationId,
       query: query || '',
       limit,
-    } as Record<string, unknown>)
+    })
     return res
   } catch (err) {
     console.error('[crm-sdk] searchContacts error:', err)
@@ -133,7 +134,7 @@ export async function searchContacts(locationId: string, query?: string, limit =
 export async function getPipelines(locationId: string) {
   const client = await getCrmClient(locationId)
   try {
-    const res = await client.opportunities.pipelines({ locationId } as Record<string, unknown>)
+    const res = await (client.opportunities as any).getPipelines({ locationId })
     return res
   } catch (err) {
     console.error('[crm-sdk] getPipelines error:', err)
@@ -147,7 +148,7 @@ export async function getPipelines(locationId: string) {
 export async function getConversations(locationId: string, limit = 20) {
   const client = await getCrmClient(locationId)
   try {
-    const res = await client.conversations.search({ locationId, limit } as Record<string, unknown>)
+    const res = await (client.conversations as any).searchConversation({ locationId, limit })
     return res
   } catch (err) {
     console.error('[crm-sdk] getConversations error:', err)

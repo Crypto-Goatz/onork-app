@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     })
 
     // Route to SDK module
-    const mod = (client as Record<string, unknown>)[module]
+    const mod = (client as unknown as Record<string, unknown>)[module]
     if (!mod || typeof mod !== 'object') {
       return NextResponse.json({ error: `Unknown CRM module: ${module}` }, { status: 400 })
     }
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
   try {
     const params = { locationId, ...(bodyParams || {}) }
 
-    const mod = (client as Record<string, unknown>)[module]
+    const mod = (client as unknown as Record<string, unknown>)[module]
     if (!mod || typeof mod !== 'object') {
       return NextResponse.json({ error: `Unknown CRM module: ${module}` }, { status: 400 })
     }
