@@ -43,10 +43,10 @@ const FEATURES = [
     num: '03',
     title: 'Integrations',
     desc: '1,554 tools across 96 services. CRM, email, social, payments, analytics — all connected through one brain.',
-    gradient: 'from-violet-500/20 via-violet-400/5 to-transparent',
-    glow: 'group-hover:shadow-violet-500/20',
-    accent: 'text-violet-400',
-    border: 'group-hover:border-violet-500/30',
+    gradient: 'from-teal-500/20 via-teal-400/5 to-transparent',
+    glow: 'group-hover:shadow-teal-500/20',
+    accent: 'text-teal-400',
+    border: 'group-hover:border-teal-500/30',
     iconPath: 'M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z',
   },
   {
@@ -193,7 +193,7 @@ export default function HomePage() {
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#7ed957] mb-3">Why 0nCore</p>
           <h2 className="text-[clamp(24px,4vw,36px)] font-extrabold text-white leading-tight">
             The four pillars of<br />
-            <span className="bg-gradient-to-r from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">autonomous business</span>
+            <span className="bg-gradient-to-r from-[#7ed957] via-[#00d4ff] to-[#14b8a6] bg-clip-text text-transparent">autonomous business</span>
           </h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
