@@ -122,14 +122,33 @@ export default function ImportPage() {
     }
   }
 
+  const [provisioning, setProvisioning] = useState(false)
+
   async function finishOnboarding() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await supabase
-        .from('profiles')
-        .update({ onboarding_complete: true })
-        .eq('id', user.id)
-    }
+    if (!user) { router.push('/login'); return }
+
+    // Mark onboarding complete
+    await supabase
+      .from('profiles')
+      .update({ onboarding_complete: true })
+      .eq('id', user.id)
+
+    // Auto-provision CRM sub-location (runs in background, doesn't block redirect)
+    setProvisioning(true)
+    fetch('/api/provision/location', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          console.log('[onboarding] CRM provisioned:', data.locationId)
+        } else {
+          console.warn('[onboarding] CRM provisioning errors:', data.errors)
+        }
+      })
+      .catch(err => console.error('[onboarding] CRM provisioning failed:', err))
+
+    // Don't wait for provisioning — send user to dashboard immediately
+    // The CRM will be ready by the time they need it
     router.push('/dashboard')
   }
 

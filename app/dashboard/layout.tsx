@@ -13,6 +13,7 @@ import { AIAssistant } from '@/components/ai-assistant'
 import { LocationProvider } from '@/lib/location-context'
 import { ActionDock } from '@/components/action-dock'
 import { AIChatBox } from '@/components/ai-chat-box'
+import { CrmStatusBar } from '@/components/crm-status-bar'
 
 const LAYOUT_KEY = '0ncore_layout'
 
@@ -27,6 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <DashboardLayoutInner>{children}</DashboardLayoutInner>
         <ActionDock />
         <AIChatBox />
+        <CrmStatusBar />
       </LocationProvider>
     </Suspense>
   )
