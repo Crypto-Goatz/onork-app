@@ -66,6 +66,7 @@ export function getPitForLocation(locationId: string): string {
     'nphConTwfHcVE1oA0uep': onCorePit,
     'AZLSL7r6X2tDV1A48Yrb': validatePit('CRM_PIT_FAIRICE', process.env.CRM_PIT_FAIRICE)
       || validatePit('CRM_AGENCY_PIT_NEW', process.env.CRM_AGENCY_PIT_NEW),
+    'F76MNKOMQCMruMrumtdf': validatePit('CRM_PIT_SPA', process.env.CRM_PIT_SPA),
   }
   const specific = pits[locationId]
   if (specific) return specific
