@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Sparkles, User, Calendar, Mail, X, MessageSquare, Users, ArrowRight } from 'lucide-react'
+import { Send, Sparkles, User, Calendar, Mail, X, MessageSquare, Users, ArrowRight, Mic, MessageCircle } from 'lucide-react'
 
 // ── Types ──
+type ChatMode = 'select' | 'text' | 'voice'
 interface Message { role: 'user' | 'assistant'; content: string }
 
 const SUGGESTIONS = [
@@ -59,11 +60,13 @@ function Modal({ open, onClose, children }: { open: boolean; onClose: () => void
 
 // ── Main Component ──
 export function ContactClient() {
+  const [chatMode, setChatMode] = useState<ChatMode>('select')
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: "Hey! I'm Jaxx — the AI behind 0nCore. Ask me anything about the platform, pricing, features, or how it works. I know everything." },
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [voiceClarify, setVoiceClarify] = useState('')
   const [showCalendar, setShowCalendar] = useState(false)
   const [showContactForm, setShowContactForm] = useState(false)
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
@@ -133,98 +136,221 @@ export function ContactClient() {
       <section className="max-w-5xl mx-auto px-6 pb-16">
         <div className="grid md:grid-cols-2 gap-6">
 
-          {/* LEFT: Jaxx AI Chat with Sound Wave */}
+          {/* LEFT: Jaxx — Voice or Text */}
           <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] flex flex-col min-h-[540px] overflow-hidden">
-            {/* Header with sound wave */}
-            <div className="px-5 py-4 border-b border-white/[0.06] bg-gradient-to-r from-[#7ed957]/[0.06] to-[#00d4ff]/[0.03]">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {/* Circular sound wave container */}
-                  <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-[#7ed957]/20 to-[#00d4ff]/20 border border-[#7ed957]/20 flex items-center justify-center overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <SoundWave active={loading} />
-                    </div>
-                    {!loading && (
-                      <Sparkles className="w-5 h-5 text-[#7ed957] relative z-10" />
-                    )}
-                    {/* Pulse ring when active */}
-                    {loading && (
-                      <div className="absolute inset-0 rounded-full border-2 border-[#7ed957]/30 animate-ping" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-[15px] font-bold text-white flex items-center gap-1.5">
-                      Jaxx
-                      <span className="w-[6px] h-[6px] rounded-full bg-[#7ed957] shadow-[0_0_8px_#7ed957]" />
-                    </h3>
-                    <p className="text-[11px] text-white/30">0nCore AI &middot; Ask me anything</p>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Messages */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-              {messages.map((msg, i) => (
-                <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                  {msg.role === 'assistant' && (
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#7ed957]/20 to-[#00d4ff]/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <Sparkles className="w-3 h-3 text-[#7ed957]" />
-                    </div>
-                  )}
-                  <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed ${
-                    msg.role === 'user'
-                      ? 'bg-[#7ed957]/15 border border-[#7ed957]/20 text-white rounded-br-sm'
-                      : 'bg-white/[0.04] border border-white/[0.06] text-white/80 rounded-bl-sm'
-                  }`}>
-                    {msg.content}
-                  </div>
-                  {msg.role === 'user' && (
-                    <div className="w-6 h-6 rounded-full bg-white/[0.06] flex items-center justify-center shrink-0 mt-0.5">
-                      <User className="w-3 h-3 text-white/40" />
-                    </div>
-                  )}
+            {/* ═══ MODE SELECT ═══ */}
+            {chatMode === 'select' && (
+              <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 gap-6">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#7ed957]/20 to-[#00d4ff]/20 flex items-center justify-center">
+                  <Sparkles className="w-7 h-7 text-[#7ed957]" />
                 </div>
-              ))}
-              {loading && (
-                <div className="flex gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#7ed957]/20 to-[#00d4ff]/20 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-3 h-3 text-[#7ed957]" />
-                  </div>
-                  <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#7ed957]/50 animate-bounce [animation-delay:0ms]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#00d4ff]/50 animate-bounce [animation-delay:150ms]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#14b8a6]/50 animate-bounce [animation-delay:300ms]" />
-                  </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-bold text-white mb-1">Talk to Jaxx</h3>
+                  <p className="text-[13px] text-white/40">Choose how you want to chat</p>
                 </div>
-              )}
-            </div>
-
-            {/* Suggestions */}
-            {!hasUserMessages && (
-              <div className="px-4 pb-2 flex flex-wrap gap-1.5">
-                {SUGGESTIONS.map(s => (
-                  <button key={s} onClick={() => send(s)}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[11px] text-white/50 hover:text-white hover:border-[#7ed957]/30 hover:bg-[#7ed957]/[0.04] transition-all cursor-pointer">
-                    {s}
+                <div className="flex gap-4">
+                  <button onClick={() => setChatMode('voice')}
+                    className="flex flex-col items-center gap-3 px-8 py-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] hover:border-[#7ed957]/30 hover:bg-[#7ed957]/[0.04] transition-all cursor-pointer group">
+                    <div className="w-14 h-14 rounded-full bg-[#7ed957]/10 border border-[#7ed957]/20 flex items-center justify-center group-hover:bg-[#7ed957]/20 transition-colors">
+                      <Mic className="w-6 h-6 text-[#7ed957]" />
+                    </div>
+                    <span className="text-[13px] font-semibold text-white">Voice</span>
+                    <span className="text-[10px] text-white/30">Speak naturally</span>
                   </button>
-                ))}
+                  <button onClick={() => setChatMode('text')}
+                    className="flex flex-col items-center gap-3 px-8 py-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] hover:border-[#00d4ff]/30 hover:bg-[#00d4ff]/[0.04] transition-all cursor-pointer group">
+                    <div className="w-14 h-14 rounded-full bg-[#00d4ff]/10 border border-[#00d4ff]/20 flex items-center justify-center group-hover:bg-[#00d4ff]/20 transition-colors">
+                      <MessageCircle className="w-6 h-6 text-[#00d4ff]" />
+                    </div>
+                    <span className="text-[13px] font-semibold text-white">Text</span>
+                    <span className="text-[10px] text-white/30">Type your questions</span>
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Input */}
-            <div className="px-4 py-3 border-t border-white/[0.06] flex gap-2">
-              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && send()} disabled={loading}
-                placeholder="Ask anything about 0nCore..."
-                className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-white text-[13px] placeholder:text-white/25 outline-none focus:border-[#7ed957]/30 transition-colors disabled:opacity-50" />
-              <button onClick={() => send()} disabled={loading || !input.trim()}
-                className="w-10 h-10 rounded-xl bg-[#7ed957] flex items-center justify-center cursor-pointer border-none hover:bg-[#7ed957]/90 transition-colors disabled:opacity-30">
-                <Send className="w-4 h-4 text-[#020810]" />
-              </button>
-            </div>
+            {/* ═══ VOICE MODE ═══ */}
+            {chatMode === 'voice' && (
+              <div className="flex-1 flex flex-col">
+                {/* Header */}
+                <div className="px-5 py-3 border-b border-white/[0.06] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Mic className="w-4 h-4 text-[#7ed957]" />
+                    <span className="text-[13px] font-semibold text-white">Voice Mode</span>
+                    <span className="w-[6px] h-[6px] rounded-full bg-[#7ed957] shadow-[0_0_6px_#7ed957]" />
+                  </div>
+                  <button onClick={() => setChatMode('select')} className="text-[11px] text-white/30 hover:text-white/60 bg-transparent border-none cursor-pointer transition-colors">
+                    Switch mode
+                  </button>
+                </div>
 
-            <style>{`@keyframes waveBar { 0% { transform: scaleY(0.3); } 100% { transform: scaleY(1); } }`}</style>
+                {/* Voice Agent */}
+                <div className="flex-1 flex flex-col items-center justify-center px-6 relative">
+                  {/* Circular equalizer ring */}
+                  <div className="relative w-[180px] h-[180px] flex items-center justify-center mb-6">
+                    {/* Outer ring */}
+                    <div className="absolute inset-0 rounded-full border-2 border-[#14b8a6]/30" />
+                    {/* Animated equalizer bars around the circle */}
+                    <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
+                      {Array.from({ length: 32 }).map((_, i) => {
+                        const angle = (i / 32) * Math.PI * 2 - Math.PI / 2
+                        const cx = 100 + Math.cos(angle) * 82
+                        const cy = 100 + Math.sin(angle) * 82
+                        const dx = Math.cos(angle)
+                        const dy = Math.sin(angle)
+                        return (
+                          <line
+                            key={i}
+                            x1={cx - dx * 4}
+                            y1={cy - dy * 4}
+                            x2={cx + dx * 4}
+                            y2={cy + dy * 4}
+                            stroke="#7ed957"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            opacity="0.3"
+                            style={{
+                              animation: `eqPulse ${0.5 + Math.random() * 0.5}s ease-in-out infinite alternate`,
+                              animationDelay: `${i * 0.03}s`,
+                            }}
+                          />
+                        )
+                      })}
+                    </svg>
+                    {/* Inner circle with mic */}
+                    <div className="w-[100px] h-[100px] rounded-full bg-[#161b22] border border-white/[0.06] flex items-center justify-center z-10">
+                      <Mic className="w-8 h-8 text-[#14b8a6]" />
+                    </div>
+                  </div>
+
+                  <p className="text-[13px] text-white/40 text-center mb-2">Speak naturally — Jaxx is listening</p>
+                  <p className="text-[10px] text-white/20 text-center">
+                    <span className="inline-block w-2 h-2 rounded-full bg-[#7ed957] mr-1" />Jaxx speaking
+                    <span className="inline-block w-2 h-2 rounded-full bg-[#a78bfa] mx-1 ml-3" />You speaking
+                  </p>
+
+                  {/* HeyGen Voice Agent Widget */}
+                  <script
+                    src="https://widgets.leadconnectorhq.com/loader.js"
+                    data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
+                    data-widget-id="d01e99a1-ed3f-4f24-b4d8-407009a165a7"
+                    async
+                  />
+                </div>
+
+                {/* Clarification input */}
+                <div className="px-4 py-3 border-t border-white/[0.06]">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={voiceClarify}
+                      onChange={e => setVoiceClarify(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && voiceClarify.trim()) { send(voiceClarify); setVoiceClarify('') } }}
+                      placeholder="Type to clarify (if needed)..."
+                      className="flex-1 px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white text-[12px] placeholder:text-white/20 outline-none focus:border-[#7ed957]/20 transition-colors"
+                    />
+                    <button
+                      onClick={() => { if (voiceClarify.trim()) { send(voiceClarify); setVoiceClarify('') } }}
+                      className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center cursor-pointer hover:bg-[#7ed957]/10 hover:border-[#7ed957]/20 transition-all"
+                    >
+                      <Send className="w-3.5 h-3.5 text-white/40" />
+                    </button>
+                  </div>
+                </div>
+
+                <style>{`
+                  @keyframes eqPulse {
+                    0% { transform: scaleX(1) scaleY(0.4); opacity: 0.2; }
+                    100% { transform: scaleX(1) scaleY(1.8); opacity: 0.6; }
+                  }
+                `}</style>
+              </div>
+            )}
+
+            {/* ═══ TEXT MODE ═══ */}
+            {chatMode === 'text' && (
+              <div className="flex-1 flex flex-col">
+                {/* Header */}
+                <div className="px-5 py-3 border-b border-white/[0.06] bg-gradient-to-r from-[#7ed957]/[0.04] to-transparent flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#7ed957]/20 to-[#00d4ff]/20 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-[#7ed957]" />
+                    </div>
+                    <div>
+                      <h3 className="text-[13px] font-bold text-white flex items-center gap-1.5">
+                        Jaxx <span className="w-[5px] h-[5px] rounded-full bg-[#7ed957] shadow-[0_0_6px_#7ed957]" />
+                      </h3>
+                      <p className="text-[10px] text-white/25">0nCore AI</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setChatMode('select')} className="text-[11px] text-white/30 hover:text-white/60 bg-transparent border-none cursor-pointer transition-colors">
+                    Switch mode
+                  </button>
+                </div>
+
+                {/* Messages */}
+                <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                  {messages.map((msg, i) => (
+                    <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                      {msg.role === 'assistant' && (
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#7ed957]/20 to-[#00d4ff]/20 flex items-center justify-center shrink-0 mt-0.5">
+                          <Sparkles className="w-3 h-3 text-[#7ed957]" />
+                        </div>
+                      )}
+                      <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-[#7ed957]/15 border border-[#7ed957]/20 text-white rounded-br-sm'
+                          : 'bg-white/[0.04] border border-white/[0.06] text-white/80 rounded-bl-sm'
+                      }`}>
+                        {msg.content}
+                      </div>
+                      {msg.role === 'user' && (
+                        <div className="w-6 h-6 rounded-full bg-white/[0.06] flex items-center justify-center shrink-0 mt-0.5">
+                          <User className="w-3 h-3 text-white/40" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {loading && (
+                    <div className="flex gap-2.5">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#7ed957]/20 to-[#00d4ff]/20 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-3 h-3 text-[#7ed957]" />
+                      </div>
+                      <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#7ed957]/50 animate-bounce [animation-delay:0ms]" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#00d4ff]/50 animate-bounce [animation-delay:150ms]" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#14b8a6]/50 animate-bounce [animation-delay:300ms]" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Suggestions */}
+                {!hasUserMessages && (
+                  <div className="px-4 pb-2 flex flex-wrap gap-1.5">
+                    {SUGGESTIONS.map(s => (
+                      <button key={s} onClick={() => send(s)}
+                        className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[11px] text-white/50 hover:text-white hover:border-[#7ed957]/30 hover:bg-[#7ed957]/[0.04] transition-all cursor-pointer">
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Input */}
+                <div className="px-4 py-3 border-t border-white/[0.06] flex gap-2">
+                  <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && send()} disabled={loading}
+                    placeholder="Ask anything about 0nCore..."
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-white text-[13px] placeholder:text-white/25 outline-none focus:border-[#7ed957]/30 transition-colors disabled:opacity-50" />
+                  <button onClick={() => send()} disabled={loading || !input.trim()}
+                    className="w-10 h-10 rounded-xl bg-[#7ed957] flex items-center justify-center cursor-pointer border-none hover:bg-[#7ed957]/90 transition-colors disabled:opacity-30">
+                    <Send className="w-4 h-4 text-[#020810]" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* RIGHT: Action Cards */}
