@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import Script from 'next/script'
+import { JaxxChat } from './jaxx-chat'
 
 export const metadata: Metadata = {
   title: 'Contact Us — 0nCore',
@@ -28,22 +28,8 @@ export default function ContactPage() {
       <section className="max-w-5xl mx-auto px-6 pb-16">
         <div className="grid md:grid-cols-2 gap-6">
 
-          {/* Left: Chat Widget */}
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 min-h-[500px] relative overflow-hidden">
-            <div className="mb-4">
-              <h2 className="text-lg font-bold text-white mb-1">Live Chat</h2>
-              <p className="text-[13px] text-white/40">Chat with our team right now. Average response: under 2 minutes.</p>
-            </div>
-            {/* CRM Chat Widget loads here */}
-            <div id="chat-widget-container" className="mt-4">
-              <Script
-                src="https://beta.leadconnectorhq.com/loader.js"
-                data-resources-url="https://beta.leadconnectorhq.com/chat-widget/loader.js"
-                data-widget-id="69ec4dbacbb9f40b1bf401f0"
-                strategy="lazyOnload"
-              />
-            </div>
-          </div>
+          {/* Left: AI Chat */}
+          <JaxxChat />
 
           {/* Right: Contact Options */}
           <div className="space-y-4">
