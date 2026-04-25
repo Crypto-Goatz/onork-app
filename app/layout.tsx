@@ -4,6 +4,7 @@ import "./jampack.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { Providers } from "@/components/providers";
+import { PublicNavWrapper } from "@/components/public-nav-wrapper";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -67,6 +68,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased min-h-screen">
         <Providers>
+        <PublicNavWrapper />
         {children}
         </Providers>
         {/* Chat widget removed from global — lives on /contact page only */}

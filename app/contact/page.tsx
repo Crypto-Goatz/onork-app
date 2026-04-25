@@ -10,21 +10,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <div className="min-h-screen bg-[#020810] text-white">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-[clamp(16px,4vw,32px)] py-[clamp(10px,2vw,12px)] bg-[rgba(2,8,16,0.85)] backdrop-blur-xl border-b border-white/[0.04]">
-        <Link href="/" className="flex items-center gap-2.5 no-underline">
-          <img src="/brand/0ncore-logo.png" alt="0nCore" className="h-8 object-contain" />
-        </Link>
-        <div className="hidden md:flex items-center gap-7">
-          <Link href="/platform" className="text-[13px] text-white/50 no-underline hover:text-white/80 transition-colors">Platform</Link>
-          <Link href="/connections" className="text-[13px] text-white/50 no-underline hover:text-white/80 transition-colors">Connections</Link>
-          <Link href="/pricing" className="text-[13px] text-white/50 no-underline hover:text-white/80 transition-colors">Pricing</Link>
-          <Link href="/contact" className="text-[13px] text-white font-semibold no-underline">Contact</Link>
-          <Link href="/login" className="text-[13px] font-semibold text-[#020810] bg-[#7ed957] px-5 py-2 rounded-lg no-underline hover:bg-[#7ed957]/90 transition-colors">
-            VIP Access
-          </Link>
-        </div>
-      </nav>
+      {/* Nav provided by PublicNavWrapper in root layout */}
 
       {/* Hero */}
       <section className="pt-32 pb-12 px-6 text-center max-w-3xl mx-auto">

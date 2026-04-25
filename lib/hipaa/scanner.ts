@@ -729,27 +729,30 @@ export async function runHIPAAScan(input: HIPAAInput): Promise<HIPAAResult> {
   ])
   const universalChecks = runUniversalChecks()
 
-  // Software supply chain (Spectra Assure) — only when an artifact is supplied
-  // and SPECTRA_ASSURE_TOKEN is configured. Failure is non-fatal so the rest
-  // of the HIPAA assessment still completes.
+  // Software supply chain (Spectra Assure Community API) — only when a
+  // package list is supplied AND SPECTRA_ASSURE_TOKEN is configured.
+  // Failure is non-fatal so the rest of the HIPAA assessment still completes.
   let supplyChainChecks: HIPAACheck[] | undefined
   let supplyChainReport: HIPAAResult['supplyChainReport']
-  if (input.artifact) {
+  if (input.packages && input.packages.length > 0) {
     try {
-      const { isSpectraAssureConfigured, scanAndWait, spectraAssureToHIPAAChecks } = await import(
+      const { isSpectraAssureConfigured, bulkVersionReports, spectraAssureToHIPAAChecks, getAccount } = await import(
         './spectra-assure'
       )
       if (isSpectraAssureConfigured()) {
-        const report = await scanAndWait(input.artifact.buffer, input.artifact.filename)
-        supplyChainChecks = spectraAssureToHIPAAChecks(report) as HIPAACheck[]
+        const [reports, account] = await Promise.all([
+          bulkVersionReports(input.packages),
+          getAccount().catch(() => ({ tier: 'Community' } as { tier: string })),
+        ])
+        const valid = reports.filter((r): r is NonNullable<typeof r> => Boolean(r))
+        supplyChainChecks = spectraAssureToHIPAAChecks(valid) as HIPAACheck[]
         supplyChainReport = {
-          scanId: report.scanId,
-          artifactName: report.artifactName,
-          artifactSha256: report.artifactSha256,
-          riskScore: report.riskScore,
-          policyResult: report.policyResult,
-          findingCount: report.findings.length,
-          reportUrl: report.reportUrl,
+          packagesScanned: valid.length,
+          totalCves: valid.reduce((s, r) => s + r.vulnerabilities.total, 0),
+          critical: valid.reduce((s, r) => s + (r.vulnerabilities.critical || 0), 0),
+          high: valid.reduce((s, r) => s + (r.vulnerabilities.high || 0), 0),
+          totalDependencies: valid.reduce((s, r) => s + r.dependencies, 0),
+          apiTier: account.tier,
         }
       }
     } catch (err) {
