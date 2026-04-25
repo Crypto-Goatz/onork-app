@@ -287,7 +287,7 @@ const DOWNLOADS: Download[] = [
     category: 'dev',
     action: 'link',
     actionLabel: 'View on GitHub',
-    actionData: 'https://github.com/0nork/0nMCP',
+    actionData: 'https://www.npmjs.com/package/0nmcp',
   },
   {
     id: 'api-docs',
