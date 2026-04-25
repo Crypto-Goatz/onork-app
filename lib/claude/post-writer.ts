@@ -1,4 +1,4 @@
-import { scoreContent, type VPISResult } from '@/lib/vpis/formula'
+import { scoreContent, type VPISScores } from '@/lib/vpis/formula'
 
 const GROQ_KEY = process.env.GROQ_API_KEY!
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
@@ -76,7 +76,7 @@ export interface GeneratePostOptions {
 
 export interface GeneratedPost {
   content: string
-  vpis: VPISResult
+  vpis: VPISScores
   hook_archetype: HookArchetype
   rewrite_count: number
 }
@@ -88,7 +88,7 @@ export async function generatePost(opts: GeneratePostOptions = {}): Promise<Gene
   const hookArchetype = opts.hookArchetype ?? archetypes[Math.floor(Math.random() * archetypes.length)]
 
   let content = ''
-  let vpis: VPISResult | null = null
+  let vpis: VPISScores | null = null
   let rewriteCount = 0
   let lastScore = 0
 

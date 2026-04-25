@@ -1,67 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as adminClient } from '@supabase/supabase-js'
-import { schedulePost } from '@/lib/ghl/client'
+import { createClient as createAdmin } from '@supabase/supabase-js'
 
-const admin = adminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const admin = createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json().catch(() => ({}))
-  const { queue_item_id, scheduled_at, reject } = body
+  const { queue_id, action, rejection_reason, edited_text } = await req.json()
 
-  // Load queue item (verify ownership)
-  const { data: item, error: itemErr } = await admin
-    .from('bot_queue')
-    .select('*, bot_config(*)')
-    .eq('id', queue_item_id)
-    .eq('user_id', user.id)
-    .single()
+  if (!queue_id || !action) return NextResponse.json({ error: 'queue_id and action required' }, { status: 400 })
 
-  if (itemErr || !item) {
-    return NextResponse.json({ error: 'Queue item not found' }, { status: 404 })
+  const { data: item } = await admin.from('bot_queue').select('*').eq('id', queue_id).eq('user_id', user.id).single()
+  if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  if (action === 'approve') {
+    const updates: Record<string, unknown> = {
+      status: 'approved',
+      approved_at: new Date().toISOString(),
+    }
+    if (edited_text) updates.content_text = edited_text
+
+    await admin.from('bot_queue').update(updates).eq('id', queue_id)
+    return NextResponse.json({ status: 'approved', queue_id })
   }
 
-  if (item.status !== 'pending_approval') {
-    return NextResponse.json({ error: `Item is already ${item.status}` }, { status: 400 })
+  if (action === 'reject') {
+    await admin.from('bot_queue').update({
+      status: 'rejected',
+      rejected_at: new Date().toISOString(),
+      rejection_reason: rejection_reason || 'Rejected by user',
+    }).eq('id', queue_id)
+    return NextResponse.json({ status: 'rejected', queue_id })
   }
 
-  // Reject path
-  if (reject) {
-    await admin.from('bot_queue').update({ status: 'rejected' }).eq('id', queue_item_id)
-    return NextResponse.json({ success: true, status: 'rejected' })
-  }
-
-  const config = item.bot_config
-  const postAt = scheduled_at ?? new Date(Date.now() + 5 * 60 * 1000).toISOString()
-
-  try {
-    // Send to CRM Social Planner
-    const { postId } = await schedulePost({
-      locationId: config.location_id,
-      content: item.content,
-      scheduledAt: postAt,
-      accountIds: [config.linkedin_account_id].filter(Boolean),
-    })
-
-    await admin
-      .from('bot_queue')
-      .update({ status: 'scheduled', crm_post_id: postId, scheduled_at: postAt })
-      .eq('id', queue_item_id)
-
-    return NextResponse.json({ success: true, status: 'scheduled', crm_post_id: postId, scheduled_at: postAt })
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'CRM scheduling failed'
-    await admin
-      .from('bot_queue')
-      .update({ status: 'failed', error_msg: msg })
-      .eq('id', queue_item_id)
-    return NextResponse.json({ error: msg }, { status: 502 })
-  }
+  return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
 }
