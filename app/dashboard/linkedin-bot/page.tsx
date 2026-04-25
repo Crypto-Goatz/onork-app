@@ -44,17 +44,32 @@ export default function LinkedInBotPage() {
   const [config, setConfig] = useState<BotConfig | null>(null)
   const [stats, setStats] = useState({ pending: 0, approved: 0, posted: 0, rejected: 0, avgScore: 0 })
   const [generating, setGenerating] = useState(false)
+  const [publishing, setPublishing] = useState<string | null>(null)
   const [topic, setTopic] = useState('')
+  const [linkedinConnected, setLinkedinConnected] = useState(false)
+  const [linkedinName, setLinkedinName] = useState('')
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/bot/config')
-      if (res.ok) {
-        const data = await res.json()
+      const [configRes, liRes] = await Promise.all([
+        fetch('/api/bot/config'),
+        fetch('/api/linkedin-bot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'status' }),
+        }),
+      ])
+      if (configRes.ok) {
+        const data = await configRes.json()
         setConfig(data.config)
         setQueue(data.queue || [])
         setStats(data.stats || {})
+      }
+      if (liRes.ok) {
+        const liData = await liRes.json()
+        setLinkedinConnected(liData.connected || false)
+        setLinkedinName(liData.name || '')
       }
     } catch {}
     setLoading(false)
@@ -85,6 +100,38 @@ export default function LinkedInBotPage() {
       }
     } catch { toast.error('Network error') }
     setGenerating(false)
+  }
+
+  async function handlePublish(id: string) {
+    setPublishing(id)
+    try {
+      const res = await fetch('/api/linkedin-bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'publish', queue_id: id }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success('Posted to LinkedIn!', { description: `Post ID: ${data.post_id}` })
+        loadData()
+      } else {
+        toast.error('Post failed', { description: data.error })
+      }
+    } catch { toast.error('Network error') }
+    setPublishing(null)
+  }
+
+  async function connectLinkedIn() {
+    try {
+      const res = await fetch('/api/auth/connect/linkedin')
+      if (res.ok) {
+        const { url } = await res.json()
+        const popup = window.open(url, 'connect-linkedin', 'width=600,height=700')
+        const check = setInterval(() => {
+          if (popup?.closed) { clearInterval(check); loadData() }
+        }, 1000)
+      }
+    } catch {}
   }
 
   async function handleAction(id: string, action: 'approve' | 'reject') {
@@ -139,9 +186,21 @@ export default function LinkedInBotPage() {
               <span className="px-2 py-0.5 rounded-md bg-core-red/10 text-core-red text-[10px] font-bold">PAUSED</span>
             )}
           </h1>
-          <p className="text-[12px] text-core-text-muted mt-0.5">
-            VPIS v0.5 &middot; {stats.posted} posted &middot; Avg score {stats.avgScore}
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-[12px] text-core-text-muted m-0">
+              VPIS v0.5 &middot; {stats.posted} posted &middot; Avg score {stats.avgScore}
+            </p>
+            {linkedinConnected ? (
+              <span className="flex items-center gap-1 text-[11px] text-core-green font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-core-green" /> LinkedIn: {linkedinName}
+              </span>
+            ) : (
+              <button onClick={connectLinkedIn}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0A66C2]/10 text-[#0A66C2] text-[11px] font-semibold cursor-pointer border border-[#0A66C2]/20 hover:bg-[#0A66C2]/20 transition-colors">
+                Connect LinkedIn
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-core-border bg-transparent text-core-text-muted text-[12px] cursor-pointer hover:text-core-text transition-colors">
@@ -229,6 +288,13 @@ export default function LinkedInBotPage() {
                 </div>
               )}
               <div className="flex gap-2">
+                {linkedinConnected && (
+                  <button onClick={() => handlePublish(item.id)} disabled={publishing === item.id}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0A66C2] text-white text-[12px] font-bold cursor-pointer border-none hover:bg-[#0A66C2]/90 disabled:opacity-50">
+                    {publishing === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                    {publishing === item.id ? 'Publishing...' : 'Post to LinkedIn'}
+                  </button>
+                )}
                 <button onClick={() => handleAction(item.id, 'approve')}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-core-green text-core-bg text-[12px] font-bold cursor-pointer border-none">
                   <Check className="w-3.5 h-3.5" /> Approve

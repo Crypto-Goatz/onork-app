@@ -15,8 +15,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { scoreContent } from '@/lib/vpis/formula'
+import { postToLinkedIn, isLinkedInReady } from '@/lib/linkedin-api'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -204,6 +206,58 @@ export async function POST(req: NextRequest) {
           top_patterns: 'Analysis pending — need more data',
           bottom_patterns: 'Analysis pending — need more data',
         })
+      }
+
+      case 'publish': {
+        // Publish an approved post to LinkedIn using the user's own OAuth token
+        const { queue_id, user_id } = body
+
+        if (!user_id) return NextResponse.json({ error: 'user_id required' }, { status: 400 })
+
+        // Get the post from queue
+        const { data: post } = await supabase.from('bot_queue')
+          .select('content_text, content_type, status')
+          .eq('id', queue_id)
+          .single()
+
+        if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+        if (post.status !== 'approved' && post.status !== 'pending_approval') {
+          return NextResponse.json({ error: `Post is ${post.status}, not approved` }, { status: 400 })
+        }
+
+        // Post to LinkedIn
+        const result = await postToLinkedIn(user_id, post.content_text)
+
+        if (result.success) {
+          // Update queue status
+          await supabase.from('bot_queue')
+            .update({ status: 'posted', posted_at: new Date().toISOString() })
+            .eq('id', queue_id)
+
+          return NextResponse.json({
+            success: true,
+            post_id: result.postId,
+            message: 'Posted to LinkedIn successfully',
+          })
+        }
+
+        return NextResponse.json({ success: false, error: result.error }, { status: 502 })
+      }
+
+      case 'status': {
+        // Check if LinkedIn is connected for a user
+        const { user_id } = body
+        if (!user_id) {
+          // Try to get from session
+          const serverSupabase = await createServerClient()
+          const { data: { user } } = await serverSupabase.auth.getUser()
+          if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+          const status = await isLinkedInReady(user.id)
+          return NextResponse.json(status)
+        }
+
+        const status = await isLinkedInReady(user_id)
+        return NextResponse.json(status)
       }
 
       default:
