@@ -116,33 +116,23 @@ export default function HomePage() {
       />
 
       {/* ═══ NAV ═══ */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: 'clamp(10px, 2vw, 12px) clamp(16px, 4vw, 32px)',
-        background: 'rgba(2,8,16,0.85)', backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
-      }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <img src="/brand/0ncore-logo.png" alt="0nCore" style={{ height: 32, objectFit: 'contain' }} />
+      <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-[clamp(16px,4vw,32px)] py-[clamp(10px,2vw,12px)] bg-[rgba(2,8,16,0.88)] backdrop-blur-2xl border-b border-white/[0.04]">
+        <Link href="/" className="flex items-center gap-2.5 no-underline shrink-0">
+          <img src="/brand/0ncore-logo.png" alt="0nCore" className="h-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
         </Link>
-        <div className="oncore-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-          <Link href="/platform" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Platform</Link>
-          <Link href="/connections" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Connections</Link>
-          <Link href="/pricing" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Pricing</Link>
-          <Link href="/blog" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Blog</Link>
-          <Link href="/contact" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Contact</Link>
-          <Link href="/login" style={{
-            fontSize: 13, fontWeight: 600, color: '#020810',
-            background: '#7ed957', padding: '8px 20px', borderRadius: 8,
-            textDecoration: 'none',
-          }}>VIP Access</Link>
+
+        <div className="hidden md:flex items-center gap-1">
+          <Link href="/platform" className="px-3 py-1.5 text-[13px] text-white/50 no-underline rounded-lg hover:text-white hover:bg-white/[0.04] transition-all">Platform</Link>
+          <Link href="/marketplace" className="px-3 py-1.5 text-[13px] text-white/50 no-underline rounded-lg hover:text-white hover:bg-white/[0.04] transition-all">Marketplace</Link>
+          <Link href="/pricing" className="px-3 py-1.5 text-[13px] text-white/50 no-underline rounded-lg hover:text-white hover:bg-white/[0.04] transition-all">Pricing</Link>
+          <Link href="/blog" className="px-3 py-1.5 text-[13px] text-white/50 no-underline rounded-lg hover:text-white hover:bg-white/[0.04] transition-all">Blog</Link>
+          <Link href="/contact" className="px-3 py-1.5 text-[13px] text-white/50 no-underline rounded-lg hover:text-white hover:bg-white/[0.04] transition-all">Contact</Link>
+          <div className="w-px h-5 bg-white/[0.08] mx-2" />
+          <Link href="/login" className="px-3 py-1.5 text-[13px] text-white/60 no-underline rounded-lg hover:text-white hover:bg-white/[0.04] transition-all">Sign In</Link>
+          <Link href="/signup" className="ml-1 px-5 py-2 text-[13px] font-semibold text-[#020810] bg-[#7ed957] no-underline rounded-lg hover:bg-[#7ed957]/90 transition-colors">Get Started</Link>
         </div>
-        <Link href="/login" className="oncore-mobile-menu" style={{
-          display: 'none', fontSize: 13, fontWeight: 600, color: '#020810',
-          background: '#7ed957', padding: '8px 20px', borderRadius: 8,
-          textDecoration: 'none',
-        }}>VIP Access</Link>
+
+        <Link href="/login" className="md:hidden px-5 py-2 text-[13px] font-semibold text-[#020810] bg-[#7ed957] no-underline rounded-lg">Get Started</Link>
       </nav>
 
       {/* ═══ HERO ═══ */}
@@ -404,10 +394,6 @@ export default function HomePage() {
       <style>{`
         .footer-yt-icon { display: flex; opacity: 0.3; transition: opacity 0.2s; }
         .footer-yt-icon:hover { opacity: 0.8; }
-        @media (max-width: 768px) {
-          .oncore-nav-links { display: none !important; }
-          .oncore-mobile-menu { display: flex !important; }
-        }
       `}</style>
     </div>
   )

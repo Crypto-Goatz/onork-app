@@ -19,6 +19,8 @@ export interface HIPAAInput {
   companyName: string
   contactEmail: string
   locationId?: string
+  /** Optional package list (npm/pypi/maven) to query the Spectra Assure Community catalog. */
+  packages?: Array<{ repo: 'npm' | 'pypi' | 'nuget' | 'maven' | 'gem' | 'composer' | 'cargo'; pkg: string; version?: string; namespace?: string }>
 }
 
 export interface HIPAACheck {
@@ -49,6 +51,17 @@ export interface HIPAAResult {
   publicChecks: HIPAACheck[]
   dashboardChecks: HIPAACheck[]
   universalChecks: HIPAACheck[]
+  /** Software supply chain checks derived from a Spectra Assure Community scan when a package list was provided. */
+  supplyChainChecks?: HIPAACheck[]
+  /** Spectra Assure summary across all scanned packages — for full Tier 4 report inclusion. */
+  supplyChainReport?: {
+    packagesScanned: number
+    totalCves: number
+    critical: number
+    high: number
+    totalDependencies: number
+    apiTier: string
+  }
 
   criticalFindings: number
   highFindings: number
@@ -716,7 +729,40 @@ export async function runHIPAAScan(input: HIPAAInput): Promise<HIPAAResult> {
   ])
   const universalChecks = runUniversalChecks()
 
-  const allChecks = [...publicChecks, ...dashboardChecks, ...universalChecks]
+  // Software supply chain (Spectra Assure) — only when an artifact is supplied
+  // and SPECTRA_ASSURE_TOKEN is configured. Failure is non-fatal so the rest
+  // of the HIPAA assessment still completes.
+  let supplyChainChecks: HIPAACheck[] | undefined
+  let supplyChainReport: HIPAAResult['supplyChainReport']
+  if (input.artifact) {
+    try {
+      const { isSpectraAssureConfigured, scanAndWait, spectraAssureToHIPAAChecks } = await import(
+        './spectra-assure'
+      )
+      if (isSpectraAssureConfigured()) {
+        const report = await scanAndWait(input.artifact.buffer, input.artifact.filename)
+        supplyChainChecks = spectraAssureToHIPAAChecks(report) as HIPAACheck[]
+        supplyChainReport = {
+          scanId: report.scanId,
+          artifactName: report.artifactName,
+          artifactSha256: report.artifactSha256,
+          riskScore: report.riskScore,
+          policyResult: report.policyResult,
+          findingCount: report.findings.length,
+          reportUrl: report.reportUrl,
+        }
+      }
+    } catch (err) {
+      console.error('[hipaa] Spectra Assure scan failed:', err)
+    }
+  }
+
+  const allChecks = [
+    ...publicChecks,
+    ...dashboardChecks,
+    ...universalChecks,
+    ...(supplyChainChecks || []),
+  ]
 
   const currentRuleScore = computeScore(allChecks, false)
   const nprm2026Score = computeScore(allChecks, true)
@@ -759,6 +805,8 @@ export async function runHIPAAScan(input: HIPAAInput): Promise<HIPAAResult> {
     publicChecks,
     dashboardChecks,
     universalChecks,
+    supplyChainChecks,
+    supplyChainReport,
 
     criticalFindings,
     highFindings,
