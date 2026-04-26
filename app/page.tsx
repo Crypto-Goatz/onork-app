@@ -175,6 +175,24 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ═══ VIDEO ═══ */}
+      <section className="px-[clamp(16px,4vw,24px)] pb-16">
+        <div className="max-w-[900px] mx-auto">
+          <div className="relative w-full rounded-2xl overflow-hidden border border-white/[0.06] shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
+            >
+            <div className="relative pt-[56.25%]">
+              <iframe
+                src="https://www.youtube.com/embed/D91C8EPRixM?rel=0&modestbranding=1&showinfo=0&controls=1&color=white&iv_load_policy=3&disablekb=0&fs=0"
+                className="absolute inset-0 w-full h-full border-none"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen={false}
+                title="0nCore Demo"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ═══ PARTNER LOGOS ═══ */}
       <section style={{ padding: '0 clamp(16px, 4vw, 24px) 60px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(16px, 3vw, 36px)', flexWrap: 'wrap', maxWidth: 900, margin: '0 auto' }}>
