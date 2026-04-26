@@ -52,16 +52,21 @@ export function VoiceAIWidget() {
             </button>
           </div>
 
-          {/* CRM Voice AI iframe */}
-          <div className="flex-1 relative">
-            <iframe
-              src={`https://widgets.leadconnectorhq.com/loader.js?widget-id=${AGENT_ID}`}
-              className="w-full h-full border-none"
-              allow="microphone; autoplay"
-              title="Jaxx Voice AI"
+          {/* CRM Voice AI widget — loaded via script injection */}
+          <div className="flex-1 relative overflow-hidden">
+            <div
+              ref={(el) => {
+                if (!el || el.dataset.loaded) return
+                el.dataset.loaded = 'true'
+                const script = document.createElement('script')
+                script.src = 'https://widgets.leadconnectorhq.com/loader.js'
+                script.setAttribute('data-resources-url', 'https://widgets.leadconnectorhq.com/chat-widget/loader.js')
+                script.setAttribute('data-widget-id', AGENT_ID)
+                script.async = true
+                el.appendChild(script)
+              }}
+              className="w-full h-full"
             />
-            {/* Fallback: load via script injection if iframe doesn't work */}
-            <VoiceWidgetLoader agentId={AGENT_ID} />
           </div>
 
           <style>{`
@@ -73,21 +78,3 @@ export function VoiceAIWidget() {
   )
 }
 
-// Script-based loader as fallback
-function VoiceWidgetLoader({ agentId }: { agentId: string }) {
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center">
-      <div
-        ref={(el) => {
-          if (!el || el.querySelector('script')) return
-          const script = document.createElement('script')
-          script.src = 'https://widgets.leadconnectorhq.com/loader.js'
-          script.setAttribute('data-resources-url', 'https://widgets.leadconnectorhq.com/chat-widget/loader.js')
-          script.setAttribute('data-widget-id', agentId)
-          script.async = true
-          el.appendChild(script)
-        }}
-      />
-    </div>
-  )
-}
