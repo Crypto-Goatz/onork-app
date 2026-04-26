@@ -23,6 +23,10 @@
     {
       "path": "/api/cron/market-aggregate",
       "schedule": "30 11 * * *"
+    },
+    {
+      "path": "/api/cron/market-match",
+      "schedule": "0 3 * * *"
     }
   ]
 }
