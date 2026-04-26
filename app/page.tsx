@@ -157,21 +157,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right: Hero Video */}
-          <div style={{
-            position: 'relative', borderRadius: 20, overflow: 'hidden',
-            border: '1px solid rgba(126,217,87,0.15)',
-            boxShadow: '0 20px 80px rgba(0,0,0,0.5), 0 0 40px rgba(126,217,87,0.08)',
-            aspectRatio: '16/9',
-          }}>
-            <iframe
-              src="https://www.youtube.com/embed/D91C8EPRixM?rel=0&modestbranding=1&playsinline=1"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title="Integrate any MCP with AI — 0nCore"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-            />
-          </div>
         </div>
       </section>
 
