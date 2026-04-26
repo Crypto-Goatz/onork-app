@@ -158,25 +158,26 @@ export default function SocialPage() {
             {/* Connect buttons */}
             <div className="flex flex-wrap gap-2 mb-3">
               {[
-                { platform: 'google', label: 'Google', fn: crm.social.connectGoogle },
-                { platform: 'facebook', label: 'Facebook', fn: crm.social.connectFacebook },
-                { platform: 'linkedin', label: 'LinkedIn', fn: crm.social.connectLinkedin },
-                { platform: 'twitter', label: 'X / Twitter', fn: crm.social.connectTwitter },
-                { platform: 'instagram', label: 'Instagram', fn: crm.social.connectInstagram },
-                { platform: 'tiktok', label: 'TikTok', fn: crm.social.connectTiktok },
+                { platform: 'google', label: 'Google' },
+                { platform: 'facebook', label: 'Facebook' },
+                { platform: 'linkedin', label: 'LinkedIn' },
+                { platform: 'twitter', label: 'X / Twitter' },
+                { platform: 'instagram', label: 'Instagram' },
+                { platform: 'tiktok', label: 'TikTok' },
               ].filter(p => !accounts.some(a => a.platform?.toLowerCase() === p.platform)).map(p => {
                 const Icon = PLATFORM_ICON[p.platform] || Globe
                 return (
                   <button key={p.platform} onClick={async () => {
                     try {
-                      const data = await p.fn()
-                      if (data.url) {
-                        const popup = window.open(data.url, `connect-${p.platform}`, 'width=600,height=700')
+                      const data = await crm.social.connect(p.platform)
+                      const url = data.url || data.authUrl || data.redirectUrl
+                      if (url) {
+                        const popup = window.open(url, `connect-${p.platform}`, 'width=600,height=700')
                         const check = setInterval(() => {
                           if (popup?.closed) { clearInterval(check); loadData() }
                         }, 1000)
                       } else {
-                        toast.error(`No OAuth URL returned for ${p.label}. Connect via CRM Social Planner settings.`)
+                        toast.error(`No OAuth URL returned for ${p.label}. The CRM may need this platform configured first.`)
                       }
                     } catch (err) {
                       toast.error(err instanceof Error ? err.message : `Failed to connect ${p.label}`)

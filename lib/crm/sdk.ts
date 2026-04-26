@@ -274,12 +274,7 @@ export interface SocialPost {
 
 export const social = {
   accounts: () => crmCall<{ accounts: SocialAccount[] }>('GET', '/social-media-posting/oauth'),
-  connectGoogle: () => crmCall<{ url: string }>('POST', '/social-media-posting/oauth/google/start', {}),
-  connectFacebook: () => crmCall<{ url: string }>('POST', '/social-media-posting/oauth/facebook/start', {}),
-  connectLinkedin: () => crmCall<{ url: string }>('POST', '/social-media-posting/oauth/linkedin/start', {}),
-  connectTwitter: () => crmCall<{ url: string }>('POST', '/social-media-posting/oauth/twitter/start', {}),
-  connectTiktok: () => crmCall<{ url: string }>('POST', '/social-media-posting/oauth/tiktok/start', {}),
-  connectInstagram: () => crmCall<{ url: string }>('POST', '/social-media-posting/oauth/instagram/start', {}),
+  connect: (platform: string) => crmCall<{ url?: string; authUrl?: string; redirectUrl?: string }>('GET', `/social-media-posting/oauth/${platform}/start?originUrl=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : 'https://0ncore.com/dashboard/crm/social')}`),
   posts: (params?: { limit?: number; skip?: number; status?: string }) => {
     const qs = new URLSearchParams()
     if (params?.limit) qs.set('limit', String(params.limit))

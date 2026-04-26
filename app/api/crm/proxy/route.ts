@@ -69,6 +69,11 @@ export async function POST(req: NextRequest) {
     url = `${url}${sep}locationId=${locationId}`
   }
 
+  // Social OAuth start endpoints also need userId
+  if (method === 'GET' && url.includes('/social-media-posting/oauth/') && url.includes('/start') && !url.includes('userId')) {
+    url = `${url}&userId=${user.id}`
+  }
+
   // For POST/PUT/PATCH, inject locationId into body if not present
   let finalBody = reqBody
   if (['POST', 'PUT', 'PATCH'].includes(method) && reqBody && typeof reqBody === 'object' && !reqBody.locationId) {
