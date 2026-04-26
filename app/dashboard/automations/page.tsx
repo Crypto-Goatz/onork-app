@@ -34,6 +34,7 @@ import PipelineView from '@/components/automations/PipelineView'
 import DotOnView from '@/components/automations/DotOnView'
 import type { CapabilityNodeType, CapabilityNodeData } from '@/components/automations/CapabilityNode'
 import type { Capability } from '@/components/automations/capabilities'
+import QuickConfigModal from '@/components/automations/QuickConfigModal'
 
 type ViewMode = 'chat' | 'workflow' | 'pipeline' | 'doton'
 
@@ -69,6 +70,9 @@ export default function AutomationsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('workflow')
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
   const pendingViewMode = useRef<ViewMode | null>(null)
+
+  // Quick config modal — shows immediately when a node is added
+  const [quickConfigNode, setQuickConfigNode] = useState<CapabilityNodeType | null>(null)
 
   // Chat messages lifted to parent — persists across tab switches
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -150,6 +154,11 @@ export default function AutomationsPage() {
     if (newEdge) setEdges(prev => [...prev, newEdge])
     setStepCounter(newCounter)
     setSaveStatus('unsaved')
+
+    // Show quick config modal if this capability has config fields
+    if (capability.configFields && capability.configFields.length > 0) {
+      setQuickConfigNode(newNode)
+    }
   }, [nodes, stepCounter])
 
   const handleUpdateWorkflow = useCallback((newNodes: CapabilityNodeType[], newEdges: Edge[], name?: string) => {
@@ -300,6 +309,35 @@ export default function AutomationsPage() {
     } catch {}
   })
 
+  // AI fill handler for quick config modal
+  const handleAIFillConfig = useCallback(async (nodeId: string, capabilityId: string): Promise<Record<string, string> | null> => {
+    try {
+      const res = await fetch('/api/automations/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          capability_id: capabilityId,
+          automation_name: automationName,
+          existing_nodes: nodes.map(n => ({ id: n.id, name: n.data.name, category: n.data.category })),
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        return data.config || null
+      }
+    } catch {}
+    return null
+  }, [automationName, nodes])
+
+  const handleQuickConfigSave = useCallback((nodeId: string, config: Record<string, string>) => {
+    setNodes(prev => prev.map(n =>
+      n.id === nodeId ? { ...n, data: { ...n.data, config, configured: true } } : n
+    ))
+    setQuickConfigNode(null)
+    setSaveStatus('unsaved')
+    toast.success('Step configured')
+  }, [])
+
   const menuSizeIcons = {
     minimize: Minimize2,
     compact: Columns2,
@@ -357,6 +395,16 @@ export default function AutomationsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Quick Config Modal — shows immediately when a node with config fields is added */}
+      {quickConfigNode && (
+        <QuickConfigModal
+          node={quickConfigNode}
+          onSave={handleQuickConfigSave}
+          onSkip={() => setQuickConfigNode(null)}
+          onAIFill={handleAIFillConfig}
+        />
       )}
 
       {/* Top Bar */}
