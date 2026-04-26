@@ -160,21 +160,97 @@ export default function AdminPage() {
     { href: '/dashboard/admin/marketing', label: 'Marketing Tools', desc: 'Content & social', accent: 'purple', icon: 'M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z' },
   ]
 
+  // VIP location config — hardcoded for mike@rocketopp.com
+  const VIP_LOCATIONS = [
+    { id: '6MSqx0trfxgLxeHBJE1k', name: 'RocketOpp', pit: 'pit-0317b406-8a47-478e-ac28-a88763a9bb3f' },
+    { id: 'nphConTwfHcVE1oA0uep', name: '0nCore', pit: 'pit-f5f41b5a-32e4-4aee-84f4-a130cd3aad91' },
+  ]
+  const [activeLocation, setActiveLocation] = useState(VIP_LOCATIONS[1])
+
+  const VIP_APPS = [
+    { name: 'CRM Dashboard', href: '/crm', badge: 'SDK' },
+    { name: 'Automations', href: '/dashboard/automations', badge: 'NEW' },
+    { name: 'Freelancer', href: '/dashboard/freelancer', badge: 'NEW' },
+    { name: 'Market Intel', href: '/dashboard/market-intel', badge: 'NEW' },
+    { name: 'LinkedIn Bot', href: '/dashboard/linkedin-bot' },
+    { name: 'Social Planner', href: '/dashboard/social' },
+    { name: 'Email Builder', href: '/dashboard/email/builder' },
+    { name: 'Voice AI', href: '/dashboard/voice' },
+    { name: 'Blog Engine', href: '/dashboard/blog' },
+    { name: 'Analytics', href: '/dashboard/analytics', badge: 'CRO9' },
+    { name: 'Security Scanner', href: '/dashboard/security', badge: 'HIPAA' },
+    { name: 'WordPress', href: '/dashboard/wordpress' },
+    { name: 'Courses', href: '/dashboard/courses' },
+    { name: '0nExec', href: '/console/exec' },
+    { name: 'Contacts', href: '/dashboard/contacts' },
+    { name: 'Calendar', href: '/dashboard/calendar' },
+    { name: 'Invoices', href: '/dashboard/invoices' },
+    { name: 'Pipeline', href: '/dashboard/pipeline' },
+    { name: 'Workflows', href: '/dashboard/workflows' },
+    { name: 'Knowledge Base', href: '/dashboard/training' },
+    { name: 'Brand Builder', href: '/dashboard/brand' },
+    { name: 'Downloads', href: '/downloads' },
+  ]
+
   return (
-    <div className="pb-10 animate-fade-in">
+    <div className="pb-10 animate-fade-in max-w-[1200px] mx-auto">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-core-green tracking-tight m-0">
             Admin Control Panel
           </h1>
           <p className="text-core-text-muted text-xs mt-1">
-            Master dashboard for the 0n ecosystem
+            VIP access — all products, all locations, no restrictions
           </p>
         </div>
         <div className="px-3 py-1.5 bg-core-green/[0.08] border border-core-green/20 rounded text-core-green text-xs font-semibold">
           mike@rocketopp.com
+        </div>
+      </div>
+
+      {/* ═══ VIP LOCATION SWITCHER ═══ */}
+      <div className="mb-6 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-[10px] text-white/30 font-bold uppercase tracking-wider">Active Location</span>
+        </div>
+        <div className="flex gap-2 mb-4">
+          {VIP_LOCATIONS.map(loc => (
+            <button key={loc.id} onClick={() => setActiveLocation(loc)}
+              className={`flex-1 px-4 py-3 rounded-lg border text-sm font-bold cursor-pointer transition-all ${
+                activeLocation.id === loc.id
+                  ? 'bg-[#7ed957]/10 border-[#7ed957]/30 text-[#7ed957]'
+                  : 'bg-transparent border-white/[0.06] text-white/40 hover:text-white hover:border-white/[0.12]'
+              }`}>
+              {loc.name}
+              <span className="block text-[10px] font-mono text-white/20 mt-0.5">{loc.id}</span>
+            </button>
+          ))}
+          <a href={`https://app.rocketclients.com/v2/location/${activeLocation.id}`}
+            target="_blank" rel="noopener noreferrer"
+            className="px-4 py-3 rounded-lg border border-white/[0.06] bg-white/[0.02] text-xs text-white/50 font-semibold hover:text-white hover:border-[#00d4ff]/30 transition-colors flex items-center gap-1.5 no-underline cursor-pointer">
+            Open in CRM
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+          </a>
+        </div>
+
+        {/* VIP Apps Grid */}
+        <div className="text-[10px] text-white/25 font-bold uppercase tracking-wider mb-2">All Products — VIP Access</div>
+        <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-1.5">
+          {VIP_APPS.map(app => (
+            <Link key={app.href} href={app.href}
+              className="px-2.5 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:border-[#7ed957]/20 hover:bg-[#7ed957]/[0.03] transition-all text-center no-underline group">
+              <div className="text-[11px] font-semibold text-white/70 group-hover:text-white truncate">{app.name}</div>
+              {app.badge && <span className="text-[8px] font-bold text-[#7ed957]/60 uppercase">{app.badge}</span>}
+            </Link>
+          ))}
+        </div>
+
+        <div className="mt-3 flex items-center gap-3 text-[10px] text-white/15">
+          <span>PIT: <code className="text-white/25 font-mono">{activeLocation.pit.slice(0, 16)}...</code></span>
+          <span>Location: <code className="text-white/25 font-mono">{activeLocation.id}</code></span>
+          <span className="text-[#7ed957]/40 font-semibold">VIP — All features unlocked</span>
         </div>
       </div>
 
