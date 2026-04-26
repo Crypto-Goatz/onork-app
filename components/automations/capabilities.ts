@@ -37,6 +37,7 @@ export const CATEGORIES: CapabilityCategory[] = [
   { id: 'learn', name: 'Learn', icon: 'GraduationCap', color: '#06b6d4' },
   { id: 'triggers', name: 'Triggers', icon: 'Zap', color: '#ef4444' },
   { id: 'wordpress', name: 'WordPress', icon: 'Globe', color: '#21759b' },
+  { id: 'google', name: 'Google Workspace', icon: 'FileSpreadsheet', color: '#34a853' },
 ];
 
 export const CAPABILITIES: Capability[] = [
@@ -517,6 +518,72 @@ export const CAPABILITIES: Capability[] = [
     icon: 'ShoppingCart',
     color: '#21759b',
     steps: ['Get order details', 'Process payment status', 'Update order status', 'Notify customer'],
+  },
+
+  // ── Google Workspace ──
+  {
+    id: 'sheets_read',
+    name: 'Read Google Sheet',
+    description: 'Read data from a Google Sheets spreadsheet',
+    category: 'google',
+    icon: 'FileSpreadsheet',
+    color: '#34a853',
+    steps: ['Connect to Google Sheets', 'Read specified range', 'Return data as rows'],
+    configFields: [
+      { key: 'spreadsheet_id', label: 'Spreadsheet ID', type: 'text', required: true, placeholder: 'From the sheet URL' },
+      { key: 'range', label: 'Range', type: 'text', required: true, placeholder: 'Sheet1!A1:Z100', default: 'Sheet1!A:Z' },
+    ],
+  },
+  {
+    id: 'sheets_append',
+    name: 'Append to Google Sheet',
+    description: 'Add new rows to a Google Sheets spreadsheet',
+    category: 'google',
+    icon: 'FilePlus',
+    color: '#34a853',
+    steps: ['Connect to Google Sheets', 'Format data as rows', 'Append to sheet'],
+    configFields: [
+      { key: 'spreadsheet_id', label: 'Spreadsheet ID', type: 'text', required: true },
+      { key: 'range', label: 'Range', type: 'text', required: true, default: 'Sheet1!A:Z' },
+    ],
+  },
+  {
+    id: 'sheets_write',
+    name: 'Write to Google Sheet',
+    description: 'Overwrite a range in a Google Sheets spreadsheet',
+    category: 'google',
+    icon: 'FileOutput',
+    color: '#34a853',
+    steps: ['Connect to Google Sheets', 'Format data', 'Write to specified range'],
+    configFields: [
+      { key: 'spreadsheet_id', label: 'Spreadsheet ID', type: 'text', required: true },
+      { key: 'range', label: 'Range', type: 'text', required: true, placeholder: 'Sheet1!A1:G1' },
+    ],
+  },
+  {
+    id: 'sheets_log_lead',
+    name: 'Log Lead to Sheet',
+    description: 'Automatically log a new lead to a tracking spreadsheet',
+    category: 'google',
+    icon: 'UserPlus',
+    color: '#34a853',
+    steps: ['Get contact data from trigger', 'Format as row (name, email, phone, source, date)', 'Append to lead tracking sheet'],
+    configFields: [
+      { key: 'spreadsheet_id', label: 'Lead Sheet ID', type: 'text', required: true },
+    ],
+  },
+  {
+    id: 'sheets_export_report',
+    name: 'Export Report to Sheet',
+    description: 'Generate a report and write it to Google Sheets',
+    category: 'google',
+    icon: 'BarChart3',
+    color: '#34a853',
+    steps: ['Gather data from CRM/analytics', 'Format as table', 'Write to new sheet tab', 'Share link'],
+    configFields: [
+      { key: 'spreadsheet_id', label: 'Report Sheet ID', type: 'text', required: true },
+      { key: 'report_type', label: 'Report Type', type: 'select', options: ['Pipeline Summary', 'Contact Export', 'Revenue Report', 'Social Analytics', 'Custom'], default: 'Pipeline Summary' },
+    ],
   },
 ];
 

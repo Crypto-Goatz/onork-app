@@ -370,6 +370,19 @@ export const tags = {
 }
 
 // ═══════════════════════════════════════════════════════
+// GOOGLE SHEETS
+// ═══════════════════════════════════════════════════════
+
+export const sheets = {
+  read: (spreadsheetId: string, range: string) =>
+    crmCall<{ values: unknown[][] }>('POST', '/api/sheets/read', { spreadsheetId, range }),
+  write: (spreadsheetId: string, range: string, values: unknown[][]) =>
+    crmCall<{ updated: boolean }>('POST', '/api/sheets/write', { spreadsheetId, range, values }),
+  append: (spreadsheetId: string, range: string, values: unknown[][]) =>
+    crmCall<{ appended: boolean }>('POST', '/api/sheets/append', { spreadsheetId, range, values }),
+}
+
+// ═══════════════════════════════════════════════════════
 // CUSTOM FIELDS
 // ═══════════════════════════════════════════════════════
 
