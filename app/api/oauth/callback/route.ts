@@ -37,11 +37,19 @@ export async function GET(req: NextRequest) {
   try {
     // Try marketplace app first, then agency app
     // The OAuth code is tied to whichever app started the flow
+    const marketplaceSecret = MARKETPLACE_APP.clientSecret || process.env.CRM_MARKETPLACE_CLIENT_SECRET || ''
     const apps = [
       {
         name: 'marketplace',
         clientId: MARKETPLACE_APP.clientId,
-        clientSecret: MARKETPLACE_APP.clientSecret || process.env.CRM_MARKETPLACE_CLIENT_SECRET || '',
+        clientSecret: marketplaceSecret,
+        redirectUri: MARKETPLACE_APP.redirectUri,
+        appId: MARKETPLACE_APP.appId,
+      },
+      {
+        name: 'marketplace-alt',
+        clientId: MARKETPLACE_APP.altClientId || '69c762225a31e1cd2f28dd4c-mnsa16jo',
+        clientSecret: marketplaceSecret,
         redirectUri: MARKETPLACE_APP.redirectUri,
         appId: MARKETPLACE_APP.appId,
       },
