@@ -36,6 +36,7 @@ export const CATEGORIES: CapabilityCategory[] = [
   { id: 'reports', name: 'Reports', icon: 'TrendingUp', color: '#eab308' },
   { id: 'learn', name: 'Learn', icon: 'GraduationCap', color: '#06b6d4' },
   { id: 'triggers', name: 'Triggers', icon: 'Zap', color: '#ef4444' },
+  { id: 'wordpress', name: 'WordPress', icon: 'Globe', color: '#21759b' },
 ];
 
 export const CAPABILITIES: Capability[] = [
@@ -407,6 +408,88 @@ export const CAPABILITIES: Capability[] = [
       { key: 'audience', label: 'Who is this for?', type: 'select', options: ['Myself', 'My team', 'My clients'], default: 'Myself' },
       { key: 'format', label: 'Format', type: 'select', options: ['Text lessons', 'Step-by-step guide', 'FAQ format', 'Video script'], default: 'Text lessons' },
     ],
+  },
+
+  // ── WordPress ──
+  {
+    id: 'wp_create_post',
+    name: 'WordPress: Create Blog Post',
+    description: 'Create a new blog post or page on your WordPress site',
+    category: 'wordpress',
+    icon: 'FileText',
+    color: '#21759b',
+    steps: ['Connect to WordPress site', 'Create post with AI-generated content', 'Set featured image', 'Publish or save as draft'],
+    configFields: [
+      { key: 'post_type', label: 'Type', type: 'select', options: ['post', 'page'], default: 'post' },
+      { key: 'status', label: 'Status', type: 'select', options: ['draft', 'publish'], default: 'draft' },
+    ],
+  },
+  {
+    id: 'wp_update_post',
+    name: 'WordPress: Update Post',
+    description: 'Update an existing WordPress post or page by ID or title',
+    category: 'wordpress',
+    icon: 'RefreshCw',
+    color: '#21759b',
+    steps: ['Find post by ID or title', 'Update content/title/status', 'Re-publish'],
+  },
+  {
+    id: 'wp_install_plugin',
+    name: 'WordPress: Install Plugin',
+    description: 'Search and install a plugin from the WordPress repository',
+    category: 'wordpress',
+    icon: 'Puzzle',
+    color: '#21759b',
+    steps: ['Search WP plugin repository', 'Install plugin', 'Activate if specified'],
+    configFields: [
+      { key: 'slug', label: 'Plugin Slug', type: 'text', required: true },
+      { key: 'activate', label: 'Auto-activate', type: 'toggle', default: 'true' },
+    ],
+  },
+  {
+    id: 'wp_upload_media',
+    name: 'WordPress: Upload Media',
+    description: 'Upload media files to the WordPress media library',
+    category: 'wordpress',
+    icon: 'Upload',
+    color: '#21759b',
+    steps: ['Download from URL', 'Upload to WP media library', 'Attach to post if specified'],
+  },
+  {
+    id: 'wp_seo_update',
+    name: 'WordPress: SEO Update',
+    description: 'Generate and apply optimized SEO meta data to a WordPress post',
+    category: 'wordpress',
+    icon: 'Search',
+    color: '#21759b',
+    steps: ['Get current SEO data', 'Generate optimized meta', 'Update post meta'],
+  },
+  {
+    id: 'wp_bulk_content',
+    name: 'WordPress: Bulk Content',
+    description: 'Generate multiple blog posts from a list of topics with CRO9 scoring',
+    category: 'wordpress',
+    icon: 'Layers',
+    color: '#21759b',
+    steps: ['Generate multiple posts from topics', 'Score each with CRO9', 'Create as drafts', 'Queue for review'],
+  },
+  {
+    id: 'wp_health_check',
+    name: 'WordPress: Site Health Check',
+    description: 'Run a health check on your WordPress site including plugins and version',
+    category: 'wordpress',
+    icon: 'Activity',
+    color: '#21759b',
+    steps: ['Check site status', 'Verify plugins', 'Check WP version', 'Report health'],
+  },
+  {
+    id: 'wc_process_order',
+    name: 'WordPress: WooCommerce Order',
+    description: 'Process a WooCommerce order including payment and customer notification',
+    category: 'wordpress',
+    icon: 'ShoppingCart',
+    color: '#21759b',
+    steps: ['Get order details', 'Process payment status', 'Update order status', 'Notify customer'],
   },
 ];
 
