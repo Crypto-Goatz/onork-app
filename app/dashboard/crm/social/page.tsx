@@ -155,11 +155,46 @@ export default function SocialPage() {
           {/* Connected Accounts */}
           <div className="mb-6">
             <h2 className="text-sm font-bold text-white/70 mb-3">Connected Accounts</h2>
+            {/* Connect buttons */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {[
+                { platform: 'google', label: 'Google', fn: crm.social.connectGoogle },
+                { platform: 'facebook', label: 'Facebook', fn: crm.social.connectFacebook },
+                { platform: 'linkedin', label: 'LinkedIn', fn: crm.social.connectLinkedin },
+                { platform: 'twitter', label: 'X / Twitter', fn: crm.social.connectTwitter },
+                { platform: 'instagram', label: 'Instagram', fn: crm.social.connectInstagram },
+                { platform: 'tiktok', label: 'TikTok', fn: crm.social.connectTiktok },
+              ].filter(p => !accounts.some(a => a.platform?.toLowerCase() === p.platform)).map(p => {
+                const Icon = PLATFORM_ICON[p.platform] || Globe
+                return (
+                  <button key={p.platform} onClick={async () => {
+                    try {
+                      const data = await p.fn()
+                      if (data.url) {
+                        const popup = window.open(data.url, `connect-${p.platform}`, 'width=600,height=700')
+                        const check = setInterval(() => {
+                          if (popup?.closed) { clearInterval(check); loadData() }
+                        }, 1000)
+                      } else {
+                        toast.error(`No OAuth URL returned for ${p.label}. Connect via CRM Social Planner settings.`)
+                      }
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : `Failed to connect ${p.label}`)
+                    }
+                  }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] text-white/50 text-xs font-medium cursor-pointer hover:text-white hover:border-[#7ed957]/30 transition-colors">
+                    <Icon className="w-3.5 h-3.5" />
+                    Connect {p.label}
+                  </button>
+                )
+              })}
+            </div>
+
             {accounts.length === 0 ? (
               <div className="px-4 py-6 rounded-xl bg-white/[0.02] border border-white/[0.06] text-center">
                 <Globe className="w-8 h-8 mx-auto text-white/10 mb-2" />
-                <p className="text-white/40 text-xs">No social accounts connected</p>
-                <p className="text-white/20 text-[10px] mt-1">Connect accounts in your CRM settings</p>
+                <p className="text-white/40 text-xs">No social accounts connected yet</p>
+                <p className="text-white/20 text-[10px] mt-1">Use the buttons above to connect your social accounts</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
