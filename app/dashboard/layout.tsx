@@ -139,7 +139,12 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   if (isEmbed) {
     return (
       <RoleContext.Provider value={roleState}>
-        <div className="min-h-screen bg-core-bg">
+        <div className="min-h-screen bg-core-bg relative">
+          {/* Background image with dark overlay */}
+          <div className="fixed inset-0 z-0 pointer-events-none">
+            <div className="absolute inset-0 bg-[url('/images/0ncore-bg.jpg')] bg-cover bg-center bg-no-repeat opacity-[0.08]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0a0e17]/90 via-[#0a0e17]/95 to-[#0a0e17]" />
+          </div>
           {/* Minimal embed header */}
           <div className="flex items-center justify-between px-4 py-2 border-b border-core-border bg-core-card">
             <div className="flex items-center gap-2">
@@ -209,9 +214,14 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   // Classic layout (default)
   return (
     <RoleContext.Provider value={roleState}>
-      <div className="jp-wrapper">
+      <div className="jp-wrapper relative">
+        {/* Background image with dark overlay */}
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[url('/images/0ncore-bg.jpg')] bg-cover bg-center bg-no-repeat opacity-[0.06]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0e17]/80 via-[#0a0e17]/95 to-[#0a0e17]" />
+        </div>
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isAdmin={isAdmin} />
-        <div className="jp-main">
+        <div className="jp-main relative z-[1]">
           <Header {...headerProps} />
           <main className="jp-content">
             {children}
