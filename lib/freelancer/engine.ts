@@ -244,6 +244,36 @@ export async function processOrder(orderId: string): Promise<{
     monetaryValue: 0,
   })
 
+  // Send follow-up email to buyer via CRM (if we have contact + email)
+  const buyerEmail = (parsed as { buyer_email?: string }).buyer_email
+  if (crmResult.contactId && buyerEmail) {
+    try {
+      const CRM_BASE = 'https://services.leadconnectorhq.com'
+      const PIT = process.env.CRM_PIT_ONCORE || process.env.CRM_PIT_RAW || process.env.CRM_PIT
+      const LOCATION = process.env.CRM_LOCATION_ID
+      if (PIT && LOCATION) {
+        await fetch(`${CRM_BASE}/conversations/messages`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${PIT}`,
+            'Content-Type': 'application/json',
+            Version: '2021-07-28',
+          },
+          body: JSON.stringify({
+            type: 'Email',
+            contactId: crmResult.contactId,
+            locationId: LOCATION,
+            subject: `Your ${tpl.label} is ready`,
+            message: bundle.deliveryMessage,
+            emailFrom: 'noreply@0nmcp.com',
+          }),
+        })
+      }
+    } catch (emailErr) {
+      console.warn('[freelancer] Follow-up email failed:', emailErr)
+    }
+  }
+
   // Update order with CRM refs
   await supabase
     .from('freelancer_orders')

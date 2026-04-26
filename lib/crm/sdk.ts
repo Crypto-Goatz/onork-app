@@ -101,6 +101,44 @@ export const conversations = {
   send: (conversationId: string, data: { type: string; message: string; contactId: string }) =>
     crmCall('POST', `/conversations/messages`, { ...data, conversationId }),
   search: (contactId: string) => crmCall<{ conversations: Conversation[] }>('GET', `/conversations/search?contactId=${contactId}`),
+  sendEmail: (data: {
+    contactId: string
+    subject: string
+    body: string
+    emailFrom?: string
+    html?: string
+  }) => crmCall('POST', '/conversations/messages', {
+    type: 'Email',
+    contactId: data.contactId,
+    subject: data.subject,
+    message: data.body,
+    html: data.html || data.body,
+    emailFrom: data.emailFrom || 'noreply@0nmcp.com',
+  }),
+  sendSMS: (data: { contactId: string; message: string }) =>
+    crmCall('POST', '/conversations/messages', {
+      type: 'SMS',
+      contactId: data.contactId,
+      message: data.message,
+    }),
+}
+
+// ═══════════════════════════════════════════════════════
+// EMAILS (TEMPLATES + SCHEDULING)
+// ═══════════════════════════════════════════════════════
+
+export const emails = {
+  templates: (params?: { limit?: number; offset?: number }) => {
+    const qs = new URLSearchParams()
+    if (params?.limit) qs.set('limit', String(params.limit))
+    return crmCall<{ templates: Array<{ id: string; name: string; type: string }> }>('GET', `/emails/builder?${qs}`)
+  },
+  getTemplate: (id: string) => crmCall<{ template: Record<string, unknown> }>('GET', `/emails/builder/${id}`),
+  scheduled: (params?: { limit?: number }) => {
+    const qs = new URLSearchParams()
+    if (params?.limit) qs.set('limit', String(params.limit))
+    return crmCall<{ schedules: Array<{ id: string; name: string; status: string; scheduledAt: string }> }>('GET', `/emails/schedule?${qs}`)
+  },
 }
 
 // ═══════════════════════════════════════════════════════

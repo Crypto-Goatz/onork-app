@@ -154,6 +154,33 @@ export const CAPABILITIES: Capability[] = [
 
   // ── Communication ──
   {
+    id: 'send_email',
+    name: 'Send Email',
+    description: 'Send a single email to a contact via CRM',
+    category: 'communicate',
+    icon: 'Mail',
+    color: '#3b82f6',
+    steps: ['Resolve contact email', 'Build email body (plain or AI-generated)', 'Send via CRM conversations API', 'Log in conversation thread'],
+    configFields: [
+      { key: 'subject', label: 'Subject', type: 'text', placeholder: 'Your order is ready', required: true },
+      { key: 'body', label: 'Email body', type: 'text', placeholder: 'Hi {{first_name}}, ...' },
+      { key: 'from', label: 'From email', type: 'text', placeholder: 'noreply@0nmcp.com', default: 'noreply@0nmcp.com' },
+      { key: 'ai_generate', label: 'AI-generate body from context', type: 'toggle', default: 'false' },
+    ],
+  },
+  {
+    id: 'send_email_template',
+    name: 'Send Email from Template',
+    description: 'Send an email using a saved CRM email template',
+    category: 'communicate',
+    icon: 'FileText',
+    color: '#3b82f6',
+    steps: ['Load email template', 'Merge contact fields', 'Send via CRM', 'Track opens/clicks'],
+    configFields: [
+      { key: 'template_id', label: 'Template ID', type: 'text', placeholder: 'template_xxxxx', required: true },
+    ],
+  },
+  {
     id: 'start_email_campaign',
     name: 'Start Email Campaign',
     description: 'Enroll contacts into an automated email sequence',
