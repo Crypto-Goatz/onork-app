@@ -49,7 +49,6 @@ export function ContactClient() {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [voiceActive, setVoiceActive] = useState(false)
   const [showCalendar, setShowCalendar] = useState(false)
   const [showContactForm, setShowContactForm] = useState(false)
   const [contactForm, setContactForm] = useState({ name: '', email: '', reason: '', message: '' })
@@ -61,6 +60,13 @@ export function ContactClient() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, loading])
+
+  // Auto-start listening when voice mode is selected
+  useEffect(() => {
+    if (chatMode === 'voice' && recognitionRef.current && !isListening && !isSpeaking) {
+      setTimeout(() => startListening(), 500)
+    }
+  }, [chatMode])
 
   // Voice state
   const [isListening, setIsListening] = useState(false)
@@ -254,26 +260,72 @@ export function ContactClient() {
               </div>
             )}
 
-            {/* ═══ VOICE MODE — launches offcanvas with HeyGen avatar ═══ */}
+            {/* ═══ VOICE MODE — inline, starts listening immediately ═══ */}
             {chatMode === 'voice' && (
-              <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 gap-6">
-                {/* Mic button — opens offcanvas */}
-                <div className="relative">
-                  <button onClick={() => setVoiceActive(true)}
-                    className="w-[120px] h-[120px] rounded-full border-2 border-[#14b8a6]/30 bg-[#161b22] flex items-center justify-center cursor-pointer transition-all hover:border-[#7ed957]/40 hover:bg-[#7ed957]/[0.04] group">
-                    <Mic className="w-10 h-10 text-[#14b8a6] group-hover:text-[#7ed957] transition-colors" />
+              <div className="flex-1 flex flex-col">
+                {/* Header */}
+                <div className="px-5 py-3 border-b border-white/[0.06] bg-gradient-to-r from-[#7ed957]/[0.04] to-transparent flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-[#7ed957]/10 border border-[#7ed957]/20 flex items-center justify-center">
+                      <Mic className="w-4 h-4 text-[#7ed957]" />
+                    </div>
+                    <div>
+                      <h3 className="text-[13px] font-bold text-white flex items-center gap-1.5">
+                        Jaxx Voice <span className="w-[5px] h-[5px] rounded-full bg-[#7ed957] shadow-[0_0_6px_#7ed957] animate-pulse" />
+                      </h3>
+                      <p className="text-[10px] text-white/25">Speak naturally</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setChatMode('select')} className="text-[11px] text-white/30 hover:text-white/60 bg-transparent border-none cursor-pointer transition-colors">
+                    Switch mode
                   </button>
-                  {voiceActive && <div className="absolute inset-0 rounded-full border-2 border-[#7ed957]/20 animate-ping pointer-events-none" />}
                 </div>
 
-                <div className="text-center">
-                  <p className="text-[14px] font-semibold text-white mb-1">Talk to Jaxx</p>
-                  <p className="text-[12px] text-white/40">Tap the mic to start a voice conversation</p>
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                  {messages.map((msg, i) => (
+                    <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                      {msg.role === 'assistant' && (
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#7ed957]/20 to-[#00d4ff]/20 flex items-center justify-center shrink-0 mt-0.5">
+                          <Sparkles className="w-3 h-3 text-[#7ed957]" />
+                        </div>
+                      )}
+                      <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-[12px] leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-[#7ed957]/15 border border-[#7ed957]/20 text-white rounded-br-sm'
+                          : 'bg-white/[0.04] border border-white/[0.06] text-white/80 rounded-bl-sm'
+                      }`}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+                  {voiceTranscript && isListening && (
+                    <div className="flex gap-2 justify-end">
+                      <div className="max-w-[85%] rounded-2xl px-3.5 py-2 text-[12px] text-white/40 bg-white/[0.02] border border-white/[0.04] rounded-br-sm italic">
+                        {voiceTranscript}...
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <button onClick={() => setChatMode('select')} className="text-[11px] text-white/20 hover:text-white/50 bg-transparent border-none cursor-pointer mt-2">
-                  Switch to text
-                </button>
+                {/* Mic control */}
+                <div className="px-4 py-4 border-t border-white/[0.06] flex flex-col items-center gap-2 shrink-0">
+                  <button
+                    onClick={isListening ? stopListening : isSpeaking ? stopSpeaking : startListening}
+                    className={`w-14 h-14 rounded-full flex items-center justify-center cursor-pointer border-2 transition-all ${
+                      isListening
+                        ? 'bg-[#7ed957]/20 border-[#7ed957] animate-pulse'
+                        : isSpeaking
+                        ? 'bg-[#00d4ff]/20 border-[#00d4ff]'
+                        : 'bg-[#161b22] border-white/[0.1] hover:border-[#7ed957]/40'
+                    }`}
+                  >
+                    <Mic className={`w-6 h-6 ${isListening ? 'text-[#7ed957]' : isSpeaking ? 'text-[#00d4ff]' : 'text-white/40'}`} />
+                  </button>
+                  <p className="text-[10px] text-white/25">
+                    {isListening ? 'Listening...' : isSpeaking ? 'Speaking — tap to stop' : 'Tap to speak'}
+                  </p>
+                </div>
               </div>
             )}
 
@@ -442,84 +494,6 @@ export function ContactClient() {
         </div>
       </section>
 
-      {/* Voice Offcanvas — slides in from right */}
-      {voiceActive && (
-        <div className="fixed inset-0 z-[10000]">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setVoiceActive(false)} />
-          <div className="absolute top-0 right-0 bottom-0 w-full max-w-md bg-[#0d1117] border-l border-white/[0.06] shadow-[−20px_0_60px_rgba(0,0,0,0.5)] animate-[slideInRight_0.3s_ease-out] flex flex-col">
-            {/* Header */}
-            <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#7ed957]/10 border border-[#7ed957]/20 flex items-center justify-center">
-                  <Mic className="w-5 h-5 text-[#7ed957]" />
-                </div>
-                <div>
-                  <h3 className="text-[14px] font-bold text-white flex items-center gap-1.5">
-                    Jaxx Voice <span className="w-[6px] h-[6px] rounded-full bg-[#7ed957] shadow-[0_0_8px_#7ed957] animate-pulse" />
-                  </h3>
-                  <p className="text-[10px] text-white/30">AI Voice Assistant</p>
-                </div>
-              </div>
-              <button onClick={() => setVoiceActive(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all bg-transparent border-none cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Voice Chat — Live conversation */}
-            <div className="flex-1 flex flex-col">
-              {/* Messages scroll area */}
-              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-                {messages.map((msg, i) => (
-                  <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                    {msg.role === 'assistant' && (
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#7ed957]/20 to-[#00d4ff]/20 flex items-center justify-center shrink-0 mt-0.5">
-                        <Sparkles className="w-3 h-3 text-[#7ed957]" />
-                      </div>
-                    )}
-                    <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-[12px] leading-relaxed ${
-                      msg.role === 'user'
-                        ? 'bg-[#7ed957]/15 border border-[#7ed957]/20 text-white rounded-br-sm'
-                        : 'bg-white/[0.04] border border-white/[0.06] text-white/80 rounded-bl-sm'
-                    }`}>
-                      {msg.content}
-                    </div>
-                  </div>
-                ))}
-                {voiceTranscript && isListening && (
-                  <div className="flex gap-2 justify-end">
-                    <div className="max-w-[85%] rounded-2xl px-3.5 py-2 text-[12px] text-white/40 bg-white/[0.02] border border-white/[0.04] rounded-br-sm italic">
-                      {voiceTranscript}...
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Voice controls */}
-              <div className="px-4 py-5 border-t border-white/[0.06] flex flex-col items-center gap-3 shrink-0">
-                {/* Big mic button */}
-                <button
-                  onClick={isListening ? stopListening : isSpeaking ? stopSpeaking : startListening}
-                  className={`w-16 h-16 rounded-full flex items-center justify-center cursor-pointer border-2 transition-all ${
-                    isListening
-                      ? 'bg-[#7ed957]/20 border-[#7ed957] animate-pulse'
-                      : isSpeaking
-                      ? 'bg-[#00d4ff]/20 border-[#00d4ff]'
-                      : 'bg-[#161b22] border-white/[0.1] hover:border-[#7ed957]/40'
-                  }`}
-                >
-                  <Mic className={`w-7 h-7 ${isListening ? 'text-[#7ed957]' : isSpeaking ? 'text-[#00d4ff]' : 'text-white/40'}`} />
-                </button>
-                <p className="text-[11px] text-white/30">
-                  {isListening ? 'Listening...' : isSpeaking ? 'Jaxx is speaking — tap to stop' : 'Tap to speak'}
-                </p>
-              </div>
-            </div>
-          </div>
-          <style>{`
-            @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
-          `}</style>
-        </div>
-      )}
 
       {/* Calendar Modal */}
       <Modal open={showCalendar} onClose={() => setShowCalendar(false)}>
