@@ -54,14 +54,25 @@ export async function POST(req: NextRequest) {
   if (!path) return NextResponse.json({ error: 'path required' }, { status: 400 })
 
   // Resolve location — NEVER fall back to another user's location
-  let locationId = overrideLocationId
+  let locationId = overrideLocationId?.trim() || ''
   if (!locationId) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('crm_location_id')
+      .select('crm_location_id, is_admin, is_vip')
       .eq('id', user.id)
       .single()
-    locationId = profile?.crm_location_id
+    locationId = profile?.crm_location_id?.trim() || ''
+
+    // Failsafe: if admin/VIP has empty location, auto-fix it
+    if (!locationId && (profile?.is_admin || profile?.is_vip)) {
+      // Set a default location for admin users and persist it
+      const defaultLoc = process.env.CRM_LOCATION_ID || ''
+      if (defaultLoc) {
+        locationId = defaultLoc
+        // Persist so this doesn't happen again
+        await supabase.from('profiles').update({ crm_location_id: defaultLoc }).eq('id', user.id)
+      }
+    }
   }
 
   if (!locationId) {
