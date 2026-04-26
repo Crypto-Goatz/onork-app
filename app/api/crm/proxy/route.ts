@@ -16,10 +16,11 @@ const supabase = createClient(
 )
 
 // Get the correct token for a location:
-// 1. Marketplace app OAuth token (has ALL scopes for the location)
-// 2. Agency PIT (fallback — has sub-location access)
+// 1. Marketplace app OAuth token (has ALL scopes)
+// 2. Location-specific PIT (CRM_PIT_ONCORE / CRM_PIT_RAW)
+// 3. Master PIT (CRM_PIT_ROCKETOPP)
 async function getTokenForLocation(locationId: string): Promise<string | null> {
-  // Check for installed marketplace app OAuth token
+  // Check for installed marketplace app OAuth token first
   const { data: installation } = await supabase
     .from('crm_installations')
     .select('access_token, expires_at')
@@ -28,17 +29,16 @@ async function getTokenForLocation(locationId: string): Promise<string | null> {
     .single()
 
   if (installation?.access_token) {
-    // TODO: check expires_at and refresh if needed
     return installation.access_token
   }
 
-  // Fallback: agency PIT (has access to all sub-locations)
-  const agencyPit = process.env.CRM_AGENCY_PIT_NEW || process.env.CRM_AGENCY_PIT
-  if (agencyPit?.startsWith('pit-')) return agencyPit
+  // Location-specific PIT — these are scoped to the location and work
+  const locationPit = process.env.CRM_PIT_ONCORE || process.env.CRM_PIT_RAW || process.env.CRM_PIT
+  if (locationPit?.startsWith('pit-')) return locationPit
 
-  // Last resort: any valid PIT
-  const anyPit = process.env.CRM_PIT_ROCKETOPP || process.env.CRM_PIT_RAW || process.env.CRM_PIT
-  if (anyPit?.startsWith('pit-')) return anyPit
+  // Master PIT — RocketOpp agency level
+  const masterPit = process.env.CRM_PIT_ROCKETOPP
+  if (masterPit?.startsWith('pit-')) return masterPit
 
   return null
 }
