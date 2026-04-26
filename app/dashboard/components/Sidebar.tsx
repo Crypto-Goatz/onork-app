@@ -99,6 +99,16 @@ const navGroups: NavGroup[] = [
           </svg>
         ),
       },
+      {
+        name: 'Market Intel',
+        href: '/dashboard/market-intel',
+        badge: 'LIVE',
+        icon: (
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zm0 0c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m-9 9h18" />
+          </svg>
+        ),
+      },
     ],
   },
   {
