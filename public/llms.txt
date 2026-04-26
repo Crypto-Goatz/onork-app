@@ -1,0 +1,86 @@
+# 0nCore — The AI Business Operating System
+
+> Customer portal for 0nMCP. The dashboards, agents, automations, the LinkedIn bot, the HIPAA scanner, and 245 CRM tools — all powered by 0nMCP.
+
+**Product:** 0nCore (0ncore.com)
+**Vendor:** RocketOpp LLC
+**Stack:** Next.js 16.1.6 · React 19.2.4 · Supabase · Stripe · Anthropic + Groq · 0nMCP v4.5.1
+
+## What it is
+
+0nCore is the front-end to [0nMCP](https://www.npmjs.com/package/0nmcp) — the open-source 1,554-tool AI orchestrator. Where 0nMCP gives developers an MCP server, 0nCore gives operators, agencies, and small businesses a polished SaaS dashboard backed by the same engine.
+
+## Live features
+
+### 0nLinkedIn — AI LinkedIn growth bot
+Sales page + bot dashboard + Chrome extension feature. VPIS scoring (Velocity / Patterns / Intelligence / Signals), BE writing style enforcement, K-Social Intelligence Layer for algorithm modeling.
+
+### CRM platform (245 tools)
+Full leadconnectorhq.com integration. Contacts, calendars, opportunities, invoices, social, custom objects, payments — all reachable from the dashboard or via natural-language AI chat.
+
+### HIPAA Scanner v2
+**63 baseline checks** + **6 software supply chain checks** (via Spectra Assure / secure.software integration). 4 tiers:
+
+| Tier | Price | Output |
+|------|-------|--------|
+| 1 | $149 | AI Readiness Report |
+| 2 | $399 | Full Compliance Report |
+| 3 | $499 | Premium Audit + Booking |
+| 4 | $899 | Full Concierge + Live Walkthrough |
+
+Magic-link auth for report access. Reports stored 6 years per 164.316(b).
+
+### Chrome extension
+v4.0.0, manifest v3, 186 files. Injects AI command palette into LinkedIn, Twitter/X, Reddit, Dev.to, ProductHunt, GitHub, Medium, YouTube. Multi-AI Council (Claude / GPT / Gemini / Grok). Voice-trained content generation.
+
+### WordPress theme + plugin downloads
+v1.0.0 of the OnPress + WP-SXO plugin family for WordPress site automation.
+
+### Multi-channel automation
+Email (Resend) + LinkedIn (custom bot) + WordPress (REST) + SMS (Twilio) + Voice (HeyGen agent).
+
+### Migration tool
+"Coming from X?" with 8 platform importers — bring your existing automations from Make, Zapier, n8n, Pabbly, Cursor, Windsurf, Claude Desktop, and OpenAI configs.
+
+## Pricing tiers (Stripe metered billing on top)
+
+| Tier | Price | Stripe Price ID |
+|------|-------|-----------------|
+| Free | $0 | — |
+| Supporter | $9/mo | `price_1T1rY5HThmAuKVQMEvWdsvcy` |
+| Builder | $19/mo | `price_1T1rYYHThmAuKVQMZIOi4kdq` |
+| Enterprise | Custom | `price_1T1rYiHThmAuKVQMsUKlhrSq` |
+| Metered execution | $0.10 / run | `price_1Sz5jVHThmAuKVQMtSPKsNsS` |
+
+## Architecture
+
+- **129 pages, 235 API routes** (full SaaS dashboard)
+- **CRM Agent Studio** integration via `CRM_AGENT_STUDIO_AGENT_ID=ac910cf1-7f20-48c3-915a-6df4847116ff`
+- **K-layer AI** — 6 personas, 3 security levels, 7 K-layer crews (0nAI, 0nSocial, 0nBrand, 0nIntel, 0nSales, 0nComm, Web0n)
+- **Database** — Supabase `pwujhhmlrtxjmjzyttwn` (shared with 0nmcp.com + marketplace + verifiedsxo)
+- **Voice** — HeyGen avatar `9a160c504b8045a1b387e08e6d2918e1`, voice agent `d01e99a1-ed3f-4f24-b4d8-407009a165a7`
+
+## Important Pages
+
+- / — Landing
+- /platform — Platform overview
+- /pricing — Tier comparison
+- /connections — Service connection wizard
+- /request — Request a feature/integration
+- /hipaa — HIPAA Scanner v2 + 4 tiers
+- /launch-party — Launch event landing
+- /login, /signup — Auth
+
+## Sitemap
+
+https://0ncore.com/sitemap.xml
+
+## Related
+
+- [0nMCP npm package](https://www.npmjs.com/package/0nmcp) — the engine
+- [0nmcp.com](https://0nmcp.com) — marketing + community
+- [marketplace.rocketclients.com](https://marketplace.rocketclients.com) — pay-per-execution marketplace
+
+## Contact
+
+mike@rocketopp.com — RocketOpp LLC
