@@ -38,6 +38,7 @@ export const CATEGORIES: CapabilityCategory[] = [
   { id: 'triggers', name: 'Triggers', icon: 'Zap', color: '#ef4444' },
   { id: 'wordpress', name: 'WordPress', icon: 'Globe', color: '#21759b' },
   { id: 'google', name: 'Google Workspace', icon: 'FileSpreadsheet', color: '#34a853' },
+  { id: 'market', name: 'Market Intel', icon: 'TrendingUp', color: '#f59e0b' },
 ];
 
 export const CAPABILITIES: Capability[] = [
@@ -583,6 +584,54 @@ export const CAPABILITIES: Capability[] = [
     configFields: [
       { key: 'spreadsheet_id', label: 'Report Sheet ID', type: 'text', required: true },
       { key: 'report_type', label: 'Report Type', type: 'select', options: ['Pipeline Summary', 'Contact Export', 'Revenue Report', 'Social Analytics', 'Custom'], default: 'Pipeline Summary' },
+    ],
+  },
+
+  // ── Market Intel ──
+  {
+    id: 'market_report',
+    name: 'Generate Market Report',
+    description: 'Pull latest freelance market data for specified skill categories',
+    category: 'market',
+    icon: 'BarChart3',
+    color: '#f59e0b',
+    steps: ['Query market_skills data', 'Filter by category/trend', 'Generate AI summary via Groq', 'Return formatted report'],
+    configFields: [
+      { key: 'category', label: 'Skill Category', type: 'select', options: ['ai-ml', 'web-development', 'mobile', 'data-science', 'devops', 'design', 'marketing', 'all'], default: 'all' },
+    ],
+  },
+  {
+    id: 'market_opportunities',
+    name: 'Find Opportunities',
+    description: 'Match your profile against current freelance market demand',
+    category: 'market',
+    icon: 'Target',
+    color: '#f59e0b',
+    steps: ['Load user profile skills', 'Query trending listings', 'Run AI matcher', 'Return top scored opportunities'],
+  },
+  {
+    id: 'market_trend_alert',
+    name: 'Trend Alert',
+    description: 'Check if any tracked skills crossed a growth or decline threshold',
+    category: 'market',
+    icon: 'Bell',
+    color: '#f59e0b',
+    steps: ['Query market_skills growth data', 'Filter above threshold', 'Generate alert summary', 'Send notification'],
+    configFields: [
+      { key: 'threshold', label: 'Growth % threshold', type: 'number', placeholder: '50', default: '50' },
+    ],
+  },
+  {
+    id: 'market_competitor',
+    name: 'Competitor Check',
+    description: 'Compare a skill pricing and demand against your current rates',
+    category: 'market',
+    icon: 'Users',
+    color: '#f59e0b',
+    steps: ['Look up skill in market_skills', 'Compare avg_budget vs your rate', 'Analyze competition level', 'Suggest pricing strategy'],
+    configFields: [
+      { key: 'skill', label: 'Skill to check', type: 'text', required: true, placeholder: 'e.g. claude-mcp-setup' },
+      { key: 'your_rate', label: 'Your hourly rate ($)', type: 'number', placeholder: '150' },
     ],
   },
 ];
