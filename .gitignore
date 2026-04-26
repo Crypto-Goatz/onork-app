@@ -43,3 +43,4 @@ google-sa.json
 *.tsbuildinfo
 next-env.d.ts
 0nREMOTE-DISPATCH.md
+.claude/worktrees/
