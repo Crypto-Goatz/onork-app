@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
 
   if (!code) {
-    return NextResponse.redirect(new URL('/dashboard?error=no_code', req.url))
+    return NextResponse.redirect(new URL('/crm?error=no_code', req.url))
   }
 
   try {
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
 
     if (!tokenData || !tokenData.access_token) {
       console.error('[oauth/callback] All token exchanges failed')
-      return NextResponse.redirect(new URL('/dashboard?error=token_failed', req.url))
+      return NextResponse.redirect(new URL('/crm?error=token_failed', req.url))
     }
 
     const access_token = tokenData.access_token as string
@@ -174,9 +174,9 @@ export async function GET(req: NextRequest) {
         },
       })
 
-      // Redirect to dashboard with location context
-      const dashUrl = new URL('/dashboard', req.url)
-      dashUrl.searchParams.set('crm', 'connected')
+      // Redirect to CRM dashboard with location context
+      const dashUrl = new URL('/crm', req.url)
+      dashUrl.searchParams.set('connected', 'true')
       if (locationId) dashUrl.searchParams.set('locationId', locationId)
 
       if (onToken) {
@@ -192,12 +192,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const dashUrl = new URL('/dashboard', req.url)
-    dashUrl.searchParams.set('crm', 'connected')
+    const dashUrl = new URL('/crm', req.url)
+    dashUrl.searchParams.set('connected', 'true')
     if (locationId) dashUrl.searchParams.set('locationId', locationId)
     return NextResponse.redirect(dashUrl)
   } catch (error) {
     console.error('[oauth/callback] Error:', error)
-    return NextResponse.redirect(new URL('/dashboard?error=oauth_failed', req.url))
+    return NextResponse.redirect(new URL('/crm?error=oauth_failed', req.url))
   }
 }
