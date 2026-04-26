@@ -5,6 +5,7 @@ import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { Providers } from "@/components/providers";
 import { PublicNavWrapper } from "@/components/public-nav-wrapper";
+import { VoiceAIFloatingButton } from "@/components/voice-ai-floating";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -70,8 +71,8 @@ export default function RootLayout({
         <Providers>
         <PublicNavWrapper />
         {children}
+        <VoiceAIFloatingButton />
         </Providers>
-        {/* Chat widget removed from global — lives on /contact page only */}
       </body>
     </html>
   );
