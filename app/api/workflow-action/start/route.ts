@@ -87,7 +87,18 @@ async function executeAction(input: {
     case 'run_0n_file':
       return { action: 'run_0n_file', executed: true, workflow: input.automationName, message: '.0n workflow executed' }
 
-    default:
+    default: {
+      // Route to the dynamic executor for any unrecognized action
+      if (input.data.command || input.data.mode) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'
+        const execRes = await fetch(`${siteUrl}/api/workflow-action/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: input.data, extras: { locationId: input.locationId, contactId: input.contactId, workflowId: input.workflowId } }),
+        })
+        return await execRes.json()
+      }
       return { action: 'start_0n', executed: true, message: '0nAI action completed' }
+    }
   }
 }
