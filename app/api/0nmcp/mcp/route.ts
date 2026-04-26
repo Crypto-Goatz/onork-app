@@ -264,7 +264,7 @@ function sseResponse(id: number | string | null, result: any) {
 async function executeTool(name: string, args: Record<string, any>): Promise<any> {
   const CRM_BASE = 'https://services.leadconnectorhq.com'
   const PIT = process.env.CRM_PIT || process.env.CRM_AGENCY_PIT || ''
-  const LOC = process.env.CRM_LOCATION_ID || 'nphConTwfHcVE1oA0uep'
+  const LOC = process.env.CRM_LOCATION_ID || ''
   const VERSION = '2021-07-28'
 
   const crmHeaders = {

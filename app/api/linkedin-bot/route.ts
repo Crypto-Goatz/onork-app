@@ -400,7 +400,8 @@ async function pushToCRMPipeline(
 ) {
   const CRM_BASE = 'https://services.leadconnectorhq.com'
   const PIT = process.env.CRM_PIT_RAW || process.env.CRM_PIT_ROCKETOPP
-  const LOCATION = process.env.CRM_LOCATION_ID || 'nphConTwfHcVE1oA0uep'
+  const LOCATION = process.env.CRM_LOCATION_ID
+  if (!LOCATION) return
 
   if (!PIT) return
 

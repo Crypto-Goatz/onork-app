@@ -24,7 +24,8 @@ async function crmFetch(path: string, opts: RequestInit = {}) {
 }
 
 export async function POST(req: NextRequest) {
-  const locationId = process.env.CRM_LOCATION_ID || 'nphConTwfHcVE1oA0uep'
+  const locationId = process.env.CRM_LOCATION_ID
+  if (!locationId) return NextResponse.json({ error: 'CRM_LOCATION_ID env var not set' }, { status: 500 })
   const results: Record<string, unknown> = {}
 
   try {

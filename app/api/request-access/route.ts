@@ -1,6 +1,6 @@
 const CRM_BASE = 'https://services.leadconnectorhq.com';
-const CRM_PIT = process.env.CRM_AGENCY_API_KEY || 'pit-e789d87e-bc97-429e-abc3-ff46aa47a316';
-const CRM_LOCATION = process.env.CRM_LOCATION_ID || 'nphConTwfHcVE1oA0uep';
+const CRM_PIT = process.env.CRM_AGENCY_API_KEY || process.env.CRM_AGENCY_PIT_NEW || '';
+const CRM_LOCATION = process.env.CRM_LOCATION_ID || '';
 
 export async function POST(req: Request) {
   const { name, email, company, role } = await req.json();

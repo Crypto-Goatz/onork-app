@@ -117,7 +117,8 @@ async function pushToCRM(args: {
 }): Promise<{ contactId?: string; opportunityId?: string }> {
   const CRM_BASE = 'https://services.leadconnectorhq.com'
   const PIT = process.env.CRM_PIT_RAW || process.env.CRM_PIT_ROCKETOPP
-  const LOCATION = process.env.CRM_LOCATION_ID || 'nphConTwfHcVE1oA0uep'
+  const LOCATION = process.env.CRM_LOCATION_ID
+  if (!LOCATION) { console.warn('[freelancer] No CRM_LOCATION_ID — skipping CRM push'); return {} }
   const PIPELINE = process.env.CRM_PIPELINE_ID || 'SYeVtvnuMIUhn3LtS23q'
   const STAGE_NEW = process.env.CRM_STAGE_FREE || '9fe04f16-4fce-4eea-84a7-6ee58083091e'
 
