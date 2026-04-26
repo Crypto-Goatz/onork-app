@@ -31,7 +31,7 @@ export const AGENCY_APP = {
 
 export const MARKETPLACE_APP = {
   appId: process.env.CRM_MARKETPLACE_APP_ID || '69c762225a31e1cd2f28dd4c',
-  clientId: process.env.CRM_MARKETPLACE_APP_CLIENT_ID || '69c762225a31e1cd2f28dd4c-mnu5pazi',
+  clientId: process.env.CRM_MARKETPLACE_APP_CLIENT_ID || process.env.CRM_MARKETPLACE_CLIENT_ID || '69c762225a31e1cd2f28dd4c-mnsa16jo',
   clientSecret: process.env.CRM_MARKETPLACE_CLIENT_SECRET || '',
   sharedSecret: process.env.CRM_MARKETPLACE_SHARED_SECRET || '',
   redirectUri: 'https://0ncore.com/api/oauth/callback',
