@@ -21,6 +21,8 @@ export interface HIPAAInput {
   locationId?: string
   /** Optional package list (npm/pypi/maven) to query the Spectra Assure Community catalog. */
   packages?: Array<{ repo: 'npm' | 'pypi' | 'nuget' | 'maven' | 'gem' | 'composer' | 'cargo'; pkg: string; version?: string; namespace?: string }>
+  /** Customer attestation for the 2026 weighted scoring engine. Optional — only used for Tier 4 executive-summary roll-up. */
+  attestation?: import('./scoring-engine-2026').HIPAA2026Input
 }
 
 export interface HIPAACheck {
@@ -62,6 +64,8 @@ export interface HIPAAResult {
     totalDependencies: number
     apiTier: string
   }
+  /** 2026 weighted executive score across 5 domains (auth/encryption/web-privacy/integrity/resilience). Only present when attestation was provided. */
+  executiveScore2026?: import('./scoring-engine-2026').HIPAA2026Result
 
   criticalFindings: number
   highFindings: number
@@ -767,6 +771,35 @@ export async function runHIPAAScan(input: HIPAAInput): Promise<HIPAAResult> {
     ...(supplyChainChecks || []),
   ]
 
+  // 2026 executive-summary scoring engine — runs only when an attestation
+  // is provided (Tier 4 reports). Pulls passive signals from the scan
+  // (TLS version, detected trackers) and merges with customer attestation
+  // for the fields a passive scan cannot observe (MFA method, log
+  // retention, 72hr DR test, etc.).
+  let executiveScore2026: HIPAAResult['executiveScore2026']
+  if (input.attestation) {
+    try {
+      const { score2026, buildInputFromScan } = await import('./scoring-engine-2026')
+
+      // Extract passive signals from check results
+      const tlsCheck = publicChecks.find((c) => c.id === 'PUB-01')
+      const tlsVersion = tlsCheck?.status === 'pass' ? '1.3' : undefined  // TODO: detect actual version
+      const trackerCheck = publicChecks.find((c) => c.id === 'PUB-21')
+      const hasPixels = trackerCheck?.status === 'fail' || trackerCheck?.status === 'warning'
+      const detectedTrackers = hasPixels && trackerCheck
+        ? trackerCheck.detail.match(/Meta Pixel|Google Analytics|TikTok|Hotjar|FullStory|Clarity/g) ?? undefined
+        : undefined
+
+      const merged = buildInputFromScan(
+        { tlsVersion, hasPixels, detectedTrackers },
+        input.attestation,
+      )
+      executiveScore2026 = score2026(merged)
+    } catch (err) {
+      console.error('[hipaa] 2026 scoring engine failed:', err)
+    }
+  }
+
   const currentRuleScore = computeScore(allChecks, false)
   const nprm2026Score = computeScore(allChecks, true)
 
@@ -810,6 +843,7 @@ export async function runHIPAAScan(input: HIPAAInput): Promise<HIPAAResult> {
     universalChecks,
     supplyChainChecks,
     supplyChainReport,
+    executiveScore2026,
 
     criticalFindings,
     highFindings,
