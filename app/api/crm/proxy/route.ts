@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
   if (!path) return NextResponse.json({ error: 'path required' }, { status: 400 })
 
-  // Resolve location
+  // Resolve location — NEVER fall back to another user's location
   let locationId = overrideLocationId
   if (!locationId) {
     const { data: profile } = await supabase
@@ -47,7 +47,14 @@ export async function POST(req: NextRequest) {
       .select('crm_location_id')
       .eq('id', user.id)
       .single()
-    locationId = profile?.crm_location_id || process.env.CRM_LOCATION_ID || 'nphConTwfHcVE1oA0uep'
+    locationId = profile?.crm_location_id
+  }
+
+  if (!locationId) {
+    return NextResponse.json({
+      error: 'No CRM location provisioned for your account. Go to Settings to provision your CRM.',
+      needs_provision: true,
+    }, { status: 403 })
   }
 
   const pit = getPIT()
