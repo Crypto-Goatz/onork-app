@@ -204,7 +204,7 @@ export default function EmailBuilderPage() {
   }
 
   return (
-    <div className="fixed top-0 right-0 bottom-0 flex flex-col overflow-hidden bg-core-bg z-40" style={{ left: 'var(--jp-sidebar-width, 220px)' }}>
+    <div className="flex flex-col overflow-hidden bg-core-bg h-[calc(100vh-64px)]">
       {/* Top Toolbar */}
       <div className="flex items-center gap-3 px-4 py-3 bg-core-surface border-b border-core-border flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -260,7 +260,7 @@ export default function EmailBuilderPage() {
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Unlayer Editor */}
-        <div className="flex-1 relative min-h-0">
+        <div className="flex-1 relative min-h-0 flex flex-col">
           <EmailEditor
             onReady={onEditorReady}
             appearance={{
@@ -276,7 +276,7 @@ export default function EmailBuilderPage() {
                 },
               },
             }}
-            style={{ height: '100%', minHeight: '100%' }}
+            minHeight="100%"
           />
           {!editorReady && (
             <div className="absolute inset-0 flex items-center justify-center bg-core-bg z-10">
