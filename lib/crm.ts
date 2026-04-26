@@ -24,8 +24,9 @@ const CRM_TOKEN_URL = 'https://services.leadconnectorhq.com/oauth/token'
  */
 export const AGENCY_APP = {
   appId: process.env.CRM_AGENCY_APP_ID || '69cf4d25a74f834803470537',
-  clientId: process.env.CRM_AGENCY_CLIENT_ID || '69cf4d25a74f834803470537-mnu5bzyo',
+  clientId: process.env.CRM_AGENCY_CLIENT_ID || '69cf4d25a74f834803470537-mnsazpwc',
   clientSecret: process.env.CRM_AGENCY_CLIENT_SECRET || '',
+  redirectUri: 'https://0ncore.com/api/oauth/callback',
 }
 
 export const MARKETPLACE_APP = {

@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { MARKETPLACE_APP } from '@/lib/crm'
+import { MARKETPLACE_APP, AGENCY_APP } from '@/lib/crm'
 import { generateToken } from '@/lib/0n-token'
 import { logHealth } from '@/lib/connection-health'
 
@@ -35,37 +35,68 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const clientSecret = MARKETPLACE_APP.clientSecret || process.env.CRM_MARKETPLACE_CLIENT_SECRET || ''
+    // Try marketplace app first, then agency app
+    // The OAuth code is tied to whichever app started the flow
+    const apps = [
+      {
+        name: 'marketplace',
+        clientId: MARKETPLACE_APP.clientId,
+        clientSecret: MARKETPLACE_APP.clientSecret || process.env.CRM_MARKETPLACE_CLIENT_SECRET || '',
+        redirectUri: MARKETPLACE_APP.redirectUri,
+        appId: MARKETPLACE_APP.appId,
+      },
+      {
+        name: 'agency',
+        clientId: AGENCY_APP.clientId,
+        clientSecret: AGENCY_APP.clientSecret || process.env.CRM_AGENCY_CLIENT_SECRET || '',
+        redirectUri: AGENCY_APP.redirectUri,
+        appId: AGENCY_APP.appId,
+      },
+    ]
 
-    const tokenRes = await fetch(CRM_TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: MARKETPLACE_APP.clientId,
-        client_secret: clientSecret,
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: MARKETPLACE_APP.redirectUri,
-      }),
-    })
+    let tokenData: Record<string, unknown> | null = null
+    let usedApp = apps[0]
 
-    const tokenData = await tokenRes.json()
+    for (const app of apps) {
+      if (!app.clientSecret) continue
 
-    if (!tokenRes.ok || !tokenData.access_token) {
-      console.error('[oauth/callback] Token exchange failed:', tokenData)
+      const tokenRes = await fetch(CRM_TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: app.clientId,
+          client_secret: app.clientSecret,
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: app.redirectUri,
+        }),
+      })
+
+      const data = await tokenRes.json()
+
+      if (tokenRes.ok && data.access_token) {
+        tokenData = data
+        usedApp = app
+        console.log(`[oauth/callback] Token exchanged via ${app.name} app`)
+        break
+      }
+
+      console.warn(`[oauth/callback] ${app.name} app token exchange failed:`, data.error || data.message || 'unknown')
+    }
+
+    if (!tokenData || !tokenData.access_token) {
+      console.error('[oauth/callback] All token exchanges failed')
       return NextResponse.redirect(new URL('/dashboard?error=token_failed', req.url))
     }
 
-    const {
-      access_token,
-      refresh_token,
-      token_type,
-      expires_in,
-      scope,
-      locationId,
-      companyId,
-      userId: crmUserId,
-    } = tokenData
+    const access_token = tokenData.access_token as string
+    const refresh_token = (tokenData.refresh_token || '') as string
+    const token_type = (tokenData.token_type || 'Bearer') as string
+    const expires_in = (tokenData.expires_in || 86400) as number
+    const scope = (tokenData.scope || '') as string
+    const locationId = (tokenData.locationId || '') as string
+    const companyId = (tokenData.companyId || '') as string
+    const crmUserId = (tokenData.userId || '') as string
 
     const admin = getAdmin()
     const supabase = await createServerClient()
@@ -76,7 +107,7 @@ export async function GET(req: NextRequest) {
       location_id: locationId,
       company_id: companyId || '',
       crm_user_id: crmUserId || '',
-      app_id: MARKETPLACE_APP.appId,
+      app_id: usedApp.appId,
       access_token,
       refresh_token: refresh_token || '',
       token_type: token_type || 'Bearer',
@@ -138,7 +169,7 @@ export async function GET(req: NextRequest) {
         metadata: {
           locationId,
           companyId,
-          app: '0ncore-marketplace',
+          app: usedApp.name,
           tokenGenerated: !!onToken,
         },
       })
@@ -163,7 +194,7 @@ export async function GET(req: NextRequest) {
 
     const dashUrl = new URL('/dashboard', req.url)
     dashUrl.searchParams.set('crm', 'connected')
-    if (tokenData.locationId) dashUrl.searchParams.set('locationId', tokenData.locationId)
+    if (locationId) dashUrl.searchParams.set('locationId', locationId)
     return NextResponse.redirect(dashUrl)
   } catch (error) {
     console.error('[oauth/callback] Error:', error)
