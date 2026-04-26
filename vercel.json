@@ -15,6 +15,14 @@
     {
       "path": "/api/cron/blog",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/market-collect",
+      "schedule": "15 */6 * * *"
+    },
+    {
+      "path": "/api/cron/market-aggregate",
+      "schedule": "30 11 * * *"
     }
   ]
 }
