@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
+import { provisionSubLocation } from '@/lib/provision'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,7 +56,10 @@ export async function POST(req: NextRequest) {
       business_name: company || null,
     }, { onConflict: 'id' })
 
-    // If website provided, scrape brand data in background
+    // Provision CRM sub-location SYNCHRONOUSLY — user doesn't proceed without one
+    const provision = await provisionSubLocation(userId)
+
+    // If website provided, scrape brand data in background (non-blocking)
     if (website) {
       fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'}/api/brand/scrape`, {
         method: 'POST',
@@ -64,24 +68,25 @@ export async function POST(req: NextRequest) {
       }).catch(() => {})
     }
 
-    // Fire CRM provisioning in background
-    fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'}/api/provision/location`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId, email, full_name, company }),
-    }).catch(() => {})
-
     // Track onboarding event
     await supabase.from('onboarding_events').insert({
       user_id: userId,
       step: 'signup_complete',
-      metadata: { email, has_website: !!website, has_company: !!company },
+      metadata: {
+        email,
+        has_website: !!website,
+        has_company: !!company,
+        crm_location_id: provision.locationId,
+        crm_provisioned: provision.success,
+      },
     })
 
     return NextResponse.json({
       ok: true,
       user_id: userId,
       token,
+      crm_location_id: provision.locationId,
+      crm_provisioned: provision.success,
       needs_confirmation: true,
     })
   } catch (err) {
