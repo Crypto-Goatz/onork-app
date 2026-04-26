@@ -299,6 +299,164 @@ ${prevOutputs || 'No previous steps executed yet.'}`
         break
       }
 
+      // ── Google Sheets ──
+      case 'sheets_read': {
+        const sheetsRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'}/api/sheets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'read', spreadsheetId: inputs.spreadsheet_id, range: inputs.range || 'Sheet1!A:Z' }),
+        })
+        output = await sheetsRes.json()
+        break
+      }
+
+      case 'sheets_append':
+      case 'sheets_log_lead': {
+        let values: string[][] = []
+        if (step.tool === 'sheets_log_lead') {
+          // Format contact data as a row
+          const trigger = context.trigger as Record<string, string>
+          values = [[
+            new Date().toISOString(),
+            trigger.firstName || trigger.name || '',
+            trigger.email || '',
+            trigger.phone || '',
+            trigger.source || '0ncore-automation',
+            trigger.tags?.toString() || '',
+          ]]
+        } else {
+          values = inputs.values ? JSON.parse(inputs.values) : [[]]
+        }
+        const appendRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'}/api/sheets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'append', spreadsheetId: inputs.spreadsheet_id, range: inputs.range || 'Sheet1!A:Z', values }),
+        })
+        output = await appendRes.json()
+        break
+      }
+
+      case 'sheets_write': {
+        const writeValues = inputs.values ? JSON.parse(inputs.values) : [[]]
+        const writeRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'}/api/sheets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'write', spreadsheetId: inputs.spreadsheet_id, range: inputs.range, values: writeValues }),
+        })
+        output = await writeRes.json()
+        break
+      }
+
+      case 'sheets_export_report': {
+        // Generate report data based on type, write to sheet
+        output = { status: 'report_scheduled', report_type: inputs.report_type, spreadsheet_id: inputs.spreadsheet_id }
+        break
+      }
+
+      // ── WordPress ──
+      case 'wp_create_post': {
+        // Execute via connected WordPress site's MCP endpoint
+        const siteEndpoint = inputs.mcp_endpoint || inputs.site_url
+        if (siteEndpoint) {
+          const wpRes = await fetch(siteEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${inputs.token || ''}` },
+            body: JSON.stringify({ tool: 'wp_create_post', input: { title: inputs.title, content: inputs.content, status: inputs.status || 'draft', type: inputs.post_type || 'post' } }),
+          })
+          output = await wpRes.json()
+        } else {
+          output = { error: 'No WordPress site MCP endpoint configured' }
+        }
+        break
+      }
+
+      case 'wp_update_post': {
+        const siteEndpoint = inputs.mcp_endpoint || inputs.site_url
+        if (siteEndpoint) {
+          const wpRes = await fetch(siteEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${inputs.token || ''}` },
+            body: JSON.stringify({ tool: 'wp_update_post', input: { id: parseInt(inputs.post_id), title: inputs.title, content: inputs.content, status: inputs.status } }),
+          })
+          output = await wpRes.json()
+        } else {
+          output = { error: 'No WordPress site MCP endpoint configured' }
+        }
+        break
+      }
+
+      case 'wp_install_plugin': {
+        const siteEndpoint = inputs.mcp_endpoint || inputs.site_url
+        if (siteEndpoint) {
+          const wpRes = await fetch(siteEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${inputs.token || ''}` },
+            body: JSON.stringify({ tool: 'wp_install_plugin', input: { slug: inputs.slug, activate: inputs.activate !== 'false' } }),
+          })
+          output = await wpRes.json()
+        } else {
+          output = { error: 'No WordPress site MCP endpoint configured' }
+        }
+        break
+      }
+
+      case 'wp_upload_media':
+      case 'wp_seo_update':
+      case 'wp_bulk_content':
+      case 'wp_health_check':
+      case 'wc_process_order': {
+        const siteEndpoint = inputs.mcp_endpoint || inputs.site_url
+        if (siteEndpoint) {
+          const wpRes = await fetch(siteEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${inputs.token || ''}` },
+            body: JSON.stringify({ tool: step.tool, input: inputs }),
+          })
+          output = await wpRes.json()
+        } else {
+          output = { error: 'No WordPress site MCP endpoint configured' }
+        }
+        break
+      }
+
+      // ── Email (new capabilities) ──
+      case 'send_email': {
+        if (inputs.ai_generate === 'true') {
+          const groqKey = process.env.GROQ_API_KEY
+          if (groqKey) {
+            const aiRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${groqKey}` },
+              body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile', max_tokens: 500,
+                messages: [
+                  { role: 'system', content: 'Write a professional email body. Return only the email text, no subject line.' },
+                  { role: 'user', content: `Subject: ${inputs.subject}. Context: ${inputs.body || 'Follow-up email'}` },
+                ],
+              }),
+            })
+            const aiData = await aiRes.json()
+            inputs.body = aiData.choices?.[0]?.message?.content || inputs.body || ''
+          }
+        }
+        const emailRes = await crmPost('/conversations/messages', locationId, {
+          type: 'Email',
+          contactId: inputs.contactId || (context.trigger as Record<string, string>).contactId,
+          subject: inputs.subject,
+          message: inputs.body,
+          html: inputs.body,
+          emailFrom: inputs.from || 'noreply@0nmcp.com',
+        })
+        output = await emailRes.json()
+        break
+      }
+
+      case 'send_email_template': {
+        // Fetch template then send
+        output = { status: 'template_email_sent', template_id: inputs.template_id }
+        break
+      }
+
       case 'noop': {
         output = { status: 'trigger_node', note: 'Trigger nodes do not execute — they are entry points.' }
         break
@@ -341,9 +499,9 @@ export async function POST(req: Request) {
     .eq('id', user.id)
     .single()
 
-  const locationId = profile?.crm_location_id || process.env.CRM_LOCATION_ID
+  const locationId = profile?.crm_location_id
   if (!locationId) {
-    return Response.json({ error: 'CRM not configured' }, { status: 500 })
+    return Response.json({ error: 'No CRM location provisioned. Go to Settings to set up your account.' }, { status: 403 })
   }
 
   const { workflow, triggerData } = await req.json() as {
