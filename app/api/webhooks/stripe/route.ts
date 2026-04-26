@@ -68,6 +68,26 @@ export async function POST(req: Request) {
         }
       }
 
+      // Handle add-on purchases (new user_addons table)
+      if (session.metadata?.type === 'addon_purchase' && session.metadata?.addon_slug) {
+        await supabase.from('user_addons').upsert({
+          user_id: userId,
+          addon_slug: session.metadata.addon_slug,
+          status: 'active',
+          payment_type: session.mode === 'subscription' ? 'subscription' : 'one_time',
+          stripe_payment_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+          stripe_subscription_id: typeof session.subscription === 'string' ? session.subscription : null,
+        }, { onConflict: 'user_id,addon_slug' })
+
+        // Update plan if subscription tier purchase
+        if (session.metadata?.tier_name) {
+          await supabase.from('profiles').update({
+            plan: session.metadata.tier_name,
+            tier_level: parseInt(session.metadata.tier_level || '1'),
+          }).eq('id', userId)
+        }
+      }
+
       if (session.mode === 'payment') {
         const sparks = parseInt(session.metadata?.sparks || '0')
         if (sparks > 0) {

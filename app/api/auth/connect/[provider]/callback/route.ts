@@ -206,6 +206,7 @@ export async function GET(
         {
           user_id: userId,
           provider: providerId,
+          service: providerId,
           provider_account_id: profile.provider_account_id,
           provider_email: profile.provider_email,
           provider_name: profile.provider_name,

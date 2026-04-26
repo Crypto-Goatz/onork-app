@@ -1,5 +1,13 @@
 'use client'
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+declare global {
+  interface Window {
+    SpeechRecognition: any
+    webkitSpeechRecognition: any
+  }
+}
+
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Send, Sparkles, User, Calendar, Mail, X, MessageSquare, Users, ArrowRight, Mic, MessageCircle } from 'lucide-react'
 
@@ -13,31 +21,6 @@ const SUGGESTIONS = [
   'How does the LinkedIn bot work?',
   'Can I try it for free?',
 ]
-
-// ── Sound Wave Visualizer ──
-function SoundWave({ active }: { active: boolean }) {
-  return (
-    <div className="flex items-center gap-[3px] h-8">
-      {Array.from({ length: 12 }).map((_, i) => (
-        <div
-          key={i}
-          className="w-[3px] rounded-full transition-all duration-300"
-          style={{
-            height: active ? `${12 + Math.sin(i * 0.8) * 10 + Math.random() * 8}px` : '4px',
-            background: `linear-gradient(to top, #7ed957, #00d4ff)`,
-            opacity: active ? 0.6 + Math.random() * 0.4 : 0.2,
-            animationName: active ? 'waveBar' : 'none',
-            animationDuration: `${0.4 + Math.random() * 0.4}s`,
-            animationIterationCount: 'infinite',
-            animationDirection: 'alternate',
-            animationTimingFunction: 'ease-in-out',
-            animationDelay: `${i * 0.05}s`,
-          }}
-        />
-      ))}
-    </div>
-  )
-}
 
 // ── Modal Wrapper ──
 function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
@@ -66,12 +49,10 @@ export function ContactClient() {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [voiceClarify, setVoiceClarify] = useState('')
   const [voiceActive, setVoiceActive] = useState(false)
-  const voiceContainerRef = useRef<HTMLDivElement>(null)
   const [showCalendar, setShowCalendar] = useState(false)
   const [showContactForm, setShowContactForm] = useState(false)
-  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
+  const [contactForm, setContactForm] = useState({ name: '', email: '', reason: '', message: '' })
   const [contactSent, setContactSent] = useState(false)
   const [contactSending, setContactSending] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -81,27 +62,96 @@ export function ContactClient() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, loading])
 
-  // Load voice widget when offcanvas opens
+  // Voice state
+  const [isListening, setIsListening] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [voiceTranscript, setVoiceTranscript] = useState('')
+  const recognitionRef = useRef<any>(null)
+  const synthRef = useRef<any>(null)
+
+  // Initialize speech recognition
   useEffect(() => {
-    if (!voiceActive || !voiceContainerRef.current) return
-    const container = voiceContainerRef.current
+    if (typeof window === 'undefined') return
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SR) return
+    const recognition = new SR()
+    recognition.continuous = false
+    recognition.interimResults = true
+    recognition.lang = 'en-US'
 
-    // Don't re-add if already loaded
-    if (container.querySelector('script')) return
-
-    const script = document.createElement('script')
-    script.src = 'https://widgets.leadconnectorhq.com/loader.js'
-    script.setAttribute('data-resources-url', 'https://widgets.leadconnectorhq.com/chat-widget/loader.js')
-    script.setAttribute('data-widget-id', 'd01e99a1-ed3f-4f24-b4d8-407009a165a7')
-    script.async = true
-    container.appendChild(script)
-
-    return () => {
-      // Cleanup on close
-      const scripts = container.querySelectorAll('script')
-      scripts.forEach(s => s.remove())
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((r: any) => r[0].transcript)
+        .join('')
+      setVoiceTranscript(transcript)
+      if (event.results[0].isFinal) {
+        handleVoiceSend(transcript)
+      }
     }
-  }, [voiceActive])
+    recognition.onerror = () => setIsListening(false)
+    recognition.onend = () => setIsListening(false)
+    recognitionRef.current = recognition
+  }, [])
+
+  function startListening() {
+    if (!recognitionRef.current) return
+    setVoiceTranscript('')
+    setIsListening(true)
+    recognitionRef.current.start()
+  }
+
+  function stopListening() {
+    if (!recognitionRef.current) return
+    recognitionRef.current.stop()
+    setIsListening(false)
+  }
+
+  async function handleVoiceSend(text: string) {
+    if (!text.trim()) return
+    setIsListening(false)
+    const userMsg: Message = { role: 'user', content: text }
+    setMessages(prev => [...prev, userMsg])
+
+    try {
+      const res = await fetch('/api/chat/public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: [...messages, userMsg].slice(-10) }),
+      })
+      const data = await res.json()
+      const reply = data.reply || "I'm here to help!"
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }])
+
+      // Speak the response
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+        const utter = new SpeechSynthesisUtterance(reply)
+        utter.rate = 1.0
+        utter.pitch = 1.0
+        // Try to find a good voice
+        const voices = window.speechSynthesis.getVoices()
+        const preferred = voices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'))
+        if (preferred) utter.voice = preferred
+        utter.onstart = () => setIsSpeaking(true)
+        utter.onend = () => { setIsSpeaking(false); startListening() }
+        synthRef.current = utter
+        window.speechSynthesis.speak(utter)
+      }
+
+      if (data.buying_signal) {
+        setTimeout(() => {
+          setMessages(prev => [...prev, { role: 'assistant', content: 'I noticed you might be ready to explore further. Want me to pull up the calendar for a quick 15-minute demo?' }])
+        }, 2000)
+      }
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Connection issue — try again.' }])
+    }
+  }
+
+  function stopSpeaking() {
+    window.speechSynthesis?.cancel()
+    setIsSpeaking(false)
+  }
 
   const send = useCallback(async (text?: string) => {
     const msg = (text || input).trim()
@@ -120,6 +170,16 @@ export function ContactClient() {
       })
       const data = await res.json()
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply || "I'm here to help!" }])
+
+      // If buying signal detected, prompt booking after a short delay
+      if (data.buying_signal) {
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: '📅 I noticed you might be ready to explore this further. Want me to pull up the calendar so you can book a quick 15-minute demo with our team?',
+          }])
+        }, 2000)
+      }
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Connection issue — try again or email mike@rocketopp.com' }])
     }
@@ -138,7 +198,7 @@ export function ContactClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          command: `Create a CRM contact: name=${contactForm.name}, email=${contactForm.email}, message=${contactForm.message}, source=website-contact-form`,
+          command: `Create a CRM contact: name=${contactForm.name}, email=${contactForm.email}, reason=${contactForm.reason}, message=${contactForm.message}, source=website-contact-form`,
         }),
       })
     } catch {}
@@ -194,56 +254,26 @@ export function ContactClient() {
               </div>
             )}
 
-            {/* ═══ VOICE MODE — placeholder in panel, real widget in offcanvas ═══ */}
+            {/* ═══ VOICE MODE — launches offcanvas with HeyGen avatar ═══ */}
             {chatMode === 'voice' && (
-              <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 gap-4">
-                {/* Circular equalizer visualization */}
-                <div className="relative w-[180px] h-[180px] flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full border-2 border-[#14b8a6]/30" />
-                  <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
-                    {Array.from({ length: 32 }).map((_, i) => {
-                      const angle = (i / 32) * Math.PI * 2 - Math.PI / 2
-                      const cx = 100 + Math.cos(angle) * 82
-                      const cy = 100 + Math.sin(angle) * 82
-                      const dx = Math.cos(angle)
-                      const dy = Math.sin(angle)
-                      return (
-                        <line key={i} x1={cx - dx * 4} y1={cy - dy * 4} x2={cx + dx * 4} y2={cy + dy * 4}
-                          stroke={voiceActive ? '#7ed957' : '#14b8a6'} strokeWidth="2.5" strokeLinecap="round" opacity="0.3"
-                          style={{ animation: voiceActive ? `eqPulse ${0.4 + Math.random() * 0.5}s ease-in-out infinite alternate` : 'none', animationDelay: `${i * 0.03}s` }} />
-                      )
-                    })}
-                  </svg>
-                  <button onClick={() => setVoiceActive(!voiceActive)}
-                    className={`w-[100px] h-[100px] rounded-full border flex items-center justify-center z-10 cursor-pointer transition-all ${voiceActive ? 'bg-[#7ed957]/10 border-[#7ed957]/30' : 'bg-[#161b22] border-white/[0.06] hover:border-[#14b8a6]/40'}`}>
-                    <Mic className={`w-8 h-8 transition-colors ${voiceActive ? 'text-[#7ed957]' : 'text-[#14b8a6]'}`} />
+              <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 gap-6">
+                {/* Mic button — opens offcanvas */}
+                <div className="relative">
+                  <button onClick={() => setVoiceActive(true)}
+                    className="w-[120px] h-[120px] rounded-full border-2 border-[#14b8a6]/30 bg-[#161b22] flex items-center justify-center cursor-pointer transition-all hover:border-[#7ed957]/40 hover:bg-[#7ed957]/[0.04] group">
+                    <Mic className="w-10 h-10 text-[#14b8a6] group-hover:text-[#7ed957] transition-colors" />
                   </button>
-                  {voiceActive && <div className="absolute inset-0 rounded-full border-2 border-[#7ed957]/20 animate-ping" />}
+                  {voiceActive && <div className="absolute inset-0 rounded-full border-2 border-[#7ed957]/20 animate-ping pointer-events-none" />}
                 </div>
 
-                <p className="text-[13px] text-white/40 text-center">{voiceActive ? 'Jaxx is listening...' : 'Tap the mic to start'}</p>
-                <p className="text-[10px] text-white/20 text-center">
-                  <span className="inline-block w-2 h-2 rounded-full bg-[#7ed957] mr-1" />Jaxx
-                  <span className="inline-block w-2 h-2 rounded-full bg-[#a78bfa] mx-1 ml-3" />You
-                </p>
-
-                {/* Clarify input */}
-                <div className="w-full mt-4 flex gap-2">
-                  <input type="text" value={voiceClarify} onChange={e => setVoiceClarify(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && voiceClarify.trim()) { send(voiceClarify); setVoiceClarify('') } }}
-                    placeholder="Type to clarify (if needed)..."
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white text-[12px] placeholder:text-white/20 outline-none focus:border-[#7ed957]/20" />
-                  <button onClick={() => { if (voiceClarify.trim()) { send(voiceClarify); setVoiceClarify('') } }}
-                    className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center cursor-pointer hover:bg-[#7ed957]/10 transition-all">
-                    <Send className="w-3.5 h-3.5 text-white/40" />
-                  </button>
+                <div className="text-center">
+                  <p className="text-[14px] font-semibold text-white mb-1">Talk to Jaxx</p>
+                  <p className="text-[12px] text-white/40">Tap the mic to start a voice conversation</p>
                 </div>
 
                 <button onClick={() => setChatMode('select')} className="text-[11px] text-white/20 hover:text-white/50 bg-transparent border-none cursor-pointer mt-2">
                   Switch to text
                 </button>
-
-                <style>{`@keyframes eqPulse { 0% { transform: scaleX(1) scaleY(0.4); opacity: 0.2; } 100% { transform: scaleX(1) scaleY(1.8); opacity: 0.6; } }`}</style>
               </div>
             )}
 
@@ -269,7 +299,12 @@ export function ContactClient() {
                 </div>
 
                 {/* Messages */}
-                <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                <div className="flex-1 relative overflow-hidden">
+                  {/* Gradient fade top */}
+                  <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[#0d1117] to-transparent z-10 pointer-events-none" />
+                  {/* Gradient fade bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0d1117] to-transparent z-10 pointer-events-none" />
+                <div ref={scrollRef} className="h-full overflow-y-auto px-4 py-6 space-y-3">
                   {messages.map((msg, i) => (
                     <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                       {msg.role === 'assistant' && (
@@ -303,6 +338,7 @@ export function ContactClient() {
                       </div>
                     </div>
                   )}
+                </div>
                 </div>
 
                 {/* Suggestions */}
@@ -368,22 +404,22 @@ export function ContactClient() {
               </div>
             </button>
 
-            {/* Community */}
-            <a href="https://0nmcp.com/community" target="_blank" rel="noopener noreferrer"
-              className="block rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 hover:border-[#14b8a6]/20 transition-all no-underline group">
+            {/* Agency Inquiry */}
+            <button onClick={() => { setContactForm(p => ({ ...p, reason: 'Agency Inquiry' })); setShowContactForm(true) }}
+              className="w-full rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 hover:border-[#14b8a6]/20 transition-all text-left cursor-pointer group">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-xl bg-[#14b8a6]/10 flex items-center justify-center shrink-0 group-hover:bg-[#14b8a6]/20 transition-colors">
                   <Users className="w-5 h-5 text-[#14b8a6]" />
                 </div>
-                <div>
-                  <h3 className="text-[15px] font-bold text-white mb-1">Join the Community</h3>
-                  <p className="text-[13px] text-white/40 mb-2">Connect with other 0nCore users. Share workflows, swap ideas.</p>
+                <div className="flex-1">
+                  <h3 className="text-[15px] font-bold text-white mb-1">Agency Inquiry</h3>
+                  <p className="text-[13px] text-white/40 mb-2">White-label 0nCore for your clients. Resell, rebrand, scale.</p>
                   <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#14b8a6]">
-                    Join on 0nmcp.com <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    Get started <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </span>
                 </div>
               </div>
-            </a>
+            </button>
 
             {/* Stats */}
             <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-r from-[#7ed957]/[0.04] to-[#00d4ff]/[0.03] p-6">
@@ -429,20 +465,53 @@ export function ContactClient() {
               </button>
             </div>
 
-            {/* Voice widget container */}
-            <div ref={voiceContainerRef} className="flex-1 relative overflow-hidden" />
+            {/* Voice Chat — Live conversation */}
+            <div className="flex-1 flex flex-col">
+              {/* Messages scroll area */}
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                {messages.map((msg, i) => (
+                  <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                    {msg.role === 'assistant' && (
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#7ed957]/20 to-[#00d4ff]/20 flex items-center justify-center shrink-0 mt-0.5">
+                        <Sparkles className="w-3 h-3 text-[#7ed957]" />
+                      </div>
+                    )}
+                    <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-[12px] leading-relaxed ${
+                      msg.role === 'user'
+                        ? 'bg-[#7ed957]/15 border border-[#7ed957]/20 text-white rounded-br-sm'
+                        : 'bg-white/[0.04] border border-white/[0.06] text-white/80 rounded-bl-sm'
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+                {voiceTranscript && isListening && (
+                  <div className="flex gap-2 justify-end">
+                    <div className="max-w-[85%] rounded-2xl px-3.5 py-2 text-[12px] text-white/40 bg-white/[0.02] border border-white/[0.04] rounded-br-sm italic">
+                      {voiceTranscript}...
+                    </div>
+                  </div>
+                )}
+              </div>
 
-            {/* Clarify input */}
-            <div className="px-4 py-3 border-t border-white/[0.06] shrink-0">
-              <div className="flex gap-2">
-                <input type="text" value={voiceClarify} onChange={e => setVoiceClarify(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && voiceClarify.trim()) { send(voiceClarify); setVoiceClarify('') } }}
-                  placeholder="Type to clarify (if needed)..."
-                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white text-[12px] placeholder:text-white/20 outline-none focus:border-[#7ed957]/20" />
-                <button onClick={() => { if (voiceClarify.trim()) { send(voiceClarify); setVoiceClarify('') } }}
-                  className="w-10 h-10 rounded-xl bg-[#7ed957] flex items-center justify-center cursor-pointer border-none hover:bg-[#7ed957]/90 transition-colors">
-                  <Send className="w-4 h-4 text-[#020810]" />
+              {/* Voice controls */}
+              <div className="px-4 py-5 border-t border-white/[0.06] flex flex-col items-center gap-3 shrink-0">
+                {/* Big mic button */}
+                <button
+                  onClick={isListening ? stopListening : isSpeaking ? stopSpeaking : startListening}
+                  className={`w-16 h-16 rounded-full flex items-center justify-center cursor-pointer border-2 transition-all ${
+                    isListening
+                      ? 'bg-[#7ed957]/20 border-[#7ed957] animate-pulse'
+                      : isSpeaking
+                      ? 'bg-[#00d4ff]/20 border-[#00d4ff]'
+                      : 'bg-[#161b22] border-white/[0.1] hover:border-[#7ed957]/40'
+                  }`}
+                >
+                  <Mic className={`w-7 h-7 ${isListening ? 'text-[#7ed957]' : isSpeaking ? 'text-[#00d4ff]' : 'text-white/40'}`} />
                 </button>
+                <p className="text-[11px] text-white/30">
+                  {isListening ? 'Listening...' : isSpeaking ? 'Jaxx is speaking — tap to stop' : 'Tap to speak'}
+                </p>
               </div>
             </div>
           </div>
@@ -457,8 +526,7 @@ export function ContactClient() {
         <div className="p-1">
           <iframe
             src="https://api.rocketclients.com/widget/booking/5xtTejAwYmiwULqboaL7"
-            className="w-full border-none rounded-b-2xl"
-            style={{ height: '650px' }}
+            className="w-full h-[650px] border-none rounded-b-2xl"
             title="Book a Demo"
           />
         </div>
@@ -491,6 +559,20 @@ export function ContactClient() {
                   <input type="email" value={contactForm.email} onChange={e => setContactForm(p => ({ ...p, email: e.target.value }))}
                     placeholder="you@company.com" required
                     className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-white text-[13px] placeholder:text-white/20 outline-none focus:border-[#7ed957]/30" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-white/30 font-semibold uppercase tracking-wider mb-1.5">Reason</label>
+                  <select value={contactForm.reason} onChange={e => setContactForm(p => ({ ...p, reason: e.target.value }))}
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-white text-[13px] outline-none focus:border-[#7ed957]/30 appearance-none cursor-pointer [&>option]:bg-[#0d1117] [&>option]:text-white">
+                    <option value="" disabled className="text-white/20">Select a reason...</option>
+                    <option value="General">General Inquiry</option>
+                    <option value="Demo Request">Demo Request</option>
+                    <option value="Agency Inquiry">Agency Inquiry</option>
+                    <option value="Support">Support</option>
+                    <option value="Partnership">Partnership</option>
+                    <option value="Enterprise">Enterprise</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-[10px] text-white/30 font-semibold uppercase tracking-wider mb-1.5">Message</label>

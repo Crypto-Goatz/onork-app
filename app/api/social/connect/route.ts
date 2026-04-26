@@ -17,16 +17,32 @@ const OAUTH_PATHS: Record<string, string> = {
 }
 
 export async function POST(req: NextRequest) {
+  // Try session auth first, then Bearer token
+  let userId: string | null = null
+
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (token) {
+    const { data: { user } } = await supabase.auth.getUser(token)
+    userId = user?.id || null
+  }
 
-  const { data: { user } } = await supabase.auth.getUser(token)
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Fallback: cookie-based session auth
+  if (!userId) {
+    const { createClient: createServerClient } = await import('@/lib/supabase/server')
+    const serverSupa = await createServerClient()
+    const { data: { user: sessionUser } } = await serverSupa.auth.getUser()
+    userId = sessionUser?.id || null
+  }
 
-  const { data: profile } = await supabase.from('profiles').select('crm_location_id').eq('id', user.id).single()
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: profile } = await supabase.from('profiles').select('crm_location_id').eq('id', userId).single()
   const locationId = profile?.crm_location_id
 
   const { platform, reconnect } = await req.json()
+
+  // Alias user for downstream code
+  const user = { id: userId }
 
   // For platforms we support via direct OAuth (no CRM needed), redirect to our connect flow
   const DIRECT_OAUTH_PLATFORMS: Record<string, boolean> = { linkedin: true, facebook: true, google: true }

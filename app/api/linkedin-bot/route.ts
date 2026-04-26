@@ -244,6 +244,127 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: result.error }, { status: 502 })
       }
 
+      case 'auto-publish': {
+        // Auto-publish: checks score threshold + user setting, publishes if eligible
+        // Called by cron or after approval timeout
+        const { queue_id, user_id, auto_approve_threshold = 85 } = body
+        if (!user_id || !queue_id) return NextResponse.json({ error: 'user_id and queue_id required' }, { status: 400 })
+
+        const { data: post } = await supabase.from('bot_queue')
+          .select('content_text, content_type, vpis_score, status')
+          .eq('id', queue_id)
+          .single()
+
+        if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+        if (post.status !== 'pending_approval') return NextResponse.json({ skipped: true, reason: `Status is ${post.status}` })
+        if ((post.vpis_score || 0) < auto_approve_threshold) return NextResponse.json({ skipped: true, reason: `Score ${post.vpis_score} below threshold ${auto_approve_threshold}` })
+
+        // Check kill switch
+        const { data: settings } = await supabase.from('bot_settings')
+          .select('auto_post_enabled, auto_comment_enabled, emergency_pause')
+          .eq('user_id', user_id)
+          .single()
+
+        if (settings?.emergency_pause) return NextResponse.json({ skipped: true, reason: 'Emergency pause active' })
+        if (post.content_type === 'post' && !settings?.auto_post_enabled) return NextResponse.json({ skipped: true, reason: 'Auto-post disabled' })
+        if (post.content_type === 'comment' && !settings?.auto_comment_enabled) return NextResponse.json({ skipped: true, reason: 'Auto-comment disabled' })
+
+        // Publish
+        const result = await postToLinkedIn(user_id, post.content_text)
+        if (result.success) {
+          await supabase.from('bot_queue')
+            .update({ status: 'posted', posted_at: new Date().toISOString() })
+            .eq('id', queue_id)
+
+          // Push to CRM pipeline
+          await pushToCRMPipeline(user_id, queue_id, post, 'Posted')
+
+          return NextResponse.json({ success: true, post_id: result.postId, auto_published: true })
+        }
+        return NextResponse.json({ success: false, error: result.error }, { status: 502 })
+      }
+
+      case 'approve': {
+        // Manual approve + optional immediate publish
+        const { queue_id, user_id, publish_now = false } = body
+        if (!queue_id) return NextResponse.json({ error: 'queue_id required' }, { status: 400 })
+
+        await supabase.from('bot_queue')
+          .update({ status: 'approved', approved_at: new Date().toISOString() })
+          .eq('id', queue_id)
+
+        if (publish_now && user_id) {
+          const { data: post } = await supabase.from('bot_queue')
+            .select('content_text, content_type, vpis_score')
+            .eq('id', queue_id)
+            .single()
+
+          if (post) {
+            const result = await postToLinkedIn(user_id, post.content_text)
+            if (result.success) {
+              await supabase.from('bot_queue')
+                .update({ status: 'posted', posted_at: new Date().toISOString() })
+                .eq('id', queue_id)
+              await pushToCRMPipeline(user_id, queue_id, post, 'Posted')
+              return NextResponse.json({ approved: true, published: true, post_id: result.postId })
+            }
+            return NextResponse.json({ approved: true, published: false, error: result.error })
+          }
+        }
+
+        return NextResponse.json({ approved: true })
+      }
+
+      case 'get-engagement': {
+        // Pull engagement data for a posted item
+        const { queue_id } = body
+
+        const { data: post } = await supabase.from('bot_queue')
+          .select('content_text, vpis_score, posted_at, linkedin_post_id')
+          .eq('id', queue_id)
+          .single()
+
+        if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+
+        // Check if we already have engagement data
+        const { data: existing } = await supabase.from('bot_engagement')
+          .select('likes, comments, reposts, impressions, actual_engagement_score')
+          .eq('queue_id', queue_id)
+          .single()
+
+        if (existing) {
+          return NextResponse.json({
+            likes: existing.likes, comments: existing.comments,
+            shares: existing.reposts, impressions: existing.impressions,
+            actual_score: existing.actual_engagement_score,
+            predicted_score: post.vpis_score,
+            delta: (post.vpis_score || 0) - (existing.actual_engagement_score || 0),
+          })
+        }
+
+        // No engagement data yet — return predicted only
+        return NextResponse.json({
+          likes: 0, comments: 0, shares: 0, impressions: 0,
+          actual_score: null, predicted_score: post.vpis_score,
+          delta: null, message: 'Engagement data not yet collected',
+        })
+      }
+
+      case 'crm-sync': {
+        // Sync a queue item to CRM pipeline as an opportunity
+        const { queue_id, user_id, stage = 'Pending Approval' } = body
+        if (!queue_id || !user_id) return NextResponse.json({ error: 'queue_id and user_id required' }, { status: 400 })
+
+        const { data: post } = await supabase.from('bot_queue')
+          .select('content_text, content_type, vpis_score, hook_archetype, patterns_fired, status')
+          .eq('id', queue_id)
+          .single()
+
+        if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+        await pushToCRMPipeline(user_id, queue_id, post, stage)
+        return NextResponse.json({ synced: true })
+      }
+
       case 'status': {
         // Check if LinkedIn is connected for a user
         const { user_id } = body
@@ -267,5 +388,59 @@ export async function POST(req: NextRequest) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
     console.error(`[linkedin-bot] ${action} error:`, msg)
     return NextResponse.json({ error: msg }, { status: 500 })
+  }
+}
+
+// ── CRM Pipeline Sync ──
+async function pushToCRMPipeline(
+  userId: string,
+  queueId: string,
+  post: { content_text: string; content_type: string; vpis_score?: number; hook_archetype?: string; patterns_fired?: string[] },
+  stage: string,
+) {
+  const CRM_BASE = 'https://services.leadconnectorhq.com'
+  const PIT = process.env.CRM_PIT_RAW || process.env.CRM_PIT_ROCKETOPP
+  const LOCATION = process.env.CRM_LOCATION_ID || 'nphConTwfHcVE1oA0uep'
+
+  if (!PIT) return
+
+  const headers = {
+    Authorization: `Bearer ${PIT}`,
+    'Content-Type': 'application/json',
+    Version: '2021-07-28',
+  }
+
+  try {
+    // Get content queue pipeline
+    const pipeRes = await fetch(`${CRM_BASE}/opportunities/pipelines?locationId=${LOCATION}`, { headers })
+    const pipeData = await pipeRes.json()
+    const contentPipeline = pipeData?.pipelines?.find((p: { name: string }) => p.name?.includes('Content Queue'))
+    if (!contentPipeline) return
+
+    const targetStage = contentPipeline.stages?.find((s: { name: string }) => s.name === stage)
+    if (!targetStage) return
+
+    // Create or update opportunity
+    await fetch(`${CRM_BASE}/opportunities/`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        locationId: LOCATION,
+        pipelineId: contentPipeline.id,
+        pipelineStageId: targetStage.id,
+        name: `${post.content_type === 'post' ? 'Post' : 'Comment'} — VPIS ${post.vpis_score || '?'} — ${new Date().toLocaleDateString()}`,
+        status: 'open',
+        customFields: [
+          { key: 'post_text', field_value: post.content_text?.slice(0, 500) },
+          { key: 'vpis_score', field_value: String(post.vpis_score || 0) },
+          { key: 'content_type', field_value: post.content_type },
+          { key: 'hook_archetype', field_value: post.hook_archetype || '' },
+          { key: 'patterns_fired', field_value: post.patterns_fired?.join(', ') || '' },
+          { key: 'content_status', field_value: stage.toLowerCase().replace(' ', '_') },
+        ],
+      }),
+    })
+  } catch (err) {
+    console.warn('[linkedin-bot] CRM sync failed:', err)
   }
 }

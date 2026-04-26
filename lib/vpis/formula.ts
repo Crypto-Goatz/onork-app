@@ -121,14 +121,89 @@ function scoreCTA(text: string, _ct: string): number {
 }
 
 function detectPatterns(text: string): string[] {
-  const f: string[] = []; const l = text.toLowerCase()
-  if (/^you are|you're the/i.test(text)) f.push('P024-ABSOLUTE_DECLARATION')
-  if (/used to.+now|but here|the problem/i.test(l)) f.push('P031-BAIT_AND_FLIP')
-  if (!/https?:\/\//.test(text)) f.push('P010-NO_LINKS')
-  if ((text.match(/#\w+/g) || []).length === 0) f.push('P011-ZERO_HASHTAGS')
-  if (/\$[\d,]+|\d+%/.test(text.split('\n')[0] || '')) f.push('P028-SPECIFICITY_HOOK')
-  if (/\?$/.test(text.split('\n').slice(-3).join(' ').trim())) f.push('P055-CLOSING_QUESTION')
-  if (text.split('\n').filter(x => x.trim()).some(x => x.trim().split(' ').length <= 6)) f.push('P058-QUOTABLE_LINE')
-  if (/\d\.\s/m.test(text)) f.push('P042-FRAMEWORK_STRUCTURE')
+  const f: string[] = []
+  const l = text.toLowerCase()
+  const firstLine = (text.split('\n')[0] || '').trim()
+  const lastLines = text.split('\n').filter(x => x.trim()).slice(-3).join(' ')
+  const wordCount = text.split(/\s+/).length
+  const hashtagCount = (text.match(/#\w+/g) || []).length
+  const hasLink = /https?:\/\//.test(text)
+  const lines = text.split('\n').filter(x => x.trim())
+
+  // ─── Hook Patterns ───
+  // P024: Absolute Declaration — "You are the API between your AI tools."
+  if (/^(you are|the (biggest|best|worst|only|real)|every |most |nobody|everyone|stop |don't |never |always )/i.test(firstLine)) f.push('P024-ABSOLUTE_DECLARATION')
+  // P031: Bait & Flip — setup belief → immediately flip
+  if (/used to.+(now|until|but)|but here'?s|the problem|\.{3}\s*(but|except|until|wrong)/i.test(l)) f.push('P031-BAIT_AND_FLIP')
+  // P022: Confession + Contrast — admit something real, contrast with change
+  if (/i (spent|wasted|lost|almost|used to|was wrong|failed|quit|stopped|gave up)/i.test(l) && /(now|then|today|changed|learned|realized)/i.test(l)) f.push('P022-CONFESSION_CONTRAST')
+  // P028: Specificity Hook — opens with exact numbers
+  if (/^\$?[\d,]+\.?\d*[%kKmM]?\s|^\d+[\.,]\d/.test(firstLine)) f.push('P028-SPECIFICITY_HOOK')
+  // P041: Authority Contrast — reference authority + add what they missed
+  if (/(won't tell you|doesn't show|left out|missed|forgot|what .+ actually|here'?s what .+ really)/i.test(l)) f.push('P041-AUTHORITY_CONTRAST')
+  // P033: Contrarian with Backup — opposite position + data justification
+  if (/(wrong about|most .+ advice|unpopular opinion|hot take|controversial|here'?s why .+ wrong)/i.test(l)) f.push('P033-CONTRARIAN_BACKUP')
+
+  // ─── Structure Patterns ───
+  // P011: Zero Hashtags (Thought Leadership)
+  if (hashtagCount === 0) f.push('P011-ZERO_HASHTAGS')
+  // P015: Link in First Comment Only
+  if (!hasLink) f.push('P015-NO_LINKS_IN_BODY')
+  // P037: Vibe Style — short sentences, no corporate, casual certainty
+  const avgSentLen = text.split(/[.!?]+/).filter(x => x.trim()).reduce((a, s) => a + s.trim().split(/\s+/).length, 0) / Math.max(1, text.split(/[.!?]+/).filter(x => x.trim()).length)
+  if (avgSentLen <= 15 && !/leverage|synergy|stakeholder|utilize|robust|innovative|cutting.?edge/i.test(l)) f.push('P037-VIBE_STYLE')
+  // P042: Framework/Numbered Structure
+  if (/\d[\.\)]\s/m.test(text) || /step \d/i.test(l)) f.push('P042-FRAMEWORK_STRUCTURE')
+
+  // ─── Engagement Patterns ───
+  // P055: Closing Question Formula
+  if (/\?/.test(lastLines) && /what|how|which|when|where|who/i.test(lastLines)) f.push('P055-CLOSING_QUESTION')
+  // P025: Comment Length Signal (for comments: 100-180 words)
+  if (wordCount >= 100 && wordCount <= 180) f.push('P025-OPTIMAL_COMMENT_LENGTH')
+  // P026: Author Reply Trigger — extends thesis + asks process question
+  if (/your (process|approach|framework|system|method|stack)/i.test(l)) f.push('P026-AUTHOR_REPLY_TRIGGER')
+
+  // ─── Viral Mechanics ───
+  // P046: Playbook as Pitch — giving away the mechanism
+  if (/(here'?s (exactly )?how|step.by.step|the (exact |full )?playbook|here'?s the (system|framework|process))/i.test(l)) f.push('P046-PLAYBOOK_AS_PITCH')
+  // P047: Implied Math — state price + volume, never multiply
+  if (/\$\d/.test(l) && /\d+ (spots?|seats?|clients?|slots?|per (week|month|day))/i.test(l)) f.push('P047-IMPLIED_MATH')
+  // P048: Price Controversy — specific price (not round) triggers debate
+  if (/\$\d{2,}[79]\b|\$\d+\.\d{2}/.test(text)) f.push('P048-PRICE_CONTROVERSY')
+  // P051: Motion Content — references to video/GIF/demo
+  if (/(screen.?record|gif|video|demo|loom|walkthrough)/i.test(l)) f.push('P051-MOTION_CONTENT')
+
+  // ─── Quotable & Save-worthy ───
+  // P058: Quotable Standalone Line — 4-12 word punchy line
+  if (lines.some(x => { const w = x.trim().split(/\s+/).length; return w >= 4 && w <= 12 && /[.!]$/.test(x.trim()) })) f.push('P058-QUOTABLE_LINE')
+  // Save intent signals — frameworks, checklists, systems
+  if (/(framework|checklist|system|formula|rule|template|playbook|step|cheat.?sheet)/i.test(l)) f.push('P_SAVE_INTENT')
+
+  // ─── Timing & Distribution ───
+  // P001: First Hour Velocity signal (detection: mentions rally/share/comment early)
+  if (/(comment below|share this|tag someone|send this to)/i.test(l)) f.push('P001-VELOCITY_SIGNAL')
+  // P008: Dwell Time Signal — long-form with questions holds attention
+  if (wordCount >= 150 && /\?/.test(text) && text.split('\n\n').length >= 3) f.push('P008-DWELL_TIME')
+  // P017: Consistency Signal — topic cluster reference
+  if (/(part \d|series|yesterday|last (week|post)|continuing|follow.?up)/i.test(l)) f.push('P017-CONSISTENCY_SIGNAL')
+  // P053: LinkedIn Aftershock — references news/events from past week
+  if (/(just (announced|released|launched|dropped)|breaking|this week|yesterday .+ announced)/i.test(l)) f.push('P053-AFTERSHOCK_WINDOW')
+
+  // ─── Comment-Specific Patterns ───
+  // P029: ICP Comment Extraction — enrichment reference
+  if (/(your comment|saw your (post|comment|take)|you mentioned)/i.test(l)) f.push('P029-ICP_EXTRACTION')
+  // P056: Comment-Bait Visibility Gap — substantive comment surfaces
+  if (wordCount >= 80 && /\?/.test(lastLines) && !/(comment|dm|follow|subscribe|link)/i.test(l.slice(-100))) f.push('P056-SUBSTANTIVE_COMMENT')
+  // P057: Specificity Mirroring — applying their specificity principle to your value
+  if (/\d+.+(services?|tools?|integrations?|apps?|connections?).+(one|single|through)/i.test(l)) f.push('P057-SPECIFICITY_MIRROR')
+
+  // ─── Emotional Triggers ───
+  if (/behind|missing out|exposed|at risk|losing|vulnerable/i.test(l)) f.push('P_FOMO_TRIGGER')
+  if (/\$\d|million|billion|revenue|save|earn/i.test(l)) f.push('P_FINANCIAL_TRIGGER')
+  if (/your (team|company|website|stack|pipeline|business)/i.test(l)) f.push('P_IDENTITY_TRIGGER')
+
+  // ─── Before/After Pattern ───
+  if (/(\d+ (months?|weeks?|years?) ago|before|used to).+(now|today|after|current)/i.test(l)) f.push('P_BEFORE_AFTER')
+
   return f
 }

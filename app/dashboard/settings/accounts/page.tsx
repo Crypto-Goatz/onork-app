@@ -100,16 +100,50 @@ export default function ConnectedAccountsPage() {
 
   const fetchConnections = useCallback(async () => {
     try {
+      // Fetch local user_connections
       const res = await fetch('/api/auth/connections')
+      let localConns: Connection[] = []
       if (res.ok) {
         const data = await res.json()
-        setConnections(data.connections || [])
+        localConns = data.connections || []
+      }
 
-        // Check for selected GA4 property
-        const google = data.connections?.find((c: Connection) => c.provider === 'google')
-        if (google?.metadata?.ga4_property_id) {
-          setSelectedProperty(google.metadata.ga4_property_id as string)
+      // Also fetch CRM social accounts (these are connected via CRM's Social Planner)
+      try {
+        const socialRes = await fetch('/api/social/accounts')
+        if (socialRes.ok) {
+          const socialData = await socialRes.json()
+          const crmAccounts = socialData.accounts || []
+          // Merge CRM social accounts as connections if not already in local list
+          for (const acct of crmAccounts) {
+            const platform = (acct.platform || acct.type || '').toLowerCase()
+            if (platform && !localConns.find(c => c.provider === platform)) {
+              localConns.push({
+                id: acct.id || platform,
+                provider: platform,
+                provider_email: acct.email || null,
+                provider_name: acct.name || acct.accountName || null,
+                provider_avatar: acct.avatar || acct.profilePicture || null,
+                status: 'active',
+                health_status: 'healthy',
+                scopes: 'crm-social-planner',
+                metadata: { source: 'crm', crm_account_id: acct.id },
+                last_used_at: null,
+                created_at: acct.createdAt || new Date().toISOString(),
+              })
+            }
+          }
         }
+      } catch {
+        // CRM social fetch is best-effort
+      }
+
+      setConnections(localConns)
+
+      // Check for selected GA4 property
+      const google = localConns.find((c: Connection) => c.provider === 'google')
+      if (google?.metadata?.ga4_property_id) {
+        setSelectedProperty(google.metadata.ga4_property_id as string)
       }
     } catch {
       // Silent
@@ -162,24 +196,31 @@ export default function ConnectedAccountsPage() {
     setSuccess('')
 
     try {
-      const res = await fetch(`/api/auth/connect/${providerId}`)
-      if (!res.ok) {
-        const data = await res.json()
-        setError(data.error || 'Failed to start connection')
+      // Use CRM Social Planner OAuth (has all the scopes already configured)
+      const res = await fetch('/api/social/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform: providerId }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data.url) {
+        // If CRM social connect fails, show helpful message
+        setError(data.error || `Could not start ${providerId} connection. Make sure your CRM location is provisioned.`)
         setConnecting(null)
         return
       }
 
-      const { url } = await res.json()
+      // Open popup to CRM's social OAuth flow
+      const popup = window.open(data.url, `connect-${providerId}`, 'width=600,height=700,left=200,top=100')
 
-      // Open popup
-      const popup = window.open(url, `connect-${providerId}`, 'width=600,height=700,left=200,top=100')
-
-      // Poll for popup close (fallback if postMessage fails)
+      // Poll for popup close
       const check = setInterval(() => {
         if (popup?.closed) {
           clearInterval(check)
           setConnecting(null)
+          setSuccess(`${providerId} connection updated`)
           fetchConnections()
         }
       }, 1000)

@@ -6,9 +6,10 @@ import {
   Users, Target, MessageSquare, Calendar, CreditCard, Tag,
   RefreshCw, Search, Plus, ChevronRight, Phone, Mail, Clock,
   AlertTriangle, CheckCircle, Loader2, Building2, User,
-  Filter, ArrowUpDown,
+  Filter, ArrowUpDown, BarChart3,
 } from 'lucide-react'
 import Link from 'next/link'
+import * as crm from '@/lib/crm/sdk'
 import { WelcomeModal } from '@/components/ui/welcome-modal'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 
@@ -27,19 +28,19 @@ interface Contact {
   source?: string
 }
 
-interface Pipeline {
+interface LocalPipeline {
   id: string
   name: string
   stages: { id: string; name: string }[]
 }
 
-interface Opportunity {
+interface LocalOpportunity {
   id: string
   name: string
   monetaryValue?: number
   status?: string
   pipelineStageId?: string
-  contact?: { name: string; email: string }
+  contact?: Record<string, unknown>
 }
 
 const TABS: { key: Tab; label: string; Icon: typeof Users; desc: string }[] = [
@@ -60,51 +61,57 @@ export default function CrmPage() {
   // Data
   const [contacts, setContacts] = useState<Contact[]>([])
   const [totalContacts, setTotalContacts] = useState(0)
-  const [pipelines, setPipelines] = useState<Pipeline[]>([])
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([])
+  const [pipelines, setPipelines] = useState<LocalPipeline[]>([])
+  const [opportunities, setOpportunities] = useState<LocalOpportunity[]>([])
   const [conversations, setConversations] = useState<{ id: string; contactName: string; lastMessage: string; updatedAt: string }[]>([])
 
-  const fetchCrm = useCallback(async (type: string, params: Record<string, string> = {}) => {
+  const loadContacts = useCallback(async (query?: string) => {
     setLoading(true)
     setError('')
     try {
-      const query = new URLSearchParams({ type, ...params })
-      const res = await fetch(`/api/crm/data?${query}`)
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Failed')
-      return json
+      const data = await crm.contacts.list({ query: query || undefined, limit: 50 })
+      setContacts(data.contacts || [])
+      setTotalContacts(data.total || data.count || data.contacts?.length || 0)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'CRM request failed'
-      setError(msg)
-      return null
-    } finally {
-      setLoading(false)
+      setError(err instanceof Error ? err.message : 'Failed to load contacts')
     }
+    setLoading(false)
   }, [])
 
-  const loadContacts = useCallback(async (query?: string) => {
-    const data = await fetchCrm('contacts', { query: query || '', limit: '50' })
-    if (data) {
-      setContacts(data.contacts || [])
-      setTotalContacts(data.meta?.total || data.contacts?.length || 0)
-    }
-  }, [fetchCrm])
-
   const loadPipeline = useCallback(async () => {
-    const data = await fetchCrm('pipelines')
-    if (data) {
-      setPipelines(data.pipelines || [])
+    setLoading(true)
+    setError('')
+    try {
+      const data = await crm.opportunities.pipelines()
+      setPipelines((data.pipelines || []) as LocalPipeline[])
       if (data.pipelines?.[0]) {
-        const opps = await fetchCrm('opportunities', { pipeline_id: data.pipelines[0].id })
-        if (opps) setOpportunities(opps.opportunities || [])
+        const opps = await crm.opportunities.list(data.pipelines[0].id, { limit: 50 })
+        setOpportunities((opps.opportunities || []) as LocalOpportunity[])
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load pipeline')
     }
-  }, [fetchCrm])
+    setLoading(false)
+  }, [])
 
   const loadConversations = useCallback(async () => {
-    const data = await fetchCrm('conversations', { limit: '20' })
-    if (data) setConversations(data.conversations || [])
-  }, [fetchCrm])
+    setLoading(true)
+    setError('')
+    try {
+      const data = await crm.conversations.list({ limit: 20 })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mapped = (data.conversations || []).map((c: any) => ({
+        id: String(c.id || ''),
+        contactName: String(c.contactName || c.fullName || 'Unknown'),
+        lastMessage: String(c.lastMessageBody || ''),
+        updatedAt: String(c.lastMessageDate || c.dateUpdated || ''),
+      }))
+      setConversations(mapped)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load conversations')
+    }
+    setLoading(false)
+  }, [])
 
   useEffect(() => {
     switch (tab) {

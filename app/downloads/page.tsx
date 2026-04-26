@@ -1,3 +1,6 @@
+'use client'
+
+import { useCallback } from 'react'
 import {
   Chrome,
   MessageSquare,
@@ -10,27 +13,38 @@ import {
   Clock,
   Bot,
   Sparkles,
+  Download,
 } from 'lucide-react'
+
+function trackDownload(extension: string, step: string) {
+  fetch('/api/track/download', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ extension, step, source: typeof window !== 'undefined' ? window.location.search : '' }),
+  }).catch(() => {})
+}
 
 const DOWNLOADS = [
   {
     key: 'chrome',
     icon: Chrome,
     name: 'Chrome Extension',
-    description: 'Add 0nMCP to your browser. Inject AI tools into any web app with a single click.',
-    badge: 'v3.0',
+    description: 'AI command center in your browser. LinkedIn tools, voice-trained content, multi-AI council, 1,554 tools via 0nMCP.',
+    badge: 'v4.0',
     badgeColor: 'text-core-green bg-core-green/10 border-core-green/20',
-    cta: 'Add to Chrome',
-    href: 'https://chrome.google.com/webstore',
-    target: '_blank',
+    cta: 'Download Extension',
+    href: '/downloads/0n-chrome-extension.zip',
+    target: '_self',
     secondary: null,
     comingSoon: false,
+    price: 'Free',
+    isDownload: true,
   },
   {
     key: 'slack',
     icon: MessageSquare,
     name: 'Slack App',
-    description: 'Run 0nMCP workflows directly from Slack. App Home, slash commands, and smart notifications.',
+    description: 'Run 0nMCP workflows from Slack. App Home, slash commands, approval queues, and smart notifications.',
     badge: 'v1.0',
     badgeColor: 'text-core-purple bg-core-purple/10 border-core-purple/20',
     cta: 'Add to Slack',
@@ -38,25 +52,29 @@ const DOWNLOADS = [
     target: '_blank',
     secondary: null,
     comingSoon: false,
+    price: 'Free',
+    isDownload: false,
   },
   {
     key: 'wordpress',
     icon: Globe,
-    name: 'WordPress Plugin',
-    description: 'Connect your WordPress site to 0nMCP. Auto-publish, SEO enrichment, and CRM sync.',
-    badge: 'v1.2',
+    name: 'WordPress Plugin + Theme',
+    description: 'Auto-publish AI blog content, CRM sync, analytics dashboard, HIPAA scanner. FSE block theme included.',
+    badge: 'v1.0',
     badgeColor: 'text-core-cyan bg-core-cyan/10 border-core-cyan/20',
     cta: 'Download Plugin',
-    href: 'https://wordpress.org/plugins',
-    target: '_blank',
+    href: '/downloads/0n-wordpress-plugin.zip',
+    target: '_self',
     secondary: null,
     comingSoon: false,
+    price: 'Free',
+    isDownload: true,
   },
   {
     key: 'claude-code',
     icon: Terminal,
-    name: 'Claude Code',
-    description: 'Use 0nMCP inside Claude Code. Configure once, access all 1,554 tools from any terminal session.',
+    name: 'Claude Code Skill',
+    description: 'Drop the /0n skill into Claude Code. Access all 1,554 tools from any terminal session. Zero config.',
     badge: 'npx',
     badgeColor: 'text-core-amber bg-core-amber/10 border-core-amber/20',
     cta: 'View Setup',
@@ -64,32 +82,23 @@ const DOWNLOADS = [
     target: '_self',
     secondary: 'npx -y 0nmcp',
     comingSoon: false,
-  },
-  {
-    key: 'mobile',
-    icon: Smartphone,
-    name: 'Mobile App',
-    description: 'Pocket access to your entire 0nMCP stack. iOS and Android apps in development.',
-    badge: 'Coming Soon',
-    badgeColor: 'text-core-text-muted bg-core-border/30 border-core-border',
-    cta: 'Notify Me',
-    href: null,
-    target: null,
-    secondary: null,
-    comingSoon: true,
+    price: 'Free',
+    isDownload: false,
   },
   {
     key: 'cli',
     icon: Package,
     name: '0nMCP CLI',
-    description: 'The full 0nMCP orchestrator as a global npm package. 1,554 tools, 96 services, zero config.',
+    description: 'The full orchestrator as a global npm package. 1,554 tools, 96 services, zero config.',
     badge: 'v4.5.1',
     badgeColor: 'text-core-green bg-core-green/10 border-core-green/20',
-    cta: 'npm i -g 0nmcp',
+    cta: 'Install via npm',
     href: 'https://www.npmjs.com/package/0nmcp',
     target: '_blank',
     secondary: 'npm install -g 0nmcp',
     comingSoon: false,
+    price: 'Free',
+    isDownload: false,
   },
   {
     key: 'chatgpt',
@@ -103,6 +112,8 @@ const DOWNLOADS = [
     target: '_blank',
     secondary: null,
     comingSoon: false,
+    price: 'Free',
+    isDownload: false,
   },
   {
     key: 'gemini',
@@ -116,6 +127,23 @@ const DOWNLOADS = [
     target: '_blank',
     secondary: null,
     comingSoon: false,
+    price: 'Free',
+    isDownload: false,
+  },
+  {
+    key: 'mobile',
+    icon: Smartphone,
+    name: 'Mobile App',
+    description: 'Pocket access to your entire 0nMCP stack. iOS and Android apps in development.',
+    badge: 'Coming Soon',
+    badgeColor: 'text-core-text-muted bg-core-border/30 border-core-border',
+    cta: 'Notify Me',
+    href: null,
+    target: null,
+    secondary: null,
+    comingSoon: true,
+    price: null,
+    isDownload: false,
   },
 ]
 
@@ -128,13 +156,13 @@ export default function DownloadsPage() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-core-green/10 border border-core-green/20 rounded-full text-xs font-semibold text-core-green mb-5">
             <Package className="w-3.5 h-3.5" />
-            0n Ecosystem
+            1,554 tools across 96 services
           </div>
           <h1 className="text-3xl font-bold text-core-text mb-3">
-            Downloads &amp; Integrations
+            Extend 0n Everywhere
           </h1>
           <p className="text-sm text-core-text-muted max-w-lg mx-auto">
-            Every way to connect 0nMCP to your workflow — browser, terminal, CMS, or chat.
+            Browser, terminal, CMS, Slack, or AI chat — plug 0nCore into every tool you use.
           </p>
         </div>
 
@@ -191,14 +219,16 @@ export default function DownloadsPage() {
                     href={item.href!}
                     target={item.target === '_blank' ? '_blank' : undefined}
                     rel={item.target === '_blank' ? 'noopener noreferrer' : undefined}
+                    onClick={() => trackDownload(item.key, item.isDownload ? 'download_start' : 'click')}
                     className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-core-green text-core-bg font-bold text-xs rounded-lg hover:brightness-110 transition-all"
                   >
+                    {item.isDownload && <Download className="w-3.5 h-3.5" />}
                     {item.cta}
-                    {item.target === '_blank' ? (
+                    {!item.isDownload && item.target === '_blank' ? (
                       <ExternalLink className="w-3.5 h-3.5" />
-                    ) : (
+                    ) : !item.isDownload ? (
                       <ArrowRight className="w-3.5 h-3.5" />
-                    )}
+                    ) : null}
                   </a>
                 )}
               </div>
