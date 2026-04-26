@@ -7,6 +7,7 @@ import { PublicNav } from './public-nav'
 const EXCLUDED_PREFIXES = [
   '/dashboard',
   '/console',
+  '/crm',
   '/auth',
   '/import',
   '/install',
