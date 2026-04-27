@@ -47,6 +47,10 @@
     {
       "path": "/api/cron/indexnow-daily",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/sxo-indexer/tick",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
