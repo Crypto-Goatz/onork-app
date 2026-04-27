@@ -91,6 +91,14 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
           // Auto-provision ONLY if crm_location_id is missing (not stripe)
           // Never overwrite an existing crm_location_id
           if (!data?.crm_location_id) {
+            // Optional override from URL: ?subaccount_name=Full-Test-1
+            // Persists in sessionStorage so it survives the OAuth redirect bounce
+            let subaccountName = searchParams.get('subaccount_name') || ''
+            try {
+              if (subaccountName) sessionStorage.setItem('0ncore_provision_subaccount', subaccountName)
+              else subaccountName = sessionStorage.getItem('0ncore_provision_subaccount') || ''
+            } catch {}
+
             fetch('/api/provision', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -98,7 +106,10 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                 user_id: user.id,
                 email: user.email || '',
                 name: user.user_metadata?.full_name || '',
+                subaccount_name: subaccountName,
               }),
+            }).then(() => {
+              try { sessionStorage.removeItem('0ncore_provision_subaccount') } catch {}
             }).catch(() => {})
           }
         })

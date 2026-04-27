@@ -46,6 +46,7 @@ export async function POST(request: Request) {
   const userId = body.user_id as string
   const email = body.email as string
   const name = body.name as string
+  const subaccountName = (body.subaccount_name as string | undefined) || ''
 
   if (!userId || !email) {
     return NextResponse.json({ error: 'user_id and email required' }, { status: 400 })
@@ -164,7 +165,7 @@ export async function POST(request: Request) {
         const subRes = await fetch(`${new URL(request.url).origin}/api/provision/crm-subaccount`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, email, name }),
+          body: JSON.stringify({ user_id: userId, email, name, subaccount_name: subaccountName }),
         })
         const subData = await subRes.json()
 

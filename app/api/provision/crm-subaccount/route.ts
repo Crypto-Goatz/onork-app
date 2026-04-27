@@ -31,6 +31,9 @@ export async function POST(request: Request) {
   const userId = body.user_id as string
   const email = body.email as string
   const name = body.name as string
+  // Optional override — used by admin reset flow + tests.
+  // If absent, falls back to profile.business_name, then to "{name}'s Account".
+  const subaccountNameOverride = (body.subaccount_name as string | undefined) || ''
 
   if (!userId || !email) {
     return NextResponse.json({ error: 'user_id and email required' }, { status: 400 })
@@ -56,6 +59,18 @@ export async function POST(request: Request) {
     })
   }
 
+  // Resolve the sub-account name: explicit override > profile.business_name > person's name + "'s Account"
+  const { data: profileNames } = await admin
+    .from('profiles')
+    .select('business_name, full_name')
+    .eq('id', userId)
+    .single()
+
+  const resolvedName =
+    subaccountNameOverride ||
+    profileNames?.business_name ||
+    (name ? `${name}'s Account` : 'New Account')
+
   // Create CRM sub-account (location)
   try {
     const res = await fetch(`${CRM_API}/locations/`, {
@@ -67,7 +82,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         companyId: CRM_COMPANY_ID,
-        name: `${name || 'User'}'s Account`,
+        name: resolvedName,
         email,
         phone: '',
         address: '',
