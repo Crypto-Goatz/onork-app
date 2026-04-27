@@ -48,6 +48,23 @@ export async function POST(req: Request) {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object
+
+      // UCP order handling — fires for any product purchased through /api/ucp/checkout
+      if (session.metadata?.ucp_product_id) {
+        const paymentId = typeof session.payment_intent === 'string' ? session.payment_intent : null
+        await supabase
+          .from('ucp_orders')
+          .update({ status: 'paid', stripe_payment_id: paymentId })
+          .eq('stripe_session_id', session.id)
+
+        const fulfillmentUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'}/api/ucp/fulfillment`
+        fetch(fulfillmentUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stripe_session_id: session.id }),
+        }).catch(err => console.error('[stripe/webhook] UCP fulfillment failed:', err.message))
+      }
+
       const userId = session.metadata?.user_id
       if (!userId) break
 
