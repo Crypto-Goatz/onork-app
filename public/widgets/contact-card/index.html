@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Card</title>
+<script src="https://cdn.jsdelivr.net/npm/postmate@1.5.2/build/postmate.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: transparent;
+    color: #e6edf3;
+    font-family: -apple-system, system-ui, sans-serif;
+    padding: 16px;
+  }
+  .card {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .contact-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6EE05A 0%, #2ea043 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0d1117;
+    flex-shrink: 0;
+  }
+  .contact-info { flex: 1; min-width: 0; }
+  .contact-name {
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .contact-company {
+    font-size: 13px;
+    color: #8b949e;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .contact-email {
+    font-size: 12px;
+    color: #8b949e;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .industry-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(110,224,90,0.1);
+    color: #6EE05A;
+    border: 1px solid rgba(110,224,90,0.2);
+    margin-bottom: 14px;
+  }
+
+  .market-row {
+    display: none;
+    background: #161b22;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: #8b949e;
+  }
+  .market-row.visible { display: flex; align-items: center; justify-content: space-between; }
+  .market-row .trend {
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .trend-up { color: #6EE05A; }
+  .trend-down { color: #f85149; }
+
+  .actions-label {
+    font-size: 12px;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .action-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: #161b22;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    border: 1px solid transparent;
+  }
+  .action-item:hover {
+    border-color: #30363d;
+    background: #1c2129;
+  }
+  .action-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6EE05A;
+    flex-shrink: 0;
+  }
+
+  .view-btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin-top: 16px;
+    padding: 10px;
+    background: #6EE05A;
+    color: #0d1117;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .view-btn:hover { opacity: 0.9; }
+
+  .footer {
+    text-align: center;
+    padding: 12px 0 0;
+    font-size: 11px;
+    color: #8b949e;
+  }
+  .footer a { color: #6EE05A; text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  .empty-state {
+    text-align: center;
+    padding: 24px 0;
+    color: #484f58;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+  <div class="card" id="contactCard">
+    <div class="empty-state" id="emptyState">Waiting for contact data...</div>
+
+    <div id="contactContent" style="display:none;">
+      <div class="contact-header">
+        <div class="avatar" id="avatar">?</div>
+        <div class="contact-info">
+          <div class="contact-name" id="contactName">--</div>
+          <div class="contact-company" id="companyName">--</div>
+          <div class="contact-email" id="contactEmail"></div>
+        </div>
+      </div>
+
+      <div class="industry-badge" id="industryBadge" style="display:none;"></div>
+
+      <div class="market-row" id="marketRow">
+        <span>Market demand</span>
+        <span class="trend" id="marketTrend">--</span>
+      </div>
+
+      <div class="actions-label">Suggested Actions</div>
+      <div id="actionsList"></div>
+
+      <a class="view-btn" href="https://0ncore.com/crm/contacts" target="_blank">View in 0n Core</a>
+    </div>
+
+    <div class="footer">Powered by <a href="https://0ncore.com" target="_blank">0n Core</a></div>
+  </div>
+
+<script>
+  let parentRef = null;
+
+  const industryActions = {
+    'ai-ml': ['Send AI automation case study', 'Schedule tech demo', 'Share integration docs'],
+    'saas': ['Send SaaS growth playbook', 'Schedule onboarding call', 'Share API documentation'],
+    'marketing': ['Send content calendar template', 'Schedule strategy session', 'Share campaign analytics'],
+    'ecommerce': ['Send conversion optimization guide', 'Schedule store audit', 'Share Shopify integration'],
+    'web-development': ['Send dev toolkit overview', 'Schedule architecture review', 'Share deployment guide'],
+    'mobile': ['Send mobile SDK docs', 'Schedule integration call', 'Share analytics setup'],
+    'data-science': ['Send data pipeline template', 'Schedule analytics demo', 'Share ML integration guide'],
+    'design': ['Send design system guide', 'Schedule Figma walkthrough', 'Share asset library'],
+    'devops': ['Send CI/CD template', 'Schedule infrastructure review', 'Share monitoring setup'],
+    'real-estate': ['Send CRM setup guide', 'Schedule pipeline demo', 'Share lead nurture sequence'],
+    'healthcare': ['Send HIPAA compliance guide', 'Schedule security review', 'Share patient flow template'],
+    'finance': ['Send reporting dashboard guide', 'Schedule compliance demo', 'Share invoicing automation'],
+    'default': ['Send welcome sequence', 'Schedule intro call', 'Share product overview']
+  };
+
+  const industryCategoryMap = {
+    'ai-ml': 'ai-ml', 'ai': 'ai-ml', 'ml': 'ai-ml', 'artificial intelligence': 'ai-ml', 'machine learning': 'ai-ml',
+    'saas': 'saas', 'software': 'saas',
+    'marketing': 'marketing', 'advertising': 'marketing', 'digital marketing': 'marketing',
+    'ecommerce': 'ecommerce', 'e-commerce': 'ecommerce', 'retail': 'ecommerce',
+    'web-development': 'web-development', 'web development': 'web-development', 'web': 'web-development',
+    'mobile': 'mobile', 'mobile development': 'mobile', 'ios': 'mobile', 'android': 'mobile',
+    'data-science': 'data-science', 'data science': 'data-science', 'data': 'data-science', 'analytics': 'data-science',
+    'design': 'design', 'ui': 'design', 'ux': 'design',
+    'devops': 'devops', 'infrastructure': 'devops', 'cloud': 'devops',
+    'real-estate': 'real-estate', 'real estate': 'real-estate', 'realty': 'real-estate',
+    'healthcare': 'healthcare', 'health': 'healthcare', 'medical': 'healthcare',
+    'finance': 'finance', 'fintech': 'finance', 'banking': 'finance'
+  };
+
+  function normalizeIndustry(raw) {
+    if (!raw) return null;
+    const lower = raw.toLowerCase().trim();
+    return industryCategoryMap[lower] || null;
+  }
+
+  function getInitials(name) {
+    if (!name) return '?';
+    return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function fetchMarketTrend(category) {
+    try {
+      const res = await fetch(`https://0ncore.com/api/market-intel/skills?category=${encodeURIComponent(category)}&sort=growth_pct&dir=desc&limit=1`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      const skills = data.skills || data.data || data || [];
+      if (Array.isArray(skills) && skills.length > 0) {
+        return skills[0].growth_pct || skills[0].growth || null;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function renderContact(contactData) {
+    const { contactName, companyName, email, industry } = contactData || {};
+
+    if (!contactName && !companyName) return;
+
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('contactContent').style.display = 'block';
+
+    // Avatar
+    document.getElementById('avatar').textContent = getInitials(contactName);
+
+    // Name & company
+    document.getElementById('contactName').textContent = contactName || 'Unknown Contact';
+    document.getElementById('companyName').textContent = companyName || '';
+    const emailEl = document.getElementById('contactEmail');
+    if (email) {
+      emailEl.textContent = email;
+      emailEl.style.display = 'block';
+    } else {
+      emailEl.style.display = 'none';
+    }
+
+    // Industry badge
+    const badgeEl = document.getElementById('industryBadge');
+    const normalized = normalizeIndustry(industry);
+    if (industry) {
+      badgeEl.textContent = industry;
+      badgeEl.style.display = 'inline-block';
+    } else {
+      badgeEl.style.display = 'none';
+    }
+
+    // Market trend
+    const marketRow = document.getElementById('marketRow');
+    const trendEl = document.getElementById('marketTrend');
+    if (normalized) {
+      const growth = await fetchMarketTrend(normalized);
+      if (growth !== null) {
+        const isUp = growth >= 0;
+        trendEl.className = 'trend ' + (isUp ? 'trend-up' : 'trend-down');
+        trendEl.innerHTML = (isUp ? '&#9650; ' : '&#9660; ') + Math.abs(growth).toFixed(1) + '%';
+        marketRow.classList.add('visible');
+      }
+    }
+
+    // Actions
+    const actionKey = normalized || 'default';
+    const actions = industryActions[actionKey] || industryActions['default'];
+    const list = document.getElementById('actionsList');
+    list.innerHTML = '';
+    actions.forEach(action => {
+      const div = document.createElement('div');
+      div.className = 'action-item';
+      div.innerHTML = `<span class="action-dot"></span>${escapeHtml(action)}`;
+      div.onclick = () => {
+        if (parentRef) parentRef.emit('contact-action', { action, contactName, companyName });
+        try { window.parent.postMessage({ type: 'contact-action', action, contactName, companyName }, '*'); } catch (e) {}
+      };
+      list.appendChild(div);
+    });
+  }
+
+  const handshake = new Postmate.Model({
+    getContact: () => ({
+      name: document.getElementById('contactName').textContent,
+      company: document.getElementById('companyName').textContent
+    })
+  });
+
+  handshake.then(parent => {
+    parentRef = parent;
+    parent.on('elementStore', (data) => {
+      if (data) renderContact(data);
+    });
+  });
+
+  // Also listen for direct postMessage (fallback)
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'contactData') {
+      renderContact(e.data);
+    }
+  });
+</script>
+</body>
+</html>

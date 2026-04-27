@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Intel</title>
+<script src="https://cdn.jsdelivr.net/npm/postmate@1.5.2/build/postmate.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #161b22;
+    color: #e6edf3;
+    font-family: -apple-system, system-ui, sans-serif;
+    padding: 16px;
+    min-height: 100vh;
+  }
+  .card {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+  h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+  select {
+    width: 100%;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    color: #e6edf3;
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238b949e' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  select:focus { border-color: #6EE05A; }
+
+  .skills-list { margin-top: 12px; }
+
+  .skill-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-color 0.2s;
+  }
+  .skill-card:hover { border-color: #6EE05A; }
+
+  .skill-info { flex: 1; }
+  .skill-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .skill-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: #8b949e;
+  }
+  .skill-meta span { display: flex; align-items: center; gap: 4px; }
+
+  .growth {
+    font-family: monospace;
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .growth-up { color: #6EE05A; }
+  .growth-down { color: #f85149; }
+
+  .competition {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .comp-low { background: rgba(110,224,90,0.15); color: #6EE05A; }
+  .comp-med { background: rgba(227,179,65,0.15); color: #e3b341; }
+  .comp-high { background: rgba(248,81,73,0.15); color: #f85149; }
+
+  .spinner {
+    display: none;
+    text-align: center;
+    padding: 32px 0;
+  }
+  .spinner.visible { display: block; }
+  .spinner-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6EE05A;
+    margin: 0 3px;
+    animation: bounce 1.2s infinite ease-in-out;
+  }
+  .spinner-dot:nth-child(2) { animation-delay: 0.2s; }
+  .spinner-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 24px 0;
+    color: #8b949e;
+    font-size: 13px;
+    display: none;
+  }
+
+  .see-more {
+    display: block;
+    text-align: center;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #6EE05A;
+    text-decoration: none;
+  }
+  .see-more:hover { text-decoration: underline; }
+
+  .footer {
+    text-align: center;
+    padding: 16px 0 4px;
+    font-size: 11px;
+    color: #8b949e;
+  }
+  .footer a { color: #6EE05A; text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h2>Market Demand Intelligence</h2>
+    <select id="category" onchange="fetchSkills()">
+      <option value="all">All Industries</option>
+      <option value="ai-ml">AI / ML</option>
+      <option value="web-development">Web Development</option>
+      <option value="mobile">Mobile</option>
+      <option value="data-science">Data Science</option>
+      <option value="design">Design</option>
+      <option value="marketing">Marketing</option>
+      <option value="devops">DevOps</option>
+    </select>
+
+    <div class="spinner" id="spinner">
+      <span class="spinner-dot"></span>
+      <span class="spinner-dot"></span>
+      <span class="spinner-dot"></span>
+    </div>
+
+    <div class="skills-list" id="skillsList"></div>
+    <div class="empty-state" id="emptyState">No data available for this category.</div>
+
+    <a class="see-more" href="https://0ncore.com/dashboard/market-intel" target="_blank">See full report</a>
+  </div>
+
+  <div class="footer">Powered by <a href="https://0ncore.com" target="_blank">0n Core</a></div>
+
+<script>
+  let parentRef = null;
+
+  const handshake = new Postmate.Model({
+    getCategory: () => document.getElementById('category').value
+  });
+
+  handshake.then(parent => {
+    parentRef = parent;
+    parent.on('elementStore', (data) => {
+      if (data && data.category) {
+        document.getElementById('category').value = data.category;
+        fetchSkills();
+      }
+    });
+  });
+
+  function formatBudget(val) {
+    if (!val && val !== 0) return '--';
+    if (val >= 1000) return '$' + (val / 1000).toFixed(val % 1000 === 0 ? 0 : 1) + 'k';
+    return '$' + val;
+  }
+
+  function getCompClass(level) {
+    if (!level) return 'comp-med';
+    const l = level.toLowerCase();
+    if (l === 'low') return 'comp-low';
+    if (l === 'high') return 'comp-high';
+    return 'comp-med';
+  }
+
+  async function fetchSkills() {
+    const category = document.getElementById('category').value;
+    const list = document.getElementById('skillsList');
+    const spinner = document.getElementById('spinner');
+    const empty = document.getElementById('emptyState');
+
+    list.innerHTML = '';
+    empty.style.display = 'none';
+    spinner.classList.add('visible');
+
+    try {
+      const url = `https://0ncore.com/api/market-intel/skills?category=${encodeURIComponent(category)}&sort=growth_pct&dir=desc&limit=5`;
+      const res = await fetch(url);
+
+      if (!res.ok) throw new Error('API error');
+
+      const data = await res.json();
+      const skills = data.skills || data.data || data || [];
+
+      spinner.classList.remove('visible');
+
+      if (!Array.isArray(skills) || skills.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      skills.forEach(skill => {
+        const growth = skill.growth_pct || skill.growth || 0;
+        const isUp = growth >= 0;
+        const card = document.createElement('div');
+        card.className = 'skill-card';
+        card.innerHTML = `
+          <div class="skill-info">
+            <div class="skill-name">${escapeHtml(skill.name || skill.skill || 'Unknown')}</div>
+            <div class="skill-meta">
+              <span>Avg budget: <strong>${formatBudget(skill.avg_budget || skill.budget)}</strong></span>
+              <span><span class="competition ${getCompClass(skill.competition)}">${escapeHtml(skill.competition || 'med')}</span></span>
+            </div>
+          </div>
+          <div class="growth ${isUp ? 'growth-up' : 'growth-down'}">
+            ${isUp ? '&#9650;' : '&#9660;'} ${Math.abs(growth).toFixed(1)}%
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    } catch (e) {
+      spinner.classList.remove('visible');
+      empty.textContent = 'Unable to load market data.';
+      empty.style.display = 'block';
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // Auto-load on init
+  fetchSkills();
+</script>
+</body>
+</html>
