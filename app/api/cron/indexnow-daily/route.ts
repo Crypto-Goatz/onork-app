@@ -27,7 +27,7 @@ const DOMAINS: Array<{ host: string; sitemapUrl?: string }> = [
   { host: 'rocketopp.com' },
   { host: 'command.rocketclients.com' },
   { host: 'rocketpost.co' },
-  { host: 'www.cro9.com' },
+  { host: 'cro9.com' },
   { host: 'wpsxo.com' },
   { host: 'www.0nmcp.com' },
   { host: '0ncore.com' },
