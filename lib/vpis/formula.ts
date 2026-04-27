@@ -32,7 +32,7 @@ async function getActiveWeights(): Promise<Weights> {
     hook: Number(data?.hook_weight) || 0.200, emotion: Number(data?.emotion_weight) || 0.180,
     platform: Number(data?.platform_weight) || 0.150, viral: Number(data?.viral_weight) || 0.120,
     specificity: Number(data?.specificity_weight) || 0.100, structure: Number(data?.structure_weight) || 0.100,
-    keywords: Number(data?.keyword_weight) || 0.080, cta: Number(data?.cta_weight) || 0.070,
+    keywords: Number(data?.keywords_weight) || 0.080, cta: Number(data?.cta_weight) || 0.070,
   }
   weightsCacheTime = Date.now()
   return cachedWeights

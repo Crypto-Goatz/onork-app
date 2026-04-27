@@ -106,7 +106,7 @@ Return ONLY the post text. No intro, no explanation, no quotation marks.`
     viral_score: bestScores.viral,
     specificity_score: bestScores.specificity,
     structure_score: bestScores.structure,
-    keyword_score: bestScores.keywords,
+    keywords_score: bestScores.keywords,
     cta_score: bestScores.cta,
     patterns_fired: bestScores.patterns_fired,
     hook_archetype,

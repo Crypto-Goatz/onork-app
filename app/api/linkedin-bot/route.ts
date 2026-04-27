@@ -3,15 +3,17 @@
  * The GHL workflows call this with different action types.
  *
  * Actions:
+ * - register-account: Provision a bot_config row + return api_key
  * - generate-post: Generate VPIS-scored LinkedIn post
  * - generate-comment: Generate engineered comment for a target post
  * - score-post: Score a target post for comment-worthiness
  * - schedule-post: Schedule a post via CRM Social Planner
- * - post-comment: Post a comment on a target post
+ * - post-comment: Queue a comment for the Chrome extension to dispatch
  * - get-engagement: Fetch engagement metrics for a posted item
  * - feedback: Submit engagement data for learning loop
  * - generate-dm: Generate a DM after author reply
  * - weekly-report: Weekly intelligence summary
+ * - publish / auto-publish / approve / crm-sync / status
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -91,7 +93,7 @@ export async function POST(req: NextRequest) {
           vpis_score: bestScores?.adjusted_score, hook_score: bestScores?.hook,
           emotion_score: bestScores?.emotion, platform_score: bestScores?.platform,
           viral_score: bestScores?.viral, specificity_score: bestScores?.specificity,
-          structure_score: bestScores?.structure, keyword_score: bestScores?.keywords,
+          structure_score: bestScores?.structure, keywords_score: bestScores?.keywords,
           cta_score: bestScores?.cta, patterns_fired: bestScores?.patterns_fired,
           hook_archetype, status: 'pending_approval',
         }).select('id').single()
@@ -260,7 +262,7 @@ export async function POST(req: NextRequest) {
         if ((post.vpis_score || 0) < auto_approve_threshold) return NextResponse.json({ skipped: true, reason: `Score ${post.vpis_score} below threshold ${auto_approve_threshold}` })
 
         // Check kill switch
-        const { data: settings } = await supabase.from('bot_settings')
+        const { data: settings } = await supabase.from('bot_config')
           .select('auto_post_enabled, auto_comment_enabled, emergency_pause')
           .eq('user_id', user_id)
           .single()
@@ -379,6 +381,112 @@ export async function POST(req: NextRequest) {
 
         const status = await isLinkedInReady(user_id)
         return NextResponse.json(status)
+      }
+
+      case 'register-account': {
+        const {
+          user_id, ghl_location_id, icp_description, value_prop,
+          target_keywords, brand_voice, tier = 'starter',
+        } = body
+        if (!user_id) return NextResponse.json({ error: 'user_id required' }, { status: 400 })
+
+        const apiKey = `0n_${crypto.randomUUID().replace(/-/g, '')}`
+
+        const { data, error } = await supabase.from('bot_config').upsert({
+          user_id,
+          location_id: ghl_location_id || null,
+          icp_description: icp_description || null,
+          value_prop: value_prop || null,
+          target_keywords: Array.isArray(target_keywords)
+            ? target_keywords
+            : (target_keywords ? String(target_keywords).split(',').map((k: string) => k.trim()) : []),
+          brand_voice: brand_voice || null,
+          tier,
+          api_key: apiKey,
+        }, { onConflict: 'user_id' }).select('id, api_key, tier').single()
+
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+        return NextResponse.json({
+          status: 'registered',
+          bot_config_id: data.id,
+          api_key: data.api_key,
+          tier: data.tier,
+        })
+      }
+
+      case 'schedule-post': {
+        const { queue_id, linkedin_account_id, post_text, scheduled_time, location_id } = body
+        if (!queue_id || !linkedin_account_id || !post_text) {
+          return NextResponse.json({ error: 'queue_id, linkedin_account_id, post_text required' }, { status: 400 })
+        }
+
+        const pit = process.env.CRM_PIT_RAW || process.env.CRM_PIT_ROCKETOPP
+        const locId = location_id || process.env.CRM_LOCATION_ID
+        if (!pit || !locId) return NextResponse.json({ error: 'CRM credentials not configured' }, { status: 500 })
+
+        const scheduleAt = scheduled_time || new Date().toISOString()
+
+        const ghlRes = await fetch(
+          `https://services.leadconnectorhq.com/social-media-posting/${locId}/posts`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${pit}`,
+              'Content-Type': 'application/json',
+              Version: '2021-07-28',
+            },
+            body: JSON.stringify({
+              type: 'post',
+              accountIds: [linkedin_account_id],
+              summary: post_text.slice(0, 200),
+              content: post_text,
+              scheduleDate: scheduleAt,
+              status: 'scheduled',
+            }),
+          },
+        )
+
+        const ghlData = await ghlRes.json().catch(() => ({}))
+        if (!ghlRes.ok) {
+          return NextResponse.json(
+            { error: 'CRM scheduling failed', status: ghlRes.status, detail: ghlData },
+            { status: 502 },
+          )
+        }
+
+        const ghlPostId = ghlData?.postId || ghlData?.id || ghlData?.post?.id || null
+
+        await supabase.from('bot_queue').update({
+          status: 'scheduled',
+          crm_post_id: ghlPostId,
+          scheduled_at: scheduleAt,
+        }).eq('id', queue_id)
+
+        return NextResponse.json({ status: 'scheduled', ghl_post_id: ghlPostId, scheduled_at: scheduleAt })
+      }
+
+      case 'post-comment': {
+        const { target_post_url, comment_text, linkedin_account_id, user_id, bot_config_id } = body
+        if (!target_post_url || !comment_text) {
+          return NextResponse.json({ error: 'target_post_url and comment_text required' }, { status: 400 })
+        }
+        if (!user_id || !bot_config_id) {
+          return NextResponse.json({ error: 'user_id and bot_config_id required' }, { status: 400 })
+        }
+
+        // CRM Social Planner doesn't post comments — queue for Chrome extension dispatch
+        const { data, error } = await supabase.from('bot_queue').insert({
+          user_id,
+          bot_config_id,
+          content_type: 'comment',
+          content_text: comment_text,
+          target_post_url,
+          linkedin_post_id: linkedin_account_id || null,
+          status: 'pending_dispatch',
+        }).select('id').single()
+
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+        return NextResponse.json({ status: 'queued', comment_id: data.id })
       }
 
       default:
