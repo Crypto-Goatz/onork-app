@@ -624,24 +624,28 @@ function LinkProfileModal({ onClose, onSuccess }: { onClose: () => void; onSucce
   const [showPaste, setShowPaste] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [needsPaste, setNeedsPaste] = useState<string | null>(null)
+
+  // Auto-show paste for LinkedIn URLs (we know server-side fetch will fail)
+  const isLinkedIn = url.toLowerCase().includes('linkedin.com')
+  const isGitHub = url.toLowerCase().includes('github.com')
+  const needsPasteForPlatform = isLinkedIn && !isGitHub
 
   async function submit() {
     setLoading(true)
     setError(null)
-    setNeedsPaste(null)
+    const pasteText = (showPaste || needsPasteForPlatform) ? pasted : undefined
     try {
       const res = await fetch('/api/market-intel/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile_url: url, pasted_text: showPaste ? pasted : undefined }),
+        body: JSON.stringify({ profile_url: url, pasted_text: pasteText }),
       })
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Something went wrong')
       } else if (data.needs_paste) {
-        setNeedsPaste(data.reason || 'Platform requires manual paste')
         setShowPaste(true)
+        setError(null)
       } else {
         onSuccess()
       }
@@ -665,36 +669,45 @@ function LinkProfileModal({ onClose, onSuccess }: { onClose: () => void; onSucce
             <X className="w-4 h-4 text-white/50" />
           </button>
         </div>
-        <p className="text-xs text-white/50 mb-4">Paste your profile URL — LinkedIn, Upwork, GitHub, Fiverr, Behance, or your personal site.</p>
+        <p className="text-xs text-white/50 mb-4">
+          {isGitHub
+            ? 'GitHub profiles are scanned automatically — just paste the URL and go.'
+            : 'Paste your profile URL — LinkedIn, Upwork, GitHub, Fiverr, Behance, or your personal site.'}
+        </p>
 
         <input
           type="url"
           value={url}
-          onChange={e => setUrl(e.target.value)}
+          onChange={e => { setUrl(e.target.value); setError(null) }}
           placeholder="https://linkedin.com/in/yourname"
           className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder:text-white/20 outline-none focus:border-[#00d4ff]/40 mb-3"
         />
 
-        {needsPaste && (
-          <div className="rounded-lg border border-yellow-400/20 bg-yellow-400/[0.06] p-3 mb-3 text-xs text-yellow-400/90 flex gap-2">
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-            <span>{needsPaste}. Copy your headline, skills, and bio from the page and paste below.</span>
+        {needsPasteForPlatform && (
+          <div className="rounded-lg border border-[#00d4ff]/20 bg-[#00d4ff]/[0.04] p-3 mb-3 text-xs text-[#00d4ff]/80">
+            <div className="font-semibold mb-1">Quick steps:</div>
+            <ol className="list-decimal list-inside space-y-0.5 text-white/50">
+              <li>Open your LinkedIn profile in another tab</li>
+              <li>Select all text on the page (Cmd+A or Ctrl+A)</li>
+              <li>Copy it (Cmd+C or Ctrl+C)</li>
+              <li>Paste below — AI extracts your skills, experience, and headline</li>
+            </ol>
           </div>
         )}
 
-        {showPaste && (
+        {(showPaste || needsPasteForPlatform) && (
           <textarea
             value={pasted}
             onChange={e => setPasted(e.target.value)}
-            placeholder="Paste your profile text — name, headline, skills, experience, bio..."
-            rows={8}
-            className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder:text-white/20 outline-none focus:border-[#00d4ff]/40 mb-3 font-mono text-xs"
+            placeholder="Paste your full profile page text here — AI will extract name, headline, skills, experience, and bio automatically..."
+            rows={6}
+            className="w-full px-3 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder:text-white/20 outline-none focus:border-[#00d4ff]/40 mb-3 resize-none"
           />
         )}
 
-        {!showPaste && (
-          <button onClick={() => setShowPaste(true)} className="text-[11px] text-white/40 hover:text-white/70 mb-3 cursor-pointer">
-            + Paste profile text manually
+        {!showPaste && !needsPasteForPlatform && (
+          <button onClick={() => setShowPaste(true)} className="text-[11px] text-white/30 hover:text-white/50 mb-3 cursor-pointer bg-transparent border-none">
+            Or paste profile text manually
           </button>
         )}
 
