@@ -125,7 +125,8 @@ export async function GET(req: NextRequest) {
         continue
       }
 
-      const app = install.marketplace_apps as { slug: string; app_config: OnAppManifest } | null
+      const rawApp = install.marketplace_apps as unknown
+      const app = (Array.isArray(rawApp) ? rawApp[0] : rawApp) as { slug: string; app_config: OnAppManifest } | null
       if (!app) {
         results.push({ trigger_id: trigger.id, app_slug: appSlug, matched, error: 'app not found' })
         continue

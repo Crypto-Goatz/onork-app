@@ -43,7 +43,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ins
     return NextResponse.json({ error: `Install is ${install.status}` }, { status: 403 })
   }
 
-  const app = install.marketplace_apps as { slug: string; app_config: OnAppManifest } | null
+  const rawApp = install.marketplace_apps as unknown
+  const app = (Array.isArray(rawApp) ? rawApp[0] : rawApp) as { slug: string; app_config: OnAppManifest } | null
   if (!app) {
     return NextResponse.json({ error: 'App not found' }, { status: 404 })
   }
