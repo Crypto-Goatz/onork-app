@@ -17,6 +17,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { MARKETPLACE_APP, AGENCY_APP } from '@/lib/crm'
 import { generateToken } from '@/lib/0n-token'
 import { logHealth } from '@/lib/connection-health'
+import { syncSnapshotToLocation } from '@/lib/snapshot-sync'
 
 const CRM_TOKEN_URL = 'https://services.leadconnectorhq.com/oauth/token'
 
@@ -150,6 +151,19 @@ export async function GET(req: NextRequest) {
         status: 'healthy',
         latencyMs: 0,
       })
+    }
+
+    // Deploy starter snapshot to the new location
+    if (locationId && access_token) {
+      try {
+        const syncResult = await syncSnapshotToLocation(locationId, access_token, 0)
+        console.log(`[oauth/callback] Snapshot sync v${syncResult.newVersion} for ${locationId}: ${syncResult.fieldsCreated} fields, ${syncResult.tagsCreated} tags, ${syncResult.pipelinesCreated} pipelines, ${syncResult.customValuesCreated} custom values`)
+        if (syncResult.errors.length > 0) {
+          console.warn('[oauth/callback] Snapshot sync partial errors:', syncResult.errors)
+        }
+      } catch (err) {
+        console.error('[oauth/callback] Snapshot sync failed (non-blocking):', err)
+      }
     }
 
     if (user) {

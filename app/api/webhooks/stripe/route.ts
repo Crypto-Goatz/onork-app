@@ -10,6 +10,25 @@ function getSupabase() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '')
 }
 
+/** Log every webhook event to stripe_webhook_logs for admin visibility */
+async function logWebhookEvent(supabase: ReturnType<typeof getSupabase>, event: Stripe.Event, processed: boolean) {
+  try {
+    const obj = event.data.object as Record<string, unknown>
+    await supabase.from('stripe_webhook_logs').upsert({
+      event_id: event.id,
+      event_type: event.type,
+      customer_id: (obj.customer as string) || null,
+      subscription_id: (obj.subscription as string) || (obj.id as string) || null,
+      status: (obj.status as string) || null,
+      amount: (obj.amount_total as number) || (obj.amount_paid as number) || null,
+      raw_data: event.data.object,
+      processed,
+    }, { onConflict: 'event_id' })
+  } catch (err) {
+    console.error('[stripe/webhook] Failed to log event:', (err as Error).message)
+  }
+}
+
 export async function POST(req: Request) {
   const body = await req.text()
   const sig = req.headers.get('stripe-signature')
@@ -23,7 +42,9 @@ export async function POST(req: Request) {
   }
 
   const supabase = getSupabase()
+  let processed = false
 
+  try {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object
@@ -174,6 +195,14 @@ export async function POST(req: Request) {
       break
     }
   }
+  processed = true
+  } catch (err) {
+    console.error('[stripe/webhook] Processing error:', (err as Error).message)
+    // Still log the event even if processing failed
+  }
+
+  // Log every event to stripe_webhook_logs
+  await logWebhookEvent(supabase, event, processed)
 
   return Response.json({ received: true })
 }
