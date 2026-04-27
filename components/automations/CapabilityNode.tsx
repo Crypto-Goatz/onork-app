@@ -3,20 +3,24 @@
 import { memo } from 'react'
 import { Handle, Position, type NodeProps, type Node } from '@xyflow/react'
 import {
-  Zap, Mail, Calendar, DollarSign, Bot, BarChart3, Flame, Search, Star,
-  MessageSquare, RefreshCw, Bell, Repeat, Receipt, CreditCard, PenLine,
-  Brain, Target, Eye, Sun, FileText, Tag, Clock, Snowflake, Banknote,
-  CheckCircle, Smartphone, TrendingUp, GraduationCap, HelpCircle,
-  Lightbulb, Scan, BookOpen, type LucideIcon
+  Activity, ArrowRightLeft, Banknote, BarChart3, Bell, BookOpen, Bot, Brain,
+  Calendar, CalendarClock, CheckCircle, Clock, CreditCard, DollarSign, Eye,
+  FileOutput, FilePlus, FileSpreadsheet, FileText, Flame, Globe, GraduationCap,
+  HelpCircle, Layers, Lightbulb, Mail, MailOpen, MessageCircle, MessageSquare,
+  PenLine, Puzzle, Receipt, RefreshCw, Repeat, Scan, Search, ShoppingCart,
+  Smartphone, Snowflake, Star, Sun, Tag, Target, TrendingUp, Upload, UserPen,
+  UserPlus, Users, Webhook, Zap, type LucideIcon
 } from 'lucide-react'
 
 // Map icon name strings to Lucide components
 const LUCIDE_ICONS: Record<string, LucideIcon> = {
-  Zap, Mail, Calendar, DollarSign, Bot, BarChart3, Flame, Search, Star,
-  MessageSquare, RefreshCw, Bell, Repeat, Receipt, CreditCard, PenLine,
-  Brain, Target, Eye, Sun, FileText, Tag, Clock, Snowflake, Banknote,
-  CheckCircle, Smartphone, TrendingUp, GraduationCap, HelpCircle,
-  Lightbulb, Scan, BookOpen,
+  Activity, ArrowRightLeft, Banknote, BarChart3, Bell, BookOpen, Bot, Brain,
+  Calendar, CalendarClock, CheckCircle, Clock, CreditCard, DollarSign, Eye,
+  FileOutput, FilePlus, FileSpreadsheet, FileText, Flame, Globe, GraduationCap,
+  HelpCircle, Layers, Lightbulb, Mail, MailOpen, MessageCircle, MessageSquare,
+  PenLine, Puzzle, Receipt, RefreshCw, Repeat, Scan, Search, ShoppingCart,
+  Smartphone, Snowflake, Star, Sun, Tag, Target, TrendingUp, Upload, UserPen,
+  UserPlus, Users, Webhook, Zap,
 }
 
 export interface CapabilityNodeData {
