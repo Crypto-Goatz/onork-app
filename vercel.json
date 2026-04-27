@@ -27,6 +27,10 @@
     {
       "path": "/api/cron/market-match",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/run-marketplace-apps",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
