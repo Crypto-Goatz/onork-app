@@ -62,9 +62,14 @@ async function fetchSitemapUrls(host: string): Promise<string[]> {
   if (!res.ok) throw new Error(`sitemap fetch ${res.status}`)
   const xml = await res.text()
   const matches = xml.match(/<loc>([^<]+)<\/loc>/g) || []
+  // Strict per-host filter — IndexNow returns 422 if urlList contains
+  // hosts other than the declared host (rocketadd's sitemap is a
+  // supersite covering 5 Rocket domains).
+  const hostHttps = `https://${host}/`
+  const hostHttpsRoot = `https://${host}`
   return matches
     .map((m) => m.replace(/<\/?loc>/g, '').trim())
-    .filter((u) => u.length > 0)
+    .filter((u) => u.length > 0 && (u.startsWith(hostHttps) || u === hostHttpsRoot))
 }
 
 async function submitToIndexNow(host: string, urls: string[]): Promise<{ status: number; body: string }> {
