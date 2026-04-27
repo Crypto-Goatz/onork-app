@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Upload, FileText, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 const SAMPLE_APP = `{
   "format": "0n-app",
@@ -53,10 +54,19 @@ export default function PublishAppPage() {
         return
       }
 
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setResult({ ok: false, message: 'Please sign in to publish' })
+        setSubmitting(false)
+        return
+      }
+
       const res = await fetch('/api/marketplace/publish', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-user-id': user.id },
         body: JSON.stringify({
+          user_id: user.id,
           app_config: parsed,
           metadata: { long_description: longDescription },
           demo_url: demoUrl || undefined,

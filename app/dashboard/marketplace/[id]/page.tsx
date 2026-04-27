@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Star, Download, Loader2, CheckCircle2, AlertCircle, Lock, ExternalLink } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface MarketplaceApp {
   id: string
@@ -75,10 +76,18 @@ export default function AppDetailPage({ params }: { params: Promise<{ id: string
     setRequirementsError(null)
 
     try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setError('Please sign in first')
+        setInstalling(false)
+        return
+      }
+
       const res = await fetch('/api/marketplace/install-app', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ app_id: app.id }),
+        body: JSON.stringify({ app_id: app.id, user_id: user.id, user_email: user.email }),
       })
       const data = await res.json()
 

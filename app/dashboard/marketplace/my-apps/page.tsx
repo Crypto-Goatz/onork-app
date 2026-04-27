@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Play, Pause, Trash2, Settings, Loader2, Activity, Package, Clock } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface Installation {
   id: string
@@ -31,10 +32,10 @@ export default function MyAppsPage() {
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/auth/whoami').then(r => r.json()).then(d => {
-      const id = d.user_id || d.id || d.user?.id
-      if (id) setUserId(id)
-    }).catch(() => {})
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id)
+    })
   }, [])
 
   useEffect(() => {
