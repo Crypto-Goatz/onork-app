@@ -1,0 +1,84 @@
+{
+  "format": "0n-app",
+  "version": "1.0.0",
+  "id": "invoice-followup",
+  "name": "Invoice Follow-Up",
+  "slug": "invoice-followup",
+  "description": "Auto follow-up on unpaid invoices at 7 and 14 days. AI-personalized, escalates to text on day 14.",
+  "category": "finance",
+  "tags": ["invoices", "collections", "automation", "ar"],
+  "author": "0nCore",
+  "icon": "$",
+  "required_services": ["crm"],
+  "required_plan": "supporter",
+  "trigger": {
+    "type": "scheduled",
+    "cron": "0 10 * * *"
+  },
+  "config_schema": [
+    { "key": "from_name", "label": "Sender name", "type": "string", "required": true },
+    { "key": "company_name", "label": "Company name", "type": "string", "required": true },
+    { "key": "first_followup_days", "label": "First follow-up at (days overdue)", "type": "number", "default": 7 },
+    { "key": "second_followup_days", "label": "Second follow-up at (days overdue)", "type": "number", "default": 14 },
+    { "key": "send_text_on_second", "label": "Send SMS on second follow-up", "type": "boolean", "default": true }
+  ],
+  "steps": [
+    {
+      "id": "fetch_overdue",
+      "name": "Fetch overdue invoices",
+      "type": "crm_action",
+      "inputs": {
+        "action": "invoices.list",
+        "status": "unpaid",
+        "overdue_min_days": "{{config.first_followup_days}}",
+        "overdue_max_days": "{{config.second_followup_days}}"
+      }
+    },
+    {
+      "id": "draft_first_message",
+      "name": "Draft polite first follow-up",
+      "type": "ai_execute",
+      "depends_on": ["fetch_overdue"],
+      "inputs": {
+        "system": "You write polite, professional invoice reminders. No pressure. Acknowledge it might be an oversight. Include the invoice number and amount.",
+        "prompt": "Customer: {{fetch_overdue.contact_name}}\nInvoice: {{fetch_overdue.invoice_number}}\nAmount: {{fetch_overdue.amount}}\nDays overdue: {{fetch_overdue.days_overdue}}\n\nWrite a friendly first follow-up email. From: {{config.from_name}} at {{config.company_name}}.",
+        "max_tokens": 350
+      }
+    },
+    {
+      "id": "send_first_email",
+      "name": "Send first follow-up email",
+      "type": "email",
+      "depends_on": ["draft_first_message"],
+      "inputs": {
+        "to": "{{fetch_overdue.contact_email}}",
+        "subject": "Quick note re: invoice {{fetch_overdue.invoice_number}}",
+        "body": "{{draft_first_message.text}}"
+      }
+    },
+    {
+      "id": "log_followup",
+      "name": "Log follow-up activity",
+      "type": "crm_action",
+      "depends_on": ["send_first_email"],
+      "inputs": {
+        "action": "notes.create",
+        "contactId": "{{fetch_overdue.contact_id}}",
+        "body": "Auto follow-up #{{fetch_overdue.followup_number}} sent for invoice {{fetch_overdue.invoice_number}}"
+      }
+    },
+    {
+      "id": "second_followup_sms",
+      "name": "Second follow-up via SMS",
+      "type": "crm_action",
+      "depends_on": ["send_first_email"],
+      "condition": "{{fetch_overdue.days_overdue}} >= {{config.second_followup_days}}",
+      "on_fail": "continue",
+      "inputs": {
+        "action": "conversations.send_sms",
+        "contactId": "{{fetch_overdue.contact_id}}",
+        "message": "Hi {{fetch_overdue.first_name}}, this is {{config.from_name}} from {{config.company_name}}. Just following up on invoice {{fetch_overdue.invoice_number}} for {{fetch_overdue.amount}}. Anything I can help clarify?"
+      }
+    }
+  ]
+}

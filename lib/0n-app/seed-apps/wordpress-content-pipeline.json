@@ -1,0 +1,77 @@
+{
+  "format": "0n-app",
+  "version": "1.0.0",
+  "id": "wordpress-content-pipeline",
+  "name": "WordPress Content Pipeline",
+  "slug": "wordpress-content-pipeline",
+  "description": "Daily: AI generates a blog post, publishes to WordPress, shares to LinkedIn.",
+  "category": "content-generation",
+  "tags": ["wordpress", "blog", "linkedin", "content", "daily"],
+  "author": "0nCore",
+  "icon": "WP",
+  "required_services": ["wordpress"],
+  "required_plan": "builder",
+  "trigger": {
+    "type": "scheduled",
+    "cron": "0 7 * * *"
+  },
+  "config_schema": [
+    { "key": "topic_focus", "label": "Topic focus", "type": "string", "required": true, "description": "What should the AI write about? (e.g., 'small business automation')" },
+    { "key": "tone", "label": "Writing tone", "type": "select", "default": "professional", "options": [
+      { "label": "Professional", "value": "professional" },
+      { "label": "Conversational", "value": "conversational" },
+      { "label": "Technical", "value": "technical" },
+      { "label": "Bold", "value": "bold" }
+    ]},
+    { "key": "word_count", "label": "Target word count", "type": "number", "default": 1500 },
+    { "key": "auto_publish", "label": "Auto-publish (vs draft)", "type": "boolean", "default": false },
+    { "key": "share_linkedin", "label": "Share to LinkedIn after publish", "type": "boolean", "default": true }
+  ],
+  "steps": [
+    {
+      "id": "generate_post",
+      "name": "Generate blog post",
+      "type": "ai_execute",
+      "inputs": {
+        "system": "You write SXO-optimized blog posts. BLUF lead, Table Trap (use a comparison table), Information Gain. Markdown format with H2/H3 structure. Include meta_title and meta_description.",
+        "prompt": "Topic focus: {{config.topic_focus}}\nTone: {{config.tone}}\nWord count: ~{{config.word_count}}\n\nWrite the post. Format as JSON: { \"title\": string, \"slug\": string, \"meta_title\": string, \"meta_description\": string, \"content_markdown\": string, \"tags\": string[] }",
+        "max_tokens": 4000
+      }
+    },
+    {
+      "id": "publish_wordpress",
+      "name": "Publish to WordPress",
+      "type": "wordpress",
+      "depends_on": ["generate_post"],
+      "inputs": {
+        "action": "create_post",
+        "title": "{{generate_post.text.title}}",
+        "content": "{{generate_post.text.content_markdown}}",
+        "status": "{{config.auto_publish}}",
+        "tags": "{{generate_post.text.tags}}"
+      }
+    },
+    {
+      "id": "linkedin_share",
+      "name": "Share to LinkedIn",
+      "type": "ai_execute",
+      "depends_on": ["publish_wordpress"],
+      "condition": "{{config.share_linkedin}} == true",
+      "on_fail": "continue",
+      "inputs": {
+        "system": "You write punchy LinkedIn posts that drive clicks. Hook in line 1. 3-5 short paragraphs. End with a question.",
+        "prompt": "Blog post title: {{generate_post.text.title}}\nMeta description: {{generate_post.text.meta_description}}\nURL: {{publish_wordpress.url}}\n\nWrite the LinkedIn post that links to this article.",
+        "max_tokens": 400
+      }
+    },
+    {
+      "id": "log_summary",
+      "name": "Log summary",
+      "type": "log",
+      "depends_on": ["publish_wordpress"],
+      "inputs": {
+        "message": "Published: {{generate_post.text.title}}"
+      }
+    }
+  ]
+}

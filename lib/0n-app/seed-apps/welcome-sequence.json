@@ -1,0 +1,65 @@
+{
+  "format": "0n-app",
+  "version": "1.0.0",
+  "id": "welcome-sequence",
+  "name": "Welcome Sequence",
+  "slug": "welcome-sequence",
+  "description": "Three-email welcome sequence for new CRM contacts. AI-personalized, sent over 7 days.",
+  "category": "crm-automation",
+  "tags": ["email", "onboarding", "crm", "sequence"],
+  "author": "0nCore",
+  "icon": "W",
+  "required_services": ["crm"],
+  "required_plan": "starter",
+  "trigger": {
+    "type": "crm_event",
+    "event": "contact.created"
+  },
+  "config_schema": [
+    { "key": "from_name", "label": "Sender name", "type": "string", "required": true, "default": "The Team" },
+    { "key": "company_name", "label": "Company name", "type": "string", "required": true },
+    { "key": "delay_email_2_days", "label": "Days before email 2", "type": "number", "default": 2 },
+    { "key": "delay_email_3_days", "label": "Days before email 3", "type": "number", "default": 7 }
+  ],
+  "steps": [
+    {
+      "id": "draft_email_1",
+      "name": "Draft welcome email",
+      "type": "ai_execute",
+      "inputs": {
+        "system": "You write warm, personal welcome emails. Conversational tone. Plain text. Under 150 words.",
+        "prompt": "Write a welcome email to {{trigger.firstName}} from {{config.from_name}} at {{config.company_name}}. Keep it warm, ask one question to start a real conversation. Subject line first, then body.",
+        "max_tokens": 350
+      }
+    },
+    {
+      "id": "send_email_1",
+      "name": "Send email 1",
+      "type": "email",
+      "depends_on": ["draft_email_1"],
+      "inputs": {
+        "to": "{{trigger.email}}",
+        "subject": "Welcome",
+        "body": "{{draft_email_1.text}}"
+      }
+    },
+    {
+      "id": "log_1",
+      "name": "Log email 1 sent",
+      "type": "log",
+      "depends_on": ["send_email_1"],
+      "inputs": { "message": "Welcome email 1 sent to {{trigger.email}}" }
+    },
+    {
+      "id": "tag_in_sequence",
+      "name": "Tag contact as in-sequence",
+      "type": "crm_action",
+      "depends_on": ["send_email_1"],
+      "inputs": {
+        "action": "contacts.add_tag",
+        "contactId": "{{trigger.id}}",
+        "tag": "welcome-sequence-active"
+      }
+    }
+  ]
+}

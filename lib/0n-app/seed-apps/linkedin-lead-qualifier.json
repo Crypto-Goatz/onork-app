@@ -1,0 +1,74 @@
+{
+  "format": "0n-app",
+  "version": "1.0.0",
+  "id": "linkedin-lead-qualifier",
+  "name": "LinkedIn Lead Qualifier",
+  "slug": "linkedin-lead-qualifier",
+  "description": "Scores LinkedIn profiles using VPIS, auto-adds qualified leads to your CRM with tags.",
+  "category": "lead-qualification",
+  "tags": ["linkedin", "leads", "vpis", "crm", "scoring"],
+  "author": "0nCore",
+  "icon": "L",
+  "required_services": ["linkedin", "crm"],
+  "required_plan": "supporter",
+  "trigger": {
+    "type": "webhook",
+    "event": "linkedin.profile.viewed",
+    "config": { "min_score": 60 }
+  },
+  "config_schema": [
+    { "key": "min_vpis_score", "label": "Minimum VPIS score", "type": "number", "default": 60, "required": true, "description": "Profiles below this score will be ignored." },
+    { "key": "qualified_tag", "label": "CRM tag for qualified leads", "type": "string", "default": "linkedin-qualified" },
+    { "key": "pipeline_stage", "label": "CRM pipeline stage ID", "type": "string", "description": "Optional. Move new contact into this stage." }
+  ],
+  "steps": [
+    {
+      "id": "score",
+      "name": "Score profile with VPIS",
+      "type": "ai_execute",
+      "inputs": {
+        "system": "You are a B2B lead qualification expert. Score the LinkedIn profile from 0-100 on Visibility, Pull, Intent, Signal (VPIS).",
+        "prompt": "Profile: {{trigger.profile}}\n\nReturn JSON: { \"score\": number, \"reasoning\": string, \"intent_signals\": string[] }",
+        "max_tokens": 400,
+        "temperature": 0.3
+      }
+    },
+    {
+      "id": "check_threshold",
+      "name": "Check qualification threshold",
+      "type": "condition",
+      "inputs": {
+        "expression": "{{score.text}} contains \"score\""
+      }
+    },
+    {
+      "id": "create_contact",
+      "name": "Create CRM contact",
+      "type": "crm_action",
+      "depends_on": ["score"],
+      "inputs": {
+        "action": "contacts.create",
+        "firstName": "{{trigger.profile.firstName}}",
+        "lastName": "{{trigger.profile.lastName}}",
+        "email": "{{trigger.profile.email}}",
+        "companyName": "{{trigger.profile.company}}",
+        "tags": ["{{config.qualified_tag}}", "linkedin", "auto-qualified"],
+        "source": "LinkedIn Lead Qualifier",
+        "customFields": {
+          "vpis_score": "{{score.text}}",
+          "linkedin_url": "{{trigger.profile.profileUrl}}"
+        }
+      }
+    },
+    {
+      "id": "log_qualification",
+      "name": "Log to console",
+      "type": "log",
+      "depends_on": ["create_contact"],
+      "inputs": {
+        "message": "Qualified LinkedIn lead: {{trigger.profile.firstName}} {{trigger.profile.lastName}}",
+        "level": "info"
+      }
+    }
+  ]
+}

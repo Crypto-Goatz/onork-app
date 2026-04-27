@@ -1,0 +1,69 @@
+{
+  "format": "0n-app",
+  "version": "1.0.0",
+  "id": "weekly-report",
+  "name": "Weekly Business Report",
+  "slug": "weekly-report",
+  "description": "Monday morning report: CRM stats, pipeline movement, LinkedIn engagement, Market Intel signals.",
+  "category": "reporting",
+  "tags": ["reporting", "weekly", "dashboard", "monday"],
+  "author": "0nCore",
+  "icon": "R",
+  "required_services": ["crm"],
+  "required_plan": "supporter",
+  "trigger": {
+    "type": "scheduled",
+    "cron": "0 9 * * 1"
+  },
+  "config_schema": [
+    { "key": "report_email", "label": "Send report to", "type": "string", "required": true, "description": "Email address for the report." },
+    { "key": "include_linkedin", "label": "Include LinkedIn stats", "type": "boolean", "default": true },
+    { "key": "include_market_intel", "label": "Include Market Intel", "type": "boolean", "default": true },
+    { "key": "slack_channel", "label": "Also post to Slack channel (optional)", "type": "string" }
+  ],
+  "steps": [
+    {
+      "id": "fetch_crm_stats",
+      "name": "Fetch CRM stats for the week",
+      "type": "crm_action",
+      "inputs": {
+        "action": "reports.weekly",
+        "range": "last_7_days"
+      }
+    },
+    {
+      "id": "summarize",
+      "name": "Summarize the week",
+      "type": "ai_execute",
+      "depends_on": ["fetch_crm_stats"],
+      "inputs": {
+        "system": "You write executive weekly business reports. BLUF format. 5 bullet points max. Focus on movement, not noise.",
+        "prompt": "Data:\n{{fetch_crm_stats}}\n\nWrite the weekly summary. Lead with the single most important change. End with one suggested action for this week.",
+        "max_tokens": 600
+      }
+    },
+    {
+      "id": "send_report_email",
+      "name": "Send report by email",
+      "type": "email",
+      "depends_on": ["summarize"],
+      "inputs": {
+        "to": "{{config.report_email}}",
+        "subject": "Weekly Report",
+        "body": "{{summarize.text}}"
+      }
+    },
+    {
+      "id": "post_to_slack",
+      "name": "Post to Slack",
+      "type": "slack",
+      "depends_on": ["summarize"],
+      "condition": "{{config.slack_channel}} != \"\"",
+      "on_fail": "continue",
+      "inputs": {
+        "channel": "{{config.slack_channel}}",
+        "text": "*Weekly Report*\n\n{{summarize.text}}"
+      }
+    }
+  ]
+}
