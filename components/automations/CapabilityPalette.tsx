@@ -1,161 +1,251 @@
 'use client'
 
-import { useState, type DragEvent } from 'react'
-import { ChevronRight } from 'lucide-react'
-import { CATEGORIES, CAPABILITIES, getCapabilitiesByCategory } from './capabilities'
+import { useState, useEffect, type DragEvent } from 'react'
+import { Search, Zap, Play, Package, Loader2, ExternalLink } from 'lucide-react'
+import { CAPABILITIES } from './capabilities'
 import { LUCIDE_ICONS } from './CapabilityNode'
 
+type Tab = 'triggers' | 'actions' | 'apps'
+
+interface InstalledAppCard {
+  id: string
+  slug: string
+  name: string
+  description: string
+  icon: string | null
+  category: string
+  installed?: boolean
+  installation_id?: string
+  active?: boolean
+}
+
 interface PaletteProps {
-  size?: 'expand' | 'compact';
+  size?: 'expand' | 'compact'
 }
 
 export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
+  const [tab, setTab] = useState<Tab>('triggers')
   const [search, setSearch] = useState('')
-  const [expandedCat, setExpandedCat] = useState<string | null>('triggers')
-  const [focusedInput, setFocusedInput] = useState(false)
+  const [apps, setApps] = useState<InstalledAppCard[]>([])
+  const [appsLoading, setAppsLoading] = useState(false)
+
   const isCompact = size === 'compact'
 
-  const filtered = search
-    ? CAPABILITIES.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.description.toLowerCase().includes(search.toLowerCase())
-      )
-    : null
+  useEffect(() => {
+    if (tab !== 'apps') return
+    setAppsLoading(true)
+    Promise.all([
+      fetch('/api/marketplace/apps?limit=60').then(r => r.json()).catch(() => ({ apps: [] })),
+      fetch('/api/marketplace/my-apps').then(r => r.json()).catch(() => ({ installations: [] })),
+    ]).then(([catalog, mine]) => {
+      const installedById = new Map<string, { installation_id: string; status: string }>()
+      for (const inst of mine.installations || []) {
+        installedById.set(inst.app_id, { installation_id: inst.id, status: inst.status })
+      }
+      const cards: InstalledAppCard[] = (catalog.apps || []).map((a: { id: string; slug: string; name: string; description: string; icon: string | null; category: string }) => {
+        const meta = installedById.get(a.id)
+        return {
+          id: a.id, slug: a.slug, name: a.name, description: a.description,
+          icon: a.icon, category: a.category,
+          installed: !!meta,
+          installation_id: meta?.installation_id,
+          active: meta?.status === 'active',
+        }
+      })
+      setApps(cards)
+      setAppsLoading(false)
+    })
+  }, [tab])
 
-  function onDragStart(e: DragEvent, capabilityId: string) {
+  const triggers = CAPABILITIES.filter(c => c.category === 'triggers')
+  const actions = CAPABILITIES.filter(c => c.category !== 'triggers')
+
+  const filterText = search.toLowerCase()
+  const filtered = (() => {
+    if (tab === 'triggers') {
+      return search ? triggers.filter(c => c.name.toLowerCase().includes(filterText) || c.description.toLowerCase().includes(filterText)) : triggers
+    }
+    if (tab === 'actions') {
+      return search ? actions.filter(c => c.name.toLowerCase().includes(filterText) || c.description.toLowerCase().includes(filterText)) : actions
+    }
+    return []
+  })()
+
+  const filteredApps = search
+    ? apps.filter(a => a.name.toLowerCase().includes(filterText) || a.description.toLowerCase().includes(filterText))
+    : apps
+
+  function onDragStartCapability(e: DragEvent, capabilityId: string) {
     const cap = CAPABILITIES.find(c => c.id === capabilityId)
     if (!cap) return
     e.dataTransfer.setData('application/0n-capability', JSON.stringify(cap))
     e.dataTransfer.effectAllowed = 'move'
   }
 
+  function onDragStartApp(e: DragEvent, app: InstalledAppCard) {
+    const payload = {
+      kind: 'app',
+      app_id: app.id,
+      slug: app.slug,
+      name: app.name,
+      description: app.description,
+      icon: app.icon,
+      category: app.category,
+      installation_id: app.installation_id || null,
+      installed: app.installed,
+    }
+    e.dataTransfer.setData('application/0n-app', JSON.stringify(payload))
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
   return (
     <div
       className="bg-core-surface border-l border-[#1c2b42] flex flex-col h-full shrink-0"
-      style={{ width: isCompact ? 200 : 280 }}
+      style={{ width: isCompact ? 220 : 300 }}
     >
-      {/* Header */}
-      <div className="p-4 border-b border-[#1c2b42]">
-        <div className={`text-sm font-bold text-core-text ${isCompact ? '' : 'mb-2.5'}`}>
-          Menu
-        </div>
-        {!isCompact && (
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search capabilities..."
-            className="w-full px-3 py-[9px] bg-core-card border rounded-lg text-core-text text-[13px] outline-none transition-colors duration-150"
-            style={{
-              borderColor: focusedInput ? '#14b8a6' : '#1c2b42',
-            }}
-            onFocus={() => setFocusedInput(true)}
-            onBlur={() => setFocusedInput(false)}
-          />
-        )}
+      {/* Tabs */}
+      <div className="flex border-b border-[#1c2b42]">
+        <TabButton tab="triggers" current={tab} onSelect={setTab} icon={Zap} label="Triggers" count={triggers.length} compact={isCompact} />
+        <TabButton tab="actions" current={tab} onSelect={setTab} icon={Play} label="Actions" count={actions.length} compact={isCompact} />
+        <TabButton tab="apps" current={tab} onSelect={setTab} icon={Package} label="Apps" count={apps.length || undefined} compact={isCompact} />
       </div>
 
-      {/* Categories + Items */}
-      <div className="flex-1 overflow-y-auto py-2">
-        {search && filtered ? (
-          // Search results
-          <div className="px-3">
-            <div className="text-[11px] text-core-text-muted px-1 pb-2 pt-1">
-              {filtered.length} results
-            </div>
-            {filtered.map(cap => (
-              <CapItem
-                key={cap.id}
-                cap={cap}
-                onDragStart={onDragStart}
-                showDescription
-              />
-            ))}
+      {/* Search */}
+      {!isCompact && (
+        <div className="px-3 py-2 border-b border-[#1c2b42]">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-core-text-muted" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={`Search ${tab}...`}
+              className="w-full pl-8 pr-2.5 py-1.5 bg-core-card border border-[#1c2b42] rounded-md text-core-text text-[12px] outline-none focus:border-[#14b8a6] transition-colors"
+            />
           </div>
-        ) : (
-          // Category accordion
-          CATEGORIES.map(cat => {
-            const items = getCapabilitiesByCategory(cat.id)
-            const isOpen = expandedCat === cat.id
+        </div>
+      )}
 
-            return (
-              <div key={cat.id}>
-                <button
-                  onClick={() => setExpandedCat(isOpen ? null : cat.id)}
-                  className="w-full px-4 py-2.5 bg-transparent border-none flex items-center gap-2.5 cursor-pointer"
-                >
-                  {(() => { const CatIcon = LUCIDE_ICONS[cat.icon]; return CatIcon ? <CatIcon className="w-4 h-4 shrink-0" style={{ color: cat.color }} /> : <span className="text-base shrink-0">{cat.icon}</span> })()}
-                  <span
-                    className="text-[13px] font-semibold flex-1 text-left"
-                    style={{ color: isOpen ? cat.color : '#9ca3af' }}
-                  >
-                    {cat.name}
-                  </span>
-                  <span className="text-[11px] text-core-text-muted">{items.length}</span>
-                  <ChevronRight
-                    className="w-3 h-3 text-core-text-muted transition-transform duration-200"
-                    style={{ transform: isOpen ? 'rotate(90deg)' : 'none' }}
-                  />
-                </button>
+      {/* Items */}
+      <div className="flex-1 overflow-y-auto p-2">
+        {tab !== 'apps' && (
+          <div>
+            {filtered.length === 0 ? (
+              <div className="text-center py-8 text-[11px] text-core-text-muted">No {tab} match search.</div>
+            ) : (
+              filtered.map(cap => <CapItem key={cap.id} cap={cap} onDragStart={onDragStartCapability} />)
+            )}
+          </div>
+        )}
 
-                {isOpen && (
-                  <div className="px-3 pb-2">
-                    {items.map(cap => (
-                      <CapItem
-                        key={cap.id}
-                        cap={cap}
-                        onDragStart={onDragStart}
-                        compact
-                      />
-                    ))}
-                  </div>
-                )}
+        {tab === 'apps' && (
+          <div>
+            {appsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-4 h-4 animate-spin text-core-text-muted" />
               </div>
-            )
-          })
+            ) : filteredApps.length === 0 ? (
+              <div className="text-center py-8 px-3">
+                <Package className="w-6 h-6 mx-auto mb-2 text-core-text-muted opacity-40" />
+                <p className="text-[11px] text-core-text-muted mb-2">No apps yet.</p>
+                <a href="/dashboard/marketplace" className="text-[11px] text-[#7ed957] hover:underline inline-flex items-center gap-1">
+                  Browse marketplace <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            ) : (
+              filteredApps.map(app => <AppItem key={app.id} app={app} onDragStart={onDragStartApp} />)
+            )}
+          </div>
         )}
       </div>
 
-      {/* Drag hint */}
-      <div className="px-4 py-3 border-t border-[#1c2b42] text-[11px] text-core-text-muted text-center">
-        Drag onto canvas
+      <div className="px-3 py-2 border-t border-[#1c2b42] text-[10px] text-core-text-muted text-center">
+        {tab === 'apps' ? 'Drag installed apps onto the canvas' : 'Drag onto canvas'}
       </div>
     </div>
   )
 }
 
-interface CapItemProps {
-  cap: typeof CAPABILITIES[number];
-  onDragStart: (e: DragEvent, id: string) => void;
-  showDescription?: boolean;
-  compact?: boolean;
+interface TabButtonProps {
+  tab: Tab
+  current: Tab
+  onSelect: (t: Tab) => void
+  icon: typeof Zap
+  label: string
+  count?: number
+  compact: boolean
 }
 
-function CapItem({ cap, onDragStart, showDescription, compact }: CapItemProps) {
+function TabButton({ tab, current, onSelect, icon: Icon, label, count, compact }: TabButtonProps) {
+  const active = tab === current
+  return (
+    <button
+      onClick={() => onSelect(tab)}
+      className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 text-[11px] font-semibold border-none cursor-pointer transition-all ${
+        active
+          ? 'bg-[#7ed957]/10 text-[#7ed957] border-b-2 border-[#7ed957]'
+          : 'bg-transparent text-core-text-muted hover:text-core-text border-b-2 border-transparent'
+      }`}
+    >
+      <Icon className="w-3.5 h-3.5" />
+      {!compact && <span>{label}</span>}
+      {!compact && count !== undefined && <span className="text-[10px] opacity-60">{count}</span>}
+    </button>
+  )
+}
+
+interface CapItemProps {
+  cap: typeof CAPABILITIES[number]
+  onDragStart: (e: DragEvent, id: string) => void
+}
+
+function CapItem({ cap, onDragStart }: CapItemProps) {
+  const Icon = LUCIDE_ICONS[cap.icon]
   return (
     <div
       draggable
       onDragStart={e => onDragStart(e, cap.id)}
-      className={`bg-core-card border border-transparent rounded-[10px] cursor-grab transition-all duration-150 flex gap-2.5 ${
-        showDescription ? 'p-3 mb-1.5 items-start' : 'p-2.5 mb-1 items-center'
-      }`}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = showDescription ? cap.color : `${cap.color}40`
-        e.currentTarget.style.background = '#1a2740'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = 'transparent'
-        e.currentTarget.style.background = ''
-      }}
+      className="bg-core-card border border-transparent hover:border-[#1c2b42] rounded-lg p-2.5 mb-1 cursor-grab transition-all flex items-start gap-2.5"
     >
-      {(() => { const CapIcon = LUCIDE_ICONS[cap.icon]; return CapIcon ? <CapIcon className={`shrink-0 ${showDescription ? 'w-5 h-5 mt-0.5' : 'w-4 h-4'}`} style={{ color: cap.color }} /> : <span className={`shrink-0 ${showDescription ? 'text-lg mt-0.5' : 'text-base'}`}>{cap.icon}</span> })()}
+      {Icon ? (
+        <Icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: cap.color }} />
+      ) : (
+        <span className="text-base shrink-0">{cap.icon}</span>
+      )}
       <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-semibold text-core-text mb-0.5">{cap.name}</div>
-        {showDescription && (
-          <div className="text-[11px] text-core-text-muted leading-snug">{cap.description}</div>
-        )}
-        {compact && (
-          <div className="text-[11px] text-core-text-muted truncate">{cap.description}</div>
-        )}
+        <div className="text-[12px] font-semibold text-core-text mb-0.5 truncate">{cap.name}</div>
+        <div className="text-[10px] text-core-text-muted leading-snug line-clamp-2">{cap.description}</div>
+      </div>
+    </div>
+  )
+}
+
+interface AppItemProps {
+  app: InstalledAppCard
+  onDragStart: (e: DragEvent, app: InstalledAppCard) => void
+}
+
+function AppItem({ app, onDragStart }: AppItemProps) {
+  return (
+    <div
+      draggable
+      onDragStart={e => onDragStart(e, app)}
+      className="bg-core-card border border-transparent hover:border-[#7ed957]/40 rounded-lg p-2.5 mb-1 cursor-grab transition-all flex items-start gap-2.5"
+    >
+      <div className="w-7 h-7 rounded-md bg-[#7ed957]/10 border border-[#7ed957]/30 flex items-center justify-center text-[12px] font-bold text-[#7ed957] shrink-0">
+        {app.icon || app.name.charAt(0)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <span className="text-[12px] font-semibold text-core-text truncate">{app.name}</span>
+          {app.installed ? (
+            app.active
+              ? <span className="text-[9px] px-1 py-px rounded bg-[#7ed957]/20 text-[#7ed957]">installed</span>
+              : <span className="text-[9px] px-1 py-px rounded bg-yellow-500/20 text-yellow-400">paused</span>
+          ) : (
+            <span className="text-[9px] px-1 py-px rounded bg-white/[0.06] text-core-text-muted">install first</span>
+          )}
+        </div>
+        <div className="text-[10px] text-core-text-muted leading-snug line-clamp-2">{app.description}</div>
       </div>
     </div>
   )

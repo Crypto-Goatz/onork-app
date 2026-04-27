@@ -29,11 +29,12 @@ interface AutomationCanvasProps {
   onNodeSelect: (nodeId: string | null) => void;
   stepCounter: number;
   onStepCounterUpdate: (n: number) => void;
+  onNodeDoubleClick?: (node: CapabilityNodeType) => void;
 }
 
 export default function AutomationCanvas({
   nodes, edges, onNodesChange: setNodes, onEdgesChange: setEdges,
-  onNodeSelect, stepCounter, onStepCounterUpdate,
+  onNodeSelect, stepCounter, onStepCounterUpdate, onNodeDoubleClick,
 }: AutomationCanvasProps) {
   const { screenToFlowPosition, fitView } = useReactFlow()
 
@@ -71,6 +72,11 @@ export default function AutomationCanvas({
     [onNodeSelect]
   )
 
+  const handleNodeDoubleClick = useCallback(
+    (_: React.MouseEvent, node: CapabilityNodeType) => onNodeDoubleClick?.(node),
+    [onNodeDoubleClick]
+  )
+
   const handlePaneClick = useCallback(() => onNodeSelect(null), [onNodeSelect])
 
   const handleDragOver = useCallback((e: DragEvent) => {
@@ -80,29 +86,53 @@ export default function AutomationCanvas({
 
   const handleDrop = useCallback((e: DragEvent) => {
     e.preventDefault()
-    const raw = e.dataTransfer.getData('application/0n-capability')
-    if (!raw) return
+    const capRaw = e.dataTransfer.getData('application/0n-capability')
+    const appRaw = e.dataTransfer.getData('application/0n-app')
+    if (!capRaw && !appRaw) return
 
-    const cap: Capability = JSON.parse(raw)
     const newCounter = stepCounter + 1
-
-    // Position: center of canvas, stacked vertically
     const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
 
-    const data: CapabilityNodeData = {
-      capabilityId: cap.id,
-      name: cap.name,
-      description: cap.description,
-      icon: cap.icon,
-      color: cap.color,
-      category: cap.category,
-      configured: !cap.configFields || cap.configFields.length === 0,
-      steps: cap.steps,
-      config: {},
+    let data: CapabilityNodeData
+
+    if (appRaw) {
+      const app = JSON.parse(appRaw) as {
+        kind: 'app'; app_id: string; slug: string; name: string; description: string;
+        icon: string | null; category: string; installation_id: string | null; installed: boolean;
+      }
+      data = {
+        capabilityId: `app_${app.slug}`,
+        name: app.name,
+        description: app.description,
+        icon: app.icon || app.name.charAt(0),
+        color: '#7ed957',
+        category: app.category,
+        configured: app.installed,
+        steps: ['Run installed .0n app'],
+        config: {},
+        kind: 'app',
+        appId: app.app_id,
+        appSlug: app.slug,
+        installationId: app.installation_id,
+      }
+    } else {
+      const cap: Capability = JSON.parse(capRaw)
+      data = {
+        capabilityId: cap.id,
+        name: cap.name,
+        description: cap.description,
+        icon: cap.icon,
+        color: cap.color,
+        category: cap.category,
+        configured: !cap.configFields || cap.configFields.length === 0,
+        steps: cap.steps,
+        config: {},
+        kind: 'capability',
+      }
     }
 
     const newNode: CapabilityNodeType = {
-      id: `cap_${newCounter}`,
+      id: appRaw ? `app_${newCounter}` : `cap_${newCounter}`,
       type: 'capability',
       position,
       data,
@@ -141,6 +171,7 @@ export default function AutomationCanvas({
         onEdgesChange={handleEdgesChange}
         onConnect={handleConnect}
         onNodeClick={handleNodeClick}
+        onNodeDoubleClick={handleNodeDoubleClick}
         onPaneClick={handlePaneClick}
         onDragOver={handleDragOver}
         onDrop={handleDrop}

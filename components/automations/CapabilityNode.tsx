@@ -29,6 +29,11 @@ export interface CapabilityNodeData {
   configured: boolean;
   steps: string[];
   config: Record<string, string>;
+  // App-node fields (set when kind === 'app')
+  kind?: 'capability' | 'app';
+  appId?: string;
+  appSlug?: string;
+  installationId?: string | null;
   [key: string]: unknown;
 }
 
@@ -37,6 +42,7 @@ export type CapabilityNodeType = Node<CapabilityNodeData, 'capability'>
 function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeType>) {
   const isConfigured = data.configured
   const isTrigger = data.category === 'triggers'
+  const isApp = data.kind === 'app'
   const IconComponent = LUCIDE_ICONS[data.icon]
 
   return (
@@ -56,12 +62,17 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
       {/* Header */}
       <div className="px-4 py-2.5 flex items-center gap-2.5 border-b"
         style={{ background: `${data.color}15`, borderBottomColor: `${data.color}20` }}>
-        {IconComponent
-          ? <IconComponent className="w-5 h-5 shrink-0" style={{ color: data.color }} />
-          : <span className="text-xl shrink-0">{data.icon}</span>
-        }
+        {isApp ? (
+          <div className="w-5 h-5 rounded-md bg-[#7ed957]/15 border border-[#7ed957]/40 flex items-center justify-center text-[10px] font-bold text-[#7ed957] shrink-0">
+            {data.icon || data.name.charAt(0)}
+          </div>
+        ) : IconComponent ? (
+          <IconComponent className="w-5 h-5 shrink-0" style={{ color: data.color }} />
+        ) : (
+          <span className="text-xl shrink-0">{data.icon}</span>
+        )}
         <span className="text-[13px] font-bold uppercase tracking-[0.05em]" style={{ color: data.color }}>
-          {isTrigger ? 'TRIGGER' : data.category === 'ai' ? 'AI' : data.category.toUpperCase()}
+          {isApp ? '0N APP' : isTrigger ? 'TRIGGER' : data.category === 'ai' ? 'AI' : data.category.toUpperCase()}
         </span>
         <div className="ml-auto">
           <span className={`inline-block w-2 h-2 rounded-full ${isConfigured ? 'bg-emerald-400' : 'bg-amber-400'}`} />

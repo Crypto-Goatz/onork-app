@@ -35,6 +35,9 @@ import DotOnView from '@/components/automations/DotOnView'
 import type { CapabilityNodeType, CapabilityNodeData } from '@/components/automations/CapabilityNode'
 import type { Capability } from '@/components/automations/capabilities'
 import QuickConfigModal from '@/components/automations/QuickConfigModal'
+import AppConfigModal from '@/components/automations/AppConfigModal'
+import WorkflowSettingsModal, { type WorkflowSettings, DEFAULT_WORKFLOW_SETTINGS } from '@/components/automations/WorkflowSettingsModal'
+import { Sparkles, Settings as SettingsIcon } from 'lucide-react'
 
 type ViewMode = 'chat' | 'workflow' | 'pipeline' | 'doton'
 
@@ -73,6 +76,16 @@ export default function AutomationsPage() {
 
   // Quick config modal — shows immediately when a node is added
   const [quickConfigNode, setQuickConfigNode] = useState<CapabilityNodeType | null>(null)
+
+  // App config modal — shows on double-click of an app node
+  const [appConfigNode, setAppConfigNode] = useState<CapabilityNodeType | null>(null)
+
+  // AI Recommendations dropdown
+  const [showAIRecs, setShowAIRecs] = useState(false)
+
+  // Workflow Settings modal
+  const [showWorkflowSettings, setShowWorkflowSettings] = useState(false)
+  const [workflowSettings, setWorkflowSettings] = useState<WorkflowSettings>(DEFAULT_WORKFLOW_SETTINGS)
 
   // Chat messages lifted to parent — persists across tab switches
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -338,6 +351,25 @@ export default function AutomationsPage() {
     toast.success('Step configured')
   }, [])
 
+  const handleNodeDoubleClick = useCallback((node: CapabilityNodeType) => {
+    if (node.data.kind === 'app') {
+      setAppConfigNode(node)
+    } else {
+      setSelectedNodeId(node.id)
+    }
+  }, [])
+
+  const handleAppConfigSave = useCallback((nodeId: string, config: Record<string, string>, installationId: string | null) => {
+    setNodes(prev => prev.map(n =>
+      n.id === nodeId
+        ? { ...n, data: { ...n.data, config, configured: true, installationId } }
+        : n
+    ))
+    setAppConfigNode(null)
+    setSaveStatus('unsaved')
+    toast.success('App configured')
+  }, [])
+
   const menuSizeIcons = {
     minimize: Minimize2,
     compact: Columns2,
@@ -582,6 +614,38 @@ export default function AutomationsPage() {
             })}
           </div>
 
+          {/* AI Recommendations dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowAIRecs(prev => !prev)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-transparent border border-core-border rounded-lg text-core-text-dim text-[13px] cursor-pointer hover:text-core-text hover:border-core-text-dim transition-colors"
+              title="AI Recommendations"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#00d4ff]" />
+              <span>AI</span>
+              <ChevronDown className="w-3 h-3" />
+            </button>
+            {showAIRecs && (
+              <div
+                className="absolute right-0 top-full mt-1 z-50 w-[340px] bg-core-card border border-core-border rounded-xl shadow-2xl overflow-hidden"
+                onMouseLeave={() => setShowAIRecs(false)}
+              >
+                <AIRecommendations
+                  nodes={nodes}
+                  onAdd={cap => { handleAddFromRecommendation(cap); setShowAIRecs(false) }}
+                />
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => setShowWorkflowSettings(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-transparent border border-core-border rounded-lg text-core-text-dim text-[13px] cursor-pointer hover:text-core-text hover:border-core-text-dim transition-colors"
+            title="Workflow Settings"
+          >
+            <SettingsIcon className="w-3.5 h-3.5" />
+          </button>
+
           <button
             onClick={handleSaveDraft}
             className="flex items-center gap-1.5 px-4 py-2 bg-transparent border border-core-border rounded-lg text-core-text-dim text-[13px] cursor-pointer hover:text-core-text hover:border-core-text-dim transition-colors"
@@ -626,8 +690,8 @@ export default function AutomationsPage() {
                   onNodeSelect={setSelectedNodeId}
                   stepCounter={stepCounter}
                   onStepCounterUpdate={setStepCounter}
+                  onNodeDoubleClick={handleNodeDoubleClick}
                 />
-                <AIRecommendations nodes={nodes} onAdd={handleAddFromRecommendation} />
                 <GenerateBar onGenerate={(newNodes, newEdges) => {
                   setNodes(newNodes)
                   setEdges(newEdges)
@@ -701,6 +765,38 @@ export default function AutomationsPage() {
 
         </ReactFlowProvider>
       </div>
+
+      {/* Modals */}
+      {quickConfigNode && (
+        <QuickConfigModal
+          node={quickConfigNode}
+          onSave={handleQuickConfigSave}
+          onSkip={() => setQuickConfigNode(null)}
+          onAIFill={handleAIFillConfig}
+        />
+      )}
+
+      {appConfigNode && (
+        <AppConfigModal
+          node={appConfigNode}
+          onSave={handleAppConfigSave}
+          onClose={() => setAppConfigNode(null)}
+        />
+      )}
+
+      {showWorkflowSettings && (
+        <WorkflowSettingsModal
+          settings={{ ...workflowSettings, name: workflowSettings.name || automationName }}
+          onSave={(next) => {
+            setWorkflowSettings(next)
+            if (next.name && next.name !== automationName) setAutomationName(next.name)
+            setShowWorkflowSettings(false)
+            setSaveStatus('unsaved')
+            toast.success('Workflow settings saved')
+          }}
+          onClose={() => setShowWorkflowSettings(false)}
+        />
+      )}
     </div>
   )
 }
