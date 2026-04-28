@@ -129,35 +129,91 @@ export default function HomePage() {
         <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translate(-50%,-30%)', width: 900, height: 900, background: 'radial-gradient(circle, rgba(126,217,87,0.08) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 1 }} />
         <div style={{ position: 'absolute', top: '30%', right: '10%', width: 400, height: 400, background: 'radial-gradient(circle, rgba(0,212,255,0.05) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 1 }} />
 
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'clamp(24px, 4vw, 60px)', alignItems: 'center' }}>
-          {/* Left: Copy */}
-          <div>
-            <div style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '5px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 24, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              1,554 Tools · 96 Services · 5 Patents
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+          <div style={{ maxWidth: 920 }}>
+            {/* Live status pill */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 10, fontWeight: 700, color: '#a3f08e', background: 'rgba(126,217,87,0.08)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.25)', marginBottom: 28, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              <span style={{ position: 'relative', display: 'inline-flex', width: 6, height: 6 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#7ed957', opacity: 0.6, animation: 'ping-dot 1.6s cubic-bezier(0,0,0.2,1) infinite' }} />
+                <span style={{ position: 'relative', display: 'inline-flex', width: 6, height: 6, borderRadius: '50%', background: '#7ed957' }} />
+              </span>
+              Live · 1,554 Tools · 96 Services · 5 Patents
             </div>
-            <h1 style={{ fontSize: 'clamp(36px, 5vw, 56px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.08, margin: '0 0 20px' }}>
-              Scale Your Platform<br />
-              10x with <span style={{ color: '#7ed957' }}>0nCore</span><br />
-              Connectivity.
-            </h1>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 480, margin: '0 0 32px' }}>
-              Unifying digital connectivity. Connect your CRM to every service, automate every workflow, and let AI handle the rest.
-            </p>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Link href="/request" style={{
-                padding: '14px 32px', background: '#7ed957', color: '#020810',
-                fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15,
-                boxShadow: '0 0 30px rgba(126,217,87,0.3)',
-              }}>Request Access</Link>
-              <Link href="/launch-party" style={{
-                padding: '14px 32px', background: 'rgba(255,255,255,0.06)', color: '#fff',
-                fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 15,
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}>Launch Party — May 1st</Link>
-            </div>
-          </div>
 
+            {/* Gradient headline — green → teal → purple */}
+            <h1 style={{
+              fontSize: 'clamp(44px, 6.5vw, 88px)',
+              fontWeight: 900,
+              letterSpacing: '-0.035em',
+              lineHeight: 1.02,
+              margin: '0 0 24px',
+            }}>
+              <span style={{
+                display: 'block',
+                backgroundImage: 'linear-gradient(135deg, #7ed957 0%, #14b8a6 50%, #a78bfa 100%)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                color: 'transparent',
+              }}>
+                One brain. Every service.
+              </span>
+              <span style={{
+                display: 'block',
+                backgroundImage: 'linear-gradient(135deg, #7ed957 0%, #14b8a6 50%, #a78bfa 100%)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                color: 'transparent',
+              }}>
+                Zero limits.
+              </span>
+            </h1>
+
+            <p style={{
+              fontSize: 'clamp(16px, 1.6vw, 20px)',
+              color: 'rgba(255,255,255,0.78)',
+              lineHeight: 1.55,
+              maxWidth: 720,
+              margin: '0 0 16px',
+            }}>
+              0nCore is the AI-powered CRM with <strong style={{ color: '#fff', fontWeight: 600 }}>1,554 tools across 96 services</strong> wired in from day one — automations, voice AI, course generator, domain management, the whole stack — all from one dashboard.
+            </p>
+            <p style={{
+              fontSize: 'clamp(15px, 1.4vw, 17px)',
+              color: 'rgba(255,255,255,0.55)',
+              lineHeight: 1.6,
+              maxWidth: 720,
+              margin: '0 0 36px',
+            }}>
+              No code. No API keys. No glue work. Sign in and start running real apps.
+            </p>
+
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <Link href="/signup" style={{
+                padding: '15px 32px', background: '#7ed957', color: '#020810',
+                fontWeight: 800, borderRadius: 12, textDecoration: 'none', fontSize: 15,
+                boxShadow: '0 0 32px rgba(126,217,87,0.35)',
+              }}>Start Free →</Link>
+              <Link href="/marketplace" style={{
+                padding: '15px 32px', background: 'rgba(255,255,255,0.05)', color: '#fff',
+                fontWeight: 600, borderRadius: 12, textDecoration: 'none', fontSize: 15,
+                border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)',
+              }}>See what you can build</Link>
+            </div>
+
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 24 }}>
+              No credit card. 60-second setup. Cancel anytime.
+            </p>
+          </div>
         </div>
+
+        <style>{`
+          @keyframes ping-dot {
+            0%   { transform: scale(1); opacity: 0.6; }
+            75%, 100% { transform: scale(2.2); opacity: 0; }
+          }
+        `}</style>
       </section>
 
       {/* ═══ VIDEO ═══ */}
