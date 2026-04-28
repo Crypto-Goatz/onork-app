@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Providers } from "@/components/providers";
 import { PublicNavWrapper } from "@/components/public-nav-wrapper";
 import { VoiceAIFloatingButton } from "@/components/voice-ai-floating";
+import { LaunchBanner } from "@/components/launch-banner";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -69,6 +70,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased min-h-screen">
         <Providers>
+        <LaunchBanner />
         <PublicNavWrapper />
         {children}
         <VoiceAIFloatingButton />
