@@ -1,40 +1,81 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import {
+  ArrowRight,
+  Bot,
+  BrainCog,
+  ChartBar,
+  CreditCard,
+  Database,
+  Megaphone,
+  Package,
+  Pencil,
+  Phone,
+  Settings,
+  Sparkles,
+  Wand2,
+  Zap,
+} from 'lucide-react'
 import { CATEGORIES, ADDONS, getAddonBySlug } from '@/lib/marketplace-data'
+import AnimatedGrid from '@/components/animated-grid'
+import AnimatedConnectors from '@/components/animated-connectors'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export const metadata: Metadata = {
   title: '0nCore Marketplace — AI-Powered Business Add-ons',
-  description: 'Browse 31 add-ons for your CRM. Social media automation, email builder, voice AI, analytics, and more. Install what you need, pay for what you use.',
+  description:
+    'Browse 31 add-ons that plug into your CRM. Voice AI, social media, email, analytics, course builder, and more. Install in one click. Pay for what you use.',
   openGraph: {
     title: '0nCore Marketplace — AI-Powered Business Add-ons',
-    description: 'Browse 31 add-ons for your CRM. Install what you need, pay for what you use.',
+    description:
+      'Browse 31 add-ons that plug into your CRM. Install in one click. Pay for what you use.',
     url: 'https://0ncore.com/marketplace',
   },
+  alternates: { canonical: 'https://0ncore.com/marketplace' },
 }
 
-const ICON_MAP: Record<string, string> = {
-  database: '\u{1F5C4}',
-  megaphone: '\u{1F4E2}',
-  brain: '\u{1F9E0}',
-  chart: '\u{1F4CA}',
-  phone: '\u{1F4DE}',
-  dollar: '\u{1F4B0}',
-  pencil: '\u{270F}',
-  settings: '\u{2699}',
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  database: Database,
+  megaphone: Megaphone,
+  brain: BrainCog,
+  chart: ChartBar,
+  phone: Phone,
+  dollar: CreditCard,
+  pencil: Pencil,
+  settings: Settings,
 }
 
 const STEPS = [
-  { num: '01', title: 'Install', desc: 'Choose an add-on from the marketplace and add it to your account.', icon: '\u{1F4E6}' },
-  { num: '02', title: 'Activate', desc: 'It connects to your CRM sub-location automatically — zero configuration.', icon: '\u{26A1}' },
-  { num: '03', title: 'Automate', desc: 'The add-on runs on autopilot using your K-layer AI crew.', icon: '\u{1F916}' },
+  {
+    num: '01',
+    title: 'Install',
+    desc: 'Pick an add-on from the marketplace and add it to your account in a click.',
+    icon: Package,
+    color: '#7ed957',
+  },
+  {
+    num: '02',
+    title: 'Activate',
+    desc: 'It connects to your CRM sub-location automatically — zero configuration, no API keys.',
+    icon: Zap,
+    color: '#00d4ff',
+  },
+  {
+    num: '03',
+    title: 'Automate',
+    desc: 'The add-on runs on autopilot using your K-layer AI crew. Watch the work get done.',
+    icon: Bot,
+    color: '#a78bfa',
+  },
 ]
 
 const featured = getAddonBySlug('content-engine')!
 
 export default function MarketplacePage() {
   return (
-    <>
-      {/* JSON-LD */}
+    <main className="min-h-screen bg-[#020810] text-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -51,139 +92,338 @@ export default function MarketplacePage() {
               name: cat.name,
               url: `https://0ncore.com/marketplace/${cat.slug}`,
             })),
-          })
+          }),
         }}
       />
 
-      {/* Hero */}
-      <section style={{
-        position: 'relative', textAlign: 'center',
-        padding: 'clamp(60px, 10vw, 100px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 60px)',
-        overflow: 'hidden',
-      }}>
-        <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translate(-50%,-30%)', width: 800, height: 800, background: 'radial-gradient(circle, rgba(126,217,87,0.06) 0%, transparent 60%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 700, margin: '0 auto' }}>
-          <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 20, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            {ADDONS.length} Add-ons &middot; {CATEGORIES.length} Categories &middot; Powered by 0nMCP
+      {/* ═══ HERO ═══════════════════════════════════════════════════ */}
+      <section className="relative overflow-hidden">
+        <AnimatedGrid />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-32 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-[#7ed957]/[0.07] blur-[140px]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute top-[20%] right-[10%] h-[400px] w-[400px] rounded-full bg-[#00d4ff]/[0.05] blur-[120px]"
+        />
+
+        <div className="relative mx-auto max-w-5xl px-4 pt-28 pb-16 text-center sm:px-6 lg:px-8 lg:pt-36 lg:pb-20">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#7ed957]/30 bg-[#7ed957]/8 px-4 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#7ed957]">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#7ed957] opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#7ed957]" />
+            </span>
+            {ADDONS.length} Add-ons · {CATEGORIES.length} Categories · Powered by 0nMCP
           </div>
-          <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 0 16px' }}>
-            The <span style={{ color: '#7ed957' }}>0nCore</span> Marketplace
+
+          <h1 className="text-balance text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+            <span className="block bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+              The 0nCore
+            </span>
+            <span className="block bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+              Marketplace.
+            </span>
           </h1>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 560, margin: '0 auto 32px' }}>
-            AI-powered add-ons that plug into your CRM. Each one unlocks a capability — install what you need, activate instantly.
+
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/75 sm:text-xl">
+            AI-powered add-ons that plug into your CRM. Each one unlocks a capability — install
+            what you need, activate instantly. <strong className="text-white">No API keys. No code. No glue work.</strong>
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="#categories" style={{ padding: '12px 28px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15 }}>Browse All</a>
-            <Link href="/request" style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 15, border: '1px solid rgba(255,255,255,0.08)' }}>Request Access</Link>
+
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="#categories"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#7ed957] px-7 py-3 text-base font-bold text-[#020810] shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-transform hover:scale-[1.02]"
+            >
+              Browse all add-ons
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/marketplace/all"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.03] px-7 py-3 text-base font-semibold text-white backdrop-blur transition-colors hover:border-[#7ed957]/40 hover:text-[#7ed957]"
+            >
+              See the full {ADDONS.length}
+            </Link>
+          </div>
+
+          {/* Stats strip */}
+          <div className="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { v: ADDONS.length.toString(), l: 'Add-ons live' },
+              { v: CATEGORIES.length.toString(), l: 'Categories' },
+              { v: '1-click', l: 'Install' },
+              { v: '$0', l: 'Setup cost' },
+            ].map((s) => (
+              <div
+                key={s.l}
+                className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-4 text-center backdrop-blur"
+              >
+                <div className="font-mono text-2xl font-black tabular-nums sm:text-3xl">
+                  <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+                    {s.v}
+                  </span>
+                </div>
+                <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-white/40">
+                  {s.l}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* How Add-ons Work */}
-      <section style={{ maxWidth: 1000, margin: '0 auto', padding: '0 clamp(16px, 4vw, 24px) clamp(40px, 6vw, 60px)' }}>
-        <h2 style={{ fontSize: 'clamp(20px, 3vw, 24px)', fontWeight: 800, textAlign: 'center', marginBottom: 32 }}>How Add-ons Work</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
-          {STEPS.map(s => (
-            <div key={s.num} style={{ padding: 28, borderRadius: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', textAlign: 'center' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#7ed957', marginBottom: 12, letterSpacing: '0.1em' }}>{s.num}</div>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>{s.icon}</div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{s.title}</h3>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6, margin: 0 }}>{s.desc}</p>
+      {/* ═══ How Add-ons Work ═════════════════════════════════════════ */}
+      <section className="relative overflow-hidden border-y border-white/5 bg-white/[0.015]">
+        <AnimatedConnectors intensity={0.22} />
+        <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+          <div className="mx-auto max-w-2xl text-center">
+            <Badge variant="outline" className="mb-4 border-white/15 font-mono text-[10px] uppercase tracking-widest text-white/65">
+              How add-ons work
+            </Badge>
+            <h2 className="text-balance text-4xl font-black tracking-tight sm:text-5xl">
+              <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+                Three steps. About 60 seconds.
+              </span>
+            </h2>
+          </div>
+
+          <div className="relative mt-14">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute left-[26px] top-2 bottom-2 w-px bg-gradient-to-b from-[#7ed957]/40 via-[#00d4ff]/40 to-[#a78bfa]/40 sm:left-[36px] lg:hidden"
+            />
+            <div className="grid gap-5 lg:grid-cols-3 lg:gap-6">
+              {STEPS.map((s, i) => {
+                const Icon = s.icon
+                return (
+                  <div key={s.num} className="relative pl-16 lg:pl-0">
+                    <div
+                      className="absolute left-0 top-0 flex h-[52px] w-[52px] items-center justify-center rounded-2xl border bg-[#0d1117] shadow-lg backdrop-blur sm:h-[72px] sm:w-[72px] lg:relative lg:mb-5 lg:h-16 lg:w-16"
+                      style={{ borderColor: `${s.color}40`, boxShadow: `0 0 28px ${s.color}25` }}
+                    >
+                      <Icon className="h-5 w-5 sm:h-7 sm:w-7" style={{ color: s.color }} />
+                    </div>
+                    <Card className="border-white/10 bg-white/[0.02] backdrop-blur">
+                      <CardHeader>
+                        <p className="font-mono text-[10px] uppercase tracking-widest" style={{ color: s.color }}>
+                          {s.num}
+                        </p>
+                        <CardTitle className="text-lg text-white">{s.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm leading-relaxed text-white/65">{s.desc}</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )
+              })}
             </div>
-          ))}
+          </div>
         </div>
       </section>
 
-      {/* Category Grid */}
-      <section id="categories" style={{ maxWidth: 1100, margin: '0 auto', padding: 'clamp(40px, 6vw, 60px) clamp(16px, 4vw, 24px)' }}>
-        <h2 style={{ fontSize: 'clamp(20px, 3vw, 24px)', fontWeight: 800, textAlign: 'center', marginBottom: 8 }}>Browse by Category</h2>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: 32 }}>Each category groups related capabilities for your CRM.</p>
-
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <Link href="/marketplace/all" style={{
-            display: 'inline-block', fontSize: 13, fontWeight: 600, padding: '8px 20px', borderRadius: 8,
-            background: 'rgba(126,217,87,0.1)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)',
-            textDecoration: 'none',
-          }}>
-            View All {ADDONS.length} Add-ons
-          </Link>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-          {CATEGORIES.map(cat => (
-            <Link key={cat.slug} href={`/marketplace/${cat.slug}`} style={{
-              padding: 24, borderRadius: 16,
-              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-              textDecoration: 'none', color: '#fff',
-              display: 'flex', flexDirection: 'column', gap: 8,
-              transition: 'border-color 0.2s',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 28 }}>{ICON_MAP[cat.icon] || '\u{1F4E6}'}</span>
-                <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 12, background: `${cat.color}15`, color: cat.color, border: `1px solid ${cat.color}25` }}>
-                  {cat.count} add-ons
+      {/* ═══ Featured add-on ═════════════════════════════════════════ */}
+      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+        <Card className="relative overflow-hidden border-[#7ed957]/25 bg-gradient-to-br from-[#7ed957]/[0.04] via-[#00d4ff]/[0.02] to-[#a78bfa]/[0.04] backdrop-blur">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-20 left-1/2 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-[#7ed957]/10 blur-[120px]"
+          />
+          <CardContent className="relative grid gap-10 px-6 py-12 lg:grid-cols-[1.4fr_1fr] lg:gap-12 lg:px-12 lg:py-16">
+            <div>
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-md bg-[#7ed957]/15 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[#7ed957]">
+                  <Sparkles className="h-3 w-3" />
+                  Featured
+                </span>
+                {featured.badge && (
+                  <span className="rounded-md bg-[#00d4ff]/12 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[#00d4ff]">
+                    {featured.badge}
+                  </span>
+                )}
+              </div>
+              <h2 className="text-balance text-3xl font-black tracking-tight sm:text-4xl">
+                <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+                  {featured.name}
+                </span>
+              </h2>
+              <p className="mt-4 text-base leading-relaxed text-white/70">{featured.shortDesc}</p>
+              <ul className="mt-6 grid gap-2 sm:grid-cols-2">
+                {featured.features.slice(0, 4).map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-white/75">
+                    <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#7ed957]" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link
+                  href={`/marketplace/addon/${featured.slug}`}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#7ed957] px-6 py-3 text-sm font-bold text-[#020810] shadow-[0_0_24px_rgba(126,217,87,0.35)] transition-transform hover:scale-[1.02]"
+                >
+                  View details
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <span className="font-mono text-xs uppercase tracking-widest text-white/40">
+                  Requires {featured.requiredPlan} plan
                 </span>
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{cat.name}</h3>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, margin: 0 }}>{cat.description}</p>
+            </div>
+
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="text-7xl font-black leading-none">
+                <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+                  {featured.priceLabel}
+                </span>
+              </div>
+              <p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-white/40">
+                Pay-as-you-go · Stripe billing
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-1.5">
+                {featured.integrations.slice(0, 8).map((i) => (
+                  <span
+                    key={i}
+                    className="rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1 font-mono text-[10px] font-medium text-white/65"
+                  >
+                    {i}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* ═══ Category grid ═══════════════════════════════════════════ */}
+      <section id="categories" className="relative overflow-hidden border-t border-white/5 bg-white/[0.015]">
+        <AnimatedConnectors intensity={0.16} />
+        <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+          <div className="mx-auto max-w-2xl text-center">
+            <Badge variant="outline" className="mb-4 border-white/15 font-mono text-[10px] uppercase tracking-widest text-white/65">
+              Browse by category
+            </Badge>
+            <h2 className="text-balance text-4xl font-black tracking-tight sm:text-5xl">
+              <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+                {CATEGORIES.length} categories. {ADDONS.length} add-ons. One dashboard.
+              </span>
+            </h2>
+            <p className="mt-4 text-base text-white/65">
+              Each category groups related capabilities for your CRM. Click in to see what&rsquo;s
+              installable today.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {CATEGORIES.map((cat) => {
+              const Icon = ICON_MAP[cat.icon] ?? Package
+              return (
+                <Link
+                  key={cat.slug}
+                  href={`/marketplace/${cat.slug}`}
+                  className="group block"
+                  style={{ ['--cat' as string]: cat.color } as React.CSSProperties}
+                >
+                  <Card className="relative h-full overflow-hidden border-white/10 bg-white/[0.02] backdrop-blur transition-all hover:scale-[1.01]">
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute -top-20 -right-20 h-40 w-40 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-60"
+                      style={{ background: cat.color }}
+                    />
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                      style={{ boxShadow: `inset 0 0 0 1px ${cat.color}40` }}
+                    />
+                    <CardHeader className="relative">
+                      <div className="flex items-start justify-between gap-3">
+                        <div
+                          className="inline-flex h-12 w-12 items-center justify-center rounded-xl border transition-colors"
+                          style={{
+                            background: `${cat.color}15`,
+                            borderColor: `${cat.color}30`,
+                          }}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <span
+                          className="rounded-full px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-widest"
+                          style={{
+                            background: `${cat.color}15`,
+                            color: cat.color,
+                            border: `1px solid ${cat.color}30`,
+                          }}
+                        >
+                          {cat.count} add-ons
+                        </span>
+                      </div>
+                      <CardTitle className="mt-3 text-lg text-white transition-colors group-hover:text-[var(--cat)]">
+                        {cat.name}
+                      </CardTitle>
+                      <CardDescription className="text-white/65">{cat.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="relative">
+                      <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-white/40 transition-colors group-hover:text-[var(--cat)]">
+                        Browse {cat.name}
+                        <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )
+            })}
+          </div>
+
+          <div className="mt-14 text-center">
+            <Link
+              href="/marketplace/all"
+              className="inline-flex items-center gap-2 rounded-xl border border-[#7ed957]/30 bg-[#7ed957]/8 px-6 py-3 text-sm font-semibold text-[#7ed957] transition-colors hover:bg-[#7ed957]/15"
+            >
+              View all {ADDONS.length} add-ons
+              <ArrowRight className="h-4 w-4" />
             </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Featured Add-on */}
-      <section style={{ maxWidth: 1100, margin: '0 auto', padding: '0 clamp(16px, 4vw, 24px) clamp(40px, 6vw, 60px)' }}>
-        <div style={{
-          borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)',
-          background: 'linear-gradient(135deg, rgba(126,217,87,0.04) 0%, rgba(0,212,255,0.02) 100%)',
-          padding: 'clamp(24px, 4vw, 40px)',
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 32,
-          alignItems: 'center',
-        }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 6, background: 'rgba(126,217,87,0.12)', color: '#7ed957', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Featured</span>
-              {featured.badge && (
-                <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: 'rgba(0,212,255,0.1)', color: '#00d4ff' }}>{featured.badge}</span>
-              )}
-            </div>
-            <h2 style={{ fontSize: 'clamp(22px, 3vw, 28px)', fontWeight: 800, margin: '0 0 8px' }}>{featured.name}</h2>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: '0 0 20px' }}>{featured.shortDesc}</p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px' }}>
-              {featured.features.slice(0, 4).map(f => (
-                <li key={f} style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', padding: '3px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: '#7ed957', fontSize: 11 }}>&#10003;</span> {f}
-                </li>
-              ))}
-            </ul>
-            <Link href={`/marketplace/addon/${featured.slug}`} style={{
-              display: 'inline-block', padding: '10px 24px', background: '#7ed957', color: '#020810',
-              fontWeight: 700, borderRadius: 8, textDecoration: 'none', fontSize: 14,
-            }}>View Details</Link>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 48, fontWeight: 800, color: '#7ed957', marginBottom: 4 }}>{featured.priceLabel}</div>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', margin: '0 0 16px' }}>Requires {featured.requiredPlan} plan</p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {featured.integrations.map(i => (
-                <span key={i} style={{ fontSize: 10, fontWeight: 600, padding: '4px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>{i}</span>
-              ))}
-            </div>
           </div>
         </div>
       </section>
 
-      {/* Bottom CTA */}
-      <section style={{ textAlign: 'center', padding: 'clamp(48px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)', marginTop: 'clamp(40px, 6vw, 60px)' }}>
-        <h2 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 800, marginBottom: 12 }}>Ready to get started?</h2>
-        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 24, maxWidth: 500, margin: '0 auto 24px' }}>
-          Install your first add-on in seconds. No contracts, cancel anytime.
-        </p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/login" style={{ padding: '12px 28px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15 }}>Start Free</Link>
-          <a href="mailto:mike@rocketopp.com" style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 15, border: '1px solid rgba(255,255,255,0.08)' }}>Contact Sales</a>
-        </div>
+      {/* ═══ Final CTA ═══════════════════════════════════════════════ */}
+      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+        <Card className="relative overflow-hidden border-[#7ed957]/25 bg-gradient-to-br from-[#0d1117] via-[#0d1117] to-[#161b22] backdrop-blur">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-32 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#7ed957]/15 blur-[100px]"
+          />
+          <CardContent className="relative px-6 py-16 text-center sm:px-12 sm:py-20">
+            <Wand2 className="mx-auto mb-6 h-12 w-12 text-[#7ed957]" />
+            <h2 className="text-balance text-4xl font-black tracking-tight sm:text-5xl">
+              <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+                Install your first add-on in seconds.
+              </span>
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg text-white/70">
+              No contracts. Cancel anytime. Pay only for what you use.
+            </p>
+            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#7ed957] px-8 py-3.5 text-base font-bold text-[#020810] shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-transform hover:scale-[1.02]"
+              >
+                Start free
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <a
+                href="mailto:mike@rocketopp.com"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.03] px-8 py-3.5 text-base font-semibold text-white backdrop-blur transition-colors hover:border-[#7ed957]/40 hover:text-[#7ed957]"
+              >
+                Contact sales
+              </a>
+            </div>
+            <p className="mt-8 font-mono text-xs uppercase tracking-widest text-white/30">
+              Public launch · May 1, 2026 · Founders pricing locked for early signups
+            </p>
+          </CardContent>
+        </Card>
       </section>
-    </>
+    </main>
   )
 }
