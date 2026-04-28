@@ -46,6 +46,11 @@ export interface PromptContext {
       activate: boolean
       run: boolean
     }
+    commerce: {
+      browse: boolean
+      checkout: boolean
+      download: boolean
+    }
   }
   // If user typed a confirmation phrase ("yes", "go", "do it") for a pending plan
   pendingConfirmation?: {
@@ -148,6 +153,9 @@ function renderContext(ctx: PromptContext): string {
   if (ctx.capabilities.automation.test) caps.push('automation.test')
   if (ctx.capabilities.automation.activate) caps.push('automation.activate')
   if (ctx.capabilities.automation.run) caps.push('automation.run')
+  if (ctx.capabilities.commerce.browse) caps.push('commerce.browse')
+  if (ctx.capabilities.commerce.checkout) caps.push('commerce.checkout')
+  if (ctx.capabilities.commerce.download) caps.push('commerce.download')
   lines.push(`- Capabilities enabled this conversation: ${caps.join(', ') || 'none'}`)
 
   if (ctx.hasActiveChallenge && ctx.pendingChallengeQuestion) {

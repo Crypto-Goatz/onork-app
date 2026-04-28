@@ -75,7 +75,8 @@ export function CrmConnectionBanner() {
                 onClick={() => {
                   window.location.href = '/api/oauth/reauth'
                 }}
-                className="bg-yellow-500 text-black hover:bg-yellow-400"
+                variant="outline"
+                className="border-yellow-500/40 bg-yellow-500/10 text-yellow-100 hover:bg-yellow-500/20 hover:text-yellow-50"
               >
                 <Plug className="mr-1.5 h-3.5 w-3.5" />
                 Reconnect CRM

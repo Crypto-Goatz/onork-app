@@ -248,6 +248,9 @@ export interface JaxxConfig {
   automation_can_test: boolean
   automation_can_activate: boolean
   automation_can_run: boolean
+  commerce_can_browse: boolean
+  commerce_can_checkout: boolean
+  commerce_can_download: boolean
   auto_execute: boolean
   business_hours_only: boolean
   business_hours_start: string
@@ -270,6 +273,9 @@ const DEFAULT_CONFIG: JaxxConfig = {
   automation_can_test: false,
   automation_can_activate: false,
   automation_can_run: false,
+  commerce_can_browse: false,
+  commerce_can_checkout: false,
+  commerce_can_download: false,
   auto_execute: false,
   business_hours_only: false,
   business_hours_start: '08:00',
@@ -301,6 +307,9 @@ export async function loadConfig(locationId: string): Promise<JaxxConfig> {
     automation_can_test: data.automation_can_test ?? false,
     automation_can_activate: data.automation_can_activate ?? false,
     automation_can_run: data.automation_can_run ?? false,
+    commerce_can_browse: data.commerce_can_browse ?? false,
+    commerce_can_checkout: data.commerce_can_checkout ?? false,
+    commerce_can_download: data.commerce_can_download ?? false,
     auto_execute: data.auto_execute ?? false,
     business_hours_only: data.business_hours_only ?? false,
     business_hours_start: data.business_hours_start ?? '08:00',

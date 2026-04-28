@@ -41,6 +41,12 @@ import {
   isMutating,
   dispatchAutomationTool,
 } from '@/lib/jaxx/tools/automation'
+import {
+  getEnabledCommerceTools,
+  isCommerceMutating,
+  dispatchCommerceTool,
+  describeCommercePlan,
+} from '@/lib/jaxx/tools/commerce'
 import { recordPair } from '@/lib/jaxx/learning'
 import { createClient } from '@supabase/supabase-js'
 
@@ -298,7 +304,10 @@ export async function POST(req: NextRequest) {
     const systemPrompt = buildSystemPrompt(promptCtx, config.system_prompt_override)
 
     // ── 8. Tools (capability-gated) ─────────────────────────────────
-    const tools = getEnabledAutomationTools(config)
+    const tools = [
+      ...getEnabledAutomationTools(config),
+      ...getEnabledCommerceTools(config),
+    ]
 
     // Pull last few turns of conversation as context (best-effort)
     const messages = await loadRecentTurns(conversationId, 6, messageBody)
@@ -328,22 +337,37 @@ export async function POST(req: NextRequest) {
           continue
         }
 
-        if (isMutating(tc.function.name) && !config.auto_execute && !userConfirmed) {
+        const isAutomation = tc.function.name.startsWith('automation_')
+        const isCommerce = tc.function.name.startsWith('commerce_')
+        const mutating =
+          (isAutomation && isMutating(tc.function.name)) ||
+          (isCommerce && isCommerceMutating(tc.function.name))
+
+        if (mutating && !config.auto_execute && !userConfirmed) {
           // Render the plan + ask for confirmation
           requiredConfirmation = true
-          const summary = describePlan(tc.function.name, parsedArgs)
+          const summary = isCommerce
+            ? describeCommercePlan(tc.function.name, parsedArgs)
+            : describePlan(tc.function.name, parsedArgs)
           replyContent = `${summary}\n\nReply 'yes' to run this, or tell me what to change.`
           toolResults.push({ name: tc.function.name, result: { plan: summary } })
           break // only one plan per turn
         }
 
         // Authorized to dispatch
-        const dispatch = await dispatchAutomationTool({
-          toolName: tc.function.name,
-          arguments: parsedArgs,
-          baseUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://0ncore.com',
-          authedFetcher: makeAuthedFetcher(ids.actor.userId),
-        })
+        const dispatch = isCommerce
+          ? await dispatchCommerceTool({
+              toolName: tc.function.name,
+              arguments: parsedArgs,
+              baseUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://0ncore.com',
+              authedFetcher: makeAuthedFetcher(ids.actor.userId),
+            })
+          : await dispatchAutomationTool({
+              toolName: tc.function.name,
+              arguments: parsedArgs,
+              baseUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://0ncore.com',
+              authedFetcher: makeAuthedFetcher(ids.actor.userId),
+            })
         toolResults.push({ name: tc.function.name, result: dispatch.data })
         confirmationReceived = userConfirmed
 
@@ -493,6 +517,11 @@ async function buildPromptContext(args: {
         test: config.automation_can_test,
         activate: config.automation_can_activate,
         run: config.automation_can_run,
+      },
+      commerce: {
+        browse: config.commerce_can_browse,
+        checkout: config.commerce_can_checkout,
+        download: config.commerce_can_download,
       },
     },
   }

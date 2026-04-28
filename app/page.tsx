@@ -4,7 +4,7 @@ import { VideoBg } from '@/components/video-bg'
 
 export const metadata: Metadata = {
   title: '0nCore — Scale Your Platform 10x with AI Connectivity',
-  description: '0nCore connects your CRM to 96+ services with 1,554 AI-powered tools. Security vault, 2-second flows, codeless integrations. Request early access.',
+  description: '0nCore connects your CRM to 150+ services with 2,000+ AI-powered capabilities. Security vault, 2-second flows, codeless integrations. Sign up free.',
 }
 
 const PARTNERS = [
@@ -32,7 +32,7 @@ const FEATURES = [
   {
     num: '02',
     title: '2s Flow',
-    desc: 'Describe what you want in plain English. 0nMCP executes across 96 services in under 2 seconds.',
+    desc: 'Describe what you want in plain English. 0nMCP executes across 150+ services in under 2 seconds.',
     gradient: 'from-cyan-500/20 via-cyan-400/5 to-transparent',
     glow: 'group-hover:shadow-cyan-500/20',
     accent: 'text-cyan-400',
@@ -42,7 +42,7 @@ const FEATURES = [
   {
     num: '03',
     title: 'Integrations',
-    desc: '1,554 tools across 96 services. CRM, email, social, payments, analytics — all connected through one brain.',
+    desc: '2,000+ capabilities across 150+ services. CRM, email, social, payments, analytics — all connected through one brain.',
     gradient: 'from-teal-500/20 via-teal-400/5 to-transparent',
     glow: 'group-hover:shadow-teal-500/20',
     accent: 'text-teal-400',
@@ -108,7 +108,7 @@ export default function HomePage() {
             applicationCategory: 'BusinessApplication',
             operatingSystem: 'Web',
             offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free to start' },
-            description: 'AI Business Operating System with 1,554 tools across 96 services',
+            description: 'AI Business Operating System with 2,000+ capabilities across 150+ services',
             url: 'https://0ncore.com',
             author: { '@type': 'Organization', name: 'RocketOpp LLC', url: 'https://rocketopp.com' },
           })
@@ -137,7 +137,7 @@ export default function HomePage() {
                 <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#7ed957', opacity: 0.6, animation: 'ping-dot 1.6s cubic-bezier(0,0,0.2,1) infinite' }} />
                 <span style={{ position: 'relative', display: 'inline-flex', width: 6, height: 6, borderRadius: '50%', background: '#7ed957' }} />
               </span>
-              Live · 1,554 Tools · 96 Services · 5 Patents
+              Live · 2,000+ Capabilities · 150+ Services · 5 Patents
             </div>
 
             {/* Gradient headline — green → teal → purple */}
@@ -177,7 +177,7 @@ export default function HomePage() {
               maxWidth: 720,
               margin: '0 0 16px',
             }}>
-              0nCore is the AI-powered CRM with <strong style={{ color: '#fff', fontWeight: 600 }}>1,554 tools across 96 services</strong> wired in from day one — automations, voice AI, course generator, domain management, the whole stack — all from one dashboard.
+              0nCore is the AI-powered CRM with <strong style={{ color: '#fff', fontWeight: 600 }}>2,000+ capabilities across 150+ services</strong> wired in from day one — automations, voice AI, course generator, domain management, the whole stack — all from one dashboard.
             </p>
             <p style={{
               fontSize: 'clamp(15px, 1.4vw, 17px)',

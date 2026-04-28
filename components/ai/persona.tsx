@@ -172,7 +172,7 @@ export function PersonaConfig({ value, onChange, className }: PersonaConfigProps
               className={cn(
                 'flex flex-col items-center gap-1 rounded-md border p-2 transition-colors',
                 value.variant === v
-                  ? 'border-[#7ed957] bg-[#7ed957]/5'
+                  ? 'border-white/40 bg-white/[0.04]'
                   : 'border-white/10 hover:border-white/30'
               )}
             >
@@ -194,7 +194,7 @@ export function PersonaConfig({ value, onChange, className }: PersonaConfigProps
               className={cn(
                 'rounded-md border px-3 py-1.5 text-xs capitalize transition-colors',
                 value.tone === t
-                  ? 'border-[#7ed957] bg-[#7ed957]/10 text-[#7ed957]'
+                  ? 'border-white/40 bg-white/[0.06] text-white'
                   : 'border-white/10 text-white/60 hover:border-white/30 hover:text-white/80'
               )}
             >
