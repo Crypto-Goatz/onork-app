@@ -53,6 +53,27 @@ const SERVICE_EXTRAS: Record<string, { tools?: number; guide?: string[]; keyUrl?
   godaddy: { tools: 20, guide: ['Go to developer.godaddy.com/keys', 'Create a new API key', 'Copy both the Key and Secret'], keyUrl: 'https://developer.godaddy.com/keys', keyLabel: 'Get API Key', capabilities: ['Domains', 'DNS', 'Certificates', 'Aftermarket'], setupNote: 'Need both API Key and API Secret' },
   linear: { tools: 18, guide: ['Go to linear.app → Settings → API', 'Create a personal API key', 'Copy the key (starts with lin_api_)'], keyUrl: 'https://linear.app/settings/api', keyLabel: 'Get API Key', capabilities: ['Issues', 'Projects', 'Teams', 'Cycles', 'Labels'], setupNote: 'GraphQL API — create a personal key from Settings → API' },
   calendly: { tools: 10, guide: ['Go to calendly.com → Integrations → API', 'Generate a Personal Access Token', 'Copy the token'], keyUrl: 'https://calendly.com/integrations/api_webhooks', keyLabel: 'Get Token', capabilities: ['Events', 'Scheduling', 'Invitees', 'Webhooks'], setupNote: 'Personal access token from Integrations → API & Webhooks' },
+  crewai: {
+    tools: 4,
+    guide: [
+      'Sign up free at app.crewai.com — every account gets 50 crew runs/month at $0',
+      'Deploy a crew from a template (or import your own from GitHub)',
+      'Open the crew → Settings → API — copy the Bearer token',
+      'Note your crew name (it becomes <name>.crewai.com)',
+    ],
+    keyUrl: 'https://app.crewai.com',
+    keyLabel: 'Sign up free (50 crews/mo)',
+    capabilities: [
+      'Multi-agent orchestration',
+      'Kick off crews',
+      'Monitor status',
+      'Resume paused runs',
+      'Inspect inputs',
+      'OSS framework (50K+ ⭐)',
+    ],
+    setupNote: 'Free tier includes 50 crew runs/month — no credit card. Bundled with 0nCore: every signup gets the integration pre-wired. For unlimited self-hosted, use 0nmcp-crewai-local instead.',
+    affiliateUrl: 'https://app.crewai.com/signup',
+  },
 }
 
 const CATEGORIES = ['All', 'Core', 'AI', 'Communication', 'Development', 'Productivity', 'Commerce', 'CRM', 'Database', 'Infrastructure', 'Marketing', 'Analytics', 'Payments', 'Support']

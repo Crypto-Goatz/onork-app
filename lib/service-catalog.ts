@@ -450,6 +450,22 @@ export const SERVICES: ServiceDef[] = [
     verifyHeaders: (c) => ({ Authorization: `Token ${c.api_key}` }),
     docUrl: 'https://www.make.com/en/api-documentation',
   },
+  {
+    id: 'crewai', name: 'CrewAI', category: 'ai', icon: '🤖', color: '#FF5A36',
+    description: 'Multi-agent crews. 50 free runs/month included with every account.',
+    fields: [
+      { key: 'bearer_token', label: 'Bearer Token', type: 'password', placeholder: 'Bearer ...', required: true },
+      { key: 'crew_name', label: 'Default Crew Name', type: 'text', placeholder: 'my-crew', required: false },
+    ],
+    // CrewAI's per-crew URL doesn't expose a generic identity endpoint, so the
+    // verify call hits /inputs on the user's named crew. If they haven't set
+    // crew_name yet, this returns a meaningful error and we treat it as "key
+    // saved, awaiting first crew_name".
+    verifyEndpoint: 'https://{crew_name}.crewai.com/inputs',
+    verifyMethod: 'GET',
+    verifyHeaders: (c) => ({ Authorization: `Bearer ${c.bearer_token}` }),
+    docUrl: 'https://docs.crewai.com',
+  },
 ]
 
 export function getServiceById(id: string): ServiceDef | undefined {
