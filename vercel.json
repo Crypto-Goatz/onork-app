@@ -41,6 +41,10 @@
       "schedule": "0 12 * * *"
     },
     {
+      "path": "/api/cron/mcp-registry-sync",
+      "schedule": "0 4 * * *"
+    },
+    {
       "path": "/api/cron/daily-post",
       "schedule": "0 12 * * *"
     },
