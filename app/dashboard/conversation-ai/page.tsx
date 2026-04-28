@@ -20,6 +20,9 @@ interface JaxxConfig {
   automation_can_test: boolean
   automation_can_activate: boolean
   automation_can_run: boolean
+  commerce_can_browse: boolean
+  commerce_can_checkout: boolean
+  commerce_can_download: boolean
   auto_execute: boolean
   business_hours_only: boolean
   business_hours_start: string
@@ -104,7 +107,7 @@ export default function ConversationAIPage() {
     }
   }
 
-  function toggleAction(action: 'knowledge' | 'automation') {
+  function toggleAction(action: 'knowledge' | 'automation' | 'commerce') {
     if (!config) return
     const has = config.allowed_actions.includes(action)
     setConfig({
@@ -256,6 +259,38 @@ export default function ConversationAIPage() {
                       desc="Mutating. Always asks for confirmation first unless auto-execute is on."
                       checked={config.automation_can_run}
                       onChange={(v) => setConfig({ ...config, automation_can_run: v })}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-white/10 pt-3 mt-3">
+                <Row
+                  label="Sell + deliver products"
+                  desc="Master switch — when on, users can browse offers, check out via Stripe, and grab their downloads through the chat."
+                  checked={config.allowed_actions.includes('commerce')}
+                  onChange={() => toggleAction('commerce')}
+                />
+
+                {config.allowed_actions.includes('commerce') && (
+                  <div className="mt-3 ml-4 space-y-2 border-l-2 border-white/10 pl-4">
+                    <Row
+                      label="Browse offers"
+                      desc="Non-mutating. Lists products, downloads, and plans from the catalog."
+                      checked={config.commerce_can_browse}
+                      onChange={(v) => setConfig({ ...config, commerce_can_browse: v })}
+                    />
+                    <Row
+                      label="Create Stripe checkout"
+                      desc="Mutating. Generates a payment link the user clicks. Always confirmation-gated."
+                      checked={config.commerce_can_checkout}
+                      onChange={(v) => setConfig({ ...config, commerce_can_checkout: v })}
+                    />
+                    <Row
+                      label="Deliver downloads"
+                      desc="Non-mutating. Returns a download link if the user has a completed purchase on file."
+                      checked={config.commerce_can_download}
+                      onChange={(v) => setConfig({ ...config, commerce_can_download: v })}
                     />
                   </div>
                 )}
