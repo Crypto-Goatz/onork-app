@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Sparkles,
@@ -63,7 +64,11 @@ interface PortfolioRow {
 }
 
 export default function ServicePackagerPage() {
-  const [tab, setTab] = useState<'builder' | 'packages' | 'portfolio'>('builder')
+  const sp = useSearchParams()
+  const initialTab = ((sp?.get('tab') ?? 'builder') as 'builder' | 'packages' | 'portfolio')
+  const [tab, setTab] = useState<'builder' | 'packages' | 'portfolio'>(
+    ['builder', 'packages', 'portfolio'].includes(initialTab) ? initialTab : 'builder'
+  )
 
   // Builder state
   const [mode, setMode] = useState<Mode>('url')

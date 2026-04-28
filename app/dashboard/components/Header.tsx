@@ -9,7 +9,8 @@ import {
   CreditCard, Tag, Mail, Share2, FileText, Link2, ClipboardList, Megaphone,
   Mic, Bot, Brain, Zap, RefreshCw, Phone, FolderOpen, FileCheck, Globe,
   GraduationCap, Palette, User, CheckSquare, Settings, Shield, Plug,
-  Building2, ShoppingCart, Download, UserPlus, PenLine, HeartPulse, ChevronDown, Check, type LucideIcon,
+  Building2, ShoppingCart, Download, UserPlus, PenLine, HeartPulse, ChevronDown, Check,
+  Package, Server, Briefcase, type LucideIcon,
 } from 'lucide-react'
 
 export type LayoutMode = 'classic' | 'compact' | 'horizontal'
@@ -66,6 +67,11 @@ const NAV_ITEMS: { label: string; href: string; keywords: string; Icon: LucideIc
   { label: 'New Contact', href: '/dashboard/contacts?action=new', keywords: 'create new contact add person', Icon: UserPlus },
   { label: 'Send Email', href: '/dashboard/email/builder', keywords: 'compose new email send write', Icon: PenLine },
   { label: 'HIPAA Scanner', href: '/dashboard/hipaa', keywords: 'hipaa scan compliance healthcare security', Icon: HeartPulse },
+  { label: 'Service Packager', href: '/dashboard/service-packager', keywords: 'service packager fiverr upwork portfolio gig product landing page mcp', Icon: Package },
+  { label: 'New Package', href: '/dashboard/service-packager?tab=builder', keywords: 'create package fiverr gig generate service', Icon: Package },
+  { label: 'My Packages', href: '/dashboard/service-packager?tab=packages', keywords: 'packages list fiverr upwork generated', Icon: Briefcase },
+  { label: 'Portfolio', href: '/dashboard/service-packager?tab=portfolio', keywords: 'portfolio public gallery showcase work', Icon: Briefcase },
+  { label: 'MCP Store', href: '/dashboard/mcp-store', keywords: 'mcp store browse servers registry connect', Icon: Server },
 ]
 
 const layoutOptions: { mode: LayoutMode; label: string }[] = [

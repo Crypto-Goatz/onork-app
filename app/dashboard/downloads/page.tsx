@@ -279,6 +279,28 @@ const DOWNLOADS: Download[] = [
     actionLabel: 'Generate Course',
     actionData: '/dashboard/courses',
   },
+  {
+    id: 'service-packager',
+    name: '0n Service Packager',
+    description: 'One input → 8 sellable outputs. Fiverr gig, Upwork listing, portfolio, .0n app, UCP product, CRM service, landing page, and social posts — all from a URL, prompt, or MCP server.',
+    Icon: Package,
+    category: 'crm',
+    action: 'link',
+    actionLabel: 'Open Packager',
+    actionData: '/dashboard/service-packager',
+    badge: 'NEW',
+  },
+  {
+    id: 'mcp-store',
+    name: 'MCP Store',
+    description: 'Browse the official Model Context Protocol registry. One-click install of curated MCP servers.',
+    Icon: PackageOpen,
+    category: 'crm',
+    action: 'link',
+    actionLabel: 'Browse Store',
+    actionData: '/dashboard/mcp-store',
+    badge: 'NEW',
+  },
 
   // Developer
   {
