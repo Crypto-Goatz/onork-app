@@ -275,3 +275,11 @@ code, pre, .font-mono {
 .animate-jaxx-think   { animation: jaxx-think 1.8s ease-in-out infinite; }
 .animate-jaxx-speak   { animation: jaxx-speak 0.7s ease-in-out infinite; }
 .animate-jaxx-pulse   { animation: jaxx-pulse 1.6s ease-in-out infinite; }
+
+/* builtwith.0nmcp.com — scrolling ticker */
+@keyframes builtwith-ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-builtwith-ticker { animation: builtwith-ticker 30s linear infinite; }
+.animate-builtwith-ticker:hover { animation-play-state: paused; }
