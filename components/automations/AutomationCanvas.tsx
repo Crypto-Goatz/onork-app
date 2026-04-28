@@ -90,7 +90,8 @@ export default function AutomationCanvas({
     const capRaw = e.dataTransfer.getData('application/0n-capability')
     const appRaw = e.dataTransfer.getData('application/0n-app')
     const switchRaw = e.dataTransfer.getData('application/0n-switch')
-    if (!capRaw && !appRaw && !switchRaw) return
+    const mcpRaw = e.dataTransfer.getData('application/0n-mcp-tool')
+    if (!capRaw && !appRaw && !switchRaw && !mcpRaw) return
 
     const newCounter = stepCounter + 1
     const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
@@ -98,7 +99,32 @@ export default function AutomationCanvas({
     let data: CapabilityNodeData
     let idPrefix = 'cap'
 
-    if (switchRaw) {
+    if (mcpRaw) {
+      const t = JSON.parse(mcpRaw) as {
+        kind: 'mcp_tool'
+        server_id: string
+        server_slug: string
+        server_name: string
+        tool_name: string
+        description: string
+      }
+      data = {
+        capabilityId: `mcp_${t.server_id}_${t.tool_name}`,
+        name: t.tool_name,
+        description: t.description || `MCP tool from ${t.server_name}`,
+        icon: 'Server',
+        color: '#06b6d4',
+        category: 'mcp',
+        configured: true,
+        steps: [`Call ${t.tool_name} on ${t.server_name}`],
+        config: {},
+        kind: 'mcp_tool',
+        mcpServerId: t.server_id,
+        mcpServerName: t.server_name,
+        mcpToolName: t.tool_name,
+      }
+      idPrefix = 'mcp'
+    } else if (switchRaw) {
       const sw = JSON.parse(switchRaw) as {
         kind: 'switch'
         switch_id: string

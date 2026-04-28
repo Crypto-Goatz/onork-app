@@ -48,10 +48,14 @@ export default function McpServersPage() {
   async function load() {
     setLoading(true)
     try {
-      const [s, p] = await Promise.all([
-        fetch('/api/mcp/servers').then((r) => r.json()),
-        fetch('/api/mcp/presets').then((r) => r.json()),
-      ])
+      const sRes = await fetch('/api/mcp/servers')
+      if (sRes.status === 403) {
+        toast.error('Admin access required')
+        window.location.href = '/dashboard'
+        return
+      }
+      const s = await sRes.json()
+      const p = await fetch('/api/mcp/presets').then((r) => r.json())
       setServers(s.servers ?? [])
       setPresets(p.presets ?? [])
     } finally {

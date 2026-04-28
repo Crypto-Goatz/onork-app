@@ -5,8 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyAdmin } from '@/lib/admin-gate'
 
 function admin() {
   return createClient(
@@ -32,10 +32,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!(await checkOwner(id, user.id))) {
+  const gate = await verifyAdmin()
+  if (!gate.ok || !gate.userId) {
+    return NextResponse.json({ error: gate.error ?? 'Forbidden' }, { status: gate.userId ? 403 : 401 })
+  }
+  if (!(await checkOwner(id, gate.userId))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
@@ -53,10 +54,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!(await checkOwner(id, user.id))) {
+  const gate = await verifyAdmin()
+  if (!gate.ok || !gate.userId) {
+    return NextResponse.json({ error: gate.error ?? 'Forbidden' }, { status: gate.userId ? 403 : 401 })
+  }
+  if (!(await checkOwner(id, gate.userId))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
@@ -76,10 +78,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!(await checkOwner(id, user.id))) {
+  const gate = await verifyAdmin()
+  if (!gate.ok || !gate.userId) {
+    return NextResponse.json({ error: gate.error ?? 'Forbidden' }, { status: gate.userId ? 403 : 401 })
+  }
+  if (!(await checkOwner(id, gate.userId))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 

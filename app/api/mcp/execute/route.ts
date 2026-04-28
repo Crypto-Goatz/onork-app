@@ -8,9 +8,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { callTool } from '@/lib/mcp/client'
+import { verifyAdmin } from '@/lib/admin-gate'
 
 function admin() {
   return createClient(
@@ -20,9 +20,21 @@ function admin() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Allow either admin session OR a valid internal-dispatch secret (so the
+  // workflow executor can fire MCP tool steps server-to-server).
+  const internalSecret = req.headers.get('x-internal-secret')
+  const isInternal =
+    !!internalSecret && internalSecret === (process.env.INTERNAL_DISPATCH_SECRET || '')
+
+  let userId: string | null = null
+  if (!isInternal) {
+    const gate = await verifyAdmin()
+    if (!gate.ok || !gate.userId) {
+      return NextResponse.json({ error: gate.error ?? 'Forbidden' }, { status: gate.userId ? 403 : 401 })
+    }
+    userId = gate.userId
+  }
+  const user = userId ? { id: userId } : null
 
   let body: { serverId?: string; tool?: string; args?: Record<string, unknown> }
   try {
@@ -36,12 +48,16 @@ export async function POST(req: NextRequest) {
   }
 
   const sb = admin()
-  const { data: server } = await sb
+  let serverQuery = sb
     .from('user_mcp_servers')
     .select('id, slug, transport, url, env_vars, bearer_token, status, use_count')
     .eq('id', body.serverId)
-    .eq('user_id', user.id)
-    .maybeSingle()
+  // Internal calls (workflow executor) match by id only — they've already
+  // come through their own auth path. Direct admin calls also match user_id.
+  if (user) {
+    serverQuery = serverQuery.eq('user_id', user.id)
+  }
+  const { data: server } = await serverQuery.maybeSingle()
 
   if (!server) return NextResponse.json({ error: 'Server not found' }, { status: 404 })
   if (server.status !== 'active') {

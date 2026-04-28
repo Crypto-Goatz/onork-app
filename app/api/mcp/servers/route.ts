@@ -5,8 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyAdmin } from '@/lib/admin-gate'
 
 function admin() {
   return createClient(
@@ -20,9 +20,11 @@ function slugify(s: string): string {
 }
 
 export async function GET() {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await verifyAdmin()
+  if (!gate.ok || !gate.userId) {
+    return NextResponse.json({ error: gate.error ?? 'Forbidden' }, { status: gate.userId ? 403 : 401 })
+  }
+  const user = { id: gate.userId }
 
   const { data } = await admin()
     .from('user_mcp_servers')
@@ -40,9 +42,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const gate = await verifyAdmin()
+  if (!gate.ok || !gate.userId) {
+    return NextResponse.json({ error: gate.error ?? 'Forbidden' }, { status: gate.userId ? 403 : 401 })
+  }
+  const user = { id: gate.userId }
 
   let body: {
     slug?: string

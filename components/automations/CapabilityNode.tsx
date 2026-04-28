@@ -34,7 +34,7 @@ export interface CapabilityNodeData {
   steps: string[];
   config: Record<string, string>;
   // App-node fields (set when kind === 'app')
-  kind?: 'capability' | 'app' | 'switch';
+  kind?: 'capability' | 'app' | 'switch' | 'mcp_tool';
   appId?: string;
   appSlug?: string;
   installationId?: string | null;
@@ -44,6 +44,10 @@ export interface CapabilityNodeData {
   toolMethod?: string | null;
   toolService?: string | null;
   isMulti?: boolean;
+  // MCP-tool-node fields (set when kind === 'mcp_tool')
+  mcpServerId?: string;
+  mcpServerName?: string;
+  mcpToolName?: string;
   [key: string]: unknown;
 }
 
@@ -62,6 +66,7 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
   const isTrigger = data.category === 'triggers'
   const isApp = data.kind === 'app'
   const isSwitch = data.kind === 'switch'
+  const isMcp = data.kind === 'mcp_tool'
   const IconComponent = LUCIDE_ICONS[data.icon]
 
   return (
@@ -91,7 +96,7 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
           <span className="text-xl shrink-0">{data.icon}</span>
         )}
         <span className="text-[13px] font-bold uppercase tracking-[0.05em]" style={{ color: data.color }}>
-          {isSwitch ? 'SWITCH' : isApp ? '0N APP' : isTrigger ? 'TRIGGER' : data.category === 'ai' ? 'AI' : data.category.toUpperCase()}
+          {isMcp ? 'MCP TOOL' : isSwitch ? 'SWITCH' : isApp ? '0N APP' : isTrigger ? 'TRIGGER' : data.category === 'ai' ? 'AI' : data.category.toUpperCase()}
         </span>
         <div className="ml-auto">
           <span className={`inline-block w-2 h-2 rounded-full ${isConfigured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
@@ -111,6 +116,16 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
             <span className="font-mono text-[10px] text-core-text-muted truncate">{data.toolName}</span>
             {data.isMulti && (
               <span className="text-[9px] px-1 py-px rounded bg-amber-500/15 text-amber-300">multi-step</span>
+            )}
+          </div>
+        )}
+        {isMcp && (
+          <div className="mb-1.5 flex items-center gap-1.5 flex-wrap">
+            <span className="text-[9px] px-1.5 py-px rounded border bg-cyan-500/15 text-cyan-300 border-cyan-500/30 font-mono">
+              MCP
+            </span>
+            {data.mcpServerName && (
+              <span className="text-[10px] text-core-text-muted truncate">{data.mcpServerName}</span>
             )}
           </div>
         )}

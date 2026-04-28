@@ -463,6 +463,34 @@ ${prevOutputs || 'No previous steps executed yet.'}`
       }
 
       default: {
+        // MCP-tool step: tool name like "mcp_<serverId>_<toolName>" — forward
+        // the call to the user's connected MCP server via /api/mcp/execute.
+        if (step.tool.startsWith('mcp_')) {
+          // Format: mcp_<uuid-with-dashes>_<toolName> — UUID has 4 dashes,
+          // so the toolName is everything after the 5th underscore-section.
+          const rest = step.tool.slice(4) // strip 'mcp_'
+          // UUIDs are 36 chars: split first 36 as serverId, rest as toolName.
+          const serverId = rest.slice(0, 36)
+          const toolName = rest.slice(37) // skip the underscore between
+          if (!serverId || !toolName) {
+            output = { status: 'invalid_mcp_step', tool: step.tool }
+            break
+          }
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://0ncore.com'
+          const r = await fetch(`${baseUrl}/api/mcp/execute`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(process.env.INTERNAL_DISPATCH_SECRET
+                ? { 'x-internal-secret': process.env.INTERNAL_DISPATCH_SECRET }
+                : {}),
+            },
+            body: JSON.stringify({ serverId, tool: toolName, args: inputs }),
+          }).catch(() => null)
+          output = r ? await r.json().catch(() => ({})) : { status: 'fetch_failed' }
+          break
+        }
+
         // Switch step: tool name like "switch_<uuid>" — look up the saved switch
         // and execute it via /api/tools/execute (which handles credential routing).
         if (step.tool.startsWith('switch_')) {

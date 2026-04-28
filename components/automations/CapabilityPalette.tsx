@@ -1,11 +1,19 @@
 'use client'
 
 import { useState, useEffect, type DragEvent } from 'react'
-import { Search, Zap, Play, Package, Loader2, ExternalLink, Power } from 'lucide-react'
+import { Search, Zap, Play, Package, Loader2, ExternalLink, Power, Server } from 'lucide-react'
 import { CAPABILITIES } from './capabilities'
 import { LUCIDE_ICONS } from './CapabilityNode'
 
-type Tab = 'triggers' | 'actions' | 'apps' | 'switches'
+type Tab = 'triggers' | 'actions' | 'apps' | 'switches' | 'mcp'
+
+interface McpToolFlat {
+  serverId: string
+  serverSlug: string
+  serverName: string
+  name: string
+  description: string
+}
 
 interface InstalledAppCard {
   id: string
@@ -44,6 +52,8 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
   const [appsLoading, setAppsLoading] = useState(false)
   const [switches, setSwitches] = useState<SwitchCard[]>([])
   const [switchesLoading, setSwitchesLoading] = useState(false)
+  const [mcpTools, setMcpTools] = useState<McpToolFlat[]>([])
+  const [mcpLoading, setMcpLoading] = useState(false)
 
   const isCompact = size === 'compact'
 
@@ -60,6 +70,35 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
       .catch(() => {
         setSwitches([])
         setSwitchesLoading(false)
+      })
+  }, [tab])
+
+  // Load MCP tools (flatten across all connected servers) when tab opens
+  useEffect(() => {
+    if (tab !== 'mcp') return
+    setMcpLoading(true)
+    fetch('/api/mcp/servers')
+      .then(r => r.json())
+      .then(async (d) => {
+        const flat: McpToolFlat[] = []
+        for (const server of d.servers || []) {
+          const tools = Array.isArray(server.tools) ? server.tools : []
+          for (const t of tools) {
+            flat.push({
+              serverId: server.id,
+              serverSlug: server.slug,
+              serverName: server.name,
+              name: t.name,
+              description: t.description ?? '',
+            })
+          }
+        }
+        setMcpTools(flat)
+        setMcpLoading(false)
+      })
+      .catch(() => {
+        setMcpTools([])
+        setMcpLoading(false)
       })
   }, [tab])
 
@@ -130,6 +169,28 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
     e.dataTransfer.effectAllowed = 'move'
   }
 
+  function onDragStartMcpTool(e: DragEvent, tool: McpToolFlat) {
+    const payload = {
+      kind: 'mcp_tool',
+      server_id: tool.serverId,
+      server_slug: tool.serverSlug,
+      server_name: tool.serverName,
+      tool_name: tool.name,
+      description: tool.description,
+    }
+    e.dataTransfer.setData('application/0n-mcp-tool', JSON.stringify(payload))
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  // MCP filter
+  const filteredMcp = search
+    ? mcpTools.filter(t =>
+        t.name.toLowerCase().includes(filterText) ||
+        t.description.toLowerCase().includes(filterText) ||
+        t.serverName.toLowerCase().includes(filterText)
+      )
+    : mcpTools
+
   function onDragStartCapability(e: DragEvent, capabilityId: string) {
     const cap = CAPABILITIES.find(c => c.id === capabilityId)
     if (!cap) return
@@ -163,6 +224,7 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
         <TabButton tab="triggers" current={tab} onSelect={setTab} icon={Zap} label="Triggers" count={triggers.length} compact={isCompact} />
         <TabButton tab="actions" current={tab} onSelect={setTab} icon={Play} label="Actions" count={actions.length} compact={isCompact} />
         <TabButton tab="switches" current={tab} onSelect={setTab} icon={Power} label="Switches" count={switches.length || undefined} compact={isCompact} />
+        <TabButton tab="mcp" current={tab} onSelect={setTab} icon={Server} label="MCP" count={mcpTools.length || undefined} compact={isCompact} />
         <TabButton tab="apps" current={tab} onSelect={setTab} icon={Package} label="Apps" count={apps.length || undefined} compact={isCompact} />
       </div>
 
@@ -213,6 +275,28 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
           </div>
         )}
 
+        {tab === 'mcp' && (
+          <div>
+            {mcpLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-4 h-4 animate-spin text-core-text-muted" />
+              </div>
+            ) : filteredMcp.length === 0 ? (
+              <div className="text-center py-8 px-3">
+                <Server className="w-6 h-6 mx-auto mb-2 text-core-text-muted opacity-40" />
+                <p className="text-[11px] text-core-text-muted mb-2">No MCP tools available.</p>
+                <a href="/dashboard/admin/mcp-registry" className="text-[11px] text-[#7ed957] hover:underline inline-flex items-center gap-1">
+                  Connect a server <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            ) : (
+              filteredMcp.map(t => (
+                <McpToolItem key={`${t.serverId}:${t.name}`} tool={t} onDragStart={onDragStartMcpTool} />
+              ))
+            )}
+          </div>
+        )}
+
         {tab === 'apps' && (
           <div>
             {appsLoading ? (
@@ -239,7 +323,38 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
           ? 'Drag installed apps onto the canvas'
           : tab === 'switches'
           ? 'Drag saved switches as workflow steps'
+          : tab === 'mcp'
+          ? 'Drag MCP tools as workflow steps'
           : 'Drag onto canvas'}
+      </div>
+    </div>
+  )
+}
+
+interface McpToolItemProps {
+  tool: McpToolFlat
+  onDragStart: (e: DragEvent, tool: McpToolFlat) => void
+}
+
+function McpToolItem({ tool, onDragStart }: McpToolItemProps) {
+  return (
+    <div
+      draggable
+      onDragStart={e => onDragStart(e, tool)}
+      className="bg-core-card border border-transparent hover:border-cyan-500/40 rounded-lg p-2.5 mb-1 cursor-grab transition-all flex items-start gap-2.5"
+    >
+      <div className="w-7 h-7 rounded-md bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0">
+        <Server className="w-3.5 h-3.5 text-cyan-300" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <span className="text-[12px] font-semibold text-core-text font-mono truncate">{tool.name}</span>
+          <span className="text-[9px] px-1 py-px rounded bg-cyan-500/15 text-cyan-300 font-mono">MCP</span>
+        </div>
+        <div className="text-[10px] text-core-text-muted truncate">{tool.serverName}</div>
+        {tool.description && (
+          <div className="text-[10px] text-core-text-muted leading-snug line-clamp-1 mt-0.5">{tool.description}</div>
+        )}
       </div>
     </div>
   )
