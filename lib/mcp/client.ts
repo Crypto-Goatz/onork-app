@@ -36,6 +36,12 @@ export interface McpServerConfig {
   envVars?: Record<string, string>
   bearerToken?: string | null
   slug?: string
+  /**
+   * Resolved headers from a registry-style server entry. Each header is
+   * applied verbatim — placeholders already substituted at connect time.
+   * Takes precedence over envVars/bearerToken when present.
+   */
+  registryHeaders?: Record<string, string>
 }
 
 interface JsonRpcResponse<T> {
@@ -52,10 +58,19 @@ function buildHeaders(cfg: McpServerConfig): HeadersInit {
     'Content-Type': 'application/json',
     Accept: 'application/json, text/event-stream',
   }
+
+  // Highest priority — explicit headers from a registry-driven connect
+  if (cfg.registryHeaders) {
+    for (const [k, v] of Object.entries(cfg.registryHeaders)) {
+      if (typeof v === 'string' && v.length > 0) h[k] = v
+    }
+    return h
+  }
+
   if (cfg.bearerToken) {
     h.Authorization = `Bearer ${cfg.bearerToken}`
   }
-  // Per-server known env-to-header mappings
+  // Per-server known env-to-header mappings (legacy preset path)
   if (cfg.slug === 'browserbase' && cfg.envVars) {
     if (cfg.envVars.BROWSERBASE_API_KEY) h['X-BB-API-Key'] = cfg.envVars.BROWSERBASE_API_KEY
     if (cfg.envVars.BROWSERBASE_PROJECT_ID) h['X-BB-Project-Id'] = cfg.envVars.BROWSERBASE_PROJECT_ID

@@ -56,12 +56,20 @@ export async function POST(req: NextRequest) {
 
   const start = Date.now()
   try {
+    const envVarsRaw = (server.env_vars as Record<string, unknown>) ?? {}
+    const registryHeaders = (envVarsRaw.__resolved_headers as Record<string, string>) ?? undefined
+    const plainEnvVars: Record<string, string> = {}
+    for (const [k, v] of Object.entries(envVarsRaw)) {
+      if (!k.startsWith('__') && typeof v === 'string') plainEnvVars[k] = v
+    }
+
     const result = await callTool(
       {
         url: server.url,
-        envVars: (server.env_vars as Record<string, string>) ?? {},
+        envVars: plainEnvVars,
         bearerToken: server.bearer_token ?? null,
         slug: server.slug,
+        registryHeaders,
       },
       body.tool,
       body.args ?? {}

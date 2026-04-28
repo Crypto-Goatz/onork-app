@@ -158,6 +158,7 @@ export default function AdminPage() {
     { href: '/dashboard/admin/workflows', label: 'Workflows', desc: 'Launch & manage', accent: 'green', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
     { href: '/dashboard/admin/crm', label: 'CRM Live', desc: 'Real-time data', accent: 'cyan', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
     { href: '/dashboard/admin/marketing', label: 'Marketing Tools', desc: 'Content & social', accent: 'purple', icon: 'M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z' },
+    { href: '/dashboard/admin/mcp-registry', label: 'MCP Registry', desc: 'Browse & connect official MCP servers', accent: 'green', icon: 'M5 12h14M12 5l7 7-7 7' },
   ]
 
   // VIP location config — hardcoded for mike@rocketopp.com
