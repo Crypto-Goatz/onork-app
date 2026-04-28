@@ -206,11 +206,21 @@ export async function GET(req: NextRequest) {
         crm_location_id: locationId,
       }).eq('id', user.id)
 
-      // Generate persistent 0n token for this user
-      const onToken = await generateToken(user.id, 'crm', ['read', 'write', 'execute'], {
-        crm_location_id: locationId,
-        company_id: companyId,
-        installed_app: MARKETPLACE_APP.appId,
+      // Generate persistent 0n token bound to (user, location). This is the
+      // public credential used across every 0n surface — locationId = ID,
+      // 0n token = secret. S3 router resolves to the right CRM credential
+      // per call.
+      const onToken = await generateToken({
+        userId: user.id,
+        locationId,
+        name: 'Marketplace install',
+        channel: 'crm',
+        scopes: ['read', 'write', 'execute'],
+        metadata: {
+          company_id: companyId,
+          installed_app: MARKETPLACE_APP.appId,
+          source: 'oauth_callback',
+        },
       }).catch(err => {
         console.error('[oauth/callback] Token generation failed:', err)
         return null

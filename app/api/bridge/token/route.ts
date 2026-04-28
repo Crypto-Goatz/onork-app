@@ -30,12 +30,37 @@ export async function POST(req: NextRequest) {
     const channel = body.channel || 'dashboard'
     const scopes = body.scopes || ['read', 'write', 'execute']
     const metadata = body.metadata || {}
+    const name: string | undefined = body.name
 
-    const token = await generateToken(userId, channel, scopes, metadata)
+    // Resolve the user's primary CRM location for this token
+    const supabase = await createServerClient()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('crm_location_id')
+      .eq('id', userId)
+      .maybeSingle()
+
+    const locationId: string | null = body.locationId || profile?.crm_location_id || null
+    if (!locationId) {
+      return NextResponse.json(
+        { error: 'No CRM location on file. Connect your CRM first, or pass locationId in the request body.' },
+        { status: 400 }
+      )
+    }
+
+    const token = await generateToken({
+      userId,
+      locationId,
+      name,
+      channel,
+      scopes,
+      metadata,
+    })
 
     return NextResponse.json({
       token,
-      warning: 'This token is shown only once. Store it securely.',
+      locationId,
+      warning: 'This token is shown only once. Store it securely. Use it as: Authorization: Bearer <token>, X-Location-Id: <locationId>.',
       channel,
       scopes,
     })
@@ -69,11 +94,11 @@ export async function DELETE(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { tokenPrefix } = body
-  if (!tokenPrefix) return NextResponse.json({ error: 'Missing tokenPrefix' }, { status: 400 })
+  const tokenId: string | undefined = body.tokenId || body.id
+  if (!tokenId) return NextResponse.json({ error: 'Missing tokenId' }, { status: 400 })
 
-  const ok = await revokeToken(tokenPrefix, userId)
+  const ok = await revokeToken(tokenId, userId)
   if (!ok) return NextResponse.json({ error: 'Revoke failed' }, { status: 500 })
 
-  return NextResponse.json({ revoked: true, tokenPrefix })
+  return NextResponse.json({ revoked: true, tokenId })
 }

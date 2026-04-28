@@ -12,6 +12,7 @@ import Link from 'next/link'
 import * as crm from '@/lib/crm/sdk'
 import { WelcomeModal } from '@/components/ui/welcome-modal'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
+import { CrmConnectionBanner } from '@/components/crm-connection-banner'
 
 type Tab = 'contacts' | 'pipeline' | 'conversations' | 'calendar' | 'invoices'
 
@@ -139,6 +140,7 @@ export default function CrmPage() {
 
   return (
     <div className="px-6 py-5 max-w-[1200px] mx-auto">
+      <CrmConnectionBanner />
       <WelcomeModal
         storageKey="crm-dashboard"
         title="Your CRM Command Center"
