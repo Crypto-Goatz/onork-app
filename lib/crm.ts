@@ -94,12 +94,16 @@ async function refreshInstall(installId: string, refreshToken: string): Promise<
 
   const res = await fetch(CRM_TOKEN_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+    },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
       client_id: clientId,
       client_secret: clientSecret,
       refresh_token: refreshToken,
+      user_type: 'Location',
     }),
   })
 
@@ -114,7 +118,7 @@ async function refreshInstall(installId: string, refreshToken: string): Promise<
 
   await getAdmin().from('crm_installations').update({
     access_token: data.access_token,
-    refresh_token: data.refresh_token || refreshToken,
+    refresh_token: data.refresh_token || refreshToken, // never wipe; rotate or keep
     expires_at: new Date(Date.now() + (data.expires_in || 86400) * 1000).toISOString(),
     status: 'active',
     updated_at: new Date().toISOString(),

@@ -38,6 +38,8 @@ export async function GET(req: NextRequest) {
   try {
     // Try marketplace app first, then agency app
     // The OAuth code is tied to whichever app started the flow
+    // CRM's /oauth/token REQUIRES user_type to return refresh_token:
+    //   Location = sub-account install, Company = agency install
     const marketplaceSecret = MARKETPLACE_APP.clientSecret || process.env.CRM_MARKETPLACE_CLIENT_SECRET || ''
     const apps = [
       {
@@ -46,6 +48,7 @@ export async function GET(req: NextRequest) {
         clientSecret: marketplaceSecret,
         redirectUri: MARKETPLACE_APP.redirectUri,
         appId: MARKETPLACE_APP.appId,
+        userType: 'Location' as const,
       },
       {
         name: 'marketplace-alt',
@@ -53,6 +56,7 @@ export async function GET(req: NextRequest) {
         clientSecret: marketplaceSecret,
         redirectUri: MARKETPLACE_APP.redirectUri,
         appId: MARKETPLACE_APP.appId,
+        userType: 'Location' as const,
       },
       {
         name: 'agency',
@@ -60,6 +64,7 @@ export async function GET(req: NextRequest) {
         clientSecret: AGENCY_APP.clientSecret || process.env.CRM_AGENCY_CLIENT_SECRET || '',
         redirectUri: AGENCY_APP.redirectUri,
         appId: AGENCY_APP.appId,
+        userType: 'Company' as const,
       },
     ]
 
@@ -71,13 +76,17 @@ export async function GET(req: NextRequest) {
 
       const tokenRes = await fetch(CRM_TOKEN_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+        },
         body: new URLSearchParams({
           client_id: app.clientId,
           client_secret: app.clientSecret,
           grant_type: 'authorization_code',
           code,
           redirect_uri: app.redirectUri,
+          user_type: app.userType,
         }),
       })
 
@@ -86,7 +95,12 @@ export async function GET(req: NextRequest) {
       if (tokenRes.ok && data.access_token) {
         tokenData = data
         usedApp = app
-        console.log(`[oauth/callback] Token exchanged via ${app.name} app`)
+        console.log(
+          `[oauth/callback] Token exchanged via ${app.name} app (user_type=${app.userType}). ` +
+          `Response keys: ${Object.keys(data).join(',')} | ` +
+          `refresh_token: ${data.refresh_token ? 'PRESENT' : 'MISSING'} | ` +
+          `locationId: ${data.locationId || 'none'} | companyId: ${data.companyId || 'none'}`
+        )
         break
       }
 
@@ -111,6 +125,25 @@ export async function GET(req: NextRequest) {
     const supabase = await createServerClient()
     const { data: { user } } = await supabase.auth.getUser()
 
+    // Preserve any existing refresh_token if the new exchange didn't return one.
+    // CRM occasionally returns a token without refresh_token on re-auth — never let
+    // that wipe a working one.
+    let preservedRefresh = refresh_token
+    if (!preservedRefresh && locationId) {
+      const { data: existing } = await admin
+        .from('crm_installations')
+        .select('refresh_token')
+        .eq('location_id', locationId)
+        .eq('app_id', usedApp.appId)
+        .maybeSingle()
+      if (existing?.refresh_token) {
+        preservedRefresh = existing.refresh_token
+        console.warn(`[oauth/callback] CRM returned no refresh_token; preserving existing one for ${locationId}`)
+      } else {
+        console.error(`[oauth/callback] CRITICAL: No refresh_token from CRM and none on file for ${locationId}/${usedApp.appId}. Auto-refresh will fail.`)
+      }
+    }
+
     // Store installation linked to user
     const installPayload = {
       location_id: locationId,
@@ -118,7 +151,7 @@ export async function GET(req: NextRequest) {
       crm_user_id: crmUserId || '',
       app_id: usedApp.appId,
       access_token,
-      refresh_token: refresh_token || '',
+      refresh_token: preservedRefresh || '',
       token_type: token_type || 'Bearer',
       expires_at: new Date(Date.now() + (expires_in || 86400) * 1000).toISOString(),
       scopes: scope || '',
@@ -132,6 +165,7 @@ export async function GET(req: NextRequest) {
         installed_at: new Date().toISOString(),
         company_id: companyId,
         crm_user_id: crmUserId,
+        user_type: usedApp.userType,
       },
     }
 
