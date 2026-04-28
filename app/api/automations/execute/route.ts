@@ -504,9 +504,10 @@ export async function POST(req: Request) {
     return Response.json({ error: 'No CRM location provisioned. Go to Settings to set up your account.' }, { status: 403 })
   }
 
-  const { workflow, triggerData } = await req.json() as {
+  const { workflow, triggerData, dryRun } = await req.json() as {
     workflow: Workflow
     triggerData?: Record<string, unknown>
+    dryRun?: boolean
   }
 
   if (!workflow?.steps) {
@@ -519,8 +520,39 @@ export async function POST(req: Request) {
     variables: workflow.variables || {},
   }
 
-  const results: StepResult[] = []
   const startTime = Date.now()
+
+  // Dry-run: validate + render the step plan without invoking any tools.
+  if (dryRun) {
+    const plan = workflow.steps.map((step) => {
+      const resolvedInputs = resolveInputs(step.inputs ?? {}, context)
+      // Surface unresolved {{...}} as warnings — anything still in braces means
+      // we couldn't bind it from triggerData, prior outputs, or variables.
+      const unresolved: string[] = []
+      for (const [k, v] of Object.entries(resolvedInputs)) {
+        if (typeof v === 'string' && /\{\{[^}]+\}\}/.test(v)) unresolved.push(k)
+      }
+      return {
+        stepId: step.id,
+        name: step.name,
+        tool: step.tool,
+        wouldRunWith: resolvedInputs,
+        unresolvedInputs: unresolved,
+        condition: step.condition ?? null,
+        on_fail: step.on_fail ?? 'halt',
+      }
+    })
+
+    return Response.json({
+      dryRun: true,
+      workflow: workflow.name,
+      totalSteps: plan.length,
+      duration: Date.now() - startTime,
+      plan,
+    })
+  }
+
+  const results: StepResult[] = []
 
   for (const step of workflow.steps) {
     const result = await executeStep(step, locationId, context)
