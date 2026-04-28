@@ -88,7 +88,7 @@ export const GUIDES: Guide[] = [
     slug: 'sxo-indexer',
     title: 'SXO Auto-Indexer',
     subtitle: '900 URLs indexed in 1.08 seconds.',
-    status: 'queued',
+    status: 'live',
     buildTime: '~1 session',
     revenue: '$19–$199/mo',
     keyProduct: 'SXO indexer add-on',
