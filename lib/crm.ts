@@ -12,31 +12,31 @@ const CRM_VERSION = '2021-07-28'
 const CRM_TOKEN_URL = 'https://services.leadconnectorhq.com/oauth/token'
 
 /**
- * CRM Marketplace Apps
+ * CRM Marketplace Apps — canonical definitions live in lib/crm-apps.ts.
+ * The exports below stay for back-compat (oauth/callback + a few callers)
+ * and read from the same env vars.
  *
- * 0nAGENCY (Agency-level, all scopes):
- *   App ID: 69cf4d25a74f834803470537
- *   Client ID: 69cf4d25a74f834803470537-mnu5bzyo
- *
- * 0nCORE Marketplace App (Sub-account level, 140+ scopes):
- *   App ID: 69c762225a31e1cd2f28dd4c
- *   Redirect: https://0ncore.com/api/oauth/callback
+ * Operation routing → see lib/crm-apps.ts pickApp() and categoryForPath().
+ *   sub-location ops (contacts, conversations, etc.) → 0nCORE Marketplace
+ *   agency ops (sub-accounts, snapshots, billing)    → 0nAGENCY
  */
+import { AGENCY_APP as AGENCY_APP_DEF, SUB_LOCATION_APP } from './crm-apps'
+
 export const AGENCY_APP = {
-  appId: process.env.CRM_AGENCY_APP_ID || '69cf4d25a74f834803470537',
+  appId: AGENCY_APP_DEF.appId,
   clientId: process.env.CRM_AGENCY_CLIENT_ID || '69cf4d25a74f834803470537-mnsazpwc',
   clientSecret: process.env.CRM_AGENCY_CLIENT_SECRET || '',
-  redirectUri: 'https://0ncore.com/api/oauth/callback',
+  redirectUri: AGENCY_APP_DEF.redirectUri,
 }
 
 export const MARKETPLACE_APP = {
-  appId: process.env.CRM_MARKETPLACE_APP_ID || '69c762225a31e1cd2f28dd4c',
+  appId: SUB_LOCATION_APP.appId,
   clientId: process.env.CRM_MARKETPLACE_APP_CLIENT_ID || process.env.CRM_MARKETPLACE_CLIENT_ID || '69c762225a31e1cd2f28dd4c-mnu5pazi',
   altClientId: '69c762225a31e1cd2f28dd4c-mnsa16jo',
   clientSecret: process.env.CRM_MARKETPLACE_CLIENT_SECRET || '',
   sharedSecret: process.env.CRM_MARKETPLACE_SHARED_SECRET || '',
-  redirectUri: 'https://0ncore.com/api/oauth/callback',
-  scopes: '140+ scopes (all available)',
+  redirectUri: SUB_LOCATION_APP.redirectUri,
+  scopes: `${SUB_LOCATION_APP.scopes.length}+ scopes (see crm-apps.ts)`,
 }
 
 function getAdmin() {
