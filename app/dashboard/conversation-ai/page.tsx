@@ -8,10 +8,14 @@ import { Card } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PersonaConfig, type PersonaVariant } from '@/components/ai/persona'
 
 interface JaxxConfig {
   enabled: boolean
   allowed_actions: string[]
+  bot_name?: string | null
+  bot_variant?: PersonaVariant | null
+  bot_tone?: 'casual' | 'formal' | 'playful' | 'technical' | null
   automation_can_generate: boolean
   automation_can_test: boolean
   automation_can_activate: boolean
@@ -165,14 +169,40 @@ export default function ConversationAIPage() {
               <div className="flex-1">
                 <div className="font-semibold flex items-center gap-2">
                   <Zap className="h-4 w-4 text-[#7ed957]" />
-                  Jaxx is {config.enabled ? 'on' : 'off'}
+                  {config.bot_name || 'Jaxx'} is {config.enabled ? 'on' : 'off'}
                 </div>
                 <p className="text-sm text-white/55 mt-1">
-                  When off, Jaxx ignores all inbound messages.
+                  When off, your AI ignores all inbound messages.
                 </p>
               </div>
               <Switch checked={config.enabled} onCheckedChange={(v) => setConfig({ ...config, enabled: v })} />
             </div>
+          </Card>
+
+          {/* Persona */}
+          <Card className="p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Bot className="h-4 w-4 text-[#7ed957]" />
+              <div className="font-semibold">Persona</div>
+            </div>
+            <p className="text-sm text-white/55 mb-4">
+              Give your AI a name, an avatar, and a voice. Same persona shows up everywhere — CRM chat, dashboard, Slack, Chrome.
+            </p>
+            <PersonaConfig
+              value={{
+                name: config.bot_name || 'Jaxx',
+                variant: (config.bot_variant as PersonaVariant) || 'command',
+                tone: config.bot_tone || 'casual',
+              }}
+              onChange={(v) =>
+                setConfig({
+                  ...config,
+                  bot_name: v.name,
+                  bot_variant: v.variant,
+                  bot_tone: v.tone ?? null,
+                })
+              }
+            />
           </Card>
 
           {/* Action surface */}

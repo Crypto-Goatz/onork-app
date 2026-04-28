@@ -241,6 +241,9 @@ export async function checkRateLimit({
 export interface JaxxConfig {
   enabled: boolean
   allowed_actions: string[]
+  bot_name: string
+  bot_variant: string
+  bot_tone: 'casual' | 'formal' | 'playful' | 'technical'
   automation_can_generate: boolean
   automation_can_test: boolean
   automation_can_activate: boolean
@@ -260,6 +263,9 @@ export interface JaxxConfig {
 const DEFAULT_CONFIG: JaxxConfig = {
   enabled: true,
   allowed_actions: ['knowledge'],
+  bot_name: 'Jaxx',
+  bot_variant: 'command',
+  bot_tone: 'casual',
   automation_can_generate: false,
   automation_can_test: false,
   automation_can_activate: false,
@@ -288,6 +294,9 @@ export async function loadConfig(locationId: string): Promise<JaxxConfig> {
   return {
     enabled: data.enabled ?? true,
     allowed_actions: data.allowed_actions ?? ['knowledge'],
+    bot_name: data.bot_name ?? 'Jaxx',
+    bot_variant: data.bot_variant ?? 'command',
+    bot_tone: (data.bot_tone as JaxxConfig['bot_tone']) ?? 'casual',
     automation_can_generate: data.automation_can_generate ?? false,
     automation_can_test: data.automation_can_test ?? false,
     automation_can_activate: data.automation_can_activate ?? false,

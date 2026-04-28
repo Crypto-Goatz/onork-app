@@ -18,8 +18,10 @@ import {
 import '@xyflow/react/dist/style.css'
 import CapabilityNode, { type CapabilityNodeType, type CapabilityNodeData } from './CapabilityNode'
 import type { Capability } from './capabilities'
+import { aiEdgeTypes } from '@/components/ai/edge'
 
 const nodeTypes = { capability: CapabilityNode }
+const edgeTypes = aiEdgeTypes
 
 interface AutomationCanvasProps {
   nodes: CapabilityNodeType[];
@@ -59,9 +61,8 @@ export default function AutomationCanvas({
     (connection) => {
       setEdges(addEdge({
         ...connection,
-        animated: true,
-        style: { stroke: 'var(--color-cyan, #14b8a6)', strokeWidth: 2 },
-        type: 'smoothstep',
+        type: 'animated',
+        data: { status: 'running' },
       }, edges))
     },
     [edges, setEdges]
@@ -145,9 +146,8 @@ export default function AutomationCanvas({
       id: `e_${lastNode.id}_${newNode.id}`,
       source: lastNode.id,
       target: newNode.id,
-      animated: true,
-      style: { stroke: 'var(--color-cyan, #14b8a6)', strokeWidth: 2 },
-      type: 'smoothstep',
+      type: 'animated',
+      data: { status: 'running' as const },
     }] : edges
 
     setNodes(updatedNodes)
@@ -156,9 +156,8 @@ export default function AutomationCanvas({
   }, [nodes, edges, stepCounter, setNodes, setEdges, onStepCounterUpdate, screenToFlowPosition])
 
   const defaultEdgeOptions = useMemo(() => ({
-    animated: true,
-    style: { stroke: 'var(--color-cyan, #14b8a6)', strokeWidth: 2 },
-    type: 'smoothstep' as const,
+    type: 'animated' as const,
+    data: { status: 'running' as const },
   }), [])
 
   return (
@@ -167,6 +166,7 @@ export default function AutomationCanvas({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onConnect={handleConnect}

@@ -243,3 +243,35 @@ code, pre, .font-mono {
     @apply font-sans;
   }
 }
+/* Jaxx Persona animations — state-driven avatar */
+@keyframes jaxx-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  50% { transform: scale(1.06); opacity: 0.75; }
+}
+@keyframes jaxx-listen {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+@keyframes jaxx-think {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(8deg) scale(1.04); }
+  50% { transform: rotate(-8deg) scale(0.96); }
+  75% { transform: rotate(8deg) scale(1.04); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+@keyframes jaxx-speak {
+  0%, 100% { transform: scale(1); }
+  20% { transform: scale(1.1); }
+  40% { transform: scale(0.95); }
+  60% { transform: scale(1.08); }
+  80% { transform: scale(0.97); }
+}
+@keyframes jaxx-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.18); opacity: 0.2; }
+}
+.animate-jaxx-breathe { animation: jaxx-breathe 3.2s ease-in-out infinite; }
+.animate-jaxx-listen  { animation: jaxx-listen 1.4s ease-in-out infinite; }
+.animate-jaxx-think   { animation: jaxx-think 1.8s ease-in-out infinite; }
+.animate-jaxx-speak   { animation: jaxx-speak 0.7s ease-in-out infinite; }
+.animate-jaxx-pulse   { animation: jaxx-pulse 1.6s ease-in-out infinite; }

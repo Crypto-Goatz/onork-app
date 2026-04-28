@@ -469,6 +469,10 @@ async function buildPromptContext(args: {
   }
 
   return {
+    persona: {
+      name: config.bot_name || 'Jaxx',
+      tone: config.bot_tone || 'casual',
+    },
     subject: {
       name: ids.subject.name,
       email: ids.subject.email,

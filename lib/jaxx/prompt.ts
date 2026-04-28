@@ -11,6 +11,11 @@
 import { DISCLOSURE_RULES } from './disclosure'
 
 export interface PromptContext {
+  // Persona — what this bot is called and how it talks
+  persona: {
+    name: string // shown to users; replaces "Jaxx" in the prompt voice
+    tone: 'casual' | 'formal' | 'playful' | 'technical'
+  }
   // Subject (the messager)
   subject: {
     name: string | null
@@ -48,8 +53,8 @@ export interface PromptContext {
   }
 }
 
-const HARD_RULES = `
-You are Jaxx — the AI operator for the user's account. You're casual, sharp, and
+const HARD_RULES_TEMPLATE = (name: string) => `
+You are ${name} — the AI operator for the user's account. You're sharp and
 helpful. Short sentences. No corporate fluff.
 
 YOUR PRIMARY JOB IS TO ANSWER QUESTIONS.
@@ -73,14 +78,36 @@ Say "I'm not sure" instead of guessing. If a feature might exist but you can't
 verify it from the user's actual context, say so. Never fabricate data.
 `.trim()
 
-const VOICE_GUIDE = `
-VOICE:
-- Casual, confident, technically sharp
+const VOICE_GUIDES: Record<PromptContext['persona']['tone'], string> = {
+  casual: `
+VOICE — casual:
+- Confident, technically sharp, lowercase is fine
 - Short sentences. No "I'd be happy to assist!" — just answer.
-- Lowercase is fine for replies. Tone over formality.
-- Never use emojis. Never use "Sure!" or "Of course!" openers.
-- End with a short follow-up like "what else?" or a relevant next step.
-`.trim()
+- Never emojis. Never "Sure!" / "Of course!" openers.
+- End with a short follow-up like "what else?"
+`.trim(),
+  formal: `
+VOICE — formal:
+- Professional, complete sentences, proper capitalization
+- Polite but not effusive. No corporate fluff.
+- Skip filler openings; lead with the answer.
+- Close with a clear next step.
+`.trim(),
+  playful: `
+VOICE — playful:
+- Light, friendly, punchy. Wit is fine when it lands.
+- Still no emojis. Still no "Sure!" openers.
+- Answer first, joke second (and only sometimes).
+- End with a forward-looking nudge.
+`.trim(),
+  technical: `
+VOICE — technical:
+- Precise terminology. Skip the vibe.
+- Show shapes (JSON, paths, headers) when helpful. Never reveal secrets.
+- Be explicit about preconditions and side effects.
+- End with the exact next step.
+`.trim(),
+}
 
 const IKY_BEHAVIOR = `
 IDENTITY VERIFICATION (IKY Protocol):
@@ -142,10 +169,13 @@ export function buildSystemPrompt(
   ctx: PromptContext,
   override?: string | null
 ): string {
+  const hardRules = HARD_RULES_TEMPLATE(ctx.persona.name)
+  const voice = VOICE_GUIDES[ctx.persona.tone] ?? VOICE_GUIDES.casual
+
   if (override && override.trim()) {
-    // Owner-supplied override still gets disclosure rules + IKY appended
-    return [override.trim(), '', DISCLOSURE_RULES, '', IKY_BEHAVIOR, '', renderContext(ctx)].join('\n')
+    // Owner-supplied override still gets disclosure rules + IKY + voice appended
+    return [override.trim(), '', voice, '', DISCLOSURE_RULES, '', IKY_BEHAVIOR, '', renderContext(ctx)].join('\n')
   }
 
-  return [HARD_RULES, '', VOICE_GUIDE, '', DISCLOSURE_RULES, '', IKY_BEHAVIOR, '', renderContext(ctx)].join('\n')
+  return [hardRules, '', voice, '', DISCLOSURE_RULES, '', IKY_BEHAVIOR, '', renderContext(ctx)].join('\n')
 }
