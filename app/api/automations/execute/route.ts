@@ -462,6 +462,105 @@ ${prevOutputs || 'No previous steps executed yet.'}`
         break
       }
 
+      case 'service_packager_generate': {
+        // Inputs: any of url / prompt / mcp_server. The first one set wins.
+        const { packageService } = await import('@/lib/service-packager/packager')
+        let mode: 'url' | 'prompt' | 'mcp_registry'
+        if (inputs.url) mode = 'url'
+        else if (inputs.prompt) mode = 'prompt'
+        else if (inputs.mcp_server) mode = 'mcp_registry'
+        else throw new Error('one of url / prompt / mcp_server required')
+
+        // Resolve the user_id from the workflow context (the outer POST handler
+        // owns auth, but step execution doesn't have direct supabase access here)
+        const { createClient: cc } = await import('@supabase/supabase-js')
+        const sb = cc(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+        const { data: prof } = await sb
+          .from('profiles')
+          .select('id')
+          .eq('crm_location_id', locationId)
+          .maybeSingle()
+
+        const pkg = await packageService({
+          mode,
+          url: inputs.url,
+          prompt: inputs.prompt,
+          mcp_server: inputs.mcp_server,
+          user_id: prof?.id,
+        })
+        output = {
+          status: 'package_generated',
+          package_id: pkg.id,
+          service_name: pkg.ingest.service_name,
+          vpis_score: pkg.vpis_score,
+        }
+        break
+      }
+
+      case 'service_packager_portfolio_add': {
+        if (!inputs.package_id) throw new Error('package_id required')
+        const { createClient: cc } = await import('@supabase/supabase-js')
+        const sb = cc(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+        const { data: pkg } = await sb
+          .from('service_packages')
+          .select('user_id, service_name, category, portfolio_item, images, price_anchor_cents, delivery_time')
+          .eq('id', inputs.package_id)
+          .maybeSingle()
+        if (!pkg) throw new Error('package not found')
+        const item = pkg.portfolio_item as { title?: string; description?: string; features?: string[]; cover_image?: { url?: string }; pricing_display?: string; delivery_display?: string; case_study_hook?: string; tags?: string[] } | null
+        const publishNow = (inputs.publish_now ?? 'false').toString() === 'true'
+        const { data: row, error } = await sb
+          .from('portfolio_items')
+          .insert({
+            user_id: pkg.user_id,
+            package_id: inputs.package_id,
+            title: item?.title || pkg.service_name,
+            description: item?.description ?? '',
+            category: pkg.category || 'general',
+            tags: item?.tags ?? [],
+            cover_image: item?.cover_image?.url || (Array.isArray(pkg.images) ? (pkg.images as string[])[0] : null) || null,
+            gallery_images: Array.isArray(pkg.images) ? (pkg.images as string[]).slice(0, 6) : [],
+            price_display: item?.pricing_display || (pkg.price_anchor_cents ? `$${(pkg.price_anchor_cents / 100).toFixed(2)}` : null),
+            delivery_display: item?.delivery_display || pkg.delivery_time || null,
+            features: item?.features ?? [],
+            case_study: item?.case_study_hook || null,
+            published: publishNow,
+          })
+          .select('id')
+          .single()
+        if (error) throw new Error(error.message)
+        output = { status: 'portfolio_added', portfolio_id: row.id, published: publishNow }
+        break
+      }
+
+      case 'service_packager_export': {
+        if (!inputs.package_id) throw new Error('package_id required')
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://0ncore.com'
+        const format = inputs.format || 'fiverr'
+        const r = await fetch(
+          `${baseUrl}/api/service-packager/packages/${inputs.package_id}/export?format=${format}`,
+          {
+            headers: process.env.INTERNAL_DISPATCH_SECRET
+              ? { 'x-internal-secret': process.env.INTERNAL_DISPATCH_SECRET }
+              : {},
+          }
+        )
+        if (!r.ok) throw new Error(`export ${r.status}`)
+        const text = await r.text()
+        output = { status: 'exported', format, length: text.length, content: text }
+        break
+      }
+
+      case 'service_packager_sync_registry': {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://0ncore.com'
+        const r = await fetch(`${baseUrl}/api/cron/mcp-registry-sync`, {
+          headers: process.env.CRON_SECRET ? { Authorization: `Bearer ${process.env.CRON_SECRET}` } : {},
+        })
+        const data = await r.json().catch(() => ({}))
+        output = { status: 'registry_synced', ...data }
+        break
+      }
+
       default: {
         // MCP-tool step: tool name like "mcp_<serverId>_<toolName>" — forward
         // the call to the user's connected MCP server via /api/mcp/execute.

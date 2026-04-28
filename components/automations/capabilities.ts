@@ -39,6 +39,7 @@ export const CATEGORIES: CapabilityCategory[] = [
   { id: 'wordpress', name: 'WordPress', icon: 'Globe', color: '#21759b' },
   { id: 'google', name: 'Google Workspace', icon: 'FileSpreadsheet', color: '#34a853' },
   { id: 'market', name: 'Market Intel', icon: 'TrendingUp', color: '#f59e0b' },
+  { id: 'packager', name: 'Service Packager', icon: 'Package', color: '#6EE05A' },
 ];
 
 export const CAPABILITIES: Capability[] = [
@@ -748,6 +749,78 @@ export const CAPABILITIES: Capability[] = [
       { key: 'skill', label: 'Skill to check', type: 'text', required: true, placeholder: 'e.g. claude-mcp-setup' },
       { key: 'your_rate', label: 'Your hourly rate ($)', type: 'number', placeholder: '150' },
     ],
+  },
+
+  // ── Service Packager ──
+  {
+    id: 'package_from_url',
+    name: 'Package from URL',
+    description: 'Scrape a service page and generate all 8 sellable outputs (Fiverr, Upwork, portfolio, .0n app, UCP product, CRM service, landing page, social posts)',
+    category: 'packager',
+    icon: 'Link',
+    color: '#6EE05A',
+    steps: ['Fetch the page', 'Extract title/meta/OG image/prices', 'Run 8 generators in parallel', 'Save to your packages'],
+    configFields: [
+      { key: 'url', label: 'URL of the service page', type: 'text', required: true, placeholder: 'https://example.com/services/landing-page' },
+    ],
+  },
+  {
+    id: 'package_from_prompt',
+    name: 'Package from Prompt',
+    description: 'Describe a service in plain English and generate all 8 outputs',
+    category: 'packager',
+    icon: 'MessageSquare',
+    color: '#6EE05A',
+    steps: ['Parse the prompt', 'Identify service shape + audience', 'Run 8 generators', 'Save to your packages'],
+    configFields: [
+      { key: 'prompt', label: 'Describe the service', type: 'text', required: true, placeholder: '$89 landing pages for local contractors, 3-day delivery' },
+    ],
+  },
+  {
+    id: 'package_from_mcp',
+    name: 'Package from MCP Server',
+    description: 'Wrap an MCP server in a sellable productized service across all 8 channels',
+    category: 'packager',
+    icon: 'Server',
+    color: '#6EE05A',
+    steps: ['Look up server in registry cache', 'Read tools/list', 'Build offering around its capabilities', 'Run 8 generators'],
+    configFields: [
+      { key: 'mcp_server', label: 'MCP server name', type: 'text', required: true, placeholder: 'io.github.firecrawl/mcp' },
+    ],
+  },
+  {
+    id: 'generate_portfolio',
+    name: 'Add Package to Portfolio',
+    description: 'Pull a generated package into your public portfolio site',
+    category: 'packager',
+    icon: 'Briefcase',
+    color: '#6EE05A',
+    steps: ['Look up the package', 'Copy portfolio_item to public table', 'Optionally publish immediately'],
+    configFields: [
+      { key: 'package_id', label: 'Package ID', type: 'text', required: true, placeholder: '{{trigger.package_id}}' },
+      { key: 'publish_now', label: 'Publish immediately', type: 'toggle', default: 'false' },
+    ],
+  },
+  {
+    id: 'export_fiverr_gig',
+    name: 'Export Fiverr Gig',
+    description: 'Generate the copy-pasteable text for a Fiverr gig submission',
+    category: 'packager',
+    icon: 'ShoppingBag',
+    color: '#6EE05A',
+    steps: ['Load package by ID', 'Format Fiverr gig fields', 'Return copy-pasteable text'],
+    configFields: [
+      { key: 'package_id', label: 'Package ID', type: 'text', required: true, placeholder: '{{trigger.package_id}}' },
+    ],
+  },
+  {
+    id: 'scan_mcp_registry',
+    name: 'Sync MCP Registry',
+    description: 'Pull the latest server list from the official MCP registry into your cache',
+    category: 'packager',
+    icon: 'RefreshCw',
+    color: '#6EE05A',
+    steps: ['Paginate registry.modelcontextprotocol.io', 'Auto-categorize by description', 'Upsert mcp_registry_cache rows'],
   },
 ];
 

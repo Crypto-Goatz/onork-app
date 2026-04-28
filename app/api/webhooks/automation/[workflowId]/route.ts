@@ -244,6 +244,14 @@ function mapCapabilityToTool(capabilityId: string): string {
     learn_improve: 'learn_generate',
     learn_pattern: 'learn_generate',
     learn_course: 'learn_generate',
+
+    // Service Packager
+    package_from_url: 'service_packager_generate',
+    package_from_prompt: 'service_packager_generate',
+    package_from_mcp: 'service_packager_generate',
+    generate_portfolio: 'service_packager_portfolio_add',
+    export_fiverr_gig: 'service_packager_export',
+    scan_mcp_registry: 'service_packager_sync_registry',
   }
 
   return MAP[capabilityId] || capabilityId
