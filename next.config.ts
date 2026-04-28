@@ -12,6 +12,17 @@ const nextConfig: NextConfig = {
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization, Mcp-Session-Id' },
         ],
       },
+      {
+        // Allow CRM marketplace + custom-menu-link iframes to embed widget pages
+        source: '/widgets/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value:
+              "frame-ancestors 'self' https://*.gohighlevel.com https://*.leadconnectorhq.com https://*.msgsndr.com",
+          },
+        ],
+      },
     ];
   },
 };
