@@ -1,157 +1,198 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { VideoBg } from '@/components/video-bg'
+import { Check, ArrowRight, Sparkles } from 'lucide-react'
+import { TIERS } from '@/lib/pricing'
 
 export const metadata: Metadata = {
-  title: '0nCore Pricing — AI Add-ons for CRM Automation',
-  description: '31 AI-powered add-ons for CRM automation. Courses, Voice AI, Social Planner, Agent Studio, and more. From $9/mo.',
+  title: 'Pricing — 0nCore',
+  description:
+    '1,598 tools across 106 services. Automation builder. AI agent crews. Course builder. Lead magnet loop. From $0 to enterprise — pick your tier.',
   openGraph: {
-    title: '0nCore Pricing — AI Add-ons',
-    description: '31 add-ons. 335 tools. 96 services. From $9/mo.',
+    title: '0nCore Pricing — Every capability, one platform',
+    description: 'From $0 to enterprise. The full 0nMCP stack with the May 1, 2026 v4.10 release.',
     url: 'https://0ncore.com/pricing',
   },
 }
 
-const ADDONS = [
-  { slug: 'ai-course-builder', name: 'AI Course Builder', price: 49, category: 'AI', desc: 'Generate full courses with AI and import directly into your CRM.', features: ['AI lesson generation', 'Auto-import to CRM', 'Instructor profiles'] },
-  { slug: 'voice-ai-agent', name: 'Voice AI Agent', price: 99, category: 'AI', desc: 'Deploy AI phone agents with knowledge bases and call routing.', features: ['Inbound & outbound', 'KB integration', 'Call analytics'], badge: 'Pro' },
-  { slug: 'conversation-ai', name: 'Conversation AI', price: 49, category: 'AI', desc: 'AI chatbots for messaging with custom personas.', features: ['Multi-channel', 'Custom personas', 'Handoff to human'] },
-  { slug: 'agent-studio', name: 'Agent Studio Pro', price: 99, category: 'AI', desc: 'Build and deploy AI agents with MCP tool access.', features: ['Agent creation', '335+ tool access', 'KB wiring'], badge: 'Pro' },
-  { slug: 'knowledge-base', name: 'Knowledge Base', price: 29, category: 'AI', desc: 'Create AI knowledge bases for agents and bots.', features: ['Document upload', 'Agent integration', 'Auto-training'] },
-  { slug: 'social-planner', name: 'Social Planner', price: 29, category: 'Marketing', desc: 'Connect social accounts and publish AI content.', features: ['Google, FB, IG, LinkedIn', 'Post scheduling', 'Analytics'] },
-  { slug: 'blog-engine', name: 'Blog Engine', price: 19, category: 'Marketing', desc: 'AI blog posts published to your CRM blog.', features: ['AI writing', 'SEO optimization', 'Categories'] },
-  { slug: 'email-builder', name: 'Email Builder', price: 19, category: 'Marketing', desc: 'AI email campaigns and templates.', features: ['AI content', 'Template builder', 'Scheduling'] },
-  { slug: 'campaign-manager', name: 'Campaign Manager', price: 29, category: 'Marketing', desc: 'Manage email and SMS campaigns.', features: ['Campaign stats', 'Audience targeting', 'A/B ready'] },
-  { slug: 'funnel-builder', name: 'Funnel Builder', price: 29, category: 'Marketing', desc: 'Manage funnels, pages, and redirects.', features: ['Funnel management', 'Page content', 'Analytics'] },
-  { slug: 'phone-system', name: 'Phone System', price: 49, category: 'Comms', desc: 'Purchase phone numbers and manage lines.', features: ['Number purchasing', 'Call forwarding', 'Recording'] },
-  { slug: 'calendar-booking', name: 'Calendar & Booking', price: 29, category: 'CRM', desc: 'Calendars, events, and booking links.', features: ['Event management', 'Booking links', 'Resources'] },
-  { slug: 'contact-manager', name: 'Contact Manager', price: 19, category: 'CRM', desc: 'Full contact CRUD with tagging and bulk ops.', features: ['Contact CRUD', 'Tagging', 'Bulk operations'] },
-  { slug: 'opportunity-pipeline', name: 'Pipeline', price: 29, category: 'CRM', desc: 'Sales pipelines, stages, and deals.', features: ['Pipeline creation', 'Deal tracking', 'Custom fields'] },
-  { slug: 'payment-processing', name: 'Payments', price: 49, category: 'Finance', desc: 'Process payments, orders, and subscriptions.', features: ['Payment collection', 'Subscriptions', 'Coupons'] },
-  { slug: 'invoice-automation', name: 'Invoice Automation', price: 29, category: 'Finance', desc: 'AI invoices, estimates, and recurring billing.', features: ['AI generation', 'Recurring', 'Auto-reminders'] },
-  { slug: 'snapshot-manager', name: 'Snapshot Manager', price: 99, category: 'Admin', desc: 'Generate, deploy, and clone CRM snapshots.', features: ['Full backup', 'Cross-location clone', 'One-click deploy'], badge: 'Pro' },
-  { slug: 'workflow-reader', name: 'Workflow Intelligence', price: 19, category: 'Admin', desc: 'Read workflows and export as .0n files.', features: ['Workflow analysis', '.0n export', 'Portability'] },
-  { slug: 'affiliate-manager', name: 'Affiliate Manager', price: 49, category: 'Sales', desc: 'Affiliate programs with tracking.', features: ['Affiliate onboarding', 'Commission tracking', 'Referral links'] },
-  { slug: 'product-catalog', name: 'Product Catalog', price: 19, category: 'Sales', desc: 'Products, pricing, and collections.', features: ['Product CRUD', 'Price management', 'Collections'] },
-  { slug: 'form-builder', name: 'Form Builder', price: 19, category: 'Content', desc: 'Forms, surveys, and submission tracking.', features: ['Form creation', 'Survey builder', 'Submissions'] },
-  { slug: 'media-manager', name: 'Media Manager', price: 9, category: 'Content', desc: 'Upload and organize media assets.', features: ['File upload', 'Folder management', 'Asset organization'] },
-  { slug: 'custom-objects', name: 'Custom Objects', price: 49, category: 'Admin', desc: 'Custom schemas, records, and associations.', features: ['Schema creation', 'Record CRUD', 'Associations'] },
-  { slug: 'document-contracts', name: 'Documents', price: 29, category: 'Sales', desc: 'Contracts and proposals with e-signature.', features: ['Contract send', 'Templates', 'E-signature'] },
-  { slug: 'ecommerce-store', name: 'E-Commerce', price: 49, category: 'Sales', desc: 'Store settings, shipping, and fulfillment.', features: ['Store config', 'Shipping', 'Fulfillment'] },
-  { slug: 'link-triggers', name: 'Link Triggers', price: 9, category: 'Admin', desc: 'Trigger links for workflow automation.', features: ['Link creation', 'Trigger automation', 'Tracking'] },
-  { slug: 'user-management', name: 'User Management', price: 19, category: 'Admin', desc: 'Team members, roles, and permissions.', features: ['User CRUD', 'Roles', 'Permissions'] },
-  { slug: 'wordpress-manager', name: 'WordPress', price: 19, category: 'Content', desc: 'Manage connected WordPress sites.', features: ['Site management', 'Status monitoring'] },
-  { slug: 'saas-manager', name: 'SaaS Manager', price: 99, category: 'Admin', desc: 'Manage SaaS locations and white-label.', features: ['Location provisioning', 'Company settings', 'White-label'], badge: 'Pro' },
-  { slug: 'location-settings', name: 'Location Settings', price: 19, category: 'Admin', desc: 'Custom fields, values, tags, and templates.', features: ['Custom fields', 'Tags', 'Templates'] },
-  { slug: 'brand-board', name: 'Brand Board', price: 9, category: 'Content', desc: 'Brand design kits and assets.', features: ['Brand kit', 'Colors & fonts', 'Logo management'] },
-]
-
-const CATEGORIES = ['AI', 'Marketing', 'CRM', 'Sales', 'Finance', 'Comms', 'Content', 'Admin']
-
-const CAT_COLORS: Record<string, string> = {
-  AI: '#7ed957', Marketing: '#00d4ff', CRM: '#a78bfa', Sales: '#f97316',
-  Finance: '#fbbf24', Comms: '#14b8a6', Content: '#ec4899', Admin: '#6b7280',
-}
+export const dynamic = 'force-static'
+export const revalidate = 3600
 
 export default function PricingPage() {
   return (
-    <div style={{ background: '#020810', color: '#fff', minHeight: '100vh' }}>
-      {/* Nav */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(12px, 2vw, 16px) clamp(16px, 4vw, 32px)', background: 'rgba(2,8,16,0.8)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-        <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <img src="/brand/0ncore-logo.png" alt="0nCore" style={{ height: 28, objectFit: 'contain' }} />
-        </a>
-        <div className="pricing-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <a href="https://0nmcp.com" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Integrations</a>
-          <a href="https://0nmcp.com/docs" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Documentation</a>
-          <a href="/login" style={{ fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Get Started</a>
-        </div>
-        <a href="/login" className="pricing-mobile-cta" style={{ display: 'none', fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Get Started</a>
-      </nav>
-
-      {/* Hero */}
-      <section style={{ textAlign: 'center', padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 24px) clamp(36px, 5vw, 60px)', maxWidth: 800, margin: '0 auto', position: 'relative', overflow: 'hidden' }}>
-        <VideoBg opacity={0.1} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 600, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 20, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            335 Tools · 96 Services · 31 Add-ons
+    <div className="min-h-screen bg-[#0d1117] text-white">
+      <div className="mx-auto max-w-7xl px-6 py-16">
+        {/* Header */}
+        <div className="mb-14 text-center max-w-3xl mx-auto">
+          <div className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-[#7ed957]/40 bg-[#7ed957]/10 px-3 py-1 text-xs font-semibold text-[#7ed957]">
+            <Sparkles className="h-3 w-3" />
+            Public availability May 1, 2026
           </div>
-          <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 0 16px' }}>
-            Pay for what you <span style={{ color: '#7ed957' }}>use</span>.
+          <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-6xl">
+            One platform.<br />
+            <span className="text-[#7ed957]">Every capability.</span>
           </h1>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 560, margin: '0 auto 32px' }}>
-            Each add-on unlocks a CRM capability powered by the 0nMCP SDK. Install what you need. Cancel anytime. No contracts.
+          <p className="text-lg leading-relaxed text-white/65">
+            1,598 tools across 106 services. Visual automation builder. AI agent crews via CrewAI.
+            Course builder. Lead magnet loop. Free MCP server marketplace. All on one bill.
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/login" style={{ padding: '12px 28px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15 }}>Start Free</a>
-            <a href="https://0nmcp.com" style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 15, border: '1px solid rgba(255,255,255,0.08)' }}>View Integrations</a>
-          </div>
         </div>
-      </section>
 
-      {/* Category pills */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 clamp(16px, 4vw, 24px) 32px' }}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {CATEGORIES.map(cat => (
-            <span key={cat} style={{ fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 20, background: `${CAT_COLORS[cat]}10`, color: CAT_COLORS[cat], border: `1px solid ${CAT_COLORS[cat]}20`, letterSpacing: '0.04em' }}>
-              {cat} ({ADDONS.filter(a => a.category === cat).length})
-            </span>
-          ))}
-        </div>
-      </section>
+        {/* Tier grid */}
+        <div className="grid gap-5 lg:grid-cols-5">
+          {TIERS.map((tier) => (
+            <div
+              key={tier.slug}
+              className={`flex flex-col rounded-2xl border p-6 transition-colors ${
+                tier.highlight
+                  ? 'border-[#7ed957]/50 bg-[#7ed957]/[0.03] ring-1 ring-[#7ed957]/30'
+                  : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.18]'
+              }`}
+            >
+              {tier.highlight && (
+                <div className="mb-3 inline-flex w-fit items-center gap-1 rounded-full bg-[#7ed957]/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#7ed957]">
+                  Most popular
+                </div>
+              )}
 
-      {/* Grid */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 clamp(16px, 4vw, 24px) clamp(40px, 6vw, 80px)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-          {ADDONS.map(addon => (
-            <div key={addon.slug} style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', padding: 24, display: 'flex', flexDirection: 'column', transition: 'border-color 0.2s' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: 10, fontWeight: 600, color: CAT_COLORS[addon.category], textTransform: 'uppercase', letterSpacing: '0.08em' }}>{addon.category}</span>
-                {addon.badge && <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: 'rgba(126,217,87,0.1)', color: '#7ed957' }}>{addon.badge}</span>}
+              <div className="mb-2">
+                <h2 className="text-2xl font-bold">{tier.name}</h2>
+                <p className="mt-1 text-sm text-white/55">{tier.tagline}</p>
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px', color: '#fff' }}>{addon.name}</h3>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, margin: '0 0 12px', flex: 1 }}>{addon.desc}</p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 16px' }}>
-                {addon.features.map(f => (
-                  <li key={f} style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', padding: '3px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ color: '#7ed957', fontSize: 10 }}>&#10003;</span> {f}
+
+              <div className="mb-5">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold">{tier.price}</span>
+                  {tier.cadence && (
+                    <span className="text-sm text-white/55">{tier.cadence}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Limits row */}
+              <div className="mb-5 grid grid-cols-2 gap-2 rounded-md bg-white/[0.02] p-3 text-[11px]">
+                {tier.limits.map((l) => (
+                  <div key={l.tag}>
+                    <div className="text-white/40 uppercase tracking-wider">{l.tag}</div>
+                    <div className="font-mono font-semibold text-white">{l.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA */}
+              {tier.ctaHref.startsWith('mailto:') ? (
+                <a
+                  href={tier.ctaHref}
+                  className={`mb-5 inline-flex items-center justify-center gap-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    tier.highlight
+                      ? 'bg-[#7ed957] text-black hover:bg-[#7ed957]/90'
+                      : 'border border-white/15 hover:border-white/40'
+                  }`}
+                >
+                  {tier.ctaLabel} <ArrowRight className="h-3.5 w-3.5" />
+                </a>
+              ) : (
+                <Link
+                  href={tier.ctaHref}
+                  className={`mb-5 inline-flex items-center justify-center gap-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    tier.highlight
+                      ? 'bg-[#7ed957] text-black hover:bg-[#7ed957]/90'
+                      : 'border border-white/15 hover:border-white/40'
+                  }`}
+                >
+                  {tier.ctaLabel} <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              )}
+
+              {/* Features */}
+              <ul className="space-y-2 text-sm">
+                {tier.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#7ed957]" />
+                    <span className={f.startsWith('Everything in') ? 'font-semibold text-white/80' : 'text-white/70'}>
+                      {f}
+                    </span>
                   </li>
                 ))}
               </ul>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                <span style={{ fontSize: 20, fontWeight: 700 }}>${addon.price}<span style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></span>
-                <Link href="/login" style={{ fontSize: 12, fontWeight: 600, padding: '6px 16px', borderRadius: 8, background: 'rgba(126,217,87,0.1)', color: '#7ed957', border: '1px solid rgba(126,217,87,0.2)', textDecoration: 'none' }}>
-                  Get Add-on
-                </Link>
-              </div>
             </div>
           ))}
         </div>
-      </section>
 
-      {/* Bottom CTA */}
-      <section style={{ textAlign: 'center', padding: 'clamp(36px, 5vw, 60px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 80px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <h2 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 800, marginBottom: 12 }}>Need everything?</h2>
-        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 24 }}>
-          All 31 add-ons. $1,169/mo. Or contact us for custom enterprise pricing.
-        </p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href="/login" style={{ padding: '12px 28px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15 }}>Start Free</a>
-          <a href="mailto:mike@rocketopp.com" style={{ padding: '12px 28px', background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 15, border: '1px solid rgba(255,255,255,0.08)' }}>Contact Sales</a>
+        {/* Bottom info */}
+        <div className="mt-14 grid gap-6 md:grid-cols-3">
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+            <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-[#7ed957]">
+              The numbers
+            </h3>
+            <ul className="space-y-1.5 text-sm text-white/65">
+              <li>
+                <span className="font-bold text-white">1,598</span> tools across{' '}
+                <span className="font-bold text-white">106</span> services
+              </li>
+              <li>
+                <span className="font-bold text-white">9</span> capability families in v4.10
+              </li>
+              <li>
+                <span className="font-bold text-white">5</span> patents pending
+              </li>
+              <li>
+                Free + open source: <code className="text-[#7ed957]">npm i 0nmcp</code>
+              </li>
+            </ul>
+          </div>
+
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+            <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-[#7ed957]">
+              What you save
+            </h3>
+            <ul className="space-y-1.5 text-sm text-white/65">
+              <li>HubSpot Starter: <span className="line-through opacity-50">$20/mo</span> per seat</li>
+              <li>Make.com Pro: <span className="line-through opacity-50">$29/mo</span></li>
+              <li>Bubble.io Pro: <span className="line-through opacity-50">$134/mo</span></li>
+              <li>Retool Team: <span className="line-through opacity-50">$50/seat</span></li>
+              <li className="pt-1.5 border-t border-white/10 mt-2">
+                <span className="font-bold text-white">Pro at $97</span> replaces all of these.
+              </li>
+            </ul>
+          </div>
+
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
+            <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-[#7ed957]">
+              FAQ
+            </h3>
+            <ul className="space-y-2 text-xs text-white/65">
+              <li>
+                <span className="font-semibold text-white">Free forever?</span> Yes. 0nMCP itself is open source.
+              </li>
+              <li>
+                <span className="font-semibold text-white">Cancel anytime?</span> Yes. No annual lock-in.
+              </li>
+              <li>
+                <span className="font-semibold text-white">Custom MCP servers?</span> Bring your own — admin-side connector ships in v4.10.
+              </li>
+              <li>
+                <span className="font-semibold text-white">Refund policy?</span> 30-day money-back, no questions.
+              </li>
+            </ul>
+          </div>
         </div>
-      </section>
 
-      {/* Footer */}
-      <footer style={{ textAlign: 'center', padding: 'clamp(16px, 3vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>© 2026 RocketOpp LLC. All rights reserved. 0nCore is powered by 0nMCP.</p>
-      </footer>
-
-      <style>{`
-        @media (max-width: 768px) {
-          .pricing-nav-links { display: none !important; }
-          .pricing-mobile-cta { display: flex !important; }
-        }
-      `}</style>
+        {/* Bottom CTA */}
+        <div className="mt-14 rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#7ed957]/[0.04] to-transparent p-10 text-center">
+          <h2 className="mb-3 text-3xl font-bold tracking-tight">
+            Public launch May 1, 2026.
+          </h2>
+          <p className="mb-6 text-white/65">
+            Register for early access — get day-one onboarding and a permanent founder rate.
+          </p>
+          <Link
+            href="/early-access"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#7ed957] px-7 py-3 text-sm font-bold text-black transition-opacity hover:opacity-90"
+          >
+            Register for early access <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
