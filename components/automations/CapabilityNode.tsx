@@ -34,19 +34,34 @@ export interface CapabilityNodeData {
   steps: string[];
   config: Record<string, string>;
   // App-node fields (set when kind === 'app')
-  kind?: 'capability' | 'app';
+  kind?: 'capability' | 'app' | 'switch';
   appId?: string;
   appSlug?: string;
   installationId?: string | null;
+  // Switch-node fields (set when kind === 'switch')
+  switchId?: string;
+  toolName?: string | null;
+  toolMethod?: string | null;
+  toolService?: string | null;
+  isMulti?: boolean;
   [key: string]: unknown;
 }
 
 export type CapabilityNodeType = Node<CapabilityNodeData, 'capability'>
 
+const METHOD_TINT: Record<string, string> = {
+  GET: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+  POST: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+  PUT: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+  PATCH: 'bg-violet-500/15 text-violet-300 border-violet-500/30',
+  DELETE: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+}
+
 function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeType>) {
   const isConfigured = data.configured
   const isTrigger = data.category === 'triggers'
   const isApp = data.kind === 'app'
+  const isSwitch = data.kind === 'switch'
   const IconComponent = LUCIDE_ICONS[data.icon]
 
   return (
@@ -76,7 +91,7 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
           <span className="text-xl shrink-0">{data.icon}</span>
         )}
         <span className="text-[13px] font-bold uppercase tracking-[0.05em]" style={{ color: data.color }}>
-          {isApp ? '0N APP' : isTrigger ? 'TRIGGER' : data.category === 'ai' ? 'AI' : data.category.toUpperCase()}
+          {isSwitch ? 'SWITCH' : isApp ? '0N APP' : isTrigger ? 'TRIGGER' : data.category === 'ai' ? 'AI' : data.category.toUpperCase()}
         </span>
         <div className="ml-auto">
           <span className={`inline-block w-2 h-2 rounded-full ${isConfigured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
@@ -86,6 +101,19 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
       {/* Body */}
       <div className="px-4 py-3.5">
         <div className="text-[15px] font-bold text-core-text mb-1.5 leading-tight">{data.name}</div>
+        {isSwitch && data.toolName && (
+          <div className="mb-1.5 flex items-center gap-1.5 flex-wrap">
+            {data.toolMethod && (
+              <span className={`text-[9px] px-1.5 py-px rounded border font-mono ${METHOD_TINT[data.toolMethod] ?? 'bg-white/10 text-white/70 border-white/20'}`}>
+                {data.toolMethod}
+              </span>
+            )}
+            <span className="font-mono text-[10px] text-core-text-muted truncate">{data.toolName}</span>
+            {data.isMulti && (
+              <span className="text-[9px] px-1 py-px rounded bg-amber-500/15 text-amber-300">multi-step</span>
+            )}
+          </div>
+        )}
         <div className="text-xs text-core-text-muted leading-relaxed">{data.description}</div>
       </div>
 

@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useEffect, type DragEvent } from 'react'
-import { Search, Zap, Play, Package, Loader2, ExternalLink } from 'lucide-react'
+import { Search, Zap, Play, Package, Loader2, ExternalLink, Power } from 'lucide-react'
 import { CAPABILITIES } from './capabilities'
 import { LUCIDE_ICONS } from './CapabilityNode'
 
-type Tab = 'triggers' | 'actions' | 'apps'
+type Tab = 'triggers' | 'actions' | 'apps' | 'switches'
 
 interface InstalledAppCard {
   id: string
@@ -19,6 +19,20 @@ interface InstalledAppCard {
   active?: boolean
 }
 
+interface SwitchCard {
+  id: string
+  name: string
+  description: string | null
+  spec: { tool?: { name: string; service: string; method: string }; inputs?: Record<string, unknown> }
+  steps: Array<{ tool: string; params: Record<string, unknown> }>
+  is_multi: boolean
+  tags: string[]
+  execution_count: number
+  last_run_at: string | null
+  schedule: { enabled?: boolean; cron?: string } | null
+  status: string
+}
+
 interface PaletteProps {
   size?: 'expand' | 'compact'
 }
@@ -28,8 +42,26 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
   const [search, setSearch] = useState('')
   const [apps, setApps] = useState<InstalledAppCard[]>([])
   const [appsLoading, setAppsLoading] = useState(false)
+  const [switches, setSwitches] = useState<SwitchCard[]>([])
+  const [switchesLoading, setSwitchesLoading] = useState(false)
 
   const isCompact = size === 'compact'
+
+  // Load switches when tab opens
+  useEffect(() => {
+    if (tab !== 'switches') return
+    setSwitchesLoading(true)
+    fetch('/api/switches')
+      .then(r => r.json())
+      .then(d => {
+        setSwitches(d.switches || [])
+        setSwitchesLoading(false)
+      })
+      .catch(() => {
+        setSwitches([])
+        setSwitchesLoading(false)
+      })
+  }, [tab])
 
   useEffect(() => {
     if (tab !== 'apps') return
@@ -75,6 +107,29 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
     ? apps.filter(a => a.name.toLowerCase().includes(filterText) || a.description.toLowerCase().includes(filterText))
     : apps
 
+  const filteredSwitches = search
+    ? switches.filter(s =>
+        s.name.toLowerCase().includes(filterText) ||
+        (s.description ?? '').toLowerCase().includes(filterText) ||
+        (s.spec?.tool?.name ?? '').toLowerCase().includes(filterText)
+      )
+    : switches
+
+  function onDragStartSwitch(e: DragEvent, sw: SwitchCard) {
+    const payload = {
+      kind: 'switch',
+      switch_id: sw.id,
+      name: sw.name,
+      description: sw.description ?? '',
+      tool: sw.spec?.tool ?? null,
+      steps: sw.steps ?? [],
+      is_multi: !!sw.is_multi,
+      tags: sw.tags ?? [],
+    }
+    e.dataTransfer.setData('application/0n-switch', JSON.stringify(payload))
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
   function onDragStartCapability(e: DragEvent, capabilityId: string) {
     const cap = CAPABILITIES.find(c => c.id === capabilityId)
     if (!cap) return
@@ -107,6 +162,7 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
       <div className="flex border-b border-[#1c2b42]">
         <TabButton tab="triggers" current={tab} onSelect={setTab} icon={Zap} label="Triggers" count={triggers.length} compact={isCompact} />
         <TabButton tab="actions" current={tab} onSelect={setTab} icon={Play} label="Actions" count={actions.length} compact={isCompact} />
+        <TabButton tab="switches" current={tab} onSelect={setTab} icon={Power} label="Switches" count={switches.length || undefined} compact={isCompact} />
         <TabButton tab="apps" current={tab} onSelect={setTab} icon={Package} label="Apps" count={apps.length || undefined} compact={isCompact} />
       </div>
 
@@ -127,12 +183,32 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
 
       {/* Items */}
       <div className="flex-1 overflow-y-auto p-2">
-        {tab !== 'apps' && (
+        {(tab === 'triggers' || tab === 'actions') && (
           <div>
             {filtered.length === 0 ? (
               <div className="text-center py-8 text-[11px] text-core-text-muted">No {tab} match search.</div>
             ) : (
               filtered.map(cap => <CapItem key={cap.id} cap={cap} onDragStart={onDragStartCapability} />)
+            )}
+          </div>
+        )}
+
+        {tab === 'switches' && (
+          <div>
+            {switchesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-4 h-4 animate-spin text-core-text-muted" />
+              </div>
+            ) : filteredSwitches.length === 0 ? (
+              <div className="text-center py-8 px-3">
+                <Power className="w-6 h-6 mx-auto mb-2 text-core-text-muted opacity-40" />
+                <p className="text-[11px] text-core-text-muted mb-2">No switches yet.</p>
+                <a href="/dashboard/tools" className="text-[11px] text-[#7ed957] hover:underline inline-flex items-center gap-1">
+                  Run a tool to save one <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            ) : (
+              filteredSwitches.map(sw => <SwitchItem key={sw.id} sw={sw} onDragStart={onDragStartSwitch} />)
             )}
           </div>
         )}
@@ -159,7 +235,51 @@ export default function CapabilityPalette({ size = 'expand' }: PaletteProps) {
       </div>
 
       <div className="px-3 py-2 border-t border-[#1c2b42] text-[10px] text-core-text-muted text-center">
-        {tab === 'apps' ? 'Drag installed apps onto the canvas' : 'Drag onto canvas'}
+        {tab === 'apps'
+          ? 'Drag installed apps onto the canvas'
+          : tab === 'switches'
+          ? 'Drag saved switches as workflow steps'
+          : 'Drag onto canvas'}
+      </div>
+    </div>
+  )
+}
+
+interface SwitchItemProps {
+  sw: SwitchCard
+  onDragStart: (e: DragEvent, sw: SwitchCard) => void
+}
+
+function SwitchItem({ sw, onDragStart }: SwitchItemProps) {
+  const method = sw.spec?.tool?.method ?? null
+  const toolName = sw.spec?.tool?.name ?? null
+  const stepCount = sw.is_multi ? (sw.steps?.length ?? 0) : 1
+
+  return (
+    <div
+      draggable
+      onDragStart={e => onDragStart(e, sw)}
+      className="bg-core-card border border-transparent hover:border-[#7ed957]/40 rounded-lg p-2.5 mb-1 cursor-grab transition-all flex items-start gap-2.5"
+    >
+      <div className="w-7 h-7 rounded-md bg-[#7ed957]/10 border border-[#7ed957]/30 flex items-center justify-center shrink-0">
+        <Power className="w-3.5 h-3.5 text-[#7ed957]" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+          <span className="text-[12px] font-semibold text-core-text truncate">{sw.name}</span>
+          {method && (
+            <span className="text-[9px] px-1 py-px rounded bg-cyan-500/15 text-cyan-300 font-mono">{method}</span>
+          )}
+          {sw.is_multi && (
+            <span className="text-[9px] px-1 py-px rounded bg-amber-500/15 text-amber-300">{stepCount} steps</span>
+          )}
+        </div>
+        {toolName && (
+          <div className="text-[10px] text-core-text-muted font-mono truncate">{toolName}</div>
+        )}
+        {sw.description && (
+          <div className="text-[10px] text-core-text-muted leading-snug line-clamp-1 mt-0.5">{sw.description}</div>
+        )}
       </div>
     </div>
   )

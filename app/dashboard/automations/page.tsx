@@ -250,6 +250,10 @@ export default function AutomationsPage() {
     const dotOnSteps = nodes.map((node, i) => ({
       id: node.id,
       action: node.data.capabilityId || node.data.name || 'unknown',
+      // Mirror as 'tool' + 'inputs' so /api/automations/execute can run the saved file directly.
+      tool: node.data.capabilityId || node.data.name || 'unknown',
+      name: node.data.name,
+      inputs: node.data.config || {},
       input: {
         name: node.data.name,
         category: node.data.category,

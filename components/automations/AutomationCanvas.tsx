@@ -89,14 +89,49 @@ export default function AutomationCanvas({
     e.preventDefault()
     const capRaw = e.dataTransfer.getData('application/0n-capability')
     const appRaw = e.dataTransfer.getData('application/0n-app')
-    if (!capRaw && !appRaw) return
+    const switchRaw = e.dataTransfer.getData('application/0n-switch')
+    if (!capRaw && !appRaw && !switchRaw) return
 
     const newCounter = stepCounter + 1
     const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
 
     let data: CapabilityNodeData
+    let idPrefix = 'cap'
 
-    if (appRaw) {
+    if (switchRaw) {
+      const sw = JSON.parse(switchRaw) as {
+        kind: 'switch'
+        switch_id: string
+        name: string
+        description: string
+        tool: { name: string; service: string; method: string } | null
+        steps: Array<{ tool: string; params: Record<string, unknown> }>
+        is_multi: boolean
+        tags: string[]
+      }
+      data = {
+        capabilityId: `switch_${sw.switch_id}`,
+        name: sw.name,
+        description: sw.description || (sw.tool ? `Run ${sw.tool.name}` : 'Run saved switch'),
+        icon: 'Power',
+        color: '#7ed957',
+        category: 'switches',
+        configured: true,
+        steps: sw.is_multi
+          ? sw.steps.map(s => `Run ${s.tool}`)
+          : sw.tool
+          ? [`Fire ${sw.tool.method} ${sw.tool.name}`]
+          : ['Run saved switch'],
+        config: {},
+        kind: 'switch',
+        switchId: sw.switch_id,
+        toolName: sw.tool?.name ?? null,
+        toolMethod: sw.tool?.method ?? null,
+        toolService: sw.tool?.service ?? null,
+        isMulti: sw.is_multi,
+      }
+      idPrefix = 'sw'
+    } else if (appRaw) {
       const app = JSON.parse(appRaw) as {
         kind: 'app'; app_id: string; slug: string; name: string; description: string;
         icon: string | null; category: string; installation_id: string | null; installed: boolean;
@@ -116,6 +151,7 @@ export default function AutomationCanvas({
         appSlug: app.slug,
         installationId: app.installation_id,
       }
+      idPrefix = 'app'
     } else {
       const cap: Capability = JSON.parse(capRaw)
       data = {
@@ -130,10 +166,11 @@ export default function AutomationCanvas({
         config: {},
         kind: 'capability',
       }
+      idPrefix = 'cap'
     }
 
     const newNode: CapabilityNodeType = {
-      id: appRaw ? `app_${newCounter}` : `cap_${newCounter}`,
+      id: `${idPrefix}_${newCounter}`,
       type: 'capability',
       position,
       data,

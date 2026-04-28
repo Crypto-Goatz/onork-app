@@ -463,6 +463,72 @@ ${prevOutputs || 'No previous steps executed yet.'}`
       }
 
       default: {
+        // Switch step: tool name like "switch_<uuid>" — look up the saved switch
+        // and execute it via /api/tools/execute (which handles credential routing).
+        if (step.tool.startsWith('switch_')) {
+          const switchId = step.tool.slice('switch_'.length)
+          const { createClient } = await import('@supabase/supabase-js')
+          const sb = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+          )
+          const { data: sw } = await sb
+            .from('switches')
+            .select('id, name, spec, steps, is_multi, user_id')
+            .eq('id', switchId)
+            .maybeSingle()
+
+          if (!sw) {
+            output = { status: 'switch_not_found', switchId }
+            break
+          }
+
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://0ncore.com'
+          const innerResults: unknown[] = []
+          const stepsToRun: Array<{ tool: string; params: Record<string, unknown> }> =
+            sw.is_multi
+              ? (sw.steps as Array<{ tool: string; params: Record<string, unknown> }>) ?? []
+              : [{ tool: (sw.spec as { tool?: { name?: string } })?.tool?.name ?? '', params: (sw.spec as { inputs?: Record<string, unknown> })?.inputs ?? {} }]
+
+          for (const inner of stepsToRun) {
+            if (!inner.tool) {
+              innerResults.push({ status: 'invalid_inner_step' })
+              continue
+            }
+            // Merge workflow-resolved inputs with switch's saved params (workflow inputs win)
+            const mergedParams = { ...inner.params, ...(inputs as Record<string, unknown>) }
+            const r = await fetch(`${baseUrl}/api/tools/execute`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(process.env.INTERNAL_DISPATCH_SECRET
+                  ? { 'x-internal-secret': process.env.INTERNAL_DISPATCH_SECRET }
+                  : {}),
+              },
+              body: JSON.stringify({ tool: inner.tool, params: mergedParams }),
+            }).catch(() => null)
+            innerResults.push(r ? await r.json().catch(() => ({})) : { status: 'fetch_failed' })
+          }
+
+          // Bump execution count on the switch
+          void sb
+            .from('switches')
+            .update({
+              execution_count: ((sw as unknown as { execution_count?: number }).execution_count ?? 0) + 1,
+              last_run_at: new Date().toISOString(),
+            })
+            .eq('id', switchId)
+
+          output = {
+            status: 'switch_executed',
+            switchId,
+            switchName: sw.name,
+            stepsRun: stepsToRun.length,
+            results: innerResults,
+          }
+          break
+        }
+
         output = { status: 'unknown_tool', tool: step.tool }
         break
       }
