@@ -2,6 +2,32 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* ── Whimsical fonts (used by Notes / diagrams to feel native) ── */
+@font-face {
+  font-family: 'Dinsical';
+  src: url('/fonts/whimsical/Dinsical-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Dinsical';
+  src: url('/fonts/whimsical/Dinsical-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Dinsical';
+  src: url('/fonts/whimsical/Dinsical-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Monsical';
+  src: url('/fonts/whimsical/Monsical-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
