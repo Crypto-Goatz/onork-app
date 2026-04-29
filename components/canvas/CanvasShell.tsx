@@ -1,32 +1,31 @@
 'use client'
 
 /**
- * Canvas shell — the white-themed visual workspace.
+ * Canvas shell — the white-themed visual workspace, powered by React Flow
+ * (@xyflow/react, MIT licensed). Same architecture as before:
  *
- * Layout:
- *   [ Block library left rail ]  [ Tldraw canvas ]  [ Jaxx chat right rail ]
+ *   [ Block library left rail ]  [ React Flow canvas ]  [ Jaxx chat right rail ]
  *
- * Tldraw owns pan/zoom/select/keyboard. Custom shapes carry block data.
- * Chat panel lets Jaxx materialize blocks on the canvas from natural language.
- *
- * Every state change autosaves to /api/canvas/flows via PATCH.
+ * Drag from library or click → places a block. Jaxx generates blocks +
+ * edges, materializes them on the canvas with green animated arrows.
+ * Autosaves nodes/edges/viewport to /api/canvas/flows on every change.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import dynamic from 'next/dynamic'
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import {
+  ReactFlow, ReactFlowProvider, Background, Controls, MiniMap, BackgroundVariant,
+  addEdge, applyNodeChanges, applyEdgeChanges, useReactFlow,
+  type OnNodesChange, type OnEdgesChange, type OnConnect, type Edge,
+  type Connection, type Viewport,
+} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
 import { toast } from 'sonner'
 import {
   Database, Mail, MessageSquareText, Filter as FilterIcon, BarChart3,
   Sparkles, Send, Loader2, Save, Plus, Workflow, Type as TypeIcon,
   Calendar, Receipt, ShoppingBag, Search,
 } from 'lucide-react'
-import 'tldraw/tldraw.css'
-import type { Editor, TLShapeId } from 'tldraw'
-
-const Tldraw = dynamic(
-  () => import('tldraw').then((m) => m.Tldraw),
-  { ssr: false, loading: () => <div className="flex h-full w-full items-center justify-center bg-slate-50"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div> }
-)
+import BlockNode, { type BlockNodeType, type BlockData } from './BlockNode'
 
 interface BlockDef {
   type: string
@@ -37,25 +36,21 @@ interface BlockDef {
 }
 
 const BLOCKS: BlockDef[] = [
-  { type: 'contacts',    label: 'Contacts',    hint: 'Live CRM contacts',    icon: Database,         category: 'data'    },
-  { type: 'pipeline',    label: 'Pipeline',    hint: 'Deal stages',          icon: Workflow,         category: 'data'    },
-  { type: 'calendar',    label: 'Calendar',    hint: 'Appointments',         icon: Calendar,         category: 'data'    },
-  { type: 'invoices',    label: 'Invoices',    hint: 'Billing list',         icon: Receipt,          category: 'data'    },
-  { type: 'send_email',  label: 'Send Email',  hint: 'Email a list',         icon: Mail,             category: 'action'  },
-  { type: 'post_linkedin', label: 'LinkedIn',  hint: 'Post to LinkedIn',     icon: ShoppingBag,      category: 'action'  },
-  { type: 'ai_compose',  label: 'AI Compose',  hint: 'Generate content',     icon: Sparkles,         category: 'ai'      },
-  { type: 'ai_summarize',label: 'Summarize',   hint: 'Distill input',        icon: MessageSquareText,category: 'ai'      },
-  { type: 'filter',      label: 'Filter',      hint: 'Filter by criteria',   icon: FilterIcon,       category: 'logic'   },
-  { type: 'stat_card',   label: 'Stat',        hint: 'Show a number',        icon: BarChart3,        category: 'display' },
-  { type: 'note',        label: 'Note',        hint: 'Plain text note',      icon: TypeIcon,         category: 'display' },
+  { type: 'contacts',       label: 'Contacts',     hint: 'Live CRM contacts',    icon: Database,         category: 'data'    },
+  { type: 'pipeline',       label: 'Pipeline',     hint: 'Deal stages',          icon: Workflow,         category: 'data'    },
+  { type: 'calendar',       label: 'Calendar',     hint: 'Appointments',         icon: Calendar,         category: 'data'    },
+  { type: 'invoices',       label: 'Invoices',     hint: 'Billing list',         icon: Receipt,          category: 'data'    },
+  { type: 'send_email',     label: 'Send Email',   hint: 'Email a list',         icon: Mail,             category: 'action'  },
+  { type: 'post_linkedin',  label: 'LinkedIn',     hint: 'Post to LinkedIn',     icon: ShoppingBag,      category: 'action'  },
+  { type: 'ai_compose',     label: 'AI Compose',   hint: 'Generate content',     icon: Sparkles,         category: 'ai'      },
+  { type: 'ai_summarize',   label: 'Summarize',    hint: 'Distill input',        icon: MessageSquareText,category: 'ai'      },
+  { type: 'filter',         label: 'Filter',       hint: 'Filter by criteria',   icon: FilterIcon,       category: 'logic'   },
+  { type: 'stat_card',      label: 'Stat',         hint: 'Show a number',        icon: BarChart3,        category: 'display' },
+  { type: 'note',           label: 'Note',         hint: 'Plain text note',      icon: TypeIcon,         category: 'display' },
 ]
 
 const CATEGORY_LABELS: Record<BlockDef['category'], string> = {
-  data: 'Data',
-  action: 'Actions',
-  ai: 'AI',
-  logic: 'Logic',
-  display: 'Display',
+  data: 'Data', action: 'Actions', ai: 'AI', logic: 'Logic', display: 'Display',
 }
 
 interface ChatMessage {
@@ -64,8 +59,41 @@ interface ChatMessage {
   flow?: { blocks: Array<{ type: string; label: string; x: number; y: number }> }
 }
 
-export default function CanvasShell({ flowId, initialName }: { flowId: string; initialName: string }) {
-  const editorRef = useRef<Editor | null>(null)
+const NODE_TYPES = { block: BlockNode }
+
+export default function CanvasShell({
+  flowId,
+  initialName,
+  initialNodes,
+  initialEdges,
+}: {
+  flowId: string
+  initialName: string
+  initialNodes: BlockNodeType[]
+  initialEdges: Edge[]
+}) {
+  return (
+    <ReactFlowProvider>
+      <Inner flowId={flowId} initialName={initialName} initialNodes={initialNodes} initialEdges={initialEdges} />
+    </ReactFlowProvider>
+  )
+}
+
+function Inner({
+  flowId,
+  initialName,
+  initialNodes,
+  initialEdges,
+}: {
+  flowId: string
+  initialName: string
+  initialNodes: BlockNodeType[]
+  initialEdges: Edge[]
+}) {
+  const { screenToFlowPosition } = useReactFlow()
+
+  const [nodes, setNodes] = useState<BlockNodeType[]>(initialNodes)
+  const [edges, setEdges] = useState<Edge[]>(initialEdges)
   const [name, setName] = useState(initialName)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
@@ -75,30 +103,23 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
   ])
   const [chatInput, setChatInput] = useState('')
   const [thinking, setThinking] = useState(false)
+
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const counterRef = useRef(initialNodes.length)
 
-  const onMount = useCallback((editor: Editor) => {
-    editorRef.current = editor
-    // Theme is inherited from the parent's colorScheme: 'light' — don't
-    // mutate user preferences here, that re-renders tldraw post-mount and
-    // collapses its UI panels for the wrong reason.
-  }, [])
-
-  const scheduleSave = useCallback(() => {
+  // ── Autosave ────────────────────────────────────────────────────
+  const scheduleSave = useCallback((nextNodes?: BlockNodeType[], nextEdges?: Edge[], nextName?: string) => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(async () => {
-      const editor = editorRef.current
-      if (!editor) return
       setSaving(true)
       try {
-        const snapshot = editor.getSnapshot()
         await fetch(`/api/canvas/flows?id=${flowId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            blocks: snapshot.document?.store ?? {},
-            viewport: editor.getViewportPageBounds().toJson(),
-            name,
+            blocks: nextNodes ?? nodes,
+            edges:  nextEdges ?? edges,
+            name:   nextName ?? name,
           }),
         })
       } catch {
@@ -107,65 +128,79 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
         setSaving(false)
       }
     }, 800)
-  }, [flowId, name])
+  }, [flowId, nodes, edges, name])
 
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current) }, [])
 
-  // ── Place a block at a specific page-coordinate point ───────────
-  function placeBlockAt(b: BlockDef, page: { x: number; y: number }) {
-    const editor = editorRef.current
-    if (!editor) return
-    editor.createShape({
-      type: 'note',
-      x: page.x - 100,
-      y: page.y - 100,
-      props: {
-        richText: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: `${b.label}\n${b.hint}` }] }] },
-        size: 's',
-        font: 'sans',
-        color: 'light-blue',
-      },
-    } as Parameters<Editor['createShape']>[0])
-    scheduleSave()
-  }
+  // ── React Flow change handlers ──────────────────────────────────
+  const onNodesChange: OnNodesChange<BlockNodeType> = useCallback((changes) => {
+    setNodes((cur) => {
+      const next = applyNodeChanges(changes, cur) as BlockNodeType[]
+      scheduleSave(next, undefined, undefined)
+      return next
+    })
+  }, [scheduleSave])
 
-  // Click-to-drop falls back to viewport center
-  function dropBlock(b: BlockDef) {
-    const editor = editorRef.current
-    if (!editor) return
-    const bounds = editor.getViewportPageBounds()
-    placeBlockAt(b, {
-      x: bounds.x + bounds.w / 2,
-      y: bounds.y + bounds.h / 2 + (Math.random() - 0.5) * 80,
+  const onEdgesChange: OnEdgesChange = useCallback((changes) => {
+    setEdges((cur) => {
+      const next = applyEdgeChanges(changes, cur)
+      scheduleSave(undefined, next, undefined)
+      return next
+    })
+  }, [scheduleSave])
+
+  const onConnect: OnConnect = useCallback((conn: Connection) => {
+    setEdges((cur) => {
+      const next = addEdge({ ...conn, animated: true, style: { stroke: '#10b981', strokeWidth: 2 } }, cur)
+      scheduleSave(undefined, next, undefined)
+      return next
+    })
+  }, [scheduleSave])
+
+  // ── Place a block at a given canvas-flow position ───────────────
+  function placeBlock(b: BlockDef, position: { x: number; y: number }) {
+    counterRef.current += 1
+    const node: BlockNodeType = {
+      id: `n${counterRef.current}_${Date.now()}`,
+      type: 'block',
+      position,
+      data: { type: b.type, label: b.label, hint: b.hint } as BlockData,
+    }
+    setNodes((cur) => {
+      const next = [...cur, node]
+      scheduleSave(next, undefined, undefined)
+      return next
     })
   }
 
-  // ── HTML5 drag from the library, drop onto the canvas ──────────
-  const canvasContainerRef = useRef<HTMLDivElement | null>(null)
-  function handleDragStart(b: BlockDef, e: React.DragEvent) {
+  // Click-to-drop falls back to a center-ish viewport position
+  function dropBlock(b: BlockDef) {
+    placeBlock(b, { x: 200 + (Math.random() - 0.5) * 80, y: 200 + (Math.random() - 0.5) * 80 })
+  }
+
+  // ── HTML5 drag from library, drop on canvas ────────────────────
+  function handleDragStart(b: BlockDef, e: DragEvent<HTMLButtonElement>) {
     e.dataTransfer.setData('application/x-0n-block', b.type)
     e.dataTransfer.effectAllowed = 'copy'
   }
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    const editor = editorRef.current
-    if (!editor) return
-    const blockType = e.dataTransfer.getData('application/x-0n-block')
-    const block = BLOCKS.find((x) => x.type === blockType)
-    if (!block) return
-    // Convert client coords (relative to viewport) to tldraw page coords
-    const rect = canvasContainerRef.current?.getBoundingClientRect()
-    if (!rect) return
-    const page = editor.screenToPage({ x: e.clientX - rect.left, y: e.clientY - rect.top })
-    placeBlockAt(block, page)
-  }
-  function handleDragOver(e: React.DragEvent) {
+
+  function handleCanvasDragOver(e: DragEvent<HTMLDivElement>) {
     if (e.dataTransfer.types.includes('application/x-0n-block')) {
       e.preventDefault()
       e.dataTransfer.dropEffect = 'copy'
     }
   }
 
+  function handleCanvasDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    const blockType = e.dataTransfer.getData('application/x-0n-block')
+    const block = BLOCKS.find((x) => x.type === blockType)
+    if (!block) return
+    const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
+    placeBlock(block, position)
+  }
+
+  // ── Jaxx chat → builds blocks + edges on the canvas ────────────
   async function sendChat() {
     const text = chatInput.trim()
     if (!text || thinking) return
@@ -182,78 +217,52 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
       const data = await r.json()
       if (!r.ok) throw new Error(data?.error || 'thinking failed')
 
-      const blocks = (data.flow?.blocks as Array<{ id: string; type: string; label: string; x: number; y: number }>) ?? []
-      const edges  = (data.flow?.edges  as Array<{ id: string; source: string; target: string }>) ?? []
+      const planBlocks = (data.flow?.blocks as Array<{ id: string; type: string; label: string; x: number; y: number }>) ?? []
+      const planEdges  = (data.flow?.edges  as Array<{ id: string; source: string; target: string }>) ?? []
+
       setChatMessages((prev) => [
         ...prev,
-        { role: 'jaxx', text: data.message ?? 'Here you go.', flow: { blocks } },
+        { role: 'jaxx', text: data.message ?? 'Here you go.', flow: { blocks: planBlocks } },
       ])
 
-      // Materialize blocks first so we can resolve edge endpoints to real tldraw ids
-      const editor = editorRef.current
-      if (editor && blocks.length) {
-        const blockIdMap: Record<string, TLShapeId> = {}
-        for (const b of blocks) {
-          const id = `shape:${crypto.randomUUID()}` as TLShapeId
-          blockIdMap[b.id] = id
-          editor.createShape({
-            id,
-            type: 'note',
-            x: b.x ?? 200,
-            y: b.y ?? 200,
-            props: {
-              richText: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: b.label }] }] },
-              size: 's',
-              font: 'sans',
-              color: 'light-blue',
-            },
-          } as Parameters<Editor['createShape']>[0])
+      // Materialize: convert plan ids → real React Flow node ids
+      if (planBlocks.length === 0) return
+      const idMap: Record<string, string> = {}
+      const newNodes: BlockNodeType[] = planBlocks.map((b, i) => {
+        counterRef.current += 1
+        const realId = `n${counterRef.current}_${Date.now()}_${i}`
+        idMap[b.id] = realId
+        const def = BLOCKS.find((x) => x.type === b.type)
+        return {
+          id: realId,
+          type: 'block',
+          position: { x: b.x ?? 200, y: b.y ?? 240 },
+          data: {
+            type: b.type,
+            label: b.label,
+            hint: def?.hint,
+          } as BlockData,
         }
+      })
+      const newEdges: Edge[] = planEdges
+        .filter((e) => idMap[e.source] && idMap[e.target])
+        .map((e, i) => ({
+          id: `e${counterRef.current}_${Date.now()}_${i}`,
+          source: idMap[e.source],
+          target: idMap[e.target],
+          animated: true,
+          style: { stroke: '#10b981', strokeWidth: 2 },
+        }))
 
-        // Then draw arrows between them. Tldraw arrows need page coordinates
-        // for both endpoints; bindings auto-attach when the start/end is inside
-        // a shape's geometry. Center each endpoint on the source/target shape.
-        for (const e of edges) {
-          const sourceId = blockIdMap[e.source]
-          const targetId = blockIdMap[e.target]
-          if (!sourceId || !targetId) continue
-          const src = blocks.find((b) => b.id === e.source)!
-          const tgt = blocks.find((b) => b.id === e.target)!
-          const arrowId = `shape:${crypto.randomUUID()}` as TLShapeId
-          editor.createShape({
-            id: arrowId,
-            type: 'arrow',
-            x: 0,
-            y: 0,
-            props: {
-              start: { x: (src.x ?? 200), y: (src.y ?? 240) },
-              end:   { x: (tgt.x ?? 200), y: (tgt.y ?? 240) },
-              color: 'green',
-              size: 'm',
-              arrowheadStart: 'none',
-              arrowheadEnd: 'arrow',
-            },
-          } as Parameters<Editor['createShape']>[0])
-
-          // Bind start/end of the arrow to the source/target shapes so they
-          // stay attached if the user drags blocks around.
-          editor.createBindings([
-            {
-              type: 'arrow',
-              fromId: arrowId,
-              toId: sourceId,
-              props: { terminal: 'start', normalizedAnchor: { x: 1, y: 0.5 }, isExact: false, isPrecise: true },
-            },
-            {
-              type: 'arrow',
-              fromId: arrowId,
-              toId: targetId,
-              props: { terminal: 'end', normalizedAnchor: { x: 0, y: 0.5 }, isExact: false, isPrecise: true },
-            },
-          ] as unknown as Parameters<Editor['createBindings']>[0])
-        }
-        scheduleSave()
-      }
+      setNodes((cur) => {
+        const next = [...cur, ...newNodes]
+        setEdges((curEdges) => {
+          const nextEdges = [...curEdges, ...newEdges]
+          scheduleSave(next, nextEdges, undefined)
+          return nextEdges
+        })
+        return next
+      })
     } catch (e) {
       setChatMessages((prev) => [...prev, { role: 'jaxx', text: e instanceof Error ? e.message : 'Something went wrong.' }])
     } finally {
@@ -262,20 +271,33 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !thinking) {
       e.preventDefault()
       void sendChat()
     }
+  }
+
+  function onMoveEnd(_e: unknown, viewport: Viewport) {
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(async () => {
+      try {
+        await fetch(`/api/canvas/flows?id=${flowId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ viewport }),
+        })
+      } catch { /* silent */ }
+    }, 800)
   }
 
   const filteredBlocks = search
     ? BLOCKS.filter((b) => `${b.label} ${b.hint}`.toLowerCase().includes(search.toLowerCase()))
     : BLOCKS
 
-  const grouped = filteredBlocks.reduce<Record<string, BlockDef[]>>((acc, b) => {
+  const grouped = useMemo(() => filteredBlocks.reduce<Record<string, BlockDef[]>>((acc, b) => {
     (acc[b.category] ||= []).push(b)
     return acc
-  }, {})
+  }, {}), [filteredBlocks])
 
   return (
     <div className="flex h-full w-full bg-white">
@@ -283,7 +305,7 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
       <aside className="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-slate-50/60">
         <div className="border-b border-slate-200 p-3">
           <div className="flex items-center gap-2">
-            <div className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--accent)] text-white shadow-[0_4px_12px_-4px_rgba(110,224,90,0.5)]">
+            <div className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-500 text-white shadow-[0_4px_12px_-4px_rgba(16,185,129,0.45)]">
               <Sparkles className="h-3.5 w-3.5" />
             </div>
             <div className="flex-1 text-sm font-semibold text-slate-900">0n Canvas</div>
@@ -317,7 +339,7 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
                       onClick={() => dropBlock(b)}
                       className="group flex w-full cursor-grab items-center gap-2.5 rounded-lg border border-transparent bg-white px-2.5 py-2 text-left shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:-translate-y-px hover:border-slate-200 hover:shadow-[0_4px_14px_-4px_rgba(0,0,0,0.10)] active:cursor-grabbing"
                     >
-                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-slate-100 text-slate-600 transition group-hover:bg-[var(--accent)]/15 group-hover:text-[var(--accent-foreground,#16803c)]">
+                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-slate-100 text-slate-600 transition group-hover:bg-emerald-50 group-hover:text-emerald-700">
                         <b.icon className="h-3.5 w-3.5" />
                       </span>
                       <span className="min-w-0 flex-1">
@@ -334,12 +356,12 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
         </div>
       </aside>
 
-      {/* Center — tldraw canvas + top bar */}
+      {/* Center — canvas + top bar */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-4">
           <input
             value={name}
-            onChange={(e) => { setName(e.target.value); scheduleSave() }}
+            onChange={(e) => { setName(e.target.value); scheduleSave(undefined, undefined, e.target.value) }}
             className="bg-transparent text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none"
             placeholder="Untitled canvas"
           />
@@ -357,12 +379,34 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
         </header>
 
         <div
-          ref={canvasContainerRef}
-          className="relative flex-1"
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
+          className="relative flex-1 bg-slate-50/40"
+          onDrop={handleCanvasDrop}
+          onDragOver={handleCanvasDragOver}
         >
-          <Tldraw onMount={onMount} hideUi={false} />
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={NODE_TYPES}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onMoveEnd={onMoveEnd}
+            fitView
+            fitViewOptions={{ padding: 0.3 }}
+            defaultEdgeOptions={{ animated: true, style: { stroke: '#94a3b8', strokeWidth: 2 } }}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} color="#e2e8f0" />
+            <Controls
+              showInteractive={false}
+              className="!rounded-lg !border-slate-200 !bg-white !shadow-[0_4px_14px_-4px_rgba(0,0,0,0.10)]"
+            />
+            <MiniMap
+              nodeColor="#cbd5e1"
+              maskColor="rgba(241, 245, 249, 0.7)"
+              className="!rounded-lg !border !border-slate-200 !bg-white !shadow-[0_4px_14px_-4px_rgba(0,0,0,0.10)]"
+            />
+          </ReactFlow>
         </div>
       </div>
 
