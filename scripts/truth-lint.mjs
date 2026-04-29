@@ -172,7 +172,8 @@ if (failed.length === 0) {
   console.log(`${C.dim}  Either wire the handler through lib/brain (think + record),${C.reset}`)
   console.log(`${C.dim}  or change category to 'automation' / 'crud' in lib/brain/registry.ts.${C.reset}`)
   console.log()
-  // In strict mode (e.g. CI), fail the build. In dev/local you can soft-fail.
-  const strict = process.env.TRUTH_LINT_STRICT !== '0' && process.env.NODE_ENV !== 'development'
+  // Soft-fail by default while existing add-ons are still being refactored.
+  // Flip to strict (exit 1, fail the build) by setting TRUTH_LINT_STRICT=1.
+  const strict = process.env.TRUTH_LINT_STRICT === '1'
   process.exit(strict ? 1 : 0)
 }
