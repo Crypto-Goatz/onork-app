@@ -79,7 +79,9 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
 
   const onMount = useCallback((editor: Editor) => {
     editorRef.current = editor
-    editor.user.updateUserPreferences({ colorScheme: 'light' })
+    // Theme is inherited from the parent's colorScheme: 'light' — don't
+    // mutate user preferences here, that re-renders tldraw post-mount and
+    // collapses its UI panels for the wrong reason.
   }, [])
 
   const scheduleSave = useCallback(() => {

@@ -1,37 +1,13 @@
 /**
  * Canvas layout — the ONLY visible front-end layer.
  *
- * The rest of the app runs on a forced-dark theme (html.dark +
- * data-theme="dark" + color-scheme:dark on :root). The canvas escapes ALL
- * of that:
- *
- *   - Removes html.dark while this route is mounted (auto-restored on leave)
- *   - Overrides the dark CSS custom properties to light values within its tree
- *   - Forces color-scheme:light so native browser chrome (scrollbars, form
- *     fields) renders light too
- *   - Suppresses LaunchBanner / PublicNav / VoiceAI / LoadingScreen via
- *     route-prefix checks already in those components
+ * Strategy: don't touch the global html.dark class (that fights with tldraw
+ * post-mount and causes its UI to collapse). Instead, scope ALL theme
+ * overrides to this layout's root div via inline CSS variables and
+ * colorScheme:'light'. Cascades down the tree, never escapes upward.
  */
 
-'use client'
-
-import { useEffect } from 'react'
-
 export default function CanvasLayout({ children }: { children: React.ReactNode }) {
-  // Toggle the html.dark class while on /canvas. Restore on unmount so the
-  // rest of the app doesn't lose its theme.
-  useEffect(() => {
-    const html = document.documentElement
-    const hadDark = html.classList.contains('dark')
-    const prevTheme = html.getAttribute('data-theme')
-    html.classList.remove('dark')
-    html.setAttribute('data-theme', 'light')
-    return () => {
-      if (hadDark) html.classList.add('dark')
-      if (prevTheme !== null) html.setAttribute('data-theme', prevTheme)
-    }
-  }, [])
-
   return (
     <div
       data-canvas-root
