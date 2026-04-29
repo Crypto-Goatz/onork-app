@@ -180,19 +180,20 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
       const data = await r.json()
       if (!r.ok) throw new Error(data?.error || 'thinking failed')
 
-      const blocks = (data.flow?.blocks as Array<{ type: string; label: string; x: number; y: number }>) ?? []
+      const blocks = (data.flow?.blocks as Array<{ id: string; type: string; label: string; x: number; y: number }>) ?? []
+      const edges  = (data.flow?.edges  as Array<{ id: string; source: string; target: string }>) ?? []
       setChatMessages((prev) => [
         ...prev,
         { role: 'jaxx', text: data.message ?? 'Here you go.', flow: { blocks } },
       ])
 
-      // Materialize on canvas
+      // Materialize blocks first so we can resolve edge endpoints to real tldraw ids
       const editor = editorRef.current
       if (editor && blocks.length) {
-        const ids: TLShapeId[] = []
+        const blockIdMap: Record<string, TLShapeId> = {}
         for (const b of blocks) {
           const id = `shape:${crypto.randomUUID()}` as TLShapeId
-          ids.push(id)
+          blockIdMap[b.id] = id
           editor.createShape({
             id,
             type: 'note',
@@ -205,6 +206,49 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
               color: 'light-blue',
             },
           } as Parameters<Editor['createShape']>[0])
+        }
+
+        // Then draw arrows between them. Tldraw arrows need page coordinates
+        // for both endpoints; bindings auto-attach when the start/end is inside
+        // a shape's geometry. Center each endpoint on the source/target shape.
+        for (const e of edges) {
+          const sourceId = blockIdMap[e.source]
+          const targetId = blockIdMap[e.target]
+          if (!sourceId || !targetId) continue
+          const src = blocks.find((b) => b.id === e.source)!
+          const tgt = blocks.find((b) => b.id === e.target)!
+          const arrowId = `shape:${crypto.randomUUID()}` as TLShapeId
+          editor.createShape({
+            id: arrowId,
+            type: 'arrow',
+            x: 0,
+            y: 0,
+            props: {
+              start: { x: (src.x ?? 200), y: (src.y ?? 240) },
+              end:   { x: (tgt.x ?? 200), y: (tgt.y ?? 240) },
+              color: 'green',
+              size: 'm',
+              arrowheadStart: 'none',
+              arrowheadEnd: 'arrow',
+            },
+          } as Parameters<Editor['createShape']>[0])
+
+          // Bind start/end of the arrow to the source/target shapes so they
+          // stay attached if the user drags blocks around.
+          editor.createBindings([
+            {
+              type: 'arrow',
+              fromId: arrowId,
+              toId: sourceId,
+              props: { terminal: 'start', normalizedAnchor: { x: 1, y: 0.5 }, isExact: false, isPrecise: true },
+            },
+            {
+              type: 'arrow',
+              fromId: arrowId,
+              toId: targetId,
+              props: { terminal: 'end', normalizedAnchor: { x: 0, y: 0.5 }, isExact: false, isPrecise: true },
+            },
+          ] as unknown as Parameters<Editor['createBindings']>[0])
         }
         scheduleSave()
       }

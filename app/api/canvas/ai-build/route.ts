@@ -4,7 +4,10 @@
  * Body: { prompt: string }
  *
  * Groq decides which blocks to materialize on the canvas. Returns:
- *   { message: string, flow: { blocks: Array<{ type, label, x, y }> } }
+ *   { message, flow: { blocks: [...], edges: [...] } }
+ *
+ * Each block has a stable id Groq assigns. Edges reference blocks by id
+ * so the canvas can draw tldraw arrows between them.
  *
  * Auth: Supabase session.
  */
@@ -26,20 +29,28 @@ const KNOWN_BLOCKS = [
 
 type BlockType = typeof KNOWN_BLOCKS[number]
 
-interface BlockSpec { type: BlockType; label: string; x: number; y: number }
-interface Plan      { message: string; blocks: BlockSpec[] }
+interface BlockSpec { id: string; type: BlockType; label: string; x: number; y: number }
+interface EdgeSpec  { id: string; source: string; target: string }
+interface Plan      { message: string; blocks: BlockSpec[]; edges?: EdgeSpec[] }
 
-const SYSTEM = `You are Jaxx, the canvas builder. Given a user request, output a small flow of blocks that materializes on a 2D canvas.
+const SYSTEM = `You are Jaxx, the canvas builder. Given a user request, output a flow of blocks linked by edges that materializes on a 2D canvas.
 
 Available block types: ${KNOWN_BLOCKS.join(', ')}.
 
 Layout rules:
 - 1-5 blocks per response. Keep it tight.
-- Position blocks left to right with x increasing by 280, starting at 200.
-- All on the same row (y = 240) unless a clear branch.
+- Position blocks left to right with x increasing by 280, starting at x=200, y=240.
+- Same row unless a clear branch.
 - Each block has a short, human label (≤32 chars) describing its job in this flow.
+- Each block needs a unique id like "n1", "n2", "n3".
+- Edges connect blocks by their ids — almost always n1 → n2 → n3 in sequence.
 
-Output ONLY valid JSON: { "message": "<one sentence to the user>", "blocks": [{ "type": "<one of the known blocks>", "label": "<≤32 chars>", "x": <number>, "y": <number> }] }`
+Output ONLY valid JSON:
+{
+  "message": "<one sentence to the user>",
+  "blocks": [{ "id": "n1", "type": "<one of the known blocks>", "label": "<≤32 chars>", "x": 200, "y": 240 }, ...],
+  "edges":  [{ "id": "e1", "source": "n1", "target": "n2" }, ...]
+}`
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
@@ -61,13 +72,30 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Sanitize: drop any unknown block types Groq invented
+  // Sanitize: drop any unknown block types Groq invented + ensure each block has an id
   const blocks = (plan.blocks ?? [])
     .filter((b) => KNOWN_BLOCKS.includes(b.type))
     .slice(0, 8)
+    .map((b, i) => ({ ...b, id: b.id ?? `n${i + 1}` }))
+
+  // Keep only edges whose source AND target reference a known block id
+  const validIds = new Set(blocks.map((b) => b.id))
+  const edges = (plan.edges ?? [])
+    .filter((e) => validIds.has(e.source) && validIds.has(e.target) && e.source !== e.target)
+    .slice(0, 16)
+    .map((e, i) => ({ ...e, id: e.id ?? `e${i + 1}` }))
+
+  // Fallback: if Groq forgot edges entirely, link blocks left-to-right in order
+  const finalEdges = edges.length > 0
+    ? edges
+    : blocks.slice(1).map((b, i) => ({
+        id: `e${i + 1}`,
+        source: blocks[i].id,
+        target: b.id,
+      }))
 
   return NextResponse.json({
     message: plan.message ?? 'Here you go.',
-    flow: { blocks },
+    flow: { blocks, edges: finalEdges },
   })
 }
