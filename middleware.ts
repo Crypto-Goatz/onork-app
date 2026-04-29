@@ -34,9 +34,15 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Protected routes — redirect to login if not authenticated
-  if (!user && (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/console'))) {
+  if (
+    !user &&
+    (request.nextUrl.pathname.startsWith('/dashboard')
+      || request.nextUrl.pathname.startsWith('/console')
+      || request.nextUrl.pathname.startsWith('/canvas'))
+  ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    url.searchParams.set('next', request.nextUrl.pathname)
     return NextResponse.redirect(url)
   }
 
@@ -58,10 +64,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 301)
   }
 
-  // If logged in and visiting login/signup, redirect to dashboard
+  // If logged in and visiting login/signup, redirect to canvas (free attractor)
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/canvas'
     return NextResponse.redirect(url)
   }
 
@@ -69,5 +75,13 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/console/:path*', '/login', '/signup', '/hippa', '/hippa/:path*'],
+  matcher: [
+    '/dashboard/:path*',
+    '/console/:path*',
+    '/canvas/:path*',
+    '/login',
+    '/signup',
+    '/hippa',
+    '/hippa/:path*',
+  ],
 }

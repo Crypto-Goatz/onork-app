@@ -74,14 +74,10 @@ export async function GET(request: Request) {
         if (next) {
           return NextResponse.redirect(`${origin}${next}`)
         }
-
-        // New user or hasn't completed onboarding → send to import
-        if (!profile?.onboarding_complete) {
-          return NextResponse.redirect(`${origin}/import`)
-        }
       }
 
-      return NextResponse.redirect(`${origin}/dashboard`)
+      // All free users land on the Canvas. The dashboard is VIP-only.
+      return NextResponse.redirect(`${origin}/canvas`)
     }
   }
 

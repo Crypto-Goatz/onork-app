@@ -89,7 +89,7 @@ export default function LoginPage() {
     setLoading(true)
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
     if (authError) { setError(authError.message); setLoading(false); return }
-    router.push('/dashboard')
+    router.push('/canvas')
   }
 
   async function handleRequestAccess(e: React.FormEvent) {
