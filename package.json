@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/pre-deploy.mjs && next build",
+    "build": "node scripts/pre-deploy.mjs && node scripts/truth-lint.mjs && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "truth-lint": "node scripts/truth-lint.mjs",
+    "truth-lint:strict": "TRUTH_LINT_STRICT=1 node scripts/truth-lint.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",

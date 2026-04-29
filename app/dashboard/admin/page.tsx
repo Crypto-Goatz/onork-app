@@ -160,6 +160,7 @@ export default function AdminPage() {
     { href: '/dashboard/admin/marketing', label: 'Marketing Tools', desc: 'Content & social', accent: 'purple', icon: 'M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z' },
     { href: '/dashboard/admin/mcp-registry', label: 'MCP Registry', desc: 'Browse & connect official MCP servers', accent: 'green', icon: 'M5 12h14M12 5l7 7-7 7' },
     { href: '/dashboard/admin/crm-apps', label: 'CRM Apps', desc: 'Live state of both apps + operation routing', accent: 'cyan', icon: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5' },
+    { href: '/dashboard/admin/truth', label: 'Truth Audit', desc: 'What\'s actually AI vs lying — green/yellow/red per add-on', accent: 'green', icon: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z' },
   ]
 
   // VIP location config — hardcoded for mike@rocketopp.com
