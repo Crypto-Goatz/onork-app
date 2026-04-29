@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { X, Rocket, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
+const EXCLUDED_PREFIXES = ['/dashboard', '/console', '/crm', '/canvas', '/auth']
 const LAUNCH_DATE = new Date('2026-05-01T00:00:00Z')
 const STORAGE_KEY = '0n_launch_banner_dismissed_v4_10_0'
 
@@ -18,8 +20,11 @@ function timeLeft(): { days: number; hours: number; minutes: number } {
 }
 
 export function LaunchBanner() {
+  const pathname = usePathname()
   const [dismissed, setDismissed] = useState<boolean | null>(null)
   const [t, setT] = useState(timeLeft())
+
+  if (EXCLUDED_PREFIXES.some((p) => pathname?.startsWith(p))) return null
 
   useEffect(() => {
     const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null

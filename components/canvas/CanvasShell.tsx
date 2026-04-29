@@ -109,18 +109,14 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
 
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current) }, [])
 
-  // ── Drop a block from the library onto the canvas ───────────────
-  function dropBlock(b: BlockDef) {
+  // ── Place a block at a specific page-coordinate point ───────────
+  function placeBlockAt(b: BlockDef, page: { x: number; y: number }) {
     const editor = editorRef.current
     if (!editor) return
-    const bounds = editor.getViewportPageBounds()
-    const cx = bounds.x + bounds.w / 2
-    const cy = bounds.y + bounds.h / 2 + (Math.random() - 0.5) * 80
-
     editor.createShape({
       type: 'note',
-      x: cx - 100,
-      y: cy - 100,
+      x: page.x - 100,
+      y: page.y - 100,
       props: {
         richText: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: `${b.label}\n${b.hint}` }] }] },
         size: 's',
@@ -129,6 +125,43 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
       },
     } as Parameters<Editor['createShape']>[0])
     scheduleSave()
+  }
+
+  // Click-to-drop falls back to viewport center
+  function dropBlock(b: BlockDef) {
+    const editor = editorRef.current
+    if (!editor) return
+    const bounds = editor.getViewportPageBounds()
+    placeBlockAt(b, {
+      x: bounds.x + bounds.w / 2,
+      y: bounds.y + bounds.h / 2 + (Math.random() - 0.5) * 80,
+    })
+  }
+
+  // ── HTML5 drag from the library, drop onto the canvas ──────────
+  const canvasContainerRef = useRef<HTMLDivElement | null>(null)
+  function handleDragStart(b: BlockDef, e: React.DragEvent) {
+    e.dataTransfer.setData('application/x-0n-block', b.type)
+    e.dataTransfer.effectAllowed = 'copy'
+  }
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    const editor = editorRef.current
+    if (!editor) return
+    const blockType = e.dataTransfer.getData('application/x-0n-block')
+    const block = BLOCKS.find((x) => x.type === blockType)
+    if (!block) return
+    // Convert client coords (relative to viewport) to tldraw page coords
+    const rect = canvasContainerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const page = editor.screenToPage({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+    placeBlockAt(block, page)
+  }
+  function handleDragOver(e: React.DragEvent) {
+    if (e.dataTransfer.types.includes('application/x-0n-block')) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+    }
   }
 
   async function sendChat() {
@@ -233,8 +266,10 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
                   {items.map((b) => (
                     <button
                       key={b.type}
+                      draggable
+                      onDragStart={(e) => handleDragStart(b, e)}
                       onClick={() => dropBlock(b)}
-                      className="group flex w-full items-center gap-2.5 rounded-lg border border-transparent bg-white px-2.5 py-2 text-left shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:-translate-y-px hover:border-slate-200 hover:shadow-[0_4px_14px_-4px_rgba(0,0,0,0.10)]"
+                      className="group flex w-full cursor-grab items-center gap-2.5 rounded-lg border border-transparent bg-white px-2.5 py-2 text-left shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:-translate-y-px hover:border-slate-200 hover:shadow-[0_4px_14px_-4px_rgba(0,0,0,0.10)] active:cursor-grabbing"
                     >
                       <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-slate-100 text-slate-600 transition group-hover:bg-[var(--accent)]/15 group-hover:text-[var(--accent-foreground,#16803c)]">
                         <b.icon className="h-3.5 w-3.5" />
@@ -275,7 +310,12 @@ export default function CanvasShell({ flowId, initialName }: { flowId: string; i
           </div>
         </header>
 
-        <div className="relative flex-1">
+        <div
+          ref={canvasContainerRef}
+          className="relative flex-1"
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+        >
           <Tldraw onMount={onMount} hideUi={false} />
         </div>
       </div>
