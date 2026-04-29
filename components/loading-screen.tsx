@@ -1,8 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
+
+// Routes that own their own viewport — the canvas, auth, etc. — should never
+// be covered by the global loading screen. The canvas is the front-end layer.
+const SKIP_PREFIXES = ['/canvas', '/login', '/signup', '/forgot-password', '/reset-password', '/auth']
 
 export function LoadingScreen() {
+  const pathname = usePathname()
   const [visible, setVisible] = useState(true)
   const [fadeOut, setFadeOut] = useState(false)
   const [phase, setPhase] = useState(0) // 0=dark, 1=logo appears, 2=glow intensifies
@@ -15,6 +21,7 @@ export function LoadingScreen() {
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4) }
   }, [])
 
+  if (SKIP_PREFIXES.some((p) => pathname?.startsWith(p))) return null
   if (!visible) return null
 
   return (
