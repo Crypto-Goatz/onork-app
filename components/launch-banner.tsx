@@ -20,11 +20,12 @@ function timeLeft(): { days: number; hours: number; minutes: number } {
 }
 
 export function LaunchBanner() {
+  // ALL hooks must run on every render — never gate them behind a path
+  // check or React throws "Rendered fewer hooks than expected" when the
+  // route changes between an excluded and non-excluded prefix.
   const pathname = usePathname()
   const [dismissed, setDismissed] = useState<boolean | null>(null)
   const [t, setT] = useState(timeLeft())
-
-  if (EXCLUDED_PREFIXES.some((p) => pathname?.startsWith(p))) return null
 
   useEffect(() => {
     const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
@@ -36,6 +37,8 @@ export function LaunchBanner() {
     return () => clearInterval(id)
   }, [])
 
+  // Path gate AFTER all hooks
+  if (EXCLUDED_PREFIXES.some((p) => pathname?.startsWith(p))) return null
   if (dismissed === null || dismissed) return null
 
   const launched = t.days <= 0 && t.hours <= 0 && t.minutes <= 0

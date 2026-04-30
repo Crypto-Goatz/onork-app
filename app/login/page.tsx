@@ -179,12 +179,7 @@ export default function LoginPage() {
               <div className="flex-1 h-px bg-white/[0.06]" />
             </div>
 
-            <form onSubmit={handleLogin} method="post" action="#">
-              {error && (
-                <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-300">
-                  {error}
-                </div>
-              )}
+            <form onSubmit={handleLogin}>
               <div className="mb-3">
                 <label className="login-label" htmlFor="login-email">Email</label>
                 <input id="login-email" name="email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com" className="login-input" />
