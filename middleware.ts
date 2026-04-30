@@ -1,10 +1,20 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+/**
+ * Auth middleware — the canonical Supabase SSR pattern.
+ *
+ * The critical bit: when supabase.auth.getUser() refreshes the session,
+ * Supabase asks us to write new cookies back. We MUST attach those cookies
+ * to whatever response we return, including redirects. Returning a bare
+ * NextResponse.redirect() discards them and causes infinite loops.
+ *
+ * The helper `withCookies(target)` copies whatever cookies the supabase
+ * client wrote onto `supabaseResponse` over to any new response we make.
+ */
+
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -15,12 +25,8 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
-          })
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -29,9 +35,23 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  /** Build a response that carries the refreshed session cookies. */
+  function withCookies(target: NextResponse): NextResponse {
+    supabaseResponse.cookies.getAll().forEach((c) => {
+      target.cookies.set(c.name, c.value, {
+        domain: c.domain,
+        path: c.path,
+        expires: c.expires,
+        maxAge: c.maxAge,
+        secure: c.secure,
+        httpOnly: c.httpOnly,
+        sameSite: c.sameSite,
+      })
+    })
+    return target
+  }
 
   // Protected routes — redirect to login if not authenticated
   if (
@@ -44,17 +64,15 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('next', request.nextUrl.pathname)
-    return NextResponse.redirect(url)
+    return withCookies(NextResponse.redirect(url))
   }
 
-  // ═══ 0nAI BRAIN — OWNER ONLY ═══
-  // /dashboard/ai is locked to mike@rocketopp.com ONLY.
-  // This is the nerve center. No exceptions.
+  // /dashboard/ai is locked to mike@rocketopp.com only
   if (request.nextUrl.pathname.startsWith('/dashboard/ai')) {
     if (!user || user.email !== 'mike@rocketopp.com') {
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
+      return withCookies(NextResponse.redirect(url))
     }
   }
 
@@ -62,14 +80,14 @@ export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname === '/hippa' || request.nextUrl.pathname.startsWith('/hippa/')) {
     const url = request.nextUrl.clone()
     url.pathname = request.nextUrl.pathname.replace('/hippa', '/hipaa')
-    return NextResponse.redirect(url, 301)
+    return withCookies(NextResponse.redirect(url, 301))
   }
 
-  // If logged in and visiting login/signup, redirect to the welcome control panel
+  // Logged in user hitting /login or /signup — bounce to /welcome
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
     const url = request.nextUrl.clone()
     url.pathname = '/welcome'
-    return NextResponse.redirect(url)
+    return withCookies(NextResponse.redirect(url))
   }
 
   return supabaseResponse
