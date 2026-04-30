@@ -309,7 +309,7 @@ export default function CompactSidebar({ isOpen, onClose, isAdmin }: CompactSide
         {/* Header */}
         <div className="jp-compact-sidebar-header py-3.5 flex justify-center">
           <Link href="/dashboard" className="jp-compact-sidebar-brand" onClick={onClose}>
-            <img src="/brand/0ncore-logo.png" alt="0nCore" className="w-8 h-8 object-contain" />
+            <img src="/brand/0ncore-icon.png" alt="0nCore" className="w-8 h-8 object-contain" />
           </Link>
         </div>
 
