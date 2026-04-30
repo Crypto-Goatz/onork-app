@@ -76,8 +76,8 @@ export async function GET(request: Request) {
         }
       }
 
-      // All free users land on the Canvas. The dashboard is VIP-only.
-      return NextResponse.redirect(`${origin}/canvas`)
+      // Every signed-in user lands on the welcome control panel.
+      return NextResponse.redirect(`${origin}/welcome`)
     }
   }
 

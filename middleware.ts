@@ -38,7 +38,8 @@ export async function middleware(request: NextRequest) {
     !user &&
     (request.nextUrl.pathname.startsWith('/dashboard')
       || request.nextUrl.pathname.startsWith('/console')
-      || request.nextUrl.pathname.startsWith('/canvas'))
+      || request.nextUrl.pathname.startsWith('/canvas')
+      || request.nextUrl.pathname.startsWith('/welcome'))
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -64,10 +65,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 301)
   }
 
-  // If logged in and visiting login/signup, redirect to canvas (free attractor)
+  // If logged in and visiting login/signup, redirect to the welcome control panel
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/canvas'
+    url.pathname = '/welcome'
     return NextResponse.redirect(url)
   }
 
@@ -79,6 +80,7 @@ export const config = {
     '/dashboard/:path*',
     '/console/:path*',
     '/canvas/:path*',
+    '/welcome/:path*',
     '/login',
     '/signup',
     '/hippa',

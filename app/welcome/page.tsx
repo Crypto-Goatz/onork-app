@@ -1,0 +1,170 @@
+/**
+ * /welcome — the post-auth control panel for every signed-in user.
+ *
+ * Server-side responsibilities:
+ *   1. Auth gate — redirect to /login?next=/welcome if no session
+ *   2. Provision — make sure profiles row exists (idempotent insert)
+ *   3. Fetch the user's plan + crm_location_id so we can compute access
+ *   4. Hand off to <WelcomePanel/> with everything resolved
+ *
+ * The user picks their own destination from 6 cards. No single product
+ * is forced as the "main" surface — flexibility for both free + paid users.
+ */
+
+import { redirect } from 'next/navigation'
+import { createClient as createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
+import WelcomePanel, { type CardAccess } from '@/components/welcome/WelcomePanel'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+function admin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
+
+interface ProfileRow {
+  id: string
+  email: string | null
+  full_name: string | null
+  plan: string | null
+  crm_location_id: string | null
+  is_admin: boolean | null
+}
+
+const PLAN_RANK: Record<string, number> = {
+  free: 0,
+  supporter: 1,
+  starter: 1,
+  builder: 2,
+  pro: 2,
+  enterprise: 3,
+  business: 3,
+  penthouse: 4,
+  agency: 4,
+}
+
+function rank(plan: string | null | undefined): number {
+  return PLAN_RANK[(plan ?? 'free').toLowerCase()] ?? 0
+}
+
+export default async function WelcomePage() {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login?next=/welcome')
+
+  const sb = admin()
+
+  // Ensure profile row exists (idempotent — Supabase trigger should have
+  // created it on signup, but we defend against missing rows here)
+  let { data: profile } = await sb
+    .from('profiles')
+    .select('id, email, full_name, plan, crm_location_id, is_admin')
+    .eq('id', user.id)
+    .maybeSingle<ProfileRow>()
+
+  if (!profile) {
+    const { data: created } = await sb
+      .from('profiles')
+      .insert({
+        id: user.id,
+        email: user.email ?? null,
+        full_name: (user.user_metadata?.full_name as string) ?? null,
+        plan: 'free',
+      })
+      .select('id, email, full_name, plan, crm_location_id, is_admin')
+      .single<ProfileRow>()
+    profile = created ?? null
+  }
+
+  const plan = profile?.plan ?? 'free'
+  const userRank = rank(plan)
+  const isAdmin = !!profile?.is_admin
+
+  // Compute access per card. Admins always pass.
+  const access = (minRank: number): CardAccess =>
+    isAdmin || userRank >= minRank ? 'unlocked' : 'locked'
+
+  return (
+    <WelcomePanel
+      user={{
+        email: profile?.email ?? user.email ?? '',
+        name: profile?.full_name ?? null,
+        plan,
+        location_id: profile?.crm_location_id ?? null,
+        is_admin: isAdmin,
+      }}
+      cards={[
+        {
+          id: 'canvas',
+          title: 'Canvas',
+          subtitle: 'Visual workspace + Jaxx flow builder',
+          description: 'Drop blocks, draw connections, or just tell Jaxx what you want.',
+          href: '/canvas',
+          access: 'unlocked',
+          tag: 'Free',
+          required_plan: null,
+          icon: 'Workflow',
+        },
+        {
+          id: 'notes',
+          title: 'Notes',
+          subtitle: 'AI-first capture — flowcharts, mind maps, docs',
+          description: 'Drop any thought; the brain decides what it should become.',
+          href: '/dashboard/notes',
+          access: 'unlocked',
+          tag: 'Free',
+          required_plan: null,
+          icon: 'Sparkles',
+        },
+        {
+          id: 'service_packager',
+          title: 'Service Packager',
+          subtitle: 'Eight sellable outputs from one input',
+          description: 'Fiverr gig, Upwork, portfolio, landing page, social — generated and exported.',
+          href: '/dashboard/service-packager',
+          access: 'unlocked',
+          tag: 'Free',
+          required_plan: null,
+          icon: 'Package',
+        },
+        {
+          id: 'course_builder',
+          title: 'Course Builder',
+          subtitle: 'AI courses + auto-publish to your CRM',
+          description: 'Conversational course generation that publishes itself.',
+          href: '/dashboard/courses',
+          access: access(1),
+          tag: 'Starter',
+          required_plan: 'Starter ($29/mo)',
+          icon: 'GraduationCap',
+        },
+        {
+          id: 'hipaa_scanner',
+          title: 'HIPAA Scanner',
+          subtitle: 'Compliance scans + weighted scoring',
+          description: '63 checks across the 4 HIPAA pillars, with branded PDF reports.',
+          href: '/dashboard/hipaa',
+          access: access(2),
+          tag: 'Builder',
+          required_plan: 'Builder ($79/mo)',
+          icon: 'Shield',
+        },
+        {
+          id: 'voice_ai',
+          title: 'Voice AI',
+          subtitle: 'Phone + web voice agents with knowledge bases',
+          description: 'Deploy a voice agent that books, qualifies, and summarizes.',
+          href: '/dashboard/voice',
+          access: access(3),
+          tag: 'Enterprise',
+          required_plan: 'Enterprise ($299/mo)',
+          icon: 'Mic',
+        },
+      ]}
+    />
+  )
+}

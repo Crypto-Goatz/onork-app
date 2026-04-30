@@ -88,7 +88,7 @@ export default function SignupPage() {
       // /canvas. Only show the "check your email" screen if for some reason
       // no session came back (autoconfirm later disabled).
       if (data.session) {
-        window.location.href = '/canvas'
+        window.location.href = '/welcome'
         return
       }
 
