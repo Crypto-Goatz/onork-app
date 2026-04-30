@@ -87,12 +87,22 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
-    if (authError) { setError(authError.message); setLoading(false); return }
-    // Hard navigation so the Supabase session cookie is sent on the next
-    // request — router.push runs before the cookie is written and middleware
-    // bounces the user back to /login.
-    window.location.href = '/canvas'
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      if (authError) {
+        setError(authError.message)
+        setLoading(false)
+        return
+      }
+      // Hard navigation so the session cookie is on the next request —
+      // router.push runs before the cookie is written and middleware bounces
+      // back to /login. Looks like the form did nothing.
+      window.location.href = '/canvas'
+    } catch (err) {
+      console.error('[login] sign in threw:', err)
+      setError(err instanceof Error ? err.message : 'Sign in failed. Please try again.')
+      setLoading(false)
+    }
   }
 
   async function handleRequestAccess(e: React.FormEvent) {
@@ -128,7 +138,7 @@ export default function LoginPage() {
             )}
 
             <div className="flex flex-col gap-[6px] mb-[18px]">
-              <button onClick={() => handleOAuth('google')} className="oauth-btn">
+              <button type="button" onClick={() => handleOAuth('google')} className="oauth-btn">
                 <svg width="18" height="18" viewBox="0 0 24 24" className="shrink-0">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -140,7 +150,7 @@ export default function LoginPage() {
                   <span className="text-[10px] text-white/30 font-normal">Analytics, Gmail, Drive, Calendar</span>
                 </div>
               </button>
-              <button onClick={() => handleOAuth('linkedin_oidc')} className="oauth-btn">
+              <button type="button" onClick={() => handleOAuth('linkedin_oidc')} className="oauth-btn">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="#0A66C2" className="shrink-0">
                   <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                 </svg>
@@ -149,7 +159,7 @@ export default function LoginPage() {
                   <span className="text-[10px] text-white/30 font-normal">AI social posting, lead intelligence</span>
                 </div>
               </button>
-              <button onClick={handleSlackLogin} className="oauth-btn">
+              <button type="button" onClick={handleSlackLogin} className="oauth-btn">
                 <svg width="18" height="18" viewBox="0 0 24 24" className="shrink-0">
                   <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z" fill="#E01E5A"/>
                   <path d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z" fill="#36C5F0"/>
@@ -169,14 +179,19 @@ export default function LoginPage() {
               <div className="flex-1 h-px bg-white/[0.06]" />
             </div>
 
-            <form onSubmit={handleLogin}>
+            <form onSubmit={handleLogin} method="post" action="#">
+              {error && (
+                <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-300">
+                  {error}
+                </div>
+              )}
               <div className="mb-3">
-                <label className="login-label">Email</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com" className="login-input" />
+                <label className="login-label" htmlFor="login-email">Email</label>
+                <input id="login-email" name="email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com" className="login-input" />
               </div>
               <div className="mb-2">
-                <label className="login-label">Password</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Enter your password" className="login-input" />
+                <label className="login-label" htmlFor="login-password">Password</label>
+                <input id="login-password" name="password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Enter your password" className="login-input" />
               </div>
               <div className="mb-5 text-right">
                 <Link href="/forgot-password" className="text-[11px] text-white/30 hover:text-[#7ed957] no-underline transition-colors">
@@ -189,7 +204,7 @@ export default function LoginPage() {
             </form>
 
             <div className="text-center mt-4 pt-4 border-t border-white/[0.05]">
-              <button onClick={() => setShowModal(true)} className="login-request-btn">
+              <button type="button" onClick={() => setShowModal(true)} className="login-request-btn">
                 Request Access
               </button>
             </div>
