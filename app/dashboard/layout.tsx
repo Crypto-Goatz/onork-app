@@ -71,19 +71,24 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       }
     } catch {}
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
+    // Use getSession (reads cookies, no network round-trip) instead of
+    // getUser (network call that can fail and trigger a redirect loop).
+    // Middleware already validated the JWT before we got here, so trusting
+    // the cached session is safe + fast.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const u = session?.user ?? null
+      if (!u) {
         router.push('/login')
         return
       }
-      setUser(user)
+      setUser(u)
       setLoading(false)
 
       // Check admin status + provisioning
       supabase
         .from('profiles')
         .select('is_admin, crm_location_id, stripe_customer_id')
-        .eq('id', user.id)
+        .eq('id', u.id)
         .single()
         .then(({ data }) => {
           if (data?.is_admin) setIsAdmin(true)
@@ -103,9 +108,9 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                user_id: user.id,
-                email: user.email || '',
-                name: user.user_metadata?.full_name || '',
+                user_id: u.id,
+                email: u.email || '',
+                name: u.user_metadata?.full_name || '',
                 subaccount_name: subaccountName,
               }),
             }).then(() => {
@@ -113,6 +118,12 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             }).catch(() => {})
           }
         })
+    }).catch((err) => {
+      // Don't bounce to /login on a fetch failure — middleware already let
+      // us through, the session is valid server-side. Just log and continue
+      // with no user (parts of the UI will show empty until session syncs).
+      console.error('[dashboard.layout] getSession failed:', err)
+      setLoading(false)
     })
   }, [router, supabase])
 
