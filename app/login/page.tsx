@@ -89,7 +89,10 @@ export default function LoginPage() {
     setLoading(true)
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
     if (authError) { setError(authError.message); setLoading(false); return }
-    router.push('/canvas')
+    // Hard navigation so the Supabase session cookie is sent on the next
+    // request — router.push runs before the cookie is written and middleware
+    // bounces the user back to /login.
+    window.location.href = '/canvas'
   }
 
   async function handleRequestAccess(e: React.FormEvent) {

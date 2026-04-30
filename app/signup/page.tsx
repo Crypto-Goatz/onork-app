@@ -67,10 +67,11 @@ export default function SignupPage() {
     setError('')
     setLoading(true)
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
           full_name: fullName,
         },
@@ -80,6 +81,15 @@ export default function SignupPage() {
     if (authError) {
       setError(authError.message)
       setLoading(false)
+      return
+    }
+
+    // Supabase has mailer_autoconfirm enabled — successful signup returns
+    // a session immediately, no email click required. Drop the user on
+    // /canvas. Only show the "check your email" screen if for some reason
+    // no session came back (autoconfirm later disabled).
+    if (data.session) {
+      window.location.href = '/canvas'
       return
     }
 
