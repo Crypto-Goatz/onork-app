@@ -50,8 +50,12 @@ function isEdge(x: unknown): x is Edge {
 }
 
 export default async function CanvasPage() {
+  // Use getSession (cookie-only, no network). Middleware validated the JWT;
+  // re-validating here can race with middleware's cookie refresh and trigger
+  // a /canvas → /login → /welcome → /canvas redirect loop.
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) redirect('/login?next=/canvas')
 
   const sb = admin()

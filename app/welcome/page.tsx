@@ -52,8 +52,13 @@ function rank(plan: string | null | undefined): number {
 }
 
 export default async function WelcomePage() {
+  // Use getSession (cookie-only, no network) instead of getUser (network call).
+  // Middleware has already validated the JWT before this server component runs;
+  // re-validating here can race with middleware's cookie refresh and produce
+  // a /welcome → /login → /welcome infinite loop.
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) redirect('/login?next=/welcome')
 
   const sb = admin()

@@ -21,8 +21,10 @@ function admin() {
 }
 
 export default async function WelcomeSettingsPage() {
+  // Cookie-only check — see /welcome/page.tsx for the loop explanation.
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user
   if (!user) redirect('/login?next=/welcome/settings')
 
   const { data: profile } = await admin()
