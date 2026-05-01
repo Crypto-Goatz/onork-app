@@ -71,18 +71,16 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       }
     } catch {}
 
-    // Use getSession (reads cookies, no network round-trip) instead of
-    // getUser (network call that can fail and trigger a redirect loop).
-    // Middleware already validated the JWT before we got here, so trusting
-    // the cached session is safe + fast.
+    // Trust middleware. If it let this request through, the user is authed.
+    // Don't bounce to /login from the client — that creates a redirect loop
+    // when the browser SDK and middleware momentarily disagree about cookies.
+    // If getSession returns null here, just stop loading; data fetches in
+    // child pages will fail gracefully.
     supabase.auth.getSession().then(({ data: { session } }) => {
       const u = session?.user ?? null
-      if (!u) {
-        router.push('/login')
-        return
-      }
       setUser(u)
       setLoading(false)
+      if (!u) return
 
       // Check admin status + provisioning
       supabase

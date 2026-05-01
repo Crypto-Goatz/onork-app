@@ -94,10 +94,9 @@ export default function LoginPage() {
         setLoading(false)
         return
       }
-      // Hard navigation so the session cookie is on the next request —
-      // router.push runs before the cookie is written and middleware bounces
-      // back to /login. Looks like the form did nothing.
-      window.location.href = '/welcome'
+      // Hard navigation so the session cookie is on the next request.
+      // Straight to /dashboard — no welcome redirect chain.
+      window.location.href = '/dashboard'
     } catch (err) {
       console.error('[login] sign in threw:', err)
       setError(err instanceof Error ? err.message : 'Sign in failed. Please try again.')

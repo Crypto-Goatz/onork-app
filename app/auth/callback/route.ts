@@ -76,8 +76,8 @@ export async function GET(request: Request) {
         }
       }
 
-      // Every signed-in user lands on the welcome control panel.
-      return NextResponse.redirect(`${origin}/welcome`)
+      // Straight to /dashboard. No welcome redirect chain.
+      return NextResponse.redirect(`${origin}/dashboard`)
     }
   }
 

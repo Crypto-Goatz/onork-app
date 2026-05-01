@@ -120,10 +120,10 @@ export async function middleware(request: NextRequest) {
     return withCookies(NextResponse.redirect(url, 301))
   }
 
-  // Logged in user hitting /login or /signup — bounce to /welcome
+  // Logged in user hitting /login or /signup — straight to /dashboard.
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/welcome'
+    url.pathname = '/dashboard'
     return withCookies(NextResponse.redirect(url))
   }
 
