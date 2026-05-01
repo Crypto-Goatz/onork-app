@@ -26,7 +26,10 @@ trust the live API — the rules below are the offline cache.
 4. **0n_ token system for auth.** All issued tokens (sessions, API keys,
    PITs, signed payloads) prefix with `0n_`. Lets us grep, audit, and
    revoke anything we issued.
-5. **Design system is fixed:**
+5. **Design system is fixed.** Read [`docs/0n-design-system.md`](./docs/0n-design-system.md)
+   before building **any** UI. It is the authoritative directive — color tokens,
+   typography scale, card/button/input specs, shadcn variable map, motion rules,
+   and the hard NO list.
    - Background: `#0d1117`
    - Primary accent: `#6EE05A`
    - Icons: **Lucide React only** — no emoji as icons, ever.
@@ -254,6 +257,7 @@ schema markup, or analytics.
 
 | Doc | When to read |
 |---|---|
+| [`docs/0n-design-system.md`](./docs/0n-design-system.md) | **Authoritative.** Every color token, typography scale, card/button/input spec, shadcn variable map, motion rule, and the hard NO list. Read before building any UI. |
 | [`docs/SXO-CRO9-Master-Playbook.md`](./docs/SXO-CRO9-Master-Playbook.md) | **Authoritative.** The 6 SXO Pillars + 8 Content Patterns + Living DOM + CRO9 engine + family-wide pricing + universal env-var standard. Source of truth for any public page. |
 | [`docs/Audit-VerifiedSXO-JaxxAI-CryptoGoatz.md`](./docs/Audit-VerifiedSXO-JaxxAI-CryptoGoatz.md) | Worked example of the audit + retrofit playbook against three live family sites. Use as the template when auditing any new domain. |
 
