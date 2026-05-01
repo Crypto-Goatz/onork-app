@@ -86,21 +86,38 @@ The Vercel cleanup runs as **Track B in parallel** with the Supabase reset. They
 
 Each phase is independently shippable. Phase 0 first (local-first verification). Phases 1-3 are mandatory before any new feature work. Phases 4-6 are scoped to the next 30 days. Phase 7 is governance, ongoing.
 
-### PHASE 0 — Local-first verification rig (4 hours)
+### PHASE 0 — Local-first verification rig (5 hours, was 4 — bumped for full prod restore)
 **Goal:** Every subsequent phase runs on a local replica of canonical first, verified, THEN promoted to production. Stops us from debugging in prod.
+
+**Updated approach from v3 review — restore PRODUCTION data, not just schema:**
 
 **Steps:**
 - [ ] Set up Supabase CLI on Mike's dev machine: `supabase init` in `onork-app`
-- [ ] `supabase db pull` from `pwujhhmlrtxjmjzyttwn` → captures full schema as a baseline migration
-- [ ] `supabase start` → boots a local Postgres mirror at `localhost:54321`
+- [ ] `supabase start` → boots a local Postgres mirror at `localhost:54322`
+- [ ] **`pg_dump` from production → restore locally** (this is the critical addition):
+  ```bash
+  pg_dump "$PRODUCTION_SUPABASE_URL" > /tmp/production_snapshot_$(date +%s).sql
+  psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" < /tmp/production_snapshot_*.sql
+  ```
+  Why: phase 2 (renames) and phase 3 (consolidation) need to be tested against REAL data — all 240+ tables, all seed data, all the weird edge cases. Empty tables always pass; production data exposes the bugs.
 - [ ] Add `.env.local.dev` with the local Supabase URL/key (gitignored)
 - [ ] Add `npm run dev:local` script that loads `.env.local.dev` instead of production envs
-- [ ] Document the workflow in a new `LOCAL_DEV.md`: "always run risky migrations against `supabase db reset --local` first"
-- [ ] Smoke test: clone schema locally, run a sample DROP TABLE, confirm app boots without errors
+- [ ] Document the workflow in a new `LOCAL_DEV.md`: "always run risky migrations against the local restore first; `supabase db reset --local` to start over from the production snapshot"
+- [ ] Smoke test: rename a known-dead table locally, confirm the app boots, then `supabase db reset` to restore
 
-**Why this matters:** Phase 2 (table drops) and Phase 3 (consolidation) become non-destructive on local before they touch the canonical DB. If something explodes, only the local replica feels it.
+**Why this matters:** Phase 2 (table drops) and Phase 3 (consolidation) become non-destructive on local before they touch the canonical DB. If something explodes, only the local replica feels it — and the production snapshot can be re-restored in one command.
 
-**Output:** `LOCAL_DEV.md` committed at repo root.
+**Output:** `LOCAL_DEV.md` committed at repo root + `/tmp/production_snapshot_*.sql` retained for the duration of the reset.
+
+### PHASE 0.5 — Pre-reset baseline snapshot (15 min)
+**Goal:** A timestamped record of what the ecosystem looked like before any destructive change.
+
+**Steps:**
+- [ ] Push current `STACK_AUDIT.md`, `OPERATION_RESET.md`, and `vercel-cleanup-recommendation.md` to `0n-dispatch` repo with commit message `baseline: pre-reset snapshot 2026-04-30`
+- [ ] Tag that commit `pre-reset-baseline`
+- [ ] If anything in the reset goes sideways, this commit is the receipt for "what was working before"
+
+**Mike's offer in v3 review:** he can push this to `0n-dispatch` directly. ✓ accept.
 
 ### PHASE 1 — Repoint the wrong Vercel projects (2-3 hours, was 1-2 — bumped up due to data migration)
 **Goal:** No 0n-branded app uses a non-canonical Supabase URL.
@@ -114,7 +131,7 @@ Each phase is independently shippable. Phase 0 first (local-first verification).
 
 So Phase 1 is **migrate-then-repoint**, not "accept data loss":
 
-**Steps:**
+**Steps (sequential, NEVER all at once — v3 addition):**
 - [ ] Run Phase 0 first (local rig must be up)
 - [ ] `pg_dump` from `yaehbwimocvvnnlojkxe` (0nCommand, powering 0nai) — full export to SQL file
 - [ ] `pg_dump` from `rtwtaisjtvdajrdyivkn` (Rocket+ Master, powering 0ntask + social0n + 0n-saas-template) — full export
@@ -122,9 +139,15 @@ So Phase 1 is **migrate-then-repoint**, not "accept data loss":
 - [ ] On the LOCAL Supabase replica (Phase 0 output): import the relevant tables, run sanity queries
 - [ ] Verify: spot-check 5 records per app — do they round-trip correctly?
 - [ ] Apply migrations against canonical via `supabase db push`
-- [ ] Repoint Vercel envs in ONE app at a time (start with `0n-saas-template` — lowest risk, no users)
-- [ ] After each app: hit `/api/health` (or equivalent), spot-check user-facing flows, watch error logs for 30 min
-- [ ] Once all 4 are clean, update `STACK_AUDIT.md` Section 2
+- [ ] **Repoint apps SEQUENTIALLY, never in parallel:**
+  1. `0n-saas-template` (lowest risk, no users) → repoint → `/api/health` → 5 min watch → ✓
+  2. `social0n` (pre-launch, low traffic) → repoint → `/api/health` → 10 min watch → ✓
+  3. `0nai` (live at command.0nmcp.com) → repoint → `/api/health` → 30 min watch + manual smoke test → ✓
+  4. `0ntask` (live at 0ntask.com) → repoint → `/api/health` → 30 min watch + manual smoke test → ✓
+- [ ] If `0ndata` (crm.web0n.com) is also on a non-canonical project, add it to the queue last
+- [ ] After each app: spot-check user-facing flows, watch error logs for the watch window
+- [ ] If ANY app shows errors, STOP and rollback that app before moving on
+- [ ] Once all are clean, update `STACK_AUDIT.md` Section 2
 
 **Tradeoff:** longer than the original estimate but no data loss. Worth the extra time given these are live.
 
@@ -145,6 +168,7 @@ So Phase 1 is **migrate-then-repoint**, not "accept data loss":
 
 **Day 1-3 (passive — 48-hour soak window)**
 - [ ] No code changes during the soak
+- [ ] **Slack alert wired** — any Supabase log line matching `relation "_deprecated_` triggers a webhook to Slack channel #all-0n. Catches problems in minutes, not at the end of 48 hours. (v3 addition)
 - [ ] Monitor logs daily for missing-table errors
 - [ ] If any error fires, `ALTER TABLE _deprecated_<name> RENAME TO <name>` (instant restore)
 
@@ -173,15 +197,21 @@ So Phase 1 is **migrate-then-repoint**, not "accept data loss":
 ### PHASE 3 — Consolidate duplicates (4-6 hours, was 2-3 — bumped due to grep-first gate)
 **Goal:** One canonical table per concept.
 
-**GATE:** every consolidation runs the global grep first across ALL repos. If a duplicate has even ONE code reference we missed, the migration plan changes:
+**GATE:** every consolidation runs the global grep first across ALL 8 repos. If a duplicate has even ONE code reference we missed, the migration plan changes:
 
 ```bash
-# Before any DROP/MERGE, run:
-for repo in onork-app 0nmcp-website 0n-extension rocket-mods 0n-marketplace 0nmcp; do
-  echo "=== $repo ==="
-  grep -rn "<table_name>" ~/Github/$repo --include="*.ts" --include="*.tsx" --include="*.js" --include="*.sql" 2>/dev/null | head
+# Before any DROP/MERGE, run (v3 — 8 repos, not 6):
+for repo in onork-app 0nmcp-website 0n-extension rocket-mods 0n-marketplace 0nMCP 0ncore-wordpress 0n-core-skill; do
+  if [ -d ~/Github/$repo ]; then
+    echo "=== $repo ==="
+    grep -rn "<table_name>" ~/Github/$repo --include="*.ts" --include="*.tsx" --include="*.js" --include="*.php" --include="*.sql" 2>/dev/null | head
+  fi
 done
 ```
+
+The two added in v3:
+- `0ncore-wordpress` — the WP MCP plugin references Supabase tables and CRM endpoints
+- `0n-core-skill` — references API endpoints that might change when tables consolidate
 
 **Decisions per duplicate group (each is its own PR):**
 
@@ -261,11 +291,16 @@ Rules going into `CLAUDE.md` (root) so every future session sees them:
 7. **Stale-cookie sweep is permanent.** The middleware already auto-cleans wrong-project cookies — keep it forever.
 8. **`/debug/auth` is a permanent diagnostic surface.** Don't gate it behind admin. Don't remove it. It saved us today.
 
-**Naming standards (locked in from the local setup's input):**
+**Naming standards (locked in from the local setup's v2 + v3 input):**
 9. **API actions use underscores, not dashes.** `score_post`, `generate_post`, `log_engagement`. Anything that ships with a dash gets blocked at lint time.
 10. **Settings tables are named `bot_settings`** (NEVER `bot_config`). The 0nLinkedin merge spec made this canonical.
 11. **VPIS active-flag column is `is_active`** (NEVER `active`). Live database confirms.
 12. **No new v0.dev project survives more than 7 days as `v0-*`.** Promote to a real name + GitHub repo + delete the v0-* shell, OR kill it.
+13. **Database columns: `snake_case` only.** Never `camelCase`. (v3)
+14. **API endpoint paths use `kebab-case` for route segments, `underscore` for action params.** Example: `/api/canvas/ai-build` (kebab route) with body `{ "action": "package_from_url" }` (underscore). (v3)
+15. **Supabase table names: `snake_case`, singular nouns where possible.** (v3 — though plural is OK for genuine collections like `notes`, `tasks`)
+16. **Environment variables: `SCREAMING_SNAKE_CASE`, type `plain` on Vercel.** Never `encrypted` for PIT tokens — Vercel's encryption double-wraps them and breaks Bearer auth. This is Mike's #1 historical pain point. (v3)
+17. **One table, one purpose.** Before creating a new table, prove that no existing table can be extended. Adds a column to an existing table > spawning a new one. (v3)
 
 **Vercel hygiene (from the cleanup recommendation):**
 13. **Speed Insights / Web Analytics are OFF by default.** Only enable on projects with a real custom domain serving real traffic.
@@ -339,12 +374,22 @@ Total focused engineering time: roughly **5-7 days** to fully reset (Track A) + 
 
 ---
 
-## DECISION POINT — what do you want first?
+## STATUS — v3 APPROVED, RESET BEGINS
 
-Both reviews say **ship it**. The local setup adds Phase 0 (local rig) as a prerequisite before any production action. The Vercel cleanup is a parallel track ready to run any time.
+Both reviews said ship it. Plan is locked at v3.
 
-**Recommended start:** **Phase 0** — set up the local Supabase replica today. ~4 hours. Once that's working, every subsequent phase is non-destructive on the local replica before touching production.
+**Now executing in parallel:**
+- **Track A: Phase 0 + 0.5** — set up local Supabase rig + push baseline snapshot to `0n-dispatch`
+- **Track B: 8 Vercel duplicate deletions** — zero-risk, ~$80-100/mo savings, can run alongside
 
-**Lower-risk parallel:** while Phase 0 is being set up, run the **8 obvious Vercel duplicate deletions** from Track B (`jax-2026-prediction-bot`, `v0-jax-bot-development`, `rocket-ai-trainer-29cb`, `rocket-ai-trainer-mcp`, `v0-saa-s-dashboard-design`, `ecospray-live`, `nearpittsburgh-sprayfoam`, `ghl-ai-course-generation-import-sbte`). 5 minutes, ~$80-100/mo savings, zero risk.
+**Then sequentially:**
+- Day 1 → Phase 1 (sequential repoint, app by app)
+- Day 1 → Phase 2A (rename to `_deprecated_*` + Slack alert)
+- Day 2 → Phase 3 (4 PRs, each grep-gated across 8 repos)
+- Day 2 → Phase 4 (strip Anthropic from 0nExec, migrate auth tables)
+- Day 3 → Phase 2B (drop the renamed tables after the 48hr soak)
+- Day 4-8 → Phase 5 (0nExec ↔ CRM webhook + 10 MCP tools)
+- Anytime → Phase 6 (archive 60+ stale repos)
+- Permanent → Phase 7 (governance rules in CLAUDE.md + truth-lint)
 
-Tell me: **start Phase 0 + run the 8 Vercel duplicate deletions**, or pause for more review.
+**Mike pushes the baseline to `0n-dispatch`. I start Phase 0 here.**
