@@ -1,19 +1,20 @@
 'use client'
 
 /**
- * /tools/email-paste — Email Copy-Paste Generator
+ * /tools/email-paste — Email Copy-Paste Generator (AI-first)
  *
- * Mobile-first tap-to-copy email tool. Compose once, then tap each field
- * (To/CC/BCC/Subject/Body) to copy it independently. Optimized for iOS
- * Safari + Spark. Templates persist in localStorage.
+ * Type a prompt like "Write an email to promote our HIPAA service" — the
+ * brain (Groq via app_briefs.email_paste) generates the full email, fills
+ * To/CC/BCC/Subject/Body, then the tap-to-copy UI lets the user paste
+ * each field into Spark/Gmail/Outlook on mobile. Optimized for iOS.
  *
  * Sale: $7 flat (one-time). Stripe price_1TS5kYHThmAuKVQMTnnXPyA6.
- * The tool is publicly accessible — purchase unlocks future templates +
- * the cloud-saved version. Free version stores in localStorage only.
+ * Templates persist in localStorage; the AI generation requires sign-in
+ * (the brain pattern routes through handleThink which auth-gates).
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { Check, Copy, Mail, Trash2, Save, Plus, ListChecks } from 'lucide-react'
+import { Check, Copy, Mail, Trash2, Save, Plus, ListChecks, Sparkles, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface Template {
   id: string
@@ -193,37 +194,212 @@ function ModeBtn({ active, onClick, icon, label }: { active: boolean; onClick: (
 // ── Compose ────────────────────────────────────────────────────────
 
 function Compose({ active, setActive, onSave, hasContent }: { active: Template; setActive: (t: Template) => void; onSave: () => void; hasContent: boolean }) {
+  const [prompt, setPrompt] = useState('')
+  const [generating, setGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showFields, setShowFields] = useState(false)
+
+  async function generate() {
+    const text = prompt.trim()
+    if (!text || generating) return
+    setGenerating(true)
+    setError(null)
+    try {
+      const r = await fetch('/api/tools/email-paste/think', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: text }),
+      })
+      const data = await r.json()
+      if (r.status === 401) {
+        setError('Sign in to generate emails. Free preview coming soon.')
+        return
+      }
+      if (!r.ok || !data.success) {
+        setError(data?.output?.error || data?.error || 'Generation failed. Try a different prompt.')
+        return
+      }
+      const e = data.output?.email
+      if (!e) {
+        setError('No email returned. Try again.')
+        return
+      }
+      setActive({
+        ...active,
+        name: active.name === 'Untitled' || !active.name ? text.slice(0, 48) : active.name,
+        to:      e.to ?? active.to,
+        cc:      e.cc ?? active.cc,
+        bcc:     e.bcc ?? active.bcc,
+        subject: e.subject ?? active.subject,
+        body:    e.body ?? active.body,
+      })
+      setShowFields(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  function onPromptKeyDown(ev: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey) && !generating) {
+      ev.preventDefault()
+      void generate()
+    }
+  }
+
   return (
     <div>
-      <Field label="Template name" value={active.name} onChange={(v) => setActive({ ...active, name: v })} placeholder="e.g. Onboarding follow-up" />
-      <Field label="To" value={active.to} onChange={(v) => setActive({ ...active, to: v })} placeholder="recipient@domain.com" mono />
-      <Field label="CC" value={active.cc} onChange={(v) => setActive({ ...active, cc: v })} placeholder="cc@domain.com" mono />
-      <Field label="BCC" value={active.bcc} onChange={(v) => setActive({ ...active, bcc: v })} placeholder="bcc@domain.com" mono />
-      <Field label="Subject" value={active.subject} onChange={(v) => setActive({ ...active, subject: v })} placeholder="Subject line" />
-      <FieldArea label="Body" value={active.body} onChange={(v) => setActive({ ...active, body: v })} placeholder="Type your email here. Line breaks preserved." />
+      {/* AI prompt — the primary input */}
+      <div style={{ marginBottom: 14, padding: 14, background: 'linear-gradient(135deg, #1a1530 0%, #161b22 100%)', border: '1px solid #635bff44', borderRadius: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <Sparkles size={12} color="#635bff" />
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#a899ff', textTransform: 'uppercase' }}>Describe the email</div>
+        </div>
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={onPromptKeyDown}
+          placeholder="Write an email to promote our HIPAA service..."
+          rows={3}
+          style={{
+            width: '100%',
+            padding: '10px 12px',
+            background: '#0d1117',
+            border: '1px solid #2a2a2a',
+            borderRadius: 8,
+            color: '#d0d0d0',
+            fontSize: 14,
+            fontFamily: '-apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+            outline: 'none',
+            resize: 'vertical',
+            lineHeight: 1.5,
+            marginBottom: 10,
+          }}
+        />
+        {error && (
+          <div style={{ marginBottom: 10, padding: '8px 10px', background: '#1a0d0d', border: '1px solid #7f1d1d', borderRadius: 8, color: '#fca5a5', fontSize: 12 }}>
+            {error}
+          </div>
+        )}
+        <button
+          onClick={generate}
+          disabled={!prompt.trim() || generating}
+          style={{
+            width: '100%',
+            padding: '12px 16px',
+            background: prompt.trim() && !generating ? '#635bff' : '#1a1a1a',
+            color: prompt.trim() && !generating ? '#fff' : '#555',
+            border: 'none',
+            borderRadius: 10,
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: prompt.trim() && !generating ? 'pointer' : 'not-allowed',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          {generating ? <><Loader2 size={14} className="spin" style={{ animation: 'spin 1s linear infinite' }} /> Generating…</> : <><Sparkles size={14} /> Generate Email</>}
+        </button>
+        <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
+        <div style={{ marginTop: 6, fontSize: 10, color: '#666', textAlign: 'center' }}>
+          ⌘+Enter to send · Powered by Groq
+        </div>
+      </div>
 
-      <button
-        onClick={onSave}
-        disabled={!hasContent}
-        style={{
-          width: '100%',
-          marginTop: 18,
-          padding: '14px 16px',
-          background: hasContent ? '#635bff' : '#1a1a1a',
-          color: hasContent ? '#fff' : '#555',
-          border: 'none',
-          borderRadius: 12,
-          fontSize: 14,
-          fontWeight: 700,
-          cursor: hasContent ? 'pointer' : 'not-allowed',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-        }}
-      >
-        <Save size={14} /> Save Template
-      </button>
+      {/* Generated preview — collapsible field editor */}
+      {(active.subject || active.body) && (
+        <>
+          <button
+            onClick={() => setShowFields((s) => !s)}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              background: '#161b22',
+              border: '1px solid #2a2a2a',
+              borderRadius: 10,
+              color: '#888',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 12,
+            }}
+          >
+            <span>{showFields ? 'Hide fields' : 'Edit fields manually'}</span>
+            {showFields ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          {showFields && (
+            <>
+              <Field label="Template name" value={active.name} onChange={(v) => setActive({ ...active, name: v })} placeholder="e.g. HIPAA promo" />
+              <Field label="To" value={active.to} onChange={(v) => setActive({ ...active, to: v })} placeholder="recipient@domain.com" mono />
+              <Field label="CC" value={active.cc} onChange={(v) => setActive({ ...active, cc: v })} placeholder="cc@domain.com" mono />
+              <Field label="BCC" value={active.bcc} onChange={(v) => setActive({ ...active, bcc: v })} placeholder="bcc@domain.com" mono />
+              <Field label="Subject" value={active.subject} onChange={(v) => setActive({ ...active, subject: v })} placeholder="Subject line" />
+              <FieldArea label="Body" value={active.body} onChange={(v) => setActive({ ...active, body: v })} placeholder="Body — line breaks preserved." />
+            </>
+          )}
+
+          {/* Quick preview when fields are collapsed */}
+          {!showFields && (
+            <div style={{ marginBottom: 12, padding: '12px 14px', background: '#161b22', border: '1px solid #2a2a2a', borderRadius: 10 }}>
+              <div style={{ fontSize: 11, color: '#635bff', fontWeight: 700, marginBottom: 4 }}>{active.subject || '(no subject)'}</div>
+              <div style={{ fontSize: 12, color: '#888', whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: 3 as unknown as number, WebkitBoxOrient: 'vertical' as 'vertical', overflow: 'hidden' }}>
+                {active.body}
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={onSave}
+            disabled={!hasContent}
+            style={{
+              width: '100%',
+              padding: '14px 16px',
+              background: hasContent ? '#635bff' : '#1a1a1a',
+              color: hasContent ? '#fff' : '#555',
+              border: 'none',
+              borderRadius: 12,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: hasContent ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <Save size={14} /> Save Template
+          </button>
+        </>
+      )}
+
+      {!active.subject && !active.body && (
+        <div style={{ padding: '24px 14px', textAlign: 'center', color: '#555', fontSize: 12 }}>
+          <div style={{ fontSize: 11, marginTop: 6 }}>Or skip the AI and tap "Edit fields manually" below.</div>
+          <button
+            onClick={() => setShowFields(true)}
+            style={{ marginTop: 14, background: 'transparent', border: '1px dashed #2a2a2a', color: '#888', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
+          >
+            Compose manually
+          </button>
+          {showFields && (
+            <div style={{ marginTop: 16 }}>
+              <Field label="Template name" value={active.name} onChange={(v) => setActive({ ...active, name: v })} placeholder="e.g. HIPAA promo" />
+              <Field label="To" value={active.to} onChange={(v) => setActive({ ...active, to: v })} placeholder="recipient@domain.com" mono />
+              <Field label="CC" value={active.cc} onChange={(v) => setActive({ ...active, cc: v })} placeholder="cc@domain.com" mono />
+              <Field label="BCC" value={active.bcc} onChange={(v) => setActive({ ...active, bcc: v })} placeholder="bcc@domain.com" mono />
+              <Field label="Subject" value={active.subject} onChange={(v) => setActive({ ...active, subject: v })} placeholder="Subject line" />
+              <FieldArea label="Body" value={active.body} onChange={(v) => setActive({ ...active, body: v })} placeholder="Body — line breaks preserved." />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

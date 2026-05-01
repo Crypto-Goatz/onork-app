@@ -133,6 +133,17 @@ export const BRAIN_REGISTRY: RegistryEntry[] = [
     surface_route: '/dashboard/voice',
     description: 'Voice agent on website + phone.',
   },
+  {
+    slug: 'email_paste',
+    display_name: 'Email Copy-Paste',
+    category: 'ai',
+    handler_paths: ['app/api/tools/email-paste/think/route.ts'],
+    required_imports: ['@/lib/brain/think-route'],
+    prohibited_imports: ['@anthropic-ai/sdk'],
+    required_calls: ['handleThink('],
+    surface_route: '/tools/email-paste',
+    description: 'AI generates a full email from a short prompt; tap each field to copy.',
+  },
 
   // ── Honest 'automation' label — CRUD, no AI claim ──────────────────
   {
