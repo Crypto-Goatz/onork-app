@@ -155,27 +155,31 @@ export async function POST(
     execution_count: (workflow.execution_count || 0) + 1,
   }).eq('id', workflowId)
 
-  // Save execution log
+  // Save execution log (schema: id, user_id, location_id, workflow_type, input, result, steps, status, started_at, completed_at, error)
+  const startedAtIso = new Date(startTime).toISOString()
+  const completedAtIso = new Date(startTime + totalDuration).toISOString()
+  const firstError = results.find(r => r.status === 'failed')?.error || null
   await admin.from('workflow_executions').insert({
-    workflow_id: workflowId,
     user_id: workflow.user_id,
-    trigger_type: eventType,
-    trigger_data: triggerData,
-    steps_total: results.length,
-    steps_succeeded: succeeded,
-    steps_failed: failed,
-    duration_ms: totalDuration,
-    results,
-    status: failed === 0 ? 'success' : 'partial',
-  }).then(() => {}, () => {})
-
-  // Notify user
-  await admin.from('dashboard_notifications').insert({
-    user_id: workflow.user_id,
-    type: failed === 0 ? 'success' : 'warning',
-    title: `Automation: ${workflow.name}`,
-    message: `Triggered by ${eventType}. ${succeeded}/${results.length} steps completed in ${totalDuration}ms.`,
-    metadata: { workflow_id: workflowId, trigger: eventType, results },
+    location_id: locationId || null,
+    workflow_type: 'automation',
+    input: {
+      workflow_id: workflowId,
+      workflow_name: workflow.name,
+      trigger_type: eventType,
+      trigger_data: triggerData,
+    },
+    result: {
+      totalSteps: results.length,
+      succeeded,
+      failed,
+      duration_ms: totalDuration,
+    },
+    steps: results,
+    status: failed === 0 ? 'success' : (succeeded > 0 ? 'partial' : 'failed'),
+    started_at: startedAtIso,
+    completed_at: completedAtIso,
+    error: firstError,
   }).then(() => {}, () => {})
 
   return NextResponse.json({
