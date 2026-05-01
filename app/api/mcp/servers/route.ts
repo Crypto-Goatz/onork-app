@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdmin } from '@/lib/admin-gate'
+import { runScan, evaluateGate } from '@/lib/security/registry-scan'
 
 function admin() {
   return createClient(
@@ -71,6 +72,37 @@ export async function POST(req: NextRequest) {
 
   const slug = body.slug?.trim() || slugify(body.name)
 
+  // ─── Security scan gate ───────────────────────────────────────────
+  // Scan the install URL before persisting. user_mcp_servers entries
+  // come in with a target URL we can hand to VirusTotal directly.
+  let gateInfo: ReturnType<typeof evaluateGate> | null = null
+  if (body.url) {
+    try {
+      const { scan } = await runScan({
+        target_type: 'user_mcp',
+        target_id: `${user.id}:${slug}`,
+        target_url: body.url,
+      })
+      gateInfo = evaluateGate(scan)
+      if (!gateInfo.allowed) {
+        return NextResponse.json(
+          {
+            error: 'Install blocked by security scan',
+            gate: gateInfo,
+          },
+          { status: 403 },
+        )
+      }
+    } catch (err) {
+      return NextResponse.json(
+        {
+          error: `security scan failed: ${err instanceof Error ? err.message : 'unknown'}`,
+        },
+        { status: 502 },
+      )
+    }
+  }
+
   const { data, error } = await admin()
     .from('user_mcp_servers')
     .insert({
@@ -94,5 +126,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ server: data })
+  return NextResponse.json({ server: data, gate: gateInfo })
 }
