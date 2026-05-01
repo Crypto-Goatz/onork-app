@@ -242,3 +242,64 @@ in `.claude/commands/RocketAI.md`.
 - **Apps Factory renderer** (`app/apps/<slug>/`) — spawned apps run
   capabilities inline + Jaxx orchestration. See recent commits `38fe3c0`,
   `ee54d8e`.
+
+---
+
+## In-repo playbooks (read before touching marketing surfaces)
+
+Critical Rules #7 ("CRO9 analytics on every surface") and #8 ("SXO writing
+standard for all copy") are operationalized by the two playbooks below.
+Read them before any work that ships customer-facing copy, lead capture,
+schema markup, or analytics.
+
+| Doc | When to read |
+|---|---|
+| [`docs/SXO-CRO9-Master-Playbook.md`](./docs/SXO-CRO9-Master-Playbook.md) | **Authoritative.** The 6 SXO Pillars + 8 Content Patterns + Living DOM + CRO9 engine + family-wide pricing + universal env-var standard. Source of truth for any public page. |
+| [`docs/Audit-VerifiedSXO-JaxxAI-CryptoGoatz.md`](./docs/Audit-VerifiedSXO-JaxxAI-CryptoGoatz.md) | Worked example of the audit + retrofit playbook against three live family sites. Use as the template when auditing any new domain. |
+
+### What "ships with SXO+CRO9" means (page checklist)
+
+Every public page in the family ships with all 9:
+
+1. **BLUF** — Bottom Line Up Front, 1–2 sentences answering the search intent
+2. **Living DOM marker** — `<meta name="cro9:living" content="1">` so the
+   mutation engine + rank tracker know the page is variant-eligible
+3. **Table trap** — comparison table within first viewport
+4. **FAQ schema** — 5–7 voice-search Q&A pairs as `FAQPage` JSON-LD
+5. **HowTo schema** — when the page describes a process
+6. **Internal-link cluster** — 3–5 contextual cross-family links
+7. **CRO9 embed** — 15KB async, 147 behavioral metrics
+8. **UCP Live Strip** — live signal of org activity from `/api/ucp/live`
+9. **`/llms.txt`** — AI-bot citation rules at site root
+
+Measured by `/api/sxo-score` (0–100). **Family pages must score ≥ 95.**
+
+### CRO9 analytics on every site
+
+Every site environment in the family runs the CRO9 embed (Ignite tier $29/mo
+minimum). One Supabase project (`pwujhhmlrtxjmjzyttwn`), one MAB allocator,
+one variant pool registry, one event sink. Sites identify themselves via
+`NEXT_PUBLIC_CRO9_SITE_ID`.
+
+### Universal env vars (CRO9 standard, identical on every site)
+
+```
+GROQ_API_KEY
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+NEXT_PUBLIC_CRO9_SITE_ID
+NEXT_PUBLIC_GA4_ID
+NEXT_PUBLIC_GTM_ID
+SERPAPI_KEY
+CRM_LOCATION_ID         # AeY8M0GNOuJPNkLQ7AAC for family sites
+CRM_PIT_TOKEN           # type:plain on Vercel — never encrypted
+JAXX_AGENT_ID
+NEXT_PUBLIC_CONSENT_MODE
+```
+
+Same names, same shape, every site. If a site needs a new variable, propose
+it for the standard rather than diverging.
+
+The hard rules in **Critical Rules** above (Groq only, Lucide only, no inline
+styles, push to `main`, PIT `type:plain`, never say GHL, `getSession` not
+`getUser`) apply to every page on every family site — not just this repo.
