@@ -155,6 +155,15 @@ export const BRAIN_REGISTRY: RegistryEntry[] = [
     description:
       'Detects 40+ tools on any visited site, scores stack gaps, recommends 0nMCP services. Recommendations rewritten by Groq inside lib/scanner/recommend.ts.',
   },
+  {
+    slug: 'fiverr_generate',
+    display_name: 'Fiverr Gig Generator',
+    category: 'automation',
+    handler_paths: ['app/api/fiverr/generate/route.ts'],
+    surface_route: '/extension/compose',
+    description:
+      'Generates a complete Fiverr gig (10 sections) via Groq llama-3.3-70b. Server-side char-limit retry up to 2x. Surfaced in the extension Compose tab under Fiverr mode.',
+  },
 
   // ── Honest 'automation' label — CRUD, no AI claim ──────────────────
   {
