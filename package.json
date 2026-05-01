@@ -8,7 +8,13 @@
     "start": "next start",
     "lint": "next lint",
     "truth-lint": "node scripts/truth-lint.mjs",
-    "truth-lint:strict": "TRUTH_LINT_STRICT=1 node scripts/truth-lint.mjs"
+    "truth-lint:strict": "TRUTH_LINT_STRICT=1 node scripts/truth-lint.mjs",
+    "dev:local": "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 NEXT_PUBLIC_SUPABASE_ANON_KEY=$(supabase status -o env 2>/dev/null | grep ANON_KEY | cut -d= -f2 | tr -d \"\"\") next dev",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:snapshot": "supabase db dump --linked -f /tmp/production_snapshot_$(date +%s).sql",
+    "db:restore-local": "psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < /tmp/production_snapshot_*.sql 2>/dev/null | tail -5"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
