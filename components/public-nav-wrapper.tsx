@@ -10,6 +10,7 @@ const EXCLUDED_PREFIXES = [
   '/crm',
   '/canvas',
   '/welcome',
+  '/tools',
   '/auth',
   '/import',
   '/install',
