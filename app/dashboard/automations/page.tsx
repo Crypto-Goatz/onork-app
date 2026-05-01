@@ -444,7 +444,7 @@ export default function AutomationsPage() {
       )}
 
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-5 py-[10px] border-b border-core-border bg-core-surface shrink-0">
+      <div className="relative z-20 flex items-center justify-between px-5 py-[10px] border-b border-core-border bg-core-surface shrink-0">
 
         <div className="flex items-center gap-3">
 
