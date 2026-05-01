@@ -274,6 +274,16 @@ const navGroups: NavGroup[] = [
         ),
       },
       {
+        name: 'Adaptive Siphon',
+        href: '/dashboard/siphon',
+        badge: 'NEW',
+        icon: (
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v3m0 12v3m9-9h-3M6 12H3m13.95-6.364l-2.121 2.121M8.464 15.536l-2.121 2.121m12.728 0l-2.121-2.121M8.464 8.464L6.343 6.343M14.5 12a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+          </svg>
+        ),
+      },
+      {
         name: 'Domains',
         href: '/dashboard/domains',
         icon: (

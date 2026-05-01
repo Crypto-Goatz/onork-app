@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Adaptive Siphon — 0nCore</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --card-hi: #1c2333;
+    --border: #30363d;
+    --border-hi: #484f58;
+    --text: #e6edf3;
+    --text-dim: #9ca3af;
+    --muted: #8b949e;
+    --primary: #6EE05A;
+    --primary-dim: #5cb83a;
+    --accent: #58a6ff;
+    --warn: #f59e0b;
+    --danger: #f87171;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+    height: 100%;
+    overflow: hidden;
+  }
+  .app {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    height: 100vh;
+    width: 100vw;
+  }
+  .sidebar {
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 18px 16px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .sidebar h1 {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 0 2px;
+    letter-spacing: 0.3px;
+  }
+  .sidebar .sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.45;
+  }
+  .section {
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+  .section h2 {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin: 0 0 10px;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .row label {
+    flex: 1;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .row .val {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px;
+    color: var(--primary);
+    min-width: 48px;
+    text-align: right;
+  }
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--primary);
+  }
+  input[type="number"] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    width: 90px;
+    outline: none;
+  }
+  input[type="number"]:focus { border-color: var(--primary); }
+  input[type="color"] {
+    width: 28px;
+    height: 22px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+  }
+  button {
+    background: var(--card-hi);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  button:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+  button.primary {
+    background: var(--primary);
+    color: #0a0a0a;
+    border-color: var(--primary);
+  }
+  button.primary:hover {
+    background: var(--primary-dim);
+    color: #000;
+    border-color: var(--primary-dim);
+  }
+  .seed-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .seed-row input { flex: 1; width: auto; }
+  .seed-row button { padding: 5px 8px; font-size: 10px; }
+  .grade-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .grade-row .name {
+    flex: 1;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .grade-row .stat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    min-width: 40px;
+    text-align: right;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .stat-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+  .stat-card .label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .stat-card .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .actions { display: flex; gap: 8px; }
+  .actions button { flex: 1; }
+  .canvas-wrap {
+    position: relative;
+    background: var(--bg);
+    overflow: hidden;
+  }
+  .legend {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 10px;
+    backdrop-filter: blur(8px);
+    pointer-events: none;
+  }
+  .legend-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .legend-row:last-child { margin-bottom: 0; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .info-pill {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    backdrop-filter: blur(8px);
+    pointer-events: none;
+  }
+  .info-pill .accent { color: var(--primary); font-weight: 700; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div>
+      <h1>Adaptive Siphon</h1>
+      <p class="sub">Real-time PPC traffic intelligence — particles graded by behavioral fingerprint flow through an evolving gravitational field.</p>
+    </div>
+
+    <div class="section">
+      <h2>Seed</h2>
+      <div class="seed-row">
+        <button id="seed-prev">←</button>
+        <input type="number" id="seed" value="1729" />
+        <button id="seed-next">→</button>
+        <button id="seed-rand">⚄</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Parameters</h2>
+      <div class="row"><label>Traffic Density</label><span class="val" id="v-density">600</span></div>
+      <input type="range" id="density" min="200" max="1200" step="20" value="600" />
+      <div class="row"><label>Detection Sensitivity</label><span class="val" id="v-sens">0.60</span></div>
+      <input type="range" id="sens" min="0.3" max="0.9" step="0.01" value="0.6" />
+      <div class="row"><label>Field Evolution Rate</label><span class="val" id="v-evo">0.006</span></div>
+      <input type="range" id="evo" min="0.001" max="0.015" step="0.0005" value="0.006" />
+      <div class="row"><label>Convergence Pull</label><span class="val" id="v-pull">0.80</span></div>
+      <input type="range" id="pull" min="0.1" max="2.0" step="0.05" value="0.8" />
+      <div class="row"><label>Bot Frequency %</label><span class="val" id="v-bot">18</span></div>
+      <input type="range" id="bot" min="5" max="40" step="1" value="18" />
+      <div class="row"><label>Noise Scale</label><span class="val" id="v-noise">0.006</span></div>
+      <input type="range" id="noise" min="0.002" max="0.012" step="0.0005" value="0.006" />
+    </div>
+
+    <div class="section">
+      <h2>Grade Palette</h2>
+      <div class="grade-row"><input type="color" id="c-a" value="#6EE05A" /><span class="name">A+ Converters</span></div>
+      <div class="grade-row"><input type="color" id="c-b" value="#58a6ff" /><span class="name">B–C Nurturing</span></div>
+      <div class="grade-row"><input type="color" id="c-d" value="#8b949e" /><span class="name">D–F Dead</span></div>
+      <div class="grade-row"><input type="color" id="c-x" value="#f87171" /><span class="name">X Bots</span></div>
+    </div>
+
+    <div class="section">
+      <h2>Live Stats</h2>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="label">A+ Converted</div><div class="num" id="s-a" style="color:#6EE05A">0</div></div>
+        <div class="stat-card"><div class="label">B–C Nurturing</div><div class="num" id="s-b" style="color:#58a6ff">0</div></div>
+        <div class="stat-card"><div class="label">D–F Dead</div><div class="num" id="s-d" style="color:#8b949e">0</div></div>
+        <div class="stat-card"><div class="label">X Blocked</div><div class="num" id="s-x" style="color:#f87171">0</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="actions">
+        <button id="btn-reset">Reset</button>
+        <button class="primary" id="btn-save">Save PNG</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="canvas-wrap" id="canvas-wrap">
+    <div class="info-pill"><span id="active-count" class="accent">0</span>&nbsp;active particles · field <span id="field-energy" class="accent">0%</span></div>
+    <div class="legend">
+      <div class="legend-row"><div class="legend-dot" style="background:#6EE05A"></div>A+ converter — high variance, deep engagement</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#58a6ff"></div>B–C nurture — moderate intent</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#8b949e"></div>D–F dead — low engagement, drift away</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#f87171"></div>X bot — uniform velocity, zero variance</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Adaptive Siphon — p5.js sketch ─────────────────────────────────
+const params = {
+  seed: 1729,
+  density: 600,
+  sens: 0.60,
+  evo: 0.006,
+  pull: 0.80,
+  bot: 18,
+  noise: 0.006,
+  cA: '#6EE05A',
+  cB: '#58a6ff',
+  cD: '#8b949e',
+  cX: '#f87171',
+};
+
+const stats = { a: 0, b: 0, d: 0, x: 0 };
+let particles = [];
+let field = [];
+let cellSize = 24;
+let cols = 0, rows = 0;
+let nucleusEnergy = 0;
+let detectionFlashes = [];
+let feedbackArcs = [];
+let canvasW = 0, canvasH = 0;
+
+class Particle {
+  constructor(seedRng) {
+    this.rng = seedRng;
+    const edge = Math.floor(this.rng() * 4);
+    if (edge === 0) { this.x = this.rng() * canvasW; this.y = -10; this.vx = (this.rng() - 0.5) * 0.6; this.vy = 1.2 + this.rng() * 0.8; }
+    else if (edge === 1) { this.x = canvasW + 10; this.y = this.rng() * canvasH; this.vx = -1.2 - this.rng() * 0.8; this.vy = (this.rng() - 0.5) * 0.6; }
+    else if (edge === 2) { this.x = this.rng() * canvasW; this.y = canvasH + 10; this.vx = (this.rng() - 0.5) * 0.6; this.vy = -1.2 - this.rng() * 0.8; }
+    else { this.x = -10; this.y = this.rng() * canvasH; this.vx = 1.2 + this.rng() * 0.8; this.vy = (this.rng() - 0.5) * 0.6; }
+    this.isBot = this.rng() * 100 < params.bot;
+    if (this.isBot) {
+      this.behaviorVariance = 0;
+      this.engagementDepth = 0.05 + this.rng() * 0.1;
+      this.velocitySmoothness = 0.98;
+    } else {
+      this.behaviorVariance = this.rng();
+      this.engagementDepth = this.rng();
+      this.velocitySmoothness = this.rng() * 0.6;
+    }
+    const score = this.behaviorVariance * 40 + this.engagementDepth * 40 + (1 - this.velocitySmoothness) * 20;
+    if (this.isBot) this.grade = 'X';
+    else if (score > 75) this.grade = 'A';
+    else if (score > 45) this.grade = 'B';
+    else this.grade = 'D';
+    this.score = score;
+    this.life = 1.0;
+    this.age = 0;
+    this.trail = [];
+    this.engaged = false;
+    this.feedbackPulse = 0;
+  }
+  step() {
+    this.age++;
+    const cx = canvasW / 2, cy = canvasH / 2;
+    const dx = cx - this.x, dy = cy - this.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    if (this.grade === 'A') {
+      const pull = params.pull * 0.06;
+      this.vx += (dx / dist) * pull;
+      this.vy += (dy / dist) * pull;
+      const nx = (this.x * params.noise);
+      const ny = (this.y * params.noise);
+      const nv = noise(nx, ny, frameCount * params.evo) * 2 - 1;
+      this.vx += Math.cos(nv * Math.PI * 2) * 0.08 * this.behaviorVariance;
+      this.vy += Math.sin(nv * Math.PI * 2) * 0.08 * this.behaviorVariance;
+    } else if (this.grade === 'B') {
+      const targetR = 130 + Math.sin(this.age * 0.01) * 30;
+      const radial = (targetR - dist) * 0.005 * params.pull;
+      this.vx += (dx / dist) * radial;
+      this.vy += (dy / dist) * radial;
+      const tang = 0.4;
+      this.vx += (-dy / dist) * tang * 0.05;
+      this.vy += (dx / dist) * tang * 0.05;
+      const n = noise(this.x * params.noise, this.y * params.noise, frameCount * params.evo);
+      this.vx += (n - 0.5) * 0.05;
+      this.vy += (n - 0.5) * 0.05;
+    } else if (this.grade === 'D') {
+      const n = noise(this.x * params.noise, this.y * params.noise, frameCount * params.evo);
+      const ang = n * Math.PI * 2;
+      this.vx += Math.cos(ang) * 0.04;
+      this.vy += Math.sin(ang) * 0.04;
+      this.vx *= 0.99;
+      this.vy *= 0.99;
+    } else if (this.grade === 'X') {
+      const repel = (220 - dist) * 0.01 * params.sens;
+      if (dist < 220) {
+        this.vx -= (dx / dist) * repel;
+        this.vy -= (dy / dist) * repel;
+      }
+    }
+    this.vx = Math.max(-3.5, Math.min(3.5, this.vx));
+    this.vy = Math.max(-3.5, Math.min(3.5, this.vy));
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.trail.length > 14) this.trail.shift();
+    this.trail.push({ x: this.x, y: this.y });
+    if (this.grade === 'A' && dist < 60 && !this.engaged) {
+      this.engaged = true;
+      nucleusEnergy = Math.min(1, nucleusEnergy + 0.04);
+      this.feedbackPulse = 1;
+      stats.a++;
+      feedbackArcs.push({ x: this.x, y: this.y, life: 1, color: params.cA });
+    }
+    if (this.grade === 'X' && dist < 90 && !this.engaged) {
+      this.engaged = true;
+      detectionFlashes.push({ x: this.x, y: this.y, life: 1 });
+      stats.x++;
+      this.life = 0;
+    }
+    if (this.grade === 'B' && this.age > 240 && !this.engaged) { this.engaged = true; stats.b++; }
+    if (this.grade === 'D' && this.age > 320 && !this.engaged) { this.engaged = true; stats.d++; }
+    if (this.x < -40 || this.x > canvasW + 40 || this.y < -40 || this.y > canvasH + 40 || this.age > 1400) this.life = 0;
+    const cellX = Math.floor(this.x / cellSize);
+    const cellY = Math.floor(this.y / cellSize);
+    if (cellX >= 0 && cellX < cols && cellY >= 0 && cellY < rows) {
+      if (this.grade === 'A') field[cellY][cellX].strength = Math.min(1, field[cellY][cellX].strength + 0.0035);
+      else if (this.grade === 'X') field[cellY][cellX].turbulence = Math.min(1, field[cellY][cellX].turbulence + 0.005);
+    }
+  }
+  draw() {
+    const c = this.grade === 'A' ? params.cA : this.grade === 'B' ? params.cB : this.grade === 'D' ? params.cD : params.cX;
+    const r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16);
+    noStroke();
+    for (let i = 0; i < this.trail.length - 1; i++) {
+      const t = i / this.trail.length;
+      fill(r, g, b, 80 * t * this.life);
+      circle(this.trail[i].x, this.trail[i].y, 2 + t * 1.5);
+    }
+    if (this.feedbackPulse > 0) {
+      noFill();
+      stroke(r, g, b, 220 * this.feedbackPulse);
+      strokeWeight(1.4);
+      circle(this.x, this.y, 20 + (1 - this.feedbackPulse) * 30);
+      this.feedbackPulse *= 0.9;
+      noStroke();
+    }
+    fill(r, g, b, 240 * this.life);
+    const sz = this.grade === 'A' ? 4.5 : this.grade === 'B' ? 3.5 : this.grade === 'X' ? 4 : 2.8;
+    circle(this.x, this.y, sz);
+    if (this.grade === 'A') {
+      fill(r, g, b, 60);
+      circle(this.x, this.y, sz * 3);
+    }
+  }
+}
+
+function rngFromSeed(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 0xffffffff;
+  };
+}
+let spawnRng = rngFromSeed(params.seed);
+
+function rebuildField() {
+  cols = Math.ceil(canvasW / cellSize) + 1;
+  rows = Math.ceil(canvasH / cellSize) + 1;
+  field = [];
+  for (let y = 0; y < rows; y++) {
+    const row = [];
+    for (let x = 0; x < cols; x++) row.push({ strength: 0, turbulence: 0 });
+    field.push(row);
+  }
+}
+
+function setup() {
+  const wrap = document.getElementById('canvas-wrap');
+  canvasW = wrap.clientWidth;
+  canvasH = wrap.clientHeight;
+  const c = createCanvas(canvasW, canvasH);
+  c.parent(wrap);
+  noiseSeed(params.seed);
+  rebuildField();
+  spawnRng = rngFromSeed(params.seed);
+  pixelDensity(window.devicePixelRatio || 1);
+}
+
+function windowResized() {
+  const wrap = document.getElementById('canvas-wrap');
+  canvasW = wrap.clientWidth;
+  canvasH = wrap.clientHeight;
+  resizeCanvas(canvasW, canvasH);
+  rebuildField();
+}
+
+function draw() {
+  background(13, 17, 23, 32);
+  drawField();
+  drawNucleus();
+  for (const arc of feedbackArcs) {
+    const r = parseInt(arc.color.slice(1, 3), 16), g = parseInt(arc.color.slice(3, 5), 16), b = parseInt(arc.color.slice(5, 7), 16);
+    noFill();
+    stroke(r, g, b, 180 * arc.life);
+    strokeWeight(1.2);
+    const cx = canvasW / 2, cy = canvasH / 2;
+    const mx = (arc.x + cx) / 2 + (cy - arc.y) * 0.2 * arc.life;
+    const my = (arc.y + cy) / 2 + (arc.x - cx) * 0.2 * arc.life;
+    bezier(arc.x, arc.y, mx, my, mx, my, cx, cy);
+    arc.life -= 0.025;
+  }
+  feedbackArcs = feedbackArcs.filter(a => a.life > 0);
+  for (const f of detectionFlashes) {
+    noFill();
+    const r = parseInt(params.cX.slice(1, 3), 16), g = parseInt(params.cX.slice(3, 5), 16), b = parseInt(params.cX.slice(5, 7), 16);
+    stroke(r, g, b, 220 * f.life);
+    strokeWeight(2);
+    circle(f.x, f.y, 24 + (1 - f.life) * 90);
+    f.life -= 0.04;
+  }
+  detectionFlashes = detectionFlashes.filter(f => f.life > 0);
+  if (particles.length < params.density && frameCount % 2 === 0) {
+    const toSpawn = Math.min(4, params.density - particles.length);
+    for (let i = 0; i < toSpawn; i++) particles.push(new Particle(spawnRng));
+  }
+  for (const p of particles) p.step();
+  particles = particles.filter(p => p.life > 0);
+  for (const p of particles) p.draw();
+  decayField();
+  nucleusEnergy *= 0.997;
+  document.getElementById('active-count').textContent = particles.length;
+  document.getElementById('field-energy').textContent = Math.round(nucleusEnergy * 100) + '%';
+  document.getElementById('s-a').textContent = stats.a;
+  document.getElementById('s-b').textContent = stats.b;
+  document.getElementById('s-d').textContent = stats.d;
+  document.getElementById('s-x').textContent = stats.x;
+}
+
+function drawField() {
+  noStroke();
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const cell = field[y][x];
+      if (cell.strength > 0.02) {
+        const r = parseInt(params.cA.slice(1, 3), 16), g = parseInt(params.cA.slice(3, 5), 16), b = parseInt(params.cA.slice(5, 7), 16);
+        fill(r, g, b, cell.strength * 35);
+        rect(x * cellSize, y * cellSize, cellSize, cellSize);
+      }
+      if (cell.turbulence > 0.02) {
+        const r = parseInt(params.cX.slice(1, 3), 16), g = parseInt(params.cX.slice(3, 5), 16), b = parseInt(params.cX.slice(5, 7), 16);
+        fill(r, g, b, cell.turbulence * 30);
+        rect(x * cellSize, y * cellSize, cellSize, cellSize);
+      }
+    }
+  }
+}
+
+function decayField() {
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      field[y][x].strength *= 0.992;
+      field[y][x].turbulence *= 0.985;
+    }
+  }
+}
+
+function drawNucleus() {
+  const cx = canvasW / 2, cy = canvasH / 2;
+  const r = parseInt(params.cA.slice(1, 3), 16), g = parseInt(params.cA.slice(3, 5), 16), b = parseInt(params.cA.slice(5, 7), 16);
+  noStroke();
+  for (let i = 6; i > 0; i--) {
+    fill(r, g, b, (8 + nucleusEnergy * 12) * (1 - i / 6));
+    circle(cx, cy, 30 + i * 14 + nucleusEnergy * 40);
+  }
+  fill(r, g, b, 200 + nucleusEnergy * 55);
+  circle(cx, cy, 12 + nucleusEnergy * 8);
+  fill(255, 255, 255, 120 + nucleusEnergy * 80);
+  circle(cx, cy, 4 + nucleusEnergy * 3);
+}
+
+function resetSim() {
+  particles = [];
+  stats.a = 0; stats.b = 0; stats.d = 0; stats.x = 0;
+  nucleusEnergy = 0;
+  detectionFlashes = [];
+  feedbackArcs = [];
+  noiseSeed(params.seed);
+  spawnRng = rngFromSeed(params.seed);
+  rebuildField();
+  try { window.parent.postMessage({ type: 'siphon:reset', seed: params.seed }, '*'); } catch (_) {}
+}
+
+// ── UI wiring ──────────────────────────────────────────────
+function bindRange(id, key, fmt) {
+  const el = document.getElementById(id);
+  const out = document.getElementById('v-' + id);
+  el.addEventListener('input', () => {
+    const v = parseFloat(el.value);
+    params[key] = v;
+    out.textContent = fmt ? fmt(v) : v;
+  });
+}
+bindRange('density', 'density', v => v.toFixed(0));
+bindRange('sens', 'sens', v => v.toFixed(2));
+bindRange('evo', 'evo', v => v.toFixed(3));
+bindRange('pull', 'pull', v => v.toFixed(2));
+bindRange('bot', 'bot', v => v.toFixed(0));
+bindRange('noise', 'noise', v => v.toFixed(3));
+
+document.getElementById('c-a').addEventListener('input', e => params.cA = e.target.value);
+document.getElementById('c-b').addEventListener('input', e => params.cB = e.target.value);
+document.getElementById('c-d').addEventListener('input', e => params.cD = e.target.value);
+document.getElementById('c-x').addEventListener('input', e => params.cX = e.target.value);
+
+const seedInput = document.getElementById('seed');
+seedInput.addEventListener('change', () => { params.seed = parseInt(seedInput.value) || 1; resetSim(); });
+document.getElementById('seed-prev').addEventListener('click', () => { params.seed = Math.max(0, params.seed - 1); seedInput.value = params.seed; resetSim(); });
+document.getElementById('seed-next').addEventListener('click', () => { params.seed += 1; seedInput.value = params.seed; resetSim(); });
+document.getElementById('seed-rand').addEventListener('click', () => { params.seed = Math.floor(Math.random() * 99999); seedInput.value = params.seed; resetSim(); });
+document.getElementById('btn-reset').addEventListener('click', resetSim);
+document.getElementById('btn-save').addEventListener('click', () => {
+  saveCanvas('adaptive-siphon-' + params.seed, 'png');
+  try { window.parent.postMessage({ type: 'siphon:save', seed: params.seed }, '*'); } catch (_) {}
+});
+
+window.addEventListener('load', () => {
+  try { window.parent.postMessage({ type: 'siphon:ready' }, '*'); } catch (_) {}
+});
+</script>
+</body>
+</html>
