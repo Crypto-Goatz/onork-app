@@ -182,6 +182,40 @@ export async function POST(
     error: firstError,
   }).then(() => {}, () => {})
 
+  // 7. Enroll contact into 0nFlow companion if one exists (time-delayed branch)
+  let flowEnrollment: { ok: boolean; enrollmentId?: string; error?: string } | null = null
+  if (workflow.flow_slug) {
+    const flowApiBase = process.env.FLOW_API_BASE || 'https://www.0nmcp.com'
+    const flowApiKey = process.env.FLOW_API_KEY || process.env.FLOW_TRIGGER_SECRET || ''
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (flowApiKey) headers['Authorization'] = `Bearer ${flowApiKey}`
+    try {
+      const res = await fetch(`${flowApiBase}/api/flows/${workflow.flow_slug}/enroll`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          contact_id: String(contactId || ''),
+          contact_email: String(contactEmail || ''),
+          contact_data: {
+            id: String(contactId || ''),
+            email: String(contactEmail || ''),
+            name: String(contactName || ''),
+            trigger: triggerData,
+          },
+          metadata: { workflow_id: workflowId, trigger_event: eventType },
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) {
+        flowEnrollment = { ok: true, enrollmentId: data?.enrollment?.id || data?.id }
+      } else {
+        flowEnrollment = { ok: false, error: data?.error || `enroll ${res.status}` }
+      }
+    } catch (err) {
+      flowEnrollment = { ok: false, error: err instanceof Error ? err.message : 'enroll failed' }
+    }
+  }
+
   return NextResponse.json({
     success: failed === 0,
     workflow: workflow.name,
@@ -192,6 +226,7 @@ export async function POST(
     failed,
     duration: totalDuration,
     results,
+    flow: flowEnrollment,
   })
 }
 

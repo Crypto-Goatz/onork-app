@@ -11,9 +11,63 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { toFlowSteps } from '@/lib/automations/to-flow-steps'
 
 const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
+const FLOW_API_BASE = process.env.FLOW_API_BASE || 'https://www.0nmcp.com'
+
+// ─── Provision a 0nFlow companion when any step has a delay ─────────
+async function provisionFlowCompanion(args: {
+  workflowId: string
+  name: string
+  nodes: unknown[]
+  edges: unknown[]
+  locationId: string
+  ownerEmail?: string | null
+}): Promise<{ flowSlug?: string; warnings: string[]; error?: string }> {
+  const callbackSecret = process.env.FLOW_CALLBACK_SECRET || process.env.INTERNAL_DISPATCH_SECRET || ''
+  const flowApiKey = process.env.FLOW_API_KEY || process.env.FLOW_TRIGGER_SECRET || ''
+
+  const { steps, hasDelays, warnings } = toFlowSteps(
+    args.nodes as Parameters<typeof toFlowSteps>[0],
+    args.edges as Parameters<typeof toFlowSteps>[1],
+    {
+      workflowId: args.workflowId,
+      callbackSecret,
+    },
+  )
+
+  if (!hasDelays) return { warnings }
+
+  const slug = `automation-${args.workflowId}`
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (flowApiKey) headers['Authorization'] = `Bearer ${flowApiKey}`
+
+  try {
+    const res = await fetch(`${FLOW_API_BASE}/api/flows`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        slug,
+        name: args.name,
+        owner_product: '0ncore',
+        owner_email: args.ownerEmail || undefined,
+        default_provider: 'crm',
+        default_location_id: args.locationId || undefined,
+        steps,
+        metadata: { workflow_id: args.workflowId },
+      }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      return { warnings, error: data?.error || `flow create ${res.status}` }
+    }
+    return { flowSlug: slug, warnings }
+  } catch (err) {
+    return { warnings, error: err instanceof Error ? err.message : 'flow create failed' }
+  }
+}
 
 function getAdmin() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -161,6 +215,24 @@ export async function POST(req: NextRequest) {
     result = data
   }
 
+  // ─── Provision 0nFlow companion (only if any step has a delay) ───
+  const flowResult = await provisionFlowCompanion({
+    workflowId: result.id,
+    name,
+    nodes: nodes || [],
+    edges: edges || [],
+    locationId,
+    ownerEmail: user.email ?? null,
+  })
+
+  if (flowResult.flowSlug) {
+    await admin
+      .from('user_workflows')
+      .update({ flow_slug: flowResult.flowSlug })
+      .eq('id', result.id)
+    result.flow_slug = flowResult.flowSlug
+  }
+
   // ─── Register trigger ───
   let triggerResult: { webhookId?: string; cronSchedule?: string; error?: string } = {}
 
@@ -206,6 +278,14 @@ export async function POST(req: NextRequest) {
         : null,
       error: triggerResult.error || null,
     },
-    message: `"${name}" activated with ${nodes.length} steps`,
+    flow: flowResult.flowSlug
+      ? {
+          slug: flowResult.flowSlug,
+          warnings: flowResult.warnings,
+        }
+      : flowResult.error
+        ? { error: flowResult.error, warnings: flowResult.warnings }
+        : null,
+    message: `"${name}" activated with ${nodes.length} steps${flowResult.flowSlug ? ' (time-delayed flow live)' : ''}`,
   })
 }
