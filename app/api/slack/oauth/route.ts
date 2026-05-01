@@ -66,13 +66,30 @@ export async function GET(req: Request) {
     /* identity lookup is best-effort */
   }
 
-  // Persist workspace
+  // Persist workspace.
+  //
+  // If Slack returned a refresh_token + expires_in (rotation enabled on
+  // the app), record them and flip rotation_enabled = TRUE so the token
+  // refresher takes over. If not (legacy long-lived install), leave
+  // rotation_enabled FALSE — the bootstrap endpoint can flip it later.
+  const hasRotation = !!(tokens.refresh_token && tokens.expires_in)
+  const tokenExpiresAt = hasRotation
+    ? new Date(Date.now() + (tokens.expires_in as number) * 1000).toISOString()
+    : null
+
   await sb.from('slack_workspaces').upsert(
     {
       team_id: tokens.team.id,
       team_name: tokens.team.name,
       bot_user_id: tokens.bot_user_id,
       bot_token: tokens.access_token,
+      refresh_token: hasRotation ? tokens.refresh_token : null,
+      token_expires_at: tokenExpiresAt,
+      rotation_enabled: hasRotation,
+      last_refresh_at: hasRotation ? new Date().toISOString() : null,
+      refresh_error_count: 0,
+      refresh_error_message: null,
+      refresh_lock_until: null,
       app_id: tokens.app_id,
       installed_by_email: installedByEmail,
       installed_by_oncore_user: installedByOnCoreUser,
@@ -94,7 +111,9 @@ export async function GET(req: Request) {
       { onConflict: 'slack_user_id,team_id' },
     )
 
-    // Welcome DM with quick-start blocks
+    // Welcome DM with quick-start blocks. Routed through the rotation
+    // layer using teamId — by now the workspace row exists, so the
+    // tokens module can fetch the freshly-stored access token.
     try {
       await postMessage(
         {
@@ -106,7 +125,7 @@ export async function GET(req: Request) {
           }),
           text: `0n is connected to your Slack workspace.`,
         },
-        tokens.access_token,
+        { teamId: tokens.team.id },
       )
     } catch {
       /* welcome DM is best-effort */

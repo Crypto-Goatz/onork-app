@@ -45,18 +45,11 @@ export async function resolveCaller(
     return loadProfile(sb, link.oncore_user_id, link.email)
   }
 
-  // 2. Look up workspace bot token
-  const { data: ws } = await sb
-    .from('slack_workspaces')
-    .select('bot_token')
-    .eq('team_id', teamId)
-    .maybeSingle()
-  const botToken = ws?.bot_token || process.env.SLACK_BOT_TOKEN
-
-  // 3. Ask Slack for the email
+  // 2. Ask Slack for the email — userInfo() pulls a fresh, rotated bot
+  //    token from slack_workspaces internally, so we just pass teamId.
   let email: string | undefined
   try {
-    const info = await userInfo(slackUserId, botToken)
+    const info = await userInfo(slackUserId, { teamId })
     email = info.user?.profile?.email
   } catch {
     return null

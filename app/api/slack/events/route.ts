@@ -136,7 +136,10 @@ async function handleDm({
   const start = Date.now()
   const caller = await resolveCaller(slackUserId, teamId)
   if (!caller) {
-    await postMessage({ channel, blocks: notLinkedPrompt(), text: 'Not linked yet' })
+    await postMessage(
+      { channel, blocks: notLinkedPrompt(), text: 'Not linked yet' },
+      { teamId },
+    )
     await logCommand({
       team_id: teamId,
       slack_user_id: slackUserId,
@@ -148,7 +151,7 @@ async function handleDm({
     return
   }
   const reply = await runJaxx({ user: caller, prompt: text, surface: 'slack:dm' })
-  await postJaxxReply(channel, reply.text, reply.traceId)
+  await postJaxxReply(channel, reply.text, reply.traceId, { teamId })
   await logCommand({
     team_id: teamId,
     slack_user_id: slackUserId,
@@ -176,17 +179,23 @@ async function handleMention({
 }) {
   const caller = await resolveCaller(slackUserId, teamId)
   if (!caller) {
-    await postMessage({ channel, blocks: notLinkedPrompt(), text: 'Not linked' })
+    await postMessage(
+      { channel, blocks: notLinkedPrompt(), text: 'Not linked' },
+      { teamId },
+    )
     return
   }
   const clean = text.replace(/^<@[A-Z0-9]+>\s*/, '').trim() || 'help'
   const reply = await runJaxx({ user: caller, prompt: clean, surface: 'slack:mention' })
-  await postMessage({
-    channel,
-    blocks: jaxxReply(reply.text, reply.traceId),
-    text: reply.text.slice(0, 200),
-    thread_ts: ts,
-  })
+  await postMessage(
+    {
+      channel,
+      blocks: jaxxReply(reply.text, reply.traceId),
+      text: reply.text.slice(0, 200),
+      thread_ts: ts,
+    },
+    { teamId },
+  )
 }
 
 async function handleHomeOpened({ slackUserId, teamId }: { slackUserId: string; teamId: string }) {
@@ -198,7 +207,7 @@ async function handleHomeOpened({ slackUserId, teamId }: { slackUserId: string; 
       : notLinkedPrompt(),
   }
   try {
-    await publishHome(slackUserId, view)
+    await publishHome(slackUserId, view, { teamId })
   } catch (e) {
     console.warn('[slack/home] publish failed:', (e as Error).message)
   }

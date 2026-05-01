@@ -60,6 +60,14 @@ export async function runAsync(
  * Post Jaxx's reply back to the DM channel. Used by the events handler
  * (message.im).
  */
-export async function postJaxxReply(channel: string, text: string, traceId?: string, token?: string) {
-  await postMessage({ channel, blocks: jaxxReply(text, traceId), text: text.slice(0, 200) }, token)
+export async function postJaxxReply(
+  channel: string,
+  text: string,
+  traceId?: string,
+  opts?: { teamId?: string },
+) {
+  await postMessage(
+    { channel, blocks: jaxxReply(text, traceId), text: text.slice(0, 200) },
+    opts,
+  )
 }

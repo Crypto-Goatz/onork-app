@@ -50,7 +50,12 @@ export async function POST(req: Request) {
       // BLOCK ACTIONS — buttons
       if (payload.type === 'block_actions' && payload.actions?.length) {
         const action = payload.actions[0]
-        await routeAction(action, { caller, responseUrl, channel: payload.channel?.id })
+        await routeAction(action, {
+          caller,
+          responseUrl,
+          channel: payload.channel?.id,
+          teamId,
+        })
         return
       }
 
@@ -87,10 +92,11 @@ async function routeAction(
     caller: Awaited<ReturnType<typeof resolveCaller>>
     responseUrl: string
     channel?: string
+    teamId: string
   },
 ) {
   const { action_id, value } = action
-  const { caller, responseUrl, channel } = ctx
+  const { caller, responseUrl, channel, teamId } = ctx
 
   if (!caller) {
     if (responseUrl) {
@@ -131,6 +137,6 @@ async function routeAction(
   if (responseUrl) {
     await respond(responseUrl, { response_type: 'ephemeral', text: reply.text })
   } else if (channel) {
-    await postMessage({ channel, text: reply.text })
+    await postMessage({ channel, text: reply.text }, { teamId })
   }
 }
