@@ -145,6 +145,17 @@ export const BRAIN_REGISTRY: RegistryEntry[] = [
     description: 'AI generates a full email from a short prompt; tap each field to copy.',
   },
 
+  // ── Honest 'automation' label — workflow plumbing that may invoke Groq ──
+  {
+    slug: 'stack_scanner',
+    display_name: 'Stack Scanner',
+    category: 'automation',
+    handler_paths: ['app/api/scanner/analyze/route.ts'],
+    surface_route: '/dashboard/scans',
+    description:
+      'Detects 40+ tools on any visited site, scores stack gaps, recommends 0nMCP services. Recommendations rewritten by Groq inside lib/scanner/recommend.ts.',
+  },
+
   // ── Honest 'automation' label — CRUD, no AI claim ──────────────────
   {
     slug: 'contacts',
