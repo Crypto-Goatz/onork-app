@@ -682,17 +682,44 @@ ${prevOutputs || 'No previous steps executed yet.'}`
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  // Internal-trusted bypass for server-to-server calls (CRM webhook → this
+  // route, scheduler → this route, etc). Caller proves it's our own server
+  // by passing INTERNAL_DISPATCH_SECRET in the x-internal-secret header.
+  const internalSecret = process.env.INTERNAL_DISPATCH_SECRET
+  const headerSecret = req.headers.get('x-internal-secret') || ''
+  const internal = internalSecret && headerSecret && headerSecret === internalSecret
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('crm_location_id')
-    .eq('id', user.id)
-    .single()
+  let userId: string | null = null
+  let locationId: string | null = null
 
-  const locationId = profile?.crm_location_id
+  if (internal) {
+    // Trusted internal call. Body must include user_id (the workflow owner)
+    // — we read crm_location_id from their profile.
+    const peek = (await req.clone().json().catch(() => ({}))) as { user_id?: string }
+    if (!peek.user_id) {
+      return Response.json({ error: 'internal call requires user_id in body' }, { status: 400 })
+    }
+    userId = peek.user_id
+    const supabaseAdmin = await createClient()
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('crm_location_id')
+      .eq('id', userId)
+      .single()
+    locationId = profile?.crm_location_id ?? null
+  } else {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    userId = user.id
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('crm_location_id')
+      .eq('id', user.id)
+      .single()
+    locationId = profile?.crm_location_id ?? null
+  }
+
   if (!locationId) {
     return Response.json({ error: 'No CRM location provisioned. Go to Settings to set up your account.' }, { status: 403 })
   }
@@ -701,6 +728,7 @@ export async function POST(req: Request) {
     workflow: Workflow
     triggerData?: Record<string, unknown>
     dryRun?: boolean
+    user_id?: string
   }
 
   if (!workflow?.steps) {

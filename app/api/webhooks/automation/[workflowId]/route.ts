@@ -100,10 +100,15 @@ export async function POST(
   for (const step of executionSteps) {
     const stepStart = Date.now()
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (process.env.INTERNAL_DISPATCH_SECRET) {
+        headers['x-internal-secret'] = process.env.INTERNAL_DISPATCH_SECRET
+      }
       const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'}/api/automations/execute`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
+          user_id: workflow.user_id,
           workflow: {
             name: workflow.name,
             trigger: { type: eventType, event: eventType, config: {} },
