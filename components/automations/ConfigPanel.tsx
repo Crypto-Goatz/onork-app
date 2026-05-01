@@ -1,9 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Trash2 } from 'lucide-react'
+import { X, Trash2, Clock } from 'lucide-react'
 import { getCapability } from './capabilities'
 import type { CapabilityNodeType } from './CapabilityNode'
+import {
+  type DelayUnit,
+  UNIT_SECONDS,
+  UNIT_LABELS,
+  fitDelay,
+  fmtDelay,
+  readDelaySeconds,
+} from '@/lib/automations/delay'
 
 interface ConfigPanelProps {
   node: CapabilityNodeType;
@@ -15,10 +23,23 @@ interface ConfigPanelProps {
 export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: ConfigPanelProps) {
   const cap = getCapability(node.data.capabilityId)
   const config = node.data.config || {}
+  const isTrigger = cap?.category === 'triggers'
   const [focusedField, setFocusedField] = useState<string | null>(null)
+  const initialDelay = readDelaySeconds(config)
+  const initialFit = fitDelay(initialDelay)
+  const [delayValue, setDelayValue] = useState<number>(initialFit.value)
+  const [delayUnit, setDelayUnit] = useState<DelayUnit>(initialFit.unit)
 
   function handleChange(key: string, value: string) {
     onUpdate(node.id, { ...config, [key]: value })
+  }
+
+  function handleDelayChange(nextValue: number, nextUnit: DelayUnit) {
+    const safeValue = Number.isFinite(nextValue) && nextValue >= 0 ? nextValue : 0
+    setDelayValue(safeValue)
+    setDelayUnit(nextUnit)
+    const totalSeconds = Math.round(safeValue * UNIT_SECONDS[nextUnit])
+    onUpdate(node.id, { ...config, delay_seconds: String(totalSeconds) })
   }
 
   return (
@@ -68,6 +89,40 @@ export default function ConfigPanel({ node, onUpdate, onClose, onDelete }: Confi
             </div>
           ))}
         </div>
+
+        {/* Wait before this step — actions only */}
+        {!isTrigger && (
+          <div className="mb-6">
+            <div className="text-[11px] text-core-cyan font-bold uppercase tracking-[0.06em] mb-3 flex items-center gap-1.5">
+              <Clock className="w-3 h-3" />
+              Wait before this step
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={0}
+                value={delayValue}
+                onChange={(e) => handleDelayChange(Number(e.target.value), delayUnit)}
+                onFocus={() => setFocusedField('delay_value')}
+                onBlur={() => setFocusedField(null)}
+                className="w-[80px] px-3 py-[9px] bg-core-card border border-[#1c2b42] rounded-lg text-core-text text-[13px] outline-none transition-colors duration-150"
+                style={{ borderColor: focusedField === 'delay_value' ? '#14b8a6' : '' }}
+              />
+              <select
+                value={delayUnit}
+                onChange={(e) => handleDelayChange(delayValue, e.target.value as DelayUnit)}
+                className="flex-1 px-3 py-[9px] bg-core-card border border-[#1c2b42] rounded-lg text-core-text text-[13px] outline-none"
+              >
+                {(['s', 'm', 'h', 'd'] as DelayUnit[]).map((u) => (
+                  <option key={u} value={u}>{UNIT_LABELS[u]}</option>
+                ))}
+              </select>
+            </div>
+            <div className="mt-1.5 text-[11px] text-core-text-muted">
+              {fmtDelay(Number(config.delay_seconds || 0))}
+            </div>
+          </div>
+        )}
 
         {/* Config fields */}
         {cap?.configFields && cap.configFields.length > 0 && (

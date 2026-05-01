@@ -11,6 +11,7 @@ import {
   Smartphone, Snowflake, Star, Sun, Tag, Target, TrendingUp, Upload, UserPen,
   UserPlus, Users, Webhook, Zap, type LucideIcon
 } from 'lucide-react'
+import { fmtDelayShort, readDelaySeconds } from '@/lib/automations/delay'
 
 // Map icon name strings to Lucide components
 const LUCIDE_ICONS: Record<string, LucideIcon> = {
@@ -68,6 +69,8 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
   const isSwitch = data.kind === 'switch'
   const isMcp = data.kind === 'mcp_tool'
   const IconComponent = LUCIDE_ICONS[data.icon]
+  const delaySeconds = readDelaySeconds(data.config)
+  const showDelay = !isTrigger && delaySeconds > 0
 
   return (
     <div
@@ -98,6 +101,12 @@ function CapabilityNodeComponent({ data, selected }: NodeProps<CapabilityNodeTyp
         <span className="text-[13px] font-bold uppercase tracking-[0.05em]" style={{ color: data.color }}>
           {isMcp ? 'MCP TOOL' : isSwitch ? 'SWITCH' : isApp ? '0N APP' : isTrigger ? 'TRIGGER' : data.category === 'ai' ? 'AI' : data.category.toUpperCase()}
         </span>
+        {showDelay && (
+          <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-300">
+            <Clock className="h-2.5 w-2.5" />
+            {fmtDelayShort(delaySeconds)}
+          </span>
+        )}
         <div className="ml-auto">
           <span className={`inline-block w-2 h-2 rounded-full ${isConfigured ? 'bg-emerald-400' : 'bg-amber-400'}`} />
         </div>
