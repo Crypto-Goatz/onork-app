@@ -222,8 +222,11 @@ export default function PricingPage() {
           </h2>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-5">
-          {TIERS.map((tier) => {
+        {(() => {
+          const topTiers = TIERS.filter((t) => ['free', 'starter', 'pro'].includes(t.slug))
+          const bottomTiers = TIERS.filter((t) => ['agency', 'enterprise'].includes(t.slug))
+
+          const renderTier = (tier: typeof TIERS[number]) => {
             const accent = TIER_ICON[tier.slug] ?? TIER_ICON.starter
             const Icon = accent.icon
             return (
@@ -324,8 +327,22 @@ export default function PricingPage() {
                 </div>
               </div>
             )
-          })}
-        </div>
+          }
+
+          return (
+            <>
+              {/* Top row — Free / Starter / Pro */}
+              <div className="grid gap-5 lg:grid-cols-3">
+                {topTiers.map(renderTier)}
+              </div>
+
+              {/* Bottom row — Agency / Enterprise */}
+              <div className="mt-5 grid gap-5 lg:grid-cols-2">
+                {bottomTiers.map(renderTier)}
+              </div>
+            </>
+          )
+        })()}
       </section>
 
       {/* ═══ Replaces this stack ═════════════════════════════════════ */}
