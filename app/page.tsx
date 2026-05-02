@@ -122,9 +122,9 @@ export default function HomePage() {
       {/* ═══ NAV ═══ */}
       {/* Nav provided by PublicNavWrapper in root layout */}
 
-      {/* ═══ HERO ═══ */}
+      {/* ═══ HERO (full-width, side-by-side text + video) ═══ */}
       <section style={{
-        position: 'relative', padding: 'clamp(100px, 15vw, 140px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 80px)', overflow: 'hidden',
+        position: 'relative', padding: 'clamp(100px, 15vw, 140px) clamp(16px, 4vw, 32px) clamp(40px, 6vw, 80px)', overflow: 'hidden',
         minHeight: '85vh', display: 'flex', alignItems: 'center',
       }}>
         {/* Video background */}
@@ -134,8 +134,9 @@ export default function HomePage() {
         <AuroraBg />
         <ParticleField count={24} color="#6EE05A" />
 
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, margin: '0 auto', width: '100%' }}>
-          <div style={{ maxWidth: 920 }}>
+        <div className="hero-grid" style={{ position: 'relative', zIndex: 2, maxWidth: 1600, margin: '0 auto', width: '100%' }}>
+          {/* ── Left column: copy + CTAs ── */}
+          <div className="hero-copy">
             {/* Live status pill */}
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 10, fontWeight: 700, color: '#a3f08e', background: 'rgba(126,217,87,0.08)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.25)', marginBottom: 28, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
               <span style={{ position: 'relative', display: 'inline-flex', width: 6, height: 6 }}>
@@ -147,7 +148,7 @@ export default function HomePage() {
 
             {/* Gradient headline — green → teal → purple */}
             <h1 style={{
-              fontSize: 'clamp(44px, 6.5vw, 88px)',
+              fontSize: 'clamp(40px, 5vw, 76px)',
               fontWeight: 900,
               letterSpacing: '-0.035em',
               lineHeight: 1.02,
@@ -176,19 +177,17 @@ export default function HomePage() {
             </h1>
 
             <p style={{
-              fontSize: 'clamp(16px, 1.6vw, 20px)',
+              fontSize: 'clamp(16px, 1.4vw, 19px)',
               color: 'rgba(255,255,255,0.78)',
               lineHeight: 1.55,
-              maxWidth: 720,
               margin: '0 0 16px',
             }}>
               0nCore is the AI-powered CRM with <strong style={{ color: '#fff', fontWeight: 600 }}>2,000+ capabilities across 150+ services</strong> wired in from day one — automations, voice AI, course generator, domain management, the whole stack — all from one dashboard.
             </p>
             <p style={{
-              fontSize: 'clamp(15px, 1.4vw, 17px)',
+              fontSize: 'clamp(15px, 1.2vw, 16px)',
               color: 'rgba(255,255,255,0.55)',
               lineHeight: 1.6,
-              maxWidth: 720,
               margin: '0 0 36px',
             }}>
               No code. No API keys. No glue work. Sign in and start running real apps.
@@ -211,6 +210,23 @@ export default function HomePage() {
               No credit card. 60-second setup. Cancel anytime.
             </p>
           </div>
+
+          {/* ── Right column: clean autoplay/looped/chrome-stripped video ── */}
+          <div className="hero-video">
+            <div className="relative w-full rounded-2xl overflow-hidden border border-white/[0.06] shadow-[0_20px_60px_rgba(0,0,0,0.4)] bg-black">
+              <div className="relative pt-[56.25%]">
+                <iframe
+                  src="https://www.youtube-nocookie.com/embed/D91C8EPRixM?autoplay=1&mute=1&loop=1&playlist=D91C8EPRixM&controls=0&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&cc_load_policy=0"
+                  className="absolute inset-0 w-full h-full border-none"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen={false}
+                  title="0nCore Demo"
+                />
+                {/* Click-shield: blocks the YouTube logo + title overlay that appears on hover */}
+                <div className="absolute inset-0 pointer-events-none" />
+              </div>
+            </div>
+          </div>
         </div>
 
         <style>{`
@@ -218,25 +234,19 @@ export default function HomePage() {
             0%   { transform: scale(1); opacity: 0.6; }
             75%, 100% { transform: scale(2.2); opacity: 0; }
           }
+          .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: clamp(32px, 5vw, 56px);
+            align-items: center;
+          }
+          @media (min-width: 1024px) {
+            .hero-grid {
+              grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+              gap: clamp(40px, 6vw, 72px);
+            }
+          }
         `}</style>
-      </section>
-
-      {/* ═══ VIDEO ═══ */}
-      <section className="px-[clamp(16px,4vw,24px)] pb-16">
-        <div className="max-w-[900px] mx-auto">
-          <div className="relative w-full rounded-2xl overflow-hidden border border-white/[0.06] shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
-            >
-            <div className="relative pt-[56.25%]">
-              <iframe
-                src="https://www.youtube.com/embed/D91C8EPRixM?rel=0&modestbranding=1&showinfo=0&controls=1&color=white&iv_load_policy=3&disablekb=0&fs=0"
-                className="absolute inset-0 w-full h-full border-none"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen={false}
-                title="0nCore Demo"
-              />
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* ═══ PARTNER LOGOS ═══ */}
