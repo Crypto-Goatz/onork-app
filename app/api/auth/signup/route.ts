@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 import { provisionSubLocation } from '@/lib/provision'
+import { findFamilyMatch } from '@/lib/family-locations'
+import { getPitForLocation } from '@/lib/crm'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -60,30 +62,51 @@ export async function POST(req: NextRequest) {
     // 2. Generate 0n_ token
     const token = `0n_${crypto.randomBytes(24).toString('hex')}`
 
-    // 3. Create profile row
+    // 3. Family-location match — does this email's domain belong to a known
+    //    0n-family sub-account? If so, link to that location instead of
+    //    provisioning a new one.
+    const family = findFamilyMatch(email)
+    const familyLocationId = family?.location.locationId || null
+    const familyLocationName = family?.location.name || null
+    const familyVip = !!family?.location.vip
+
+    // 4. Create profile row (with family-link if matched)
     await supabase.from('profiles').upsert({
       id: userId,
       email,
       full_name: full_name || null,
-      company: company || null,
+      company: company || familyLocationName || null,
       access_token: token,
-      tier_level: 0,
-      plan: 'free',
+      tier_level: familyVip ? 99 : 0,
+      plan: family?.location.defaultPlan || (familyVip ? 'enterprise' : 'free'),
       onboarding_completed: false,
       onboarding_step: 1,
-      business_name: company || null,
+      business_name: company || familyLocationName || null,
       website: website || null,
+      crm_location_id: familyLocationId,
     }, { onConflict: 'id' })
 
-    // 4. Create CRM contact in MASTER location (non-blocking)
+    // 5. Create CRM contact. Prefer the family location if matched (with its
+    //    own PIT); fall back to the master location otherwise. This means a
+    //    new In2sight signup lands as a contact INSIDE the In2sight CRM
+    //    sub-account, not in the master.
     const { firstName, lastName } = splitName(full_name)
     let crmContactId: string | null = null
+    const contactLocationId = familyLocationId || MASTER_LOCATION_ID
+    const contactPit = familyLocationId
+      ? (getPitForLocation(familyLocationId) || MASTER_PIT)
+      : MASTER_PIT
+    const contactTags = familyVip
+      ? ['0n User', 'VIP', 'Family']
+      : family
+        ? ['0n User', 'Family Signup', family.location.name.replace(/\s+/g, '-')]
+        : ['0n User', 'Trial', 'Signup']
 
     try {
       const contactRes = await fetch(`${CRM_API}/contacts/`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${MASTER_PIT}`,
+          Authorization: `Bearer ${contactPit}`,
           Version: CRM_VERSION,
           'Content-Type': 'application/json',
         },
@@ -91,10 +114,10 @@ export async function POST(req: NextRequest) {
           firstName,
           lastName,
           email,
-          tags: ['0n User', 'Trial', 'Signup'],
-          source: '0ncore-signup',
-          companyName: company || '',
-          locationId: MASTER_LOCATION_ID,
+          tags: contactTags,
+          source: family ? `0ncore-signup:${family.matchedBy}-match` : '0ncore-signup',
+          companyName: company || familyLocationName || '',
+          locationId: contactLocationId,
         }),
       })
 
@@ -116,12 +139,17 @@ export async function POST(req: NextRequest) {
       console.error('[auth/signup] CRM contact error:', crmErr)
     }
 
-    // 5. Start CRM sub-location provisioning (async — runs in background)
-    provisionSubLocation(userId).then((result) => {
-      console.log(`[auth/signup] Provision result for ${email}:`, result.success ? 'OK' : result.errors)
-    }).catch((err) => {
-      console.error(`[auth/signup] Provision failed for ${email}:`, err)
-    })
+    // 6. CRM sub-location provisioning — only when NO family match. Family
+    //    signups already share an existing sub-location (set on profile above).
+    if (!familyLocationId) {
+      provisionSubLocation(userId).then((result) => {
+        console.log(`[auth/signup] Provision result for ${email}:`, result.success ? 'OK' : result.errors)
+      }).catch((err) => {
+        console.error(`[auth/signup] Provision failed for ${email}:`, err)
+      })
+    } else {
+      console.log(`[auth/signup] Family match for ${email}: linked to ${familyLocationName} (${familyLocationId}), skipping new sub-location provisioning`)
+    }
 
     // 6. If website provided, scrape brand data in background
     if (website) {
@@ -141,6 +169,9 @@ export async function POST(req: NextRequest) {
         has_website: !!website,
         has_company: !!company,
         crm_contact_id: crmContactId,
+        family_match: family
+          ? { location: familyLocationName, location_id: familyLocationId, by: family.matchedBy, vip: familyVip }
+          : null,
       },
     })
 
@@ -148,7 +179,10 @@ export async function POST(req: NextRequest) {
       ok: true,
       userId,
       token,
-      status: 'provisioning',
+      status: familyLocationId ? 'linked' : 'provisioning',
+      family: family
+        ? { location: familyLocationName, locationId: familyLocationId, vip: familyVip, matchedBy: family.matchedBy }
+        : null,
     })
   } catch (err) {
     console.error('[auth/signup] Error:', err)
