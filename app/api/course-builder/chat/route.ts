@@ -462,7 +462,7 @@ async function runPublish(sessionId: string) {
       ? `\n📎 Enrollment link: ${result.enrollmentUrl}`
       : `\n(Enrollment link will appear in your CRM courses dashboard.)`
     const methodNote =
-      result.method === 'video_fallback'
+      result.method === 'per_lesson_video'
         ? `\n(Note: your CRM uses the video lesson format — content was embedded into each lesson description so students see it.)`
         : ''
 
