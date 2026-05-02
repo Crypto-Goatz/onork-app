@@ -42,11 +42,15 @@ export async function GET(
   let userId: string
   let codeVerifier: string | undefined
   let mode: string = 'connect'
+  let nextPath: string | null = null
   try {
     const decoded = JSON.parse(Buffer.from(state, 'base64url').toString())
     userId = decoded.userId
     codeVerifier = decoded.cv
     mode = decoded.mode || 'connect'
+    if (typeof decoded.next === 'string' && decoded.next.startsWith('/')) {
+      nextPath = decoded.next
+    }
   } catch {
     return NextResponse.redirect(`${settingsUrl}?error=invalid_state&provider=${providerId}`)
   }
@@ -170,6 +174,7 @@ export async function GET(
     }
 
     // Slack login mode — find or create user, then sign them in
+    let freshlyCreated = false
     if (mode === 'login' && providerId === 'slack' && profile.provider_email) {
       // Check if user exists with this email
       const { data: existingUsers } = await supabase.auth.admin.listUsers()
@@ -193,6 +198,7 @@ export async function GET(
           return NextResponse.redirect(`${settingsUrl}?error=user_creation&provider=slack`)
         }
         userId = newUser.user.id
+        freshlyCreated = true
 
         // Create profile
         await supabase.from('profiles').upsert({
@@ -209,6 +215,17 @@ export async function GET(
     //   userId explicitly.
     // - mode='connect' enforces that provider_email matches profile.email.
     //   Mismatch throws IdentityMismatchError → user-facing error redirect.
+    //
+    // Persist OIDC id_token (Google/LinkedIn return one) into metadata so a
+    // future role-decoding pass can read groups/claims without a re-auth.
+    const baseMetadata: Record<string, unknown> =
+      providerId === 'slack' && tokens.team
+        ? { team_id: tokens.team.id, team_name: tokens.team.name }
+        : {}
+    if (tokens.id_token) {
+      baseMetadata.id_token = tokens.id_token
+    }
+
     try {
       await upsertConnection({
         provider: providerId as Provider,
@@ -222,11 +239,20 @@ export async function GET(
         tokenType: tokens.token_type || 'Bearer',
         expiresAt,
         scopes: scope,
-        metadata:
-          providerId === 'slack' && tokens.team
-            ? { team_id: tokens.team.id, team_name: tokens.team.name }
-            : {},
+        metadata: baseMetadata,
+        // Fresh Slack-login users have a profile.email we just wrote; the
+        // identity check can race the write, so skip it for that one path.
+        skipIdentityCheck: mode === 'login' && freshlyCreated,
       })
+
+      // For freshly-created users, ensure profiles.email is backfilled so
+      // subsequent connects pass the identity check on the first try.
+      if (mode === 'login' && freshlyCreated && profile.provider_email) {
+        await supabase
+          .from('profiles')
+          .update({ email: profile.provider_email })
+          .eq('id', userId)
+      }
     } catch (err) {
       if (err instanceof IdentityMismatchError) {
         console.warn(`[oauth/${providerId}] identity mismatch:`, err.message)
@@ -238,17 +264,21 @@ export async function GET(
       return NextResponse.redirect(`${settingsUrl}?error=db_error&provider=${providerId}`)
     }
 
-    // For Slack login mode, generate a magic link to create a Supabase session
+    // For Slack login mode, generate a magic link to create a Supabase session.
+    // Honor `state.next` if it was carried through; otherwise land on /dashboard.
+    // We never default to /install/slack here — that path is for bot install,
+    // not identity-scope login.
     if (mode === 'login' && profile.provider_email) {
+      const loginRedirect = `${baseUrl}${nextPath || '/dashboard'}`
       const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
         type: 'magiclink',
         email: profile.provider_email,
-        options: { redirectTo: `${baseUrl}/install/slack?connected=slack` },
+        options: { redirectTo: loginRedirect },
       })
 
       if (linkErr || !linkData?.properties?.hashed_token) {
         console.error('[oauth/slack] Magic link generation failed:', linkErr)
-        return NextResponse.redirect(`${baseUrl}/install/slack?error=auth_failed`)
+        return NextResponse.redirect(`${baseUrl}/login?error=auth_failed`)
       }
 
       const actionLink = linkData.properties.action_link

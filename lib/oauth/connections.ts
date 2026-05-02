@@ -51,6 +51,10 @@ export interface UpsertConnectionInput {
   // example: the user is signed in and explicitly clicking "Connect"), pass
   // it. Otherwise we resolve by email.
   oncoreUserId?: string | null
+  // When true, skip the explicit-id vs provider-email mismatch check. Used
+  // for fresh-user flows (e.g. Slack login mode) where we just created the
+  // user and the profile.email is not yet settled. Default false.
+  skipIdentityCheck?: boolean
 }
 
 export interface ResolvedConnection {
@@ -127,7 +131,7 @@ export async function upsertConnection(input: UpsertConnectionInput): Promise<Re
     // Caller passed oncoreUserId. If they also passed providerEmail, sanity
     // check that it matches the profile's email — refuse on mismatch so we
     // never link a different person's account to this user.
-    if (input.providerEmail) {
+    if (input.providerEmail && !input.skipIdentityCheck) {
       const sb = admin()
       const { data: profile } = await sb
         .from('profiles')
@@ -142,6 +146,8 @@ export async function upsertConnection(input: UpsertConnectionInput): Promise<Re
         )
       }
       userEmail = profileEmail || provEmail
+    } else if (input.providerEmail) {
+      userEmail = input.providerEmail.toLowerCase()
     }
   }
 

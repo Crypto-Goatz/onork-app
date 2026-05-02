@@ -48,6 +48,25 @@ export async function GET(req: Request) {
     )
   }
 
+  // Guard: identity-scope (`identity.*`) tokens are user-context tokens for
+  // login flows — they belong on `/api/auth/connect/slack/callback`, not on
+  // the bot-install path. They have a fundamentally different token shape
+  // (no bot_user_id, no chat:write) and persisting them as a workspace
+  // install would conflate user identity with workspace bot rows. If the
+  // authorize call only returned identity user_scopes, refuse here.
+  const userScope = (tokens.authed_user?.scope || '') as string
+  const userScopes = userScope.split(',').map((s) => s.trim()).filter(Boolean)
+  const botScope = (tokens.scope || '') as string
+  const hasBotScopes = botScope.split(',').some((s) => s.trim().length > 0)
+  const onlyIdentityScopes =
+    userScopes.length > 0 && userScopes.every((s) => s.startsWith('identity.')) && !hasBotScopes
+  if (onlyIdentityScopes) {
+    return NextResponse.json(
+      { error: 'identity-scope login goes through /api/auth/connect/slack/callback' },
+      { status: 400 },
+    )
+  }
+
   const sb = admin()
   const teamId = tokens.team.id
   const installerSlackId = tokens.authed_user?.id || null
