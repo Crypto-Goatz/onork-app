@@ -35,13 +35,24 @@ export function PublicNav() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-lg px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
-                  active
-                    ? 'bg-white/[0.06] text-white'
-                    : 'text-white/55 hover:bg-white/[0.04] hover:text-white'
+                className={`group relative rounded-lg px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+                  active ? 'text-white' : 'text-white/55 hover:text-white'
                 }`}
               >
-                {link.label}
+                {/* Slow-fade gradient glow on hover (and active) */}
+                <span
+                  aria-hidden
+                  className={`pointer-events-none absolute inset-0 -z-0 rounded-lg bg-gradient-to-br from-[#7ed957]/25 via-[#00d4ff]/20 to-[#a78bfa]/25 blur-md transition-opacity duration-700 ease-out ${
+                    active ? 'opacity-60' : 'opacity-0 group-hover:opacity-100'
+                  }`}
+                />
+                <span
+                  aria-hidden
+                  className={`pointer-events-none absolute inset-0 -z-0 rounded-lg bg-gradient-to-br from-[#7ed957]/10 via-[#00d4ff]/8 to-[#a78bfa]/10 transition-opacity duration-700 ease-out ${
+                    active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}
+                />
+                <span className="relative z-10">{link.label}</span>
               </Link>
             )
           })}
