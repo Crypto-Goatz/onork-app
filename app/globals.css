@@ -164,6 +164,35 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ─── Ambient backgrounds (AuroraBg + ConicMeshBg) ─── */
+@keyframes aurora-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(8%, 6%) scale(1.15); }
+}
+@keyframes aurora-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-10%, 4%) scale(1.1); }
+}
+@keyframes aurora-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(6%, -8%) scale(1.2); }
+}
+@keyframes conic-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-aurora-1 { animation: aurora-1 22s ease-in-out infinite; will-change: transform; }
+.animate-aurora-2 { animation: aurora-2 26s ease-in-out infinite; animation-delay: -7s; will-change: transform; }
+.animate-aurora-3 { animation: aurora-3 30s ease-in-out infinite; animation-delay: -13s; will-change: transform; }
+.animate-conic-spin { animation: conic-spin 60s linear infinite; will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-aurora-1, .animate-aurora-2, .animate-aurora-3, .animate-conic-spin {
+    animation: none;
+  }
+}
+
 /*
  * CRITICAL: DO NOT add margin: 0 or padding: 0 here.
  * Tailwind's @layer base preflight handles resets.

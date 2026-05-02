@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { VideoBg } from '@/components/video-bg'
+import SiteFooter from '@/components/SiteFooter'
+import AuroraBg from '@/components/bg/AuroraBg'
+import ConicMeshBg from '@/components/bg/ConicMeshBg'
+import ParticleField from '@/components/bg/ParticleField'
 
 export const metadata: Metadata = {
   title: '0nCore — Scale Your Platform 10x with AI Connectivity',
@@ -125,9 +129,10 @@ export default function HomePage() {
       }}>
         {/* Video background */}
         <VideoBg opacity={0.12} />
-        {/* Background glow */}
-        <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translate(-50%,-30%)', width: 900, height: 900, background: 'radial-gradient(circle, rgba(126,217,87,0.08) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 1 }} />
-        <div style={{ position: 'absolute', top: '30%', right: '10%', width: 400, height: 400, background: 'radial-gradient(circle, rgba(0,212,255,0.05) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 1 }} />
+        {/* Conic mesh + aurora — subtle ambient layer above the video */}
+        <ConicMeshBg />
+        <AuroraBg />
+        <ParticleField count={24} color="#6EE05A" />
 
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 1200, margin: '0 auto', width: '100%' }}>
           <div style={{ maxWidth: 920 }}>
@@ -397,8 +402,9 @@ export default function HomePage() {
       </section>
 
       {/* ═══ LAUNCH PARTY CTA ═══ */}
-      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
-        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+      <section style={{ position: 'relative', padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center', overflow: 'hidden' }}>
+        <AuroraBg />
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 600, margin: '0 auto' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#7ed957', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>May 1st · 9 PM EST</div>
           <h2 style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: 800, marginBottom: 12 }}>Launch Party</h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 28, lineHeight: 1.7 }}>
@@ -415,28 +421,7 @@ export default function HomePage() {
       </section>
 
       {/* ═══ FOOTER ═══ */}
-      <footer style={{ padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 32px)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>© 2026 RocketOpp LLC. Powered by 0nMCP.</span>
-          <a href="https://www.youtube.com/@0ncoreAI" target="_blank" rel="noopener noreferrer" className="footer-yt-icon">
-            <img src="/logos/youtube.svg" alt="YouTube" style={{ width: 18, height: 18, filter: 'brightness(0) invert(1)' }} />
-          </a>
-        </div>
-        <div style={{ display: 'flex', gap: 'clamp(12px, 2vw, 20px)', flexWrap: 'wrap' }}>
-          <Link href="/platform" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Platform</Link>
-          <Link href="/connections" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Connections</Link>
-          <Link href="/request" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Request Access</Link>
-          <Link href="/launch-party" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Launch Party</Link>
-          <a href="https://0nmcp.com" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>0nMCP</a>
-          <a href="https://www.youtube.com/@0ncoreAI" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }} target="_blank" rel="noopener noreferrer">YouTube</a>
-          <a href="mailto:mike@rocketopp.com" style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Contact</a>
-        </div>
-      </footer>
-
-      <style>{`
-        .footer-yt-icon { display: flex; opacity: 0.3; transition: opacity 0.2s; }
-        .footer-yt-icon:hover { opacity: 0.8; }
-      `}</style>
+      <SiteFooter />
     </div>
   )
 }
