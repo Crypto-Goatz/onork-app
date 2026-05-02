@@ -164,6 +164,23 @@ export const BRAIN_REGISTRY: RegistryEntry[] = [
     description:
       'Generates a complete Fiverr gig (10 sections) via Groq llama-3.3-70b. Server-side char-limit retry up to 2x. Surfaced in the extension Compose tab under Fiverr mode.',
   },
+  {
+    slug: 'fiverr_section_regenerate',
+    display_name: 'Fiverr Section Regenerate',
+    category: 'automation',
+    handler_paths: ['app/api/fiverr/section-regenerate/route.ts'],
+    surface_route: '/extension/compose',
+    description:
+      'Regenerates a single section of a Fiverr gig (per-card Regenerate button) via Groq with the same char-limit guardrails as fiverr_generate.',
+  },
+  {
+    slug: 'fiverr_templates',
+    display_name: 'Fiverr Saved Templates',
+    category: 'crud',
+    handler_paths: ['app/api/fiverr/templates/route.ts'],
+    surface_route: '/extension/compose',
+    description: 'List + save Fiverr gig templates (input state + 10 sections + VPIS) per spec §2.6.',
+  },
 
   // ── Honest 'automation' label — CRUD, no AI claim ──────────────────
   {

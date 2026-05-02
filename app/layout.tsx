@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./jampack.css";
-import { Geist } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { Providers } from "@/components/providers";
 import { PublicNavWrapper } from "@/components/public-nav-wrapper";
@@ -9,7 +9,9 @@ import { VoiceAIFloatingButton } from "@/components/voice-ai-floating";
 import { LaunchBanner } from "@/components/launch-banner";
 import { GroqBanner } from "@/components/GroqBanner";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+// Per docs/0n-design-system.md §2 — Inter as font-sans, JetBrains Mono as font-mono.
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.0ncore.com"),
@@ -53,7 +55,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={cn("dark font-sans", geist.variable)}>
+    <html lang="en" className={cn("dark font-sans", inter.variable, mono.variable)}>
       <head>
         {/* PWA */}
         <link rel="manifest" href="/manifest.json" />
@@ -63,9 +65,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="0nCore" />
         <link rel="apple-touch-icon" href="/favicon.png" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Nunito+Sans:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+        {/* Fonts loaded via next/font (Inter + JetBrains Mono) — no stylesheet needed */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-BE81T6STW6" />
         <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-BE81T6STW6');` }} />
         <script dangerouslySetInnerHTML={{ __html: `document.documentElement.setAttribute('data-theme','dark')` }} />
