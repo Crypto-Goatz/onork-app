@@ -113,7 +113,8 @@ export default function OnboardingPage() {
   // Init — check existing state
   useEffect(() => {
     async function init() {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
       if (!user) return
 
       const meta = user.user_metadata || {}
@@ -246,7 +247,8 @@ export default function OnboardingPage() {
   // Complete
   async function handleLaunch() {
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
     if (!user) { setSaving(false); return }
 
     await supabase.auth.updateUser({

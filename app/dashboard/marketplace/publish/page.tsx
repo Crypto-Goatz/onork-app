@@ -55,7 +55,8 @@ export default function PublishAppPage() {
       }
 
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
       if (!user) {
         setResult({ ok: false, message: 'Please sign in to publish' })
         setSubmitting(false)

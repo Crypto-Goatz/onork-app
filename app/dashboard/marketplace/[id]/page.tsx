@@ -77,7 +77,8 @@ export default function AppDetailPage({ params }: { params: Promise<{ id: string
 
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
       if (!user) {
         setError('Please sign in first')
         setInstalling(false)

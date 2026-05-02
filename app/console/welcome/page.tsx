@@ -19,7 +19,8 @@ export default function WelcomePage() {
     if (!businessName.trim()) return
     setLoading(true)
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
     if (!user) { setLoading(false); return }
 
     // 1. Update profile

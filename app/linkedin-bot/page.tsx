@@ -390,7 +390,8 @@ export default function LinkedInBotPage() {
 
   const loadQueue = useCallback(async (filter = queueFilter) => {
     const supabaseClient = createClient()
-    const { data: { user } } = await supabaseClient.auth.getUser()
+    const { data: { session: __sess } } = await supabaseClient.auth.getSession()
+  const user = __sess?.user ?? null
     if (!user) return
     const query = supabaseClient
       .from('bot_queue')

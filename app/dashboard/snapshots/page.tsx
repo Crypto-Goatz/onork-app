@@ -69,7 +69,8 @@ export default function SnapshotsPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getSession().then(({ data: { session: __sess } }) => {
+      const user = __sess?.user ?? null;
       if (user) {
         const loc = user.user_metadata?.active_location_id || ''
         setLocationId(loc)

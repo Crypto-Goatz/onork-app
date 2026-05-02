@@ -37,7 +37,8 @@ export default function VoicePage() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getSession().then(({ data: { session: __sess } }) => {
+      const user = __sess?.user ?? null;
       if (user) {
         setLocationId(user.user_metadata?.active_location_id || '')
         setAiName(user.user_metadata?.ai_name || '0nAI')

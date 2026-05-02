@@ -28,7 +28,8 @@ export default function SlackInstallPage() {
 
   useEffect(() => {
     // Check if already logged in
-    supabase.auth.getUser().then(({ data: { user: u } }) => {
+    supabase.auth.getSession().then(({ data: { session: __sess } }) => {
+      const u = __sess?.user ?? null;
       if (u) {
         setUser({ email: u.email || '', id: u.id })
         // Check if already has Slack connection

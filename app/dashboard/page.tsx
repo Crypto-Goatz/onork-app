@@ -128,7 +128,8 @@ export default function DashboardHome() {
       .catch(() => {})
 
     // K-layer count
-    const { data: { user: u } } = await supabase.auth.getUser()
+    const { data: { session: __sess } } = await supabase.auth.getSession()
+  const u = __sess?.user ?? null
     if (u) {
       const { data } = await supabase
         .from('kb_content_queue')
@@ -169,7 +170,8 @@ export default function DashboardHome() {
   }, [])
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getSession().then(({ data: { session: __sess } }) => {
+      const user = __sess?.user ?? null;
       if (user) {
         setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'User')
       }

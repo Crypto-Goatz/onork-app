@@ -54,7 +54,8 @@ export default function BillingPage() {
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
       if (!user) { setLoading(false); return }
 
       const [tierRes, subRes, balRes, kRes] = await Promise.all([

@@ -111,7 +111,8 @@ export default function OnboardingPage() {
   // Load user on mount
   useEffect(() => {
     async function loadUser() {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
       if (!user) {
         router.push('/login')
         return

@@ -56,7 +56,8 @@ export default function AIPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getSession().then(({ data: { session: __sess } }) => {
+      const user = __sess?.user ?? null;
       setChecking(false)
       if (!user || user.email !== OWNER_EMAIL) {
         window.location.href = '/dashboard'

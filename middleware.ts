@@ -53,10 +53,18 @@ export async function middleware(request: NextRequest) {
 
   let supabaseResponse = NextResponse.next({ request })
 
+  // Cross-subdomain cookie share — when set to `.0ncore.com`, the auth cookie
+  // is visible to www.0ncore.com AND dispatch.0ncore.com so signing in once
+  // works everywhere.
+  const AUTH_COOKIE_DOMAIN = process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder',
     {
+      cookieOptions: AUTH_COOKIE_DOMAIN
+        ? { domain: AUTH_COOKIE_DOMAIN, path: '/', sameSite: 'lax', secure: true }
+        : undefined,
       cookies: {
         getAll() {
           return request.cookies.getAll()
@@ -65,7 +73,10 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, {
+              ...options,
+              ...(AUTH_COOKIE_DOMAIN ? { domain: AUTH_COOKIE_DOMAIN } : {}),
+            })
           )
         },
       },

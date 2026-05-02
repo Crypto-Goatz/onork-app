@@ -73,7 +73,8 @@ export default function ChatPage() {
   // Load profile + K-layer status
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
       if (!user) return
 
       const { data: p } = await supabase
@@ -188,7 +189,8 @@ export default function ChatPage() {
     setSwitchingLocation(true)
     setActiveLocation(locationId)
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
     if (user) {
       await supabase.from('profiles').update({
         crm_location_id: locationId,

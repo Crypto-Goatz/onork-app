@@ -42,7 +42,8 @@ export default function ConsoleDashboard() {
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
       if (!user) return
 
       const [tierRes, featRes, profileRes] = await Promise.all([

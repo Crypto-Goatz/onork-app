@@ -119,7 +119,8 @@ export default function WhiteLabelPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getSession().then(({ data: { session: __sess } }) => {
+      const user = __sess?.user ?? null;
       if (user?.user_metadata?.white_label) {
         setConfig({ ...DEFAULT_CONFIG, ...user.user_metadata.white_label })
       }

@@ -39,7 +39,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
       if (!user) return
 
       setEmail(user.email || '')
@@ -91,7 +92,8 @@ export default function SettingsPage() {
 
   async function handleSave() {
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
     if (!user) { setSaving(false); return }
 
     await supabase.from('profiles').update({

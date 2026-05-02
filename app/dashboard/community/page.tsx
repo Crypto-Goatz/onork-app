@@ -12,7 +12,8 @@ export default function CommunityPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getSession().then(({ data: { session: __sess } }) => {
+      const user = __sess?.user ?? null;
       if (user?.email) setUserEmail(user.email)
     })
   }, [])

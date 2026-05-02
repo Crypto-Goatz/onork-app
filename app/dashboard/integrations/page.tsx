@@ -174,7 +174,8 @@ export default function IntegrationsPage() {
 
   async function handleDisconnect(serviceId: string) {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session: __sess } } = await supabase.auth.getSession()
+  const user = __sess?.user ?? null
       if (!user) return
       const admin = createClient()
       await admin.from('user_service_connections').delete().eq('user_id', user.id).eq('service', serviceId)
