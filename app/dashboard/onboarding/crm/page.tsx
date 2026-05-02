@@ -38,7 +38,14 @@ interface VerifyResult {
   counts?: { contacts: number; pipelines: number }
   sample_contact?: { name: string; email: string | null } | null
   pipelines?: Array<{ id: string; name: string; stages: number }>
-  pit_redacted?: string
+  auth?: {
+    source: 'oauth' | 'pit'
+    token_redacted: string
+    install_status: { installed: boolean; expiresAt: string | null; expired: boolean; scope: string | null }
+    mint_attempted: boolean
+    mint_source: 'cache' | 'minted' | 'failed'
+    mint_error?: string
+  }
   profile?: { business_name: string | null; plan: string }
 }
 
@@ -177,12 +184,33 @@ export default function CrmOnboardingPage() {
                         <Crown className="h-3 w-3" /> VIP
                       </span>
                     )}
-                    {verify.pit_redacted && (
-                      <span className="font-mono text-[10px] text-white/30">PIT {verify.pit_redacted}</span>
+                    {verify.auth && (
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[10px] ${
+                          verify.auth.source === 'oauth'
+                            ? 'bg-emerald-500/15 text-emerald-300'
+                            : 'bg-amber-500/15 text-amber-300'
+                        }`}
+                      >
+                        {verify.auth.source === 'oauth' ? 'OAUTH MINT' : 'ENV PIT'}
+                        {' '}
+                        {verify.auth.token_redacted}
+                      </span>
+                    )}
+                    {verify.auth?.mint_attempted && verify.auth.mint_source === 'minted' && (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-[#7ed957]/15 px-2 py-0.5 text-[10px] font-medium text-[#7ed957]">
+                        Token freshly minted
+                      </span>
                     )}
                   </div>
                 </div>
               </div>
+
+              {verify.auth?.mint_error && (
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[11px] text-amber-200">
+                  Mint warning: {verify.auth.mint_error}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">

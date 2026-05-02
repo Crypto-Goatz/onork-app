@@ -129,8 +129,14 @@ async function refreshInstall(installId: string, refreshToken: string): Promise<
 
 /**
  * Resolve the auth credential for a given location.
- * Prefers an active OAuth install (refreshing if within 60s of expiry),
- * falls back to a PIT token.
+ *
+ * Resolution order:
+ *   1. Active, non-expiring OAuth install in crm_installations (refresh if within 60s)
+ *   2. Auto-mint via the agency app — POST /oauth/locationToken using the
+ *      cached agency-OAuth token. This is what makes auto-provisioning
+ *      hands-off: every sub-location gets a scoped token without per-location
+ *      OAuth consent.
+ *   3. Env PIT (CRM_PIT_<LOCATION_ID>, then fallback chain)
  */
 export async function getAuthForLocation(locationId: string): Promise<Auth> {
   try {
@@ -150,10 +156,28 @@ export async function getAuthForLocation(locationId: string): Promise<Auth> {
         const fresh = await refreshInstall(data.id, data.refresh_token)
         if (fresh) return { token: fresh, source: 'oauth', installId: data.id, locationId }
       }
-      return { token: data.access_token, source: 'oauth', installId: data.id, locationId }
+      // If expired AND no refresh token (location-token mints don't return one),
+      // fall through to ensureLocationInstall which will re-mint from agency token.
+      if (!expiringSoon || data.refresh_token) {
+        return { token: data.access_token, source: 'oauth', installId: data.id, locationId }
+      }
     }
   } catch (err) {
     console.error('[crm.getAuthForLocation] lookup failed:', err)
+  }
+
+  // Auto-mint via agency-token. Lazy-imported to avoid a circular dep.
+  try {
+    const { ensureLocationInstall } = await import('./crm/location-token')
+    const minted = await ensureLocationInstall(locationId)
+    if (minted.token) {
+      return { token: minted.token, source: 'oauth', locationId }
+    }
+    if (minted.error) {
+      console.warn(`[crm.getAuthForLocation] mint failed for ${locationId}: ${minted.error}`)
+    }
+  } catch (err) {
+    console.warn('[crm.getAuthForLocation] mint threw:', err)
   }
 
   return { token: getPitForLocation(locationId), source: 'pit', locationId }

@@ -17,7 +17,8 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
-import { getPitForLocation } from '@/lib/crm'
+import { getAuthForLocation } from '@/lib/crm'
+import { ensureLocationInstall, getLocationInstallStatus } from '@/lib/crm/location-token'
 import { FAMILY_LOCATIONS } from '@/lib/family-locations'
 
 export const runtime = 'nodejs'
@@ -55,20 +56,27 @@ export async function GET() {
     })
   }
 
-  const pit = getPitForLocation(locationId)
-  if (!pit) {
+  // Auto-ensure the marketplace location-token is fresh. If no install
+  // exists, mint one from the agency token. This is the architectural step
+  // Mike asked for — never require manual PIT generation.
+  const minted = await ensureLocationInstall(locationId)
+  const auth = await getAuthForLocation(locationId)
+
+  if (!auth.token) {
     return NextResponse.json({
       ok: false,
-      stage: 'no_pit',
-      message: `No PIT configured for location ${locationId}. Set CRM_PIT_<LOCATION_ID> on Vercel.`,
+      stage: 'no_auth',
+      message: minted.error || `No token available for location ${locationId}. Reinstall the agency app at /api/oauth/install.`,
       locationId,
+      mint: minted,
     })
   }
 
   const headers = {
-    Authorization: `Bearer ${pit}`,
+    Authorization: `Bearer ${auth.token}`,
     Version: CRM_VERSION,
   }
+  const installStatus = await getLocationInstallStatus(locationId)
 
   // 1. Location info
   let locationName = ''
@@ -147,7 +155,14 @@ export async function GET() {
     },
     sample_contact: sampleContact,
     pipelines,
-    pit_redacted: `${pit.slice(0, 8)}…${pit.slice(-4)}`,
+    auth: {
+      source: auth.source,
+      token_redacted: `${auth.token.slice(0, 8)}…${auth.token.slice(-4)}`,
+      install_status: installStatus,
+      mint_attempted: minted.source !== 'cache',
+      mint_source: minted.source,
+      mint_error: minted.error,
+    },
     profile: {
       business_name: profile?.business_name || null,
       plan: profile?.plan || 'free',

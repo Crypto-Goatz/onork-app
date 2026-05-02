@@ -11,6 +11,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { deploySnapshot, MASTER_SNAPSHOT } from './snapshot'
+import { ensureLocationInstall } from './crm/location-token'
 
 const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
@@ -115,6 +116,24 @@ export async function provisionSubLocation(userId: string): Promise<ProvisionRes
       .from('profiles')
       .update({ crm_location_id: newLocationId })
       .eq('id', userId)
+
+    // Auto-mint a marketplace location-token via the agency app. This is
+    // what unlocks writes (tags, conversations, opportunities) on the new
+    // sub-location WITHOUT manual PIT generation. Best-effort: if it fails
+    // (agency token expired, app uninstalled), continue with snapshot deploy
+    // — the verify wizard will surface and let admin fix it.
+    try {
+      const minted = await ensureLocationInstall(newLocationId)
+      if (minted.token) {
+        console.log(`[provision] Location-token minted (${minted.source}) for ${newLocationId}`)
+      } else {
+        console.warn(`[provision] Location-token mint failed for ${newLocationId}: ${minted.error}`)
+        errors.push(`Location-token mint: ${minted.error}`)
+      }
+    } catch (mintErr) {
+      console.error(`[provision] Location-token mint threw:`, mintErr)
+      errors.push(`Location-token mint: ${mintErr instanceof Error ? mintErr.message : 'unknown'}`)
+    }
 
     // Deploy master snapshot (pipeline, fields, tags, KBs, workflows)
     let snapshotDeployed = false

@@ -4,6 +4,7 @@ import crypto from 'crypto'
 import { provisionSubLocation } from '@/lib/provision'
 import { findFamilyMatch } from '@/lib/family-locations'
 import { getPitForLocation } from '@/lib/crm'
+import { ensureLocationInstall } from '@/lib/crm/location-token'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -149,6 +150,16 @@ export async function POST(req: NextRequest) {
       })
     } else {
       console.log(`[auth/signup] Family match for ${email}: linked to ${familyLocationName} (${familyLocationId}), skipping new sub-location provisioning`)
+      // Auto-mint a marketplace location-token for this family sub-account
+      // so writes (tags, contacts, opportunities) work immediately. No manual
+      // PIT generation required.
+      ensureLocationInstall(familyLocationId)
+        .then((m) => {
+          console.log(`[auth/signup] Location-token mint for ${familyLocationId}: ${m.source} ${m.error ? '· ' + m.error : ''}`)
+        })
+        .catch((err) => {
+          console.error(`[auth/signup] Location-token mint threw for ${familyLocationId}:`, err)
+        })
     }
 
     // 6. If website provided, scrape brand data in background

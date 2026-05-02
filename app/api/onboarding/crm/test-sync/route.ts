@@ -13,7 +13,8 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
-import { getPitForLocation } from '@/lib/crm'
+import { getAuthForLocation } from '@/lib/crm'
+import { ensureLocationInstall } from '@/lib/crm/location-token'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -49,16 +50,27 @@ export async function POST() {
     )
   }
 
-  const pit = getPitForLocation(locationId)
-  if (!pit) {
+  // Auto-mint a fresh location-scoped token before doing the test-sync.
+  // This is what guarantees "if no PIT exists, generate and assign" — the
+  // marketplace agency app mints a fully-scoped token on demand.
+  const minted = await ensureLocationInstall(locationId)
+  const auth = await getAuthForLocation(locationId)
+
+  if (!auth.token) {
     return NextResponse.json(
-      { ok: false, error: `No PIT for ${locationId}. Set CRM_PIT_<LOCATION_ID> on Vercel.` },
+      {
+        ok: false,
+        error:
+          minted.error ||
+          `No token for ${locationId}. The agency marketplace app may need to be reinstalled at /api/oauth/install.`,
+        mint: minted,
+      },
       { status: 500 },
     )
   }
 
   const headers = {
-    Authorization: `Bearer ${pit}`,
+    Authorization: `Bearer ${auth.token}`,
     Version: CRM_VERSION,
     'Content-Type': 'application/json',
   }
@@ -91,7 +103,7 @@ export async function POST() {
       // Already exists — search + PUT-update, treat as success
       const searchRes = await fetch(
         `${CRM_API}/contacts/search?locationId=${locationId}&query=${encodeURIComponent(testEmail)}`,
-        { headers: { Authorization: `Bearer ${pit}`, Version: CRM_VERSION } },
+        { headers: { Authorization: `Bearer ${auth.token}`, Version: CRM_VERSION } },
       )
       if (searchRes.ok) {
         const searchData = await searchRes.json()
@@ -127,7 +139,7 @@ export async function POST() {
   let readResult: { ok: boolean; tags?: string[]; raw?: string } = { ok: false }
   try {
     const res = await fetch(`${CRM_API}/contacts/${writeResult.contactId}`, {
-      headers: { Authorization: `Bearer ${pit}`, Version: CRM_VERSION },
+      headers: { Authorization: `Bearer ${auth.token}`, Version: CRM_VERSION },
     })
     if (res.ok) {
       const data = await res.json()
