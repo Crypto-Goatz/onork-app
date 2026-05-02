@@ -28,6 +28,7 @@ import {
 } from '@/lib/slack/modals'
 import { invalidateHomeCache } from '@/lib/slack/home'
 import { handleMessageShortcut, handleGlobalShortcut } from '@/lib/slack/shortcuts'
+import { scoreVpis } from '@/lib/scoring/vpis'
 import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
@@ -330,36 +331,20 @@ async function saveHomePreferences(
     .eq('slack_user_id', slackUserId)
 }
 
-// Lightweight VPIS scorer — falls back to a deterministic rubric if Groq is unavailable.
-// Real implementation should call the registered brain surface; this keeps Phase 2 unblocked.
+// Real Groq-backed VPIS scoring — single source of truth lives in
+// lib/scoring/vpis.ts so Slack, dashboard, extension, and canvas all match.
 async function scoreText(
   text: string,
   tone: string,
 ): Promise<{ score: number; factors: Array<{ key: string; value: number | string }>; patterns: string[] }> {
-  const len = text.length
-  const wordCount = text.split(/\s+/).filter(Boolean).length
-  const exclam = (text.match(/!/g) || []).length
-  const questions = (text.match(/\?/g) || []).length
-  const value = Math.min(40, Math.max(10, Math.floor(wordCount / 4)))
-  const passion = Math.min(30, exclam * 6 + questions * 4)
-  const insight = Math.min(20, Math.floor(len / 80))
-  const story = Math.min(10, /\b(we|i|our|my)\b/i.test(text) ? 10 : 4)
-  const total = value + passion + insight + story
+  const result = await scoreVpis(text, tone)
   return {
-    score: total,
-    factors: [
-      { key: 'Value', value },
-      { key: 'Passion', value: passion },
-      { key: 'Insight', value: insight },
-      { key: 'Story', value: story },
-      { key: 'Tone', value: tone },
-      { key: 'Length', value: `${wordCount} words` },
-    ],
-    patterns: [
-      ...(exclam > 2 ? ['high-energy'] : []),
-      ...(questions > 0 ? ['engaging-question'] : []),
-      ...(wordCount > 60 ? ['long-form'] : []),
-    ],
+    score: result.score,
+    factors: result.factors.map((f) => ({
+      key: f.key,
+      value: f.reason ? `${f.value} — ${f.reason}` : f.value,
+    })),
+    patterns: result.patterns,
   }
 }
 

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getProvider, getRedirectUri } from '@/lib/oauth-providers'
+import {
+  upsertConnection,
+  IdentityMismatchError,
+  type Provider,
+} from '@/lib/oauth/connections'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -199,34 +204,37 @@ export async function GET(
       }
     }
 
-    // Upsert into user_connections
-    const { error: dbError } = await supabase
-      .from('user_connections')
-      .upsert(
-        {
-          user_id: userId,
-          provider: providerId,
-          service: providerId,
-          provider_account_id: profile.provider_account_id,
-          provider_email: profile.provider_email,
-          provider_name: profile.provider_name,
-          provider_avatar: profile.provider_avatar,
-          access_token: accessToken,
-          refresh_token: refreshToken,
-          token_type: tokens.token_type || 'Bearer',
-          expires_at: expiresAt,
-          scopes: scope,
-          status: 'active',
-          health_status: 'healthy',
-          consecutive_failures: 0,
-          last_error: null,
-          metadata: {},
-        },
-        { onConflict: 'user_id,provider' },
-      )
-
-    if (dbError) {
-      console.error(`[oauth/${providerId}] DB error:`, dbError)
+    // Upsert into user_connections via the email-keyed identity unifier.
+    // - mode='login' (Slack only) already created/found the user above; pass
+    //   userId explicitly.
+    // - mode='connect' enforces that provider_email matches profile.email.
+    //   Mismatch throws IdentityMismatchError → user-facing error redirect.
+    try {
+      await upsertConnection({
+        provider: providerId as Provider,
+        oncoreUserId: userId,
+        providerAccountId: profile.provider_account_id,
+        providerEmail: profile.provider_email,
+        providerName: profile.provider_name,
+        providerAvatar: profile.provider_avatar,
+        accessToken,
+        refreshToken,
+        tokenType: tokens.token_type || 'Bearer',
+        expiresAt,
+        scopes: scope,
+        metadata:
+          providerId === 'slack' && tokens.team
+            ? { team_id: tokens.team.id, team_name: tokens.team.name }
+            : {},
+      })
+    } catch (err) {
+      if (err instanceof IdentityMismatchError) {
+        console.warn(`[oauth/${providerId}] identity mismatch:`, err.message)
+        return NextResponse.redirect(
+          `${settingsUrl}?error=identity_mismatch&provider=${providerId}&detail=${encodeURIComponent(err.message)}`,
+        )
+      }
+      console.error(`[oauth/${providerId}] upsert error:`, err)
       return NextResponse.redirect(`${settingsUrl}?error=db_error&provider=${providerId}`)
     }
 
