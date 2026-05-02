@@ -63,6 +63,35 @@ export async function GET(request: Request) {
           }
         }
 
+        // Persist referred_by from user_metadata or 0n_ref cookie if present
+        // and not already recorded — first-touch wins, never overwrites.
+        try {
+          const metaRef =
+            typeof user.user_metadata?.referred_by === 'string'
+              ? user.user_metadata.referred_by
+              : null
+          const cookieRef = (() => {
+            const m = request.headers.get('cookie')?.match(/(?:^|;\s*)0n_ref=([^;]+)/)
+            return m ? decodeURIComponent(m[1]) : null
+          })()
+          const ref = metaRef || cookieRef
+          if (ref) {
+            const { data: existing } = await admin
+              .from('profiles')
+              .select('referred_by')
+              .eq('id', user.id)
+              .single()
+            if (existing && !existing.referred_by) {
+              await admin
+                .from('profiles')
+                .update({ referred_by: ref })
+                .eq('id', user.id)
+            }
+          }
+        } catch (err) {
+          console.warn('[auth/callback] referral persist skipped:', (err as Error).message)
+        }
+
         // Check onboarding status
         const { data: profile } = await admin
           .from('profiles')

@@ -41,17 +41,17 @@ export default function RequestPage() {
             <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
             <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>Request Received</h1>
             <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, marginBottom: 24 }}>
-              We will review your request and get back to you within 24 hours. In the meantime, join us at the Launch Party.
+              We will review your request and get back to you within 24 hours. In the meantime, you can start free today.
             </p>
-            <Link href="/launch-party" style={{ padding: '12px 28px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 14 }}>
-              RSVP for Launch Party →
+            <Link href="/signup" style={{ padding: '12px 28px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 14 }}>
+              Start free →
             </Link>
           </div>
         ) : (
           <div style={{ maxWidth: 480, width: '100%' }}>
-            <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 8 }}>Request Access</h1>
+            <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 8 }}>Talk to Sales</h1>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginBottom: 32, lineHeight: 1.6 }}>
-              0nCore is currently in early access. Tell us about your use case and we will get you set up.
+              Need a custom plan, multi-tenant, or enterprise rollout? Tell us about your use case and we&apos;ll get back within 24 hours. To self-serve, <Link href="/signup" style={{ color: '#7ed957', textDecoration: 'underline' }}>start free here</Link>.
             </p>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" required style={{ padding: '14px 18px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', fontSize: 14, outline: 'none' }} />

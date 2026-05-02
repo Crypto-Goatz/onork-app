@@ -268,8 +268,8 @@ export default function LoginPage() {
               </div>
             ) : (
               <>
-                <h2 className="text-xl font-extrabold text-white mb-[6px]">Request Access</h2>
-                <p className="text-white/40 text-[12px] mb-5">Join the waitlist for your personal AI agent.</p>
+                <h2 className="text-xl font-extrabold text-white mb-[6px]">Talk to Sales</h2>
+                <p className="text-white/40 text-[12px] mb-5">For custom plans or enterprise. To self-serve, sign up free.</p>
                 <form onSubmit={handleRequestAccess}>
                   <div className="grid grid-cols-2 gap-[10px] mb-[10px]">
                     <div><label className="login-label">Name</label><input value={requestForm.name} onChange={e => setRequestForm(p => ({ ...p, name: e.target.value }))} required placeholder="Your name" className="login-input" /></div>

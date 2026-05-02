@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { VideoBg } from '@/components/video-bg'
@@ -12,7 +12,22 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [refCode, setRefCode] = useState<string | null>(null)
   const supabase = createClient()
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    const ref = url.searchParams.get('ref')
+    if (ref) {
+      setRefCode(ref)
+      try {
+        document.cookie = `0n_ref=${encodeURIComponent(ref)}; path=/; max-age=2592000; SameSite=Lax`
+      } catch {
+        // ignore
+      }
+    }
+  }, [])
 
   async function handleSlackLogin() {
     try {
@@ -73,7 +88,10 @@ export default function SignupPage() {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { full_name: fullName },
+          data: {
+            full_name: fullName,
+            ...(refCode ? { referred_by: refCode } : {}),
+          },
         },
       })
 

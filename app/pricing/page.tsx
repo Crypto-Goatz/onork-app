@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     '1,598 tools across 106 services. Visual automation builder. AI agent crews. Course builder. Lead magnet loop. From $0 to enterprise — pick your tier.',
   openGraph: {
     title: '0nCore Pricing — Every capability, one platform',
-    description: 'From $0 to enterprise. The full 0nMCP stack with the May 1, 2026 v4.10 release.',
+    description: 'From $0 to enterprise. The full 0nMCP v4.10 stack — UCP, Marketplace, Course Builder, App Builder, Website Builder, SaaS Factory, and the Agentic Automation Generator.',
     url: 'https://0ncore.com/pricing',
   },
   alternates: { canonical: 'https://0ncore.com/pricing' },
@@ -111,7 +111,7 @@ export default function PricingPage() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#7ed957] opacity-70" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-[#7ed957]" />
             </span>
-            Public availability May 1, 2026 · Founder rate locks in
+            Live now · Start free, upgrade anytime
           </div>
 
           <h1 className="text-balance text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
@@ -137,10 +137,10 @@ export default function PricingPage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/early-access"
+              href="/signup"
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.03] px-7 py-3 text-base font-semibold text-white backdrop-blur transition-colors hover:border-[#7ed957]/40 hover:text-[#7ed957]"
             >
-              Lock founder rate
+              Start free
             </Link>
           </div>
 
@@ -426,8 +426,8 @@ export default function PricingPage() {
               a: 'Yes. The admin-side custom-connector ships in v4.10. Drop in your own MCP server and 0nCore registers it alongside the catalog.',
             },
             {
-              q: 'What happens after May 1, 2026?',
-              a: 'Founder pricing locks in for early-access registrants. Public list price at launch will be higher — early access keeps your tier price for life.',
+              q: 'Is 0nCore live?',
+              a: 'Yes — 0nCore launched May 1, 2026. Sign up free and start building today.',
             },
             {
               q: 'Refund policy?',
@@ -458,23 +458,23 @@ export default function PricingPage() {
           />
           <CardContent className="relative px-6 py-12 text-center sm:px-12 sm:py-16">
             <Badge variant="outline" className="mb-4 border-[#7ed957]/30 bg-[#7ed957]/8 font-mono text-[10px] uppercase tracking-widest text-[#7ed957]">
-              May 1, 2026
+              Live now
             </Badge>
             <h2 className="text-balance text-4xl font-black tracking-tight sm:text-5xl">
               <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
-                Public launch is coming.
+                Start building today.
               </span>
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-sm text-white/65 sm:text-base">
-              Register for early access — get day-one onboarding and a permanent founder rate locked
-              in across whichever tier you choose.
+              The full v4.10 stack is live — UCP, Marketplace, Course Builder, App Builder,
+              Website Builder, SaaS Factory, and the Agentic Automation Generator.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link
-                href="/early-access"
+                href="/signup"
                 className="inline-flex items-center gap-2 rounded-xl bg-[#7ed957] px-7 py-3 text-base font-bold text-[#020810] shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-transform hover:scale-[1.02]"
               >
-                Lock founder rate
+                Start free
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link

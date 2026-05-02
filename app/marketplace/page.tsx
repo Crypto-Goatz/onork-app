@@ -419,7 +419,7 @@ export default function MarketplacePage() {
               </a>
             </div>
             <p className="mt-8 font-mono text-xs uppercase tracking-widest text-white/30">
-              Public launch · May 1, 2026 · Founders pricing locked for early signups
+              Live now · Free tier available · Upgrade anytime
             </p>
           </CardContent>
         </Card>

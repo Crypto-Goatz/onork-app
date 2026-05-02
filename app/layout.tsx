@@ -12,8 +12,12 @@ import { GroqBanner } from "@/components/GroqBanner";
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: "0nCore — AI That Runs Your Business | 1,589 Tools, 102 Services",
-  description: "The AI-powered CRM with 1,589 tools across 102 services. Automations, voice AI, course generator, domain management — all from one dashboard. Built on 0nMCP. 5 patents pending.",
+  metadataBase: new URL("https://www.0ncore.com"),
+  title: {
+    default: "0nCore — AI That Runs Your Business | 1,589+ Tools, 102 Services",
+    template: "%s · 0nCore",
+  },
+  description: "The AI-powered CRM with 1,589+ tools across 109 services. Automations, voice AI, course generator, app builder, website builder, SaaS factory — all from one dashboard. Built on 0nMCP. Live now.",
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: '32x32' },
@@ -23,12 +27,12 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "0nCore — One Brain. Every Service. Zero Limits.",
-    description: "AI-powered CRM with 900+ tools. Automations builder, voice AI, course generator, domain management, multi-AI council. Your AI runs your business. Starts at $80/mo.",
-    url: "https://0ncore.com",
+    description: "AI-powered CRM with 1,589+ tools. Automations builder, voice AI, course generator, app/site builder, SaaS factory, agentic generator. Free tier. Live now.",
+    url: "https://www.0ncore.com",
     siteName: "0nCore",
     type: "website",
     images: [{
-      url: "https://0ncore.com/og-image.png",
+      url: "/og-image.png",
       width: 1200,
       height: 630,
       alt: "0nCore — AI That Runs Your Business",
@@ -37,10 +41,10 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "0nCore — One Brain. Every Service. Zero Limits.",
-    description: "AI-powered CRM with 900+ tools. Your AI runs your business.",
-    images: ["https://0ncore.com/og-image.png"],
+    description: "AI-powered CRM with 1,589+ tools. Free tier. Live now.",
+    images: ["/og-image.png"],
   },
-  keywords: ["AI CRM", "AI automation", "MCP server", "0nMCP", "voice AI", "course generator", "CRM marketplace", "business automation", "AI assistant", "workflow builder"],
+  keywords: ["AI CRM", "AI automation", "MCP server", "0nMCP", "voice AI", "course generator", "CRM marketplace", "business automation", "AI assistant", "workflow builder", "agentic AI"],
 };
 
 export default function RootLayout({

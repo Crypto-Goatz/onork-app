@@ -212,14 +212,14 @@ export default function PlatformPage() {
         <div style={{ maxWidth: 500, margin: '0 auto' }}>
           <h2 style={{ fontSize: 'clamp(26px, 4vw, 32px)', fontWeight: 800, marginBottom: 12 }}>Ready?</h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 28, lineHeight: 1.7 }}>
-            Early access is open. No credit card. No commitment. Just connect your tools and watch everything sync.
+            Live now. Free tier, no credit card. Connect your tools and watch everything sync.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/request" style={{ padding: '14px 36px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 16, boxShadow: '0 0 30px rgba(126,217,87,0.3)' }}>
-              Request Access
+            <Link href="/signup" style={{ padding: '14px 36px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 16, boxShadow: '0 0 30px rgba(126,217,87,0.3)' }}>
+              Start free
             </Link>
-            <Link href="/launch-party" style={{ padding: '14px 36px', background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 16, border: '1px solid rgba(255,255,255,0.08)' }}>
-              Launch Party — May 1st
+            <Link href="/pricing" style={{ padding: '14px 36px', background: 'rgba(255,255,255,0.06)', color: '#fff', fontWeight: 600, borderRadius: 10, textDecoration: 'none', fontSize: 16, border: '1px solid rgba(255,255,255,0.08)' }}>
+              See pricing
             </Link>
           </div>
         </div>
