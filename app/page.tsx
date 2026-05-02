@@ -114,66 +114,88 @@ export default function HomePage() {
         <AuroraBg />
         <ParticleField count={24} color="#7ed957" />
 
-        <div className="relative mx-auto max-w-5xl px-4 pt-28 pb-16 text-center sm:px-6 lg:px-8 lg:pt-36 lg:pb-20">
-          {/* Live status pill */}
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#7ed957]/30 bg-[#7ed957]/[0.08] px-4 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#7ed957]">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#7ed957] opacity-70" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#7ed957]" />
-            </span>
-            Live · 2,000+ capabilities · 150+ services · 5 patents
-          </div>
+        <div className="relative mx-auto max-w-7xl px-4 pt-28 pb-16 sm:px-6 lg:px-8 lg:pt-36 lg:pb-20">
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-16">
+            {/* ── Left column: copy + CTAs + stats ── */}
+            <div className="text-center lg:text-left">
+              {/* Live status pill */}
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#7ed957]/30 bg-[#7ed957]/[0.08] px-4 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#7ed957]">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#7ed957] opacity-70" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#7ed957]" />
+                </span>
+                Live · 2,000+ capabilities · 150+ services · 5 patents
+              </div>
 
-          {/* Headline — 3-stop gradient like /marketplace */}
-          <h1 className="text-balance text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
-            <span className="block bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
-              One orchestrator.
-            </span>
-            <span className="block bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
-              Every service you run.
-            </span>
-          </h1>
+              {/* Headline — 3-stop gradient like /marketplace */}
+              <h1 className="text-balance text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+                <span className="block bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+                  One orchestrator.
+                </span>
+                <span className="block bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+                  Every service you run.
+                </span>
+              </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/75 sm:text-xl">
-            0nCore is the universal AI orchestration layer. Connect your CRM to
-            150+ services, describe outcomes in plain English, let
-            time-delayed flows do the work.{' '}
-            <strong className="text-white">No API keys. No code. No glue work.</strong>
-          </p>
+              <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/75 sm:text-xl lg:mx-0">
+                0nCore is the universal AI orchestration layer. Connect your CRM to
+                150+ services, describe outcomes in plain English, let
+                time-delayed flows do the work.{' '}
+                <strong className="text-white">No API keys. No code. No glue work.</strong>
+              </p>
 
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/request"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#7ed957] px-7 py-3 text-base font-bold text-[#020810] shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-transform hover:scale-[1.02]"
-            >
-              Get your invite
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/platform"
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.03] px-7 py-3 text-base font-semibold text-white backdrop-blur transition-colors hover:border-[#7ed957]/40 hover:text-[#7ed957]"
-            >
-              See the platform
-            </Link>
-          </div>
+              <div className="mt-10 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+                <Link
+                  href="/request"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#7ed957] px-7 py-3 text-base font-bold text-[#020810] shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-transform hover:scale-[1.02]"
+                >
+                  Get your invite
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  href="/platform"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.03] px-7 py-3 text-base font-semibold text-white backdrop-blur transition-colors hover:border-[#7ed957]/40 hover:text-[#7ed957]"
+                >
+                  See the platform
+                </Link>
+              </div>
 
-          {/* Stats strip — marketplace style */}
-          <div className="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
-            {STATS.map((s) => (
-              <div
-                key={s.l}
-                className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-4 text-center backdrop-blur"
-              >
-                <div className="font-mono text-2xl font-black tabular-nums sm:text-3xl">
-                  <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
-                    {s.v}
-                  </span>
-                </div>
-                <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-white/40">
-                  {s.l}
+              {/* Stats strip */}
+              <div className="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4 lg:mx-0">
+                {STATS.map((s) => (
+                  <div
+                    key={s.l}
+                    className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-4 text-center backdrop-blur"
+                  >
+                    <div className="font-mono text-2xl font-black tabular-nums sm:text-3xl">
+                      <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+                        {s.v}
+                      </span>
+                    </div>
+                    <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-white/40">
+                      {s.l}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Right column: clean autoplay/looped/chrome-stripped video ── */}
+            <div className="relative">
+              <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-black shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+                <div className="relative pt-[56.25%]">
+                  <iframe
+                    src="https://www.youtube-nocookie.com/embed/D91C8EPRixM?autoplay=1&mute=1&loop=1&playlist=D91C8EPRixM&controls=0&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&cc_load_policy=0"
+                    className="absolute inset-0 h-full w-full border-none"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen={false}
+                    title="0nCore demo"
+                  />
                 </div>
               </div>
-            ))}
+              {/* Soft accent glow under the video */}
+              <div className="pointer-events-none absolute -inset-x-4 -bottom-6 -z-10 h-12 rounded-full bg-[#7ed957]/15 blur-2xl" />
+            </div>
           </div>
         </div>
       </section>
