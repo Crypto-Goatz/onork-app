@@ -114,8 +114,8 @@ export default function HomePage() {
         <AuroraBg />
         <ParticleField count={24} color="#7ed957" />
 
-        <div className="relative mx-auto max-w-7xl px-4 pt-28 pb-16 sm:px-6 lg:px-8 lg:pt-36 lg:pb-20">
-          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-16">
+        <div className="relative w-full px-4 pt-28 pb-16 sm:px-8 lg:px-16 xl:px-24 lg:pt-36 lg:pb-20">
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-20">
             {/* ── Left column: copy + CTAs + stats ── */}
             <div className="text-center lg:text-left">
               {/* Live status pill */}
@@ -128,7 +128,7 @@ export default function HomePage() {
               </div>
 
               {/* Headline — 3-stop gradient like /marketplace */}
-              <h1 className="text-balance text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+              <h1 className="text-balance text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
                 <span className="block bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
                   One orchestrator.
                 </span>

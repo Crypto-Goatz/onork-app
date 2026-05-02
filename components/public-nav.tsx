@@ -21,7 +21,7 @@ export function PublicNav() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/[0.06] bg-[#0d1117]/85 backdrop-blur-xl">
-      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <nav className="flex h-16 w-full items-center justify-between px-4 sm:px-8 lg:px-16 xl:px-24">
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-2.5 no-underline" aria-label="0nCore home">
           <img src="/brand/0ncore-logo.png" alt="0nCore" className="h-8 object-contain" />
@@ -90,7 +90,7 @@ export function PublicNav() {
       {/* Mobile menu */}
       {open && (
         <div className="border-t border-white/[0.06] bg-[#0d1117]/95 backdrop-blur-xl md:hidden">
-          <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
+          <div className="w-full px-4 py-3 sm:px-8">
             <div className="flex flex-col gap-1">
               {NAV_LINKS.map((link) => {
                 const active = isActive(link.href)
