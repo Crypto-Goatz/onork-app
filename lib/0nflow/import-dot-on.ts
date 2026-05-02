@@ -29,7 +29,6 @@ import {
 import {
   findOrCreateTag,
   findOrCreateCustomField,
-  findTagByName,
   findCustomField,
 } from '@/lib/automations/crm-lookup'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -220,27 +219,15 @@ export async function resolveDotOn(opts: {
   if (triggerSrc.type === 'trigger_tag_added') {
     const tagName = (triggerConfig.tag_name as string) || (triggerConfig.tag as string)
     if (!triggerConfig.tag_id && tagName) {
-      const existing = await findTagByName(locationId, tagName)
-      if (existing) {
-        triggerConfig.tag_id = existing.id
-      } else if (answers['trigger_tag_action'] === 'create') {
-        const made = await findOrCreateTag(locationId, tagName)
-        if (made) {
-          triggerConfig.tag_id = made.tag.id
+      // Find-or-create policy: tag-by-name is decidable, never ask.
+      // Same as custom fields below — the agentic-first principle is "resolve
+      // before asking; only ask when genuinely undecidable."
+      const made = await findOrCreateTag(locationId, tagName)
+      if (made) {
+        triggerConfig.tag_id = made.tag.id
+        if (made.created) {
           created.push({ type: 'tag', name: tagName, id: made.tag.id })
         }
-      } else {
-        questions.push({
-          key: 'trigger_tag_action',
-          question: `The trigger uses a tag "${tagName}" that doesn't exist on this location yet. Create it now, or pick an existing tag?`,
-          step_id: 'trigger',
-          type: 'select',
-          options: [
-            { value: 'create', label: `Create new tag: "${tagName}"` },
-            { value: 'pick_existing', label: 'Pick an existing tag instead' },
-          ],
-          suggested: 'create',
-        })
       }
     }
   }
