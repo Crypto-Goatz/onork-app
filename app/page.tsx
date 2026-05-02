@@ -1,107 +1,67 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { VideoBg } from '@/components/video-bg'
+import Image from 'next/image'
+import {
+  ArrowRight,
+  Shield,
+  Zap,
+  Plug,
+  Sparkles,
+  Github,
+  Server,
+  Cloud,
+  Database,
+} from 'lucide-react'
 import SiteFooter from '@/components/SiteFooter'
 import AuroraBg from '@/components/bg/AuroraBg'
 import ConicMeshBg from '@/components/bg/ConicMeshBg'
 import ParticleField from '@/components/bg/ParticleField'
 
 export const metadata: Metadata = {
-  title: '0nCore — Scale Your Platform 10x with AI Connectivity',
-  description: '0nCore connects your CRM to 150+ services with 2,000+ AI-powered capabilities. Security vault, 2-second flows, codeless integrations. Sign up free.',
+  title: '0nCore — Universal AI Orchestration',
+  description:
+    '0nCore connects your CRM to 150+ services with 2,000+ AI-powered capabilities. Security vault, time-delayed flows, codeless integrations.',
 }
-
-const PARTNERS = [
-  { name: 'GitHub', logo: '/logos/github.svg' },
-  { name: 'Slack', logo: '/logos/slack.svg' },
-  { name: 'Stripe', logo: '/logos/stripe.svg' },
-  { name: 'Linear', logo: '/logos/linear.svg' },
-  { name: 'Google', logo: '/logos/gcal.svg' },
-  { name: 'Supabase', logo: '/logos/supabase.svg' },
-  { name: 'Vercel', logo: '/logos/vercel.svg' },
-  { name: 'Shopify', logo: '/logos/shopify.svg' },
-]
 
 const FEATURES = [
   {
-    num: '01',
+    icon: Shield,
     title: 'Security Vault',
     desc: 'AES-256 encrypted credential storage with hardware fingerprinting. Your API keys never leave the vault.',
-    gradient: 'from-emerald-500/20 via-emerald-400/5 to-transparent',
-    glow: 'group-hover:shadow-emerald-500/20',
-    accent: 'text-emerald-400',
-    border: 'group-hover:border-emerald-500/30',
-    iconPath: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
   },
   {
-    num: '02',
-    title: '2s Flow',
-    desc: 'Describe what you want in plain English. 0nMCP executes across 150+ services in under 2 seconds.',
-    gradient: 'from-cyan-500/20 via-cyan-400/5 to-transparent',
-    glow: 'group-hover:shadow-cyan-500/20',
-    accent: 'text-cyan-400',
-    border: 'group-hover:border-cyan-500/30',
-    iconPath: 'M13 10V3L4 14h7v7l9-11h-7z',
+    icon: Zap,
+    title: 'Time-Delayed Flows',
+    desc: 'Describe outcomes in plain English. 0nMCP routes across 150+ services with native scheduling and retries.',
   },
   {
-    num: '03',
-    title: 'Integrations',
-    desc: '2,000+ capabilities across 150+ services. CRM, email, social, payments, analytics — all connected through one brain.',
-    gradient: 'from-teal-500/20 via-teal-400/5 to-transparent',
-    glow: 'group-hover:shadow-teal-500/20',
-    accent: 'text-teal-400',
-    border: 'group-hover:border-teal-500/30',
-    iconPath: 'M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z',
-  },
-  {
-    num: '04',
-    title: 'Codeless',
-    desc: 'Build AI workflows without writing code. Drag, connect, deploy. Your entire business on autopilot.',
-    gradient: 'from-amber-500/20 via-amber-400/5 to-transparent',
-    glow: 'group-hover:shadow-amber-500/20',
-    accent: 'text-amber-400',
-    border: 'group-hover:border-amber-500/30',
-    iconPath: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+    icon: Plug,
+    title: 'Codeless Integrations',
+    desc: 'Drag, connect, deploy. 2,000+ capabilities across CRM, email, social, payments, and analytics — wired in minutes.',
   },
 ]
 
-const INTEGRATIONS = [
-  { name: 'GitHub', logo: '/logos/github.svg' },
-  { name: 'Google', logo: '/logos/gcal.svg' },
-  { name: 'Stripe', logo: '/logos/stripe.svg' },
-  { name: 'Slack', logo: '/logos/slack.svg' },
-  { name: 'Supabase', logo: '/logos/supabase.svg' },
-  { name: 'Vercel', logo: '/logos/vercel.svg' },
-  { name: 'Shopify', logo: '/logos/shopify.svg' },
-  { name: 'HubSpot', logo: '/logos/hubspot.svg' },
-  { name: 'Notion', logo: '/logos/notion.svg' },
-  { name: 'Airtable', logo: '/logos/airtable.svg' },
-  { name: 'Discord', logo: '/logos/discord.svg' },
-  { name: 'Twilio', logo: '/logos/twilio.svg' },
-  { name: 'SendGrid', logo: '/logos/sendgrid.svg' },
-  { name: 'Calendly', logo: '/logos/calendly.svg' },
-  { name: 'Zoom', logo: '/logos/zoom.svg' },
-  { name: 'Linear', logo: '/logos/linear.svg' },
-  { name: 'Jira', logo: '/logos/jira.svg' },
-  { name: 'OpenAI', logo: '/logos/openai.svg' },
-  { name: 'GoHighLevel', logo: '/logos/gohighlevel.svg' },
-  { name: 'Anthropic', logo: '/logos/anthropic.svg' },
-  { name: 'MongoDB', logo: '/logos/mongodb.svg' },
-  { name: 'Cloudflare', logo: '/logos/cloudflare.svg' },
-  { name: 'Mailchimp', logo: '/logos/mailchimp.svg' },
-  { name: 'Figma', logo: '/logos/figma.svg' },
+const TRUSTED_LOGOS = [
+  { name: 'GitHub', src: '/logos/github.svg' },
+  { name: 'Stripe', src: '/logos/stripe.svg' },
+  { name: 'Vercel', src: '/logos/vercel.svg' },
+  { name: 'Supabase', src: '/logos/supabase.svg' },
+  { name: 'Slack', src: '/logos/slack.svg' },
+  { name: 'Linear', src: '/logos/linear.svg' },
+  { name: 'Shopify', src: '/logos/shopify.svg' },
+  { name: 'Cloudflare', src: '/logos/cloudflare.svg' },
 ]
 
-const COMMUNITY = [
-  { name: 'Alex Thompson', role: 'CTO, ScaleAI', text: 'We connected 14 services in our first week. The vault system means I actually sleep at night knowing our API keys are safe.' },
-  { name: 'Sarah Chen', role: 'Founder, NexusOps', text: 'Replaced 6 different integration tools with one 0nCore instance. The 2-second execution time is not marketing — it is real.' },
-  { name: 'Marcus Rivera', role: 'DevOps Lead', text: 'The codeless workflow builder saved our team 40+ hours per week. We went from idea to production automation in minutes.' },
+const STATS = [
+  { value: '2,000+', label: 'Capabilities', icon: Sparkles },
+  { value: '150+', label: 'Services', icon: Server },
+  { value: '5', label: 'Patents pending', icon: Shield },
 ]
 
 export default function HomePage() {
   return (
-    <div style={{ background: '#020810', color: '#fff', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
-      {/* JSON-LD Structured Data */}
+    <main className="relative bg-[#0d1117] text-[#c9d1d9] font-sans antialiased min-h-screen">
+      {/* JSON-LD */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -111,327 +71,243 @@ export default function HomePage() {
             name: '0nCore',
             applicationCategory: 'BusinessApplication',
             operatingSystem: 'Web',
-            offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free to start' },
-            description: 'AI Business Operating System with 2,000+ capabilities across 150+ services',
+            offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+            description:
+              'Universal AI orchestration. 2,000+ capabilities across 150+ services.',
             url: 'https://0ncore.com',
             author: { '@type': 'Organization', name: 'RocketOpp LLC', url: 'https://rocketopp.com' },
-          })
+          }),
         }}
       />
 
-      {/* ═══ NAV ═══ */}
-      {/* Nav provided by PublicNavWrapper in root layout */}
-
-      {/* ═══ HERO (full-width, side-by-side text + video) ═══ */}
-      <section style={{
-        position: 'relative', padding: 'clamp(100px, 15vw, 140px) clamp(16px, 4vw, 32px) clamp(40px, 6vw, 80px)', overflow: 'hidden',
-        minHeight: '85vh', display: 'flex', alignItems: 'center',
-      }}>
-        {/* Video background */}
-        <VideoBg opacity={0.12} />
-        {/* Conic mesh + aurora — subtle ambient layer above the video */}
+      {/* ─── HERO ──────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden flex items-center min-h-[85vh] px-4 sm:px-6 lg:px-8 pt-32 pb-20">
+        {/* Ambient backgrounds — kept per Mike's note */}
         <ConicMeshBg />
         <AuroraBg />
         <ParticleField count={24} color="#6EE05A" />
 
-        <div className="hero-grid" style={{ position: 'relative', zIndex: 2, maxWidth: 1600, margin: '0 auto', width: '100%' }}>
-          {/* ── Left column: copy + CTAs ── */}
-          <div className="hero-copy">
-            {/* Live status pill */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 10, fontWeight: 700, color: '#a3f08e', background: 'rgba(126,217,87,0.08)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.25)', marginBottom: 28, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-              <span style={{ position: 'relative', display: 'inline-flex', width: 6, height: 6 }}>
-                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#7ed957', opacity: 0.6, animation: 'ping-dot 1.6s cubic-bezier(0,0,0.2,1) infinite' }} />
-                <span style={{ position: 'relative', display: 'inline-flex', width: 6, height: 6, borderRadius: '50%', background: '#7ed957' }} />
-              </span>
-              Live · 2,000+ Capabilities · 150+ Services · 5 Patents
-            </div>
-
-            {/* Gradient headline — green → teal → purple */}
-            <h1 style={{
-              fontSize: 'clamp(40px, 5vw, 76px)',
-              fontWeight: 900,
-              letterSpacing: '-0.035em',
-              lineHeight: 1.02,
-              margin: '0 0 24px',
-            }}>
-              <span style={{
-                display: 'block',
-                backgroundImage: 'linear-gradient(135deg, #7ed957 0%, #14b8a6 50%, #a78bfa 100%)',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                color: 'transparent',
-              }}>
-                One brain. Every service.
-              </span>
-              <span style={{
-                display: 'block',
-                backgroundImage: 'linear-gradient(135deg, #7ed957 0%, #14b8a6 50%, #a78bfa 100%)',
-                WebkitBackgroundClip: 'text',
-                backgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                color: 'transparent',
-              }}>
-                Zero limits.
-              </span>
-            </h1>
-
-            <p style={{
-              fontSize: 'clamp(16px, 1.4vw, 19px)',
-              color: 'rgba(255,255,255,0.78)',
-              lineHeight: 1.55,
-              margin: '0 0 16px',
-            }}>
-              0nCore is the AI-powered CRM with <strong style={{ color: '#fff', fontWeight: 600 }}>2,000+ capabilities across 150+ services</strong> wired in from day one — automations, voice AI, course generator, domain management, the whole stack — all from one dashboard.
-            </p>
-            <p style={{
-              fontSize: 'clamp(15px, 1.2vw, 16px)',
-              color: 'rgba(255,255,255,0.55)',
-              lineHeight: 1.6,
-              margin: '0 0 36px',
-            }}>
-              No code. No API keys. No glue work. Sign in and start running real apps.
-            </p>
-
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Link href="/signup" style={{
-                padding: '15px 32px', background: '#7ed957', color: '#020810',
-                fontWeight: 800, borderRadius: 12, textDecoration: 'none', fontSize: 15,
-                boxShadow: '0 0 32px rgba(126,217,87,0.35)',
-              }}>Start Free →</Link>
-              <Link href="/marketplace" style={{
-                padding: '15px 32px', background: 'rgba(255,255,255,0.05)', color: '#fff',
-                fontWeight: 600, borderRadius: 12, textDecoration: 'none', fontSize: 15,
-                border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)',
-              }}>See what you can build</Link>
-            </div>
-
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 24 }}>
-              No credit card. 60-second setup. Cancel anytime.
-            </p>
+        <div className="relative z-10 mx-auto max-w-5xl text-center">
+          {/* Live status pill */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#6EE05A]/25 bg-[#6EE05A]/10 px-3 py-1 text-xs font-medium text-[#6EE05A]">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inset-0 rounded-full bg-[#6EE05A] opacity-60 animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#6EE05A]" />
+            </span>
+            Live · 2,000+ capabilities · 150+ services
           </div>
 
-          {/* ── Right column: clean autoplay/looped/chrome-stripped video ── */}
-          <div className="hero-video">
-            <div className="relative w-full rounded-2xl overflow-hidden border border-white/[0.06] shadow-[0_20px_60px_rgba(0,0,0,0.4)] bg-black">
-              <div className="relative pt-[56.25%]">
-                <iframe
-                  src="https://www.youtube-nocookie.com/embed/D91C8EPRixM?autoplay=1&mute=1&loop=1&playlist=D91C8EPRixM&controls=0&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&cc_load_policy=0"
-                  className="absolute inset-0 w-full h-full border-none"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen={false}
-                  title="0nCore Demo"
-                />
-                {/* Click-shield: blocks the YouTube logo + title overlay that appears on hover */}
-                <div className="absolute inset-0 pointer-events-none" />
-              </div>
-            </div>
-          </div>
-        </div>
+          {/* Headline */}
+          <h1 className="mt-8 text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-[#e6edf3] leading-[1.05]">
+            One orchestrator.
+            <br className="hidden sm:block" />
+            <span className="text-[#6EE05A]"> Every service you run.</span>
+          </h1>
 
-        <style>{`
-          @keyframes ping-dot {
-            0%   { transform: scale(1); opacity: 0.6; }
-            75%, 100% { transform: scale(2.2); opacity: 0; }
-          }
-          .hero-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: clamp(32px, 5vw, 56px);
-            align-items: center;
-          }
-          @media (min-width: 1024px) {
-            .hero-grid {
-              grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-              gap: clamp(40px, 6vw, 72px);
-            }
-          }
-        `}</style>
-      </section>
-
-      {/* ═══ PARTNER LOGOS ═══ */}
-      <section style={{ padding: '0 clamp(16px, 4vw, 24px) 60px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(16px, 3vw, 36px)', flexWrap: 'wrap', maxWidth: 900, margin: '0 auto' }}>
-          {PARTNERS.map(p => (
-            <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.5 }}>
-              <img src={p.logo} alt={p.name} style={{ height: 22, filter: 'brightness(0) invert(1)', objectFit: 'contain' }} />
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>{p.name}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ═══ 4 FEATURES ═══ */}
-      <section className="py-[clamp(48px,8vw,96px)] px-[clamp(16px,4vw,24px)] max-w-[1100px] mx-auto">
-        <div className="text-center mb-12">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#7ed957] mb-3">Why 0nCore</p>
-          <h2 className="text-[clamp(24px,4vw,36px)] font-extrabold text-white leading-tight">
-            The four pillars of<br />
-            <span className="bg-gradient-to-r from-[#7ed957] via-[#00d4ff] to-[#14b8a6] bg-clip-text text-transparent">autonomous business</span>
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {FEATURES.map((f, i) => (
-            <div
-              key={f.num}
-              className={`group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-7 text-center transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl ${f.glow} ${f.border} cursor-default`}
-              style={{ animationDelay: `${i * 100}ms` }}
-            >
-              {/* Gradient overlay on hover */}
-              <div className={`absolute inset-0 bg-gradient-to-b ${f.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
-
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none overflow-hidden">
-                <div className="absolute -inset-full bg-gradient-to-r from-transparent via-white/[0.04] to-transparent skew-x-12 group-hover:animate-[shimmer_2s_ease-in-out_infinite]" />
-              </div>
-
-              {/* Content */}
-              <div className="relative z-10">
-                {/* Number badge */}
-                <div className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider mb-5 border ${f.accent} bg-white/[0.03] border-white/[0.08] group-hover:border-current/30 transition-colors`}>
-                  {f.num}
-                </div>
-
-                {/* Icon */}
-                <div className={`mx-auto mb-4 w-14 h-14 rounded-2xl flex items-center justify-center bg-white/[0.04] border border-white/[0.06] group-hover:bg-white/[0.08] group-hover:border-white/[0.12] transition-all duration-300 group-hover:scale-110`}>
-                  <svg className={`w-6 h-6 ${f.accent} transition-transform duration-300 group-hover:scale-110`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d={f.iconPath} />
-                  </svg>
-                </div>
-
-                {/* Title */}
-                <h3 className="text-[16px] font-bold text-white mb-2 group-hover:text-white transition-colors">{f.title}</h3>
-
-                {/* Description */}
-                <p className="text-[13px] text-white/40 leading-relaxed group-hover:text-white/55 transition-colors">{f.desc}</p>
-              </div>
-
-              {/* Bottom glow line */}
-              <div className={`absolute bottom-0 left-[10%] right-[10%] h-px bg-gradient-to-r from-transparent ${f.accent.replace('text-', 'via-')}/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-            </div>
-          ))}
-        </div>
-
-        <style>{`
-          @keyframes shimmer {
-            0% { transform: translateX(-100%) skewX(-12deg); }
-            100% { transform: translateX(200%) skewX(-12deg); }
-          }
-        `}</style>
-      </section>
-
-      {/* ═══ INTEGRATION GRID ═══ */}
-      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <h2 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 800, marginBottom: 8 }}>Integration Grid</h2>
-            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>Connect to All Modern Platforms.</p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 12 }}>
-            {INTEGRATIONS.map(i => (
-              <div key={i.name} style={{
-                padding: '16px 12px', borderRadius: 12, textAlign: 'center',
-                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-                transition: 'border-color 0.2s, background 0.2s',
-              }}>
-                <img src={i.logo} alt={i.name} style={{ width: 36, height: 36, objectFit: 'contain' }} />
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{i.name}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ textAlign: 'center', marginTop: 32 }}>
-            <Link href="/connections" style={{ fontSize: 13, color: '#7ed957', textDecoration: 'none', fontWeight: 600 }}>View all 96 connections →</Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ DOCUMENTATION + BLOG PREVIEW ═══ */}
-      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 32 }}>
-          {/* Documentation */}
-          <div style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', padding: 28 }}>
-            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Developer Documentation</h3>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20, lineHeight: 1.6 }}>Full API reference, tutorials, and guides for building on 0nCore.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {['Getting Started', 'API Reference', 'MCP Server Setup', 'Webhook Configuration'].map(doc => (
-                <a key={doc} href="https://0nmcp.com/docs" style={{
-                  padding: '10px 14px', borderRadius: 8,
-                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
-                  color: 'rgba(255,255,255,0.6)', fontSize: 13, textDecoration: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                }}>
-                  {doc}
-                  <span style={{ color: 'rgba(255,255,255,0.2)' }}>→</span>
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* Blog Preview */}
-          <div style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', padding: 28 }}>
-            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Blog</h3>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20, lineHeight: 1.6 }}>Insights on AI orchestration, MCP servers, and the future of automation.</p>
-            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 16 }}>
-              <div style={{ height: 140, background: 'linear-gradient(135deg, rgba(126,217,87,0.1) 0%, rgba(0,212,255,0.05) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Featured Post</span>
-              </div>
-              <div style={{ padding: 16 }}>
-                <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Optimizing Your MCP Server with Production-Grade Extensibility</h4>
-                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>How to build MCP servers that scale to 1,500+ tools without sacrificing performance.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ COMMUNITY ═══ */}
-      <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 800, textAlign: 'center', marginBottom: 48 }}>Community</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-            {COMMUNITY.map((c, i) => (
-              <div key={i} style={{
-                padding: 24, borderRadius: 16,
-                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(126,217,87,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#7ed957' }}>
-                    {c.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{c.name}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{c.role}</div>
-                  </div>
-                </div>
-                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: 0 }}>&ldquo;{c.text}&rdquo;</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ LAUNCH PARTY CTA ═══ */}
-      <section style={{ position: 'relative', padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center', overflow: 'hidden' }}>
-        <AuroraBg />
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 600, margin: '0 auto' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#7ed957', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>May 1st · 9 PM EST</div>
-          <h2 style={{ fontSize: 'clamp(28px, 5vw, 36px)', fontWeight: 800, marginBottom: 12 }}>Launch Party</h2>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 28, lineHeight: 1.7 }}>
-            Join us for the official 0nCore launch. Live demo, exclusive early access, and a behind-the-scenes look at the future of AI orchestration.
+          <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-[#c9d1d9] leading-relaxed">
+            0nCore is the universal AI orchestration layer. Connect your CRM to
+            150+ services, describe outcomes in plain English, and let
+            time-delayed flows do the work. Hardware-bound vault. No code.
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/launch-party" style={{
-              padding: '14px 36px', background: '#7ed957', color: '#020810',
-              fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 16,
-              boxShadow: '0 0 30px rgba(126,217,87,0.3)',
-            }}>Get Your Invite</Link>
+
+          {/* CTAs */}
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/request"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#6EE05A] px-5 py-2.5 text-sm font-medium text-[#0d1117] hover:bg-[#5bc74a] transition-all duration-150 active:scale-[0.98]"
+            >
+              Get your invite
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/platform"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#21262d] px-5 py-2.5 text-sm font-medium text-[#c9d1d9] border border-[#30363d] hover:bg-[#30363d] hover:text-[#e6edf3] transition-all duration-150 active:scale-[0.98]"
+            >
+              See the platform
+            </Link>
+          </div>
+
+          {/* Stats row */}
+          <div className="mt-14 grid grid-cols-3 gap-3 sm:gap-6 max-w-2xl mx-auto">
+            {STATS.map((s) => {
+              const I = s.icon
+              return (
+                <div
+                  key={s.label}
+                  className="rounded-xl border border-[#30363d] bg-[#161b22]/60 backdrop-blur-sm p-4 sm:p-5"
+                >
+                  <I className="h-4 w-4 text-[#6EE05A] mx-auto mb-2" />
+                  <div className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#e6edf3]">
+                    {s.value}
+                  </div>
+                  <div className="text-xs text-[#8b949e] mt-1">{s.label}</div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </section>
 
-      {/* ═══ FOOTER ═══ */}
+      {/* ─── FEATURES (3-column grid) ──────────────────────────────── */}
+      <section className="border-t border-[#30363d] px-4 sm:px-6 lg:px-8 py-20">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-semibold tracking-tight text-[#e6edf3]">
+              Built for the work, not the wiring.
+            </h2>
+            <p className="mt-3 text-sm text-[#c9d1d9] leading-relaxed">
+              Three primitives that compose into anything: a vault, a flow
+              engine, and a connector mesh.
+            </p>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {FEATURES.map((f) => {
+              const I = f.icon
+              return (
+                <div
+                  key={f.title}
+                  className="bg-[#161b22] border border-[#30363d] rounded-xl p-5
+                             hover:border-[#484f58] hover:bg-[#1c2128]
+                             hover:-translate-y-px hover:shadow-lg hover:shadow-black/20
+                             transition-all duration-200"
+                >
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#6EE05A]/10 border border-[#6EE05A]/20">
+                    <I className="h-5 w-5 text-[#6EE05A]" />
+                  </div>
+                  <div className="mt-4 text-base font-medium text-[#e6edf3]">
+                    {f.title}
+                  </div>
+                  <p className="mt-2 text-sm text-[#c9d1d9] leading-relaxed">
+                    {f.desc}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── TRUSTED-BY STRIP ──────────────────────────────────────── */}
+      <section className="border-t border-[#30363d] px-4 sm:px-6 lg:px-8 py-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-xs font-medium uppercase tracking-widest text-[#8b949e] text-center">
+            Wired to the infrastructure you already use
+          </div>
+          <div className="mt-8 grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-x-8 gap-y-6 items-center">
+            {TRUSTED_LOGOS.map((logo) => (
+              <div
+                key={logo.name}
+                className="flex items-center justify-center grayscale opacity-50 hover:opacity-100 hover:grayscale-0 transition-all duration-200"
+              >
+                <Image
+                  src={logo.src}
+                  alt={logo.name}
+                  width={88}
+                  height={28}
+                  className="h-6 w-auto object-contain"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── DEEP-LINK CARDS ───────────────────────────────────────── */}
+      <section className="border-t border-[#30363d] px-4 sm:px-6 lg:px-8 py-20">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-3xl font-semibold tracking-tight text-[#e6edf3]">
+            What can you build today?
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm text-[#c9d1d9] leading-relaxed">
+            Three example surfaces shipped on the same orchestrator. Open one
+            and ship the next in minutes.
+          </p>
+
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                icon: Database,
+                href: '/dashboard/automations',
+                title: 'Automations',
+                desc: 'Visual builder for time-delayed flows. Drag a trigger, drop steps, ship.',
+              },
+              {
+                icon: Cloud,
+                href: '/dashboard/registry',
+                title: 'Registry',
+                desc: 'Every MCP server and UCP product in one searchable surface. One-click install for free, no-API entries.',
+              },
+              {
+                icon: Server,
+                href: '/dashboard/scans',
+                title: 'Stack Scanner',
+                desc: 'Detect 40+ tools on any site, save as a CRM lead, generate a Fiverr gig from the gaps.',
+              },
+            ].map((card) => {
+              const I = card.icon
+              return (
+                <Link
+                  key={card.title}
+                  href={card.href}
+                  className="group bg-[#161b22] border border-[#30363d] rounded-xl p-5
+                             hover:border-[#484f58] hover:bg-[#1c2128]
+                             hover:-translate-y-px hover:shadow-lg hover:shadow-black/20
+                             transition-all duration-200"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#21262d]">
+                      <I className="h-5 w-5 text-[#58a6ff]" />
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-[#8b949e] group-hover:text-[#6EE05A] group-hover:translate-x-0.5 transition-all duration-150" />
+                  </div>
+                  <div className="mt-4 text-base font-medium text-[#e6edf3]">
+                    {card.title}
+                  </div>
+                  <p className="mt-2 text-sm text-[#c9d1d9] leading-relaxed">
+                    {card.desc}
+                  </p>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FINAL CTA ─────────────────────────────────────────────── */}
+      <section className="border-t border-[#30363d] px-4 sm:px-6 lg:px-8 py-24">
+        <div className="mx-auto max-w-3xl text-center">
+          <Sparkles className="h-6 w-6 text-[#6EE05A] mx-auto" />
+          <h2 className="mt-6 text-3xl sm:text-4xl font-semibold tracking-tight text-[#e6edf3]">
+            Ship the work. Skip the wiring.
+          </h2>
+          <p className="mt-4 text-sm sm:text-base text-[#c9d1d9] leading-relaxed">
+            Free to install, MIT-licensed core, hardware-bound vault. Pay only
+            when you scale.
+          </p>
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/request"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#6EE05A] px-5 py-2.5 text-sm font-medium text-[#0d1117] hover:bg-[#5bc74a] transition-all duration-150 active:scale-[0.98]"
+            >
+              Get your invite
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <a
+              href="https://github.com/0nork"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#21262d] px-5 py-2.5 text-sm font-medium text-[#c9d1d9] border border-[#30363d] hover:bg-[#30363d] hover:text-[#e6edf3] transition-all duration-150 active:scale-[0.98]"
+            >
+              <Github className="h-4 w-4" />
+              View on GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FOOTER ────────────────────────────────────────────────── */}
       <SiteFooter />
-    </div>
+    </main>
   )
 }

@@ -120,36 +120,38 @@
   --font-body: 'Nunito Sans', 'Inter', system-ui, sans-serif;
   --font-mono: 'Roboto Mono', 'JetBrains Mono', monospace;
   color-scheme: dark;
-  --background: #0d1117;
-  --foreground: #f0f4f8;
-  --card: #161b22;
-  --card-foreground: #f0f4f8;
-  --popover: #161b22;
-  --popover-foreground: #f0f4f8;
-  --primary: #6EE05A;
+  /* shadcn theme — values per docs/0n-design-system.md §11 */
+  --background: #0d1117;             /* 220 13% 7% */
+  --foreground: #e6edf3;             /* 213 31% 91% */
+  --card: #161b22;                   /* 215 21% 11% */
+  --card-foreground: #e6edf3;
+  --popover: #1c2128;                /* 213 19% 14% */
+  --popover-foreground: #e6edf3;
+  --primary: #6EE05A;                /* 113 67% 62% */
   --primary-foreground: #0d1117;
-  --secondary: #1c2333;
-  --secondary-foreground: #f0f4f8;
-  --muted: #1c2333;
-  --muted-foreground: #9ca3af;
-  --accent: #1c2333;
-  --accent-foreground: #f0f4f8;
-  --destructive: #ef4444;
-  --border: #30363d;
+  --secondary: #21262d;              /* 215 14% 16% */
+  --secondary-foreground: #c9d1d9;   /* 210 17% 82% */
+  --muted: #161b22;
+  --muted-foreground: #8b949e;       /* 215 8% 58% */
+  --accent: #21262d;
+  --accent-foreground: #e6edf3;
+  --destructive: #f87171;            /* 0 91% 71% */
+  --destructive-foreground: #0d1117;
+  --border: #30363d;                 /* 215 14% 21% */
   --input: #30363d;
-  --ring: #6EE05A;
+  --ring: #6EE05A;                   /* 113 67% 62% */
   --chart-1: #6EE05A;
-  --chart-2: #14b8a6;
-  --chart-3: #8b5cf6;
-  --chart-4: #f59e0b;
-  --chart-5: #ef4444;
-  --radius: 0.625rem;
+  --chart-2: #58a6ff;
+  --chart-3: #fbbf24;
+  --chart-4: #f87171;
+  --chart-5: #c9d1d9;
+  --radius: 0.75rem;                 /* rounded-xl default per spec */
   --sidebar: #0d1117;
-  --sidebar-foreground: #f0f4f8;
+  --sidebar-foreground: #c9d1d9;
   --sidebar-primary: #6EE05A;
   --sidebar-primary-foreground: #0d1117;
-  --sidebar-accent: #1c2333;
-  --sidebar-accent-foreground: #f0f4f8;
+  --sidebar-accent: #21262d;
+  --sidebar-accent-foreground: #e6edf3;
   --sidebar-border: #30363d;
   --sidebar-ring: #6EE05A;
 }
