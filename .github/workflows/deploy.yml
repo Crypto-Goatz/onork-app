@@ -70,8 +70,10 @@ jobs:
 
       - name: Deploy pre-built artifacts to Vercel
         id: deploy
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
         run: |
-          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} --archive=tgz)
           echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
           echo "Deployed: $DEPLOY_URL"
 
