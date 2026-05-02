@@ -26,7 +26,17 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
-const TEST_LOCATION_ID = 'nphConTwfHcVE1oA0uep'
+const DEFAULT_targetLocationId = 'nphConTwfHcVE1oA0uep'
+
+// Allow-list — narrow to family locations Mike controls so this endpoint
+// can never become a course-spammer if the secret leaks.
+const ALLOWED_LOCATIONS = new Set<string>([
+  'nphConTwfHcVE1oA0uep', // 0nCore (marketing sub)
+  '6MSqx0trfxgLxeHBJE1k', // RocketOpp (agency master)
+  'AeY8M0GNOuJPNkLQ7AAC', // In2sight LLC
+  'Ev1Bzj84a2vljzCkfBEM', // 0nMCP
+  'F76MNKOMQCMruMrumtdf', // Spa Ligonier
+])
 
 interface VerifyReport {
   ok: boolean
@@ -75,10 +85,25 @@ export async function GET(req: NextRequest) {
 
   const topic = url.searchParams.get('topic') || 'How to write cold emails that get replies'
   const audience = url.searchParams.get('audience') || 'B2B SaaS founders doing their own outbound'
-  const lessonCount = Math.max(3, Math.min(5, Number(url.searchParams.get('lessons')) || 3))
+  const lessonCount = Math.max(3, Math.min(8, Number(url.searchParams.get('lessons')) || 3))
   const learningOutcome =
     url.searchParams.get('outcome') ||
     'Send 50 cold emails per week with a measurable 15%+ reply rate'
+
+  // Allow targeting any allow-listed family location with custom pricing.
+  const requestedLocation =
+    url.searchParams.get('location') || DEFAULT_targetLocationId
+  if (!ALLOWED_LOCATIONS.has(requestedLocation)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: { code: 'location_not_allowed', message: 'location must be a 0n family sub-account' },
+      },
+      { status: 400 },
+    )
+  }
+  const targetLocationId = requestedLocation
+  const priceCents = Math.max(0, Math.min(99900, Number(url.searchParams.get('price')) || 0))
 
   const config: CourseConfig = {
     topic,
@@ -148,9 +173,9 @@ export async function GET(req: NextRequest) {
     report.step = 'publishing'
     const tp = Date.now()
     publish = await publishCourse({
-      locationId: TEST_LOCATION_ID,
+      locationId: targetLocationId,
       course,
-      priceCents: 0,
+      priceCents,
       currency: 'USD',
     })
     durations.publish_ms = Date.now() - tp
@@ -177,7 +202,7 @@ export async function GET(req: NextRequest) {
   try {
     report.step = 'readback'
     const tr = Date.now()
-    const res = await crmGet(`/courses/${publish.crmCourseId}`, TEST_LOCATION_ID)
+    const res = await crmGet(`/courses/${publish.crmCourseId}`, targetLocationId)
     if (!res.ok) {
       const txt = await res.text().catch(() => '')
       report.readback = { error: `${res.status}: ${txt.slice(0, 200)}` }
