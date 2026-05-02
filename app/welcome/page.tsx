@@ -15,6 +15,8 @@ import { redirect } from 'next/navigation'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import WelcomePanel, { type CardAccess } from '@/components/welcome/WelcomePanel'
+import { FAMILY_LOCATIONS, findFamilyMatch } from '@/lib/family-locations'
+import { getTierCapabilities } from '@/lib/permissions'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -93,15 +95,35 @@ export default async function WelcomePage() {
   const access = (minRank: number): CardAccess =>
     isAdmin || userRank >= minRank ? 'unlocked' : 'locked'
 
+  // Resolve the family location (if linked OR matchable by email).
+  // This is the "fallback for users with an email recognized by a sub-location"
+  // — even if their profile crm_location_id is null, we surface the match.
+  const profileLocationId = profile?.crm_location_id ?? null
+  const emailMatch = findFamilyMatch(profile?.email ?? user.email ?? '')
+  const familyLocation =
+    (profileLocationId && FAMILY_LOCATIONS.find((f) => f.locationId === profileLocationId)) ||
+    emailMatch?.location ||
+    null
+
+  const tierCaps = getTierCapabilities(plan)
+
   return (
     <WelcomePanel
       user={{
         email: profile?.email ?? user.email ?? '',
         name: profile?.full_name ?? null,
         plan,
-        location_id: profile?.crm_location_id ?? null,
+        location_id: profileLocationId,
         is_admin: isAdmin,
       }}
+      familyLocation={
+        familyLocation
+          ? { name: familyLocation.name, locationId: familyLocation.locationId, vip: !!familyLocation.vip }
+          : null
+      }
+      tierLabel={tierCaps.label}
+      tierQuotas={tierCaps.quotas}
+      tierActions={tierCaps.onboardingActions}
       cards={[
         {
           id: 'canvas',
