@@ -8,6 +8,7 @@
  * Hard rule (Groq-only): never call Anthropic / OpenAI in prod paths.
  */
 import { groqJson } from '@/lib/groq'
+import { resolveGroqKey, recordGroqUsage } from '@/lib/groq/router'
 
 const USER_PROMPT = (text: string, tone: string) =>
   `Tone target: ${tone}\n\nText:\n"""\n${text}\n"""\n\nReturn JSON:\n{ "factors": [{ "key": "Value"|"Passion"|"Insight"|"Story", "value": number 0-25, "reason": string }], "patterns": string[], "total": number }`
@@ -76,13 +77,26 @@ function fallback(text: string, tone: string, warning: string): VpisResult {
   }
 }
 
-export async function scoreVpis(text: string, tone = 'professional'): Promise<VpisResult> {
+export async function scoreVpis(
+  text: string,
+  tone = 'professional',
+  userId?: string | null,
+): Promise<VpisResult> {
   const trimmed = text.trim()
   if (!trimmed) {
     return fallback('', tone, 'empty input')
   }
-  if (!process.env.GROQ_API_KEY) {
-    return fallback(trimmed, tone, 'GROQ_API_KEY not set')
+
+  const key = await resolveGroqKey(userId ?? null)
+  if (!key.apiKey) {
+    return fallback(trimmed, tone, 'no Groq key — connect one at /dashboard/settings/groq')
+  }
+  if (key.exhausted) {
+    return fallback(
+      trimmed,
+      tone,
+      `monthly Groq quota reached (${key.quota?.used ?? 0}/${key.quota?.limit ?? 0}). Bring your own key at /dashboard/settings/groq for unlimited.`,
+    )
   }
 
   try {
@@ -92,6 +106,7 @@ export async function scoreVpis(text: string, tone = 'professional'): Promise<Vp
       model: 'llama-3.3-70b-versatile',
       temperature: 0.2,
       max_tokens: 600,
+      apiKey: key.apiKey,
     })
     if (!raw || !Array.isArray(raw.factors)) {
       return fallback(trimmed, tone, 'groq returned invalid shape')
@@ -113,6 +128,10 @@ export async function scoreVpis(text: string, tone = 'professional'): Promise<Vp
     const patterns = Array.isArray(raw.patterns)
       ? raw.patterns.filter((p) => typeof p === 'string').slice(0, 5)
       : []
+    if (key.shouldRecord && userId) {
+      // Best-effort — never fail the call on usage write
+      void recordGroqUsage(userId, 1)
+    }
     return {
       score,
       factors: factorsOut,

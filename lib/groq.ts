@@ -26,6 +26,12 @@ export interface GroqChatRequest {
   temperature?: number
   max_tokens?: number
   json?: boolean
+  /**
+   * Optional explicit API key. When present, this key is used INSTEAD of
+   * env vars and no env-var fallback is attempted. Use this for the
+   * per-user bring-your-own-key path resolved via lib/groq/router.ts.
+   */
+  apiKey?: string
 }
 
 export interface GroqChatResult {
@@ -47,11 +53,6 @@ function getKeys(): { primary: string; fallback: string } {
  * @throws Error when both keys fail or when neither is configured.
  */
 export async function groqChat(req: GroqChatRequest): Promise<GroqChatResult> {
-  const { primary, fallback } = getKeys()
-  if (!primary && !fallback) {
-    throw new Error('Groq not configured — set GROQ_API_KEY or GROQ_API_KEY_FALLBACK.')
-  }
-
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = []
   if (req.system) messages.push({ role: 'system', content: req.system })
   messages.push({ role: 'user', content: req.user })
@@ -64,6 +65,20 @@ export async function groqChat(req: GroqChatRequest): Promise<GroqChatResult> {
   }
   if (req.json) {
     body.response_format = { type: 'json_object' }
+  }
+
+  // ── Per-call key override (BYO via lib/groq/router.ts) ──
+  if (req.apiKey) {
+    const out = await callGroq(req.apiKey, body)
+    if (out.ok) {
+      return { text: out.text, raw: out.raw, keyUsed: 'primary' }
+    }
+    throw new Error(`Groq ${out.status}: ${out.errorMessage}`)
+  }
+
+  const { primary, fallback } = getKeys()
+  if (!primary && !fallback) {
+    throw new Error('Groq not configured — set GROQ_API_KEY or GROQ_API_KEY_FALLBACK.')
   }
 
   // Try primary

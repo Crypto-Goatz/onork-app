@@ -11,7 +11,18 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-export type Provider = 'slack' | 'linkedin' | 'google' | 'crm' | 'github' | 'figma' | 'canva' | 'docusign'
+export type Provider =
+  | 'slack'
+  | 'linkedin'
+  | 'google'
+  | 'crm'
+  | 'github'
+  | 'figma'
+  | 'canva'
+  | 'docusign'
+  | 'groq'
+  | 'openai'
+  | 'anthropic'
 
 function admin() {
   return createClient(
