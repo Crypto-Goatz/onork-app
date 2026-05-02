@@ -334,12 +334,18 @@ async function publishWithContentType(
  * Bulk-import lesson "post" shape — lesson content + quiz + resources all
  * inlined into the description so the dashboard renders one continuous
  * lesson page with everything the student needs.
+ *
+ * contentType MUST be 'video' for the bulk-import endpoint — text type is
+ * rejected on most locations including RocketOpp ('Invalid Post content
+ * type'). The body lives in `description` and renders as markdown.
+ * Verified against location 6MSqx0trfxgLxeHBJE1k 2026-05-02 (course id
+ * 56fb4a3c-3590-4eeb-bf18-410d48051635, HTTP 201).
  */
 function buildLessonPost(lesson: GeneratedLesson) {
   return {
     title: lesson.title,
     visibility: 'published' as const,
-    contentType: 'text' as const,
+    contentType: 'video' as const,
     description: composeFullLessonMarkdown(lesson),
   }
 }
