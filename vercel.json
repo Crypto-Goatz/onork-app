@@ -56,5 +56,11 @@
       "path": "/api/sxo-indexer/tick",
       "schedule": "*/5 * * * *"
     }
-  ]
+  ],
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
+  }
 }
