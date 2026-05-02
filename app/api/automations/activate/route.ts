@@ -27,7 +27,13 @@ async function provisionFlowCompanion(args: {
   ownerEmail?: string | null
 }): Promise<{ flowSlug?: string; warnings: string[]; error?: string }> {
   const callbackSecret = process.env.FLOW_CALLBACK_SECRET || process.env.INTERNAL_DISPATCH_SECRET || ''
-  const flowApiKey = process.env.FLOW_API_KEY || process.env.FLOW_TRIGGER_SECRET || ''
+  // Canonical name agreed with the 0nFlow engine team: ONMCP_FLOW_API_TOKEN.
+  // Older names kept as fallback so existing deploys don't break mid-rollout.
+  const flowApiKey =
+    process.env.ONMCP_FLOW_API_TOKEN ||
+    process.env.FLOW_API_KEY ||
+    process.env.FLOW_TRIGGER_SECRET ||
+    ''
 
   const { steps, hasDelays, warnings } = toFlowSteps(
     args.nodes as Parameters<typeof toFlowSteps>[0],

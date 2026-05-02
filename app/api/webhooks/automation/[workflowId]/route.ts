@@ -186,7 +186,12 @@ export async function POST(
   let flowEnrollment: { ok: boolean; enrollmentId?: string; error?: string } | null = null
   if (workflow.flow_slug) {
     const flowApiBase = process.env.FLOW_API_BASE || 'https://www.0nmcp.com'
-    const flowApiKey = process.env.FLOW_API_KEY || process.env.FLOW_TRIGGER_SECRET || ''
+    // Canonical name agreed with the 0nFlow engine team: ONMCP_FLOW_API_TOKEN.
+    const flowApiKey =
+      process.env.ONMCP_FLOW_API_TOKEN ||
+      process.env.FLOW_API_KEY ||
+      process.env.FLOW_TRIGGER_SECRET ||
+      ''
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (flowApiKey) headers['Authorization'] = `Bearer ${flowApiKey}`
     try {
