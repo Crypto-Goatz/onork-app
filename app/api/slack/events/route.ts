@@ -16,9 +16,10 @@ import { NextResponse } from 'next/server'
 import { verifySlackRequest } from '@/lib/slack/verify'
 import { resolveCaller, logCommand } from '@/lib/slack/auth'
 import { postJaxxReply } from '@/lib/slack/responder'
-import { postMessage, publishHome } from '@/lib/slack/client'
-import { welcomeCard, notLinkedPrompt, jaxxReply } from '@/lib/slack/blocks'
+import { postMessage } from '@/lib/slack/client'
+import { jaxxReply, notLinkedPrompt } from '@/lib/slack/blocks'
 import { runJaxx } from '@/lib/slack/jaxx'
+import { publishHome as publishAppHome } from '@/lib/slack/home'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -199,15 +200,8 @@ async function handleMention({
 }
 
 async function handleHomeOpened({ slackUserId, teamId }: { slackUserId: string; teamId: string }) {
-  const caller = await resolveCaller(slackUserId, teamId)
-  const view = {
-    type: 'home',
-    blocks: caller
-      ? welcomeCard({ email: caller.email, full_name: caller.full_name, plan: caller.plan })
-      : notLinkedPrompt(),
-  }
   try {
-    await publishHome(slackUserId, view, { teamId })
+    await publishAppHome(slackUserId, teamId)
   } catch (e) {
     console.warn('[slack/home] publish failed:', (e as Error).message)
   }
