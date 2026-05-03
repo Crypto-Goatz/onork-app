@@ -223,7 +223,7 @@ async function generateLessonOnce(
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// Lessons — radial burst
+// Lessons — paced burst (serialized to respect Groq's 12k TPM cap)
 // ──────────────────────────────────────────────────────────────────────────
 
 export interface RadialBurstResult {
@@ -233,61 +233,77 @@ export interface RadialBurstResult {
 }
 
 /**
- * Fires every lesson in parallel. Returns whatever succeeded plus a failures
- * list. Caller decides whether to retry failures or proceed.
+ * Lesson-generation pacing.
+ *
+ * Each lesson call uses ~3-4k tokens (prompt + 4096 max output). Groq's
+ * `llama-3.3-70b-versatile` on-demand tier caps at 12,000 tokens / minute,
+ * so true parallel `Promise.all` blows the cap on any course with 3+ lessons
+ * (verified — every parallel run after lesson 1 returned 429).
+ *
+ * Solution: serialize with a configurable inter-lesson delay. With 5s
+ * spacing a 6-lesson course finishes in ~30s of generation + 25s of
+ * cumulative wait — well under the chat handler's 5-minute budget — and
+ * stays comfortably under TPM. The function name keeps "Radial" for API
+ * stability across callers; the implementation is now paced-serial.
  */
+const LESSON_PACE_MS = Number(process.env.COURSE_BUILDER_LESSON_PACE_MS) || 5000
+
+async function sleep(ms: number) {
+  if (ms <= 0) return
+  await new Promise<void>((r) => setTimeout(r, ms))
+}
+
 export async function generateLessonsRadial(
   config: CourseConfig,
   outline: CourseOutline
 ): Promise<RadialBurstResult> {
-  const settled = await Promise.allSettled(
-    outline.lessons.map((l) => generateLessonOnce(config, outline, l.index))
-  )
-
   const lessons: GeneratedLesson[] = []
   const failures: Array<{ lessonIndex: number; error: string }> = []
 
-  settled.forEach((s, i) => {
-    const lessonIndex = outline.lessons[i].index
-    if (s.status === 'fulfilled') {
-      lessons.push(s.value)
-    } else {
+  for (let i = 0; i < outline.lessons.length; i++) {
+    const idx = outline.lessons[i].index
+    try {
+      const lesson = await generateLessonOnce(config, outline, idx)
+      lessons.push(lesson)
+    } catch (e) {
       failures.push({
-        lessonIndex,
-        error: s.reason instanceof Error ? s.reason.message : String(s.reason),
+        lessonIndex: idx,
+        error: e instanceof Error ? e.message : String(e),
       })
     }
-  })
+    if (i < outline.lessons.length - 1) await sleep(LESSON_PACE_MS)
+  }
 
-  // Keep numerical order
   lessons.sort((a, b) => a.index - b.index)
-
   const totalWordCount = lessons.reduce((sum, l) => sum + l.wordCount, 0)
-
   return { lessons, failures, totalWordCount }
 }
 
 /**
  * Retry just the failed lesson indexes. Used by the chat handler when the
- * first burst returns partial results.
+ * first burst returns partial results. Same paced-serial strategy.
  */
 export async function retryLessons(
   config: CourseConfig,
   outline: CourseOutline,
   indexes: number[]
 ): Promise<RadialBurstResult> {
-  const settled = await Promise.allSettled(
-    indexes.map((i) => generateLessonOnce(config, outline, i))
-  )
-
   const lessons: GeneratedLesson[] = []
   const failures: Array<{ lessonIndex: number; error: string }> = []
 
-  settled.forEach((s, i) => {
+  for (let i = 0; i < indexes.length; i++) {
     const idx = indexes[i]
-    if (s.status === 'fulfilled') lessons.push(s.value)
-    else failures.push({ lessonIndex: idx, error: s.reason instanceof Error ? s.reason.message : String(s.reason) })
-  })
+    try {
+      const lesson = await generateLessonOnce(config, outline, idx)
+      lessons.push(lesson)
+    } catch (e) {
+      failures.push({
+        lessonIndex: idx,
+        error: e instanceof Error ? e.message : String(e),
+      })
+    }
+    if (i < indexes.length - 1) await sleep(LESSON_PACE_MS)
+  }
 
   return {
     lessons: lessons.sort((a, b) => a.index - b.index),
