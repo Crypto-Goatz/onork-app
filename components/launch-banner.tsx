@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { X, Rocket, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
-const EXCLUDED_PREFIXES = ['/dashboard', '/console', '/crm', '/canvas', '/welcome', '/tools', '/auth']
+const EXCLUDED_PREFIXES = ['/dashboard', '/console', '/crm', '/canvas', '/welcome', '/tools', '/auth', '/admin']
 const STORAGE_KEY = '0n_launched_banner_dismissed_v1'
 
 export function LaunchBanner() {

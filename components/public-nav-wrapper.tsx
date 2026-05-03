@@ -15,6 +15,7 @@ const EXCLUDED_PREFIXES = [
   '/import',
   '/install',
   '/0nexec-demo',
+  '/admin',
 ]
 
 // Routes with their own nav (login/signup have custom designs)

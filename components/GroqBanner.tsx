@@ -31,8 +31,9 @@ export function GroqBanner() {
   const [status, setStatus] = useState<Status | null>(null)
   const [dismissed, setDismissed] = useState(false)
 
-  // Don't render on the connect page itself
+  // Don't render on the connect page itself or on focused app surfaces
   const isConnectPage = pathname?.startsWith('/dashboard/settings/groq')
+  const isExcluded = pathname?.startsWith('/admin') || pathname?.startsWith('/welcome')
 
   useEffect(() => {
     let cancelled = false
@@ -54,6 +55,7 @@ export function GroqBanner() {
   }, [pathname])
 
   if (isConnectPage) return null
+  if (isExcluded) return null
   if (!status?.authenticated) return null
   if (status.hasOwnKey) return null
   if (dismissed && !status.exhausted) return null

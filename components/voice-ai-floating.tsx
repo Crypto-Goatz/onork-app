@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import { VoiceAIWidget } from './voice-ai-widget'
 
 // Only show voice AI on public pages — not dashboard, crm, auth
-const EXCLUDED_PREFIXES = ['/dashboard', '/crm', '/canvas', '/welcome', '/tools', '/auth', '/login', '/signup']
+const EXCLUDED_PREFIXES = ['/dashboard', '/crm', '/canvas', '/welcome', '/tools', '/auth', '/login', '/signup', '/admin']
 
 export function VoiceAIFloatingButton() {
   const pathname = usePathname()
