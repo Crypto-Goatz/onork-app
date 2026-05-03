@@ -19,6 +19,7 @@
 import { createHash } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import type { OnCoreCaller } from './auth'
+import { runGhlJaxx, isGhlIntent } from '../jaxx/ghl-brain'
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_MODEL = 'llama-3.3-70b-versatile'
@@ -79,6 +80,28 @@ export async function runJaxx({ user, prompt }: RunInput): Promise<JaxxReply> {
   const groqKey = process.env.GROQ_API_KEY
   if (!groqKey) {
     return offlineReply(ctx, prompt)
+  }
+
+  // If the user is asking about CRM / workflows / campaigns, hand off to
+  // the GHL-specialized brain. It returns Claude-Chrome instructions instead
+  // of a free-form Slack chat reply.
+  if (isGhlIntent(prompt)) {
+    const ghl = await runGhlJaxx({
+      message: prompt,
+      context: {
+        caller: {
+          user_id: user.user_id,
+          email: user.email,
+          full_name: user.full_name,
+          plan: user.plan,
+          crm_location_id: user.crm_location_id,
+          is_admin: user.is_admin,
+        },
+        connections: ctx.connections,
+        k_layers: ctx.k_layers,
+      },
+    })
+    return ghl
   }
 
   const sys = buildSystemPrompt(ctx)
