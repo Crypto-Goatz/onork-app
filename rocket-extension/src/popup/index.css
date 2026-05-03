@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 13% 7%;
+    --foreground: 213 31% 91%;
+    --card: 215 21% 11%;
+    --card-foreground: 213 31% 91%;
+    --popover: 213 19% 14%;
+    --popover-foreground: 213 31% 91%;
+    --primary: 113 67% 62%;
+    --primary-foreground: 220 13% 7%;
+    --secondary: 215 14% 16%;
+    --secondary-foreground: 210 17% 82%;
+    --muted: 215 21% 11%;
+    --muted-foreground: 215 8% 58%;
+    --accent: 215 14% 16%;
+    --accent-foreground: 213 31% 91%;
+    --destructive: 0 91% 71%;
+    --destructive-foreground: 220 13% 7%;
+    --border: 215 14% 21%;
+    --input: 215 14% 21%;
+    --ring: 113 67% 62%;
+    --radius: 0.75rem;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01", "ss03";
+    overflow: hidden;
+  }
+
+  body {
+    width: 400px;
+    height: 600px;
+  }
+
+  #root {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Scrollbar — quiet, in-theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #30363d;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #484f58;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

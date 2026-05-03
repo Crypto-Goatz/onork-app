@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "RocketOpp Admin",
+  "short_name": "RocketOpp",
+  "version": "1.0.0",
+  "description": "Internal RocketOpp admin tool. Direct CRM API access for any sub-location you manage.",
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "RocketOpp Admin",
+    "default_icon": {
+      "16": "public/icons/icon-16.png",
+      "48": "public/icons/icon-48.png",
+      "128": "public/icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "public/icons/icon-16.png",
+    "48": "public/icons/icon-48.png",
+    "128": "public/icons/icon-128.png"
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.rocketclients.com/*",
+        "*://*.leadconnectorhq.com/*",
+        "*://*.gohighlevel.com/*",
+        "*://app.180crm.com/*"
+      ],
+      "js": ["src/content/detector.ts"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["storage", "activeTab", "tabs"],
+  "host_permissions": [
+    "https://services.leadconnectorhq.com/*",
+    "*://*.rocketclients.com/*",
+    "*://*.leadconnectorhq.com/*",
+    "*://*.gohighlevel.com/*"
+  ]
+}
