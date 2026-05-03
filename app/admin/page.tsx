@@ -19,6 +19,7 @@ import {
   Workflow,
 } from 'lucide-react'
 import { ADMIN_LOCATIONS, DEFAULT_ADMIN_LOCATION_ID, type AdminLocation } from '@/lib/admin-locations'
+import { DetectRefineSection } from './DetectRefineSection'
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -254,6 +255,8 @@ function DashboardTab({ location, onJump }: { location: AdminLocation; onJump: (
         <StatCard icon={TagIcon} label="Tags" value={statsLoading ? '…' : stats.tags?.toString() ?? '—'} />
         <StatCard icon={Workflow} label="Workflows" value={statsLoading ? '…' : stats.workflows?.toString() ?? '—'} />
       </div>
+
+      <DetectRefineSection locationId={location.id} />
 
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-[#e6edf3]">Quick actions</h2>
