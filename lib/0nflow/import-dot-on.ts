@@ -216,6 +216,10 @@ export async function resolveDotOn(opts: {
   const questions: ImportQuestion[] = []
   const triggerConfig: Record<string, unknown> = { ...(triggerSrc.config || {}) }
 
+  // Surface trigger-resolution failures instead of returning silently
+  // with a half-resolved trigger config — Mike noticed missing tag_id.
+  const triggerNotes: string[] = []
+
   if (triggerSrc.type === 'trigger_tag_added') {
     const tagName = (triggerConfig.tag_name as string) || (triggerConfig.tag as string)
     if (!triggerConfig.tag_id && tagName) {
@@ -228,6 +232,10 @@ export async function resolveDotOn(opts: {
         if (made.created) {
           created.push({ type: 'tag', name: tagName, id: made.tag.id })
         }
+      } else {
+        triggerNotes.push(
+          `Could not resolve trigger tag "${tagName}" — CRM tag list/create call failed. The workflow will save, but you'll need to set tag_id manually before activating.`,
+        )
       }
     }
   }
@@ -268,7 +276,7 @@ export async function resolveDotOn(opts: {
     trigger: { type: triggerSrc.type, config: triggerConfig },
     steps: swapped,
     created,
-    swap_notes: swapNotes,
+    swap_notes: [...triggerNotes, ...swapNotes],
     available,
   }
 

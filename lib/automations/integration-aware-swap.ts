@@ -48,10 +48,8 @@ export function swapForAvailable(
         action: 'crm_add_tag',
         display_name: `Tag for filter: ${tabName}`,
         config: {
-          contact_id: step.config.contact_id ?? '{{search.output.contacts[0].id}}',
+          contact_id: step.config.contact_id ?? '{{trigger.contact_id}}',
           tags: [tabName],
-          // Carry the row payload as a CRM note so nothing is lost
-          note_payload: step.config.row,
         },
       },
       swapped: true,

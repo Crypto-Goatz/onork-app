@@ -49,7 +49,7 @@ interface Pattern {
 const PATTERNS: Pattern[] = [
   // Search contacts (by tag, query, or filter)
   {
-    nameAny: ['gather contact', 'search contacts', 'find contacts', 'get contacts'],
+    nameAny: ['search contacts', 'find contacts', 'list contacts', 'get contacts'],
     configKeysAny: ['query', 'tag', 'tags', 'filter'],
     action: 'crm_search_contacts',
     rewriteConfig: (cfg) => {
@@ -66,10 +66,28 @@ const PATTERNS: Pattern[] = [
     },
   },
 
+  // Single-contact lookup (the "Gather contact data" pattern)
+  {
+    nameAny: ['gather contact', 'get contact', 'fetch contact', 'lookup contact', 'load contact', 'contact data'],
+    configKeysAny: ['contact_id', 'contactId'],
+    action: 'crm_get_contact',
+    rewriteConfig: (cfg) => ({
+      contact_id: cfg.contactId ?? cfg.contact_id,
+    }),
+  },
+
   // Update contact custom fields (the most common pattern in the example)
   {
-    nameAny: ['create custom field', 'set custom field', 'update contact', 'update custom field'],
-    configKeysAll: ['contactId'],
+    nameAny: [
+      'create custom field',
+      'set custom field',
+      'update contact',
+      'update custom field',
+      'update contact with',
+      'stamp contact',
+      'save to contact',
+    ],
+    configKeysAny: ['contact_id', 'contactId'],
     action: 'crm_update_contact',
     rewriteConfig: (cfg) => ({
       contact_id: cfg.contactId ?? cfg.contact_id,
@@ -79,8 +97,8 @@ const PATTERNS: Pattern[] = [
 
   // Add tag to contact
   {
-    nameAny: ['add tag', 'tag contact', 'apply tag'],
-    configKeysAll: ['contactId'],
+    nameAny: ['add tag', 'tag contact', 'apply tag', 'tag for', 'mark as'],
+    configKeysAny: ['contact_id', 'contactId'],
     action: 'crm_add_tag',
     rewriteConfig: (cfg) => ({
       contact_id: cfg.contactId ?? cfg.contact_id,
@@ -91,7 +109,7 @@ const PATTERNS: Pattern[] = [
   // Remove tag
   {
     nameAny: ['remove tag', 'untag'],
-    configKeysAll: ['contactId'],
+    configKeysAny: ['contact_id', 'contactId'],
     action: 'crm_remove_tag',
     rewriteConfig: (cfg) => ({
       contact_id: cfg.contactId ?? cfg.contact_id,
@@ -107,50 +125,57 @@ const PATTERNS: Pattern[] = [
     rewriteConfig: (cfg) => ({ email: cfg.email }),
   },
 
-  // AI Readiness scan (we already have this on rocketopp-live; will route to it)
+  // AI Readiness scan
   {
-    nameAny: ['ai readiness', 'ai-readiness', 'readiness score'],
-    configKeysAny: ['url'],
+    nameAny: ['ai readiness', 'ai-readiness', 'readiness score', 'readiness scan'],
+    configKeysAny: ['url', 'domain', 'website'],
     action: 'ai_readiness_scan',
-    rewriteConfig: (cfg) => ({ url: cfg.url }),
+    rewriteConfig: (cfg) => ({
+      url: cfg.url ?? cfg.domain ?? cfg.website,
+    }),
   },
 
   // Lead score
   {
     nameAny: ['hot lead', 'lead score', 'score lead', 'score website'],
-    configKeysAny: ['url'],
+    configKeysAny: ['url', 'domain', 'website'],
     action: 'lead_score',
-    rewriteConfig: (cfg) => ({ url: cfg.url, contact_id: cfg.contact_id ?? cfg.contactId }),
+    rewriteConfig: (cfg) => ({
+      url: cfg.url ?? cfg.domain ?? cfg.website,
+      contact_id: cfg.contact_id ?? cfg.contactId,
+    }),
   },
 
   // Tech stack scan
   {
-    nameAny: ['technical stack', 'tech stack', 'website stack'],
-    configKeysAny: ['url'],
+    nameAny: ['technical stack', 'tech stack', 'website stack', 'stack scan'],
+    configKeysAny: ['url', 'domain', 'website'],
     action: 'tech_stack_scan',
-    rewriteConfig: (cfg) => ({ url: cfg.url }),
+    rewriteConfig: (cfg) => ({
+      url: cfg.url ?? cfg.domain ?? cfg.website,
+    }),
   },
 
   // Business classification (niche/market/industry)
   {
     nameAny: ['niche', 'market', 'industry', 'business definition', 'classify business'],
-    configKeysAny: ['url'],
+    configKeysAny: ['url', 'domain', 'website'],
     action: 'ai_classify_business',
-    rewriteConfig: (cfg) => ({ url: cfg.url }),
+    rewriteConfig: (cfg) => ({ url: cfg.url ?? cfg.domain ?? cfg.website }),
   },
 
   // LinkedIn lookup
   {
     nameAny: ['linkedin'],
-    configKeysAny: ['company', 'email'],
+    configKeysAny: ['company', 'email', 'domain'],
     action: 'linkedin_company_lookup',
-    rewriteConfig: (cfg) => ({ company: cfg.company, email: cfg.email }),
+    rewriteConfig: (cfg) => ({ company: cfg.company, email: cfg.email, domain: cfg.domain }),
   },
 
   // Google Sheet append (will be swapped if not connected)
   {
-    nameAny: ['google sheet', 'gsheet', 'spreadsheet', 'sheet'],
-    configKeysAny: ['webhookId', 'spreadsheet_id', 'sheet_id', 'payload'],
+    nameAny: ['google sheet', 'gsheet', 'spreadsheet', 'append to', 'leaderboard', 'append sheet', 'append to sheet'],
+    configKeysAny: ['webhookId', 'spreadsheet_id', 'sheet_id', 'payload', 'tab'],
     action: 'gsheet_append',
     rewriteConfig: (cfg) => ({
       spreadsheet_id: cfg.spreadsheet_id ?? cfg.sheet_id,
@@ -161,8 +186,8 @@ const PATTERNS: Pattern[] = [
 
   // Send email
   {
-    nameAny: ['send email'],
-    configKeysAny: ['contactId', 'email'],
+    nameAny: ['send email', 'email contact', 'mail contact'],
+    configKeysAny: ['contact_id', 'contactId', 'email'],
     action: 'crm_send_email',
     rewriteConfig: (cfg) => ({
       contact_id: cfg.contactId ?? cfg.contact_id,
@@ -173,8 +198,8 @@ const PATTERNS: Pattern[] = [
 
   // Send SMS
   {
-    nameAny: ['send sms', 'send text'],
-    configKeysAll: ['contactId'],
+    nameAny: ['send sms', 'send text', 'text contact'],
+    configKeysAny: ['contact_id', 'contactId'],
     action: 'crm_send_sms',
     rewriteConfig: (cfg) => ({
       contact_id: cfg.contactId ?? cfg.contact_id,
