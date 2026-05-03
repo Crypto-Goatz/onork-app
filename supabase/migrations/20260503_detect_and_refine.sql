@@ -57,14 +57,29 @@ CREATE INDEX IF NOT EXISTS idx_dr_events ON dr_events(site_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_dr_events_grade ON dr_events(site_id, grade, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_dr_stats ON dr_daily_stats(site_id, date DESC);
 
--- Seed: Spa Ligonier (location F76MNKOMQCMruMrumtdf, domain spaligonier.com).
+-- Seeds: Spa Ligonier owns three domains under location F76MNKOMQCMruMrumtdf.
 -- site_id and script_key are stable so the install snippet survives reseeds.
 INSERT INTO dr_domains (location_id, domain, site_id, script_key, is_active)
-VALUES (
-  'F76MNKOMQCMruMrumtdf',
-  'spaligonier.com',
-  'dr_spa_ligonier_a1b2c3',
-  'd92f4a7c8b1e6f3a5d2c9b8e7f4a1c6d',
-  true
-)
+VALUES
+  (
+    'F76MNKOMQCMruMrumtdf',
+    'spaligonier.com',
+    'dr_spa_ligonier_a1b2c3',
+    'd92f4a7c8b1e6f3a5d2c9b8e7f4a1c6d',
+    true
+  ),
+  (
+    'F76MNKOMQCMruMrumtdf',
+    'ligonierspa.com',
+    'dr_ligonierspa_d4e5f6',
+    'a7c2e8f4b9d1c6a3f5e8b2d7c4a9f1e6',
+    true
+  ),
+  (
+    'F76MNKOMQCMruMrumtdf',
+    'facialhealthspa.com',
+    'dr_facialhealthspa_g7h8i9',
+    'b3f8a1c5e9d2f7b4a8c1e6d3f9b2a5c8',
+    true
+  )
 ON CONFLICT (site_id) DO NOTHING;
