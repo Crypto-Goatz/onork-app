@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     // Check profile for crm_location_id
     const { data: profile, error: profileErr } = await supabase
       .from('profiles')
-      .select('crm_location_id, onboarding_completed, onboarding_step')
+      .select('crm_location_id, onboarding_complete, onboarding_step')
       .eq('id', userId)
       .single()
 

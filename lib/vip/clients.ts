@@ -129,7 +129,7 @@ export const VIP_CLIENTS: Record<string, VipClient> = {
         clickTag: 'md-clicked-giftcard',
         funnelTags: ['mothers-day-2026', 'md-clicked-giftcard', 'md-purchased'],
         dealUrl:
-          'https://www.massagebook.com/ligonier/massage/deals/sdf/200871',
+          'https://www.massagebook.com/ligonier/massage/promotion/preview/Mothers-Day-2026/200926',
       },
     ],
     authorizedEmails: [
