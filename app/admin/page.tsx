@@ -621,15 +621,31 @@ function CampaignsTab({ location }: { location: AdminLocation }) {
 // ── Tab 4: Jaxx AI chat ──────────────────────────────────────────
 
 function JaxxTab({ location }: { location: AdminLocation }) {
+  // 3-layer AI Agent engine — Spec: docs/0ncore-ai-agent-architecture.md.
+  // Calls /api/ai/chat with { locationId, message, conversationId, channel:'admin' }.
+  // Server resolves Layer 1 (RocketOpp K-Layers) + Layer 2 (per-location agent
+  // profile) + Layer 3 (Trained Llama via Groq) and returns parsed actions.
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      content: `I'm Jaxx — wired into ${location.name}. Ask me to find contacts, create tags, deploy a campaign, or anything else CRM-related.`,
+      content: `I'm Jaxx — wired into ${location.name}. Ask me about your services, pricing, leads, or campaigns.`,
     },
   ])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [conversationId, setConversationId] = useState<string | null>(null)
   const scrollerRef = useRef<HTMLDivElement>(null)
+
+  // Reset conversation when the user switches location.
+  useEffect(() => {
+    setConversationId(null)
+    setMessages([
+      {
+        role: 'assistant',
+        content: `I'm Jaxx — wired into ${location.name}. Ask me about your services, pricing, leads, or campaigns.`,
+      },
+    ])
+  }, [location.id, location.name])
 
   useEffect(() => {
     scrollerRef.current?.scrollTo({ top: scrollerRef.current.scrollHeight, behavior: 'smooth' })
@@ -643,31 +659,39 @@ function JaxxTab({ location }: { location: AdminLocation }) {
     setMessages(next)
     setSending(true)
 
-    const res = await fetch('/api/admin/jaxx', {
+    const res = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: next.map(({ role, content }) => ({ role, content })),
         locationId: location.id,
-        locationName: location.name,
+        message: text,
+        conversationId,
+        channel: 'admin',
       }),
     })
-    const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string; error?: string }
+    const data = (await res.json().catch(() => ({}))) as {
+      response?: string
+      conversationId?: string
+      actions?: Array<{ action_type: string; success: boolean; result?: unknown }>
+      error?: string
+      message?: string
+    }
 
-    if (!data.ok || !data.message) {
-      setMessages([...next, { role: 'assistant', content: `(Jaxx error: ${data.error || 'unknown'})` }])
+    if (!res.ok || !data.response) {
+      setMessages([...next, { role: 'assistant', content: `(Jaxx error: ${data.message || data.error || `HTTP ${res.status}`})` }])
       setSending(false)
       return
     }
 
-    // Parse + run any action blocks in the response
-    const { stripped, actions } = parseActions(data.message)
-    const actionResults: ActionResult[] = []
-    for (const a of actions) {
-      actionResults.push(await runAction(a, location.id))
-    }
+    if (data.conversationId) setConversationId(data.conversationId)
 
-    setMessages([...next, { role: 'assistant', content: stripped, actions: actionResults }])
+    const actionResults: ActionResult[] = (data.actions ?? []).map((a) => ({
+      type: a.action_type,
+      ok: a.success,
+      summary: summarizeActionResult(a.result),
+    }))
+
+    setMessages([...next, { role: 'assistant', content: data.response, actions: actionResults }])
     setSending(false)
   }
 
@@ -756,107 +780,19 @@ function ChatBubble({ message }: { message: ChatMessage }) {
   )
 }
 
-// ── Action parser + runner ───────────────────────────────────────
+// ── Action summary ───────────────────────────────────────────────
+// The 3-layer engine executes actions server-side and returns a result
+// blob per action. Phase 1 ships stub results; Phase 3 wires concrete
+// CRM/campaign handlers. This helper renders whatever the server sent.
 
-interface JaxxAction {
-  type: string
-  [k: string]: unknown
-}
-
-function parseActions(text: string): { stripped: string; actions: JaxxAction[] } {
-  const actions: JaxxAction[] = []
-  const stripped = text.replace(/```action\s*([\s\S]*?)```/g, (_match, body: string) => {
-    try {
-      const parsed = JSON.parse(body.trim())
-      if (parsed && typeof parsed === 'object' && typeof parsed.type === 'string') {
-        actions.push(parsed as JaxxAction)
-      }
-    } catch {
-      // ignore — show in stripped text? We strip the block silently.
-    }
-    return ''
-  }).trim()
-  return { stripped, actions }
-}
-
-async function runAction(action: JaxxAction, locationId: string): Promise<ActionResult> {
-  switch (action.type) {
-    case 'CREATE_TAGS': {
-      const names = Array.isArray(action.names) ? (action.names as string[]) : []
-      let okCount = 0
-      const failures: string[] = []
-      for (const name of names) {
-        const r = await crm('createTag', locationId, { name })
-        if (r.ok) okCount++
-        else failures.push(`${name}: ${r.error || r.status}`)
-      }
-      return {
-        type: action.type,
-        ok: failures.length === 0,
-        summary: failures.length === 0
-          ? `Created ${okCount} tag${okCount === 1 ? '' : 's'}.`
-          : `Created ${okCount}, failed ${failures.length}: ${failures.join('; ')}`,
-      }
-    }
-    case 'SEARCH_CONTACTS': {
-      const r = await crm<{ contacts?: Contact[] }>('searchContacts', locationId, {
-        query: String(action.query || ''),
-        limit: Number(action.limit ?? 10),
-      })
-      const list = r.data?.contacts ?? []
-      return {
-        type: action.type,
-        ok: r.ok,
-        summary: r.ok
-          ? `${list.length} match${list.length === 1 ? '' : 'es'}: ${list.slice(0, 5).map((c) => c.contactName || c.email || c.phone || '?').join(', ')}`
-          : (r.error || `HTTP ${r.status}`),
-      }
-    }
-    case 'CREATE_CONTACT': {
-      const r = await crm('createContact', locationId, {
-        firstName: action.firstName,
-        lastName: action.lastName,
-        email: action.email,
-        phone: action.phone,
-      })
-      return {
-        type: action.type,
-        ok: r.ok,
-        summary: r.ok ? 'Contact created.' : (r.error || `HTTP ${r.status}`),
-      }
-    }
-    case 'LIST_WORKFLOWS': {
-      const r = await crm<{ workflows?: { name?: string }[] }>('getWorkflows', locationId)
-      const list = r.data?.workflows ?? []
-      return {
-        type: action.type,
-        ok: r.ok,
-        summary: r.ok
-          ? `${list.length} workflow${list.length === 1 ? '' : 's'}: ${list.slice(0, 5).map((w) => w.name).join(', ')}`
-          : (r.error || `HTTP ${r.status}`),
-      }
-    }
-    case 'CREATE_CUSTOM_FIELD': {
-      const r = await crm('createCustomField', locationId, {
-        name: action.name,
-        dataType: action.dataType || 'TEXT',
-      })
-      return {
-        type: action.type,
-        ok: r.ok,
-        summary: r.ok ? `Field "${action.name}" created.` : (r.error || `HTTP ${r.status}`),
-      }
-    }
-    case 'GET_LOCATION_INFO': {
-      const r = await crm<{ location?: { name?: string; address?: string } }>('getLocation', locationId)
-      const loc = r.data?.location
-      return {
-        type: action.type,
-        ok: r.ok,
-        summary: r.ok ? `${loc?.name ?? 'Unknown'} — ${loc?.address ?? 'no address'}` : (r.error || `HTTP ${r.status}`),
-      }
-    }
-    default:
-      return { type: action.type, ok: false, summary: `Unknown action type: ${action.type}` }
-  }
+function summarizeActionResult(result: unknown): string {
+  if (result == null) return 'Logged.'
+  if (typeof result === 'string') return result
+  if (typeof result !== 'object') return String(result)
+  const r = result as Record<string, unknown>
+  if (typeof r.summary === 'string') return r.summary
+  if (typeof r.note === 'string') return r.note
+  if (typeof r.error === 'string') return `Error: ${r.error}`
+  if (typeof r.status === 'string') return r.status
+  return 'Logged for execution.'
 }

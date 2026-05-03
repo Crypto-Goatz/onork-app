@@ -1,79 +1,129 @@
+/**
+ * /api/ai/chat — 3-layer AI Agent endpoint.
+ *
+ * Per docs/0ncore-ai-agent-architecture.md:
+ *   1. Resolve agent + active packs for the locationId.
+ *   2. Build the system prompt (Layer 1 + Layer 2 + Layer 3).
+ *   3. Append conversation history + new user message.
+ *   4. Call Groq (llama-3.3-70b-versatile by default; configurable via bot_settings).
+ *   5. Parse [ACTION:...] declarations off the front of the reply.
+ *   6. Execute / record actions.
+ *   7. Persist conversation + return { response, actions, conversationId }.
+ *
+ * Critical Rule #6 — Groq only (no Anthropic SDK in production paths).
+ * Critical Rule #2 — action identifiers are snake_case; non-allowlisted
+ * action declarations are dropped.
+ * Critical Rule #1 — model + behavior knobs come from bot_settings, not
+ * literals.
+ */
+
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { buildSystemPrompt } from '@/lib/ai/prompt'
+import { activeActionSet } from '@/lib/ai/k-layers/packs'
+import { groqCall, type ChatMessage } from '@/lib/ai/groq'
+import { parseActions, executeActions } from '@/lib/ai/actions'
+import {
+  getOrCreateAgent,
+  getActivePacks,
+  getOrCreateConversation,
+  appendConversation,
+  logAction,
+} from '@/lib/ai/store'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
-const SYSTEM_PROMPT = `You are 0nAI, the business operating system. Execute first, confirm second. Keep responses under 3 sentences. Never say GHL.
-
-You have access to 1,171 tools across 54 services through the 0nMCP orchestration engine. You can score leads, send emails, manage pipelines, build automations, generate courses, and run any business task.
-
-When asked to do something, act decisively. You are not an assistant — you are the AI that runs their business.`
+const HISTORY_LIMIT = 20
 
 export async function POST(req: Request) {
-  const supabase = await createClient()
+  const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { message, history } = await req.json()
-  if (!message) return NextResponse.json({ error: 'Message required' }, { status: 400 })
+  let body: { locationId?: string; message?: string; conversationId?: string; channel?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'invalid json' }, { status: 400 })
+  }
 
-  // Build conversation messages
-  const messages: Array<{ role: string; content: string }> = [
-    { role: 'system', content: SYSTEM_PROMPT },
+  const locationId = body.locationId?.trim()
+  const message = body.message?.trim()
+  const channel = (body.channel?.trim() || 'admin').toLowerCase()
+  const incomingConversationId = body.conversationId?.trim() || null
+
+  if (!locationId) return NextResponse.json({ error: 'locationId required' }, { status: 400 })
+  if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 })
+
+  // 1. Resolve agent + active packs
+  const agent = await getOrCreateAgent(locationId)
+  const activePacks = await getActivePacks(locationId)
+
+  // 2. Build the 3-layer system prompt
+  const systemPrompt = buildSystemPrompt({ agent, activePacks })
+
+  // 3. Load conversation history
+  const conversation = await getOrCreateConversation(locationId, incomingConversationId, channel, user.id)
+  const recentHistory = conversation.messages.slice(-HISTORY_LIMIT)
+
+  const userTs = new Date().toISOString()
+  const userMessage: ChatMessage = { role: 'user', content: message }
+
+  const messages: ChatMessage[] = [
+    { role: 'system', content: systemPrompt },
+    ...recentHistory.map((m) => ({ role: m.role, content: m.content }) as ChatMessage),
+    userMessage,
   ]
 
-  // Include conversation history if provided (last 20 messages max)
-  if (Array.isArray(history)) {
-    const recent = history.slice(-20)
-    for (const msg of recent) {
-      if (msg.role === 'user' || msg.role === 'assistant') {
-        messages.push({ role: msg.role, content: msg.content })
-      }
-    }
+  // 4. Call Groq
+  let groqResult
+  try {
+    groqResult = await groqCall(messages)
+  } catch (err) {
+    return NextResponse.json(
+      {
+        error: 'groq_unavailable',
+        message: err instanceof Error ? err.message : 'Groq call failed',
+      },
+      { status: 502 },
+    )
   }
 
-  messages.push({ role: 'user', content: message })
+  // 5. Parse actions
+  const allowed = activeActionSet(activePacks)
+  const { actions: parsed, reply } = parseActions(groqResult.text, allowed)
+  const finalReply = reply || groqResult.text
 
-  // Try Groq API pool
-  const pool = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '').split(',').filter(Boolean)
+  // 6. Execute actions (Phase 1 stubs — recorded for future routing)
+  const executed = await executeActions(parsed, {
+    locationId,
+    conversationId: conversation.id,
+    logger: (row) => logAction(row),
+  })
 
-  if (pool.length > 0) {
-    const key = pool[Math.floor(Math.random() * pool.length)].trim()
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`,
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          max_tokens: 2048,
-          messages,
-        }),
-        signal: AbortSignal.timeout(30000),
-      })
+  // 7. Persist conversation
+  const assistantTs = new Date().toISOString()
+  await appendConversation(
+    conversation.id,
+    [
+      { role: 'user', content: message, ts: userTs },
+      { role: 'assistant', content: finalReply, ts: assistantTs },
+    ],
+    executed.map((a) => ({ ...a, ts: assistantTs })),
+  )
 
-      if (res.ok) {
-        const data = await res.json()
-        const text = data.choices?.[0]?.message?.content
-        if (text) {
-          return NextResponse.json({
-            response: text,
-            source: 'groq',
-            model: 'llama-3.3-70b',
-          })
-        }
-      }
-    } catch (err) {
-      console.error('[ai/chat] Groq error:', err instanceof Error ? err.message : err)
-    }
-  }
-
-  // Fallback: smart response
   return NextResponse.json({
-    response: 'I\'m ready to help run your business. Connect a Groq API key to unlock full AI responses, or ask me about what I can do.',
-    source: 'fallback',
+    response: finalReply,
+    actions: executed,
+    conversationId: conversation.id,
+    activePacks,
+    model: groqResult.model,
+    usage: {
+      prompt_tokens: groqResult.prompt_tokens,
+      completion_tokens: groqResult.completion_tokens,
+      latency_ms: groqResult.latency_ms,
+    },
   })
 }

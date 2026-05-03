@@ -214,6 +214,24 @@ export const BRAIN_REGISTRY: RegistryEntry[] = [
     surface_route: '/dashboard/calendar',
   },
 
+  // ── 0nCore AI Agent Engine — 3-layer prompt assembly + Groq + actions ──
+  // Spec: docs/0ncore-ai-agent-architecture.md. The agent uses its own
+  // 3-layer pattern (RocketOpp K-Layers + Location K-Layers + Trained Llama)
+  // rather than the brain.think/record loop, so the contract enforces the
+  // pattern's load-bearing primitives directly: groqCall + buildSystemPrompt,
+  // never @anthropic-ai/sdk.
+  {
+    slug: 'ai_agent',
+    display_name: '0nCore AI Agent (Jaxx)',
+    category: 'ai',
+    handler_paths: ['app/api/ai/chat/route.ts'],
+    required_imports: ['@/lib/ai/groq', '@/lib/ai/prompt'],
+    prohibited_imports: ['@anthropic-ai/sdk', 'openai'],
+    required_calls: ['groqCall(', 'buildSystemPrompt('],
+    surface_route: '/admin',
+    description: 'Per-location AI agent. 3-layer prompt assembly + Groq + action execution + unlockable prompt packs.',
+  },
+
   // ── Honest 'automation' label — workflow plumbing, AI may run inside steps ──
   {
     slug: 'automations',
