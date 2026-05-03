@@ -1,10 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Sparkles, ArrowRight, Check } from 'lucide-react'
+
+export default function SignupPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0d1117]" />}>
+      <SignupPage />
+    </Suspense>
+  )
+}
 
 /**
  * /signup — public registration.
@@ -19,7 +27,7 @@ import { Sparkles, ArrowRight, Check } from 'lucide-react'
  * provider returns, which runs the SAME provisioning chain. So both flows
  * end identically provisioned regardless of which one the user picks.
  */
-export default function SignupPage() {
+function SignupPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
