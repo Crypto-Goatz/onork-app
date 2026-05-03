@@ -69,6 +69,7 @@ export async function publishCourse(args: {
     console.warn('[course-builder.publish] bulk_import failed:', r.error)
   } catch (err) {
     console.warn('[course-builder.publish] bulk_import threw:', err)
+    lastErrBody = `bulk_import threw: ${err instanceof Error ? err.message : String(err)}`
   }
 
   // ── Attempt 2: per-lesson text ─────────────────────────────────────────
@@ -79,6 +80,7 @@ export async function publishCourse(args: {
     lastErrBody = r.lastResponseBody ?? lastErrBody
   } catch (err) {
     console.warn('[course-builder.publish] per_lesson_text threw:', err)
+    lastErrBody = `per_lesson_text threw: ${err instanceof Error ? err.message : String(err)}` || lastErrBody
   }
 
   // ── Attempt 3: per-lesson video-fallback (description carries content) ─
@@ -89,6 +91,7 @@ export async function publishCourse(args: {
     lastErrBody = r.lastResponseBody ?? lastErrBody
   } catch (err) {
     console.warn('[course-builder.publish] per_lesson_video threw:', err)
+    lastErrBody = `per_lesson_video threw: ${err instanceof Error ? err.message : String(err)}` || lastErrBody
   }
 
   return {

@@ -181,6 +181,9 @@ export async function GET(req: NextRequest) {
     durations.publish_ms = Date.now() - tp
     if (!publish.ok) {
       errors.push(`publish: ${publish.error}`)
+      if (publish.lastResponseBody) {
+        errors.push(`publish-body: ${publish.lastResponseBody.slice(0, 600)}`)
+      }
       report.errors = errors
       report.durations_ms.total_ms = Date.now() - t0
       return NextResponse.json(report, { status: 500 })
