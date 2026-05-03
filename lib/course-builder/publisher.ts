@@ -126,11 +126,15 @@ async function publishViaBulkImport(
     posts: course.lessons.map((lesson) => buildLessonPost(lesson)),
   }
 
+  // contentType MUST be 'video' for bulk-import — text type is rejected on
+  // every location we've tested (RocketOpp + 0nCore both throw 400
+  // "Invalid Post content type" on text). Body lives in description and
+  // renders as markdown.
   const introPost = course.salesPageCopy
     ? {
         title: 'About this course',
         visibility: 'published' as const,
-        contentType: 'text' as const,
+        contentType: 'video' as const,
         description: course.salesPageCopy,
       }
     : null
