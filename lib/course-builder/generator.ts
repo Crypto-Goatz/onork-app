@@ -3,14 +3,19 @@
  *
  * Strategy:
  *   1. generateOutline()         — single Groq call returns structured outline
- *   2. generateLessonsRadial()   — RADIAL BURST: all lessons in parallel via
- *                                   Promise.all. Each one returns content +
- *                                   quiz (if enabled) + resources in a single
- *                                   structured response.
+ *   2. generateLessonsRadial()   — paced-serial lesson generation (one at a
+ *                                   time with a small inter-lesson delay) so
+ *                                   we stay under Groq TPM caps.
  *   3. generateSalesPage()       — final pass; takes the full course context.
  *
- * All calls use llama-3.3-70b-versatile via lib/jaxx/groq (same wrapper Jaxx
- * uses). Responses are JSON; we parse defensively. On parse failure we retry
+ * Model: configurable via COURSE_BUILDER_GROQ_MODEL env (default
+ * `llama-3.1-8b-instant`). The 70b model has the lowest daily-token cap
+ * on the free/on-demand tier (100k/day shared with everything else in
+ * the codebase using Jaxx) — for sustained course generation throughput
+ * the 8b instant model is the right pick. Quality is plenty for course
+ * outlines, lessons, quizzes, and sales-page copy.
+ *
+ * Responses are JSON; we parse defensively. On parse failure we retry
  * once with a stricter prompt before bubbling the error.
  */
 
@@ -23,6 +28,9 @@ import type {
   QuizQuestion,
   LessonResource,
 } from './types'
+
+const COURSE_GROQ_MODEL =
+  process.env.COURSE_BUILDER_GROQ_MODEL || 'llama-3.1-8b-instant'
 
 // ──────────────────────────────────────────────────────────────────────────
 // Outline
@@ -69,6 +77,7 @@ function stripJsonFences(s: string): string {
 
 export async function generateOutline(config: CourseConfig): Promise<CourseOutline> {
   const result = await completion({
+    model: COURSE_GROQ_MODEL,
     systemPrompt: OUTLINE_SYSTEM,
     messages: [{ role: 'user', content: outlineUserPrompt(config) }],
     temperature: 0.5,
@@ -82,6 +91,7 @@ export async function generateOutline(config: CourseConfig): Promise<CourseOutli
   } catch {
     // One retry with a stricter prompt
     const retry = await completion({
+      model: COURSE_GROQ_MODEL,
       systemPrompt: OUTLINE_SYSTEM,
       messages: [
         { role: 'user', content: outlineUserPrompt(config) },
@@ -175,6 +185,7 @@ async function generateLessonOnce(
   lessonIndex: number
 ): Promise<GeneratedLesson> {
   const result = await completion({
+    model: COURSE_GROQ_MODEL,
     systemPrompt: LESSON_SYSTEM,
     messages: [{ role: 'user', content: lessonUserPrompt(config, outline, lessonIndex) }],
     temperature: 0.55,
@@ -194,6 +205,7 @@ async function generateLessonOnce(
     parsed = JSON.parse(raw) as LessonRaw
   } catch {
     const retry = await completion({
+      model: COURSE_GROQ_MODEL,
       systemPrompt: LESSON_SYSTEM,
       messages: [
         { role: 'user', content: lessonUserPrompt(config, outline, lessonIndex) },
@@ -324,6 +336,7 @@ export async function generateSalesPage(course: GeneratedCourse): Promise<string
     .join('\n')
 
   const result = await completion({
+    model: COURSE_GROQ_MODEL,
     systemPrompt: SALES_PAGE_SYSTEM,
     messages: [
       {
