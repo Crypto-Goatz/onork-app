@@ -24,7 +24,7 @@ import type { CourseConfig } from '@/lib/course-builder/types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-export const maxDuration = 120
+export const maxDuration = 300 // course gen + sales page + publish + readback can take 2-3 minutes
 
 const DEFAULT_targetLocationId = 'nphConTwfHcVE1oA0uep'
 
