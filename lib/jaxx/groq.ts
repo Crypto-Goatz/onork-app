@@ -103,21 +103,62 @@ export async function completion(args: CompletionArgs): Promise<CompletionResult
     body.tool_choice = args.toolChoice ?? 'auto'
   }
 
+  // Groq's free/on-demand tiers cap llama-3.3-70b at 12k TPM. When a course
+  // generation issues several lessons in a row, the bucket throttles and
+  // returns 429 with a `retry-after` header (seconds). Honor it. Without
+  // this loop, every paced lesson call still loses the race on the second
+  // request because the bucket is already empty.
+  //
+  // Also retry transient 5xx (502/503/504) twice — those happen sporadically
+  // and a short backoff usually clears them.
   const start = Date.now()
-  const res = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-    cache: 'no-store',
-  })
+  let res: Response
+  let attempts = 0
+  const maxAttempts = 4
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    attempts++
+    res = await fetch(GROQ_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+    })
+
+    if (res.ok) break
+
+    const isRateLimit = res.status === 429
+    const isTransient = res.status === 502 || res.status === 503 || res.status === 504
+    if ((!isRateLimit && !isTransient) || attempts >= maxAttempts) break
+
+    // retry-after may be a number of seconds OR an HTTP date. Groq returns
+    // seconds (sometimes fractional). Cap to a sane ceiling.
+    const ra = res.headers.get('retry-after') || ''
+    let waitMs = 0
+    const asNum = Number(ra)
+    if (Number.isFinite(asNum) && asNum > 0) {
+      waitMs = Math.min(asNum * 1000, 60_000)
+    } else if (ra) {
+      const t = Date.parse(ra)
+      if (!Number.isNaN(t)) waitMs = Math.max(0, Math.min(t - Date.now(), 60_000))
+    }
+    if (waitMs <= 0) waitMs = isRateLimit ? 8_000 : 1_500
+    // exponential backoff jitter for transient, additive for rate-limit
+    if (isTransient) waitMs *= attempts
+    waitMs = Math.min(waitMs, 60_000)
+
+    // Drain the body so the connection can be reused.
+    await res.text().catch(() => '')
+    await new Promise<void>((r) => setTimeout(r, waitMs))
+  }
   const latencyMs = Date.now() - start
 
   if (!res.ok) {
     const errBody = await res.text().catch(() => '')
-    throw new Error(`groq ${res.status}: ${errBody.slice(0, 300)}`)
+    throw new Error(`groq ${res.status} after ${attempts} attempt(s): ${errBody.slice(0, 300)}`)
   }
 
   const data = (await res.json()) as GroqResponse
