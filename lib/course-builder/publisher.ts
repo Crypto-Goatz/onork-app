@@ -186,15 +186,21 @@ async function publishViaBulkImport(
     }
   }
 
-  // The bulk endpoint returns a top-level course id, sometimes nested.
+  // The bulk endpoint returns a course id under one of several shapes
+  // depending on CRM version. Verified shape against location
+  // nphConTwfHcVE1oA0uep + 6MSqx0trfxgLxeHBJE1k 2026-05-02:
+  //   { "message": "Migration for courses started",
+  //     "processingCourses": [{ "id": "...", "title": "...", "url": "..." }] }
   type BulkResp = {
     id?: string
     course?: { id?: string }
     products?: Array<{ id?: string; courseId?: string; categories?: Array<{ posts?: Array<{ id?: string }> }> }>
+    processingCourses?: Array<{ id?: string; title?: string; url?: string }>
     data?: { id?: string }
   }
   const data = (await res.json().catch(() => ({}))) as BulkResp
   const crmCourseId =
+    data.processingCourses?.[0]?.id ??
     data.id ??
     data.course?.id ??
     data.products?.[0]?.id ??
@@ -218,6 +224,9 @@ async function publishViaBulkImport(
     }
   }
 
+  // Capture the public dashboard URL when present — saves a follow-up GET.
+  const dashboardUrl = data.processingCourses?.[0]?.url ?? null
+
   // Best-effort: apply pricing (the importer doesn't accept pricing yet on
   // many locations, so we PATCH after the fact).
   if (priceCents > 0) {
@@ -230,8 +239,10 @@ async function publishViaBulkImport(
     }
   }
 
-  // Best-effort: enrollment URL
-  const enrollmentUrl = await fetchEnrollmentUrl(locationId, crmCourseId)
+  // Prefer the dashboard URL the importer just gave us; only fall back to
+  // a follow-up GET if it's missing (some older locations).
+  const enrollmentUrl =
+    dashboardUrl || (await fetchEnrollmentUrl(locationId, crmCourseId))
 
   return {
     ok: true,
