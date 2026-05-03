@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getVipClient, type VipClient } from '@/lib/vip/clients'
+import { loadVipDashboard } from '@/lib/vip/crm'
 import {
   Activity,
   TrendingUp,
@@ -69,42 +70,48 @@ export default async function VipDashboard({
     }
   }
 
-  // ── V1: mock data with markers ───────────────────────────────────
-  // Real wires noted inline; replace with live queries post-Mother's-Day.
+  // ── Live CRM data + mock fallbacks for non-CRM widgets ──────────
+  // CRM reads are real via the spa-specific PIT. D&R + Stripe/MassageBook
+  // revenue + ad spend stay on placeholder until those wires land post-MD.
+  const live = await loadVipDashboard(client)
+
+  const conversionRate = live.campaign && live.campaign.enrolled > 0
+    ? (live.campaign.purchased / live.campaign.enrolled) * 100
+    : 0
+  const bookingDelta = live.bookingsThisWeek - live.bookingsLastWeek
+  const bookingPct = live.bookingsLastWeek > 0
+    ? Math.round((bookingDelta / live.bookingsLastWeek) * 100)
+    : 0
+
   const mock = {
-    revenueToday: 1247,
-    revenueWeek: 8932,
-    revenueMonth: 24180,
-    bookingsThisWeek: 28,
-    bookingsLastWeek: 19,
     activeCampaign: client.activeCampaigns?.[0],
-    campaign: {
-      enrolled: 142,
-      clicked: 41,
-      purchased: 14,
-      revenue: 2178,
-      conversionRate: 9.86, // purchased / enrolled
-    },
+    revenueToday: 1247,        // ← Stripe + MB email parser (post-MD)
+    revenueWeek: 8932,         // ← same
+    campaignRevenueToday: 2178, // ← MB email parser (post-MD)
     traffic: {
-      qualityScore: 78,
+      qualityScore: 78,        // ← D&R live (post-MD when D&R script is on the spa site)
       sessionsToday: 42,
       botsBlocked: 6,
       grades: { 'A+': 28, A: 22, B: 18, C: 14, D: 8, F: 6, X: 4 },
     },
     adSpend: {
-      total: 412,
+      total: 412,              // ← Google Ads API (post-MD)
       attributed: 1380,
       roas: 3.35,
     },
-    activity: [
-      { type: 'purchase', text: 'Linda Mascia bought $100 gift card', time: '12 min ago' },
-      { type: 'click',    text: 'Tag added: md-clicked-giftcard ($150 tier)', time: '34 min ago' },
-      { type: 'booking',  text: 'New booking — 60-min Swedish, Saturday 11am', time: '1 hr ago' },
-      { type: 'lead',     text: 'New form submission — Mother\'s Day landing', time: '2 hr ago' },
-      { type: 'purchase', text: 'Sarah Knapp bought $50 gift card', time: '3 hr ago' },
-      { type: 'block',    text: 'D&R blocked 2 bot sessions from Facebook ad', time: '4 hr ago' },
-    ],
   }
+
+  const activity = [
+    ...live.recentContacts.slice(0, 6).map((c) => ({
+      type: c.tags?.includes(client.activeCampaigns?.[0]?.purchaseTag || '___')
+        ? ('purchase' as const)
+        : c.tags?.includes(client.activeCampaigns?.[0]?.clickTag || '___')
+          ? ('click' as const)
+          : ('lead' as const),
+      text: contactBlurb(c, client.activeCampaigns?.[0]),
+      time: c.dateUpdated ? timeAgo(c.dateUpdated) : 'recently',
+    })),
+  ]
 
   const b = client.brand
 
@@ -173,42 +180,70 @@ export default async function VipDashboard({
 
       <main className="max-w-[1200px] mx-auto px-6 py-8 space-y-6">
         {/* ── Active campaign banner ─────────────────────────── */}
-        {mock.activeCampaign && (
-          <ActiveCampaignBanner campaign={mock.activeCampaign} stats={mock.campaign} brand={b} />
+        {mock.activeCampaign && live.campaign && (
+          <ActiveCampaignBanner
+            campaign={mock.activeCampaign}
+            stats={{
+              ...live.campaign,
+              revenue: mock.campaignRevenueToday,
+              conversionRate,
+            }}
+            brand={b}
+          />
         )}
 
         {/* ── KPI strip ──────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Kpi
             brand={b}
-            label="Revenue today"
-            value={`$${mock.revenueToday.toLocaleString()}`}
-            sub="MassageBook + gift cards"
-            Icon={DollarSign}
-          />
-          <Kpi
-            brand={b}
-            label="This week"
-            value={`$${mock.revenueWeek.toLocaleString()}`}
-            sub={`+${Math.round(((mock.bookingsThisWeek - mock.bookingsLastWeek) / mock.bookingsLastWeek) * 100)}% vs last`}
-            Icon={TrendingUp}
-            positive
+            label="Total contacts"
+            value={live.totalContacts.toLocaleString()}
+            sub={`${live.totalTags} tags · ${live.totalWorkflows} workflows`}
+            Icon={Users}
           />
           <Kpi
             brand={b}
             label="Bookings this week"
-            value={String(mock.bookingsThisWeek)}
-            sub={`${mock.bookingsThisWeek - mock.bookingsLastWeek} more than last`}
+            value={String(live.bookingsThisWeek)}
+            sub={
+              live.bookingsLastWeek === 0
+                ? `vs ${live.bookingsLastWeek} last week`
+                : `${bookingDelta >= 0 ? '+' : ''}${bookingPct}% vs last week`
+            }
             Icon={Calendar}
+            positive={bookingDelta > 0}
+          />
+          <Kpi
+            brand={b}
+            label="Revenue today"
+            value={`$${mock.revenueToday.toLocaleString()}`}
+            sub="MassageBook + gift cards · sample"
+            Icon={DollarSign}
           />
           <Kpi
             brand={b}
             label="Ad ROAS"
             value={`${mock.adSpend.roas.toFixed(2)}×`}
-            sub={`$${mock.adSpend.total} spend → $${mock.adSpend.attributed} attributed`}
+            sub={`$${mock.adSpend.total} spend · sample`}
             Icon={Activity}
           />
         </div>
+
+        {/* Errors banner — CRM call partial failure */}
+        {live.errors.length > 0 && (
+          <div
+            className="rounded-xl border px-4 py-3 text-xs"
+            style={{
+              background: `${b.accent}10`,
+              borderColor: `${b.accent}40`,
+              color: b.textSecondary,
+            }}
+          >
+            <strong style={{ color: b.accent }}>Heads up:</strong> some CRM
+            queries didn't return cleanly — showing partial data. (
+            {live.errors.map((e) => e.source).join(', ')})
+          </div>
+        )}
 
         {/* ── 2-col content row ──────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -299,17 +334,23 @@ export default async function VipDashboard({
             <h2 className="text-lg font-bold mb-4" style={{ fontFamily: client.fonts?.display }}>
               Recent activity
             </h2>
-            <ul className="space-y-3">
-              {mock.activity.map((a, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm">
-                  <ActivityIcon type={a.type} brand={b} />
-                  <div className="min-w-0 flex-1">
-                    <p style={{ color: b.text }}>{a.text}</p>
-                    <p className="text-[11px] mt-0.5" style={{ color: b.textMuted }}>{a.time}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {activity.length > 0 ? (
+              <ul className="space-y-3">
+                {activity.map((a, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm">
+                    <ActivityIcon type={a.type} brand={b} />
+                    <div className="min-w-0 flex-1">
+                      <p style={{ color: b.text }}>{a.text}</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: b.textMuted }}>{a.time}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm" style={{ color: b.textMuted }}>
+                No recent activity yet.
+              </p>
+            )}
           </div>
         </div>
 
@@ -340,7 +381,7 @@ export default async function VipDashboard({
 
         <p className="text-[11px] text-center pt-6 pb-4" style={{ color: b.textMuted }}>
           <Sparkles className="w-3 h-3 inline mr-1" />
-          V1 dashboard with sample data while the live wires complete after Mother's Day.
+          Live CRM data · revenue + ad-spend wires complete after Mother's Day.
         </p>
       </main>
     </div>
@@ -348,6 +389,39 @@ export default async function VipDashboard({
 }
 
 // ── Helpers ──────────────────────────────────────────────────────
+
+function timeAgo(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime()
+  const m = Math.floor(ms / 60000)
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m} min ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h} hr ago`
+  const d = Math.floor(h / 24)
+  if (d < 30) return `${d} day${d === 1 ? '' : 's'} ago`
+  return new Date(iso).toLocaleDateString()
+}
+
+function contactBlurb(
+  c: { firstName?: string; lastName?: string; email?: string; tags?: string[] },
+  campaign?: VipClient['activeCampaigns'] extends infer T ? T extends Array<infer U> ? U : never : never,
+): string {
+  const name =
+    [c.firstName, c.lastName].filter(Boolean).join(' ').trim() ||
+    c.email ||
+    '(unnamed contact)'
+  const tags = c.tags || []
+  if (campaign && tags.includes(campaign.purchaseTag)) {
+    return `${name} — gift card purchased`
+  }
+  if (campaign && tags.includes(campaign.clickTag)) {
+    return `${name} — clicked the deal`
+  }
+  if (campaign && tags.includes(campaign.enrollTag)) {
+    return `${name} — enrolled in ${campaign.name}`
+  }
+  return `${name}${tags.length ? ` — tagged ${tags.slice(0, 2).join(', ')}` : ''}`
+}
 
 function gradeColor(g: 'A+' | 'A' | 'B' | 'C' | 'D' | 'F' | 'X', b: VipClient['brand']) {
   switch (g) {
