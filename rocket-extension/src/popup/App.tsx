@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Wrench,
   Megaphone,
+  Layers,
   Settings as SettingsIcon,
   Rocket,
 } from "lucide-react";
@@ -21,14 +22,16 @@ import { TriggerLinkManager } from "../components/TriggerLinkManager";
 import { WorkflowList } from "../components/WorkflowList";
 import { CampaignBuilder } from "../components/CampaignBuilder";
 import { Settings } from "../components/Settings";
+import { Builder } from "../builder/Builder";
 import { ToastStack, useToasts } from "../components/Toast";
 
-type Tab = "dashboard" | "actions" | "campaigns" | "settings";
+type Tab = "dashboard" | "actions" | "campaigns" | "builder" | "settings";
 
 const TABS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Home", icon: LayoutDashboard },
   { id: "actions", label: "Actions", icon: Wrench },
   { id: "campaigns", label: "Campaigns", icon: Megaphone },
+  { id: "builder", label: "Builder", icon: Layers },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
@@ -40,6 +43,7 @@ export function App() {
   const [crmDomain, setCrmDomain] = useState<string | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
   const toasts = useToasts();
+  const pushToast = toasts.push;
 
   const refresh = useCallback(async () => {
     const state = await getState();
@@ -87,7 +91,6 @@ export function App() {
     return () => chrome.storage.onChanged.removeListener(onChanged);
   }, [refresh, detectFromActiveTab]);
 
-  // Auto-switch active to detected when detected matches a saved location.
   useEffect(() => {
     if (!detectedId || !activeId) return;
     if (detectedId === activeId) return;
@@ -116,10 +119,10 @@ export function App() {
             <Rocket className="w-4 h-4 text-[#6EE05A]" />
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-[#e6edf3] leading-tight">
+            <div className="text-sm font-semibold text-[#e6edf3] leading-tight tracking-tight">
               RocketOpp
             </div>
-            <div className="text-[10px] text-[#8b949e] leading-tight">
+            <div className="text-[10px] text-[#8b949e] leading-tight font-mono">
               CRM Admin
             </div>
           </div>
@@ -141,10 +144,10 @@ export function App() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium border-b-2 transition-all duration-150 ${
+              className={`flex-1 flex items-center justify-center gap-1 px-1.5 py-2 text-[11px] font-medium border-b-2 transition-all duration-150 ${
                 isActive
                   ? "border-[#6EE05A] text-[#6EE05A]"
-                  : "border-transparent text-[#8b949e] hover:text-[#e6edf3]"
+                  : "border-transparent text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]"
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -169,81 +172,26 @@ export function App() {
           <QuickActions
             location={active}
             onNavigate={(t) => setTab(t)}
-            toast={(v, m) =>
-              v === "success"
-                ? toasts.success(m)
-                : v === "error"
-                  ? toasts.error(m)
-                  : toasts.info(m)
-            }
+            toast={pushToast}
           />
         ) : tab === "actions" ? (
           <div className="space-y-3 animate-fade-up">
             <ContactSearch
               location={active}
               crmDomain={crmDomain}
-              toast={(v, m) =>
-                v === "success"
-                  ? toasts.success(m)
-                  : v === "error"
-                    ? toasts.error(m)
-                    : toasts.info(m)
-              }
+              toast={pushToast}
             />
-            <TagManager
-              location={active}
-              toast={(v, m) =>
-                v === "success"
-                  ? toasts.success(m)
-                  : v === "error"
-                    ? toasts.error(m)
-                    : toasts.info(m)
-              }
-            />
-            <CustomFieldManager
-              location={active}
-              toast={(v, m) =>
-                v === "success"
-                  ? toasts.success(m)
-                  : v === "error"
-                    ? toasts.error(m)
-                    : toasts.info(m)
-              }
-            />
-            <TriggerLinkManager
-              location={active}
-              toast={(v, m) =>
-                v === "success"
-                  ? toasts.success(m)
-                  : v === "error"
-                    ? toasts.error(m)
-                    : toasts.info(m)
-              }
-            />
-            <WorkflowList
-              location={active}
-              toast={(v, m) =>
-                v === "success"
-                  ? toasts.success(m)
-                  : v === "error"
-                    ? toasts.error(m)
-                    : toasts.info(m)
-              }
-            />
+            <TagManager location={active} toast={pushToast} />
+            <CustomFieldManager location={active} toast={pushToast} />
+            <TriggerLinkManager location={active} toast={pushToast} />
+            <WorkflowList location={active} toast={pushToast} />
           </div>
         ) : tab === "campaigns" ? (
           <div className="animate-fade-up">
-            <CampaignBuilder
-              location={active}
-              toast={(v, m) =>
-                v === "success"
-                  ? toasts.success(m)
-                  : v === "error"
-                    ? toasts.error(m)
-                    : toasts.info(m)
-              }
-            />
+            <CampaignBuilder location={active} toast={pushToast} />
           </div>
+        ) : tab === "builder" ? (
+          <Builder location={active} toast={pushToast} />
         ) : (
           <div className="animate-fade-up">
             <Settings
@@ -251,20 +199,14 @@ export function App() {
               activeId={activeId}
               detectedId={detectedId}
               onChange={refresh}
-              toast={(v, m) =>
-                v === "success"
-                  ? toasts.success(m)
-                  : v === "error"
-                    ? toasts.error(m)
-                    : toasts.info(m)
-              }
+              toast={pushToast}
             />
           </div>
         )}
       </main>
 
       <footer className="border-t border-[#30363d] px-3 py-1.5 flex items-center justify-between text-[10px] text-[#8b949e] flex-shrink-0">
-        <span className="font-mono">v1.0.0</span>
+        <span className="font-mono">v1.1.0</span>
         <span>RocketOpp · Internal</span>
       </footer>
     </div>
@@ -279,13 +221,15 @@ function EmptyState({
   onAddNew: () => void;
 }) {
   return (
-    <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5 text-center space-y-3 animate-fade-up">
+    <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5 text-center space-y-3 animate-fade-up hover:border-[#484f58] hover:shadow-lg hover:shadow-black/20 transition-all duration-200">
       <div className="w-10 h-10 rounded-full bg-[#6EE05A]/10 flex items-center justify-center mx-auto">
         <Rocket className="w-5 h-5 text-[#6EE05A]" />
       </div>
       <div>
-        <div className="text-sm font-medium text-[#e6edf3]">No active location</div>
-        <div className="text-xs text-[#8b949e] mt-1">
+        <div className="text-sm font-medium text-[#e6edf3] tracking-tight">
+          No active location
+        </div>
+        <div className="text-xs text-[#8b949e] mt-1 leading-relaxed">
           Add a location with its PIT token to start managing it from here.
         </div>
       </div>

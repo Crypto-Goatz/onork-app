@@ -1,6 +1,6 @@
 {
   "name": "rocket-extension",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "RocketOpp internal admin tool — sits on top of the CRM dashboard for direct API access to any sub-location.",
   "private": true,
   "type": "module",

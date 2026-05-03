@@ -98,10 +98,10 @@ export function QuickActions({
 
   return (
     <div className="space-y-4 animate-fade-up">
-      <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-4">
+      <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-4 hover:border-[#484f58] transition-colors duration-200">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="min-w-0">
-            <div className="text-base font-medium text-[#e6edf3] truncate">
+            <div className="text-base font-medium text-[#e6edf3] tracking-tight truncate">
               {locDetails?.name ?? location.name}
             </div>
             <div className="text-[11px] text-[#8b949e] font-mono truncate">
@@ -186,7 +186,7 @@ function StatCard({
         <div className="h-5 w-8 bg-[#161b22] rounded animate-pulse" />
       ) : (
         <div
-          className={`text-lg font-semibold ${
+          className={`text-lg font-semibold font-mono tracking-tight ${
             isHealth
               ? value === 1
                 ? "text-[#6EE05A]"
@@ -214,10 +214,10 @@ function ActionButton({
   return (
     <button
       onClick={onClick}
-      className="bg-[#161b22] border border-[#30363d] rounded-lg p-3 flex flex-col items-start gap-2 hover:border-[#484f58] hover:bg-[#1c2128] transition-all duration-150 active:scale-[0.98]"
+      className="bg-[#161b22] border border-[#30363d] rounded-lg p-3 flex flex-col items-start gap-2 hover:border-[#484f58] hover:bg-[#1c2128] hover:translate-y-[-1px] hover:shadow-lg hover:shadow-black/20 transition-all duration-200 active:scale-[0.98]"
     >
       <Icon className="w-4 h-4 text-[#6EE05A]" />
-      <span className="text-sm font-medium text-[#e6edf3] text-left">
+      <span className="text-sm font-medium text-[#e6edf3] text-left tracking-tight">
         {label}
       </span>
     </button>

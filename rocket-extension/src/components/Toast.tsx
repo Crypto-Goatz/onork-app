@@ -76,6 +76,7 @@ export function useToasts() {
   return {
     toasts,
     dismiss,
+    push,
     success: (t: string) => push("success", t),
     error: (t: string) => push("error", t),
     info: (t: string) => push("info", t),

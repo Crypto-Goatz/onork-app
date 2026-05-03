@@ -34,7 +34,9 @@
     color: #c9d1d9;
     font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "cv11", "ss01", "ss03";
+    text-rendering: optimizeLegibility;
     overflow: hidden;
   }
 
@@ -48,7 +50,11 @@
     height: 100%;
   }
 
-  /* Scrollbar — quiet, in-theme */
+  /* Default focus ring across the popup so every interactive surface is visible */
+  *:focus-visible {
+    outline: none;
+  }
+
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -64,6 +70,11 @@
     background: #484f58;
   }
 
+  /* Iframe (template preview) keeps its own theme */
+  iframe {
+    background: #0d1117;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -71,5 +82,14 @@
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
+  }
+}
+
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 }

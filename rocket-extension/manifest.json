@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "RocketOpp Admin",
   "short_name": "RocketOpp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Internal RocketOpp admin tool. Direct CRM API access for any sub-location you manage.",
   "action": {
     "default_popup": "src/popup/index.html",

@@ -99,6 +99,29 @@ export type LocationDetails = {
   phone?: string;
   address?: string;
   timezone?: string;
+  website?: string;
+};
+
+export type Funnel = {
+  id: string;
+  name: string;
+  locationId: string;
+  domain?: string;
+};
+
+export type FunnelPage = {
+  id: string;
+  name: string;
+  funnelId: string;
+  locationId: string;
+  url?: string;
+};
+
+export type DeployResult = {
+  pageId?: string;
+  funnelId?: string;
+  url?: string;
+  raw: unknown;
 };
 
 export const crm = {
@@ -230,7 +253,75 @@ export const crm = {
     );
     return res.workflows ?? [];
   },
+
+  async listFunnels(locationId: string): Promise<Funnel[]> {
+    const params = new URLSearchParams({ locationId });
+    const res = await crmFetch<{ funnels?: Funnel[] }>(
+      `/funnels/funnel/list?${params.toString()}`,
+      locationId,
+    );
+    return res.funnels ?? [];
+  },
+
+  async createFunnelPage(
+    locationId: string,
+    payload: {
+      name: string;
+      funnelId: string;
+      html: string;
+      slug?: string;
+    },
+  ): Promise<DeployResult> {
+    const res = await crmFetch<Record<string, unknown>>(
+      `/funnels/page`,
+      locationId,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          locationId,
+          name: payload.name,
+          funnelId: payload.funnelId,
+          slug: payload.slug ?? slugify(payload.name),
+          html: payload.html,
+          customCSS: "",
+          customJS: "",
+        }),
+      },
+    );
+    const page = (res.page ?? res) as Record<string, unknown> | undefined;
+    return {
+      pageId: typeof page?.id === "string" ? page.id : undefined,
+      funnelId: payload.funnelId,
+      url:
+        typeof page?.url === "string"
+          ? page.url
+          : typeof page?.previewUrl === "string"
+            ? page.previewUrl
+            : undefined,
+      raw: res,
+    };
+  },
+
+  /**
+   * Pushes a custom CSS string into the location's white-label / sites
+   * settings. Endpoint shape varies between CRM tenants — this writes to
+   * the location's customCss field on the location record.
+   */
+  async applyCustomCss(locationId: string, css: string): Promise<void> {
+    await crmFetch<unknown>(`/locations/${locationId}`, locationId, {
+      method: "PUT",
+      body: JSON.stringify({ customCss: css }),
+    });
+  },
 };
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 60);
+}
 
 export function openContactInCrm(
   baseDomain: string,
