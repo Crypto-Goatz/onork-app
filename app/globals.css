@@ -189,6 +189,13 @@
 .animate-aurora-3 { animation: aurora-3 30s ease-in-out infinite; animation-delay: -13s; will-change: transform; }
 .animate-conic-spin { animation: conic-spin 60s linear infinite; will-change: transform; }
 
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-aurora-1, .animate-aurora-2, .animate-aurora-3, .animate-conic-spin {
     animation: none;
