@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
   ArrowRight,
-  Sparkles,
   Shield,
   Zap,
   Plug,
@@ -148,7 +147,6 @@ export default function HomePage() {
         }}
       />
 
-      <Nav />
       <Hero />
       <StackStrip />
       <Pillars />
@@ -162,38 +160,6 @@ export default function HomePage() {
 
       <SiteFooter />
     </main>
-  )
-}
-
-// ── Nav ────────────────────────────────────────────────────────
-
-function Nav() {
-  return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-black/60 border-b border-white/5">
-      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#6EE05A] to-[#00d4ff] flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5 text-black" />
-          </span>
-          <span className="font-semibold text-white tracking-tight">0nCore</span>
-        </Link>
-        <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-400">
-          <Link href="#pillars" className="hover:text-white transition-colors">Platform</Link>
-          <Link href="#how" className="hover:text-white transition-colors">How it works</Link>
-          <Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link>
-          <Link href="#faq" className="hover:text-white transition-colors">FAQ</Link>
-        </nav>
-        <div className="flex items-center gap-2">
-          <Link href="/login" className="hidden sm:inline-flex text-sm text-zinc-300 hover:text-white px-3 py-1.5 transition-colors">
-            Sign in
-          </Link>
-          <Link href="/signup" className="inline-flex items-center gap-1.5 text-sm font-semibold bg-[#6EE05A] text-black px-3.5 py-1.5 rounded-lg hover:brightness-110 transition-all">
-            Start free
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </div>
-    </header>
   )
 }
 
