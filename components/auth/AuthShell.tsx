@@ -17,12 +17,26 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
           <div className="absolute -bottom-40 right-1/4 h-60 w-60 rounded-full bg-teal/10 blur-3xl" />
         </div>
 
-        <Link href="/" className="relative z-10 mb-8 flex items-center gap-2 group">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-teal">
-            <span className="text-lg font-bold text-bg-primary">0n</span>
-          </span>
-          <span className="text-2xl font-bold text-white">
-            <span className="text-accent">0n</span>Core
+        <Link
+          href="/"
+          aria-label="0nCore"
+          className="relative z-10 mb-8 flex items-center justify-center"
+        >
+          <span className="relative flex h-16 w-44 items-center justify-center">
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent/40 animate-logo-ring"
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent animate-logo-dot"
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/0ncore-logo.svg"
+              alt="0nCore"
+              className="relative h-10 w-auto object-contain animate-logo-entrance"
+            />
           </span>
         </Link>
 
