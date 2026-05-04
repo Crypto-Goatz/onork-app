@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import {
-  Sparkles, Loader2, Send, Trash2, ExternalLink, Brain, FileText, GitBranch,
-  Network, Workflow, MessageSquare, AlertCircle,
+  Sparkles, Loader2, Send, Trash2, Brain, FileText, GitBranch,
+  Network, Workflow, MessageSquare, AlertCircle, ArrowUpRight,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -12,12 +13,21 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 
+const MermaidView = dynamic(
+  () => import('@/components/diagram/MermaidView').then((m) => m.MermaidView),
+  { ssr: false, loading: () => <div className="text-xs text-white/40">Loading renderer…</div> },
+)
+
+const ReactMarkdown = dynamic(() => import('react-markdown'), { ssr: false })
+
 interface Note {
   id: string
   title: string
   body: string
   artifact_type: 'note' | 'flowchart' | 'mindmap' | 'diagram' | 'doc'
   artifact_url: string | null
+  mermaid: string | null
+  markdown: string | null
   tags: string[]
   brain_decision: { tool: string; reasoning: string; confidence: number } | null
   feedback: string | null
@@ -75,7 +85,7 @@ export default function NotesPage() {
       if (!res.ok) return
       setBrainView(json)
     } catch {
-      // brain panel is optional — silent fail
+      /* optional */
     }
   }
 
@@ -99,13 +109,6 @@ export default function NotesPage() {
         return
       }
 
-      if (json.output?.needs_connection) {
-        toast.error(json.output.message, {
-          action: { label: 'Connect', onClick: () => { window.location.href = json.output.connect_url } },
-        })
-        return
-      }
-
       if (json.success) {
         const conf = json.decision?.confidence ?? 0
         toast.success(`${describeTool(json.decision.tool)} (${conf}% confident)`, {
@@ -115,7 +118,7 @@ export default function NotesPage() {
         setPendingQuestion(null)
         await Promise.all([loadNotes(), loadBrain()])
       } else {
-        toast.error(json.output?.error ?? 'Action failed')
+        toast.error((json.output?.error as string) ?? 'Action failed')
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'request failed')
@@ -124,17 +127,17 @@ export default function NotesPage() {
     }
   }
 
-  async function sendFeedback(_outcomeId: string, feedback: 'accepted' | 'rejected' | 'edited') {
+  async function sendFeedback(outcomeId: string, feedback: 'accepted' | 'rejected' | 'edited') {
     try {
       await fetch('/api/notes/think', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input: 'noop', feedback, previous_outcome_id: _outcomeId }),
+        body: JSON.stringify({ input: 'noop', feedback, previous_outcome_id: outcomeId }),
       })
       await loadBrain()
       toast.success(`Feedback: ${feedback}`)
     } catch {
-      // silent
+      /* silent */
     }
   }
 
@@ -164,11 +167,11 @@ export default function NotesPage() {
           <Sparkles className="h-6 w-6 text-[var(--accent)]" />
           Notes
           <Badge variant="outline" className="ml-1 text-xs">
-            AI-First · Self-Learning
+            AI-First · Self-Learning · Native Render
           </Badge>
         </h1>
         <p className="mt-1 text-sm text-white/60">
-          Drop in any thought. The brain decides whether it becomes a flowchart, mind map, doc, or just a tagged note — and gets better at it the more you use it.
+          Drop in any thought. The brain decides whether it becomes a flowchart, mind map, doc, or just a tagged note — rendered inline, right here. Diagrams can be turned into a real automation in one click.
         </p>
       </div>
 
@@ -230,9 +233,10 @@ export default function NotesPage() {
 
 function describeTool(tool: string): string {
   const map: Record<string, string> = {
-    'whimsical.create_from_text': 'Created a flowchart',
-    'whimsical.create_from_mermaid': 'Rendered a diagram',
-    'whimsical.create_doc': 'Wrote a doc',
+    create_flowchart: 'Created a flowchart',
+    create_mindmap: 'Created a mind map',
+    create_diagram: 'Rendered a diagram',
+    create_doc: 'Wrote a doc',
     store_note: 'Saved as note',
     ask_clarification: 'Need more info',
   }
@@ -247,7 +251,12 @@ function ArtifactIcon({ type }: { type: string }) {
   return <FileText className="h-4 w-4" />
 }
 
+const DIAGRAM_TYPES = new Set(['flowchart', 'mindmap', 'diagram'])
+
 function NoteCard({ note, onDelete }: { note: Note; onDelete: () => void }) {
+  const isDiagram = DIAGRAM_TYPES.has(note.artifact_type)
+  const isDoc = note.artifact_type === 'doc'
+
   return (
     <Card className="p-4">
       <div className="flex items-start justify-between gap-3">
@@ -257,9 +266,8 @@ function NoteCard({ note, onDelete }: { note: Note; onDelete: () => void }) {
             <h3 className="truncate font-medium">{note.title}</h3>
             <Badge variant="outline" className="text-[10px] uppercase">{note.artifact_type}</Badge>
           </div>
-          <p className="mt-1 line-clamp-2 text-sm text-white/60">{note.body}</p>
           {note.brain_decision && (
-            <p className="mt-2 text-xs italic text-white/40">
+            <p className="mt-1 text-xs italic text-white/40">
               Brain: {note.brain_decision.reasoning} · {note.brain_decision.confidence}% confident
             </p>
           )}
@@ -272,10 +280,14 @@ function NoteCard({ note, onDelete }: { note: Note; onDelete: () => void }) {
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          {note.artifact_url && (
-            <a href={note.artifact_url} target="_blank" rel="noreferrer">
-              <Button variant="outline" size="sm" title="Open in Whimsical">
-                <ExternalLink className="h-4 w-4" />
+          {isDiagram && note.mermaid && (
+            <a
+              href={`/dashboard/automations/import?from_note=${note.id}`}
+              title="Turn into automation"
+            >
+              <Button variant="outline" size="sm">
+                <ArrowUpRight className="mr-1 h-3.5 w-3.5" />
+                Automate
               </Button>
             </a>
           )}
@@ -284,6 +296,22 @@ function NoteCard({ note, onDelete }: { note: Note; onDelete: () => void }) {
           </Button>
         </div>
       </div>
+
+      {isDiagram && note.mermaid && (
+        <div className="mt-4">
+          <MermaidView source={note.mermaid} />
+        </div>
+      )}
+
+      {isDoc && note.markdown && (
+        <div className="prose prose-invert mt-4 max-w-none rounded-lg border border-border/50 bg-bg-primary/40 p-5 text-sm">
+          <ReactMarkdown>{note.markdown}</ReactMarkdown>
+        </div>
+      )}
+
+      {note.artifact_type === 'note' && note.body && (
+        <p className="mt-3 line-clamp-3 text-sm text-white/70 whitespace-pre-wrap">{note.body}</p>
+      )}
     </Card>
   )
 }

@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   let q = supabase
     .from('notes')
-    .select('id, title, body, artifact_type, artifact_url, tags, brain_decision, feedback, created_at')
+    .select('id, title, body, artifact_type, artifact_url, mermaid, markdown, tags, brain_decision, feedback, created_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(limit)

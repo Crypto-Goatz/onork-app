@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Loader2,
   Upload,
@@ -14,6 +15,7 @@ import {
   Power,
   Copy,
   Check,
+  Wand2,
 } from 'lucide-react'
 
 const EXAMPLE_DOT_ON = {
@@ -149,11 +151,62 @@ interface ApiResponse {
   swap_notes?: string[]
 }
 
-export default function AutomationImportPage() {
+export default function AutomationImportPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-core-bg" />}>
+      <AutomationImportPage />
+    </Suspense>
+  )
+}
+
+function AutomationImportPage() {
+  const searchParams = useSearchParams()
+  const fromNoteId = searchParams.get('from_note')
+
   const [raw, setRaw] = useState(JSON.stringify(EXAMPLE_DOT_ON, null, 2))
   const [busy, setBusy] = useState<'idle' | 'preview' | 'save'>('idle')
   const [result, setResult] = useState<ApiResponse | null>(null)
   const [copied, setCopied] = useState(false)
+  const [convertingNote, setConvertingNote] = useState(false)
+  const [noteSource, setNoteSource] = useState<{ title: string; mermaid: string } | null>(null)
+  const [convertError, setConvertError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!fromNoteId) return
+    let cancelled = false
+
+    async function bridge() {
+      setConvertingNote(true)
+      setConvertError(null)
+      try {
+        const res = await fetch(`/api/notes/list`)
+        const json = await res.json()
+        const note = (json.notes ?? []).find((n: { id: string }) => n.id === fromNoteId)
+        if (!note?.mermaid) throw new Error('Note has no mermaid diagram to convert')
+        if (cancelled) return
+        setNoteSource({ title: note.title, mermaid: note.mermaid })
+
+        const conv = await fetch('/api/automations/from-mermaid', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mermaid: note.mermaid, title: note.title }),
+        })
+        const cdata = await conv.json()
+        if (!conv.ok) throw new Error(cdata?.error || 'conversion failed')
+        if (cancelled) return
+        setRaw(JSON.stringify(cdata.workflow, null, 2))
+      } catch (e) {
+        if (!cancelled) setConvertError(e instanceof Error ? e.message : 'conversion failed')
+      } finally {
+        if (!cancelled) setConvertingNote(false)
+      }
+    }
+
+    void bridge()
+    return () => {
+      cancelled = true
+    }
+  }, [fromNoteId])
 
   function loadExample() {
     setRaw(JSON.stringify(EXAMPLE_DOT_ON, null, 2))
@@ -222,6 +275,38 @@ export default function AutomationImportPage() {
             Load CRM Stack Scan example
           </button>
         </div>
+
+        {fromNoteId && (
+          <div className="rounded-lg border border-core-cyan/30 bg-core-cyan/5 p-4 text-sm">
+            <div className="flex items-start gap-3">
+              <Wand2 className="mt-0.5 h-4 w-4 shrink-0 text-core-cyan" />
+              <div className="min-w-0 flex-1">
+                {convertingNote && (
+                  <p className="text-core-text">
+                    <span className="font-semibold">Converting your diagram…</span>{' '}
+                    <span className="text-core-text-dim">
+                      AI is turning the Mermaid flowchart into a 0n-workflow draft. The editor below will fill in a moment.
+                    </span>
+                  </p>
+                )}
+                {!convertingNote && noteSource && !convertError && (
+                  <p className="text-core-text">
+                    <span className="font-semibold">Source:</span>{' '}
+                    <span className="text-core-text-dim">
+                      Mermaid diagram from note &quot;{noteSource.title}&quot;. Review the JSON below and hit{' '}
+                      <span className="font-mono text-core-cyan">Resolve preview</span> — you can edit anything.
+                    </span>
+                  </p>
+                )}
+                {convertError && (
+                  <p className="text-red-300">
+                    <span className="font-semibold">Conversion failed:</span> {convertError}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* ── Input editor ─────────────────────────────────────────── */}

@@ -45,14 +45,14 @@ export const BRAIN_REGISTRY: RegistryEntry[] = [
   // ── AI category — must use lib/brain ───────────────────────────────
   {
     slug: 'notes',
-    display_name: 'Notes (Whimsical)',
+    display_name: 'Notes',
     category: 'ai',
     handler_paths: ['app/api/notes/think/route.ts'],
     required_imports: ['@/lib/brain'],
     prohibited_imports: ['@anthropic-ai/sdk'],
     required_calls: ['think(', 'record('],
     surface_route: '/dashboard/notes',
-    description: 'Drop any thought — brain decides if it becomes a flowchart, mind map, doc, or tagged note.',
+    description: 'Drop any thought — brain renders it inline as a flowchart, mind map, diagram, doc, or tagged note. No third-party tools.',
   },
 
   // ── AI surfaces — all route through /api/<slug>/think (handleThink helper) ──
