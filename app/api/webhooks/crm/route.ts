@@ -1,170 +1,91 @@
-// POST /api/webhooks/crm — Handles all inbound CRM marketplace app webhooks
-// Events: ContactCreate, ContactUpdate, ContactDelete, AppointmentCreate,
-// AppointmentUpdate, OpportunityCreate, OpportunityStatusUpdate,
-// ConversationUnreadUpdate, InvoiceCreate, NoteCreate, CampaignStatusUpdate
+/**
+ * POST /api/webhooks/crm
+ *
+ * Hard rule: NOTHING from a CRM customer's internal workflow should ever cost
+ * us GB-Hours. If it's not on the HANDLED whitelist, we 200 it in <50ms with
+ * no DB write, no fan-out, no logging beyond a counter — the receiver becomes
+ * a thin null-router for everything we don't actively process.
+ *
+ * Why this exists:
+ *   May 4: spa Mother's Day workflow tagged 3,412 contacts. Every tag-add
+ *   fired a webhook to us (because the 0nCore marketplace app subscribed to
+ *   contact.tag.added in the GHL Dev Portal). Our handler hung on a fan-out
+ *   call → 504 → CRM retried → 5x amplification → ~278 GB-Hrs burned.
+ *   Mike's hard rule afterwards: "if it's failing, we cannot be getting
+ *   drilled with charges. Ever."
+ *
+ *   Subscription-side fix: trim the marketplace app's webhook events in the
+ *   GHL Dev Portal so we don't even receive these. Belt-and-suspenders here:
+ *   even if a future app accidentally subscribes to 50 events, this whitelist
+ *   caps the cost.
+ *
+ * To enable an event: add it to HANDLED + write the actual handler that
+ * dequeues from webhook_events_queue. No one-liners — explicit registration.
+ */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { executeApp, ExecutionContext } from '@/lib/0n-app/executor'
-import { OnAppManifest } from '@/lib/0n-app/parser'
 
-const supabase = createClient(
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const maxDuration = 5
+
+/**
+ * The ONLY events we accept inbound. Anything else gets a fast 200 + drop.
+ *
+ * As of 2026-05-05 this is intentionally empty — no inbound events feed any
+ * production feature in onork-app today. The /vip/spa dashboard pulls live
+ * from CRM via PIT (outbound), Stripe webhooks go to /api/webhooks/stripe,
+ * and the 0nCore add-on framework's marketplace fan-out is parked.
+ *
+ * Add events here ONLY when:
+ *   1. There's a concrete handler in the drain cron that does something with it
+ *   2. The event has been added to the GHL Dev Portal app's webhook subscription
+ *   3. We've confirmed the new event volume doesn't blow GB-Hrs at scale
+ */
+const HANDLED: ReadonlySet<string> = new Set<string>([
+  // Intentionally empty — no inbound CRM webhooks are wired to anything yet.
+  // When you wire one, add the EXACT eventType string here. e.g.:
+  //   'AppointmentCreate',
+  //   'OpportunityStatusUpdate',
+])
+
+const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
 
-const EVENT_MAP: Record<string, string> = {
-  'ContactCreate': 'contact.created',
-  'ContactUpdate': 'contact.updated',
-  'ContactDelete': 'contact.deleted',
-  'AppointmentCreate': 'appointment.created',
-  'AppointmentUpdate': 'appointment.updated',
-  'OpportunityCreate': 'opportunity.created',
-  'OpportunityStatusUpdate': 'opportunity.status_updated',
-  'InvoiceCreate': 'invoice.created',
-  'NoteCreate': 'note.created',
-  'ConversationUnreadUpdate': 'conversation.unread',
-  'CampaignStatusUpdate': 'campaign.status_updated',
-}
-
-async function fanOutToMarketplaceApps(
-  rawEventType: string,
-  locationId: string,
-  payload: Record<string, unknown>,
-) {
-  const normalizedEvent = EVENT_MAP[rawEventType] || rawEventType.toLowerCase()
-
-  const { data: triggers } = await supabase
-    .from('custom_triggers')
-    .select('id, user_id, config')
-    .eq('trigger_type', 'crm_event')
-    .eq('enabled', true)
-
-  if (!triggers || triggers.length === 0) return { fan_out_count: 0, results: [] }
-
-  const matches = triggers.filter(t => {
-    const cfg = (t.config as Record<string, unknown>) || {}
-    return cfg.event === normalizedEvent || cfg.event === rawEventType
-  })
-
-  const results: { installation_id: string; app_slug: string; status: string; error?: string }[] = []
-
-  for (const t of matches) {
-    const cfg = (t.config as Record<string, unknown>) || {}
-    const installationId = cfg.installation_id as string | undefined
-    const appSlug = (cfg.app_slug as string) || 'unknown'
-    if (!installationId) continue
-
-    try {
-      const { data: install } = await supabase
-        .from('user_installed_apps')
-        .select('id, user_id, status, config_overrides, marketplace_apps(slug, app_config)')
-        .eq('id', installationId)
-        .single()
-
-      if (!install || install.status !== 'active') {
-        results.push({ installation_id: installationId, app_slug: appSlug, status: 'skipped' })
-        continue
-      }
-
-      const rawApp = install.marketplace_apps as unknown
-      const app = (Array.isArray(rawApp) ? rawApp[0] : rawApp) as { slug: string; app_config: OnAppManifest } | null
-      if (!app) continue
-
-      const ctx: ExecutionContext = {
-        userId: install.user_id,
-        installationId: install.id,
-        appSlug: app.slug,
-        trigger: { source: 'crm_webhook', event: normalizedEvent, location_id: locationId, ...payload },
-        outputs: {},
-        variables: {},
-        config: (install.config_overrides as Record<string, unknown>) || {},
-      }
-
-      const exec = await executeApp(app.app_config, ctx)
-      results.push({
-        installation_id: install.id,
-        app_slug: app.slug,
-        status: exec.ok ? 'success' : 'failed',
-      })
-    } catch (err) {
-      results.push({
-        installation_id: installationId,
-        app_slug: appSlug,
-        status: 'error',
-        error: err instanceof Error ? err.message : String(err),
-      })
-    }
+export async function POST(req: NextRequest) {
+  let body: Record<string, unknown> = {}
+  try {
+    body = await req.json()
+  } catch {
+    // Malformed → accept-and-drop. The CRM should not retry on a 200.
+    return NextResponse.json({ received: true, dropped: true, reason: 'invalid_json' })
   }
 
-  return { fan_out_count: matches.length, results }
-}
+  const eventType = String(body.type || body.event || body.webhookEvent || 'unknown')
 
-export async function POST(req: NextRequest) {
+  // ── Whitelist gate ────────────────────────────────────────────────
+  // If the event isn't actively wired, return 200 immediately. No DB write.
+  // No log. The function exits in <50ms. CRM sees success and never retries.
+  if (!HANDLED.has(eventType)) {
+    return NextResponse.json({ received: true, dropped: true, event: eventType })
+  }
+
+  // ── Below here only runs for events we explicitly opted into ─────
+  const locationId = String(body.locationId || body.location_id || '')
+
   try {
-    const body = await req.json()
-    const eventType = body.type || body.event || body.webhookEvent || 'unknown'
-    const locationId = body.locationId || body.location_id || ''
-
-    // Log every webhook event
-    try {
-      await supabase.from('dashboard_notifications').insert({
-        type: 'info',
-        title: `CRM Event: ${eventType}`,
-        message: `Location: ${locationId}. ${JSON.stringify(body).slice(0, 200)}`,
-        metadata: { event_type: eventType, location_id: locationId, raw: body },
-      })
-    } catch {}
-
-    // Handle specific events
-    switch (eventType) {
-      case 'ContactCreate':
-      case 'ContactUpdate':
-      case 'ContactDelete': {
-        // Could sync to local DB or trigger automations
-        console.log(`[crm-webhook] ${eventType}: ${body.id || body.contactId || 'unknown'}`)
-        break
-      }
-
-      case 'AppointmentCreate':
-      case 'AppointmentUpdate': {
-        console.log(`[crm-webhook] ${eventType}: ${body.id || 'unknown'}`)
-        break
-      }
-
-      case 'OpportunityCreate':
-      case 'OpportunityStatusUpdate': {
-        console.log(`[crm-webhook] ${eventType}: ${body.id || 'unknown'} status=${body.status || ''}`)
-        break
-      }
-
-      case 'ConversationUnreadUpdate': {
-        console.log(`[crm-webhook] Unread conversation: ${body.conversationId || body.id || 'unknown'}`)
-        break
-      }
-
-      case 'InvoiceCreate': {
-        console.log(`[crm-webhook] Invoice created: ${body.id || 'unknown'}`)
-        break
-      }
-
-      default:
-        console.log(`[crm-webhook] Unhandled event: ${eventType}`)
-    }
-
-    // Fan out to any installed marketplace apps subscribed to this event
-    const fanOut = await fanOutToMarketplaceApps(eventType, locationId, body).catch(err => {
-      console.error('[crm-webhook] Fan-out failed:', err)
-      return { fan_out_count: 0, results: [] }
-    })
-
-    return NextResponse.json({
-      received: true,
-      event: eventType,
-      marketplace_fan_out: fanOut,
+    await admin.from('webhook_events_queue').insert({
+      source: 'crm',
+      event_type: eventType,
+      location_id: locationId || null,
+      payload: body,
     })
   } catch (err) {
-    console.error('[crm-webhook] Error:', err)
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
+    console.error('[crm-webhook] enqueue failed:', err instanceof Error ? err.message : err)
   }
+
+  return NextResponse.json({ received: true, queued: true, event: eventType })
 }
