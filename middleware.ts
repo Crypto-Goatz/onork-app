@@ -101,13 +101,16 @@ export async function middleware(request: NextRequest) {
     return target
   }
 
-  // Protected routes — redirect to login if not authenticated
+  // Protected routes — redirect to login if not authenticated.
+  // /vip/* is in here because each VIP dashboard renders live customer data
+  // (CRM contacts, appointment lists, revenue) — must NEVER fail open.
   if (
     !user &&
     (request.nextUrl.pathname.startsWith('/dashboard')
       || request.nextUrl.pathname.startsWith('/console')
       || request.nextUrl.pathname.startsWith('/canvas')
-      || request.nextUrl.pathname.startsWith('/welcome'))
+      || request.nextUrl.pathname.startsWith('/welcome')
+      || request.nextUrl.pathname.startsWith('/vip'))
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -147,6 +150,7 @@ export const config = {
     '/console/:path*',
     '/canvas/:path*',
     '/welcome/:path*',
+    '/vip/:path*',
     '/login',
     '/signup',
     '/hippa',

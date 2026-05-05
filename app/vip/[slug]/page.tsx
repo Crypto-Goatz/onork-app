@@ -21,6 +21,24 @@ import {
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+// VIP dashboards render live customer CRM data — must never be indexed,
+// cached by archive.org, or surfaced in search. Layered with the
+// X-Robots-Tag header set in next.config + the /vip disallow in robots.ts.
+export const metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      'max-snippet': -1,
+      'max-image-preview': 'none' as const,
+    },
+  },
+}
+
 interface Params {
   slug: string
 }
