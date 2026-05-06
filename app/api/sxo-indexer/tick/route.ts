@@ -10,9 +10,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdmin, runDomainSubmission } from '@/lib/sxo-indexer'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+export const maxDuration = 30
 
-const BATCH_SIZE = 25
+const BATCH_SIZE = 5
+const PER_DOMAIN_TIMEOUT_MS = 8_000
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`timeout ${ms}ms`)), ms)
+    p.then((v) => { clearTimeout(t); resolve(v) }).catch((e) => { clearTimeout(t); reject(e) })
+  })
+}
 
 export async function GET(req: NextRequest) {
   // Auth: Vercel cron header OR Bearer CRON_SECRET

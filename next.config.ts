@@ -23,6 +23,18 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Detect & Refine embed dashboards — explicitly designed to be iframed
+        // by customers anywhere (their wp-admin, GHL pages, agency portals,
+        // Notion docs, etc). frame-ancestors * is correct here — the data
+        // shown is per-site_id which the customer already has on the calling
+        // page anyway, so embedding adds no privacy risk.
+        source: '/embed/dr/:path*',
+        headers: [
+          { key: 'Content-Security-Policy', value: 'frame-ancestors *' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
+        ],
+      },
     ];
   },
 };

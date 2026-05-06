@@ -33,7 +33,11 @@ export function GroqBanner() {
 
   // Don't render on the connect page itself or on focused app surfaces
   const isConnectPage = pathname?.startsWith('/dashboard/settings/groq')
-  const isExcluded = pathname?.startsWith('/admin') || pathname?.startsWith('/welcome')
+  const isExcluded =
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/welcome') ||
+    pathname?.startsWith('/embed') ||
+    pathname?.startsWith('/vip')
 
   useEffect(() => {
     let cancelled = false

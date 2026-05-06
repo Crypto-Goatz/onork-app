@@ -16,6 +16,8 @@ const EXCLUDED_PREFIXES = [
   '/install',
   '/0nexec-demo',
   '/admin',
+  '/embed', // iframe-embed pages — host provides chrome
+  '/vip',   // VIP dashboards — branded per-client
 ]
 
 // Routes with their own nav (login/signup have custom designs)
