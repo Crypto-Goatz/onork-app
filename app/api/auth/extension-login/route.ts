@@ -18,7 +18,43 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { email, password, token } = body
+
+  // Pull token from anywhere it might land — old extension versions, copy-
+  // paste mishaps, header-style auth. If anything looks like a 0n_ token,
+  // treat it as one. This is forward-compat protection against the v3.1.0
+  // bug where the old background.js shipped { email, password } from a
+  // password-typed input that contained a 0n_ token (Desktop unpacked
+  // extension that bit Mike on 2026-05-05).
+  const authHeader = req.headers.get('authorization') || ''
+  const headerBearer = authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : ''
+
+  const candidates = [
+    body?.token,
+    body?.access_token,
+    body?.api_key,
+    body?.password,
+    body?.email,
+    headerBearer,
+  ]
+  const tokenFromAny = candidates.find(
+    (v) => typeof v === 'string' && v.trim().startsWith('0n_'),
+  ) as string | undefined
+
+  const token: string | undefined =
+    (typeof body?.token === 'string' && body.token.startsWith('0n_')
+      ? body.token
+      : tokenFromAny)
+
+  const email: string | undefined =
+    typeof body?.email === 'string' && !body.email.startsWith('0n_')
+      ? body.email
+      : undefined
+  const password: string | undefined =
+    typeof body?.password === 'string' && !body.password.startsWith('0n_')
+      ? body.password
+      : undefined
 
   // Method 1: 0n_ token authentication (paste token)
   if (token && token.startsWith('0n_')) {
