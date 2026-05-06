@@ -399,6 +399,160 @@ ucp_signals                 -- domain, signal_type, value, ttl_seconds
 
 - **Audit a new domain:** `docs/Audit-VerifiedSXO-JaxxAI-CryptoGoatz.md` is
   the canonical example.
+- **AEO implementation reference:** `docs/AEO-Implementation.md` — the 10
+  AEO dimensions, the dual-loop adaptive engine, the database schema, the
+  daily cron flow.
 - **Live rules:** `https://www.0ncore.com/api/dispatch/rules`
 - **Live ecosystem:** `https://www.0ncore.com/api/dispatch/ecosystem`
 - **Canonical playbook:** `0n-dispatch/specs/sxo-cro9-playbook.md`
+
+---
+
+# Appendix A — SXO + AEO Marriage (added 2026-05-06)
+
+The 6 SXO Pillars table (above) treats AEO as one of six dimensions. As of
+2026-05-06, AEO is no longer a single dimension — it's a **second adaptive
+scoring axis** that runs alongside SXO. Same engine, two loops, one brief.
+
+## The two loops
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│  Daily cron — /api/cron/blog-seo                                       │
+│                                                                        │
+│  ┌─────────────────────┐         ┌─────────────────────────────────┐  │
+│  │  SXO loop           │         │  AEO loop                        │  │
+│  │                     │         │                                  │  │
+│  │  Search Console →   │         │  cro9_events →                   │  │
+│  │  page metrics →     │         │  engagement deltas →             │  │
+│  │  scored pages →     │         │  citation outcomes (Phase 3) →   │  │
+│  │  seo_weights        │         │  aeo_weights                     │  │
+│  │  (5 dimensions)     │         │  (10 dimensions)                 │  │
+│  └──────────┬──────────┘         └──────────┬──────────────────────┘  │
+│             │                               │                          │
+│             └────────────┬──────────────────┘                          │
+│                          ▼                                             │
+│             ┌──────────────────────────┐                               │
+│             │  Combined ContentBrief   │                               │
+│             │  (SXO + AEO requirements) │                               │
+│             └────────────┬─────────────┘                               │
+│                          ▼                                             │
+│             ┌──────────────────────────┐                               │
+│             │  Blog generator           │                               │
+│             │  (Groq, AEO-aware prompt) │                               │
+│             └────────────┬─────────────┘                               │
+│                          ▼                                             │
+│             ┌──────────────────────────┐                               │
+│             │  Score + persist          │                               │
+│             │  blog_aeo_scores +        │                               │
+│             │  publish top, draft rest  │                               │
+│             └──────────────────────────┘                               │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+Each loop adapts independently. Together they answer:
+- **SXO loop:** *"will this page surface for the query?"*
+- **AEO loop:** *"once it surfaces, will an AI engine cite it?"*
+
+## The 10 AEO dimensions
+
+| # | Dimension | Default weight | Detector | Why |
+|---|-----------|----------------|----------|-----|
+| 1 | **BLUF** | 0.18 | First non-heading paragraph is 1-3 sentences, no fluff phrases, contains an answer-shaped verb cluster | Most-cited structure across ChatGPT/Claude/Perplexity Q1 2026 |
+| 2 | **Definition block** | 0.14 | Bolded sentence within first 200 words matching `**X is/are/means Y.**` | "What is X?" extraction target |
+| 3 | **Procedure** | 0.12 | Numbered list of ≥3 items, ≥60% start with imperative verbs (Click/Select/Run/etc.) | HowTo cite signal |
+| 4 | **Comparison table** | 0.10 | Markdown table ≥3 rows × ≥3 cols, includes "Best for"/"When to choose" column | "X vs Y" answer extraction |
+| 5 | **FAQ block** | 0.10 | `## FAQ` / `## Frequently Asked` heading + 5-7 `### Q:` items | Voice-search Q/A direct match |
+| 6 | **Author E-E-A-T** | 0.08 | Author byline + credential phrase (years/certified/PhD/MD/CEO) | Trust signal Google AI Overview cites |
+| 7 | **Freshness** | 0.08 | Inline "Updated <date>" + recent `updated_at` (≤30 days = full score) | Recency penalty for stale |
+| 8 | **Schema completeness** | 0.08 | FAQPage + HowTo + Article + Organization JSON-LD all present | Machine-readable confirmation |
+| 9 | **Information Gain** | 0.06 | Code blocks, unique tables, inline citations, "internal data"/"case study" markers | Anti-cargo-cult signal |
+| 10 | **Specificity** | 0.06 | ≥5 numbers/dates/named-entities per 100 words | Concrete > vague (cite-able) |
+
+Weights sum to 1.00. They drift weekly via the AEO outcome evaluator.
+
+## Self-learning — how AEO weights adapt
+
+Every generated post is scored at publish time → `blog_aeo_scores` row
+holds the score + per-dimension factor breakdown. After N days (default
+14), the AEO outcome evaluator:
+
+1. Pulls `cro9_events` for that page over the measurement window
+2. Computes engagement deltas: `avgScrollPct`, `avgTimeOnPage`, `bounceRate`,
+   `conversionRate`
+3. Compares against the 28-day baseline for that page-type bucket
+4. Per dimension, asks: *"on posts where this factor was strong, did
+   engagement go up significantly more than baseline?"*
+5. If yes → bump that dimension's weight. If no → decay it slightly.
+6. Normalize so weights still sum to 1.00, write a new row in `aeo_weights`
+   with `generation = parent.generation + 1` and `parent_id` set, mark old
+   row inactive.
+
+When the AI-citation simulator ships (Phase 3 — actually call ChatGPT /
+Claude / Perplexity APIs against each post's target query), `aeo_outcomes.citation_results`
+will populate `{chatgpt:bool, claude:bool, perplexity:bool, googleAIO:bool}`
+and become the dominant signal for the loop. Engagement is a proxy until then.
+
+## The brief — how the two axes merge
+
+`ContentBrief.aeoRequirements` (added 2026-05-06):
+
+```ts
+aeoRequirements: {
+  needsBLUF: boolean
+  needsDefinition: boolean
+  needsProcedure: boolean
+  needsComparison: boolean
+  needsFAQ: boolean
+  needsAuthorEEAT: boolean
+  needsFreshness: boolean
+}
+```
+
+Default: every flag `true` for new posts. For rewrites, the flags are set
+based on the current AEO factor scores — "if `factors.bluf < 0.5`, set
+`needsBLUF: true`." Cheap to ask, expensive to omit. The blog generator's
+system prompt is built directly from these flags.
+
+## Database schema (added in `aeo_self_learning_weights` migration)
+
+| Table | Purpose |
+|-------|---------|
+| `aeo_weights` | One row per generation. Active row drives current scoring. |
+| `blog_aeo_scores` | Per-post score cache. Updated on publish + on edit. |
+| `aeo_outcomes` | Ledger: factors_before, factors_after, engagement_delta, citation_results. |
+
+Plus existing tables it consumes:
+- `blog_posts` — the post being scored
+- `cro9_events` — engagement signal source
+- `seo_weights` — SXO axis (companion)
+
+## Where the code lives
+
+| File | Role |
+|------|------|
+| `src/lib/cro9/types.ts` | `AEOFactors`, `AEOWeights`, `DEFAULT_AEO_WEIGHTS`, `AEOOutcome` |
+| `src/lib/cro9/aeo-scorer.ts` | All 10 detectors + composite scorer + gap detector |
+| `src/lib/cro9/brief-generator.ts` | Adds `aeoRequirements` to every generated brief |
+| `src/lib/cro9/blog-generator.ts` | AEO-aware system prompt (BLUF, definition, procedure, FAQ, no-fluff) |
+| `src/lib/cro9/publisher.ts` | `scoreAndPersistAEO()` runs on every save/publish |
+| `src/app/api/cron/blog-seo/route.ts` | Daily cron (uses both axes) |
+
+## What WP-SXO 2.0 inherits
+
+The same 10 detectors are being ported to PHP for the WP-SXO plugin. Real-time
+scoring inside Gutenberg, same `aeo_weights` source-of-truth, customer
+license-key authenticated against `wpsxo.com/api/license/check`.
+
+## Phase 3 roadmap (separate build)
+
+1. **AI-citation simulator** — call ChatGPT, Claude, Perplexity APIs against
+   each post's `target_query`, parse responses for citation links, write
+   results to `aeo_outcomes.citation_results`. Becomes the dominant weight-
+   adjuster signal.
+2. **AEO dashboard** at `/dashboard/aeo` — per-post score over time, dimension
+   factor history, weight drift visualization.
+3. **Real-time AEO score** in the Gutenberg sidebar (WP-SXO 2.0 ships this
+   alongside the existing SXO score).
+4. **Topic clustering auto-suggest** — pillar pages get a list of cluster
+   page suggestions based on entity gaps.
