@@ -1,7 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+import { askAIForJson } from '@/lib/ai-call'
 
 interface OutcomeRecord {
   contact_id: string
@@ -102,18 +100,14 @@ async function detectAIPatterns(input: LearnerInput) {
     current_weights: input.currentWeights,
   }
 
-  try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 800,
-      system: `You are a B2B pipeline scoring analyst. Analyze outcome data and return a JSON array of 1-3 patterns. Each: {"pattern_type":"stall_predictor"|"success_signal"|"weight_suggestion","title":"<60 chars","description":"<200 chars","recommendation":"<200 chars","confidence":number,"pattern_data":{}}. Only patterns with confidence>60. Return only the JSON array.`,
-      messages: [{ role: 'user', content: JSON.stringify(summary) }],
-    })
+  const prompt = `You are a B2B pipeline scoring analyst. Analyze outcome data and return JSON: { "patterns": [{"pattern_type":"stall_predictor"|"success_signal"|"weight_suggestion","title":"<60 chars","description":"<200 chars","recommendation":"<200 chars","confidence":number,"pattern_data":{}}, ...] }. 1-3 patterns max. Only patterns with confidence>60.
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '[]'
-    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim())
-    return Array.isArray(parsed) ? parsed.map((p: Record<string, unknown>) => ({ ...p, sample_size: input.outcomes.length, affected_count: 0 })) : []
-  } catch {
-    return []
-  }
+DATA:
+${JSON.stringify(summary)}`
+
+  const { data } = await askAIForJson<{ patterns?: Array<Record<string, unknown>> }>(prompt, {
+    maxTokens: 800,
+  })
+  if (!data || !Array.isArray(data.patterns)) return []
+  return data.patterns.map((p) => ({ ...p, sample_size: input.outcomes.length, affected_count: 0 }))
 }
