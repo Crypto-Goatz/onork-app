@@ -70,13 +70,14 @@ export async function POST(req: Request) {
 
       if (session.mode === 'subscription' && session.subscription) {
         const sub = await getStripe().subscriptions.retrieve(session.subscription)
-        await supabase.from('product_subscriptions').upsert({
+        const { error: subErr } = await supabase.from('product_subscriptions').upsert({
           user_id: userId, product_id: '0ncore', tier: session.metadata?.tier_name || 'supporter',
           status: 'active', stripe_subscription_id: sub.id, stripe_customer_id: sub.customer,
           current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
           current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
           cancel_at_period_end: sub.cancel_at_period_end,
         }, { onConflict: 'user_id,product_id' })
+        if (subErr) console.error('[stripe-webhook] product_subscriptions upsert failed:', subErr)
 
         // Addon subscriptions — unlock the product_key and promote any
         // existing trial CRO9 sites to active status.
@@ -130,11 +131,12 @@ export async function POST(req: Request) {
         const sparks = parseInt(session.metadata?.sparks || '0')
         if (sparks > 0) {
           const { data: existing } = await supabase.from('run_balances').select('balance, lifetime_earned').eq('user_id', userId).single()
-          await supabase.from('run_balances').upsert({
+          const { error: balErr } = await supabase.from('run_balances').upsert({
             user_id: userId, balance: (existing?.balance || 0) + sparks,
             lifetime_earned: (existing?.lifetime_earned || 0) + sparks,
             stripe_customer_id: session.customer,
           }, { onConflict: 'user_id' })
+          if (balErr) console.error('[stripe-webhook] run_balances upsert failed:', balErr)
         }
 
         // Add-on purchase → write product_keys + report to CRM billing webhook
