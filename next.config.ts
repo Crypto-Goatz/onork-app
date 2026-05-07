@@ -1,6 +1,40 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /**
+   * dispatch.0ncore.com — host-based rewrites so the subdomain serves the
+   * dispatch API at clean pretty URLs:
+   *   dispatch.0ncore.com/         → /dispatch (landing page)
+   *   dispatch.0ncore.com/rules    → /api/dispatch/rules
+   *   dispatch.0ncore.com/version  → /api/dispatch/version
+   *   dispatch.0ncore.com/<thing>  → /api/dispatch/<thing>
+   *
+   * NOTE: if the Vercel project still has a dashboard-level redirect on the
+   * dispatch.0ncore.com domain (currently sending every path to /login), it
+   * runs BEFORE these rewrites. Mike: open Vercel → onork-app → Settings →
+   * Domains → dispatch.0ncore.com → Redirects, and remove any rule that
+   * sends "/" or "/:path*" to /login. That's the actual root cause; this
+   * rewrite is the clean URL layer underneath.
+   */
+  async rewrites() {
+    return [
+      {
+        source: '/',
+        has: [{ type: 'host', value: 'dispatch.0ncore.com' }],
+        destination: '/dispatch',
+      },
+      {
+        source: '/api/dispatch/:path*',
+        has: [{ type: 'host', value: 'dispatch.0ncore.com' }],
+        destination: '/api/dispatch/:path*',
+      },
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'dispatch.0ncore.com' }],
+        destination: '/api/dispatch/:path*',
+      },
+    ]
+  },
   async headers() {
     return [
       {
