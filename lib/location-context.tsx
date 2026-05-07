@@ -38,7 +38,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       }
 
       // Otherwise fetch from profile
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = (await supabase.auth.getSession()).data.session?.user ?? null
       if (!user) {
         setLoading(false)
         return
@@ -64,7 +64,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     setRefreshKey(prev => prev + 1)
 
     // Update profile in Supabase
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = (await supabase.auth.getSession()).data.session?.user ?? null
     if (user) {
       await supabase
         .from('profiles')

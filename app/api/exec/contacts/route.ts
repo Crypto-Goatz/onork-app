@@ -7,7 +7,7 @@ function db() { return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, proce
 
 export async function GET(req: NextRequest) {
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const orbitId = req.nextUrl.searchParams.get('orbit_id')
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()

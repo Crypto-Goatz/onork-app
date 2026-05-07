@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) {
     const next = `/api/billing/subscribe?tier=${tier.slug}`
     return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(next)}`, req.url))

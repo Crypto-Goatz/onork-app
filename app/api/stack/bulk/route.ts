@@ -47,7 +47,7 @@ async function resolveUser(req: Request): Promise<{ userId: string; tier: string
   }
 
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return null
   return { userId: user.id, tier: 'free' }
 }

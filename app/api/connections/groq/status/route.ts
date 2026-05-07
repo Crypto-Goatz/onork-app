@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) {
     return NextResponse.json(
       { authenticated: false, hasOwnKey: false, source: 'platform', exhausted: false },

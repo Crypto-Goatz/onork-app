@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
 
     const admin = getAdmin()
     const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = (await supabase.auth.getSession()).data.session?.user ?? null
 
     // Preserve any existing refresh_token if the new exchange didn't return one.
     // CRM occasionally returns a token without refresh_token on re-auth — never let

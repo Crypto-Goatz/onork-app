@@ -41,7 +41,7 @@ export interface AuthContext {
  */
 export async function getAuthContext(request?: Request): Promise<AuthContext | null> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return null
 
   const { data: profile } = await admin

@@ -23,7 +23,7 @@ async function resolveUserId(req: NextRequest): Promise<string | null> {
   // Try Supabase session from cookies
   try {
     const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = (await supabase.auth.getSession()).data.session?.user ?? null
     if (user?.id) return user.id
   } catch (e) {
     console.error('[services/connect] Auth error:', e)

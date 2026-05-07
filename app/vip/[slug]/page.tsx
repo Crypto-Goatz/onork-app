@@ -67,7 +67,7 @@ export default async function VipDashboard({
 
   // Auth gate
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) {
     redirect(`/login?next=/vip/${slug}`)
   }

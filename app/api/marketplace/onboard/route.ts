@@ -9,7 +9,7 @@ function getStripe() {
 // POST — Generate an account link for KYC onboarding
 export async function POST(req: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { account_id } = await req.json()

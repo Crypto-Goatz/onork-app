@@ -9,7 +9,7 @@ function getStripe() {
 // POST — Create a connected account for a seller/sub-location
 export async function POST(req: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { business_name, email, country } = await req.json()
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 // GET — List connected accounts or get current user's account status
 export async function GET(req: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: profile } = await supabase

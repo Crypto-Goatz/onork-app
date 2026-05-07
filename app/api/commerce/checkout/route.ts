@@ -30,7 +30,7 @@ function admin() {
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   let body: { slug?: string; quantity?: number }

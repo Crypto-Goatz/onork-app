@@ -11,7 +11,7 @@ const admin = createAdmin(
 // GET /api/tokens — list user's active tokens
 export async function GET() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: tokens } = await admin
@@ -27,7 +27,7 @@ export async function GET() {
 // POST /api/tokens — generate a new token
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { label, scopes } = await req.json()
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 // DELETE /api/tokens — revoke a token
 export async function DELETE(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { tokenId } = await req.json()

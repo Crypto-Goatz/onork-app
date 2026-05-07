@@ -6,7 +6,7 @@ function db() { return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, proce
 
 export async function GET() {
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data } = await db().from('exec_orbits').select('*, exec_formulas(id, name, icon)').eq('onmcp_user_id', user.id).order('sort_order')
@@ -15,7 +15,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()

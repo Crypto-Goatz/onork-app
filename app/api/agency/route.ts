@@ -67,7 +67,7 @@ async function crmFetch(path: string, opts: RequestInit = {}): Promise<{ ok: boo
 // GET /api/agency — Fetch all sub-locations with stats
 export async function GET() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized — not logged in' }, { status: 401 })
 
   const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single()
@@ -144,7 +144,7 @@ export async function GET() {
 // POST /api/agency — Detail fetches and bulk operations
 export async function POST(req: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single()

@@ -8,7 +8,7 @@ const KNOWN_LOCATIONS = [
 
 export async function GET() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: profile } = await supabase
@@ -32,7 +32,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { locationId } = await req.json()

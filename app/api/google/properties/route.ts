@@ -5,7 +5,7 @@ import { google } from 'googleapis'
 // GET /api/google/properties — List user's GA4 properties
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Get user's Google connection
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
 // POST /api/google/properties — Select a GA4 property
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()

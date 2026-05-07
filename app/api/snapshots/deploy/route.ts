@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
   if (!isWebhookAuth) {
     // User auth — must be admin
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = (await supabase.auth.getSession()).data.session?.user ?? null
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data: profile } = await supabase

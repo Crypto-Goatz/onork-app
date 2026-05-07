@@ -72,7 +72,7 @@ async function resolveAuth(request: NextRequest): Promise<AuthResult | null> {
 
   // 3. Supabase session (dashboard)
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return null
 
   const admin = getAdminClient()

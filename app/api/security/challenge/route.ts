@@ -8,7 +8,7 @@ import { serveNext, resolveChallenge, addChallenge } from '@/lib/security/challe
 export async function GET() {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = (await supabase.auth.getSession()).data.session?.user ?? null
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const challenge = await serveNext(user.id)
@@ -35,7 +35,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = (await supabase.auth.getSession()).data.session?.user ?? null
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()

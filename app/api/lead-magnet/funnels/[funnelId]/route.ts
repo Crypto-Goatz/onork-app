@@ -50,7 +50,7 @@ export async function GET(
 ) {
   const { funnelId } = await params
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!(await ownerCheck(funnelId, user.id))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -71,7 +71,7 @@ export async function PUT(
 ) {
   const { funnelId } = await params
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!(await ownerCheck(funnelId, user.id))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -100,7 +100,7 @@ export async function DELETE(
 ) {
   const { funnelId } = await params
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!(await ownerCheck(funnelId, user.id))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })

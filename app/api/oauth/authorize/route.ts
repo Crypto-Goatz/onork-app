@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
   // Check if user is authenticated with 0nCore
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
 
   if (!user) {
     // Not logged in — redirect to login page with return URL

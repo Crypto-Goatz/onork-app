@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
   if (!actorUserId) {
     const supabase = await createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = (await supabase.auth.getSession()).data.session?.user ?? null
     actorUserId = user?.id ?? null
   }
 

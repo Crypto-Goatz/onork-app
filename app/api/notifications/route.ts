@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data } = await supabase
@@ -19,7 +19,7 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id, read } = await req.json()

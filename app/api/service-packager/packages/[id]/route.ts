@@ -34,7 +34,7 @@ const PATCHABLE_FIELDS = new Set([
 
 async function ownPackage(req: NextRequest, id: string) {
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return { error: 'Unauthorized', status: 401 as const, supabase: null, user: null }
 
   const { data, error } = await supabase
@@ -51,7 +51,7 @@ async function ownPackage(req: NextRequest, id: string) {
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data, error } = await supabase

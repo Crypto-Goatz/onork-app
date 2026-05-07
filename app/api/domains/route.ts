@@ -17,7 +17,7 @@ function namecomHeaders(): HeadersInit {
 // GET — Search for domain availability
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const domain = req.nextUrl.searchParams.get('domain')
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
 // POST — Register a domain
 export async function POST(req: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { domain, autoRenew } = await req.json()

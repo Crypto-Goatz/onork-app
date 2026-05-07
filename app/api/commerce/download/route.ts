@@ -22,7 +22,7 @@ function admin() {
 
 export async function GET(req: NextRequest) {
   const supabase = await createServerClient()
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const slug = req.nextUrl.searchParams.get('slug')

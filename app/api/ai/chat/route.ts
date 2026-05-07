@@ -39,7 +39,7 @@ const HISTORY_LIMIT = 20
 
 export async function POST(req: Request) {
   const supabase = await createServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   let body: { locationId?: string; message?: string; conversationId?: string; channel?: string }

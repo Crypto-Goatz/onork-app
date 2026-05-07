@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   // In production, validate the access token
   // For now, return the authenticated user's info
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
 
   return NextResponse.json({
     id: user?.id || 'oncore-user',

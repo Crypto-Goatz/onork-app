@@ -6,7 +6,7 @@ const GROQ_KEY = process.env.GROQ_API_KEY
 // POST /api/brand/extract — AI brand extraction from URL (using Groq — FREE)
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { url, text } = await req.json()

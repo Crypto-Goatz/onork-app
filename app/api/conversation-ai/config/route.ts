@@ -15,7 +15,7 @@ function admin() {
 
 async function resolveContext(req: NextRequest) {
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return null
 
   const { data: profile } = await supabase

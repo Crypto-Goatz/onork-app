@@ -78,7 +78,7 @@ export async function DELETE(
 ) {
   const { provider: providerId } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

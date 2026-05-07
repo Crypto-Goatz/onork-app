@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 async function getLocationId() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return { error: 'Unauthorized', status: 401 }
 
   const { data: profile } = await supabase

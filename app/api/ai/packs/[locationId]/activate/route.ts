@@ -22,7 +22,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ locationId: st
   if (!locationId) return NextResponse.json({ error: 'locationId required' }, { status: 400 })
 
   const supabase = await createServerSupabase()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   let body: { packId?: string; expiresAt?: string | null }

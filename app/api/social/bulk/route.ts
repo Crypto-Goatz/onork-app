@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 // Takes a list of topics + schedule config, generates content, returns posts ready for CSV import
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const {

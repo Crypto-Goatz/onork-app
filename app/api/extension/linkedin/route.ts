@@ -10,7 +10,7 @@ const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY
  */
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
 
   // Allow bearer token from extension
   if (!user) {

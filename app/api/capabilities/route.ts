@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
   const kindFilter = req.nextUrl.searchParams.get('kind')
 
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
 
   const out: CapabilityRow[] = []
 

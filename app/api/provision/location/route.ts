@@ -10,7 +10,7 @@ import { provisionSubLocation } from '@/lib/provision'
 
 export async function POST() {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession(); const user = session?.user
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const result = await provisionSubLocation(user.id)

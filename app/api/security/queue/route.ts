@@ -8,7 +8,7 @@ import { enqueue, dequeue, cancel, listQueue } from '@/lib/security/queue'
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = (await supabase.auth.getSession()).data.session?.user ?? null
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const sessionId = req.nextUrl.searchParams.get('session_id')
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = (await supabase.auth.getSession()).data.session?.user ?? null
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()

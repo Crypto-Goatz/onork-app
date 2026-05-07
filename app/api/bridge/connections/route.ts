@@ -19,7 +19,7 @@ async function resolveUserId(req: NextRequest): Promise<string | null> {
   }
 
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   return user?.id || null
 }
 

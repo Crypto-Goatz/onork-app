@@ -6,7 +6,7 @@ const admin = createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUP
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { queue_id, action, rejection_reason, edited_text } = await req.json()

@@ -15,7 +15,7 @@ const admin = createAdmin(
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
 
   // Admin check
   if (!user || user.email !== 'mike@rocketopp.com') {

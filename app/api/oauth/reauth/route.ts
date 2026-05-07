@@ -68,7 +68,7 @@ const REQUESTED_SCOPES = [
 export async function GET(req: NextRequest) {
   // Sanity: user must be logged in to start a reconnect on their account
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) {
     return NextResponse.redirect(new URL('/login?next=/crm', req.url))
   }

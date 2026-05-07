@@ -59,7 +59,7 @@ export default async function DebugAuthPage() {
 
   let userResult: { ok: boolean; user_id?: string; email?: string; error?: string } = { ok: false }
   try {
-    const { data, error } = await supabase.auth.getUser()
+    const { data, error } = /* TODO_GETUSER_MANUAL: review this call — getSession() preferred per Rule 10a */ await supabase.auth.getUser()
     if (error) userResult = { ok: false, error: error.message }
     else if (data.user) userResult = { ok: true, user_id: data.user.id, email: data.user.email ?? '?' }
     else userResult = { ok: false, error: 'getUser returned null user' }

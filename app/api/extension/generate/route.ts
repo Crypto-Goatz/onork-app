@@ -11,7 +11,7 @@ const GROQ_KEY = process.env.GROQ_API_KEY
 export async function POST(req: NextRequest) {
   // Auth check
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
 
   if (!user) {
     // Try bearer token from extension

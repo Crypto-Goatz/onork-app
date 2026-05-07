@@ -102,7 +102,7 @@ function buildSystemPrompt(
 
 export async function POST(req: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { message, history = [], crewId } = await req.json()

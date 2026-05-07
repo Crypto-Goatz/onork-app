@@ -5,7 +5,7 @@ import { google } from 'googleapis'
 // GET /api/google/analytics — Fetch GA4 reports using the user's own OAuth tokens
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)

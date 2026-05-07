@@ -49,7 +49,7 @@ async function authenticate(
   if (authHeader?.startsWith('Bearer ')) {
     try {
       const supabase = await createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = (await supabase.auth.getSession()).data.session?.user ?? null
       if (user) {
         // Get user's location
         const { data: profile } = await getAdmin()

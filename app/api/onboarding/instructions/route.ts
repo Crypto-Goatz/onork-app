@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server'
  */
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
 
   const userId = user?.id || 'new-user'
   const email = user?.email || ''
