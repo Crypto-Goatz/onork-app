@@ -12,33 +12,6 @@ interface Pattern {
   sample_size: number
 }
 
-const DEMO_PATTERNS: Pattern[] = [
-  {
-    pattern_type: 'stall_predictor',
-    title: 'Contacts below 40 rarely close',
-    description: '15% win rate below score 40',
-    recommendation: 'Set intervention at 40',
-    confidence: 82,
-    sample_size: 23,
-  },
-  {
-    pattern_type: 'success_signal',
-    title: 'High engagement + DM access predicts win',
-    description: '90% of won deals had engagement>75 and DM access>80',
-    recommendation: 'Prioritize DM access in early stages',
-    confidence: 88,
-    sample_size: 31,
-  },
-  {
-    pattern_type: 'churn_signal',
-    title: 'Score decline >10pts in 2 weeks = churn',
-    description: '78% of churned contacts showed this pattern',
-    recommendation: 'Auto-flag on 10pt decline',
-    confidence: 75,
-    sample_size: 18,
-  },
-]
-
 const PATTERN_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
   stall_predictor: { icon: '\uD83D\uDD34', color: '#ef4444', label: 'Stall Predictor' },
   success_signal: { icon: '\uD83D\uDFE2', color: '#6EE05A', label: 'Success Signal' },

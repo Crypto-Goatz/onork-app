@@ -14,6 +14,12 @@ const admin = createAdmin(
 )
 
 export async function POST(req: NextRequest) {
+  // Gated behind ALLOW_DEMO_ACCOUNTS=true. Off by default in production so
+  // demo-N@0ncore.com profiles can't be minted accidentally.
+  if (process.env.ALLOW_DEMO_ACCOUNTS !== 'true') {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 })
+  }
+
   const supabase = await createClient()
   const user = (await supabase.auth.getSession()).data.session?.user ?? null
 

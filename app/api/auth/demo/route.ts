@@ -9,8 +9,14 @@ const supabase = createClient(
 const DEMO_EMAIL = 'demo@0ncore.com'
 const DEMO_PASSWORD = '0nCore-Demo-2026!'
 
-// GET /api/auth/demo — Auto-login with demo credentials and redirect
+// GET /api/auth/demo — Auto-login with demo credentials and redirect.
+// Gated behind ALLOW_DEMO_ACCOUNTS=true. In production this 404s so the
+// demo path can't be hit by real users.
 export async function GET(req: NextRequest) {
+  if (process.env.ALLOW_DEMO_ACCOUNTS !== 'true') {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 })
+  }
+
   const { searchParams } = new URL(req.url)
   const redirect = searchParams.get('redirect') || '/dashboard'
   const locationId = searchParams.get('locationId') || 'demo-location'

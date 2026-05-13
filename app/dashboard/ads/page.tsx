@@ -53,54 +53,9 @@ const PLATFORMS = [
   { key: 'linkedin', name: 'LinkedIn Ads', icon: 'in', iconBg: 'bg-sky-700',     iconText: 'text-white' },
 ] as const
 
-// ── Demo data generators ──────────────────────────────────
-function generateDemoCampaigns(platform: string): Campaign[] {
-  const prefixes: Record<string, string[]> = {
-    google:   ['Search - Brand', 'Search - Non-Brand', 'Display - Retarget', 'PMax - All', 'YouTube - Awareness'],
-    facebook: ['Conversions - Lookalike', 'Traffic - Interest', 'Retargeting - Cart', 'Leads - Form', 'Engagement - Video'],
-    tiktok:   ['TopView - Launch', 'In-Feed - Retarget', 'Spark Ads - UGC', 'Collection - Products'],
-    linkedin: ['Sponsored - Decision Makers', 'Message Ads - C-Suite', 'Lead Gen - IT Managers', 'Document Ads - Whitepaper'],
-  }
-  const names = prefixes[platform] || ['Campaign 1', 'Campaign 2', 'Campaign 3']
-  const statuses: Campaign['status'][] = ['active', 'active', 'paused', 'completed', 'active']
-
-  return names.map((name, i) => {
-    const spend = Math.round(800 + Math.random() * 4200)
-    const impressions = Math.round(spend * (15 + Math.random() * 35))
-    const clicks = Math.round(impressions * (0.01 + Math.random() * 0.06))
-    const conversions = Math.round(clicks * (0.02 + Math.random() * 0.12))
-    const revenue = conversions * (20 + Math.random() * 180)
-    return {
-      id: `${platform}-${i}`,
-      name,
-      status: statuses[i % statuses.length],
-      spend,
-      impressions,
-      clicks,
-      ctr: parseFloat(((clicks / impressions) * 100).toFixed(2)),
-      conversions,
-      roas: parseFloat((revenue / spend).toFixed(2)),
-    }
-  })
-}
-
-function generatePlatformMetrics(platform: string): PlatformMetrics {
-  const campaigns = generateDemoCampaigns(platform)
-  const spend = campaigns.reduce((s, c) => s + c.spend, 0)
-  const impressions = campaigns.reduce((s, c) => s + c.impressions, 0)
-  const clicks = campaigns.reduce((s, c) => s + c.clicks, 0)
-  const conversions = campaigns.reduce((s, c) => s + c.conversions, 0)
-  const totalRevenue = campaigns.reduce((s, c) => s + c.spend * c.roas, 0)
-
-  return {
-    spend,
-    impressions,
-    clicks,
-    ctr: parseFloat(((clicks / impressions) * 100).toFixed(2)),
-    conversions,
-    roas: parseFloat((totalRevenue / spend).toFixed(2)),
-    campaigns,
-  }
+// ── Empty metrics shape (used until a platform is connected & real data flows) ──
+function emptyMetrics(): PlatformMetrics {
+  return { spend: 0, impressions: 0, clicks: 0, ctr: 0, conversions: 0, roas: 0, campaigns: [] }
 }
 
 // ── Formatters ────────────────────────────────────────────
@@ -201,10 +156,13 @@ export default function PaidAdsPage() {
   useEffect(() => { fetchAds() }, [fetchAds])
 
   useEffect(() => {
+    // Per-platform real metrics live on adData. Until that's wired through
+    // /api/ads for each platform, show zeros for any platform that hasn't
+    // been connected — never synthesize fake spend / impressions / ROAS.
     const m: Record<string, PlatformMetrics> = {}
-    for (const p of PLATFORMS) m[p.key] = generatePlatformMetrics(p.key)
+    for (const p of PLATFORMS) m[p.key] = emptyMetrics()
     setMetrics(m)
-  }, [timeframe])
+  }, [timeframe, adData])
 
   const totals = {
     spend:       Object.values(metrics).reduce((s, m) => s + m.spend, 0),

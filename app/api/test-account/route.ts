@@ -23,6 +23,13 @@ function getAdmin() {
  * Body: { action: 'create' | 'delete' | 'status' }
  */
 export async function POST(req: NextRequest) {
+  // Gated behind ALLOW_DEMO_ACCOUNTS=true. Off by default in production so
+  // the test account can't be (re)created or wiped accidentally. Note: the
+  // account itself remains in the database — this only blocks the endpoint.
+  if (process.env.ALLOW_DEMO_ACCOUNTS !== 'true') {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 })
+  }
+
   const { action = 'status' } = await req.json().catch(() => ({ action: 'status' }))
   const admin = getAdmin()
 
