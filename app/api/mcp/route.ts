@@ -31,7 +31,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { validateToken, type TokenContext } from '@/lib/0n-token'
+import { validateToken, validateProfileToken, type TokenContext } from '@/lib/0n-token'
 import { scoreContent } from '@/lib/vpis/formula'
 import { runCombinedScan } from '@/lib/sxo-aeo/engine'
 import {
@@ -211,8 +211,27 @@ async function resolveAuth(
   if (!raw) raw = req.nextUrl.searchParams.get('token')
 
   if (raw && raw.startsWith('0n_')) {
+    // 1) Try api_tokens (legacy/scoped tokens with location binding).
     const ctx = await validateToken(raw)
     if (ctx) return { ctx, publicOk: true }
+
+    // 2) Try profiles.access_token (universal one-token-per-user).
+    //    Synthesize a TokenContext from the profile so tenant-bound tools
+    //    keep working unchanged.
+    const profileRes = await validateProfileToken(raw)
+    if (profileRes.valid && profileRes.profile) {
+      const p = profileRes.profile as Record<string, unknown>
+      return {
+        ctx: {
+          tokenId: `profile:${profileRes.profile.id}`,
+          userId: profileRes.profile.id,
+          locationId: (p.location_id as string) || '',
+          scopes: ['read', 'write', 'execute'],
+          channel: 'profile',
+        },
+        publicOk: true,
+      }
+    }
   }
 
   const publicKey = process.env.MCP_PUBLIC_KEY
