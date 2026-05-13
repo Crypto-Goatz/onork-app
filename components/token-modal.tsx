@@ -81,10 +81,10 @@ export function TokenButton() {
       {/* Modal */}
       {open && (
         <div
-          className="fixed inset-0 z-[10000] bg-black/75 backdrop-blur-[8px] flex items-center justify-center"
+          className="fixed inset-0 z-[10000] bg-black/75 backdrop-blur-[8px] flex items-center justify-center p-4"
           onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}
         >
-          <div className="bg-[#0d1117] border border-[#30363d] rounded-2xl w-[480px] max-h-[80vh] overflow-hidden flex flex-col animate-[tokenModalIn_0.25s_ease]">
+          <div className="bg-[#0d1117] border border-[#30363d] rounded-2xl w-full max-w-[480px] max-h-[90vh] overflow-hidden flex flex-col animate-[tokenModalIn_0.25s_ease]">
             {/* Header */}
             <div className="px-5 py-4 border-b border-[#30363d] flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -137,7 +137,7 @@ export function TokenButton() {
               ) : (
                 <div className="mb-5 p-4 rounded-[10px] bg-[#6EE05A]/[.06] border border-[#6EE05A]/20">
                   <div className="text-[12px] font-bold text-[#6EE05A] mb-2">Your new token (copy now — shown once):</div>
-                  <div className="px-3 py-2.5 rounded-md font-mono text-[11px] bg-[#0d1117] border border-[#30363d] text-[#f0f4f8] break-all leading-relaxed mb-2">
+                  <div className="px-3 py-2.5 rounded-md font-mono text-[11px] bg-[#0d1117] border border-[#30363d] text-[#f0f4f8] break-all leading-relaxed mb-2 select-all overflow-x-auto">
                     {newToken}
                   </div>
                   <button
