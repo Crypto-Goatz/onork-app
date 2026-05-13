@@ -41,6 +41,14 @@ import {
   generateScriptKey,
   normalizeDomain,
 } from '@/lib/dr/admin'
+import {
+  V3_TOOLS,
+  V3_TOOL_INDEX,
+  V3_SDK_VERSION,
+  V3_MODULE_COUNT,
+  dispatchV3Tool,
+  toolToInputSchema,
+} from '@/lib/crm/v3/dispatch'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -194,8 +202,21 @@ const TOOLS: ToolSchema[] = [
   },
 ]
 
+// ── v3 CRM catalog (auto-generated from HighLevel SDK v3.0.0) ─────────────
+// 576 SDK-aligned CRM tools from lib/crm/v3/catalog.json. All require a
+// tenant token; the generic dispatcher in lib/crm/v3/dispatch.ts handles
+// path/query/body substitution against services.leadconnectorhq.com.
+const V3_TOOL_SCHEMAS: ToolSchema[] = V3_TOOLS.map((t) => ({
+  name: t.name,
+  description: t.description,
+  inputSchema: toolToInputSchema(t),
+  requireTenant: true,
+}))
+
+const ALL_TOOLS: ToolSchema[] = [...TOOLS, ...V3_TOOL_SCHEMAS]
+
 const TOOL_INDEX: Record<string, ToolSchema> = Object.fromEntries(
-  TOOLS.map((t) => [t.name, t]),
+  ALL_TOOLS.map((t) => [t.name, t]),
 )
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -487,8 +508,22 @@ async function execTool(
       return { result: { siteId, days, daily: daily ?? [] } }
     }
 
-    default:
+    default: {
+      // v3 CRM dispatcher — handles every crm_<sdkMethod> tool from the
+      // generated catalog. One generic path → 576 tools.
+      if (V3_TOOL_INDEX[name]) {
+        const pit =
+          process.env.CRM_PIT || process.env.CRM_PIT_TOKEN || process.env.CRM_AGENCY_PIT || ''
+        if (!pit) return { error: 'CRM PIT not configured (set CRM_PIT)' }
+        const r = await dispatchV3Tool(name, args, {
+          accessToken: pit,
+          locationId: ctx?.locationId || process.env.CRM_LOCATION_ID || '',
+        })
+        if (!r.ok) return { error: r.error ?? `CRM ${r.status}`, result: r.data }
+        return { result: r.data }
+      }
       return { error: `unknown tool: ${name}` }
+    }
   }
 }
 
@@ -588,7 +623,12 @@ export async function GET(req: NextRequest) {
     transport: 'streamable-http',
     endpoints: { mcp: '/api/mcp', discovery: '/.well-known/mcp.json' },
     methods: ['initialize', 'tools/list', 'tools/call', 'ping'],
-    tools: TOOLS.length,
+    tools: ALL_TOOLS.length,
+    crm: {
+      sdk_version: V3_SDK_VERSION,
+      modules: V3_MODULE_COUNT,
+      tools: V3_TOOLS.length,
+    },
   })
 }
 
@@ -642,7 +682,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (method === 'tools/list') {
-    const tools = TOOLS.map((t) => ({
+    const tools = ALL_TOOLS.map((t) => ({
       name: t.name,
       description: t.description,
       inputSchema: t.inputSchema,
