@@ -79,8 +79,8 @@ export default function RootLayout({
           family install after 0nmcp.com and jaxspot-app.vercel.app.
         */}
         <script
-          src="https://detect-and-refine-cryptogoatz.vercel.app/cro9.js"
-          data-account-id="0ncore_com"
+          src="https://rocketpost.co/cro9.js"
+          data-account-id="acct_c48453c3b54655"
           async
         />
       </head>
