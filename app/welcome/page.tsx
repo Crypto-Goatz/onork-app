@@ -15,6 +15,7 @@ import { redirect } from 'next/navigation'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import WelcomePanel, { type CardAccess } from '@/components/welcome/WelcomePanel'
+import ClaimWorkspaceBanner from '@/components/welcome/ClaimWorkspaceBanner'
 import { FAMILY_LOCATIONS, findFamilyMatch } from '@/lib/family-locations'
 import { getTierCapabilities } from '@/lib/permissions'
 
@@ -107,8 +108,18 @@ export default async function WelcomePage() {
 
   const tierCaps = getTierCapabilities(plan)
 
+  // Claim card surfaces only for users who have no workspace AND no family
+  // match. Family-matched users already share an existing location.
+  const showClaim = !profileLocationId && !familyLocation
+
   return (
-    <WelcomePanel
+    <>
+      {showClaim && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10">
+          <ClaimWorkspaceBanner userName={profile?.full_name ?? null} />
+        </div>
+      )}
+      <WelcomePanel
       user={{
         email: profile?.email ?? user.email ?? '',
         name: profile?.full_name ?? null,
@@ -192,6 +203,7 @@ export default async function WelcomePage() {
           icon: 'Mic',
         },
       ]}
-    />
+      />
+    </>
   )
 }

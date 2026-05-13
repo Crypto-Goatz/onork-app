@@ -24,7 +24,6 @@
 
 import crypto from 'crypto'
 import { createClient } from '@supabase/supabase-js'
-import { provisionSubLocation } from '@/lib/provision'
 import { findFamilyMatch } from '@/lib/family-locations'
 import { getPitForLocation } from '@/lib/crm'
 import { ensureLocationInstall } from '@/lib/crm/location-token'
@@ -176,19 +175,14 @@ export async function postSignupProvision(
     }
   }
 
-  // 5. Sub-location provisioning (background) OR location-token mint
-  if (!alreadyProvisioned && !familyLocationId) {
-    // Non-family — queue full sub-location provisioning
-    provisionSubLocation(input.userId)
-      .then((r) => {
-        console.log(
-          `[post-signup] provision ${input.email}: ${r.success ? 'OK' : 'FAIL'} ${r.errors?.join('; ') || ''}`,
-        )
-      })
-      .catch((err) => {
-        console.error(`[post-signup] provision threw for ${input.email}:`, err)
-      })
-  } else if (familyLocationId) {
+  // 5. Sub-location provisioning OR location-token mint
+  //
+  // CHANGED 2026-05-13: non-family users no longer auto-provision a
+  // sub-location. They claim it on demand via /api/workspace/claim.
+  // Rationale: free-tier seat hygiene + cleaner conversion signal +
+  // failure isolation. The lead is already in the master CRM (step 4)
+  // and gets the welcome workflow either way. See ADR / Mike's call.
+  if (familyLocationId) {
     ensureLocationInstall(familyLocationId)
       .then((m) =>
         console.log(`[post-signup] location-token mint ${familyLocationId}: ${m.source}`),
