@@ -1,36 +1,36 @@
 /**
  * POST /api/workspace/claim
  *
- * On-demand CRM sub-location provisioning, gated to the authenticated
- * user. Replaces the auto-queue that used to fire from postSignupProvision
- * for non-family users.
+ * On-demand workspace provisioning, authenticated. Wraps the canonical
+ * `provisionSubLocation` from @/lib/provision which already does:
+ *   1. Create CRM sub-location (CRITICAL)
+ *   2. Mint location-scoped marketplace token (best-effort)
+ *   3. Deploy master snapshot — pipeline + fields + tags + workflows
+ *      (best-effort; partial deploys surface in `errors[]`)
+ *   4. Save crm_location_id to profile (immediate, after step 1)
+ *   5. Write dashboard_notifications row
  *
- * Idempotent: if profile already has crm_location_id, returns existing.
- * Family-matched users get the family location instead (no new sub-location).
+ * Idempotent: if profile.crm_location_id is already set, returns
+ * `existing` and the UI just reloads into the workspace.
  *
- * Mike's "claim your workspace" pattern — every signup gets a CRM contact
- * automatically, but the workspace itself only spins up when the user
- * explicitly asks for it.
+ * UX contract (Mike's "save and proceed" pattern):
+ *   - If step 1 succeeds, the user proceeds even if snapshot is partial.
+ *     The workspace is real; pipelines/workflows can be retried later
+ *     by re-clicking the claim button (idempotent on location_id).
+ *   - Critical failure (step 1) returns ok:false so the banner shows
+ *     a retry button.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { provisionSubLocation } from '@/lib/provision'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-function admin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } },
-  )
-}
+export const maxDuration = 60
 
 export async function POST(_req: NextRequest) {
-  // Cookie-only session check (per CLAUDE.md rule 12 — no getUser)
+  // Cookie-only session check (CLAUDE.md rule 12 — no getUser)
   const supabase = await createServerClient()
   const { data: { session } } = await supabase.auth.getSession()
   const user = session?.user
@@ -39,62 +39,28 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'unauthenticated' }, { status: 401 })
   }
 
-  const sb = admin()
+  const result = await provisionSubLocation(user.id)
 
-  // Idempotent: profile already has a workspace
-  const { data: profile } = await sb
-    .from('profiles')
-    .select('id, email, crm_location_id, crm_contact_id, full_name, company')
-    .eq('id', user.id)
-    .maybeSingle<{
-      id: string
-      email: string | null
-      crm_location_id: string | null
-      crm_contact_id: string | null
-      full_name: string | null
-      company: string | null
-    }>()
-
-  if (profile?.crm_location_id) {
-    return NextResponse.json({
-      ok: true,
-      status: 'existing',
-      crm_location_id: profile.crm_location_id,
-    })
-  }
-
-  // Provision now. provisionSubLocation reads the user's profile internally,
-  // mints the sub-location via agency PIT, and writes crm_location_id back.
-  try {
-    const result = await provisionSubLocation(user.id)
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          ok: false,
-          status: 'failed',
-          errors: result.errors,
-        },
-        { status: 500 },
-      )
-    }
-
-    // Re-read to surface the freshly-written location_id
-    const { data: refreshed } = await sb
-      .from('profiles')
-      .select('crm_location_id')
-      .eq('id', user.id)
-      .maybeSingle<{ crm_location_id: string | null }>()
-
-    return NextResponse.json({
-      ok: true,
-      status: 'provisioned',
-      crm_location_id: refreshed?.crm_location_id ?? null,
-    })
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
+  if (!result.success) {
     return NextResponse.json(
-      { ok: false, status: 'error', error: msg.slice(0, 300) },
+      {
+        ok: false,
+        status: 'failed',
+        errors: result.errors,
+      },
       { status: 500 },
     )
   }
+
+  return NextResponse.json({
+    ok: true,
+    status: result.locationName === 'existing' ? 'existing' : 'created',
+    crm_location_id: result.locationId,
+    workspace_name: result.locationName,
+    snapshot_deployed: result.snapshotDeployed,
+    // Surface non-fatal errors only in dev for debugging
+    ...(process.env.VERCEL_ENV !== 'production' && result.errors.length > 0
+      ? { warnings: result.errors }
+      : {}),
+  })
 }
