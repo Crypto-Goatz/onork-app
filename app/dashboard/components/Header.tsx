@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { NotificationBell } from '@/components/NotificationBell'
 import { TokenButton } from '@/components/token-modal'
+import OpenInCrmButton from '@/components/dashboard/OpenInCrmButton'
 import {
   LayoutDashboard, MessageSquare, BarChart3, Users, Target, Calendar,
   CreditCard, Tag, Mail, Share2, FileText, Link2, ClipboardList, Megaphone,
@@ -268,6 +269,7 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
 
           <div className="w-px h-5 bg-white/[0.06] mx-1 hidden md:block" />
 
+          <OpenInCrmButton />
           <TokenButton />
           <NotificationBell />
 

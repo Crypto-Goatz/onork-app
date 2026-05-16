@@ -501,6 +501,19 @@ const navGroups: NavGroup[] = [
           </svg>
         ),
       },
+      {
+        name: 'Ops (CRM)',
+        href: '/dashboard/ops',
+        badge: 'BETA',
+        icon: (
+          // Lucide Briefcase — kept as inline SVG to match the existing nav
+          // pattern in this file (every item uses inline SVG, not a React
+          // component). Path is the published Lucide "briefcase" icon.
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 20V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v16m12-9H4a2 2 0 00-2 2v5a2 2 0 002 2h16a2 2 0 002-2v-5a2 2 0 00-2-2z" />
+          </svg>
+        ),
+      },
     ],
   },
 ]
