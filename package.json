@@ -14,7 +14,9 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:snapshot": "supabase db dump --linked -f /tmp/production_snapshot_$(date +%s).sql",
-    "db:restore-local": "psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < /tmp/production_snapshot_*.sql 2>/dev/null | tail -5"
+    "db:restore-local": "psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < /tmp/production_snapshot_*.sql 2>/dev/null | tail -5",
+    "test:e2e": "playwright test --grep @smoke",
+    "test:e2e:cleanup": "tsx tests/e2e/cleanup.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
@@ -54,10 +56,12 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.1.18",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.6",
     "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "^4.1.18",
+    "tsx": "^4.22.0"
   }
 }

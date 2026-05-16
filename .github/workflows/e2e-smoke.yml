@@ -1,0 +1,59 @@
+name: E2E Smoke Tests
+
+# Smoke suite for the signup chain (PF-010..PF-017 regression net).
+# Runs against the deployed production URL (https://www.0ncore.com)
+# on every push to main. Does NOT spin up a dev server.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: https://www.0ncore.com
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Playwright (no other deps needed)
+        run: |
+          npm install --no-save --no-audit --no-fund \
+            @playwright/test@latest \
+            @supabase/supabase-js@latest \
+            tsx@latest
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke suite
+        run: npx playwright test --grep @smoke
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Cleanup test rows
+        if: always()
+        run: npx tsx tests/e2e/cleanup.ts
+        continue-on-error: true
