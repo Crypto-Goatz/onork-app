@@ -231,7 +231,7 @@ function Hero() {
   )
 }
 
-// ── Dashboard preview (CSS-only mockup of /vip/spa) ────────────
+// ── Dashboard preview (CSS-only mockup) ────────────
 
 function DashboardPreview() {
   return (
