@@ -11,7 +11,6 @@ import {
   Wand2,
   Layers,
   Workflow,
-  Globe,
   Check,
   HelpCircle,
   Activity,
