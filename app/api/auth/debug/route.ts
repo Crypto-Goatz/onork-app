@@ -42,14 +42,6 @@ export async function GET() {
     auth_cookie_domain: process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN,
     supabase_url: process.env.NEXT_PUBLIC_SUPABASE_URL,
     providers: {
-      google: {
-        client_id_set: !!process.env.GOOGLE_CLIENT_ID,
-        client_secret_set: !!process.env.GOOGLE_CLIENT_SECRET,
-        connect_redirect_uri: 'https://0ncore.com/api/auth/connect/google/callback',
-        supabase_redirect_uri: supabaseRedirectUri,
-        login_path: '/login (uses supabase.auth.signInWithOAuth, provider=google)',
-        connect_path: '/api/auth/connect/google',
-      },
       linkedin: {
         client_id_set: !!process.env.LINKEDIN_CLIENT_ID,
         client_secret_set: !!process.env.LINKEDIN_CLIENT_SECRET,
@@ -68,7 +60,7 @@ export async function GET() {
       },
     },
     notes: [
-      'Google/LinkedIn login go through Supabase auth (signInWithOAuth)',
+      'LinkedIn login goes through Supabase auth (signInWithOAuth)',
       'Slack login uses the custom /api/auth/connect/slack flow + magic link',
       'Vercel env vars are NOT what Supabase uses — Supabase needs separate config in dashboard',
     ],

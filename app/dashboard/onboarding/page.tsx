@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
   Globe, Linkedin, CheckCircle, ArrowRight, Loader2,
-  Building2, Palette, Briefcase, Sparkles, Chrome,
+  Building2, Palette, Briefcase, Sparkles,
   Phone, Rocket, SkipForward
 } from 'lucide-react'
 
@@ -96,9 +96,7 @@ export default function OnboardingPage() {
 
   // OAuth
   const [linkedinConnected, setLinkedinConnected] = useState(false)
-  const [googleConnected, setGoogleConnected] = useState(false)
   const [linkedinName, setLinkedinName] = useState('')
-  const [googleEmail, setGoogleEmail] = useState('')
   const [checkingOAuth, setCheckingOAuth] = useState(true)
 
   // State
@@ -127,14 +125,10 @@ export default function OnboardingPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('google_tokens, business_name, crm_location_id, provisioned_at')
+        .select('business_name, crm_location_id, provisioned_at')
         .eq('id', user.id)
         .single()
 
-      if (profile?.google_tokens?.access_token) {
-        setGoogleConnected(true)
-        setGoogleEmail(profile.google_tokens.email || '')
-      }
       if (profile?.business_name) setBusinessName(profile.business_name)
       if (profile?.provisioned_at) setProvisioned(true)
 
@@ -222,26 +216,6 @@ export default function OnboardingPage() {
       provider: 'linkedin_oidc',
       options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard/onboarding` },
     })
-  }
-
-  function connectGoogle() {
-    const w = 500, h = 600
-    const left = window.screenX + (window.innerWidth - w) / 2
-    const top = window.screenY + (window.innerHeight - h) / 2
-    const popup = window.open('/api/auth/google-connect', 'google-oauth', `width=${w},height=${h},left=${left},top=${top}`)
-    const poll = setInterval(() => {
-      if (popup?.closed) {
-        clearInterval(poll)
-        fetch('/api/auth/google-connect/status')
-          .then(r => r.json())
-          .then(d => {
-            if (d.connected) {
-              setGoogleConnected(true)
-              setGoogleEmail(d.email || '')
-            }
-          }).catch(() => {})
-      }
-    }, 500)
   }
 
   // Complete
@@ -390,26 +364,6 @@ export default function OnboardingPage() {
               {linkedinConnected && <span className="text-xs text-core-green/60">Profile imported</span>}
             </button>
 
-            {/* Google */}
-            <button
-              onClick={connectGoogle}
-              disabled={googleConnected}
-              className={`group w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border text-sm font-medium transition-all duration-200 ${
-                googleConnected
-                  ? 'bg-core-green/5 border-core-green/30 text-core-green'
-                  : 'bg-core-card border-core-border text-core-text-dim hover:border-core-border-hi cursor-pointer'
-              }`}
-            >
-              {googleConnected
-                ? <CheckCircle className="w-5 h-5 text-core-green" />
-                : <Chrome className="w-5 h-5 text-core-text-muted" />
-              }
-              <span className="flex-1 text-left">
-                {googleConnected ? `Connected — ${googleEmail}` : 'Connect Google'}
-              </span>
-              {!googleConnected && <ArrowRight className="w-4 h-4 text-core-text-muted group-hover:translate-x-0.5 transition-transform" />}
-              {googleConnected && <span className="text-xs text-core-green/60">Analytics + Calendar</span>}
-            </button>
           </div>
 
           {/* Provisioning tick */}
@@ -624,7 +578,6 @@ export default function OnboardingPage() {
           {/* Connection status */}
           <div className="flex items-center gap-4 mb-6 px-4 py-2.5 bg-core-card border border-core-border rounded-xl text-xs">
             <StatusChip connected={linkedinConnected} label="LinkedIn" />
-            <StatusChip connected={googleConnected} label="Google" />
             <StatusChip connected={provisioned} label="Account" />
             {brand && <StatusChip connected label="Brand" />}
           </div>
@@ -684,12 +637,6 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-2 text-sm">
                     <CheckCircle className="w-4 h-4 text-core-green shrink-0" />
                     <span className="text-core-text-dim">LinkedIn connected</span>
-                  </div>
-                )}
-                {googleConnected && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="w-4 h-4 text-core-green shrink-0" />
-                    <span className="text-core-text-dim">Google connected</span>
                   </div>
                 )}
                 {brand && (

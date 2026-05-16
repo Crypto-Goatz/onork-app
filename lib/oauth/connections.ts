@@ -14,7 +14,6 @@ import { createClient } from '@supabase/supabase-js'
 export type Provider =
   | 'slack'
   | 'linkedin'
-  | 'google'
   | 'crm'
   | 'github'
   | 'figma'
@@ -45,7 +44,7 @@ export interface UpsertConnectionInput {
   tokenType?: string | null
   expiresAt?: string | null // ISO timestamp
   scopes?: string | string[] | null
-  // Optional metadata blob (e.g. team_id for slack, sub for google, location_id for crm)
+  // Optional metadata blob (e.g. team_id for slack, location_id for crm)
   metadata?: Record<string, unknown> | null
   // If the caller already knows which 0nCore user to attach this to (for
   // example: the user is signed in and explicitly clicking "Connect"), pass

@@ -26,40 +26,6 @@ export interface OAuthProvider {
 }
 
 export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
-  google: {
-    id: 'google',
-    name: 'Google',
-    authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
-    tokenUrl: 'https://oauth2.googleapis.com/token',
-    scopes: [
-      'openid',
-      'email',
-      'profile',
-      'https://www.googleapis.com/auth/analytics.readonly',
-      'https://www.googleapis.com/auth/webmasters.readonly',
-      'https://www.googleapis.com/auth/gmail.readonly',
-      'https://www.googleapis.com/auth/gmail.send',
-      'https://www.googleapis.com/auth/drive.readonly',
-      'https://www.googleapis.com/auth/drive.file',
-      'https://www.googleapis.com/auth/spreadsheets',
-      'https://www.googleapis.com/auth/calendar',
-      'https://www.googleapis.com/auth/calendar.events',
-      'https://www.googleapis.com/auth/documents',
-      'https://www.googleapis.com/auth/tasks',
-    ],
-    profileUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
-    clientIdEnv: 'GOOGLE_CLIENT_ID',
-    clientSecretEnv: 'GOOGLE_CLIENT_SECRET',
-    redirectUriOverride: 'https://0ncore.com/api/auth/connect/google/callback',
-    extraAuthParams: { access_type: 'offline', prompt: 'consent' },
-    extractProfile: (data) => ({
-      provider_account_id: String(data.id || ''),
-      provider_email: (data.email as string) || null,
-      provider_name: (data.name as string) || null,
-      provider_avatar: (data.picture as string) || null,
-    }),
-  },
-
   facebook: {
     id: 'facebook',
     name: 'Facebook',

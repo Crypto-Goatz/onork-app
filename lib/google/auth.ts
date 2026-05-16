@@ -59,18 +59,6 @@ export function getServiceAccountAuth(userSaKey?: { client_email: string; privat
   return _jwtClient
 }
 
-// OAuth client for user-facing flows (Ads, user consent)
-export function getOAuthClient() {
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars required')
-  }
-  return new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI || 'https://0ncore.com/api/auth/google-connect/callback'
-  )
-}
-
 // Pre-configured API clients
 export function getAnalyticsDataClient() {
   const auth = getServiceAccountAuth()
