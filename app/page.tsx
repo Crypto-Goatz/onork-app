@@ -100,9 +100,9 @@ const TESTIMONIALS = [
     quote: '"This is the AI orchestration layer I\'ve been trying to build for 5 years. Existing tools call themselves orchestrators — 0nCore actually is one."',
   },
   {
-    name: 'Rachel Knapic',
-    handle: 'The Spa In Ligonier',
-    quote: '"I gave it the Mother\'s Day campaign in plain English and it built the workflow, the tags, the segment, and the social schedule. I clicked toggle. It just ran."',
+    name: 'Wellness operator',
+    handle: 'service business',
+    quote: '"I described the campaign in plain English and it built the workflow, the tags, the segment, and the social schedule. I clicked toggle. It just ran."',
   },
   {
     name: 'Designer @ studio',
@@ -245,20 +245,20 @@ function DashboardPreview() {
         </div>
         <div className="ml-3 px-3 py-1 rounded-md bg-zinc-900/60 border border-white/5 text-[11px] text-zinc-500 font-mono flex items-center gap-1.5">
           <span className="w-1 h-1 rounded-full bg-[#6EE05A]" />
-          0ncore.com/vip/spa
+          0ncore.com/vip
         </div>
       </div>
 
       {/* Branded header */}
       <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-black/30">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-[#2c4b43] flex items-center justify-center text-white text-[11px] font-bold">SL</div>
+          <div className="w-7 h-7 rounded-md bg-[#2c4b43] flex items-center justify-center text-white text-[11px] font-bold">0n</div>
           <div>
             <p className="text-[9px] uppercase tracking-widest text-[#c56a57] font-bold leading-none">VIP Dashboard</p>
-            <p className="text-xs font-bold text-white leading-tight">The Spa In Ligonier</p>
+            <p className="text-xs font-bold text-white leading-tight">Your VIP Workspace</p>
           </div>
         </div>
-        <div className="text-[10px] text-zinc-500 hidden sm:block">201 S Fairfield · (724) 238-9800</div>
+        <div className="text-[10px] text-zinc-500 hidden sm:block">Example preview</div>
       </div>
 
       {/* Active campaign banner */}
