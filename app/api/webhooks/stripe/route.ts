@@ -1,6 +1,7 @@
 // @ts-nocheck
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
+import { applyLifecycleTag, writeStripeIdsToCrmContact } from '@/lib/crm-billing-link'
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-06-20' as any })
@@ -8,6 +9,47 @@ function getStripe() {
 
 function getSupabase() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '')
+}
+
+/**
+ * Bidirectional Stripe → CRM sync for subscription events. Looks up the
+ * profile by stripe_customer_id, then writes Stripe IDs + lifecycle tag onto
+ * the master-location CRM contact. Skips silently when contact is missing.
+ */
+async function syncSubscriptionToCrm(
+  supabase: ReturnType<typeof getSupabase>,
+  sub: Stripe.Subscription,
+) {
+  try {
+    const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id
+    if (!customerId) return
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('id, email, crm_contact_id, stripe_customer_id')
+      .eq('stripe_customer_id', customerId)
+      .maybeSingle()
+
+    if (error) {
+      console.error('[stripe/webhook] profile lookup error:', error.message)
+      return
+    }
+    if (!profile?.crm_contact_id) {
+      console.log(
+        `[stripe/webhook] No crm_contact_id for stripe_customer ${customerId} (user not yet claimed workspace) — skipping CRM sync`,
+      )
+      return
+    }
+
+    await writeStripeIdsToCrmContact({
+      contactId: profile.crm_contact_id,
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: sub.id,
+    })
+    await applyLifecycleTag({ contactId: profile.crm_contact_id, stripeStatus: sub.status })
+  } catch (err) {
+    console.error('[stripe/webhook] syncSubscriptionToCrm threw:', (err as Error).message)
+  }
 }
 
 /** Log every webhook event to stripe_webhook_logs for admin visibility */
@@ -43,6 +85,22 @@ export async function POST(req: Request) {
 
   const supabase = getSupabase()
   let processed = false
+
+  // Idempotency — bail if we've already processed this event.
+  try {
+    const { data: dup } = await supabase
+      .from('stripe_webhook_logs')
+      .select('event_id, processed')
+      .eq('event_id', event.id)
+      .maybeSingle()
+    if (dup?.processed) {
+      console.log(`[stripe/webhook] duplicate event ${event.id} (${event.type}) — skipping`)
+      return Response.json({ received: true, duplicate: true })
+    }
+  } catch (err) {
+    // Lookup failure shouldn't block — log and continue.
+    console.warn('[stripe/webhook] idempotency lookup failed:', (err as Error).message)
+  }
 
   try {
   switch (event.type) {
@@ -181,6 +239,11 @@ export async function POST(req: Request) {
       }
       break
     }
+    case 'customer.subscription.created': {
+      const sub = event.data.object
+      await syncSubscriptionToCrm(supabase, sub)
+      break
+    }
     case 'customer.subscription.updated': {
       const sub = event.data.object
       await supabase.from('product_subscriptions').update({
@@ -189,11 +252,13 @@ export async function POST(req: Request) {
         current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
         cancel_at_period_end: sub.cancel_at_period_end,
       }).eq('stripe_subscription_id', sub.id)
+      await syncSubscriptionToCrm(supabase, sub)
       break
     }
     case 'customer.subscription.deleted': {
       const sub = event.data.object
       await supabase.from('product_subscriptions').update({ status: 'cancelled', cancel_at_period_end: false }).eq('stripe_subscription_id', sub.id)
+      await syncSubscriptionToCrm(supabase, sub)
       break
     }
     case 'invoice.payment_succeeded': {

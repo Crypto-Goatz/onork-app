@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
   const sb = admin()
   const { data: profile } = await sb
     .from('profiles')
-    .select('stripe_customer_id, email')
+    .select('stripe_customer_id, email, crm_contact_id')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -73,7 +73,10 @@ export async function GET(req: NextRequest) {
   if (!customerId) {
     const customer = await stripe.customers.create({
       email: user.email ?? profile?.email ?? undefined,
-      metadata: { user_id: user.id },
+      metadata: {
+        user_id: user.id,
+        ...(profile?.crm_contact_id ? { crm_contact_id: profile.crm_contact_id } : {}),
+      },
     })
     customerId = customer.id
     await sb.from('profiles').update({ stripe_customer_id: customer.id }).eq('id', user.id)

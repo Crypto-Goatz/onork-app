@@ -114,18 +114,22 @@ export async function POST(request: Request) {
         results.stripe_customer_id = profile.stripe_customer_id
         results.stripe_status = 'existing'
       } else {
+        const stripeParams: Record<string, string> = {
+          email,
+          name: name || '',
+          'metadata[user_id]': userId,
+          'metadata[source]': '0ncore',
+        }
+        if (typeof results.crm_contact_id === 'string' && results.crm_contact_id) {
+          stripeParams['metadata[crm_contact_id]'] = results.crm_contact_id
+        }
         const res = await fetch('https://api.stripe.com/v1/customers', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${STRIPE_SECRET}`,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: new URLSearchParams({
-            email,
-            name: name || '',
-            'metadata[user_id]': userId,
-            'metadata[source]': '0ncore',
-          }),
+          body: new URLSearchParams(stripeParams),
         })
         const customer = await res.json()
 

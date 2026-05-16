@@ -34,7 +34,7 @@ export async function POST(req: Request) {
   // Get profile
   const { data: profile } = await supabase
     .from('profiles')
-    .select('email, full_name')
+    .select('email, full_name, crm_contact_id')
     .eq('id', user.id)
     .single()
 
@@ -51,7 +51,10 @@ export async function POST(req: Request) {
     const customer = await getStripe().customers.create({
       email: profile?.email || user.email!,
       name: profile?.full_name || undefined,
-      metadata: { user_id: user.id },
+      metadata: {
+        user_id: user.id,
+        ...(profile?.crm_contact_id ? { crm_contact_id: profile.crm_contact_id } : {}),
+      },
     })
     customerId = customer.id
     await supabase.from('run_balances').upsert({
