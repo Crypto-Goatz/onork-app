@@ -15,12 +15,12 @@ export const dynamic = 'force-dynamic'
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ref?: string }>
+  searchParams: Promise<{ ref?: string; email?: string }>
 }) {
   const sp = await searchParams
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#0d1117]" />}>
-      <SignupCinematic refCode={sp.ref} />
+      <SignupCinematic refCode={sp.ref} initialEmail={sp.email} />
     </Suspense>
   )
 }

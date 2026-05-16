@@ -54,12 +54,18 @@ function StepField({ show, label, children }: StepFieldProps) {
 const FIELD_CLASS =
   'w-full bg-transparent border-0 border-b border-[#30363d] focus:border-[#6EE05A]/70 text-xl sm:text-2xl text-white placeholder:text-[#6b7681] pb-3 pt-1 focus:outline-none transition-colors'
 
-export default function SignupCinematic({ refCode }: { refCode?: string }) {
+export default function SignupCinematic({
+  refCode,
+  initialEmail,
+}: {
+  refCode?: string
+  initialEmail?: string
+}) {
   const router = useRouter()
   const supabase = createClient()
 
   const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(initialEmail?.trim() ?? '')
   const [company, setCompany] = useState('')
   const [password, setPassword] = useState('')
 
@@ -77,36 +83,20 @@ export default function SignupCinematic({ refCode }: { refCode?: string }) {
     }
   }, [refCode])
 
-  const showEmail = fullName.trim().length >= 2
+  // If email is prefilled from the homepage, advance the reveal so the user
+  // doesn't see fields disappear after they already typed their email.
+  const hasPrefilledEmail = !!initialEmail && EMAIL_RE.test(initialEmail.trim())
+  const showEmail = fullName.trim().length >= 2 || hasPrefilledEmail
   const showCompany = showEmail && EMAIL_RE.test(email.trim())
   const showPassword = showCompany && company.trim().length >= 2
   const canSubmit =
     showPassword && password.length >= 8 && !submitting
 
-  async function handleOAuth(provider: 'google' | 'linkedin_oidc') {
+  async function handleOAuth(provider: 'linkedin_oidc') {
     setError(null)
     const options: Record<string, unknown> = {
       redirectTo: `${window.location.origin}/auth/callback`,
-    }
-    if (provider === 'google') {
-      options.queryParams = {
-        access_type: 'offline',
-        prompt: 'consent',
-        scope: [
-          'openid',
-          'email',
-          'profile',
-          'https://www.googleapis.com/auth/analytics.readonly',
-          'https://www.googleapis.com/auth/webmasters.readonly',
-          'https://www.googleapis.com/auth/gmail.readonly',
-          'https://www.googleapis.com/auth/drive.readonly',
-          'https://www.googleapis.com/auth/spreadsheets',
-          'https://www.googleapis.com/auth/calendar',
-        ].join(' '),
-      }
-    }
-    if (provider === 'linkedin_oidc') {
-      options.scopes = 'openid profile email w_member_social'
+      scopes: 'openid profile email w_member_social',
     }
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider,
@@ -249,16 +239,8 @@ export default function SignupCinematic({ refCode }: { refCode?: string }) {
             Free signup
           </div>
 
-          {/* OAuth row */}
+          {/* OAuth row — LinkedIn only (Google removed) */}
           <div className="space-y-2 mb-5">
-            <button
-              type="button"
-              onClick={() => handleOAuth('google')}
-              className="w-full flex items-center justify-center gap-2.5 text-sm font-medium bg-white text-[#0d1117] py-2.5 rounded-lg hover:bg-white/90 transition"
-            >
-              <span className="inline-block w-4 h-4 rounded-full bg-gradient-to-br from-[#EA4335] via-[#FBBC04] to-[#34A853]" />
-              Continue with Google
-            </button>
             <button
               type="button"
               onClick={() => handleOAuth('linkedin_oidc')}

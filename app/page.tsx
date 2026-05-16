@@ -202,23 +202,41 @@ function Hero() {
           wired into your CRM out of the box.
         </p>
 
-        <div className="flex flex-wrap items-center justify-center gap-3 mb-16">
-          <Link
-            href="/signup"
-            className="group inline-flex items-center gap-2 bg-[#6EE05A] text-black font-semibold rounded-lg px-6 py-3 hover:brightness-110 transition-all duration-150 shadow-[0_0_50px_-10px_rgba(110,224,90,0.55)]"
+        <div className="flex flex-col items-center gap-3.5 mb-16">
+          <form
+            action="/signup"
+            method="get"
+            className="flex w-full max-w-xl flex-col sm:flex-row items-stretch gap-2"
           >
-            Get started
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-          <Link
-            href="https://github.com/0nork"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 bg-white/5 text-zinc-200 border border-white/10 rounded-lg px-6 py-3 hover:bg-white/10 hover:border-white/20 transition-all duration-150 backdrop-blur-sm"
-          >
-            <Globe className="w-4 h-4" />
-            GitHub
-          </Link>
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="you@yourcompany.com"
+              autoComplete="email"
+              aria-label="Your work email"
+              className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-5 py-3.5 text-base text-white placeholder-white/30 outline-none focus:border-[#6EE05A]/60 focus:bg-white/[0.07] transition-all"
+            />
+            <button
+              type="submit"
+              className="group inline-flex items-center justify-center gap-2 bg-[#6EE05A] text-black font-semibold rounded-lg px-6 py-3.5 hover:brightness-110 transition-all duration-150 shadow-[0_0_50px_-10px_rgba(110,224,90,0.55)] whitespace-nowrap"
+            >
+              Get your workspace
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </form>
+          <p className="text-xs text-white/45">
+            Free · No credit card · Live in 30 seconds
+            <span className="mx-2 text-white/15">·</span>
+            <Link
+              href="https://github.com/0nork"
+              target="_blank"
+              rel="noreferrer"
+              className="text-white/55 hover:text-white underline-offset-4 hover:underline"
+            >
+              view on GitHub
+            </Link>
+          </p>
         </div>
 
         {/* Hero centerpiece — VIP dashboard preview */}
@@ -701,25 +719,43 @@ function FinalCta() {
           Free to start. Live to your CRM in 30 seconds.
         </h2>
         <p className="text-lg text-zinc-400 leading-relaxed mb-9">
-          Sign up. Connect Google or LinkedIn. Watch the platform provision your
-          CRM sub-location. Describe your first outcome. Toggle on.
+          Drop your email. We provision your CRM sub-location, mint your token,
+          and open the canvas. Describe your first outcome. Toggle on.
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/signup"
-            className="group inline-flex items-center gap-2 bg-[#6EE05A] text-black font-semibold rounded-lg px-6 py-3 hover:brightness-110 transition-all duration-150 shadow-[0_0_50px_-10px_rgba(110,224,90,0.5)]"
+        <form
+          action="/signup"
+          method="get"
+          className="flex w-full max-w-xl mx-auto flex-col sm:flex-row items-stretch gap-2"
+        >
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="you@yourcompany.com"
+            autoComplete="email"
+            aria-label="Your work email"
+            className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-5 py-3.5 text-base text-white placeholder-white/30 outline-none focus:border-[#6EE05A]/60 focus:bg-white/[0.07] transition-all"
+          />
+          <button
+            type="submit"
+            className="group inline-flex items-center justify-center gap-2 bg-[#6EE05A] text-black font-semibold rounded-lg px-6 py-3.5 hover:brightness-110 transition-all duration-150 shadow-[0_0_50px_-10px_rgba(110,224,90,0.5)] whitespace-nowrap"
           >
-            Get started <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
+            Get your workspace
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        </form>
+        <p className="text-xs text-white/45 mt-4">
+          Free · No credit card · Live in 30 seconds
+          <span className="mx-2 text-white/15">·</span>
           <Link
             href="https://github.com/0nork"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 bg-white/5 text-zinc-200 border border-white/10 rounded-lg px-6 py-3 hover:bg-white/10 hover:border-white/20 transition-all duration-150 backdrop-blur-sm"
+            className="text-white/55 hover:text-white underline-offset-4 hover:underline"
           >
-            <Globe className="w-4 h-4" /> GitHub
+            view on GitHub
           </Link>
-        </div>
+        </p>
       </div>
     </section>
   )
