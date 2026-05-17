@@ -31,8 +31,12 @@ export const AGENCY_APP = {
 
 export const MARKETPLACE_APP = {
   appId: SUB_LOCATION_APP.appId,
-  clientId: process.env.CRM_MARKETPLACE_APP_CLIENT_ID || process.env.CRM_MARKETPLACE_CLIENT_ID || '69c762225a31e1cd2f28dd4c-mnu5pazi',
+  // Rotated 2026-05-17 — new credentials issued in the marketplace dashboard.
+  // The two older client IDs are kept as alt fallbacks in case existing installs
+  // are still pinned to them; new installs use the current credentials.
+  clientId: process.env.CRM_MARKETPLACE_APP_CLIENT_ID || process.env.CRM_MARKETPLACE_CLIENT_ID || '69c762225a31e1cd2f28dd4c-mpa19g2x',
   altClientId: '69c762225a31e1cd2f28dd4c-mnsa16jo',
+  legacyClientId: '69c762225a31e1cd2f28dd4c-mnu5pazi',
   clientSecret: process.env.CRM_MARKETPLACE_CLIENT_SECRET || '',
   sharedSecret: process.env.CRM_MARKETPLACE_SHARED_SECRET || '',
   redirectUri: SUB_LOCATION_APP.redirectUri,
