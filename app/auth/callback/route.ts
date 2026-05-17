@@ -26,6 +26,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 import { postSignupProvision, kickOffBackgroundProvision } from '@/lib/provision/post-signup'
 
+// after() callbacks (background CRM sub-location provisioning) are bounded by maxDuration.
+export const maxDuration = 60
+export const runtime = 'nodejs'
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')

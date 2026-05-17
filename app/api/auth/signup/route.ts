@@ -17,6 +17,11 @@ import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { postSignupProvision, kickOffBackgroundProvision } from '@/lib/provision/post-signup'
 
+// Vercel bounds total execution (including after() callbacks) by maxDuration.
+// CRM sub-location create + master snapshot deploy can take 20-40s, so set 60.
+export const maxDuration = 60
+export const runtime = 'nodejs'
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
