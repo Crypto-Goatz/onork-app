@@ -27,6 +27,7 @@ import { createClient } from '@supabase/supabase-js'
 import { findFamilyMatch } from '@/lib/family-locations'
 import { getPitForLocation } from '@/lib/crm'
 import { ensureLocationInstall } from '@/lib/crm/location-token'
+import { provisionSubLocation } from '@/lib/provision'
 
 const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
@@ -177,12 +178,16 @@ export async function postSignupProvision(
 
   // 5. Sub-location provisioning OR location-token mint
   //
-  // CHANGED 2026-05-13: non-family users no longer auto-provision a
-  // sub-location. They claim it on demand via /api/workspace/claim.
-  // Rationale: free-tier seat hygiene + cleaner conversion signal +
-  // failure isolation. The lead is already in the master CRM (step 4)
-  // and gets the welcome workflow either way. See ADR / Mike's call.
+  // CHANGED 2026-05-15 (reversed 2026-05-13 decision): non-family users
+  // now auto-provision a sub-location in the background at signup.
+  // Rationale: 73% claim-drop on the manual "claim your workspace"
+  // button (38 of 52 users). Auto-provisioning at signup + polling UI
+  // on /welcome closes the gap. Sub-location creation takes ~15-20s, so
+  // we fire-and-forget here and let the /welcome page poll
+  // /api/profile/provision-status.
   if (familyLocationId) {
+    // Family users share an existing location — just ensure the
+    // location-token is installed. No new sub-location created.
     ensureLocationInstall(familyLocationId)
       .then((m) =>
         console.log(`[post-signup] location-token mint ${familyLocationId}: ${m.source}`),
@@ -190,6 +195,60 @@ export async function postSignupProvision(
       .catch((err) =>
         console.error(`[post-signup] location-token mint threw:`, err),
       )
+  } else if (!existing?.crm_location_id) {
+    // Non-family users — kick off sub-location creation in the background.
+    // Stamp provisioning_started_at BEFORE firing so the UI knows we're working.
+    // provisionSubLocation() is idempotent and re-checks crm_location_id, so a
+    // race between this and a manual /api/workspace/claim retry is safe.
+    try {
+      await sb
+        .from('profiles')
+        .update({
+          provisioning_started_at: new Date().toISOString(),
+          provisioning_error: null,
+        })
+        .eq('id', input.userId)
+    } catch (err) {
+      console.error('[post-signup] failed to stamp provisioning_started_at:', err)
+    }
+
+    // Fire-and-forget. Errors get written to profiles.provisioning_error so
+    // the /welcome polling UI can surface them with a retry button.
+    provisionSubLocation(input.userId)
+      .then((result) => {
+        if (result.success) {
+          console.log(
+            `[post-signup] background provisioning OK for ${input.email}: ${result.locationId}`,
+          )
+        } else {
+          const errMsg = result.errors.join('; ').slice(0, 1000) || 'unknown failure'
+          console.error(
+            `[post-signup] background provisioning failed for ${input.email}:`,
+            errMsg,
+          )
+          sb.from('profiles')
+            .update({ provisioning_error: errMsg })
+            .eq('id', input.userId)
+            .then(({ error }) => {
+              if (error)
+                console.error('[post-signup] failed to write provisioning_error:', error)
+            })
+        }
+      })
+      .catch((err) => {
+        const errMsg = err instanceof Error ? err.message : String(err)
+        console.error(
+          `[post-signup] background provisioning threw for ${input.email}:`,
+          errMsg,
+        )
+        sb.from('profiles')
+          .update({ provisioning_error: errMsg.slice(0, 1000) })
+          .eq('id', input.userId)
+          .then(({ error }) => {
+            if (error)
+              console.error('[post-signup] failed to write provisioning_error:', error)
+          })
+      })
   }
 
   // 6. Audit row (idempotent on signup_complete)

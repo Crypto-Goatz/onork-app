@@ -16,6 +16,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import WelcomePanel, { type CardAccess } from '@/components/welcome/WelcomePanel'
 import ClaimWorkspaceBanner from '@/components/welcome/ClaimWorkspaceBanner'
+import WorkspaceProvisioningStatus from '@/components/welcome/WorkspaceProvisioningStatus'
 import { FAMILY_LOCATIONS, findFamilyMatch } from '@/lib/family-locations'
 import { getTierCapabilities } from '@/lib/permissions'
 
@@ -36,6 +37,8 @@ interface ProfileRow {
   plan: string | null
   crm_location_id: string | null
   is_admin: boolean | null
+  provisioning_started_at: string | null
+  provisioning_error: string | null
 }
 
 const PLAN_RANK: Record<string, number> = {
@@ -70,7 +73,7 @@ export default async function WelcomePage() {
   // created it on signup, but we defend against missing rows here)
   let { data: profile } = await sb
     .from('profiles')
-    .select('id, email, full_name, plan, crm_location_id, is_admin')
+    .select('id, email, full_name, plan, crm_location_id, is_admin, provisioning_started_at, provisioning_error')
     .eq('id', user.id)
     .maybeSingle<ProfileRow>()
 
@@ -83,7 +86,7 @@ export default async function WelcomePage() {
         full_name: (user.user_metadata?.full_name as string) ?? null,
         plan: 'free',
       })
-      .select('id, email, full_name, plan, crm_location_id, is_admin')
+      .select('id, email, full_name, plan, crm_location_id, is_admin, provisioning_started_at, provisioning_error')
       .single<ProfileRow>()
     profile = created ?? null
   }
@@ -108,12 +111,27 @@ export default async function WelcomePage() {
 
   const tierCaps = getTierCapabilities(plan)
 
-  // Claim card surfaces only for users who have no workspace AND no family
-  // match. Family-matched users already share an existing location.
-  const showClaim = !profileLocationId && !familyLocation
+  // Workspace state machine for the top-of-page banner:
+  //   - Has location (own or family) → render nothing (workspace cards below)
+  //   - No location, provisioning started → live polling status component
+  //   - No location, provisioning never started → legacy manual claim banner
+  //     (covers users who signed up before the auto-provision change)
+  const provisioningStartedAt = profile?.provisioning_started_at ?? null
+  const showProvisioningStatus =
+    !profileLocationId && !familyLocation && !!provisioningStartedAt
+  const showClaim =
+    !profileLocationId && !familyLocation && !provisioningStartedAt
 
   return (
     <>
+      {showProvisioningStatus && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10">
+          <WorkspaceProvisioningStatus
+            userName={profile?.full_name ?? null}
+            initialStartedAt={provisioningStartedAt}
+          />
+        </div>
+      )}
       {showClaim && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10">
           <ClaimWorkspaceBanner userName={profile?.full_name ?? null} />

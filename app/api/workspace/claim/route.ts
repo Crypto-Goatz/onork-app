@@ -23,11 +23,20 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { provisionSubLocation } from '@/lib/provision'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
+
+function admin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  )
+}
 
 export async function POST(_req: NextRequest) {
   // Cookie-only session check (CLAUDE.md rule 12 — no getUser)
@@ -39,9 +48,36 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'unauthenticated' }, { status: 401 })
   }
 
+  // Stamp provisioning_started_at + clear any previous error BEFORE firing —
+  // covers the manual retry path where a row may not yet have this set, and
+  // ensures the polling UI sees a fresh in_progress state. Service-role
+  // client because RLS on profiles is locked down.
+  const sb = admin()
+  try {
+    await sb
+      .from('profiles')
+      .update({
+        provisioning_started_at: new Date().toISOString(),
+        provisioning_error: null,
+      })
+      .eq('id', user.id)
+  } catch (err) {
+    console.error('[workspace/claim] failed to stamp provisioning_started_at:', err)
+    // Continue — non-fatal. Provisioning can still proceed.
+  }
+
   const result = await provisionSubLocation(user.id)
 
   if (!result.success) {
+    const errMsg = result.errors.join('; ').slice(0, 1000) || 'unknown failure'
+    try {
+      await sb
+        .from('profiles')
+        .update({ provisioning_error: errMsg })
+        .eq('id', user.id)
+    } catch (err) {
+      console.error('[workspace/claim] failed to write provisioning_error:', err)
+    }
     return NextResponse.json(
       {
         ok: false,
@@ -52,6 +88,7 @@ export async function POST(_req: NextRequest) {
     )
   }
 
+  // Success — leave provisioning_error null (the update above already cleared it)
   return NextResponse.json({
     ok: true,
     status: result.locationName === 'existing' ? 'existing' : 'created',
