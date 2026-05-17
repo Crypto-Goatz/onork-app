@@ -77,6 +77,8 @@ export interface ProvisionResult {
   crmContactId: string | null
   /** Whether the profile was already provisioned (idempotent re-run) */
   alreadyProvisioned: boolean
+  /** Caller should wrap kickOffBackgroundProvision(userId) in after() */
+  needsBackgroundProvision: boolean
 }
 
 export async function postSignupProvision(
@@ -196,10 +198,13 @@ export async function postSignupProvision(
         console.error(`[post-signup] location-token mint threw:`, err),
       )
   } else if (!existing?.crm_location_id) {
-    // Non-family users — kick off sub-location creation in the background.
-    // Stamp provisioning_started_at BEFORE firing so the UI knows we're working.
-    // provisionSubLocation() is idempotent and re-checks crm_location_id, so a
-    // race between this and a manual /api/workspace/claim retry is safe.
+    // Non-family users — stamp provisioning_started_at so the polling UI
+    // shows "in progress" immediately. The actual provisionSubLocation()
+    // call is fired by the route handler via after() (next/server) so the
+    // Vercel lambda stays alive past the response — fire-and-forget DOES
+    // NOT work on serverless (lambda dies on response, killing the
+    // background promise). Return needsBackgroundProvision: true to signal
+    // the caller to wrap kickOffBackgroundProvision in after().
     try {
       await sb
         .from('profiles')
@@ -211,44 +216,6 @@ export async function postSignupProvision(
     } catch (err) {
       console.error('[post-signup] failed to stamp provisioning_started_at:', err)
     }
-
-    // Fire-and-forget. Errors get written to profiles.provisioning_error so
-    // the /welcome polling UI can surface them with a retry button.
-    provisionSubLocation(input.userId)
-      .then((result) => {
-        if (result.success) {
-          console.log(
-            `[post-signup] background provisioning OK for ${input.email}: ${result.locationId}`,
-          )
-        } else {
-          const errMsg = result.errors.join('; ').slice(0, 1000) || 'unknown failure'
-          console.error(
-            `[post-signup] background provisioning failed for ${input.email}:`,
-            errMsg,
-          )
-          sb.from('profiles')
-            .update({ provisioning_error: errMsg })
-            .eq('id', input.userId)
-            .then(({ error }) => {
-              if (error)
-                console.error('[post-signup] failed to write provisioning_error:', error)
-            })
-        }
-      })
-      .catch((err) => {
-        const errMsg = err instanceof Error ? err.message : String(err)
-        console.error(
-          `[post-signup] background provisioning threw for ${input.email}:`,
-          errMsg,
-        )
-        sb.from('profiles')
-          .update({ provisioning_error: errMsg.slice(0, 1000) })
-          .eq('id', input.userId)
-          .then(({ error }) => {
-            if (error)
-              console.error('[post-signup] failed to write provisioning_error:', error)
-          })
-      })
   }
 
   // 6. Audit row (idempotent on signup_complete)
@@ -284,5 +251,52 @@ export async function postSignupProvision(
     vip: familyVip,
     crmContactId,
     alreadyProvisioned,
+    // Non-family, no existing location → caller MUST kick off provisioning
+    // via after() so the Vercel lambda stays alive past the response.
+    needsBackgroundProvision: !familyLocationId && !existing?.crm_location_id,
+  }
+}
+
+/**
+ * Kicks off CRM sub-location provisioning for a non-family user.
+ * MUST be wrapped in `after()` from 'next/server' by the route handler so
+ * the Vercel lambda stays alive past the HTTP response. Fire-and-forget
+ * from inside lib code does NOT work — the lambda dies on response and
+ * the background promise never completes.
+ *
+ * Writes profiles.provisioning_error on failure. provisionSubLocation()
+ * itself writes crm_location_id + provisioned_at on success.
+ */
+export async function kickOffBackgroundProvision(userId: string): Promise<void> {
+  const sb = admin()
+  try {
+    const result = await provisionSubLocation(userId)
+    if (result.success) {
+      console.log(
+        `[post-signup] background provision OK for ${userId}: ${result.locationId}`,
+      )
+    } else {
+      const errMsg = result.errors.join('; ').slice(0, 1000) || 'unknown failure'
+      console.error(`[post-signup] background provision failed ${userId}:`, errMsg)
+      try {
+        await sb
+          .from('profiles')
+          .update({ provisioning_error: errMsg })
+          .eq('id', userId)
+      } catch (writeErr) {
+        console.error('[post-signup] failed to write provisioning_error:', writeErr)
+      }
+    }
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : String(err)
+    console.error(`[post-signup] background provision threw ${userId}:`, errMsg)
+    try {
+      await sb
+        .from('profiles')
+        .update({ provisioning_error: errMsg.slice(0, 1000) })
+        .eq('id', userId)
+    } catch (writeErr) {
+      console.error('[post-signup] failed to write provisioning_error:', writeErr)
+    }
   }
 }

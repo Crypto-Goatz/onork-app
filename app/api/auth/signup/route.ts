@@ -13,9 +13,9 @@
  * email/password users and OAuth users end up identically provisioned.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { postSignupProvision } from '@/lib/provision/post-signup'
+import { postSignupProvision, kickOffBackgroundProvision } from '@/lib/provision/post-signup'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -82,6 +82,14 @@ export async function POST(req: NextRequest) {
       website: website || null,
       source: '0ncore-signup',
     })
+
+    // Non-family signup → fire CRM sub-location provisioning AFTER the response
+    // ships. after() (Next 16 stable) keeps the Vercel lambda alive past response
+    // so the background promise actually completes — fire-and-forget alone does
+    // NOT work on serverless (lambda dies on response).
+    if (result.needsBackgroundProvision) {
+      after(() => kickOffBackgroundProvision(userId))
+    }
 
     return NextResponse.json({
       ok: true,

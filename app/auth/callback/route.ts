@@ -21,10 +21,10 @@
  *        - else → /dashboard
  */
 
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
-import { postSignupProvision } from '@/lib/provision/post-signup'
+import { postSignupProvision, kickOffBackgroundProvision } from '@/lib/provision/post-signup'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -146,7 +146,7 @@ export async function GET(request: Request) {
       (user.user_metadata?.full_name as string) ||
       (user.user_metadata?.name as string) ||
       null
-    await postSignupProvision({
+    const result = await postSignupProvision({
       userId: user.id,
       email: user.email || '',
       fullName,
@@ -156,6 +156,11 @@ export async function GET(request: Request) {
           ? `oauth-${user.identities.find((i) => i.provider !== 'email')!.provider}`
           : '0ncore-signup',
     })
+    // Keep the lambda alive past the redirect response so the CRM
+    // sub-location provision actually completes (PF-018 territory).
+    if (result.needsBackgroundProvision) {
+      after(() => kickOffBackgroundProvision(user.id))
+    }
   } catch (err) {
     console.error('[auth/callback] postSignupProvision threw:', err)
     // Continue — don't block login on provisioning hiccups
