@@ -68,8 +68,9 @@ export async function provisionSubLocation(userId: string): Promise<ProvisionRes
   const locationName = `${businessName} — 0nCore`
 
   try {
-    // Create the sub-location via CRM Agency API
-    const createRes = await fetch(`${CRM_API}/locations`, {
+    // Create the sub-location via CRM Agency API.
+    // NOTE: trailing slash is REQUIRED — `/locations` returns 404, `/locations/` is the canonical endpoint.
+    const createRes = await fetch(`${CRM_API}/locations/`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${agencyPit}`,
