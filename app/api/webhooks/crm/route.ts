@@ -33,21 +33,32 @@ export const maxDuration = 5
 /**
  * The ONLY events we accept inbound. Anything else gets a fast 200 + drop.
  *
- * As of 2026-05-05 this is intentionally empty — no inbound events feed any
- * production feature in onork-app today. The /vip/spa dashboard pulls live
- * from CRM via PIT (outbound), Stripe webhooks go to /api/webhooks/stripe,
- * and the 0nCore add-on framework's marketplace fan-out is parked.
+ * As of 2026-05-18: 3 LIFECYCLE events are wired for the public marketplace
+ * launch. These are low-volume (one event per install/uninstall/rename per
+ * user, not per-contact) so they can be handled inline without queuing.
+ *
+ * High-volume events (contact.*, conversation.*, opportunity.*) remain off
+ * the whitelist — they require the queued drain pipeline first, and the
+ * May 4 incident (278 GB-Hrs burned on tag-add fan-out) is the case-study
+ * for why.
  *
  * Add events here ONLY when:
- *   1. There's a concrete handler in the drain cron that does something with it
- *   2. The event has been added to the GHL Dev Portal app's webhook subscription
+ *   1. There's a concrete handler that does something with it
+ *   2. The event has been added to the marketplace app's webhook subscription
  *   3. We've confirmed the new event volume doesn't blow GB-Hrs at scale
  */
 const HANDLED: ReadonlySet<string> = new Set<string>([
-  // Intentionally empty — no inbound CRM webhooks are wired to anything yet.
-  // When you wire one, add the EXACT eventType string here. e.g.:
-  //   'AppointmentCreate',
-  //   'OpportunityStatusUpdate',
+  // Lifecycle (low volume, handled inline below)
+  'INSTALL',          // canonical marketplace install event
+  'UNINSTALL',        // canonical marketplace uninstall event
+  'LocationUpdate',   // sub-location renamed/branding changed
+  // Lowercase / dot-notation variants — defensive, since the CRM marketplace
+  // platform has used different conventions in different release notes
+  'install',
+  'uninstall',
+  'app.installation',
+  'app.uninstall',
+  'location.update',
 ])
 
 const admin = createClient(
@@ -75,7 +86,10 @@ export async function POST(req: NextRequest) {
 
   // ── Below here only runs for events we explicitly opted into ─────
   const locationId = String(body.locationId || body.location_id || '')
+  const companyId = String(body.companyId || body.company_id || '')
+  const appId = String(body.appId || body.app_id || '')
 
+  // Always queue for audit / replay
   try {
     await admin.from('webhook_events_queue').insert({
       source: 'crm',
@@ -87,5 +101,51 @@ export async function POST(req: NextRequest) {
     console.error('[crm-webhook] enqueue failed:', err instanceof Error ? err.message : err)
   }
 
-  return NextResponse.json({ received: true, queued: true, event: eventType })
+  // ── Inline lifecycle handlers — low volume, no fan-out, safe to run sync ──
+  try {
+    const normalized = eventType.toLowerCase()
+    if (normalized === 'install' || normalized === 'app.installation') {
+      // OAuth callback is the canonical install path. This event is
+      // belt-and-suspenders: mark the install as confirmed-by-CRM.
+      if (locationId) {
+        await admin.from('crm_installations')
+          .update({ status: 'active', last_health_check: new Date().toISOString() })
+          .eq('location_id', locationId)
+          .eq('app_id', appId || process.env.CRM_MARKETPLACE_APP_ID || '69c762225a31e1cd2f28dd4c')
+      }
+    } else if (normalized === 'uninstall' || normalized === 'app.uninstall') {
+      // Hard requirement for a public marketplace app — clean up when a
+      // user removes us from their sub-location.
+      if (locationId) {
+        await admin.from('crm_installations')
+          .update({
+            status: 'uninstalled',
+            access_token: null,
+            refresh_token: null,
+            last_health_check: new Date().toISOString(),
+          })
+          .eq('location_id', locationId)
+
+        // Clear the user's crm_location_id pointer so the next /welcome render
+        // shows them the claim-workspace banner instead of a stale dead link.
+        await admin.from('profiles')
+          .update({ crm_location_id: null })
+          .eq('crm_location_id', locationId)
+      }
+    } else if (normalized === 'locationupdate' || normalized === 'location.update') {
+      // Sub-location renamed / branding changed. Update our metadata cache.
+      if (locationId) {
+        await admin.from('crm_installations')
+          .update({
+            metadata: { last_location_update_at: new Date().toISOString(), ...((body.location || {}) as Record<string, unknown>) },
+          })
+          .eq('location_id', locationId)
+      }
+    }
+  } catch (err) {
+    console.error(`[crm-webhook] ${eventType} handler failed:`, err instanceof Error ? err.message : err)
+    // Still return 200 — we logged + queued; don't let CRM retry-storm us
+  }
+
+  return NextResponse.json({ received: true, queued: true, event: eventType, companyId: companyId || undefined })
 }
