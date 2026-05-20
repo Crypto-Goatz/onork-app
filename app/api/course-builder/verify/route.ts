@@ -35,7 +35,7 @@ const ALLOWED_LOCATIONS = new Set<string>([
   '6MSqx0trfxgLxeHBJE1k', // RocketOpp (agency master)
   'AeY8M0GNOuJPNkLQ7AAC', // In2sight LLC
   'Ev1Bzj84a2vljzCkfBEM', // 0nMCP
-  'F76MNKOMQCMruMrumtdf', // Spa Ligonier
+  'F76MNKOMQCMruMrumtdf', // client
 ])
 
 interface VerifyReport {
