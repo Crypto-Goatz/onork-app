@@ -500,7 +500,7 @@ export default function AgencyCommandCenter() {
                 { text: 'Patent #5 filed', meta: 'Knowledge Layers — #64/024,736', time: 'Apr 1', dot: 'purple' },
                 { text: '0nDefender deployed', meta: '0nWatch + 0nSeal + 0nAlert active', time: 'Apr 1', dot: 'cyan' },
                 { text: '0nmcp.com redesign', meta: '824+ pages, SXO Living DOM', time: 'Mar 31', dot: 'amber' },
-                { text: 'WordPress deployed', meta: 'The Spa In Ligonier on WP Engine', time: 'Mar 31', dot: 'green' },
+                { text: 'WordPress deployed', meta: 'Client WP Engine deploy', time: 'Mar 31', dot: 'green' },
               ].map((item, i) => (
                 <li key={i} className="jp-activity-item">
                   <span className={`jp-activity-dot ${item.dot}`} />
@@ -799,7 +799,7 @@ export default function AgencyCommandCenter() {
               {[
                 { label: 'Agency PIT', id: process.env.NEXT_PUBLIC_CRM_AGENCY_PIT ? 'Connected' : 'pit-e789...a316', scope: 'All Locations', colorClass: 'bg-core-green/15 text-core-green border-core-green/20' },
                 { label: '0nMCP Sub-location', id: 'pit-bd4e...2675', scope: 'nphConTwfHcVE1oA0uep', colorClass: 'bg-core-cyan/15 text-core-cyan border-core-cyan/20' },
-                { label: 'Spa Ligonier', id: 'pit-8860...5e44', scope: 'F76MNKOMQCMruMrumtdf', colorClass: 'bg-core-purple/15 text-core-purple border-core-purple/20' },
+                { label: 'Client Sub-location', id: 'pit-•••5e44', scope: '•••mtdf', colorClass: 'bg-core-purple/15 text-core-purple border-core-purple/20' },
               ].map(pit => (
                 <div key={pit.label} className="flex justify-between items-center px-3 py-2.5 rounded-lg bg-core-surface border border-core-border">
                   <div>
