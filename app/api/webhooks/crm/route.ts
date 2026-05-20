@@ -117,6 +117,35 @@ export async function POST(req: NextRequest) {
       // Hard requirement for a public marketplace app — clean up when a
       // user removes us from their sub-location.
       if (locationId) {
+        // Capture uninstall feedback (added 2026-04-30 by the CRM marketplace).
+        // The payload may include feedback.reason and feedback.details on the
+        // root, or nested under `body.feedback`, depending on the event shape.
+        const feedback = (body.feedback || {}) as Record<string, unknown>
+        const reason = String(feedback.reason || body.reason || '') || null
+        const details = String(feedback.details || feedback.note || body.details || '') || null
+
+        // Look up the user_id for this location before we null it out
+        const { data: profileRow } = await admin
+          .from('profiles')
+          .select('id')
+          .eq('crm_location_id', locationId)
+          .maybeSingle()
+
+        try {
+          await admin.from('crm_uninstall_feedback').insert({
+            location_id: locationId,
+            company_id: companyId || null,
+            user_id: profileRow?.id || null,
+            app_id: appId || null,
+            reason,
+            details,
+            feedback_payload: feedback,
+            raw_event_payload: body,
+          })
+        } catch (fbErr) {
+          console.error('[crm-webhook] uninstall feedback insert failed:', fbErr instanceof Error ? fbErr.message : fbErr)
+        }
+
         await admin.from('crm_installations')
           .update({
             status: 'uninstalled',
