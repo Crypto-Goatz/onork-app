@@ -373,20 +373,13 @@ export default async function VipDashboard({
         </div>
 
         {/* ── Quick links ────────────────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <QuickLink
             brand={b}
             href={client.website || '#'}
             label="Website"
             sub={client.website?.replace('https://', '') || ''}
             Icon={ExternalLink}
-          />
-          <QuickLink
-            brand={b}
-            href="https://www.massagebook.com/Ligonier~Massage~TheSpaInLigonier"
-            label="MassageBook"
-            sub="Booking & gift cards"
-            Icon={Calendar}
           />
           <QuickLink
             brand={b}
