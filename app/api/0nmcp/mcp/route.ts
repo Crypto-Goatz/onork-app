@@ -31,6 +31,7 @@ const TOOLS = [
   t('crm_create_opportunity', 'Create pipeline opportunity', { name: s, pipelineId: s, stageId: s, contactId: s, monetaryValue: n }, ['name']),
   t('crm_update_opportunity', 'Move opportunity to new stage', { opportunityId: s, stageId: s, monetaryValue: n, status: s }, ['opportunityId']),
   t('crm_list_pipelines', 'List all pipelines and stages', {}),
+  t('crm_list_opportunities', 'List or search pipeline opportunities', { pipelineId: s, query: s, limit: n }),
   t('crm_create_task', 'Create a task for a contact', { contactId: s, title: s, body: s, dueDate: s }, ['contactId', 'title']),
   t('crm_list_tasks', 'List tasks for a contact', { contactId: s }, ['contactId']),
   t('crm_send_email', 'Send email to a contact via CRM', { contactId: s, subject: s, body: s }, ['contactId', 'subject', 'body']),
@@ -384,6 +385,14 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
     }
     case 'crm_list_pipelines': {
       const res = await fetch(`${CRM_BASE}/opportunities/pipelines?locationId=${LOC}`, { headers: crmHeaders })
+      return await res.json()
+    }
+    case 'crm_list_opportunities': {
+      // GHL opportunities search uses snake_case location_id
+      const params = new URLSearchParams({ location_id: LOC, limit: String(args.limit || 50) })
+      if (args.pipelineId) params.set('pipeline_id', args.pipelineId)
+      if (args.query) params.set('q', args.query)
+      const res = await fetch(`${CRM_BASE}/opportunities/search?${params.toString()}`, { headers: crmHeaders })
       return await res.json()
     }
     case 'crm_create_task': {
