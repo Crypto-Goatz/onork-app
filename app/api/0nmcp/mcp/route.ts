@@ -24,6 +24,7 @@ const TOOLS = [
   t('crm_create_contact', 'Create a CRM contact', { firstName: s, lastName: s, email: s, phone: s, tags: a(), company: s, website: s, source: s }, ['email']),
   t('crm_update_contact', 'Update an existing CRM contact', { contactId: s, firstName: s, lastName: s, email: s, phone: s, tags: a(), company: s }, ['contactId']),
   t('crm_search_contacts', 'Search CRM contacts by query', { query: s, limit: n }, ['query']),
+  t('crm_list_contacts', 'List recent contacts for the location', { limit: n }),
   t('crm_get_contact', 'Get full contact details by ID', { contactId: s }, ['contactId']),
   t('crm_delete_contact', 'Delete a CRM contact', { contactId: s }, ['contactId']),
   t('crm_add_tags', 'Add tags to a contact', { contactId: s, tags: a() }, ['contactId', 'tags']),
@@ -288,6 +289,10 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
       const res = await fetch(`${CRM_BASE}/contacts/search?locationId=${LOC}&query=${encodeURIComponent(args.query)}`, {
         headers: crmHeaders,
       })
+      return await res.json()
+    }
+    case 'crm_list_contacts': {
+      const res = await fetch(`${CRM_BASE}/contacts/?locationId=${LOC}&limit=${args.limit || 100}`, { headers: crmHeaders })
       return await res.json()
     }
 
