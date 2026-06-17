@@ -54,6 +54,7 @@ export function ContactClient() {
   const [contactForm, setContactForm] = useState({ name: '', email: '', reason: '', message: '' })
   const [contactSent, setContactSent] = useState(false)
   const [contactSending, setContactSending] = useState(false)
+  const [contactError, setContactError] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -197,26 +198,39 @@ export function ContactClient() {
     e.preventDefault()
     if (!contactForm.email) return
     setContactSending(true)
+    setContactError('')
 
-    // Send to CRM via the engine
+    // Create the CRM contact + log the submission
     try {
-      await fetch('/api/ai/execute', {
+      const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          command: `Create a CRM contact: name=${contactForm.name}, email=${contactForm.email}, reason=${contactForm.reason}, message=${contactForm.message}, source=website-contact-form`,
+          name: contactForm.name,
+          email: contactForm.email,
+          reason: contactForm.reason,
+          message: contactForm.message,
         }),
       })
-    } catch {}
 
-    setContactSent(true)
-    setContactSending(false)
+      if (!res.ok) {
+        setContactError('Something went wrong sending your message. Please try again or email mike@rocketopp.com.')
+        setContactSending(false)
+        return
+      }
 
-    // Add summary to Jaxx chat
-    setMessages(prev => [...prev, {
-      role: 'assistant',
-      content: `Got it! I've saved ${contactForm.name || 'your'} contact info. Someone from our team will reach out to ${contactForm.email} shortly. Anything else I can help with?`,
-    }])
+      setContactSent(true)
+      setContactSending(false)
+
+      // Add summary to Jaxx chat
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `Got it! I've saved ${contactForm.name || 'your'} contact info. Someone from our team will reach out to ${contactForm.email} shortly. Anything else I can help with?`,
+      }])
+    } catch {
+      setContactError('Connection issue — please try again or email mike@rocketopp.com.')
+      setContactSending(false)
+    }
   }
 
   const hasUserMessages = messages.length > 1
@@ -507,7 +521,7 @@ export function ContactClient() {
       </Modal>
 
       {/* Contact Form Modal */}
-      <Modal open={showContactForm} onClose={() => { setShowContactForm(false); setContactSent(false) }}>
+      <Modal open={showContactForm} onClose={() => { setShowContactForm(false); setContactSent(false); setContactError('') }}>
         <div className="p-6">
           {contactSent ? (
             <div className="text-center py-8">
@@ -555,6 +569,9 @@ export function ContactClient() {
                     rows={4}
                     className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-white text-[13px] placeholder:text-white/20 outline-none focus:border-[#7ed957]/30 resize-none" />
                 </div>
+                {contactError && (
+                  <p className="text-[12px] text-red-400 leading-relaxed">{contactError}</p>
+                )}
                 <button type="submit" disabled={contactSending}
                   className="w-full py-3 rounded-xl bg-[#7ed957] text-[#020810] text-[14px] font-bold cursor-pointer border-none hover:bg-[#7ed957]/90 transition-colors disabled:opacity-50">
                   {contactSending ? 'Sending...' : 'Send Message'}
