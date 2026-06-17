@@ -301,10 +301,19 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
     }
 
     case 'crm_create_opportunity': {
+      // GHL requires pipelineStageId (not stageId) + status + contactId
+      const { stageId, pipelineStageId, status, pipelineId, ...rest } = args
+      const oppBody = {
+        locationId: LOC,
+        pipelineId: pipelineId || 'SYeVtvnuMIUhn3LtS23q',
+        pipelineStageId: pipelineStageId || stageId || '9fe04f16-4fce-4eea-84a7-6ee58083091e',
+        status: status || 'open',
+        ...rest,
+      }
       const res = await fetch(`${CRM_BASE}/opportunities/`, {
         method: 'POST',
         headers: crmHeaders,
-        body: JSON.stringify({ locationId: LOC, pipelineId: 'SYeVtvnuMIUhn3LtS23q', stageId: '9fe04f16-4fce-4eea-84a7-6ee58083091e', ...args }),
+        body: JSON.stringify(oppBody),
       })
       return { success: res.ok, data: await res.json() }
     }
@@ -379,7 +388,8 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
       return { success: res.ok, data: await res.json() }
     }
     case 'crm_update_opportunity': {
-      const { opportunityId, ...oppData } = args
+      const { opportunityId, stageId, pipelineStageId, ...oppData } = args
+      if (pipelineStageId || stageId) oppData.pipelineStageId = pipelineStageId || stageId
       const res = await fetch(`${CRM_BASE}/opportunities/${opportunityId}`, { method: 'PUT', headers: crmHeaders, body: JSON.stringify(oppData) })
       return { success: res.ok, data: await res.json() }
     }
