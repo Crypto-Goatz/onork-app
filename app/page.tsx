@@ -21,6 +21,7 @@ import {
 import SiteFooter from '@/components/SiteFooter'
 import { CroSlot } from '@/components/cro9/CroSlot'
 import { SignupForm } from '@/components/cro9/SignupForm'
+import TriggerBurst from '@/components/home/TriggerBurst'
 
 export const metadata: Metadata = {
   title: '0nCore — The AI CRM That Runs Your Business | 1,640+ Tools, 109 Services',
@@ -570,48 +571,8 @@ function Centerpiece() {
         </p>
       </div>
 
-      {/* The orb */}
-      <div className="relative max-w-md mx-auto h-[400px] sm:h-[500px] flex items-center justify-center">
-        {/* Outer glow */}
-        <div className="absolute w-[600px] h-[600px] rounded-full bg-[#6EE05A]/15 blur-[100px]" />
-        <div className="absolute w-[400px] h-[400px] rounded-full bg-[#6EE05A]/20 blur-[80px]" />
-        {/* Sphere */}
-        <div className="relative w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] rounded-full overflow-hidden">
-          <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(110,224,90,0.35),rgba(0,212,255,0.15)_45%,rgba(0,0,0,0.95)_75%)] animate-[spin_60s_linear_infinite]" />
-          <div className="absolute inset-0 rounded-full border border-[#6EE05A]/20 shadow-[inset_0_0_80px_rgba(110,224,90,0.25)]" />
-          {/* Latitude lines */}
-          <div className="absolute inset-0 rounded-full pointer-events-none">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className="absolute left-0 right-0 h-px bg-[#6EE05A]/10"
-                style={{ top: `${(i + 1) * (100 / 7)}%` }}
-              />
-            ))}
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={`v${i}`}
-                className="absolute top-0 bottom-0 w-px bg-[#6EE05A]/10"
-                style={{ left: `${(i + 1) * (100 / 8)}%` }}
-              />
-            ))}
-          </div>
-        </div>
-        {/* Connection dots */}
-        {[
-          { top: '20%', left: '15%' },
-          { top: '40%', right: '10%' },
-          { top: '70%', left: '12%' },
-          { bottom: '15%', right: '20%' },
-          { top: '15%', right: '25%' },
-        ].map((p, i) => (
-          <span
-            key={i}
-            className="absolute w-2 h-2 rounded-full bg-[#6EE05A] shadow-[0_0_15px_rgba(110,224,90,0.8)] animate-pulse"
-            style={{ ...p, animationDelay: `${i * 0.4}s` }}
-          />
-        ))}
-      </div>
+      {/* The trigger burst — power button fires every service at once */}
+      <TriggerBurst />
     </section>
   )
 }
