@@ -19,7 +19,7 @@ export default async function SignupPage({
 }) {
   const sp = await searchParams
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0d1117]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-[#020810]" />}>
       <SignupCinematic refCode={sp.ref} initialEmail={sp.email} />
     </Suspense>
   )

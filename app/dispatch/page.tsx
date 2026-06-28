@@ -21,10 +21,15 @@ const ENDPOINTS = [
 
 export default function DispatchLanding() {
   return (
-    <div style={{ background: '#0d1117', color: '#e6edf3', minHeight: '100vh', padding: '64px 24px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
+    <div style={{ background: '#020810', color: '#fff', minHeight: '100vh', padding: '64px 24px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>dispatch.0ncore.com</h1>
-        <p style={{ color: '#8b949e', marginBottom: 32 }}>
+        <h1 style={{
+          fontSize: 28, fontWeight: 700, marginBottom: 8,
+          background: 'linear-gradient(135deg, #7ed957 0%, #00d4ff 50%, #a78bfa 100%)',
+          WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent',
+          display: 'inline-block',
+        }}>dispatch.0ncore.com</h1>
+        <p style={{ color: 'rgba(255,255,255,0.55)', marginBottom: 32 }}>
           Canonical rules + ecosystem map for the RocketOpp / 0n family. Read-only HTTP API. The
           authoritative source for every Claude / AI session that touches our codebase.
         </p>
@@ -38,15 +43,16 @@ export default function DispatchLanding() {
               style={{
                 display: 'block',
                 padding: 16,
-                border: '1px solid #30363d',
+                border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: 8,
-                background: '#161b22',
+                background: 'rgba(255,255,255,0.02)',
+                backdropFilter: 'blur(12px)',
                 textDecoration: 'none',
-                color: '#e6edf3',
+                color: '#fff',
               }}
             >
-              <code style={{ color: '#79c0ff', fontWeight: 600 }}>GET {e.path}</code>
-              <p style={{ marginTop: 6, marginBottom: 0, color: '#8b949e', fontFamily: 'system-ui, sans-serif', fontSize: 14 }}>
+              <code style={{ color: '#7ed957', fontWeight: 600 }}>GET {e.path}</code>
+              <p style={{ marginTop: 6, marginBottom: 0, color: 'rgba(255,255,255,0.55)', fontFamily: 'system-ui, sans-serif', fontSize: 14 }}>
                 {e.desc}
               </p>
             </a>
@@ -54,7 +60,7 @@ export default function DispatchLanding() {
         </div>
 
         <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 32, marginBottom: 12 }}>How clients use it</h2>
-        <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: 8, padding: 16, fontSize: 14 }}>
+        <div style={{ background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: 16, fontSize: 14 }}>
           <p style={{ marginTop: 0 }}>
             Every product repo runs <code>bash scripts/sync-from-dispatch.sh</code> to refresh
             <code> .dispatch-cache/*.json</code> from the live API. CLAUDE.md files in each
@@ -66,8 +72,8 @@ export default function DispatchLanding() {
           </p>
         </div>
 
-        <p style={{ marginTop: 48, color: '#484f58', fontSize: 12, fontFamily: 'system-ui, sans-serif' }}>
-          Open source: <a href="https://github.com/Crypto-Goatz/0n-dispatch" style={{ color: '#79c0ff' }}>Crypto-Goatz/0n-dispatch</a>
+        <p style={{ marginTop: 48, color: 'rgba(255,255,255,0.3)', fontSize: 12, fontFamily: 'system-ui, sans-serif' }}>
+          Open source: <a href="https://github.com/Crypto-Goatz/0n-dispatch" style={{ color: '#7ed957' }}>Crypto-Goatz/0n-dispatch</a>
         </p>
       </div>
     </div>

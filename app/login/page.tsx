@@ -88,7 +88,7 @@ export default function LoginPage() {
       footer={
         <>
           New here?{' '}
-          <Link href="/signup" className="text-accent hover:underline">
+          <Link href="/signup" className="text-[#7ed957] hover:underline">
             Create an account
           </Link>
         </>
@@ -131,7 +131,7 @@ export default function LoginPage() {
         <div className="flex justify-end">
           <Link
             href="/forgot-password"
-            className="text-xs text-text-muted hover:text-white transition-colors"
+            className="text-xs text-white/45 hover:text-white transition-colors"
           >
             Forgot password?
           </Link>

@@ -58,17 +58,17 @@ interface StatusData {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function gradeColor(grade: string) {
-  if (grade === 'S') return 'text-core-green'
-  if (grade === 'A') return 'text-core-cyan'
-  if (grade === 'B') return 'text-core-amber'
-  return 'text-core-text-dim'
+  if (grade === 'S') return 'text-[#7ed957]'
+  if (grade === 'A') return 'text-[#00d4ff]'
+  if (grade === 'B') return 'text-[#f59e0b]'
+  return 'text-white/60'
 }
 
 function vpisColor(score: number) {
-  if (score >= 90) return 'text-core-green'
-  if (score >= 80) return 'text-core-cyan'
-  if (score >= 70) return 'text-core-amber'
-  return 'text-core-red'
+  if (score >= 90) return 'text-[#7ed957]'
+  if (score >= 80) return 'text-[#00d4ff]'
+  if (score >= 70) return 'text-[#f59e0b]'
+  return 'text-[#ef4444]'
 }
 
 function formatHour(h: number) {
@@ -91,10 +91,10 @@ function timeAgo(iso: string) {
 function VPISBar({ label, score }: { label: string; score: number }) {
   return (
     <div className="flex items-center gap-2 text-xs">
-      <span className="w-20 text-core-text-dim truncate">{label}</span>
-      <div className="flex-1 h-1.5 bg-core-border rounded-full overflow-hidden">
+      <span className="w-20 text-white/60 truncate">{label}</span>
+      <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
         <div
-          className={cn('h-full rounded-full transition-all', score >= 80 ? 'bg-core-green' : score >= 60 ? 'bg-core-amber' : 'bg-core-red')}
+          className={cn('h-full rounded-full transition-all', score >= 80 ? 'bg-[#7ed957]' : score >= 60 ? 'bg-[#f59e0b]' : 'bg-[#ef4444]')}
           style={{ width: `${score}%` }}
         />
       </div>
@@ -120,14 +120,14 @@ function QueueCard({
   const bd = item.vpis_breakdown
 
   return (
-    <div className="bg-core-card border border-core-border rounded-xl p-4 space-y-3">
+    <div className="bg-white/[0.02] border border-white/10 rounded-xl p-4 space-y-3">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <Linkedin className="w-4 h-4 text-blue-400 shrink-0" />
-          <span className="text-xs text-core-text-dim font-mono">{item.hook_archetype ?? item.type}</span>
+          <span className="text-xs text-white/60 font-mono">{item.hook_archetype ?? item.type}</span>
           {item.rewrite_count > 0 && (
-            <span className="text-xs bg-core-border text-core-text-muted px-1.5 py-0.5 rounded">
+            <span className="text-xs bg-white/10 text-white/45 px-1.5 py-0.5 rounded">
               {item.rewrite_count}x rewrite
             </span>
           )}
@@ -136,20 +136,20 @@ function QueueCard({
           {item.vpis_score !== null && (
             <div className={cn('text-sm font-bold font-mono', vpisColor(item.vpis_score))}>
               {item.vpis_score}
-              {bd && <span className="text-xs font-normal ml-0.5 text-core-text-dim">/{bd.grade}</span>}
+              {bd && <span className="text-xs font-normal ml-0.5 text-white/60">/{bd.grade}</span>}
             </div>
           )}
-          <span className="text-xs text-core-text-muted">{timeAgo(item.created_at)}</span>
+          <span className="text-xs text-white/45">{timeAgo(item.created_at)}</span>
         </div>
       </div>
 
       {/* Content preview */}
-      <p className={cn('text-sm text-core-text leading-relaxed whitespace-pre-wrap', !expanded && 'line-clamp-4')}>
+      <p className={cn('text-sm text-white leading-relaxed whitespace-pre-wrap', !expanded && 'line-clamp-4')}>
         {item.content}
       </p>
       <button
         onClick={() => setExpanded(e => !e)}
-        className="text-xs text-core-text-dim flex items-center gap-1 hover:text-core-text transition-colors"
+        className="text-xs text-white/60 flex items-center gap-1 hover:text-white transition-colors"
       >
         {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         {expanded ? 'Collapse' : 'Read full post'}
@@ -157,8 +157,8 @@ function QueueCard({
 
       {/* VPIS breakdown */}
       {expanded && bd && (
-        <div className="space-y-1.5 pt-1 border-t border-core-border">
-          <p className="text-xs text-core-text-muted font-medium mb-2">VPIS Breakdown</p>
+        <div className="space-y-1.5 pt-1 border-t border-white/10">
+          <p className="text-xs text-white/45 font-medium mb-2">VPIS Breakdown</p>
           {Object.entries(bd.breakdown).map(([k, v]) => (
             <VPISBar key={k} label={k} score={Math.round(v)} />
           ))}
@@ -170,8 +170,8 @@ function QueueCard({
                   className={cn(
                     'text-xs px-1.5 py-0.5 rounded border',
                     p.delta > 0
-                      ? 'border-core-green/30 text-core-green bg-core-green/5'
-                      : 'border-core-red/30 text-core-red bg-core-red/5'
+                      ? 'border-[#7ed957]/30 text-[#7ed957] bg-[#7ed957]/5'
+                      : 'border-[#ef4444]/30 text-[#ef4444] bg-[#ef4444]/5'
                   )}
                 >
                   {p.delta > 0 ? '+' : ''}{p.delta} {p.name.replace(/_/g, ' ')}
@@ -188,7 +188,7 @@ function QueueCard({
           <button
             onClick={() => onApprove(item.id)}
             disabled={approving === item.id}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-core-green/10 hover:bg-core-green/20 border border-core-green/30 text-core-green text-sm rounded-lg transition-colors disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#7ed957]/10 hover:bg-[#7ed957]/20 border border-[#7ed957]/30 text-[#7ed957] text-sm rounded-lg transition-colors disabled:opacity-50"
           >
             {approving === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
             Approve & Schedule
@@ -196,7 +196,7 @@ function QueueCard({
           <button
             onClick={() => onReject(item.id)}
             disabled={approving === item.id}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-core-red/10 hover:bg-core-red/20 border border-core-red/30 text-core-red text-sm rounded-lg transition-colors disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-[#ef4444]/10 hover:bg-[#ef4444]/20 border border-[#ef4444]/30 text-[#ef4444] text-sm rounded-lg transition-colors disabled:opacity-50"
           >
             <XCircle className="w-3.5 h-3.5" />
             Reject
@@ -207,10 +207,10 @@ function QueueCard({
       {item.status !== 'pending_approval' && (
         <div className={cn(
           'text-xs px-2 py-1 rounded-lg border w-fit',
-          item.status === 'scheduled' ? 'border-core-cyan/30 text-core-cyan bg-core-cyan/5' :
-          item.status === 'published' ? 'border-core-green/30 text-core-green bg-core-green/5' :
-          item.status === 'rejected' ? 'border-core-red/30 text-core-red bg-core-red/5' :
-          'border-core-border text-core-text-muted'
+          item.status === 'scheduled' ? 'border-[#00d4ff]/30 text-[#00d4ff] bg-[#00d4ff]/5' :
+          item.status === 'published' ? 'border-[#7ed957]/30 text-[#7ed957] bg-[#7ed957]/5' :
+          item.status === 'rejected' ? 'border-[#ef4444]/30 text-[#ef4444] bg-[#ef4444]/5' :
+          'border-white/10 text-white/45'
         )}>
           {item.status}
         </div>
@@ -261,28 +261,28 @@ function SettingsPanel({ config, onUpdate }: { config: BotConfig; onUpdate: () =
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-xs text-core-text-dim">Bot Name</label>
+          <label className="text-xs text-white/60">Bot Name</label>
           <input
             value={form.name}
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            className="w-full bg-core-bg border border-core-border rounded-lg px-3 py-2 text-sm text-core-text focus:outline-none focus:border-core-green"
+            className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#7ed957]"
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-core-text-dim">Niche / Context</label>
+          <label className="text-xs text-white/60">Niche / Context</label>
           <input
             value={form.niche}
             onChange={e => setForm(f => ({ ...f, niche: e.target.value }))}
             placeholder="e.g. B2B SaaS, agency growth"
-            className="w-full bg-core-bg border border-core-border rounded-lg px-3 py-2 text-sm text-core-text focus:outline-none focus:border-core-green placeholder:text-core-text-muted"
+            className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#7ed957] placeholder:text-white/45"
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-core-text-dim">Writing Tone</label>
+          <label className="text-xs text-white/60">Writing Tone</label>
           <select
             value={form.tone}
             onChange={e => setForm(f => ({ ...f, tone: e.target.value }))}
-            className="w-full bg-core-bg border border-core-border rounded-lg px-3 py-2 text-sm text-core-text focus:outline-none focus:border-core-green"
+            className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#7ed957]"
           >
             <option value="thought_leader">Thought Leader</option>
             <option value="builder">Builder</option>
@@ -290,33 +290,33 @@ function SettingsPanel({ config, onUpdate }: { config: BotConfig; onUpdate: () =
           </select>
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-core-text-dim">VPIS Target Score</label>
+          <label className="text-xs text-white/60">VPIS Target Score</label>
           <input
             type="number"
             min={60}
             max={99}
             value={form.vpis_target}
             onChange={e => setForm(f => ({ ...f, vpis_target: Number(e.target.value) }))}
-            className="w-full bg-core-bg border border-core-border rounded-lg px-3 py-2 text-sm text-core-text focus:outline-none focus:border-core-green"
+            className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#7ed957]"
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-core-text-dim">Max Posts / Day</label>
+          <label className="text-xs text-white/60">Max Posts / Day</label>
           <input
             type="number"
             min={1}
             max={2}
             value={form.max_posts_day}
             onChange={e => setForm(f => ({ ...f, max_posts_day: Number(e.target.value) }))}
-            className="w-full bg-core-bg border border-core-border rounded-lg px-3 py-2 text-sm text-core-text focus:outline-none focus:border-core-green"
+            className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#7ed957]"
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-core-text-dim">Post Time (EST)</label>
+          <label className="text-xs text-white/60">Post Time (EST)</label>
           <select
             value={form.post_time_hour}
             onChange={e => setForm(f => ({ ...f, post_time_hour: Number(e.target.value) }))}
-            className="w-full bg-core-bg border border-core-border rounded-lg px-3 py-2 text-sm text-core-text focus:outline-none focus:border-core-green"
+            className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#7ed957]"
           >
             {[7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map(h => (
               <option key={h} value={h}>{formatHour(h)}</option>
@@ -326,32 +326,32 @@ function SettingsPanel({ config, onUpdate }: { config: BotConfig; onUpdate: () =
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs text-core-text-dim">ICP Keywords (comma-separated)</label>
+        <label className="text-xs text-white/60">ICP Keywords (comma-separated)</label>
         <input
           value={form.icp_keywords_raw}
           onChange={e => setForm(f => ({ ...f, icp_keywords_raw: e.target.value }))}
           placeholder="AI, automation, agency, SaaS, revenue"
-          className="w-full bg-core-bg border border-core-border rounded-lg px-3 py-2 text-sm text-core-text focus:outline-none focus:border-core-green placeholder:text-core-text-muted"
+          className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#7ed957] placeholder:text-white/45"
         />
       </div>
 
       <div className="flex items-center gap-6">
         <button
           onClick={() => setForm(f => ({ ...f, auto_approve: !f.auto_approve }))}
-          className="flex items-center gap-2 text-sm text-core-text"
+          className="flex items-center gap-2 text-sm text-white"
         >
           {form.auto_approve
-            ? <ToggleRight className="w-5 h-5 text-core-green" />
-            : <ToggleLeft className="w-5 h-5 text-core-text-dim" />}
+            ? <ToggleRight className="w-5 h-5 text-[#7ed957]" />
+            : <ToggleLeft className="w-5 h-5 text-white/60" />}
           Auto-approve posts
         </button>
         <button
           onClick={() => setForm(f => ({ ...f, slack_notify: !f.slack_notify }))}
-          className="flex items-center gap-2 text-sm text-core-text"
+          className="flex items-center gap-2 text-sm text-white"
         >
           {form.slack_notify
-            ? <ToggleRight className="w-5 h-5 text-core-green" />
-            : <ToggleLeft className="w-5 h-5 text-core-text-dim" />}
+            ? <ToggleRight className="w-5 h-5 text-[#7ed957]" />
+            : <ToggleLeft className="w-5 h-5 text-white/60" />}
           Slack notifications
         </button>
       </div>
@@ -359,7 +359,7 @@ function SettingsPanel({ config, onUpdate }: { config: BotConfig; onUpdate: () =
       <button
         onClick={save}
         disabled={saving}
-        className="flex items-center gap-2 px-4 py-2 bg-core-green/10 hover:bg-core-green/20 border border-core-green/30 text-core-green text-sm rounded-lg transition-colors disabled:opacity-50"
+        className="flex items-center gap-2 px-4 py-2 bg-[#7ed957]/10 hover:bg-[#7ed957]/20 border border-[#7ed957]/30 text-[#7ed957] text-sm rounded-lg transition-colors disabled:opacity-50"
       >
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
         Save Settings
@@ -460,13 +460,14 @@ export default function LinkedInBotPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-core-green" />
+      <div className="flex min-h-screen items-center justify-center bg-[#020810] font-sans text-white antialiased">
+        <Loader2 className="w-6 h-6 animate-spin text-[#7ed957]" />
       </div>
     )
   }
 
   return (
+    <div className="min-h-screen bg-[#020810] font-sans text-white antialiased">
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -475,14 +476,14 @@ export default function LinkedInBotPage() {
             <Linkedin className="w-5 h-5 text-blue-400" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-core-text">0nLinkedIn Bot</h1>
-            <p className="text-xs text-core-text-muted">AI-powered LinkedIn automation with VPIS scoring</p>
+            <h1 className="text-lg font-semibold text-white">0nLinkedIn Bot</h1>
+            <p className="text-xs text-white/45">AI-powered LinkedIn automation with VPIS scoring</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => Promise.all([loadStatus(), loadQueue(queueFilter)])}
-            className="p-2 rounded-lg border border-core-border text-core-text-dim hover:text-core-text hover:border-core-border-hi transition-colors"
+            className="p-2 rounded-lg border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -507,31 +508,31 @@ export default function LinkedInBotPage() {
               label: 'Queue Depth',
               value: status.queue_depth,
               icon: Clock,
-              color: status.queue_depth > 0 ? 'text-core-amber' : 'text-core-text-dim',
+              color: status.queue_depth > 0 ? 'text-[#f59e0b]' : 'text-white/60',
             },
             {
               label: 'Published / Week',
               value: status.published_this_week,
               icon: Send,
-              color: 'text-core-green',
+              color: 'text-[#7ed957]',
             },
             {
               label: 'Avg VPIS',
               value: status.avg_vpis_score !== null ? `${status.avg_vpis_score}` : '—',
               icon: Target,
-              color: status.avg_vpis_score !== null ? vpisColor(status.avg_vpis_score) : 'text-core-text-dim',
+              color: status.avg_vpis_score !== null ? vpisColor(status.avg_vpis_score) : 'text-white/60',
             },
             {
               label: 'Active Bots',
               value: status.configs.filter(c => c.active).length,
               icon: Bot,
-              color: 'text-core-cyan',
+              color: 'text-[#00d4ff]',
             },
           ].map(stat => (
-            <div key={stat.label} className="bg-core-card border border-core-border rounded-xl p-4">
+            <div key={stat.label} className="bg-white/[0.02] border border-white/10 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <stat.icon className={cn('w-4 h-4', stat.color)} />
-                <span className="text-xs text-core-text-muted">{stat.label}</span>
+                <span className="text-xs text-white/45">{stat.label}</span>
               </div>
               <div className={cn('text-2xl font-bold font-mono', stat.color)}>{stat.value}</div>
             </div>
@@ -541,28 +542,28 @@ export default function LinkedInBotPage() {
 
       {/* Bot config cards */}
       {status?.configs.length === 0 && (
-        <div className="bg-core-card border border-core-border rounded-xl p-8 text-center space-y-3">
-          <Bot className="w-10 h-10 text-core-text-muted mx-auto" />
-          <p className="text-core-text-dim text-sm">No bot configured yet.</p>
-          <p className="text-core-text-muted text-xs">Set up your first LinkedIn bot to get started.</p>
+        <div className="bg-white/[0.02] border border-white/10 rounded-xl p-8 text-center space-y-3">
+          <Bot className="w-10 h-10 text-white/45 mx-auto" />
+          <p className="text-white/60 text-sm">No bot configured yet.</p>
+          <p className="text-white/45 text-xs">Set up your first LinkedIn bot to get started.</p>
         </div>
       )}
 
       {status?.configs.map(config => (
-        <div key={config.id} className="bg-core-card border border-core-border rounded-xl p-4">
+        <div key={config.id} className="bg-white/[0.02] border border-white/10 rounded-xl p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              <div className={cn('w-2 h-2 rounded-full shrink-0', config.active ? 'bg-core-green animate-pulse' : 'bg-core-border')} />
+              <div className={cn('w-2 h-2 rounded-full shrink-0', config.active ? 'bg-[#7ed957] animate-pulse' : 'bg-white/10')} />
               <div className="min-w-0">
-                <p className="text-sm font-medium text-core-text truncate">{config.name}</p>
-                <p className="text-xs text-core-text-muted">
+                <p className="text-sm font-medium text-white truncate">{config.name}</p>
+                <p className="text-xs text-white/45">
                   {config.niche ?? 'No niche set'} · {config.tone.replace('_', ' ')} · VPIS target {config.vpis_target}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {config.next_fire_at && (
-                <div className="hidden sm:flex items-center gap-1 text-xs text-core-text-muted">
+                <div className="hidden sm:flex items-center gap-1 text-xs text-white/45">
                   <Calendar className="w-3.5 h-3.5" />
                   Next: {new Date(config.next_fire_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'America/New_York' })} EST
                 </div>
@@ -573,8 +574,8 @@ export default function LinkedInBotPage() {
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border transition-colors',
                   config.active
-                    ? 'bg-core-green/10 border-core-green/30 text-core-green hover:bg-core-red/10 hover:border-core-red/30 hover:text-core-red'
-                    : 'bg-core-border/20 border-core-border text-core-text-dim hover:bg-core-green/10 hover:border-core-green/30 hover:text-core-green'
+                    ? 'bg-[#7ed957]/10 border-[#7ed957]/30 text-[#7ed957] hover:bg-[#ef4444]/10 hover:border-[#ef4444]/30 hover:text-[#ef4444]'
+                    : 'bg-white/[0.04] border-white/10 text-white/60 hover:bg-[#7ed957]/10 hover:border-[#7ed957]/30 hover:text-[#7ed957]'
                 )}
               >
                 {togglingBot === config.id ? (
@@ -592,7 +593,7 @@ export default function LinkedInBotPage() {
       ))}
 
       {/* Tabs */}
-      <div className="border-b border-core-border">
+      <div className="border-b border-white/10">
         <div className="flex gap-0">
           {([
             { id: 'queue', label: 'Approval Queue', icon: Clock },
@@ -605,14 +606,14 @@ export default function LinkedInBotPage() {
               className={cn(
                 'flex items-center gap-2 px-4 py-3 text-sm border-b-2 transition-colors',
                 activeTab === tab.id
-                  ? 'border-core-green text-core-green'
-                  : 'border-transparent text-core-text-dim hover:text-core-text'
+                  ? 'border-[#7ed957] text-[#7ed957]'
+                  : 'border-transparent text-white/60 hover:text-white'
               )}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
               {tab.id === 'queue' && (status?.queue_depth ?? 0) > 0 && (
-                <span className="bg-core-amber/20 text-core-amber text-xs px-1.5 py-0.5 rounded-full font-mono">
+                <span className="bg-[#f59e0b]/20 text-[#f59e0b] text-xs px-1.5 py-0.5 rounded-full font-mono">
                   {status!.queue_depth}
                 </span>
               )}
@@ -633,8 +634,8 @@ export default function LinkedInBotPage() {
                 className={cn(
                   'text-xs px-3 py-1.5 rounded-lg border transition-colors',
                   queueFilter === f
-                    ? 'bg-core-green/10 border-core-green/30 text-core-green'
-                    : 'border-core-border text-core-text-dim hover:border-core-border-hi hover:text-core-text'
+                    ? 'bg-[#7ed957]/10 border-[#7ed957]/30 text-[#7ed957]'
+                    : 'border-white/10 text-white/60 hover:border-white/20 hover:text-white'
                 )}
               >
                 {f.replace('_', ' ')}
@@ -643,7 +644,7 @@ export default function LinkedInBotPage() {
           </div>
 
           {queue.length === 0 && (
-            <div className="text-center py-12 text-core-text-muted text-sm">
+            <div className="text-center py-12 text-white/45 text-sm">
               No items in queue with status &ldquo;{queueFilter}&rdquo;.
             </div>
           )}
@@ -666,7 +667,7 @@ export default function LinkedInBotPage() {
       {activeTab === 'settings' && (
         <div className="space-y-4">
           {!activeConfig && (
-            <div className="text-center py-8 text-core-text-muted text-sm">
+            <div className="text-center py-8 text-white/45 text-sm">
               No bot config found. Create one to get started.
             </div>
           )}
@@ -679,56 +680,57 @@ export default function LinkedInBotPage() {
       {/* Tab: Performance */}
       {activeTab === 'performance' && (
         <div className="space-y-4">
-          <div className="bg-core-card border border-core-border rounded-xl p-6 text-center space-y-3">
-            <Activity className="w-8 h-8 text-core-text-muted mx-auto" />
-            <p className="text-sm text-core-text-dim">
+          <div className="bg-white/[0.02] border border-white/10 rounded-xl p-6 text-center space-y-3">
+            <Activity className="w-8 h-8 text-white/45 mx-auto" />
+            <p className="text-sm text-white/60">
               Performance analytics populate after your first published posts.
             </p>
-            <p className="text-xs text-core-text-muted">
+            <p className="text-xs text-white/45">
               The weekly learning loop (every Monday) automatically adjusts VPIS weights based on engagement data.
             </p>
           </div>
 
           {status && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-core-card border border-core-border rounded-xl p-4 space-y-3">
+              <div className="bg-white/[0.02] border border-white/10 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-core-green" />
-                  <span className="text-sm font-medium text-core-text">VPIS Performance</span>
+                  <TrendingUp className="w-4 h-4 text-[#7ed957]" />
+                  <span className="text-sm font-medium text-white">VPIS Performance</span>
                 </div>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-core-text-dim">
+                  <div className="flex justify-between text-white/60">
                     <span>Average VPIS score</span>
-                    <span className={cn('font-mono font-bold', status.avg_vpis_score !== null ? vpisColor(status.avg_vpis_score) : 'text-core-text-muted')}>
+                    <span className={cn('font-mono font-bold', status.avg_vpis_score !== null ? vpisColor(status.avg_vpis_score) : 'text-white/45')}>
                       {status.avg_vpis_score ?? '—'}
                     </span>
                   </div>
-                  <div className="flex justify-between text-core-text-dim">
+                  <div className="flex justify-between text-white/60">
                     <span>Posts this week</span>
-                    <span className="font-mono text-core-text">{status.published_this_week}</span>
+                    <span className="font-mono text-white">{status.published_this_week}</span>
                   </div>
-                  <div className="flex justify-between text-core-text-dim">
+                  <div className="flex justify-between text-white/60">
                     <span>Pending approval</span>
-                    <span className="font-mono text-core-amber">{status.queue_depth}</span>
+                    <span className="font-mono text-[#f59e0b]">{status.queue_depth}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-core-card border border-core-border rounded-xl p-4 space-y-3">
+              <div className="bg-white/[0.02] border border-white/10 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-core-cyan" />
-                  <span className="text-sm font-medium text-core-text">Learning Loop</span>
+                  <Zap className="w-4 h-4 text-[#00d4ff]" />
+                  <span className="text-sm font-medium text-white">Learning Loop</span>
                 </div>
-                <div className="text-xs text-core-text-muted space-y-1.5">
+                <div className="text-xs text-white/45 space-y-1.5">
                   <p>Runs every Monday at 10am EST.</p>
                   <p>Uses gradient descent on VPIS weights based on engagement deltas (likes, comments, shares).</p>
-                  <p className="text-core-text-dim">Comments carry 3x weight · Shares 2x · Likes 1x</p>
+                  <p className="text-white/60">Comments carry 3x weight · Shares 2x · Likes 1x</p>
                 </div>
               </div>
             </div>
           )}
         </div>
       )}
+    </div>
     </div>
   )
 }

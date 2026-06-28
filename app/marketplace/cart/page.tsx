@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 
 interface CartItem {
   slug: string
@@ -46,88 +47,80 @@ export default function CartPage() {
 
   if (!mounted) {
     return (
-      <div style={{ maxWidth: 700, margin: '0 auto', padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', textAlign: 'center' }}>
-        <p style={{ color: 'rgba(255,255,255,0.4)' }}>Loading...</p>
-      </div>
+      <main className="min-h-screen bg-[#020810] px-4 py-16 text-center font-sans text-white antialiased sm:px-6 sm:py-20">
+        <p className="text-white/40">Loading...</p>
+      </main>
     )
   }
 
   return (
-    <div style={{ maxWidth: 700, margin: '0 auto', padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)' }}>
-      {/* Breadcrumb */}
-      <nav style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 24 }}>
-        <Link href="/marketplace" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Marketplace</Link>
-        <span style={{ margin: '0 8px' }}>/</span>
-        <span style={{ color: 'rgba(255,255,255,0.6)' }}>Cart</span>
-      </nav>
+    <main className="min-h-screen bg-[#020810] font-sans text-white antialiased">
+      <div className="mx-auto max-w-[700px] px-4 py-12 sm:px-6 sm:py-20">
+        {/* Breadcrumb */}
+        <nav className="mb-6 text-xs text-white/30">
+          <Link href="/marketplace" className="text-white/40 transition-colors hover:text-[#7ed957]">Marketplace</Link>
+          <span className="mx-2">/</span>
+          <span className="text-white/60">Cart</span>
+        </nav>
 
-      <h1 style={{ fontSize: 'clamp(24px, 4vw, 32px)', fontWeight: 800, marginBottom: 24 }}>Your Cart</h1>
+        <h1 className="mb-6 text-balance text-3xl font-black tracking-tight sm:text-4xl">
+          <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">Your Cart</span>
+        </h1>
 
-      {cart.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>Your cart is empty.</p>
-          <Link href="/marketplace" style={{
-            display: 'inline-block', padding: '10px 24px', background: '#7ed957', color: '#020810',
-            fontWeight: 700, borderRadius: 8, textDecoration: 'none', fontSize: 14,
-          }}>Browse Add-ons</Link>
-        </div>
-      ) : (
-        <>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-            {cart.map(item => (
-              <div key={item.slug} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: 16, borderRadius: 12,
-                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-              }}>
-                <div>
-                  <Link href={`/marketplace/addon/${item.slug}`} style={{ fontSize: 14, fontWeight: 600, color: '#fff', textDecoration: 'none' }}>
-                    {item.name}
-                  </Link>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{item.priceLabel}</div>
+        {cart.length === 0 ? (
+          <div className="py-12 text-center">
+            <p className="mb-5 text-[15px] text-white/40">Your cart is empty.</p>
+            <Link
+              href="/marketplace"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#7ed957] px-6 py-2.5 text-sm font-bold text-[#020810] no-underline shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-transform hover:scale-[1.02]"
+            >Browse Add-ons<ArrowRight className="h-4 w-4" /></Link>
+          </div>
+        ) : (
+          <>
+            <div className="mb-6 flex flex-col gap-3">
+              {cart.map(item => (
+                <div key={item.slug} className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 backdrop-blur">
+                  <div>
+                    <Link href={`/marketplace/addon/${item.slug}`} className="text-sm font-semibold text-white no-underline transition-colors hover:text-[#7ed957]">
+                      {item.name}
+                    </Link>
+                    <div className="mt-0.5 text-xs text-white/30">{item.priceLabel}</div>
+                  </div>
+                  <button
+                    onClick={() => removeItem(item.slug)}
+                    className="cursor-pointer border-none bg-transparent px-2 py-1 text-xs text-white/30 transition-colors hover:text-white/70"
+                  >
+                    Remove
+                  </button>
                 </div>
-                <button
-                  onClick={() => removeItem(item.slug)}
-                  style={{
-                    fontSize: 12, color: 'rgba(255,255,255,0.3)', background: 'none', border: 'none',
-                    cursor: 'pointer', padding: '4px 8px',
-                  }}
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {/* Summary */}
-          <div style={{
-            padding: 20, borderRadius: 16,
-            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-            marginBottom: 24,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>Subtotal ({cart.length} item{cart.length !== 1 ? 's' : ''})</span>
-              <span style={{ fontSize: 24, fontWeight: 800 }}>${(subtotal / 100).toFixed(2)}<span style={{ fontSize: 13, fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>/mo</span></span>
+              ))}
             </div>
-            <Link href="/login" style={{
-              display: 'block', textAlign: 'center', padding: '12px 24px',
-              background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10,
-              textDecoration: 'none', fontSize: 15,
-            }}>
-              Sign In to Checkout
-            </Link>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: 8 }}>
-              You need an account to complete your purchase.
-            </p>
-          </div>
 
-          <div style={{ textAlign: 'center' }}>
-            <Link href="/marketplace" style={{ fontSize: 13, color: '#7ed957', textDecoration: 'none' }}>
-              &larr; Continue browsing
-            </Link>
-          </div>
-        </>
-      )}
-    </div>
+            {/* Summary */}
+            <div className="mb-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur">
+              <div className="mb-4 flex items-center justify-between">
+                <span className="text-sm text-white/50">Subtotal ({cart.length} item{cart.length !== 1 ? 's' : ''})</span>
+                <span className="text-2xl font-extrabold">${(subtotal / 100).toFixed(2)}<span className="text-[13px] font-normal text-white/40">/mo</span></span>
+              </div>
+              <Link
+                href="/login"
+                className="flex items-center justify-center gap-2 rounded-xl bg-[#7ed957] px-6 py-3 text-[15px] font-bold text-[#020810] no-underline shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-transform hover:scale-[1.02]"
+              >
+                Sign In to Checkout
+              </Link>
+              <p className="mt-2 text-center text-[11px] text-white/20">
+                You need an account to complete your purchase.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <Link href="/marketplace" className="inline-flex items-center gap-1.5 text-[13px] text-[#7ed957] no-underline transition-colors hover:text-[#7ed957]/80">
+                <ArrowLeft className="h-3.5 w-3.5" /> Continue browsing
+              </Link>
+            </div>
+          </>
+        )}
+      </div>
+    </main>
   )
 }

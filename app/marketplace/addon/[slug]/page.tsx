@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Check } from 'lucide-react'
 import { ADDONS, CATEGORIES, getAddonBySlug, getRelatedAddons } from '@/lib/marketplace-data'
 import { AddToCartButton } from './add-to-cart'
 
@@ -35,10 +36,10 @@ export default async function AddonDetailPage({ params }: { params: Promise<{ sl
 
   if (!addon) {
     return (
-      <div style={{ textAlign: 'center', padding: '120px 24px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800 }}>Add-on not found</h1>
-        <Link href="/marketplace" style={{ color: '#7ed957', textDecoration: 'none', fontSize: 14, marginTop: 16, display: 'inline-block' }}>Back to Marketplace</Link>
-      </div>
+      <main className="min-h-screen bg-[#020810] px-6 py-32 text-center font-sans text-white antialiased">
+        <h1 className="text-2xl font-extrabold">Add-on not found</h1>
+        <Link href="/marketplace" className="mt-4 inline-block text-sm text-[#7ed957] no-underline transition-colors hover:text-[#7ed957]/80">Back to Marketplace</Link>
+      </main>
     )
   }
 
@@ -90,177 +91,166 @@ export default async function AddonDetailPage({ params }: { params: Promise<{ sl
         }}
       />
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(24px, 4vw, 40px) clamp(16px, 4vw, 24px)' }}>
-        {/* Breadcrumb */}
-        <nav style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 24 }}>
-          <Link href="/marketplace" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Marketplace</Link>
-          <span style={{ margin: '0 8px' }}>/</span>
-          <Link href={`/marketplace/${addon.categories[0]}`} style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>{primaryCat?.name || addon.categories[0]}</Link>
-          <span style={{ margin: '0 8px' }}>/</span>
-          <span style={{ color: 'rgba(255,255,255,0.6)' }}>{addon.name}</span>
-        </nav>
+      <main className="min-h-screen bg-[#020810] font-sans text-white antialiased">
+        <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+          {/* Breadcrumb */}
+          <nav className="mb-6 text-xs text-white/30">
+            <Link href="/marketplace" className="text-white/40 transition-colors hover:text-[#7ed957]">Marketplace</Link>
+            <span className="mx-2">/</span>
+            <Link href={`/marketplace/${addon.categories[0]}`} className="text-white/40 transition-colors hover:text-[#7ed957]">{primaryCat?.name || addon.categories[0]}</Link>
+            <span className="mx-2">/</span>
+            <span className="text-white/60">{addon.name}</span>
+          </nav>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 32 }} className="mp-detail-grid">
-          {/* Main Content */}
-          <div>
-            {/* Header */}
-            <div style={{ marginBottom: 32 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-                {addon.categories.map(catSlug => {
-                  const c = CATEGORIES.find(cat => cat.slug === catSlug)
-                  return (
-                    <Link key={catSlug} href={`/marketplace/${catSlug}`} style={{
-                      fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 12,
-                      background: `${c?.color || '#7ed957'}15`, color: c?.color || '#7ed957',
-                      border: `1px solid ${c?.color || '#7ed957'}25`, textDecoration: 'none',
-                      textTransform: 'uppercase', letterSpacing: '0.06em',
-                    }}>{c?.name || catSlug}</Link>
-                  )
-                })}
-                {addon.badge && (
-                  <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 6, background: 'rgba(126,217,87,0.12)', color: '#7ed957' }}>{addon.badge}</span>
-                )}
+          <div className="grid grid-cols-1 gap-8 mp-detail-grid">
+            {/* Main Content */}
+            <div>
+              {/* Header */}
+              <div className="mb-8">
+                <div className="mb-3 flex flex-wrap items-center gap-2.5">
+                  {addon.categories.map(catSlug => {
+                    const c = CATEGORIES.find(cat => cat.slug === catSlug)
+                    return (
+                      <Link
+                        key={catSlug}
+                        href={`/marketplace/${catSlug}`}
+                        className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] no-underline"
+                        style={{ background: `${c?.color || '#7ed957'}15`, color: c?.color || '#7ed957', border: `1px solid ${c?.color || '#7ed957'}25` }}
+                      >{c?.name || catSlug}</Link>
+                    )
+                  })}
+                  {addon.badge && (
+                    <span className="rounded-md bg-[#7ed957]/[0.12] px-2.5 py-0.5 text-[10px] font-semibold text-[#7ed957]">{addon.badge}</span>
+                  )}
+                </div>
+                <h1 className="mb-2 text-balance text-4xl font-black tracking-tight sm:text-5xl">
+                  <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">{addon.name}</span>
+                </h1>
+                <p className="text-base leading-relaxed text-white/50">{addon.longDesc}</p>
               </div>
-              <h1 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 800, margin: '0 0 8px', letterSpacing: '-0.02em' }}>{addon.name}</h1>
-              <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, margin: 0 }}>{addon.longDesc}</p>
-            </div>
 
-            {/* What it does */}
-            <section style={{ marginBottom: 40 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 16px' }}>What it does</h2>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                {addon.features.map(f => (
-                  <li key={f} style={{
-                    fontSize: 14, color: 'rgba(255,255,255,0.6)', padding: '8px 0',
-                    display: 'flex', alignItems: 'flex-start', gap: 10,
-                    borderBottom: '1px solid rgba(255,255,255,0.03)',
-                  }}>
-                    <span style={{ color: '#7ed957', fontSize: 14, marginTop: 1, flexShrink: 0 }}>&#10003;</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </section>
+              {/* What it does */}
+              <section className="mb-10">
+                <h2 className="mb-4 text-xl font-extrabold">What it does</h2>
+                <ul className="list-none p-0">
+                  {addon.features.map(f => (
+                    <li key={f} className="flex items-start gap-2.5 border-b border-white/[0.04] py-2 text-sm text-white/60">
+                      <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#7ed957]" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </section>
 
-            {/* Capabilities */}
-            <section style={{ marginBottom: 40 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 16px' }}>Capabilities required</h2>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {addon.capabilities.map(cap => (
-                  <span key={cap} style={{
-                    fontSize: 11, fontWeight: 500, padding: '5px 12px', borderRadius: 8,
-                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-                    color: 'rgba(255,255,255,0.5)', fontFamily: 'monospace',
-                  }}>{cap}</span>
-                ))}
-              </div>
-            </section>
+              {/* Capabilities */}
+              <section className="mb-10">
+                <h2 className="mb-4 text-xl font-extrabold">Capabilities required</h2>
+                <div className="flex flex-wrap gap-2">
+                  {addon.capabilities.map(cap => (
+                    <span key={cap} className="rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 font-mono text-[11px] font-medium text-white/50">{cap}</span>
+                  ))}
+                </div>
+              </section>
 
-            {/* How it works */}
-            <section style={{ marginBottom: 40 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 16px' }}>How it works</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-                {STEPS.map(s => (
-                  <div key={s.num} style={{ padding: 20, borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: '#7ed957', marginBottom: 8 }}>{s.num}</div>
-                    <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 4px' }}>{s.title}</h4>
-                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, margin: 0 }}>{s.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Integrations */}
-            <section style={{ marginBottom: 40 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 16px' }}>Integrations</h2>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {addon.integrations.map(i => (
-                  <span key={i} style={{
-                    fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 8,
-                    background: 'rgba(126,217,87,0.06)', border: '1px solid rgba(126,217,87,0.12)',
-                    color: 'rgba(255,255,255,0.6)',
-                  }}>{i}</span>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          {/* Sidebar */}
-          <aside className="mp-detail-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* Price Card */}
-            <div style={{
-              borderRadius: 16, border: '1px solid rgba(126,217,87,0.15)',
-              background: 'linear-gradient(135deg, rgba(126,217,87,0.04) 0%, rgba(2,8,16,1) 100%)',
-              padding: 24,
-            }}>
-              <div style={{ fontSize: 36, fontWeight: 800, marginBottom: 4 }}>{addon.priceLabel}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <span style={{
-                  fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 6,
-                  background: `${PLAN_COLORS[addon.requiredPlan]}15`,
-                  color: PLAN_COLORS[addon.requiredPlan],
-                  border: `1px solid ${PLAN_COLORS[addon.requiredPlan]}25`,
-                  textTransform: 'uppercase', letterSpacing: '0.06em',
-                }}>Requires {addon.requiredPlan}</span>
-              </div>
-              <AddToCartButton slug={addon.slug} name={addon.name} price={addon.price} priceLabel={addon.priceLabel} />
-              <ul style={{ listStyle: 'none', padding: 0, margin: '16px 0 0' }}>
-                {addon.features.slice(0, 4).map(f => (
-                  <li key={f} style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', padding: '3px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ color: '#7ed957', fontSize: 10 }}>&#10003;</span> {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Category Nav */}
-            <div style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', padding: 20 }}>
-              <h4 style={{ fontSize: 13, fontWeight: 700, margin: '0 0 12px', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Categories</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {CATEGORIES.map(c => (
-                  <Link key={c.slug} href={`/marketplace/${c.slug}`} style={{
-                    fontSize: 13, padding: '6px 10px', borderRadius: 6, textDecoration: 'none',
-                    color: addon.categories.includes(c.slug) ? '#7ed957' : 'rgba(255,255,255,0.5)',
-                    background: addon.categories.includes(c.slug) ? 'rgba(126,217,87,0.08)' : 'transparent',
-                  }}>{c.name} ({c.count})</Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Related Add-ons */}
-            {related.length > 0 && (
-              <div style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', padding: 20 }}>
-                <h4 style={{ fontSize: 13, fontWeight: 700, margin: '0 0 12px', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Related Add-ons</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {related.slice(0, 4).map(r => (
-                    <Link key={r.slug} href={`/marketplace/addon/${r.slug}`} style={{
-                      padding: 12, borderRadius: 10, background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid rgba(255,255,255,0.05)', textDecoration: 'none', color: '#fff',
-                    }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{r.name}</div>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>{r.priceLabel}</span>
-                        <span style={{ color: '#7ed957' }}>&rarr;</span>
+              {/* How it works */}
+              <section className="mb-10">
+                <h2 className="mb-4 text-xl font-extrabold">How it works</h2>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {STEPS.map((s, i) => {
+                    const accents = ['#7ed957', '#00d4ff', '#a78bfa']
+                    const color = accents[i % accents.length]
+                    return (
+                      <div key={s.num} className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur">
+                        <div className="mb-2 text-2xl font-extrabold" style={{ color }}>{s.num}</div>
+                        <h4 className="mb-1 text-sm font-bold">{s.title}</h4>
+                        <p className="text-xs leading-relaxed text-white/40">{s.desc}</p>
                       </div>
-                    </Link>
+                    )
+                  })}
+                </div>
+              </section>
+
+              {/* Integrations */}
+              <section className="mb-10">
+                <h2 className="mb-4 text-xl font-extrabold">Integrations</h2>
+                <div className="flex flex-wrap gap-2">
+                  {addon.integrations.map(i => (
+                    <span key={i} className="rounded-lg border border-[#7ed957]/[0.12] bg-[#7ed957]/[0.06] px-3.5 py-1.5 text-xs font-semibold text-white/60">{i}</span>
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            {/* Sidebar */}
+            <aside className="mp-detail-sidebar flex flex-col gap-5">
+              {/* Price Card */}
+              <div className="rounded-2xl border border-[#7ed957]/[0.15] bg-gradient-to-br from-[#7ed957]/[0.05] to-[#020810] p-6 backdrop-blur">
+                <div className="mb-1 text-4xl font-extrabold">{addon.priceLabel}</div>
+                <div className="mb-4 flex items-center gap-2">
+                  <span
+                    className="rounded-md px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em]"
+                    style={{ background: `${PLAN_COLORS[addon.requiredPlan]}15`, color: PLAN_COLORS[addon.requiredPlan], border: `1px solid ${PLAN_COLORS[addon.requiredPlan]}25` }}
+                  >Requires {addon.requiredPlan}</span>
+                </div>
+                <AddToCartButton slug={addon.slug} name={addon.name} price={addon.price} priceLabel={addon.priceLabel} />
+                <ul className="mt-4 list-none p-0">
+                  {addon.features.slice(0, 4).map(f => (
+                    <li key={f} className="flex items-center gap-1.5 py-0.5 text-xs text-white/40">
+                      <Check className="h-3 w-3 text-[#7ed957]" /> {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Category Nav */}
+              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur">
+                <h4 className="mb-3 font-mono text-[11px] font-bold uppercase tracking-widest text-white/50">Categories</h4>
+                <div className="flex flex-col gap-1">
+                  {CATEGORIES.map(c => (
+                    <Link
+                      key={c.slug}
+                      href={`/marketplace/${c.slug}`}
+                      className={`rounded-md px-2.5 py-1.5 text-[13px] no-underline transition-colors ${addon.categories.includes(c.slug) ? 'bg-[#7ed957]/[0.08] text-[#7ed957]' : 'text-white/50 hover:text-white/80'}`}
+                    >{c.name} ({c.count})</Link>
                   ))}
                 </div>
               </div>
-            )}
 
-            {/* Custom CTA */}
-            <div style={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', padding: 20, textAlign: 'center' }}>
-              <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 6px' }}>Need a custom solution?</h4>
-              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: '0 0 12px', lineHeight: 1.5 }}>We build custom add-ons for enterprise teams.</p>
-              <a href="mailto:mike@rocketopp.com" style={{
-                display: 'inline-block', fontSize: 12, fontWeight: 600, padding: '8px 16px', borderRadius: 8,
-                background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.08)',
-                textDecoration: 'none',
-              }}>Contact Us</a>
-            </div>
-          </aside>
+              {/* Related Add-ons */}
+              {related.length > 0 && (
+                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur">
+                  <h4 className="mb-3 font-mono text-[11px] font-bold uppercase tracking-widest text-white/50">Related Add-ons</h4>
+                  <div className="flex flex-col gap-2">
+                    {related.slice(0, 4).map(r => (
+                      <Link
+                        key={r.slug}
+                        href={`/marketplace/addon/${r.slug}`}
+                        className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-white no-underline transition-colors hover:border-white/[0.18]"
+                      >
+                        <div className="mb-0.5 text-[13px] font-semibold">{r.name}</div>
+                        <div className="flex justify-between text-[11px] text-white/30">
+                          <span>{r.priceLabel}</span>
+                          <span className="text-[#7ed957]">&rarr;</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Custom CTA */}
+              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 text-center backdrop-blur">
+                <h4 className="mb-1.5 text-sm font-bold">Need a custom solution?</h4>
+                <p className="mb-3 text-xs leading-relaxed text-white/45">We build custom add-ons for enterprise teams.</p>
+                <a
+                  href="mailto:mike@rocketopp.com"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.06] px-4 py-2 text-xs font-semibold text-white/70 no-underline transition-colors hover:border-[#7ed957]/40 hover:text-[#7ed957]"
+                >Contact Us</a>
+              </div>
+            </aside>
+          </div>
         </div>
-      </div>
+      </main>
 
       <style>{`
         @media (min-width: 900px) {

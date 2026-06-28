@@ -67,8 +67,8 @@ function inline(text: string): string {
   return text
     .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#f0f4f8;font-weight:600;">$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code style="background:rgba(110,224,90,0.08);padding:1px 5px;border-radius:4px;font-size:13px;color:#6EE05A;">$1</code>')
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" style="color:#6EE05A;text-decoration:underline;">$1</a>')
+    .replace(/`(.+?)`/g, '<code style="background:rgba(126,217,87,0.08);padding:1px 5px;border-radius:4px;font-size:13px;color:#7ed957;">$1</code>')
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" style="color:#7ed957;text-decoration:underline;">$1</a>')
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ category: string; slug: string }> }) {
@@ -97,7 +97,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ categ
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(10px, 2vw, 14px) clamp(16px, 4vw, 32px)', background: 'rgba(2,8,16,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
         <Link href="/" style={{ textDecoration: 'none' }}><img src="/brand/0ncore-logo.png" alt="0nCore" style={{ height: 28, objectFit: 'contain' }} /></Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <Link href="/blog" style={{ fontSize: 13, color: '#6EE05A', textDecoration: 'none', fontWeight: 600 }}>Blog</Link>
+          <Link href="/blog" style={{ fontSize: 13, color: '#7ed957', textDecoration: 'none', fontWeight: 600 }}>Blog</Link>
           <Link href="/login" style={{ fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Get Started</Link>
         </div>
       </nav>
@@ -122,7 +122,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ categ
 
         {/* Meta */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: cat?.color || '#6EE05A', background: `${cat?.color || '#6EE05A'}15`, padding: '3px 10px', borderRadius: 10, border: `1px solid ${cat?.color || '#6EE05A'}30`, textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: cat?.color || '#7ed957', background: `${cat?.color || '#7ed957'}15`, padding: '3px 10px', borderRadius: 10, border: `1px solid ${cat?.color || '#7ed957'}30`, textTransform: 'uppercase' }}>
             {cat?.name || category}
           </span>
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
@@ -137,7 +137,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ categ
 
         {/* Author */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(110,224,90,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#6EE05A' }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(126,217,87,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#7ed957' }}>
             {post.author_name?.charAt(0) || '0'}
           </div>
           <div>
@@ -150,10 +150,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ categ
         <div dangerouslySetInnerHTML={{ __html: renderContent(post.content || '') }} />
 
         {/* CTA */}
-        <div style={{ marginTop: 48, padding: 32, borderRadius: 16, background: 'rgba(110,224,90,0.04)', border: '1px solid rgba(110,224,90,0.1)', textAlign: 'center' }}>
-          <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>Ready to try 0nCore?</h3>
+        <div style={{ marginTop: 48, padding: 32, borderRadius: 20, background: 'linear-gradient(135deg, rgba(126,217,87,0.06), rgba(0,212,255,0.03), rgba(167,139,250,0.06))', border: '1px solid rgba(126,217,87,0.25)', backdropFilter: 'blur(12px)', textAlign: 'center' }}>
+          <h3 style={{ fontSize: 20, fontWeight: 900, marginBottom: 8 }}>Ready to try 0nCore?</h3>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 16 }}>1,554 tools. 96 services. One AI brain. Start free.</p>
-          <Link href="/login" style={{ display: 'inline-block', padding: '12px 28px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15 }}>
+          <Link href="/login" style={{ display: 'inline-block', padding: '12px 28px', background: '#7ed957', color: '#020810', fontWeight: 800, borderRadius: 12, textDecoration: 'none', fontSize: 15, boxShadow: '0 0 32px rgba(126,217,87,0.4)' }}>
             Get Started Free
           </Link>
         </div>

@@ -138,7 +138,7 @@ const FAQS = [
 
 export default function CourseBuilderDemoPage() {
   return (
-    <main className="bg-[#0d1117] text-[#c9d1d9] font-sans antialiased min-h-screen">
+    <main className="min-h-screen bg-[#020810] font-sans text-white antialiased">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -162,21 +162,23 @@ export default function CourseBuilderDemoPage() {
       />
 
       {/* HERO */}
-      <section className="border-b border-[#30363d]">
-        <div className="max-w-7xl mx-auto px-6 py-16 sm:py-24">
+      <section className="relative overflow-hidden border-b border-white/5">
+        <div aria-hidden className="pointer-events-none absolute -top-32 left-[8%] h-[560px] w-[560px] rounded-full bg-[#7ed957]/[0.07] blur-[150px]" />
+        <div aria-hidden className="pointer-events-none absolute top-[10%] right-[6%] h-[420px] w-[420px] rounded-full bg-[#00d4ff]/[0.05] blur-[130px]" />
+        <div className="relative max-w-7xl mx-auto px-6 py-16 sm:py-24">
           <div className="max-w-4xl space-y-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#6EE05A]/30 bg-[#6EE05A]/10 px-3 py-1 text-xs font-medium text-[#6EE05A]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#7ed957]/30 bg-[#7ed957]/10 px-3 py-1 text-xs font-medium text-[#7ed957]">
               <Sparkles className="w-3 h-3" />
               CRM Marketplace App · v1.0.0
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-[#e6edf3] leading-[1.1]">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.1] text-balance">
               Generate a complete course
               <br />
-              <span className="text-[#6EE05A]">from a five-question chat.</span>
+              <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">from a five-question chat.</span>
             </h1>
 
-            <p className="text-lg text-[#c9d1d9] leading-relaxed max-w-3xl">
+            <p className="text-lg text-white/75 leading-relaxed max-w-3xl">
               The 0n Course Builder lives inside your CRM as a Conversation AI agent. Tell it
               what to teach, who it&apos;s for, how many lessons, and the outcome you want — it
               returns a fully written course with quizzes, resources, and a sales page,
@@ -186,27 +188,27 @@ export default function CourseBuilderDemoPage() {
             <div className="flex flex-wrap items-center gap-3">
               <a
                 href="#demo"
-                className="inline-flex items-center gap-2 bg-[#6EE05A] text-[#0d1117] font-medium rounded-lg px-5 py-2.5 hover:bg-[#5bc74a] transition-all duration-150 active:scale-[0.98]"
+                className="inline-flex items-center gap-2 bg-[#7ed957] text-[#020810] font-medium rounded-lg px-5 py-2.5 hover:bg-[#5bc74a] transition-all duration-150 active:scale-[0.98]"
               >
                 Try it now
                 <PlayCircle className="w-4 h-4" />
               </a>
               <Link
                 href="/demos/course-builder-scopes"
-                className="inline-flex items-center gap-2 bg-[#21262d] text-[#c9d1d9] border border-[#30363d] rounded-lg px-5 py-2.5 hover:bg-[#30363d] hover:text-[#e6edf3] transition-all duration-150 active:scale-[0.98]"
+                className="inline-flex items-center gap-2 bg-white/[0.03] backdrop-blur text-white/75 border border-white/10 rounded-lg px-5 py-2.5 hover:border-[#7ed957]/40 hover:text-white transition-all duration-150 active:scale-[0.98]"
               >
                 Scopes &amp; permissions
               </Link>
               <a
                 href="mailto:hello@0ncore.com"
-                className="inline-flex items-center gap-2 text-[#8b949e] hover:text-[#e6edf3] rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-150"
+                className="inline-flex items-center gap-2 text-white/45 hover:text-white rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-150"
               >
                 <Mail className="w-4 h-4" />
                 hello@0ncore.com
               </a>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-[#30363d]">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-white/10">
               {[
                 { v: '< 90s', l: '5-lesson course' },
                 { v: '5', l: 'Inputs collected' },
@@ -214,10 +216,10 @@ export default function CourseBuilderDemoPage() {
                 { v: 'CRM-native', l: 'Publishes via courses.write' },
               ].map((s) => (
                 <div key={s.l}>
-                  <div className="text-2xl font-semibold text-[#e6edf3] font-mono tabular-nums">
+                  <div className="text-2xl font-semibold text-white font-mono tabular-nums">
                     {s.v}
                   </div>
-                  <div className="text-xs text-[#8b949e] mt-1">{s.l}</div>
+                  <div className="text-xs text-white/45 mt-1">{s.l}</div>
                 </div>
               ))}
             </div>
@@ -226,13 +228,13 @@ export default function CourseBuilderDemoPage() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="border-b border-[#30363d]">
+      <section className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-20 space-y-10">
           <div className="space-y-2 max-w-2xl">
-            <h2 className="text-3xl font-semibold tracking-tight text-[#e6edf3]">
+            <h2 className="text-3xl font-semibold tracking-tight text-white">
               How it works
             </h2>
-            <p className="text-[#8b949e]">
+            <p className="text-white/45">
               Conversation AI handles the input. Groq writes the course. Your CRM publishes it.
               No new dashboards to learn.
             </p>
@@ -242,11 +244,11 @@ export default function CourseBuilderDemoPage() {
             {HOW_STEPS.map((s) => (
               <div
                 key={s.title}
-                className="bg-[#161b22] border border-[#30363d] rounded-xl p-5 hover:border-[#484f58] transition-colors duration-200"
+                className="bg-white/[0.02] backdrop-blur border border-white/10 rounded-xl p-5 hover:border-white/[0.18] transition-colors duration-200"
               >
-                <s.icon className="w-8 h-8 text-[#6EE05A]" />
-                <div className="mt-4 text-base font-medium text-[#e6edf3]">{s.title}</div>
-                <p className="mt-2 text-sm text-[#c9d1d9] leading-relaxed">{s.body}</p>
+                <s.icon className="w-8 h-8 text-[#7ed957]" />
+                <div className="mt-4 text-base font-medium text-white">{s.title}</div>
+                <p className="mt-2 text-sm text-white/75 leading-relaxed">{s.body}</p>
               </div>
             ))}
           </div>
@@ -254,13 +256,13 @@ export default function CourseBuilderDemoPage() {
       </section>
 
       {/* FEATURES */}
-      <section className="border-b border-[#30363d]">
+      <section className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-20 space-y-10">
           <div className="space-y-2 max-w-2xl">
-            <h2 className="text-3xl font-semibold tracking-tight text-[#e6edf3]">
+            <h2 className="text-3xl font-semibold tracking-tight text-white">
               What ships in every course
             </h2>
-            <p className="text-[#8b949e]">
+            <p className="text-white/45">
               Not just an outline. Not just lesson titles. The whole thing.
             </p>
           </div>
@@ -269,11 +271,11 @@ export default function CourseBuilderDemoPage() {
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className="bg-[#161b22] border border-[#30363d] rounded-xl p-5 hover:border-[#484f58] transition-colors duration-200"
+                className="bg-white/[0.02] backdrop-blur border border-white/10 rounded-xl p-5 hover:border-white/[0.18] transition-colors duration-200"
               >
-                <f.icon className="w-6 h-6 text-[#6EE05A]" />
-                <div className="mt-4 text-base font-medium text-[#e6edf3]">{f.title}</div>
-                <p className="mt-2 text-sm text-[#c9d1d9] leading-relaxed">{f.body}</p>
+                <f.icon className="w-6 h-6 text-[#7ed957]" />
+                <div className="mt-4 text-base font-medium text-white">{f.title}</div>
+                <p className="mt-2 text-sm text-white/75 leading-relaxed">{f.body}</p>
               </div>
             ))}
           </div>
@@ -281,15 +283,15 @@ export default function CourseBuilderDemoPage() {
       </section>
 
       {/* LIVE DEMO */}
-      <section id="demo" className="border-b border-[#30363d] scroll-mt-12">
+      <section id="demo" className="border-b border-white/10 scroll-mt-12">
         <div className="max-w-7xl mx-auto px-6 py-20 space-y-10">
           <div className="space-y-2 max-w-2xl">
-            <h2 className="text-3xl font-semibold tracking-tight text-[#e6edf3]">
+            <h2 className="text-3xl font-semibold tracking-tight text-white">
               Live demo
             </h2>
-            <p className="text-[#8b949e]">
+            <p className="text-white/45">
               Same exact webhook the CRM Conversation AI agent uses
-              (<code className="font-mono text-xs bg-[#161b22] px-1.5 py-0.5 rounded text-[#e6edf3]">/api/course-builder/chat</code>).
+              (<code className="font-mono text-xs bg-white/[0.02] backdrop-blur px-1.5 py-0.5 rounded text-white">/api/course-builder/chat</code>).
               Answer the five questions and watch the outline return.
             </p>
           </div>
@@ -304,13 +306,13 @@ export default function CourseBuilderDemoPage() {
             ].map((c) => (
               <div
                 key={c.label}
-                className="bg-[#161b22] border border-[#30363d] rounded-xl p-5"
+                className="bg-white/[0.02] backdrop-blur border border-white/10 rounded-xl p-5"
               >
-                <c.icon className="w-5 h-5 text-[#6EE05A]" />
-                <div className="mt-3 text-xs font-medium uppercase tracking-wider text-[#8b949e]">
+                <c.icon className="w-5 h-5 text-[#7ed957]" />
+                <div className="mt-3 text-xs font-medium uppercase tracking-wider text-white/45">
                   {c.label}
                 </div>
-                <div className="mt-1 text-base font-medium text-[#e6edf3]">{c.v}</div>
+                <div className="mt-1 text-base font-medium text-white">{c.v}</div>
               </div>
             ))}
           </div>
@@ -318,27 +320,27 @@ export default function CourseBuilderDemoPage() {
       </section>
 
       {/* SPECS */}
-      <section className="border-b border-[#30363d]">
+      <section className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-20 space-y-10">
           <div className="space-y-2 max-w-2xl">
-            <h2 className="text-3xl font-semibold tracking-tight text-[#e6edf3]">
+            <h2 className="text-3xl font-semibold tracking-tight text-white">
               Technical specs
             </h2>
-            <p className="text-[#8b949e]">
+            <p className="text-white/45">
               Everything the marketplace reviewer needs in one block.
             </p>
           </div>
 
-          <div className="bg-[#161b22] border border-[#30363d] rounded-xl divide-y divide-[#30363d]">
+          <div className="bg-white/[0.02] backdrop-blur border border-white/10 rounded-xl divide-y divide-white/10">
             {SPECS.map((row) => (
               <div
                 key={row.label}
                 className="px-5 py-4 grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-1 sm:gap-4"
               >
-                <div className="text-xs font-medium uppercase tracking-wider text-[#8b949e]">
+                <div className="text-xs font-medium uppercase tracking-wider text-white/45">
                   {row.label}
                 </div>
-                <div className="text-sm text-[#e6edf3] font-mono break-all">{row.value}</div>
+                <div className="text-sm text-white font-mono break-all">{row.value}</div>
               </div>
             ))}
           </div>
@@ -346,13 +348,13 @@ export default function CourseBuilderDemoPage() {
       </section>
 
       {/* SCOPES SUMMARY */}
-      <section className="border-b border-[#30363d]">
+      <section className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-20 space-y-10">
           <div className="space-y-2 max-w-2xl">
-            <h2 className="text-3xl font-semibold tracking-tight text-[#e6edf3]">
+            <h2 className="text-3xl font-semibold tracking-tight text-white">
               Scopes
             </h2>
-            <p className="text-[#8b949e]">
+            <p className="text-white/45">
               Three scopes. Each one powers a specific feature. No data leaves the CRM agent —
               the model never sees your contacts, conversations, or workflows.
             </p>
@@ -381,18 +383,18 @@ export default function CourseBuilderDemoPage() {
             ].map((s) => (
               <div
                 key={s.title}
-                className="bg-[#161b22] border border-[#30363d] rounded-xl p-5 hover:border-[#484f58] transition-colors duration-200"
+                className="bg-white/[0.02] backdrop-blur border border-white/10 rounded-xl p-5 hover:border-white/[0.18] transition-colors duration-200"
               >
-                <s.icon className="w-6 h-6 text-[#6EE05A]" />
-                <div className="mt-4 text-base font-medium text-[#e6edf3]">{s.title}</div>
-                <p className="mt-2 text-sm text-[#c9d1d9] leading-relaxed">{s.body}</p>
+                <s.icon className="w-6 h-6 text-[#7ed957]" />
+                <div className="mt-4 text-base font-medium text-white">{s.title}</div>
+                <p className="mt-2 text-sm text-white/75 leading-relaxed">{s.body}</p>
               </div>
             ))}
           </div>
 
           <Link
             href="/demos/course-builder-scopes"
-            className="inline-flex items-center gap-2 text-sm font-medium text-[#58a6ff] hover:underline"
+            className="inline-flex items-center gap-2 text-sm font-medium text-[#00d4ff] hover:underline"
           >
             Full scope justification
             <ArrowRight className="w-4 h-4" />
@@ -401,21 +403,21 @@ export default function CourseBuilderDemoPage() {
       </section>
 
       {/* FAQ */}
-      <section className="border-b border-[#30363d]">
+      <section className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-20 space-y-10">
           <div className="space-y-2 max-w-2xl">
-            <h2 className="text-3xl font-semibold tracking-tight text-[#e6edf3]">FAQ</h2>
-            <p className="text-[#8b949e]">Everything reviewers and customers ask first.</p>
+            <h2 className="text-3xl font-semibold tracking-tight text-white">FAQ</h2>
+            <p className="text-white/45">Everything reviewers and customers ask first.</p>
           </div>
 
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             {FAQS.map((f) => (
               <div
                 key={f.q}
-                className="bg-[#161b22] border border-[#30363d] rounded-xl p-5"
+                className="bg-white/[0.02] backdrop-blur border border-white/10 rounded-xl p-5"
               >
-                <div className="text-base font-medium text-[#e6edf3]">{f.q}</div>
-                <p className="mt-2 text-sm text-[#c9d1d9] leading-relaxed">{f.a}</p>
+                <div className="text-base font-medium text-white">{f.q}</div>
+                <p className="mt-2 text-sm text-white/75 leading-relaxed">{f.a}</p>
               </div>
             ))}
           </div>
@@ -423,28 +425,28 @@ export default function CourseBuilderDemoPage() {
       </section>
 
       {/* REVIEWER BLOCK */}
-      <section className="border-b border-[#30363d]">
+      <section className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-16">
-          <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-8 md:p-10 space-y-6">
+          <div className="bg-white/[0.02] backdrop-blur border border-white/10 rounded-xl p-8 md:p-10 space-y-6">
             <div className="flex items-start gap-3">
-              <Webhook className="w-6 h-6 text-[#6EE05A] mt-1" />
+              <Webhook className="w-6 h-6 text-[#7ed957] mt-1" />
               <div className="space-y-2">
-                <h3 className="text-xl font-semibold tracking-tight text-[#e6edf3]">
+                <h3 className="text-xl font-semibold tracking-tight text-white">
                   Marketplace reviewer details
                 </h3>
-                <p className="text-sm text-[#c9d1d9]">
+                <p className="text-sm text-white/75">
                   Test account: agency app installed on location
-                  <code className="font-mono text-xs bg-[#0d1117] px-1.5 py-0.5 rounded text-[#e6edf3] mx-1.5">
+                  <code className="font-mono text-xs bg-[#0d1117] px-1.5 py-0.5 rounded text-white mx-1.5">
                     nphConTwfHcVE1oA0uep
                   </code>
                   (0nCore). Webhook endpoint:
-                  <code className="font-mono text-xs bg-[#0d1117] px-1.5 py-0.5 rounded text-[#e6edf3] mx-1.5">
+                  <code className="font-mono text-xs bg-[#0d1117] px-1.5 py-0.5 rounded text-white mx-1.5">
                     https://0ncore.com/api/course-builder/chat
                   </code>
                   . Contact:
                   <a
                     href="mailto:hello@0ncore.com"
-                    className="text-[#58a6ff] hover:underline mx-1"
+                    className="text-[#00d4ff] hover:underline mx-1"
                   >
                     hello@0ncore.com
                   </a>
@@ -461,13 +463,13 @@ export default function CourseBuilderDemoPage() {
               ].map((c) => (
                 <div
                   key={c.label}
-                  className="bg-[#0d1117] border border-[#30363d] rounded-lg p-4"
+                  className="bg-[#0d1117] border border-white/10 rounded-lg p-4"
                 >
-                  <c.icon className="w-4 h-4 text-[#6EE05A]" />
-                  <div className="mt-2 text-xs font-medium uppercase tracking-wider text-[#8b949e]">
+                  <c.icon className="w-4 h-4 text-[#7ed957]" />
+                  <div className="mt-2 text-xs font-medium uppercase tracking-wider text-white/45">
                     {c.label}
                   </div>
-                  <div className="mt-1 text-sm font-mono text-[#e6edf3] break-all">{c.v}</div>
+                  <div className="mt-1 text-sm font-mono text-white break-all">{c.v}</div>
                 </div>
               ))}
             </div>
@@ -476,27 +478,27 @@ export default function CourseBuilderDemoPage() {
       </section>
 
       {/* CTA */}
-      <section className="border-b border-[#30363d]">
+      <section className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-20">
-          <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-10 md:p-14 text-center space-y-6">
-            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#e6edf3]">
+          <div className="bg-white/[0.02] backdrop-blur border border-white/10 rounded-xl p-10 md:p-14 text-center space-y-6">
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
               Stop writing courses. Start describing them.
             </h2>
-            <p className="text-[#c9d1d9] max-w-2xl mx-auto">
+            <p className="text-white/75 max-w-2xl mx-auto">
               Five questions. One Conversation AI agent. A finished, sellable course inside your
               CRM Courses module — outline, lessons, quizzes, resources, and a sales page included.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <a
                 href="#demo"
-                className="inline-flex items-center gap-2 bg-[#6EE05A] text-[#0d1117] font-medium rounded-lg px-5 py-2.5 hover:bg-[#5bc74a] transition-all duration-150 active:scale-[0.98]"
+                className="inline-flex items-center gap-2 bg-[#7ed957] text-[#020810] font-medium rounded-lg px-5 py-2.5 hover:bg-[#5bc74a] transition-all duration-150 active:scale-[0.98]"
               >
                 Try the demo
                 <PlayCircle className="w-4 h-4" />
               </a>
               <Link
                 href="/demos/course-builder-scopes"
-                className="inline-flex items-center gap-2 bg-[#21262d] text-[#c9d1d9] border border-[#30363d] rounded-lg px-5 py-2.5 hover:bg-[#30363d] hover:text-[#e6edf3] transition-all duration-150 active:scale-[0.98]"
+                className="inline-flex items-center gap-2 bg-white/[0.03] backdrop-blur text-white/75 border border-white/10 rounded-lg px-5 py-2.5 hover:border-[#7ed957]/40 hover:text-white transition-all duration-150 active:scale-[0.98]"
               >
                 See scope details
               </Link>

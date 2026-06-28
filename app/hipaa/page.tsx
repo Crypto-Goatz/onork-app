@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { ShieldCheck, Search, Zap } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Free HIPAA 2026 Readiness Score — Is Your Website Compliant?',
@@ -236,7 +237,10 @@ export default function HIPAAPage() {
               letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 0 20px',
             }}>
               Is Your Healthcare Website Ready for{' '}
-              <span style={{ color: '#7ed957' }}>HIPAA 2026</span>?
+              <span style={{
+                background: 'linear-gradient(135deg, #7ed957 0%, #00d4ff 50%, #a78bfa 100%)',
+                WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent',
+              }}>HIPAA 2026</span>?
             </h1>
             <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 520, margin: '0 0 32px' }}>
               The new HIPAA Security Rule eliminates the distinction between Required and Addressable safeguards.
@@ -333,7 +337,10 @@ export default function HIPAAPage() {
       <section style={{ padding: 'clamp(40px, 6vw, 80px) clamp(16px, 4vw, 24px)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: 800, marginBottom: 8 }}>
-            Your Website Gets <span style={{ color: '#7ed957' }}>Two Scores</span>
+            Your Website Gets <span style={{
+              background: 'linear-gradient(135deg, #7ed957 0%, #00d4ff 50%, #a78bfa 100%)',
+              WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent',
+            }}>Two Scores</span>
           </h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', maxWidth: 600, margin: '0 auto 40px' }}>
             We assess your compliance against both the current rule and the proposed 2026 changes.
@@ -435,12 +442,12 @@ export default function HIPAAPage() {
           <ScanForm id="bottom-form" />
           <div style={{ display: 'flex', gap: 24, justifyContent: 'center', marginTop: 32, flexWrap: 'wrap' }}>
             {[
-              { label: 'No PHI Collected', icon: '\u{1F6E1}\uFE0F' },
-              { label: 'Passive Scan Only', icon: '\u{1F50D}' },
-              { label: 'Results in 30 Seconds', icon: '\u26A1' },
+              { label: 'No PHI Collected', icon: ShieldCheck },
+              { label: 'Passive Scan Only', icon: Search },
+              { label: 'Results in 30 Seconds', icon: Zap },
             ].map(b => (
               <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
-                <span>{b.icon}</span> {b.label}
+                <b.icon size={14} style={{ color: '#7ed957' }} /> {b.label}
               </div>
             ))}
           </div>

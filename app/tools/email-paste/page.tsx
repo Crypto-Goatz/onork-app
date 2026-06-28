@@ -108,7 +108,7 @@ export default function EmailPastePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0d1117', color: '#d0d0d0' }}>
+    <div style={{ minHeight: '100vh', background: '#020810', color: '#d0d0d0' }}>
       <Header
         templateCount={templates.length}
         onLibraryClick={() => setShowLibrary(true)}
@@ -145,9 +145,9 @@ export default function EmailPastePage() {
 
 function Header({ templateCount, onLibraryClick, onNewClick }: { templateCount: number; onLibraryClick: () => void; onNewClick: () => void }) {
   return (
-    <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(13,17,23,0.95)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #2a2a2a' }}>
+    <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(2,8,16,0.95)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #2a2a2a' }}>
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Mail size={18} color="#635bff" />
+        <Mail size={18} color="#7ed957" />
         <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#fff' }}>Email Copy-Paste</div>
         <button
           onClick={onLibraryClick}
@@ -157,7 +157,7 @@ function Header({ templateCount, onLibraryClick, onNewClick }: { templateCount: 
         </button>
         <button
           onClick={onNewClick}
-          style={{ background: '#635bff', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+          style={{ background: '#7ed957', border: 'none', color: '#fff', padding: '6px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
         >
           <Plus size={12} /> New
         </button>
@@ -172,7 +172,7 @@ function ModeBtn({ active, onClick, icon, label }: { active: boolean; onClick: (
       onClick={onClick}
       style={{
         flex: 1,
-        background: active ? '#635bff' : 'transparent',
+        background: active ? '#7ed957' : 'transparent',
         color: active ? '#fff' : '#888',
         border: 'none',
         padding: '8px 10px',
@@ -251,10 +251,10 @@ function Compose({ active, setActive, onSave, hasContent }: { active: Template; 
   return (
     <div>
       {/* AI prompt — the primary input */}
-      <div style={{ marginBottom: 14, padding: 14, background: 'linear-gradient(135deg, #1a1530 0%, #161b22 100%)', border: '1px solid #635bff44', borderRadius: 12 }}>
+      <div style={{ marginBottom: 14, padding: 14, background: 'linear-gradient(135deg, #1a1530 0%, #161b22 100%)', border: '1px solid #7ed95744', borderRadius: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-          <Sparkles size={12} color="#635bff" />
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#a899ff', textTransform: 'uppercase' }}>Describe the email</div>
+          <Sparkles size={12} color="#7ed957" />
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#7ed957', textTransform: 'uppercase' }}>Describe the email</div>
         </div>
         <textarea
           value={prompt}
@@ -265,7 +265,7 @@ function Compose({ active, setActive, onSave, hasContent }: { active: Template; 
           style={{
             width: '100%',
             padding: '10px 12px',
-            background: '#0d1117',
+            background: '#020810',
             border: '1px solid #2a2a2a',
             borderRadius: 8,
             color: '#d0d0d0',
@@ -288,7 +288,7 @@ function Compose({ active, setActive, onSave, hasContent }: { active: Template; 
           style={{
             width: '100%',
             padding: '12px 16px',
-            background: prompt.trim() && !generating ? '#635bff' : '#1a1a1a',
+            background: prompt.trim() && !generating ? '#7ed957' : '#1a1a1a',
             color: prompt.trim() && !generating ? '#fff' : '#555',
             border: 'none',
             borderRadius: 10,
@@ -348,7 +348,7 @@ function Compose({ active, setActive, onSave, hasContent }: { active: Template; 
           {/* Quick preview when fields are collapsed */}
           {!showFields && (
             <div style={{ marginBottom: 12, padding: '12px 14px', background: '#161b22', border: '1px solid #2a2a2a', borderRadius: 10 }}>
-              <div style={{ fontSize: 11, color: '#635bff', fontWeight: 700, marginBottom: 4 }}>{active.subject || '(no subject)'}</div>
+              <div style={{ fontSize: 11, color: '#7ed957', fontWeight: 700, marginBottom: 4 }}>{active.subject || '(no subject)'}</div>
               <div style={{ fontSize: 12, color: '#888', whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: 3 as unknown as number, WebkitBoxOrient: 'vertical' as 'vertical', overflow: 'hidden' }}>
                 {active.body}
               </div>
@@ -361,7 +361,7 @@ function Compose({ active, setActive, onSave, hasContent }: { active: Template; 
             style={{
               width: '100%',
               padding: '14px 16px',
-              background: hasContent ? '#635bff' : '#1a1a1a',
+              background: hasContent ? '#7ed957' : '#1a1a1a',
               color: hasContent ? '#fff' : '#555',
               border: 'none',
               borderRadius: 12,
@@ -512,7 +512,7 @@ function CopyView({ fields }: { fields: Template }) {
           width: '100%',
           marginTop: 14,
           padding: '14px 16px',
-          background: copied === 'body' ? '#22c55e' : '#635bff',
+          background: copied === 'body' ? '#22c55e' : '#7ed957',
           color: '#fff',
           border: 'none',
           borderRadius: 12,
@@ -586,7 +586,7 @@ function Row({ label, value, copied, onCopy, mono, bodyPreview }: { label: strin
             width: 32,
             height: 32,
             borderRadius: 8,
-            background: copied ? '#22c55e' : '#635bff',
+            background: copied ? '#22c55e' : '#7ed957',
             color: '#fff',
             display: 'flex',
             alignItems: 'center',
@@ -614,7 +614,7 @@ function Steps() {
         ['4', 'Repeat for To / CC / BCC / Subject / Body'],
       ].map(([n, t]) => (
         <div key={n} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
-          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#635bff', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{n}</div>
+          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#7ed957', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{n}</div>
           <div style={{ fontSize: 12, color: '#d0d0d0', paddingTop: 3 }}>{t}</div>
         </div>
       ))}
@@ -639,7 +639,7 @@ function Library({ templates, activeId, onSelect, onDelete, onClose }: { templat
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {templates.map((t) => (
-              <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 10, background: t.id === activeId ? '#0d1f10' : '#0d1117', border: `1px solid ${t.id === activeId ? '#22c55e' : '#2a2a2a'}`, borderRadius: 10 }}>
+              <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 10, background: t.id === activeId ? '#0d1f10' : '#020810', border: `1px solid ${t.id === activeId ? '#22c55e' : '#2a2a2a'}`, borderRadius: 10 }}>
                 <div onClick={() => onSelect(t)} style={{ flex: 1, cursor: 'pointer' }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{t.name}</div>
                   <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{t.subject || '(no subject)'}</div>

@@ -36,15 +36,15 @@ export default function ForgotPasswordPage() {
     return (
       <AuthShell title="Check your email" subtitle={`We sent a reset link to ${email}`}>
         <div className="flex flex-col items-center gap-4 py-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/15">
-            <Check className="h-6 w-6 text-accent" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#7ed957]/15">
+            <Check className="h-6 w-6 text-[#7ed957]" />
           </div>
-          <p className="text-sm text-text-muted text-center">
+          <p className="text-sm text-white/45 text-center">
             Click the link in your email to choose a new password.
           </p>
           <Link
             href="/login"
-            className="flex items-center justify-center gap-2 text-sm text-text-muted hover:text-white transition-colors"
+            className="flex items-center justify-center gap-2 text-sm text-white/45 hover:text-white transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to sign in
@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
       <div className="mt-5">
         <Link
           href="/login"
-          className="flex items-center justify-center gap-2 text-sm text-text-muted hover:text-white transition-colors"
+          className="flex items-center justify-center gap-2 text-sm text-white/45 hover:text-white transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to sign in

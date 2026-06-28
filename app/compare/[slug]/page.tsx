@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import AnimatedGrid from "@/components/animated-grid";
 import {
   COMPARISON_DATA,
   VALID_SLUGS,
@@ -44,10 +45,10 @@ function CheckIcon() {
       fill="none"
       style={{ flexShrink: 0 }}
     >
-      <circle cx="9" cy="9" r="9" fill="#6EE05A" fillOpacity={0.15} />
+      <circle cx="9" cy="9" r="9" fill="#7ed957" fillOpacity={0.15} />
       <path
         d="M5.5 9.5L7.5 11.5L12.5 6.5"
-        stroke="#6EE05A"
+        stroke="#7ed957"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -120,9 +121,9 @@ function ComparisonCard({
       style={{
         flex: 1,
         minWidth: "280px",
-        backgroundColor: "#0a0f1a",
+        backgroundColor: "rgba(255,255,255,0.02)",
         borderRadius: "16px",
-        border: isFull ? "2px solid #6EE05A" : "1px solid #1a1f2e",
+        border: isFull ? "2px solid #7ed957" : "1px solid rgba(255,255,255,0.08)",
         padding: "32px 24px",
         position: "relative",
         display: "flex",
@@ -136,7 +137,7 @@ function ComparisonCard({
             top: "-13px",
             left: "50%",
             transform: "translateX(-50%)",
-            backgroundColor: "#6EE05A",
+            backgroundColor: "#7ed957",
             color: "#04070f",
             fontSize: "11px",
             fontWeight: 700,
@@ -178,7 +179,7 @@ function ComparisonCard({
         style={{
           fontSize: "24px",
           fontWeight: 800,
-          color: isCurrent ? "#ef4444" : "#6EE05A",
+          color: isCurrent ? "#ef4444" : "#7ed957",
           marginBottom: "24px",
         }}
       >
@@ -188,7 +189,7 @@ function ComparisonCard({
       <div
         style={{
           flex: 1,
-          borderTop: "1px solid #1a1f2e",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
           paddingTop: "16px",
           marginBottom: "24px",
         }}
@@ -212,13 +213,13 @@ function ComparisonCard({
             transition: "opacity 0.2s",
             ...(isFull
               ? {
-                  backgroundColor: "#6EE05A",
+                  backgroundColor: "#7ed957",
                   color: "#04070f",
                 }
               : {
                   backgroundColor: "transparent",
-                  color: "#6EE05A",
-                  border: "2px solid #6EE05A",
+                  color: "#7ed957",
+                  border: "2px solid #7ed957",
                 }),
           }}
         >
@@ -238,15 +239,20 @@ export default async function ComparePage({ params }: PageProps) {
   }
 
   return (
-    <>
+    <div style={{ background: "#020810", color: "#fff", minHeight: "100vh" }}>
       {/* Nav */}
       <nav
         style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "16px 32px",
-          borderBottom: "1px solid #1a1f2e",
+          background: "rgba(2,8,16,0.85)",
+          backdropFilter: "blur(16px)",
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
         }}
       >
         <a
@@ -286,8 +292,12 @@ export default async function ComparePage({ params }: PageProps) {
       </nav>
 
       {/* Hero */}
+      <div style={{ position: "relative", overflow: "hidden" }}>
+      <AnimatedGrid />
+      <div aria-hidden style={{ pointerEvents: "none", position: "absolute", top: -120, left: "50%", transform: "translateX(-50%)", height: 480, width: 480, borderRadius: "50%", background: "rgba(126,217,87,0.07)", filter: "blur(150px)" }} />
       <div
         style={{
+          position: "relative",
           maxWidth: "960px",
           margin: "0 auto",
           padding: "64px 24px 80px",
@@ -298,9 +308,9 @@ export default async function ComparePage({ params }: PageProps) {
           <span
             style={{
               display: "inline-block",
-              backgroundColor: "rgba(110, 224, 90, 0.1)",
-              border: "1px solid rgba(110, 224, 90, 0.3)",
-              color: "#6EE05A",
+              backgroundColor: "rgba(126, 217, 87, 0.1)",
+              border: "1px solid rgba(126, 217, 87, 0.3)",
+              color: "#7ed957",
               fontSize: "13px",
               fontWeight: 600,
               padding: "6px 20px",
@@ -319,11 +329,20 @@ export default async function ComparePage({ params }: PageProps) {
             fontSize: "clamp(28px, 4vw, 44px)",
             fontWeight: 800,
             lineHeight: 1.15,
-            color: "#ffffff",
             margin: "0 0 16px",
           }}
         >
-          {data.headline}
+          <span
+            style={{
+              backgroundImage:
+                "linear-gradient(135deg, #7ed957, #00d4ff, #a78bfa)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+            }}
+          >
+            {data.headline}
+          </span>
         </h1>
 
         {/* Subheadline */}
@@ -376,7 +395,7 @@ export default async function ComparePage({ params }: PageProps) {
             textAlign: "center",
             marginTop: "56px",
             paddingTop: "32px",
-            borderTop: "1px solid #1a1f2e",
+            borderTop: "1px solid rgba(255,255,255,0.08)",
           }}
         >
           <p
@@ -395,7 +414,7 @@ export default async function ComparePage({ params }: PageProps) {
             style={{
               fontSize: "16px",
               fontWeight: 600,
-              color: "#6EE05A",
+              color: "#7ed957",
               textDecoration: "none",
             }}
           >
@@ -403,6 +422,7 @@ export default async function ComparePage({ params }: PageProps) {
           </a>
         </div>
       </div>
-    </>
+      </div>
+    </div>
   );
 }
