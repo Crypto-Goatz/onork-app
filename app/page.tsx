@@ -17,7 +17,11 @@ import {
   Users,
   Calendar,
   TrendingUp,
+  Sparkles,
+  Rocket,
+  Crown,
 } from 'lucide-react'
+import { TIERS, type Tier } from '@/lib/pricing'
 import SiteFooter from '@/components/SiteFooter'
 import { CroSlot } from '@/components/cro9/CroSlot'
 import { SignupForm } from '@/components/cro9/SignupForm'
@@ -635,107 +639,108 @@ function Testimonials() {
 
 // ── Pricing ────────────────────────────────────────────────────
 
+const HOME_TIER_ACCENT: Record<string, { icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; color: string }> = {
+  free: { icon: Sparkles, color: '#94a3b8' },
+  starter: { icon: Zap, color: '#7ed957' },
+  pro: { icon: Rocket, color: '#00d4ff' },
+  agency: { icon: Users, color: '#a78bfa' },
+  enterprise: { icon: Crown, color: '#f59e0b' },
+}
+
 function Pricing() {
+  const top = TIERS.filter((t) => ['free', 'starter', 'pro'].includes(t.slug))
+  const bottom = TIERS.filter((t) => ['agency', 'enterprise'].includes(t.slug))
   return (
-    <section id="pricing" className="py-28 border-t border-white/5">
-      <div className="max-w-5xl mx-auto px-6">
-        <SectionHead
-          eyebrow="Pricing"
-          title="Free for the core. Pay for what you turn on."
-          subtitle="No credit card to start. Cancel anytime."
-        />
-        <div className="grid md:grid-cols-3 gap-4 mt-14">
-          <PricingCard
-            tier="Free"
-            price="$0"
-            sub="forever"
-            features={[
-              'Unlimited workflows',
-              'CRM sub-location auto-provisioned',
-              'All 1,640+ tools (rate-limited)',
-              'Community support',
-            ]}
-            cta="Start free"
-            ctaHref="/signup"
-          />
-          <PricingCard
-            tier="Pro"
-            price="$49"
-            sub="per month"
-            highlight
-            features={[
-              'Everything in Free',
-              'Higher rate limits',
-              'Bring your own AI keys',
-              'Detect & Refine ad-quality scoring',
-              'Priority support',
-            ]}
-            cta="Get Pro"
-            ctaHref="/signup?plan=pro"
-          />
-          <PricingCard
-            tier="Team"
-            price="$299"
-            sub="per month"
-            features={[
-              'Everything in Pro',
-              '25 team members',
-              'White-label client dashboards',
-              '/vip/[client] branded portals',
-              'Dedicated onboarding',
-            ]}
-            cta="Talk to us"
-            ctaHref="mailto:mike@rocketopp.com?subject=0nCore%20Team"
-          />
+    <section id="pricing" className="relative overflow-hidden border-t border-white/5 py-28">
+      <div aria-hidden className="pointer-events-none absolute -top-24 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-[#7ed957]/[0.06] blur-[140px]" />
+      <div className="relative mx-auto max-w-6xl px-6">
+        <div className="mx-auto mb-14 max-w-2xl text-center">
+          <span className="mb-4 inline-block rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-white/60">
+            Pricing
+          </span>
+          <h2 className="text-balance text-4xl font-black tracking-tight sm:text-5xl">
+            <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+              Free to start. Everything at $497.
+            </span>
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-sm text-white/55">No credit card to start. Cancel anytime.</p>
+        </div>
+        <div className="grid gap-5 lg:grid-cols-3">{top.map((t) => <PricingCard key={t.slug} tier={t} />)}</div>
+        <div className="mt-5 grid gap-5 lg:grid-cols-2">{bottom.map((t) => <PricingCard key={t.slug} tier={t} />)}</div>
+        <div className="mt-10 text-center">
+          <Link href="/pricing" className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/70 transition-colors hover:text-[#7ed957]">
+            See the full feature comparison <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </div>
     </section>
   )
 }
 
-function PricingCard({
-  tier, price, sub, features, cta, ctaHref, highlight,
-}: {
-  tier: string; price: string; sub: string; features: string[]; cta: string; ctaHref: string; highlight?: boolean
-}) {
+function PricingCard({ tier }: { tier: Tier }) {
+  const accent = HOME_TIER_ACCENT[tier.slug] ?? HOME_TIER_ACCENT.starter
+  const Icon = accent.icon
   return (
     <div
       className={
-        'relative rounded-2xl p-7 ' +
-        (highlight
-          ? 'border border-[#6EE05A]/40 bg-gradient-to-br from-zinc-950 to-black shadow-[0_0_60px_-20px_rgba(110,224,90,0.45)]'
-          : 'border border-white/10 bg-zinc-950/60')
+        'relative flex flex-col overflow-hidden rounded-2xl border p-6 backdrop-blur transition-colors ' +
+        (tier.highlight
+          ? 'border-[#7ed957]/50 bg-gradient-to-br from-[#7ed957]/[0.05] via-[#00d4ff]/[0.02] to-[#a78bfa]/[0.04] ring-1 ring-[#7ed957]/30'
+          : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.18]')
       }
     >
-      {highlight && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[#6EE05A] text-black text-[10px] font-bold uppercase tracking-widest">
-          Most popular
-        </span>
+      {tier.highlight && (
+        <div aria-hidden className="pointer-events-none absolute -top-16 left-1/2 h-[200px] w-[200px] -translate-x-1/2 rounded-full bg-[#7ed957]/15 blur-[80px]" />
       )}
-      <div className="text-xs uppercase tracking-widest text-[#6EE05A] font-bold mb-2">{tier}</div>
-      <div className="flex items-baseline gap-1.5 mb-6">
-        <span className="text-4xl font-bold text-white">{price}</span>
-        <span className="text-sm text-zinc-500">/ {sub}</span>
+      <div className="relative">
+        <div className="mb-4 flex items-center justify-between">
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-xl border bg-[#0d1117]"
+            style={{ borderColor: `${accent.color}40`, boxShadow: `0 0 20px ${accent.color}20` }}
+          >
+            <Icon className="h-5 w-5" style={{ color: accent.color }} />
+          </div>
+          {tier.highlight && (
+            <span className="inline-flex items-center rounded-full bg-[#7ed957]/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[#7ed957]">
+              Most popular
+            </span>
+          )}
+        </div>
+        <h3 className="text-2xl font-black tracking-tight text-white">{tier.name}</h3>
+        <p className="mt-1 text-sm text-white/55">{tier.tagline}</p>
+        <div className="mb-5 mt-5 flex items-baseline gap-1">
+          <span
+            className={
+              'text-4xl font-black ' +
+              (tier.highlight
+                ? 'bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent'
+                : 'text-white')
+            }
+          >
+            {tier.price}
+          </span>
+          {tier.cadence && <span className="text-sm text-white/55">{tier.cadence}</span>}
+        </div>
+        <Link
+          href={tier.ctaHref}
+          className={
+            'mb-5 inline-flex w-full items-center justify-center gap-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ' +
+            (tier.highlight
+              ? 'bg-[#7ed957] text-black shadow-[0_0_24px_rgba(126,217,87,0.35)] hover:bg-[#7ed957]/90'
+              : 'border border-white/15 text-white hover:border-white/40')
+          }
+        >
+          {tier.ctaLabel} <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+        <ul className="space-y-2 text-sm">
+          {tier.features.map((f) => (
+            <li key={f} className="flex items-start gap-2">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: accent.color }} />
+              <span className={f.startsWith('Everything in') ? 'font-semibold text-white/85' : 'text-white/70'}>{f}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-      <ul className="space-y-2.5 mb-6">
-        {features.map((f, i) => (
-          <li key={i} className="flex items-start gap-2 text-sm text-zinc-300">
-            <Check className="w-4 h-4 text-[#6EE05A] shrink-0 mt-0.5" />
-            <span>{f}</span>
-          </li>
-        ))}
-      </ul>
-      <Link
-        href={ctaHref}
-        className={
-          'inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ' +
-          (highlight
-            ? 'bg-[#6EE05A] text-black hover:brightness-110'
-            : 'bg-white/5 text-zinc-200 border border-white/10 hover:bg-white/10 hover:border-white/20')
-        }
-      >
-        {cta} <ArrowRight className="w-3.5 h-3.5" />
-      </Link>
     </div>
   )
 }
