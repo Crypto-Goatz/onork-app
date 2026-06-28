@@ -91,13 +91,13 @@ const FILTERS: Array<{ id: 'all' | IntegrationCategory; label: string }> = [
 ]
 
 const CATEGORY_BADGE_CLASS: Record<IntegrationCategory, string> = {
-  ai: 'bg-[#6EE05A]/10 text-[#6EE05A]',
+  ai: 'bg-[#7ed957]/10 text-[#7ed957]',
   browser: 'bg-[#58a6ff]/10 text-[#58a6ff]',
   cms: 'bg-[#fbbf24]/10 text-[#fbbf24]',
   team: 'bg-[#a78bfa]/10 text-[#a78bfa]',
   pm: 'bg-[#22d3ee]/10 text-[#22d3ee]',
   crm: 'bg-[#f87171]/10 text-[#f87171]',
-  dev: 'bg-[#c9d1d9]/10 text-[#c9d1d9]',
+  dev: 'bg-white/10 text-white/75',
 }
 
 export interface InstallHubProps {
@@ -189,21 +189,30 @@ export function InstallHub({ mode, initialInstallId }: InstallHubProps) {
   }
 
   return (
-    <div className="bg-[#0d1117] text-[#c9d1d9] font-sans antialiased min-h-screen">
+    <div className="bg-[#020810] text-white/75 font-sans antialiased min-h-screen">
       {/* Header / search */}
-      <div className="sticky top-0 z-30 bg-[#0d1117]/80 backdrop-blur border-b border-[#30363d]">
+      <div className="sticky top-0 z-30 bg-[#020810]/80 backdrop-blur border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#e6edf3]">
-            {mode === 'dashboard' ? 'Your installs' : 'Install 0n on every tool you use'}
+          <h1 className="text-2xl font-black tracking-tight text-white">
+            {mode === 'dashboard' ? (
+              'Your installs'
+            ) : (
+              <>
+                Install{' '}
+                <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+                  0n every tool you use
+                </span>
+              </>
+            )}
           </h1>
           <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8b949e]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/45" />
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search integrations…"
-              className="bg-[#0d1117] border border-[#30363d] rounded-lg pl-9 pr-3 py-2 w-full text-sm text-[#e6edf3] placeholder:text-[#484f58] focus:border-[#6EE05A] focus:ring-1 focus:ring-[#6EE05A]/20 focus:outline-none transition-colors"
+              className="bg-white/[0.03] border border-white/10 rounded-lg pl-9 pr-3 py-2 w-full text-sm text-white placeholder:text-white/30 focus:border-[#7ed957] focus:ring-1 focus:ring-[#7ed957]/20 focus:outline-none transition-colors"
             />
           </div>
         </div>
@@ -216,8 +225,8 @@ export function InstallHub({ mode, initialInstallId }: InstallHubProps) {
               onClick={() => setFilter(filter === f.id ? 'all' : f.id)}
               className={
                 filter === f.id
-                  ? 'bg-[#6EE05A]/10 text-[#6EE05A] border border-[#6EE05A]/30 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap'
-                  : 'bg-[#21262d] text-[#8b949e] border border-[#30363d] rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap hover:text-[#e6edf3] hover:border-[#484f58]'
+                  ? 'bg-[#7ed957]/10 text-[#7ed957] border border-[#7ed957]/30 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap'
+                  : 'bg-white/[0.03] text-white/45 border border-white/10 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap hover:text-white hover:border-white/20'
               }
             >
               {f.label}
@@ -229,14 +238,14 @@ export function InstallHub({ mode, initialInstallId }: InstallHubProps) {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Resume banner */}
         {mode === 'dashboard' && inProgress && inProgressIntegration && (
-          <div className="bg-[#6EE05A]/5 border border-[#6EE05A]/30 rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-[#7ed957]/5 border border-[#7ed957]/30 rounded-xl p-4 flex items-center justify-between backdrop-blur">
             <div className="flex items-center gap-3">
-              <Loader2 className="w-5 h-5 text-[#6EE05A] animate-spin" />
+              <Loader2 className="w-5 h-5 text-[#7ed957] animate-spin" />
               <div>
-                <div className="text-sm font-medium text-[#e6edf3]">
+                <div className="text-sm font-medium text-white">
                   Continue {inProgressIntegration.name} install
                 </div>
-                <div className="text-xs text-[#8b949e]">
+                <div className="text-xs text-white/45">
                   Step {inProgress.current_step} of {inProgress.total_steps}
                 </div>
               </div>
@@ -244,7 +253,7 @@ export function InstallHub({ mode, initialInstallId }: InstallHubProps) {
             <button
               type="button"
               onClick={() => setOpenId(inProgress.integration_id)}
-              className="bg-[#6EE05A] text-[#0d1117] font-medium rounded-lg px-4 py-2 text-sm hover:bg-[#5bc74a] transition-all duration-150 active:scale-[0.98] inline-flex items-center gap-2"
+              className="bg-[#7ed957] text-[#020810] font-bold rounded-xl px-4 py-2 text-sm shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-transform hover:scale-[1.02] active:scale-[0.98] inline-flex items-center gap-2"
             >
               Resume
               <ArrowRight className="w-4 h-4" />
@@ -341,24 +350,24 @@ function IntegrationCard({
 
   const dotClass =
     userStatus === 'installed'
-      ? 'bg-[#6EE05A]'
+      ? 'bg-[#7ed957]'
       : userStatus === 'in_progress' || userStatus === 'needs_setup'
         ? 'bg-[#fbbf24]'
         : userStatus === 'error'
           ? 'bg-[#f87171]'
           : isComing
             ? 'bg-[#fbbf24]'
-            : 'bg-[#6EE05A]'
+            : 'bg-[#7ed957]'
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="relative text-left bg-[#161b22] border border-[#30363d] rounded-xl p-5 hover:border-[#484f58] hover:bg-[#1c2128] hover:-translate-y-px hover:shadow-lg hover:shadow-black/20 transition-all duration-200 flex flex-col gap-4"
+      className="relative text-left bg-white/[0.02] border border-white/[0.08] rounded-xl p-5 backdrop-blur hover:border-white/[0.18] hover:bg-white/[0.04] hover:-translate-y-px hover:shadow-lg hover:shadow-black/20 transition-all duration-200 flex flex-col gap-4"
     >
       <span className={`absolute top-3 right-3 w-2 h-2 rounded-full ${dotClass}`} aria-hidden />
       <div className="flex items-center justify-between">
-        <Icon className="w-8 h-8 text-[#6EE05A]" />
+        <Icon className="w-8 h-8 text-[#7ed957]" />
       </div>
       <div className="space-y-1">
         <div
@@ -366,9 +375,9 @@ function IntegrationCard({
         >
           {CATEGORY_LABELS[integration.category]}
         </div>
-        <div className="text-base font-medium text-[#e6edf3]">{integration.name}</div>
+        <div className="text-base font-medium text-white">{integration.name}</div>
       </div>
-      <p className="text-sm text-[#c9d1d9] leading-relaxed line-clamp-2">
+      <p className="text-sm text-white/75 leading-relaxed line-clamp-2">
         {integration.description}
       </p>
       <div className="mt-auto pt-2 flex items-center gap-2 text-sm font-medium">
@@ -377,10 +386,10 @@ function IntegrationCard({
             isComing
               ? 'text-[#fbbf24]'
               : userStatus === 'installed'
-                ? 'text-[#6EE05A]'
+                ? 'text-[#7ed957]'
                 : userStatus === 'error'
                   ? 'text-[#f87171]'
-                  : 'text-[#6EE05A]'
+                  : 'text-[#7ed957]'
           }`}
         >
           {primaryLabel}
@@ -393,13 +402,13 @@ function IntegrationCard({
 
 function EmptyState({ onClear }: { onClear: () => void }) {
   return (
-    <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-12 text-center space-y-3">
-      <SearchX className="w-8 h-8 text-[#8b949e] mx-auto" />
-      <div className="text-base font-medium text-[#e6edf3]">No integrations match</div>
+    <div className="bg-white/[0.02] border border-white/[0.08] rounded-xl p-12 text-center space-y-3 backdrop-blur">
+      <SearchX className="w-8 h-8 text-white/45 mx-auto" />
+      <div className="text-base font-medium text-white">No integrations match</div>
       <button
         type="button"
         onClick={onClear}
-        className="text-sm font-medium text-[#6EE05A] hover:text-[#5bc74a] transition-colors"
+        className="text-sm font-medium text-[#7ed957] hover:text-[#7ed957]/80 transition-colors"
       >
         Clear filters
       </button>
@@ -476,19 +485,19 @@ function WalkthroughDrawer({
         aria-hidden
       />
       <aside
-        className="fixed right-0 top-0 bottom-0 w-full sm:w-[440px] bg-[#161b22] border-l border-[#30363d] z-50 flex flex-col"
+        className="fixed right-0 top-0 bottom-0 w-full sm:w-[440px] bg-[#020810]/95 backdrop-blur border-l border-white/10 z-50 flex flex-col"
         aria-label={`${integration.name} walkthrough`}
       >
-        <header className="flex items-center justify-between p-5 border-b border-[#30363d]">
+        <header className="flex items-center justify-between p-5 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <Icon className="w-6 h-6 text-[#6EE05A]" />
-            <div className="text-base font-medium text-[#e6edf3]">{integration.name}</div>
+            <Icon className="w-6 h-6 text-[#7ed957]" />
+            <div className="text-base font-medium text-white">{integration.name}</div>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close walkthrough"
-            className="text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] rounded-lg p-2 transition-all"
+            className="text-white/45 hover:text-white hover:bg-white/[0.06] rounded-lg p-2 transition-all"
           >
             <X className="w-4 h-4" />
           </button>
@@ -496,12 +505,12 @@ function WalkthroughDrawer({
 
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
           {walkthrough.estimated_minutes > 0 && (
-            <div className="text-xs text-[#8b949e]">
+            <div className="text-xs text-white/45">
               Estimated: {walkthrough.estimated_minutes} min
             </div>
           )}
           {walkthrough.prerequisites && walkthrough.prerequisites.length > 0 && (
-            <div className="text-xs text-[#8b949e]">
+            <div className="text-xs text-white/45">
               Prerequisites: {walkthrough.prerequisites.join(', ')}
             </div>
           )}
@@ -519,21 +528,21 @@ function WalkthroughDrawer({
           ))}
         </div>
 
-        <footer className="border-t border-[#30363d] p-4">
-          <div className="flex items-center justify-between text-xs text-[#8b949e]">
+        <footer className="border-t border-white/10 p-4">
+          <div className="flex items-center justify-between text-xs text-white/45">
             <span>
               {done} of {total}
             </span>
             {done >= total && total > 0 ? (
-              <span className="text-[#6EE05A] inline-flex items-center gap-1.5">
+              <span className="text-[#7ed957] inline-flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4" />
                 Installed
               </span>
             ) : null}
           </div>
-          <div className="mt-2 h-1.5 w-full rounded-full bg-[#21262d] overflow-hidden">
+          <div className="mt-2 h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
             <div
-              className="h-full bg-[#6EE05A] rounded-full transition-all duration-300"
+              className="h-full bg-[#7ed957] rounded-full transition-all duration-300"
               style={{ width: `${total ? Math.round((done / total) * 100) : 0}%` }}
             />
           </div>
@@ -562,23 +571,23 @@ function StepCard({
     <div
       className={
         completed
-          ? 'border border-[#6EE05A]/40 bg-[#6EE05A]/5 rounded-xl p-4'
-          : 'border border-[#30363d] bg-[#1c2128] rounded-xl p-4'
+          ? 'border border-[#7ed957]/40 bg-[#7ed957]/5 rounded-xl p-4 backdrop-blur'
+          : 'border border-white/[0.08] bg-white/[0.02] rounded-xl p-4 backdrop-blur'
       }
     >
       <div className="flex items-start gap-3">
         <div
           className={
             completed
-              ? 'flex-shrink-0 w-6 h-6 rounded-full bg-[#6EE05A] text-[#0d1117] inline-flex items-center justify-center text-xs font-semibold'
-              : 'flex-shrink-0 w-6 h-6 rounded-full border border-[#30363d] text-[#8b949e] inline-flex items-center justify-center text-xs font-semibold'
+              ? 'flex-shrink-0 w-6 h-6 rounded-full bg-[#7ed957] text-[#020810] inline-flex items-center justify-center text-xs font-semibold'
+              : 'flex-shrink-0 w-6 h-6 rounded-full border border-white/10 text-white/45 inline-flex items-center justify-center text-xs font-semibold'
           }
         >
           {completed ? <Check className="w-3 h-3" /> : index + 1}
         </div>
         <div className="flex-1 min-w-0 space-y-2">
-          <div className="text-sm font-medium text-[#e6edf3]">{step.title}</div>
-          <p className="text-sm text-[#c9d1d9] leading-relaxed whitespace-pre-line">
+          <div className="text-sm font-medium text-white">{step.title}</div>
+          <p className="text-sm text-white/75 leading-relaxed whitespace-pre-line">
             {step.body_md}
           </p>
 
@@ -608,7 +617,7 @@ function StepCard({
                 type="button"
                 onClick={onVerify}
                 disabled={completed || verifying}
-                className="bg-[#6EE05A] text-[#0d1117] font-medium rounded-lg px-3 py-1.5 text-sm hover:bg-[#5bc74a] transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                className="bg-[#7ed957] text-[#020810] font-bold rounded-lg px-3 py-1.5 text-sm shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
               >
                 {verifying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 {completed ? 'Verified' : 'Verify'}
@@ -618,7 +627,7 @@ function StepCard({
                 type="button"
                 onClick={onMark}
                 disabled={completed}
-                className="bg-[#21262d] text-[#c9d1d9] border border-[#30363d] rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-[#30363d] hover:text-[#e6edf3] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-white/[0.03] text-white/75 border border-white/10 rounded-lg px-3 py-1.5 text-sm font-medium backdrop-blur hover:border-[#7ed957]/40 hover:text-[#7ed957] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {completed ? 'Done' : 'Mark complete'}
               </button>
@@ -633,9 +642,9 @@ function StepCard({
 function CopyBlock({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false)
   return (
-    <div className="bg-[#0d1117] border border-[#30363d] rounded-lg p-3">
+    <div className="bg-white/[0.03] border border-white/10 rounded-lg p-3 backdrop-blur">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs font-medium text-[#8b949e]">{label}</span>
+        <span className="text-xs font-medium text-white/45">{label}</span>
         <button
           type="button"
           aria-label={`Copy ${label}`}
@@ -644,13 +653,13 @@ function CopyBlock({ label, value }: { label: string; value: string }) {
             setCopied(true)
             setTimeout(() => setCopied(false), 1500)
           }}
-          className="text-[#8b949e] hover:text-[#e6edf3] inline-flex items-center gap-1 text-xs"
+          className="text-white/45 hover:text-white inline-flex items-center gap-1 text-xs"
         >
-          {copied ? <Check className="w-3.5 h-3.5 text-[#6EE05A]" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? <Check className="w-3.5 h-3.5 text-[#7ed957]" /> : <Copy className="w-3.5 h-3.5" />}
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <pre className="font-mono text-xs text-[#e6edf3] whitespace-pre-wrap break-all">
+      <pre className="font-mono text-xs text-white whitespace-pre-wrap break-all">
         {value}
       </pre>
     </div>
@@ -699,22 +708,22 @@ function NotifyModal({
         aria-hidden
       />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-[#1c2128] border border-[#30363d] rounded-xl p-6 max-w-sm w-full space-y-4">
+        <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 max-w-sm w-full space-y-4 backdrop-blur">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-medium text-[#e6edf3]">
+            <h3 className="text-base font-medium text-white">
               Notify me when {integration.name} ships
             </h3>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="text-[#8b949e] hover:text-[#e6edf3]"
+              className="text-white/45 hover:text-white"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
           {submitted ? (
-            <div className="text-sm text-[#6EE05A] flex items-center gap-2">
+            <div className="text-sm text-[#7ed957] flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4" />
               You&apos;re on the list for {integration.name}.
             </div>
@@ -725,7 +734,7 @@ function NotifyModal({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
-                className="bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm text-[#e6edf3] placeholder:text-[#484f58] focus:border-[#6EE05A] focus:ring-1 focus:ring-[#6EE05A]/20 focus:outline-none w-full"
+                className="bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-[#7ed957] focus:ring-1 focus:ring-[#7ed957]/20 focus:outline-none w-full"
               />
               {error && (
                 <div className="text-xs text-[#f87171] flex items-center gap-1.5">
@@ -736,7 +745,7 @@ function NotifyModal({
                 type="button"
                 onClick={submit}
                 disabled={loading || !email.includes('@')}
-                className="bg-[#6EE05A] text-[#0d1117] font-medium rounded-lg px-4 py-2 text-sm hover:bg-[#5bc74a] transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full inline-flex items-center justify-center gap-2"
+                className="bg-[#7ed957] text-[#020810] font-bold rounded-xl px-4 py-2 text-sm shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full inline-flex items-center justify-center gap-2"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 Notify me

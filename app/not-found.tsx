@@ -10,7 +10,7 @@ export default function NotFound() {
         <div className="flex gap-3 justify-center">
           <Link
             href="/dashboard"
-            className="px-5 py-2.5 rounded-xl bg-[#6EE05A] text-[#020810] text-sm font-bold no-underline hover:bg-[#6EE05A]/90 transition-colors"
+            className="px-5 py-2.5 rounded-xl bg-[#7ed957] text-[#020810] text-sm font-bold no-underline hover:bg-[#7ed957]/90 transition-colors"
           >
             Go to Dashboard
           </Link>

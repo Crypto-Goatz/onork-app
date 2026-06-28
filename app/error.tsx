@@ -24,7 +24,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#6EE05A] text-[#020810] text-sm font-bold cursor-pointer border-none hover:bg-[#6EE05A]/90 transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#7ed957] text-[#020810] text-sm font-bold cursor-pointer border-none hover:bg-[#7ed957]/90 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Try Again

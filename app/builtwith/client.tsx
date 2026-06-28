@@ -44,8 +44,8 @@ export function ShowcaseGrid() {
           key={item.id}
           className={`rounded-2xl p-6 transition-all hover:-translate-y-0.5 ${
             item.is_featured
-              ? 'border border-emerald-500/25 bg-emerald-500/[0.04]'
-              : 'border border-white/[0.08] bg-white/[0.04] hover:border-emerald-500/30'
+              ? 'border border-[#7ed957]/25 bg-[#7ed957]/[0.04]'
+              : 'border border-white/[0.08] bg-white/[0.04] hover:border-[#7ed957]/30'
           }`}
         >
           <div className="mb-4 flex items-center gap-3">
@@ -65,7 +65,7 @@ export function ShowcaseGrid() {
             <p className="line-clamp-3 text-sm leading-relaxed text-zinc-400">{item.bio}</p>
           )}
           {item.category && (
-            <span className="mt-3 inline-block rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
+            <span className="mt-3 inline-block rounded-full bg-[#7ed957]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#7ed957]">
               {item.category}
             </span>
           )}
