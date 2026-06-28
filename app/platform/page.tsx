@@ -19,6 +19,7 @@ import {
   CheckSquare,
 } from 'lucide-react'
 import SiteFooter from '@/components/SiteFooter'
+import TriggerBurst from '@/components/home/TriggerBurst'
 
 export const metadata: Metadata = {
   title: '0nCore Platform — One Place. Everywhere.',
@@ -123,34 +124,41 @@ export default function PlatformPage() {
       {/* ═══ HERO ═══════════════════════════════════════════════════ */}
       <section className="border-b border-[#30363d]">
         <div className="max-w-7xl mx-auto px-6 py-20 sm:py-28">
-          <div className="max-w-3xl space-y-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#6EE05A]/30 bg-[#6EE05A]/10 px-3 py-1 text-xs font-medium text-[#6EE05A]">
-              The AI Business Operating System
+          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-8">
+            <div className="max-w-2xl space-y-8">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#6EE05A]/30 bg-[#6EE05A]/10 px-3 py-1 text-xs font-medium text-[#6EE05A]">
+                The AI Business Operating System
+              </div>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-[#e6edf3] leading-[1.1]">
+                Add it one place.
+                <br />
+                <span className="text-[#6EE05A]">Have it everywhere.</span>
+              </h1>
+              <p className="text-lg text-[#c9d1d9] leading-relaxed max-w-2xl">
+                Create a task in 0nCore. It appears in Slack, your calendar, your CRM, and your
+                phone — instantly. Update it anywhere. Every connected tool stays in sync, in
+                real time, with zero glue code.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href="/signup"
+                  className="inline-flex items-center gap-2 bg-[#6EE05A] text-[#0d1117] font-medium rounded-lg px-5 py-2.5 hover:bg-[#5bc74a] transition-all duration-150 active:scale-[0.98]"
+                >
+                  Start free
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  href="/install"
+                  className="inline-flex items-center gap-2 bg-[#21262d] text-[#c9d1d9] border border-[#30363d] rounded-lg px-5 py-2.5 hover:bg-[#30363d] hover:text-[#e6edf3] transition-all duration-150 active:scale-[0.98]"
+                >
+                  Browse integrations
+                </Link>
+              </div>
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-[#e6edf3] leading-[1.1]">
-              Add it one place.
-              <br />
-              <span className="text-[#6EE05A]">Have it everywhere.</span>
-            </h1>
-            <p className="text-lg text-[#c9d1d9] leading-relaxed max-w-2xl">
-              Create a task in 0nCore. It appears in Slack, your calendar, your CRM, and your
-              phone — instantly. Update it anywhere. Every connected tool stays in sync, in
-              real time, with zero glue code.
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/signup"
-                className="inline-flex items-center gap-2 bg-[#6EE05A] text-[#0d1117] font-medium rounded-lg px-5 py-2.5 hover:bg-[#5bc74a] transition-all duration-150 active:scale-[0.98]"
-              >
-                Start free
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/install"
-                className="inline-flex items-center gap-2 bg-[#21262d] text-[#c9d1d9] border border-[#30363d] rounded-lg px-5 py-2.5 hover:bg-[#30363d] hover:text-[#e6edf3] transition-all duration-150 active:scale-[0.98]"
-              >
-                Browse integrations
-              </Link>
+            {/* Trigger-burst render — one press, every system fires */}
+            <div className="relative hidden lg:block">
+              <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 mx-auto h-[420px] w-[420px] translate-y-6 rounded-full bg-[#6EE05A]/[0.07] blur-[120px]" />
+              <TriggerBurst />
             </div>
           </div>
         </div>
