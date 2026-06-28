@@ -6,6 +6,9 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { generateAndStoreFeaturedImage } from '@/lib/blog/featured-image'
+
+export const maxDuration = 60
 
 const GROQ_KEY = process.env.GROQ_API_KEY
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -49,6 +52,29 @@ const BLOG_TOPICS = [
   { category: 'mcp-ecosystem', topic: 'The 0nVault container system: encrypted portable AI brains' },
 ]
 
+// LLM JSON often contains raw newlines inside string values (illegal in JSON).
+// Parse directly first; on failure, escape control chars *inside string literals only*.
+function parseLooseJson(text: string): any {
+  try { return JSON.parse(text) } catch { /* fall through to repair */ }
+  let out = ''
+  let inStr = false
+  let esc = false
+  for (const ch of text) {
+    if (esc) { out += ch; esc = false; continue }
+    if (ch === '\\') { out += ch; esc = true; continue }
+    if (ch === '"') { inStr = !inStr; out += ch; continue }
+    if (inStr) {
+      if (ch === '\n') { out += '\\n'; continue }
+      if (ch === '\r') { out += '\\r'; continue }
+      if (ch === '\t') { out += '\\t'; continue }
+      const code = ch.charCodeAt(0)
+      if (code < 0x20) { out += '\\u' + code.toString(16).padStart(4, '0'); continue }
+    }
+    out += ch
+  }
+  return JSON.parse(out)
+}
+
 export async function GET() {
   if (!GROQ_KEY) return NextResponse.json({ error: 'GROQ_API_KEY missing' }, { status: 500 })
 
@@ -87,7 +113,7 @@ SXO rules: BLUF (bottom line up front), Table Trap (include a comparison table),
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 4000 }),
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 4000, response_format: { type: 'json_object' } }),
     })
 
     if (!res.ok) {
@@ -101,39 +127,35 @@ SXO rules: BLUF (bottom line up front), Table Trap (include a comparison table),
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) return NextResponse.json({ error: 'Parse failed' }, { status: 422 })
 
-    const post = JSON.parse(match[0])
+    const post = parseLooseJson(match[0])
     const slug = (post.title || topic.topic).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)
 
-    // Get category ID
-    const { data: cat } = await admin.from('blog_categories').select('id').eq('slug', topic.category).single()
+    const wordCount = String(post.content || '').split(/\s+/).filter(Boolean).length
+
+    // Generate + store a featured image (best-effort; null is fine).
+    const image = await generateAndStoreFeaturedImage(slug, post.title, topic.category)
 
     const { error: insertError } = await admin.from('blog_posts').insert({
       slug,
       title: post.title,
-      subtitle: post.subtitle,
-      category_id: cat?.id,
-      category_slug: topic.category,
       excerpt: post.excerpt,
       content: post.content,
-      meta_title: post.meta_title,
+      body: post.content,
       meta_description: post.meta_description,
-      keywords: post.keywords,
-      author_name: 'RocketOpp',
-      reading_time: post.reading_time || 6,
+      category: topic.category,
+      tags: post.keywords,
+      image,
+      author: 'RocketOpp',
+      author_title: 'AI Content Engine',
+      word_count: wordCount,
       status: 'published',
-      generated_by: 'groq-cron',
+      source: 'groq-cron',
       published_at: new Date().toISOString(),
     })
 
     if (insertError) {
       console.error('[Blog Cron] Insert error:', insertError.message)
       return NextResponse.json({ error: insertError.message }, { status: 500 })
-    }
-
-    // Update category post count
-    if (cat?.id) {
-      const { count } = await admin.from('blog_posts').select('id', { count: 'exact', head: true }).eq('category_slug', topic.category).eq('status', 'published')
-      await admin.from('blog_categories').update({ post_count: count || 0 }).eq('id', cat.id)
     }
 
     console.log(`[Blog Cron] Published: "${post.title}" → /blog/${topic.category}/${slug}`)

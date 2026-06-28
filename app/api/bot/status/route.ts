@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   // Load bot config(s) for this user
   const configQuery = admin
-    .from('bot_config')
+    .from('bot_settings')
     .select('id, name, active, vpis_target')
     .eq('user_id', user.id)
 

@@ -48,9 +48,15 @@ export async function provisionSubLocation(userId: string): Promise<ProvisionRes
     return { success: false, locationId: null, locationName: '', snapshotDeployed: false, errors: ['Profile not found'] }
   }
 
-  // Already has a location — don't create another
+  // Already has a location — don't create another, but make sure the completion
+  // flag is stamped (older rows never got provisioned_at written).
   if (profile.crm_location_id) {
     console.log(`[provision] User ${profile.email} already has location ${profile.crm_location_id}`)
+    await supabase
+      .from('profiles')
+      .update({ provisioned_at: new Date().toISOString() })
+      .eq('id', userId)
+      .is('provisioned_at', null)
     return { success: true, locationId: profile.crm_location_id, locationName: 'existing', snapshotDeployed: false, errors: [] }
   }
 
@@ -176,6 +182,12 @@ export async function provisionSubLocation(userId: string): Promise<ProvisionRes
       console.error('[provision] Stripe→CRM link threw:', linkErr)
       errors.push(`Stripe→CRM link: ${linkErr instanceof Error ? linkErr.message : 'unknown'}`)
     }
+
+    // Stamp the completion flag now that the location exists + snapshot ran.
+    await supabase
+      .from('profiles')
+      .update({ provisioned_at: new Date().toISOString() })
+      .eq('id', userId)
 
     // Log provisioning event
     await supabase.from('dashboard_notifications').insert({

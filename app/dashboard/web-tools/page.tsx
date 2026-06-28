@@ -139,6 +139,11 @@ const INITIAL_SERVICES: Omit<ServiceConnection, 'value' | 'connected'>[] = [
 
 // ── Chart Drawing ──────────────────────────────────────────
 
+// Maps a service tile id → the server config column it persists to.
+const ID_TO_FIELD: Record<string, string> = {
+  ga4: 'ga4_id', fbpixel: 'fb_pixel_id', gads: 'gads_id', gtm: 'gtm_id',
+}
+
 function drawChart(
   canvas: HTMLCanvasElement,
   data: number[],
@@ -275,16 +280,24 @@ export default function WebToolsPage() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const loaded: ServiceConnection[] = INITIAL_SERVICES.map((s) => {
-      let stored: string | null = null
-      try {
-        stored = localStorage.getItem(s.storageKey)
-      } catch {
-        // ignore
-      }
-      return { ...s, value: stored || '', connected: !!stored }
-    })
-    setServices(loaded)
+    // Load saved tracking IDs from the server (persists across devices).
+    fetch('/api/web-tools')
+      .then((r) => r.json())
+      .then((d) => {
+        const cfg = d?.config || {}
+        setServices(INITIAL_SERVICES.map((s) => {
+          const v = (cfg[ID_TO_FIELD[s.id]] as string) || ''
+          return { ...s, value: v, connected: !!v }
+        }))
+      })
+      .catch(() => {
+        // Fallback to any local cache if the API is unreachable.
+        setServices(INITIAL_SERVICES.map((s) => {
+          let stored: string | null = null
+          try { stored = localStorage.getItem(s.storageKey) } catch { /* ignore */ }
+          return { ...s, value: stored || '', connected: !!stored }
+        }))
+      })
   }, [])
 
   const chartData = generateDemoData(timeframe, metric)
@@ -314,22 +327,27 @@ export default function WebToolsPage() {
     { label: 'Conversions', value: String(20 + Math.round(seededRandom(timeframe.length + 7) * 80)), trend: 22.1, up: true },
   ]
 
+  const persist = (arr: ServiceConnection[]) => {
+    const cfg: Record<string, string> = {}
+    arr.forEach((s) => { if (ID_TO_FIELD[s.id] && s.value) cfg[ID_TO_FIELD[s.id]] = s.value })
+    fetch('/api/web-tools', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) }).catch(() => {})
+  }
+
   const handleConnect = (serviceId: string) => {
     const val = inputValues[serviceId]
     if (!val || !val.trim()) return
-    try {
-      const svc = INITIAL_SERVICES.find((s) => s.id === serviceId)
-      if (svc) localStorage.setItem(svc.storageKey, val.trim())
-    } catch { /* ignore */ }
-    setServices((prev) => prev.map((s) => (s.id === serviceId ? { ...s, value: val.trim(), connected: true } : s)))
+    const next = services.map((s) => (s.id === serviceId ? { ...s, value: val.trim(), connected: true } : s))
+    setServices(next); persist(next)
+    try { const svc = INITIAL_SERVICES.find((s) => s.id === serviceId); if (svc) localStorage.setItem(svc.storageKey, val.trim()) } catch { /* ignore */ }
     setEditingService(null)
-    setInputValues((prev) => { const next = { ...prev }; delete next[serviceId]; return next })
+    setInputValues((prev) => { const n = { ...prev }; delete n[serviceId]; return n })
   }
 
   const handleDisconnect = (serviceId: string) => {
+    const next = services.map((s) => (s.id === serviceId ? { ...s, value: '', connected: false } : s))
+    setServices(next); persist(next)
     const svc = INITIAL_SERVICES.find((s) => s.id === serviceId)
     if (svc) { try { localStorage.removeItem(svc.storageKey) } catch { /* ignore */ } }
-    setServices((prev) => prev.map((s) => (s.id === serviceId ? { ...s, value: '', connected: false } : s)))
   }
 
   const maxTrafficSessions = Math.max(...TRAFFIC_SOURCES.map((t) => t.sessions))

@@ -19,11 +19,32 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import SiteFooter from '@/components/SiteFooter'
+import { CroSlot } from '@/components/cro9/CroSlot'
+import { SignupForm } from '@/components/cro9/SignupForm'
 
 export const metadata: Metadata = {
-  title: '0nCore — Universal AI Orchestration',
+  title: '0nCore — The AI CRM That Runs Your Business | 1,640+ Tools, 109 Services',
   description:
-    "Stop building workflows. Start describing outcomes. 1,640+ tools, 109 services, wired into your CRM out of the box. Free tier. Live now.",
+    'The AI-powered CRM that actually does the work: contacts, pipelines, email, SMS, booking, payments, and funnels — orchestrated by AI across 1,640+ tools and 109 services. Free to start. Live in 30 seconds.',
+  keywords: [
+    'AI CRM', 'AI-powered CRM', 'CRM automation', 'AI sales automation', 'best AI CRM',
+    'CRM with AI agents', 'sales pipeline software', 'email and SMS marketing CRM',
+    'booking and payments CRM', 'GoHighLevel alternative', 'all-in-one CRM', '0nCore',
+  ],
+  alternates: { canonical: 'https://www.0ncore.com' },
+  openGraph: {
+    title: '0nCore — The AI CRM That Runs Your Business',
+    description:
+      'Contacts, pipelines, email, SMS, booking, payments, funnels — orchestrated by AI across 1,640+ tools and 109 services. Describe what you want; 0nCore makes it happen.',
+    url: 'https://www.0ncore.com',
+    siteName: '0nCore',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '0nCore — The AI CRM That Runs Your Business',
+    description: 'The AI CRM that actually does the work. 1,640+ tools, 109 services. Free to start.',
+  },
 }
 
 // ─── Data ───────────────────────────────────────────────────────
@@ -99,9 +120,9 @@ const TESTIMONIALS = [
     quote: '"This is the AI orchestration layer I\'ve been trying to build for 5 years. Existing tools call themselves orchestrators — 0nCore actually is one."',
   },
   {
-    name: 'Wellness operator',
-    handle: 'service business',
-    quote: '"I described the campaign in plain English and it built the workflow, the tags, the segment, and the social schedule. I clicked toggle. It just ran."',
+    name: 'Agency owner',
+    handle: 'scaling operator',
+    quote: '"We replaced our CRM, our email tool, our booking app, and three Zaps with 0nCore. Contacts, pipeline, payments, and the follow-up automations all live in one place now — and the AI actually runs them."',
   },
   {
     name: 'Designer @ studio',
@@ -134,19 +155,52 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
-            '@type': 'SoftwareApplication',
-            name: '0nCore',
-            applicationCategory: 'BusinessApplication',
-            operatingSystem: 'Web',
-            offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-            description: 'Stop building workflows. Start describing outcomes. 1,640+ tools, 109 services, wired into your CRM.',
-            url: 'https://www.0ncore.com',
-            author: { '@type': 'Organization', name: 'RocketOpp LLC', url: 'https://rocketopp.com' },
+            '@graph': [
+              {
+                '@type': 'SoftwareApplication',
+                '@id': 'https://www.0ncore.com/#software',
+                name: '0nCore',
+                applicationCategory: 'BusinessApplication',
+                applicationSubCategory: 'CRM',
+                operatingSystem: 'Web',
+                description:
+                  'The AI-powered CRM that runs your business: contacts, pipelines, email, SMS, booking, payments, and funnels orchestrated by AI across 1,640+ tools and 109 services.',
+                url: 'https://www.0ncore.com',
+                featureList: [
+                  'Contact management', 'Sales pipeline', 'Email marketing', 'SMS & phone',
+                  'Booking & calendar', 'Invoicing & payments', 'Websites & funnels',
+                  'AI agent automations', 'Unified inbox', 'Reputation management',
+                ],
+                offers: [
+                  { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD' },
+                  { '@type': 'Offer', name: 'Pro', price: '49', priceCurrency: 'USD' },
+                  { '@type': 'Offer', name: 'Team', price: '299', priceCurrency: 'USD' },
+                ],
+                author: { '@type': 'Organization', name: 'RocketOpp LLC', url: 'https://rocketopp.com' },
+              },
+              {
+                '@type': 'Organization',
+                '@id': 'https://www.0ncore.com/#org',
+                name: '0nCore',
+                url: 'https://www.0ncore.com',
+                parentOrganization: { '@type': 'Organization', name: 'RocketOpp LLC', url: 'https://rocketopp.com' },
+              },
+              {
+                '@type': 'FAQPage',
+                '@id': 'https://www.0ncore.com/#faq',
+                mainEntity: FAQ.map((f) => ({
+                  '@type': 'Question',
+                  name: f.q,
+                  acceptedAnswer: { '@type': 'Answer', text: f.a },
+                })),
+              },
+            ],
           }),
         }}
       />
 
       <Hero />
+      <ProductShowcase />
       <StackStrip />
       <Pillars />
       <Features />
@@ -188,42 +242,24 @@ function Hero() {
         </Link>
 
         <h1 className="text-5xl sm:text-6xl lg:text-[88px] font-bold tracking-[-0.03em] text-white leading-[0.95] mb-7">
-          Stop building workflows.
-          <br />
-          <span className="bg-gradient-to-br from-white via-white to-zinc-500 bg-clip-text text-transparent">
-            Start describing outcomes.
-          </span>
+          <CroSlot
+            slot="hero_headline"
+            as="span"
+            fallback="The AI CRM that runs your business."
+            className="bg-gradient-to-br from-white via-white to-zinc-400 bg-clip-text text-transparent"
+          />
         </h1>
 
         <p className="text-lg sm:text-xl text-zinc-400 leading-relaxed max-w-2xl mx-auto mb-9">
-          0nCore is the universal AI orchestrator for your business. One brain,
-          every service, zero glue code. {STATS[0].v} tools across {STATS[1].v} services —
-          wired into your CRM out of the box.
+          <CroSlot
+            slot="hero_subhead"
+            as="span"
+            fallback="Contacts, pipelines, email, SMS, booking, payments, and funnels — orchestrated by AI across 1,640+ tools and 109 services. Describe what you want; 0nCore makes it happen."
+          />
         </p>
 
-        <div className="flex flex-col items-center gap-3.5 mb-16">
-          <form
-            action="/signup"
-            method="get"
-            className="flex w-full max-w-xl flex-col sm:flex-row items-stretch gap-2"
-          >
-            <input
-              type="email"
-              name="email"
-              required
-              placeholder="you@yourcompany.com"
-              autoComplete="email"
-              aria-label="Your work email"
-              className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-5 py-3.5 text-base text-white placeholder-white/30 outline-none focus:border-[#6EE05A]/60 focus:bg-white/[0.07] transition-all"
-            />
-            <button
-              type="submit"
-              className="group inline-flex items-center justify-center gap-2 bg-[#6EE05A] text-black font-semibold rounded-lg px-6 py-3.5 hover:brightness-110 transition-all duration-150 shadow-[0_0_50px_-10px_rgba(110,224,90,0.55)] whitespace-nowrap"
-            >
-              Get your workspace
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          </form>
+        <div className="flex flex-col items-center gap-3.5 mb-12">
+          <SignupForm ctaSlot="hero_cta" ctaFallback="Get your workspace" />
           <p className="text-xs text-white/45">
             Free · No credit card · Live in 30 seconds
             <span className="mx-2 text-white/15">·</span>
@@ -238,10 +274,78 @@ function Hero() {
           </p>
         </div>
 
-        {/* Hero centerpiece — VIP dashboard preview */}
-        <div className="relative max-w-4xl mx-auto">
-          <div className="absolute -inset-x-20 -inset-y-10 bg-[#6EE05A]/10 blur-3xl rounded-full pointer-events-none" />
-          <DashboardPreview />
+        {/* Trust stats */}
+        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+          {STATS.map((s) => (
+            <div key={s.l} className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-bold text-white tabular-nums">{s.v}</span>
+              <span className="text-[11px] uppercase tracking-widest text-zinc-500">{s.l}</span>
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </section>
+  )
+}
+
+// ── Product showcase — dashboard visual + description + free CTA ───
+
+function ProductShowcase() {
+  return (
+    <section className="relative py-20 sm:py-28 border-t border-white/5 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] rounded-full bg-[#6EE05A]/[0.07] blur-[150px]" />
+      </div>
+      <div className="relative max-w-6xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Left — the dashboard */}
+          <div className="relative">
+            <div className="absolute -inset-6 bg-[#6EE05A]/10 blur-3xl rounded-full pointer-events-none" />
+            <DashboardPreview />
+          </div>
+
+          {/* Right — description */}
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.3em] text-[#6EE05A] font-bold mb-4">
+              One screen. Your whole business.
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-[-0.02em] leading-[1.05] mb-5">
+              Every customer, conversation, and dollar — in one live workspace.
+            </h2>
+            <p className="text-lg text-zinc-400 leading-relaxed mb-7">
+              Pipeline, revenue, bookings, and automations update in real time. Your AI
+              works the leads, sends the follow-ups, and books the calls while you watch
+              the numbers move — no tabs, no glue code, no agency markup.
+            </p>
+            <ul className="space-y-3">
+              {[
+                'Contacts, pipeline, and revenue at a glance',
+                'AI automations running 24/7 in the background',
+                'Email, SMS, calls & bookings from one inbox',
+                'Live conversion tracking on every campaign',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-3 text-zinc-300">
+                  <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#6EE05A]/15">
+                    <Check className="h-3 w-3 text-[#6EE05A]" />
+                  </span>
+                  <span className="text-[15px]">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Sign up free CTA */}
+        <div className="mt-14 flex flex-col items-center gap-3">
+          <Link
+            href="/signup"
+            className="group inline-flex items-center justify-center gap-2 bg-[#6EE05A] text-black font-semibold rounded-lg px-8 py-4 text-lg hover:brightness-110 transition-all duration-150 shadow-[0_0_60px_-12px_rgba(110,224,90,0.6)]"
+          >
+            Sign up free
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+          <p className="text-xs text-white/45">No credit card · Live to your CRM in 30 seconds</p>
         </div>
       </div>
     </section>
@@ -262,36 +366,36 @@ function DashboardPreview() {
         </div>
         <div className="ml-3 px-3 py-1 rounded-md bg-zinc-900/60 border border-white/5 text-[11px] text-zinc-500 font-mono flex items-center gap-1.5">
           <span className="w-1 h-1 rounded-full bg-[#6EE05A]" />
-          0ncore.com/vip
+          app.0ncore.com
         </div>
       </div>
 
       {/* Branded header */}
       <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-black/30">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-[#2c4b43] flex items-center justify-center text-white text-[11px] font-bold">0n</div>
+          <div className="w-7 h-7 rounded-md bg-[#6EE05A] flex items-center justify-center text-black text-[11px] font-bold">0n</div>
           <div>
-            <p className="text-[9px] uppercase tracking-widest text-[#c56a57] font-bold leading-none">VIP Dashboard</p>
-            <p className="text-xs font-bold text-white leading-tight">Your VIP Workspace</p>
+            <p className="text-[9px] uppercase tracking-widest text-[#6EE05A] font-bold leading-none">0nCore CRM</p>
+            <p className="text-xs font-bold text-white leading-tight">Acme Co · Workspace</p>
           </div>
         </div>
-        <div className="text-[10px] text-zinc-500 hidden sm:block">Example preview</div>
+        <div className="text-[10px] text-zinc-500 hidden sm:block">Live · synced</div>
       </div>
 
-      {/* Active campaign banner */}
-      <div className="m-4 rounded-lg p-4 bg-gradient-to-br from-[#122019] to-[#2c4b43] relative overflow-hidden">
-        <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-[#c56a57]/30 blur-2xl" />
+      {/* Active automation banner */}
+      <div className="m-4 rounded-lg p-4 bg-gradient-to-br from-[#0f1f17] to-[#1c3a29] relative overflow-hidden">
+        <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-[#6EE05A]/30 blur-2xl" />
         <div className="relative grid grid-cols-[1fr_auto] gap-3">
           <div>
-            <p className="text-[8px] uppercase tracking-widest text-[#e09080] font-bold">Active campaign · 6 days left</p>
-            <p className="text-sm font-bold text-white mt-1">Mother's Day 2026</p>
-            <p className="text-[10px] text-zinc-300/80 mt-1">mothers-day-2026 → md-clicked-giftcard → md-purchased</p>
+            <p className="text-[8px] uppercase tracking-widest text-[#6EE05A] font-bold">AI automation · running now</p>
+            <p className="text-sm font-bold text-white mt-1">New lead → qualify → book</p>
+            <p className="text-[10px] text-zinc-300/80 mt-1">lead-captured → ai-qualified → 24h-followup → booked</p>
           </div>
           <div className="grid grid-cols-3 gap-1.5">
             {[
-              { l: 'Enrolled',  v: 142,  c: '#e09080' },
-              { l: 'Clicked',   v: 41,   c: '#e09080' },
-              { l: 'Purchased', v: 14,   c: '#fff'    },
+              { l: 'Leads',  v: 318, c: '#6EE05A' },
+              { l: 'Qual.',  v: 124, c: '#6EE05A' },
+              { l: 'Booked', v: 41,  c: '#fff'    },
             ].map((s) => (
               <div key={s.l} className="bg-white/5 rounded p-2 text-center border border-white/10">
                 <p className="text-[7px] uppercase tracking-widest text-white/50">{s.l}</p>
@@ -312,8 +416,8 @@ function DashboardPreview() {
         ].map((k) => (
           <div key={k.l} className="rounded-lg border border-white/10 bg-zinc-950 p-2.5">
             <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-5 h-5 rounded bg-[#c56a57]/15 flex items-center justify-center">
-                <k.Icon className="w-2.5 h-2.5 text-[#c56a57]" />
+              <div className="w-5 h-5 rounded bg-[#6EE05A]/15 flex items-center justify-center">
+                <k.Icon className="w-2.5 h-2.5 text-[#6EE05A]" />
               </div>
               <p className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold truncate">{k.l}</p>
             </div>
@@ -326,18 +430,18 @@ function DashboardPreview() {
       {/* D&R quality */}
       <div className="mx-4 mb-4 rounded-lg border border-white/10 bg-zinc-950 p-3">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[9px] uppercase tracking-widest text-[#c56a57] font-bold">Detect &amp; Refine — live</p>
-          <p className="text-2xl font-bold text-[#2c4b43] leading-none">78</p>
+          <p className="text-[9px] uppercase tracking-widest text-[#6EE05A] font-bold">Detect &amp; Refine — live</p>
+          <p className="text-2xl font-bold text-[#6EE05A] leading-none">78</p>
         </div>
         <div className="space-y-1">
           {[
-            { g: 'A+', pct: 28, c: '#2c4b43' },
-            { g: 'A',  pct: 22, c: '#2c4b43' },
-            { g: 'B',  pct: 18, c: '#1a2c27' },
-            { g: 'C',  pct: 14, c: '#e09080' },
-            { g: 'D',  pct: 8,  c: '#c56a57' },
-            { g: 'F',  pct: 6,  c: '#a85240' },
-            { g: 'X',  pct: 4,  c: '#7a3326' },
+            { g: 'A+', pct: 28, c: '#6EE05A' },
+            { g: 'A',  pct: 22, c: '#5cb83a' },
+            { g: 'B',  pct: 18, c: '#4a9430' },
+            { g: 'C',  pct: 14, c: '#3a7026' },
+            { g: 'D',  pct: 8,  c: '#2f5a1f' },
+            { g: 'F',  pct: 6,  c: '#264a19' },
+            { g: 'X',  pct: 4,  c: '#1a3311' },
           ].map((r) => (
             <div key={r.g} className="flex items-center gap-2">
               <span className="w-5 text-[9px] font-bold text-zinc-300 tabular-nums">{r.g}</span>
@@ -715,34 +819,15 @@ function FinalCta() {
           Start building
         </p>
         <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-[-0.02em] mb-5">
-          Free to start. Live to your CRM in 30 seconds.
+          <CroSlot slot="final_cta" as="span" fallback="Free to start. Live to your CRM in 30 seconds." />
         </h2>
         <p className="text-lg text-zinc-400 leading-relaxed mb-9">
           Drop your email. We provision your CRM sub-location, mint your token,
           and open the canvas. Describe your first outcome. Toggle on.
         </p>
-        <form
-          action="/signup"
-          method="get"
-          className="flex w-full max-w-xl mx-auto flex-col sm:flex-row items-stretch gap-2"
-        >
-          <input
-            type="email"
-            name="email"
-            required
-            placeholder="you@yourcompany.com"
-            autoComplete="email"
-            aria-label="Your work email"
-            className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-5 py-3.5 text-base text-white placeholder-white/30 outline-none focus:border-[#6EE05A]/60 focus:bg-white/[0.07] transition-all"
-          />
-          <button
-            type="submit"
-            className="group inline-flex items-center justify-center gap-2 bg-[#6EE05A] text-black font-semibold rounded-lg px-6 py-3.5 hover:brightness-110 transition-all duration-150 shadow-[0_0_50px_-10px_rgba(110,224,90,0.5)] whitespace-nowrap"
-          >
-            Get your workspace
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </button>
-        </form>
+        <div className="flex justify-center">
+          <SignupForm ctaSlot="hero_cta" ctaFallback="Get your workspace" />
+        </div>
         <p className="text-xs text-white/45 mt-4">
           Free · No credit card · Live in 30 seconds
           <span className="mx-2 text-white/15">·</span>

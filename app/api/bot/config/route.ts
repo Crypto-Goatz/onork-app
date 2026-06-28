@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: config } = await admin.from('bot_config').select('*').eq('user_id', user.id).single()
+  const { data: config } = await admin.from('bot_settings').select('*').eq('user_id', user.id).single()
 
   // Also get queue stats
   const { data: queue } = await admin.from('bot_queue').select('id, status, content_type, vpis_score, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20)
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { data, error } = await admin.from('bot_config').upsert({
+  const { data, error } = await admin.from('bot_settings').upsert({
     user_id: user.id,
     ...body,
   }, { onConflict: 'user_id' }).select().single()

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ArrowRight, CornerRightDown } from 'lucide-react'
+import OpenFunnelBuilderButton from '@/components/dashboard/OpenFunnelBuilderButton'
 
 interface Funnel {
   id: string
@@ -141,17 +142,20 @@ export default function FunnelsPage() {
             </span>
           </h1>
           <p className="text-[13px] text-core-text-muted mt-1">
-            {tab === 'funnels' ? `${funnels.length} funnels` : `${redirects.length} redirects`}
+            {tab === 'funnels' ? `${funnels.length} pages & funnels · built on your CRM (own domain, forms, tracking)` : `${redirects.length} redirects`}
           </p>
         </div>
-        {tab === 'redirects' && (
-          <button
-            onClick={openCreateModal}
-            className="px-[18px] py-2 rounded-lg bg-gradient-to-br from-core-green to-[#5cb83a] text-black text-[13px] font-bold cursor-pointer border-0"
-          >
-            + Add Redirect
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {tab === 'funnels' && <OpenFunnelBuilderButton />}
+          {tab === 'redirects' && (
+            <button
+              onClick={openCreateModal}
+              className="px-[18px] py-2 rounded-lg bg-gradient-to-br from-core-green to-[#5cb83a] text-black text-[13px] font-bold cursor-pointer border-0"
+            >
+              + Add Redirect
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
