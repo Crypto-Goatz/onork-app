@@ -26,6 +26,39 @@ export interface OAuthProvider {
 }
 
 export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
+  google: {
+    id: 'google',
+    name: 'Google',
+    authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    scopes: [
+      'openid',
+      'email',
+      'profile',
+      'https://www.googleapis.com/auth/analytics.readonly', // GA4
+      'https://www.googleapis.com/auth/webmasters.readonly', // Search Console
+      'https://www.googleapis.com/auth/business.manage', // Business Profile (reviews/local)
+      'https://www.googleapis.com/auth/adwords', // Google Ads (needs developer token to call)
+      'https://www.googleapis.com/auth/calendar', // Calendar sync
+      'https://www.googleapis.com/auth/tasks', // Tasks sync
+    ],
+    profileUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
+    clientIdEnv: 'GOOGLE_CLIENT_ID',
+    clientSecretEnv: 'GOOGLE_CLIENT_SECRET',
+    // offline + consent → guarantees a refresh_token so server-side reads keep working
+    extraAuthParams: {
+      access_type: 'offline',
+      prompt: 'consent',
+      include_granted_scopes: 'true',
+    },
+    extractProfile: (data) => ({
+      provider_account_id: String(data.id || data.sub || ''),
+      provider_email: (data.email as string) || null,
+      provider_name: (data.name as string) || null,
+      provider_avatar: (data.picture as string) || null,
+    }),
+  },
+
   facebook: {
     id: 'facebook',
     name: 'Facebook',
