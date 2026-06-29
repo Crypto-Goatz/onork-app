@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Plus, GripVertical, RefreshCw, Search } from 'lucide-react'
+import { toast } from 'sonner'
 import { useLocation } from '@/lib/location-context'
 
 interface Deal {
@@ -70,6 +71,8 @@ export default function PipelinePage() {
   const [addStageId, setAddStageId] = useState('')
   const [draggedDeal, setDraggedDeal] = useState<{ dealId: string; fromStageId: string } | null>(null)
   const [dragOverStage, setDragOverStage] = useState<string | null>(null)
+  const [pipelineId, setPipelineId] = useState('')
+  const [saving, setSaving] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
   const { locationId, refreshKey } = useLocation()
 
@@ -80,13 +83,10 @@ export default function PipelinePage() {
     try {
       const res = await fetch('/api/crm/pipeline')
       const data = await res.json()
-      const mapped = mapCrmToStages(data.pipelines || [])
-      setStages(mapped.length > 0 ? mapped : [
-        { id: 'new', name: 'New', color: '#6b7280', deals: [] },
-        { id: 'contacted', name: 'Contacted', color: '#00d4ff', deals: [] },
-        { id: 'qualified', name: 'Qualified', color: '#7ed957', deals: [] },
-        { id: 'closed', name: 'Closed', color: '#a78bfa', deals: [] },
-      ])
+      const pipelines = data.pipelines || []
+      const mapped = mapCrmToStages(pipelines)
+      setStages(mapped)
+      setPipelineId(pipelines[0]?.id || '')
       if (mapped.length > 0) setAddStageId(mapped[0].id)
     } catch {}
     setLoading(false)
@@ -101,22 +101,42 @@ export default function PipelinePage() {
     setTimeout(() => titleRef.current?.focus(), 100)
   }
 
-  function submitAdd() {
-    if (!addTitle.trim()) return
-    const newDeal: Deal = {
-      id: `local-${Date.now()}`,
-      name: addTitle.trim(),
-      company: addDesc.trim(),
-      value: 0,
-      urgency: addUrgency,
-      daysInStage: 0,
-      stageId: addStageId,
+  async function submitAdd() {
+    const title = addTitle.trim()
+    if (!title || saving) return
+    if (!pipelineId || !addStageId) {
+      toast.error('No pipeline available', { description: 'Create a pipeline in your CRM first.' })
+      return
     }
-    setStages(prev => prev.map(s => s.id === addStageId ? { ...s, deals: [...s.deals, newDeal] } : s))
-    setAddTitle('')
-    setAddDesc('')
-    setAddUrgency(30)
-    setTimeout(() => titleRef.current?.focus(), 50)
+    setSaving(true)
+    try {
+      const res = await fetch('/api/crm/pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: title,
+          pipelineId,
+          pipelineStageId: addStageId,
+          monetaryValue: 0,
+          status: 'open',
+        }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        toast.error('Could not add deal', { description: d.error || d.details || 'CRM rejected the request' })
+        setSaving(false)
+        return
+      }
+      toast.success('Deal added')
+      setAddTitle('')
+      setAddDesc('')
+      setAddUrgency(30)
+      await load()
+      setTimeout(() => titleRef.current?.focus(), 50)
+    } catch (e) {
+      toast.error('Network error', { description: e instanceof Error ? e.message : 'Could not reach CRM' })
+    }
+    setSaving(false)
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -129,19 +149,41 @@ export default function PipelinePage() {
   function handleDragStart(dealId: string, fromStageId: string) { setDraggedDeal({ dealId, fromStageId }) }
   function handleDragOver(e: React.DragEvent, stageId: string) { e.preventDefault(); setDragOverStage(stageId) }
   function handleDragLeave() { setDragOverStage(null) }
-  function handleDrop(toStageId: string) {
+  async function handleDrop(toStageId: string) {
     if (!draggedDeal || draggedDeal.fromStageId === toStageId) { setDraggedDeal(null); setDragOverStage(null); return }
-    setStages(prev => {
-      const deal = prev.find(s => s.id === draggedDeal.fromStageId)?.deals.find(d => d.id === draggedDeal.dealId)
-      if (!deal) return prev
-      return prev.map(s => {
-        if (s.id === draggedDeal.fromStageId) return { ...s, deals: s.deals.filter(d => d.id !== draggedDeal.dealId) }
-        if (s.id === toStageId) return { ...s, deals: [...s.deals, { ...deal, stageId: toStageId }] }
-        return s
-      })
-    })
+    const { dealId, fromStageId } = draggedDeal
+    const deal = stages.find(s => s.id === fromStageId)?.deals.find(d => d.id === dealId)
     setDraggedDeal(null)
     setDragOverStage(null)
+    if (!deal) return
+
+    // Optimistic move; keep a snapshot to revert if persistence fails.
+    const prevStages = stages
+    setStages(prev => prev.map(s => {
+      if (s.id === fromStageId) return { ...s, deals: s.deals.filter(d => d.id !== dealId) }
+      if (s.id === toStageId) return { ...s, deals: [...s.deals, { ...deal, stageId: toStageId }] }
+      return s
+    }))
+
+    try {
+      const res = await fetch('/api/crm/pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          opportunityId: dealId,
+          pipelineStageId: toStageId,
+          ...(pipelineId ? { pipelineId } : {}),
+        }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        toast.error('Move not saved', { description: d.error || d.details || 'Reverted' })
+        setStages(prevStages)
+      }
+    } catch (e) {
+      toast.error('Move not saved', { description: e instanceof Error ? e.message : 'Reverted' })
+      setStages(prevStages)
+    }
   }
 
   const totalDeals = stages.reduce((s, st) => s + st.deals.length, 0)
@@ -173,13 +215,20 @@ export default function PipelinePage() {
           <Button variant="outline" size="sm" onClick={load} className="h-7 w-7 p-0">
             <RefreshCw className="h-3 w-3" />
           </Button>
-          <Button size="sm" onClick={() => openAdd()} className="h-7 bg-accent text-cta-text hover:bg-accent-action gap-1 text-xs">
+          <Button size="sm" onClick={() => openAdd()} disabled={stages.length === 0 || !pipelineId} className="h-7 bg-accent text-cta-text hover:bg-accent-action gap-1 text-xs">
             <Plus className="h-3 w-3" /> Add
           </Button>
         </div>
       </div>
 
-      {/* Kanban board */}
+      {/* Empty state — no pipeline/stages from CRM */}
+      {stages.length === 0 ? (
+        <div className="flex min-h-[40vh] flex-col items-center justify-center text-center">
+          <p className="text-sm text-core-text">No pipeline stages found.</p>
+          <p className="text-xs text-core-text-muted mt-1">Create a pipeline in your CRM to start tracking deals here.</p>
+        </div>
+      ) : (
+      /* Kanban board */
       <div className="flex gap-2 overflow-x-auto pb-4" style={{ minHeight: 'calc(100vh - 140px)' }}>
         {stages.map(stage => {
           const filtered = search
@@ -262,6 +311,7 @@ export default function PipelinePage() {
           )
         })}
       </div>
+      )}
 
       {/* Quick Add Dialog */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
@@ -339,10 +389,11 @@ export default function PipelinePage() {
             <p className="text-[10px] text-core-text-muted flex-1">Press Enter to add another</p>
             <Button
               size="sm"
+              disabled={saving || !addTitle.trim()}
               onClick={() => { submitAdd(); setShowAdd(false) }}
               className="bg-accent text-cta-text hover:bg-accent-action"
             >
-              Add Deal
+              {saving ? 'Saving...' : 'Add Deal'}
             </Button>
           </DialogFooter>
         </DialogContent>

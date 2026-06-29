@@ -91,14 +91,57 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { opportunityId, stageId, pipelineId } = body
+    const { opportunityId, stageId, pipelineStageId, pipelineId, name, monetaryValue, status } = body
+    const stage = pipelineStageId || stageId
 
-    if (!opportunityId || !stageId) {
-      return NextResponse.json({ error: 'opportunityId and stageId required' }, { status: 400 })
+    // ─── CREATE a new opportunity (no opportunityId provided) ───
+    if (!opportunityId) {
+      if (!name || !pipelineId || !stage) {
+        return NextResponse.json(
+          { error: 'name, pipelineId and stageId are required to create an opportunity' },
+          { status: 400 }
+        )
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('crm_location_id')
+        .eq('id', user.id)
+        .single()
+      const locationId = profile?.crm_location_id || process.env.CRM_LOCATION_ID
+      if (!locationId) {
+        return NextResponse.json({ error: 'CRM location not configured' }, { status: 500 })
+      }
+
+      const res = await crmFetch('/opportunities/', 'POST', {
+        locationId,
+        pipelineId,
+        pipelineStageId: stage,
+        name,
+        status: status || 'open',
+        monetaryValue: typeof monetaryValue === 'number' ? monetaryValue : 0,
+      })
+
+      if (!res.ok) {
+        const text = await res.text()
+        return NextResponse.json(
+          { error: `CRM API error: ${res.status}`, details: text },
+          { status: res.status }
+        )
+      }
+
+      const data = await res.json()
+      return NextResponse.json(data)
     }
 
+    // ─── UPDATE an existing opportunity's stage (move) ───
+    if (!stage) {
+      return NextResponse.json({ error: 'stageId required' }, { status: 400 })
+    }
+
+    // CRM expects `pipelineStageId` (not `stageId`) on update.
     const res = await crmFetch(`/opportunities/${opportunityId}`, 'PUT', {
-      stageId,
+      pipelineStageId: stage,
       ...(pipelineId ? { pipelineId } : {}),
     })
 

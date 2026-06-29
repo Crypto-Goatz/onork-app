@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Plus, X } from 'lucide-react'
 import TaskBoard from './components/TaskBoard'
 import type { Task as BoardTask } from './components/TaskBoard'
@@ -46,6 +46,89 @@ function loadJson<T>(key: string, fallback: T): T {
 function saveJson(key: string, data: unknown) {
   if (typeof window === 'undefined') return
   localStorage.setItem(key, JSON.stringify(data))
+}
+
+// ── Real DB persistence (unified_tasks via /api/tasks/unified) ──────────────
+// The main board now LOADs/SAVEs server-side. localStorage is kept only as an
+// optimistic cache for instant first paint + per-device subtask cache (the
+// unified_tasks table has no subtasks column — see report note).
+
+interface DbTask {
+  id: string
+  title: string
+  description: string | null
+  status: string
+  priority: string
+  due_date: string | null
+}
+
+// Server-generated ids are UUIDs; optimistic ids are Date.now()+random (no dashes).
+const isServerId = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(id)
+
+function dbToBoard(row: DbTask, cachedSubtasks?: Task['subtasks']): Task {
+  const statusMap: Record<string, Task['status']> = {
+    todo: 'todo',
+    in_progress: 'in-progress',
+    done: 'done',
+    blocked: 'todo',
+    cancelled: 'done',
+  }
+  const priority: Task['priority'] =
+    row.priority === 'high' || row.priority === 'urgent'
+      ? 'high'
+      : row.priority === 'low'
+        ? 'low'
+        : 'medium'
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description || undefined,
+    status: statusMap[row.status] || 'todo',
+    priority,
+    dueDate: row.due_date || undefined,
+    subtasks: cachedSubtasks,
+  }
+}
+
+const boardStatusToDb = (s: Task['status']) => (s === 'in-progress' ? 'in_progress' : s)
+
+function boardToDbPayload(t: Partial<Task>) {
+  const payload: Record<string, unknown> = {}
+  if (t.title !== undefined) payload.title = t.title
+  if ('description' in t) payload.description = t.description ?? null
+  if (t.status !== undefined) payload.status = boardStatusToDb(t.status)
+  if (t.priority !== undefined) payload.priority = t.priority
+  if ('dueDate' in t) payload.due_date = t.dueDate ?? null
+  return payload
+}
+
+async function apiCreateTask(t: Task): Promise<string | null> {
+  try {
+    const res = await fetch('/api/tasks/unified', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(boardToDbPayload(t)),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.task?.id ?? null
+  } catch {
+    return null
+  }
+}
+
+function apiPatchTask(id: string, updates: Partial<Task>) {
+  if (!isServerId(id)) return // optimistic task not yet persisted; skip
+  fetch('/api/tasks/unified', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, ...boardToDbPayload(updates) }),
+  }).catch(() => {})
+}
+
+function apiDeleteTask(id: string) {
+  if (!isServerId(id)) return
+  fetch(`/api/tasks/unified?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {})
 }
 
 interface RecurringTask {
@@ -253,6 +336,10 @@ export default function TasksPage() {
   const [mobileTab, setMobileTab] = useState<'board' | 'chat'>('board')
   const [mounted, setMounted] = useState(false)
 
+  // Latest tasks for stale-free reads inside event handlers
+  const tasksRef = useRef<Task[]>([])
+  useEffect(() => { tasksRef.current = tasks }, [tasks])
+
   // View state
   const [activeView, setActiveView] = useState<ViewTab>('dashboard')
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
@@ -283,11 +370,31 @@ export default function TasksPage() {
 
   useEffect(() => {
     setMounted(true)
-    setTasks(loadJson(STORAGE_KEY, []))
+    // Optimistic first paint from localStorage cache
+    const cached = loadJson<Task[]>(STORAGE_KEY, [])
+    setTasks(cached)
     setClients(loadJson(CLIENTS_KEY, []))
     setProjects(loadJson(PROJECTS_KEY, []))
     setEmails(loadJson(EMAILS_KEY, []))
     setEvents(loadJson(EVENTS_KEY, []))
+
+    // Authoritative load from the DB (unified_tasks). Server is source of truth.
+    ;(async () => {
+      try {
+        const res = await fetch('/api/tasks/unified?status=all&limit=200')
+        if (!res.ok) return // 401/unauth or error → keep cache only
+        const data = await res.json()
+        if (Array.isArray(data.tasks)) {
+          // Re-attach per-device cached subtasks (no DB column for them yet)
+          const subById = new Map<string, Task['subtasks']>(
+            cached.map(t => [t.id, t.subtasks] as [string, Task['subtasks']]),
+          )
+          setTasks(data.tasks.map((r: DbTask) => dbToBoard(r, subById.get(r.id))))
+        }
+      } catch {
+        // network failure → keep optimistic cache
+      }
+    })()
   }, [])
 
   useEffect(() => { if (mounted) saveJson(STORAGE_KEY, tasks) }, [tasks, mounted])
@@ -296,10 +403,11 @@ export default function TasksPage() {
   useEffect(() => { if (mounted) saveJson(EMAILS_KEY, emails) }, [emails, mounted])
   useEffect(() => { if (mounted) saveJson(EVENTS_KEY, events) }, [events, mounted])
 
-  // Task handlers
+  // Task handlers — optimistic local update + real DB persistence
   const handleAddTask = useCallback((partial: Partial<Task>) => {
+    const tempId = Date.now().toString() + Math.random().toString(36).slice(2, 6)
     const task: Task = {
-      id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+      id: tempId,
       title: partial.title || 'Untitled',
       description: partial.description,
       status: partial.status || 'todo',
@@ -308,28 +416,36 @@ export default function TasksPage() {
       subtasks: partial.subtasks,
     }
     setTasks(prev => [task, ...prev])
+    // Persist to DB, then swap the optimistic id for the real UUID
+    apiCreateTask(task).then(realId => {
+      if (realId) setTasks(prev => prev.map(t => (t.id === tempId ? { ...t, id: realId } : t)))
+    })
   }, [])
 
   const handleToggleTask = useCallback((taskId: string) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id !== taskId) return t
-      const nextStatus: Record<string, Task['status']> = {
-        'todo': 'in-progress', 'in-progress': 'done', 'done': 'todo',
-      }
-      return { ...t, status: nextStatus[t.status] || 'todo' }
-    }))
+    const cur = tasksRef.current.find(t => t.id === taskId)
+    if (!cur) return
+    const nextStatus: Record<string, Task['status']> = {
+      'todo': 'in-progress', 'in-progress': 'done', 'done': 'todo',
+    }
+    const next = nextStatus[cur.status] || 'todo'
+    setTasks(prev => prev.map(t => (t.id === taskId ? { ...t, status: next } : t)))
+    apiPatchTask(taskId, { status: next })
   }, [])
 
   const handleDeleteTask = useCallback((taskId: string) => {
     setTasks(prev => prev.filter(t => t.id !== taskId))
+    apiDeleteTask(taskId)
   }, [])
 
   const handleUpdateTask = useCallback((updated: Task) => {
     setTasks(prev => prev.map(t => t.id === updated.id ? updated : t))
+    apiPatchTask(updated.id, updated)
   }, [])
 
   const handleCompleteTask = useCallback((taskId: string) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'done' as const } : t))
+    apiPatchTask(taskId, { status: 'done' })
   }, [])
 
   // Chat
@@ -363,9 +479,12 @@ export default function TasksPage() {
           } else if (action.type === 'complete' && action.taskId) {
             handleCompleteTask(action.taskId)
           } else if (action.type === 'update' && action.taskId) {
-            setTasks(prev => prev.map(t =>
-              t.id === action.taskId ? { ...t, ...(action.status && { status: action.status }), ...(action.priority && { priority: action.priority }) } : t
-            ))
+            const patch: Partial<Task> = {
+              ...(action.status && { status: action.status }),
+              ...(action.priority && { priority: action.priority }),
+            }
+            setTasks(prev => prev.map(t => t.id === action.taskId ? { ...t, ...patch } : t))
+            apiPatchTask(action.taskId, patch)
           }
         }
       }

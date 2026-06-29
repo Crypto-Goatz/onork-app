@@ -57,6 +57,19 @@ interface SavedAutomation {
   updatedAt: number;
 }
 
+// Map a user_workflows row (from GET /api/automations/list) → SavedAutomation
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapWorkflowRow(w: any): SavedAutomation {
+  return {
+    id: w.id,
+    name: w.name || 'Untitled Automation',
+    nodes: Array.isArray(w.nodes) ? w.nodes : [],
+    edges: Array.isArray(w.edges) ? w.edges : [],
+    status: w.status === 'active' ? 'active' : w.status === 'paused' ? 'paused' : 'draft',
+    updatedAt: w.updated_at ? new Date(w.updated_at).getTime() : Date.now(),
+  }
+}
+
 export default function AutomationsPage() {
   const [nodes, setNodes] = useState<CapabilityNodeType[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
@@ -182,75 +195,12 @@ export default function AutomationsPage() {
     setSaveStatus('unsaved')
   }, [])
 
-  const handleSaveDraft = useCallback(() => {
-    setSaveStatus('saving')
-    const draft: SavedAutomation = {
-      id: automationId,
-      name: automationName,
-      nodes,
-      edges,
-      status: 'draft',
-      updatedAt: Date.now(),
-    }
-
-    setSavedDrafts(prev => {
-      const idx = prev.findIndex(d => d.id === draft.id)
-      if (idx >= 0) {
-        const updated = [...prev]
-        updated[idx] = draft
-        return updated
-      }
-      return [draft, ...prev]
-    })
-
-    try {
-      const all = JSON.parse(localStorage.getItem('0ncore-automations') || '[]')
-      const idx = all.findIndex((d: SavedAutomation) => d.id === draft.id)
-      if (idx >= 0) all[idx] = draft
-      else all.unshift(draft)
-      localStorage.setItem('0ncore-automations', JSON.stringify(all.slice(0, 50)))
-    } catch {}
-
-    setTimeout(() => {
-      setSaveStatus('saved')
-      toast.success('Draft saved')
-    }, 300)
-  }, [automationId, automationName, nodes, edges])
-
-  const handleLoadDraft = useCallback((draft: SavedAutomation) => {
-    setAutomationId(draft.id)
-    setAutomationName(draft.name)
-    setNodes(draft.nodes)
-    setEdges(draft.edges)
-    setStepCounter(draft.nodes.length)
-    setSelectedNodeId(null)
-    setShowWorkflowMenu(false)
-    setSaveStatus('saved')
-  }, [])
-
-  const handleNewAutomation = useCallback(() => {
-    setAutomationId(crypto.randomUUID())
-    setAutomationName('Untitled Automation')
-    setNodes([])
-    setEdges([])
-    setStepCounter(0)
-    setSelectedNodeId(null)
-    setShowWorkflowMenu(false)
-    setSaveStatus('unsaved')
-    setChatMessages([
-      { id: 'welcome', role: 'assistant', content: "I'm your automation builder. Describe what you want to automate and I'll build it step by step.", timestamp: new Date() },
-    ])
-  }, [])
-
-  const handleActivate = useCallback(async () => {
-    if (nodes.length === 0 || !hasTrigger || activating) return
-    setActivating(true)
-
-
+  // Build the request body shared by Save Draft and Activate.
+  // Mirrors the .0n file shape the activate route + execute engine expect.
+  const buildActivationBody = useCallback((status: 'draft' | 'active') => {
     const dotOnSteps = nodes.map((node, i) => ({
       id: node.id,
       action: node.data.capabilityId || node.data.name || 'unknown',
-      // Mirror as 'tool' + 'inputs' so /api/automations/execute can run the saved file directly.
       tool: node.data.capabilityId || node.data.name || 'unknown',
       name: node.data.name,
       inputs: node.data.config || {},
@@ -281,24 +231,123 @@ export default function AutomationsPage() {
       },
     }
 
+    return {
+      name: automationName,
+      description: `${nodes.length} steps, trigger: ${triggerNode?.data.name || 'manual'}`,
+      dot_on_file: dotOnFile,
+      nodes: nodes.map(n => ({ id: n.id, type: n.type, position: n.position, data: n.data })),
+      edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target })),
+      status,
+    }
+  }, [nodes, edges, automationName, automationId])
+
+  // Load saved workflows from the DB (source of truth). Falls back to the
+  // local offline draft cache only if the request fails.
+  const loadWorkflows = useCallback(async () => {
+    try {
+      const res = await fetch('/api/automations/list')
+      if (res.ok) {
+        const data = await res.json()
+        setSavedDrafts((data.workflows || []).map(mapWorkflowRow))
+        return
+      }
+    } catch {}
+    try {
+      const stored = JSON.parse(localStorage.getItem('0ncore-automations') || '[]')
+      setSavedDrafts(stored)
+    } catch {}
+  }, [])
+
+  const handleSaveDraft = useCallback(async () => {
+    setSaveStatus('saving')
+
+    // Offline mirror (fallback only — the DB is the source of truth).
+    const draft: SavedAutomation = {
+      id: automationId, name: automationName, nodes, edges, status: 'draft', updatedAt: Date.now(),
+    }
+    try {
+      const all = JSON.parse(localStorage.getItem('0ncore-automations') || '[]')
+      const idx = all.findIndex((d: SavedAutomation) => d.id === draft.id)
+      if (idx >= 0) all[idx] = draft
+      else all.unshift(draft)
+      localStorage.setItem('0ncore-automations', JSON.stringify(all.slice(0, 50)))
+    } catch {}
+
+    // The activate route requires at least one step — keep empty workflows local.
+    if (nodes.length === 0) {
+      setSavedDrafts(prev => {
+        const idx = prev.findIndex(d => d.id === draft.id)
+        if (idx >= 0) { const u = [...prev]; u[idx] = draft; return u }
+        return [draft, ...prev]
+      })
+      setSaveStatus('saved')
+      toast.success('Draft saved (local — add a step to sync)')
+      return
+    }
+
     try {
       const res = await fetch('/api/automations/activate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: automationName,
-          description: `${nodes.length} steps, trigger: ${triggerNode?.data.name || 'manual'}`,
-          dot_on_file: dotOnFile,
-          nodes: nodes.map(n => ({ id: n.id, type: n.type, position: n.position, data: n.data })),
-          edges: edges.map(e => ({ id: e.id, source: e.source, target: e.target })),
-          status: 'active',
-        }),
+        body: JSON.stringify(buildActivationBody('draft')),
+      })
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}))
+        if (data.workflow?.id) setAutomationId(data.workflow.id)
+        setSaveStatus('saved')
+        toast.success('Draft saved')
+        loadWorkflows()
+      } else {
+        const data = await res.json().catch(() => ({ error: 'Unknown error' }))
+        setSaveStatus('unsaved')
+        toast.error('Save failed', { description: data.error || 'Could not save draft' })
+      }
+    } catch (err) {
+      setSaveStatus('unsaved')
+      toast.error('Network error', { description: err instanceof Error ? err.message : 'Could not reach server' })
+    }
+  }, [automationId, automationName, nodes, edges, buildActivationBody, loadWorkflows])
+
+  const handleLoadDraft = useCallback((draft: SavedAutomation) => {
+    setAutomationId(draft.id)
+    setAutomationName(draft.name)
+    setNodes(draft.nodes)
+    setEdges(draft.edges)
+    setStepCounter(draft.nodes.length)
+    setSelectedNodeId(null)
+    setShowWorkflowMenu(false)
+    setSaveStatus('saved')
+  }, [])
+
+  const handleNewAutomation = useCallback(() => {
+    setAutomationId(crypto.randomUUID())
+    setAutomationName('Untitled Automation')
+    setNodes([])
+    setEdges([])
+    setStepCounter(0)
+    setSelectedNodeId(null)
+    setShowWorkflowMenu(false)
+    setSaveStatus('unsaved')
+    setChatMessages([
+      { id: 'welcome', role: 'assistant', content: "I'm your automation builder. Describe what you want to automate and I'll build it step by step.", timestamp: new Date() },
+    ])
+  }, [])
+
+  const handleActivate = useCallback(async () => {
+    if (nodes.length === 0 || !hasTrigger || activating) return
+    setActivating(true)
+
+    try {
+      const res = await fetch('/api/automations/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildActivationBody('active')),
       })
 
       if (res.ok) {
-        setSavedDrafts(prev => prev.map(d =>
-          d.id === automationId ? { ...d, status: 'active' as const } : d
-        ))
+        const data = await res.json().catch(() => ({}))
+        if (data.workflow?.id) setAutomationId(data.workflow.id)
+        // Mirror status in the offline cache.
         try {
           const all = JSON.parse(localStorage.getItem('0ncore-automations') || '[]')
           const idx = all.findIndex((d: SavedAutomation) => d.id === automationId)
@@ -307,6 +356,7 @@ export default function AutomationsPage() {
 
         toast.success(`"${automationName}" activated`, { description: 'Workflow is now live.' })
         setSaveStatus('saved')
+        loadWorkflows()
       } else {
         const data = await res.json().catch(() => ({ error: 'Unknown error' }))
         toast.error('Activation failed', { description: data.error || 'Unknown error' })
@@ -316,15 +366,10 @@ export default function AutomationsPage() {
     } finally {
       setActivating(false)
     }
-  }, [nodes, edges, hasTrigger, activating, automationName, automationId])
+  }, [nodes, hasTrigger, activating, automationName, automationId, buildActivationBody, loadWorkflows])
 
-  // Load drafts from localStorage on mount
-  useState(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('0ncore-automations') || '[]')
-      setSavedDrafts(stored)
-    } catch {}
-  })
+  // Load saved workflows from the DB on mount (offline cache is the fallback).
+  useEffect(() => { loadWorkflows() }, [loadWorkflows])
 
   // AI fill handler for quick config modal
   const handleAIFillConfig = useCallback(async (nodeId: string, capabilityId: string): Promise<Record<string, string> | null> => {
