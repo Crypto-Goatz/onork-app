@@ -7,6 +7,7 @@ import { Menu, X, ArrowRight } from 'lucide-react'
 
 const NAV_LINKS: Array<{ href: string; label: string }> = [
   { href: '/platform', label: 'Platform' },
+  { href: '/possibilities', label: 'Possibilities' },
   { href: '/marketplace', label: 'Marketplace' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/contact', label: 'Contact' },
