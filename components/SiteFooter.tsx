@@ -18,6 +18,7 @@ const COLUMNS: Array<{ title: string; links: Array<{ label: string; href: string
       { label: 'Platform', href: '/platform' },
       { label: 'Connections', href: '/connections' },
       { label: 'Marketplace', href: '/marketplace' },
+      { label: 'Bulk Stack Scan', href: '/stack-scan' },
       { label: 'Pricing', href: '/pricing' },
     ],
   },
