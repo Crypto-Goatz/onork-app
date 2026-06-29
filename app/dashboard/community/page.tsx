@@ -109,12 +109,6 @@ export default function CommunityPage() {
                 >
                   Email Support — mike@rocketopp.com
                 </a>
-                <a
-                  href="/dashboard/docs"
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-lg border border-border text-muted-foreground hover:text-foreground font-medium text-sm transition-colors"
-                >
-                  Browse Documentation
-                </a>
               </div>
             </div>
           </div>

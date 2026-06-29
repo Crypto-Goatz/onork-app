@@ -10,7 +10,7 @@ import {
   CreditCard, Tag, Mail, Share2, FileText, Link2, ClipboardList, Megaphone,
   Mic, Bot, Brain, Zap, RefreshCw, Phone, FolderOpen, FileCheck, Globe,
   GraduationCap, Palette, User, CheckSquare, Settings, Shield, Plug,
-  Building2, ShoppingCart, Download, UserPlus, PenLine, HeartPulse, ChevronDown, Check,
+  Building2, ShoppingCart, UserPlus, PenLine, HeartPulse, ChevronDown, Check,
   Package, Server, Briefcase, type LucideIcon,
 } from 'lucide-react'
 
@@ -64,7 +64,6 @@ const NAV_ITEMS: { label: string; href: string; keywords: string; Icon: LucideIc
   { label: 'Integrations', href: '/dashboard/integrations', keywords: 'integrations connect api services stripe', Icon: Plug },
   { label: 'Agency', href: '/dashboard/agency', keywords: 'agency locations sub-accounts management', Icon: Building2 },
   { label: 'Marketplace', href: '/marketplace', keywords: 'marketplace addons plugins store buy', Icon: ShoppingCart },
-  { label: 'Downloads', href: '/dashboard/downloads', keywords: 'downloads install cli mcp server', Icon: Download },
   { label: 'New Contact', href: '/dashboard/contacts?action=new', keywords: 'create new contact add person', Icon: UserPlus },
   { label: 'Send Email', href: '/dashboard/email/builder', keywords: 'compose new email send write', Icon: PenLine },
   { label: 'HIPAA Scanner', href: '/dashboard/hipaa', keywords: 'hipaa scan compliance healthcare security', Icon: HeartPulse },
