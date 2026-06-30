@@ -76,32 +76,48 @@ export async function provisionSubLocation(userId: string): Promise<ProvisionRes
   try {
     // Create the sub-location via CRM Agency API.
     // NOTE: trailing slash is REQUIRED — `/locations` returns 404, `/locations/` is the canonical endpoint.
-    const createRes = await fetch(`${CRM_API}/locations/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${agencyPit}`,
-        Version: CRM_VERSION,
-        'Content-Type': 'application/json',
+    const createBody = JSON.stringify({
+      companyId: process.env.CRM_COMPANY_ID || '',
+      name: locationName,
+      email: profile.email,
+      phone: '',
+      address: '',
+      city: '',
+      state: '',
+      country: 'US',
+      postalCode: '',
+      website: (profile.website_scan as Record<string, unknown>)?.site_url || '',
+      timezone: 'America/New_York',
+      settings: {
+        allowDuplicateContact: false,
+        allowDuplicateOpportunity: false,
       },
-      body: JSON.stringify({
-        companyId: process.env.CRM_COMPANY_ID || '',
-        name: locationName,
-        email: profile.email,
-        phone: '',
-        address: '',
-        city: '',
-        state: '',
-        country: 'US',
-        postalCode: '',
-        website: (profile.website_scan as Record<string, unknown>)?.site_url || '',
-        timezone: 'America/New_York',
-        settings: {
-          allowDuplicateContact: false,
-          allowDuplicateOpportunity: false,
-        },
-      }),
     })
 
+    // Retry transient failures (network errors + 5xx); 4xx are returned as-is.
+    let createRes: Response | null = null
+    let lastErr = ''
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        createRes = await fetch(`${CRM_API}/locations/`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${agencyPit}`, Version: CRM_VERSION, 'Content-Type': 'application/json' },
+          body: createBody,
+        })
+        if (createRes.ok || createRes.status < 500) break // success or a non-retryable 4xx
+        lastErr = `HTTP ${createRes.status}`
+      } catch (e) {
+        lastErr = e instanceof Error ? e.message : String(e)
+        createRes = null
+      }
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 800 * attempt))
+    }
+
+    if (!createRes) {
+      console.error(`[provision] Location creation network error after retries:`, lastErr)
+      errors.push(`Location creation: network error after retries — ${lastErr}`)
+      return { success: false, locationId: null, locationName, snapshotDeployed: false, errors }
+    }
     if (!createRes.ok) {
       const errText = await createRes.text()
       console.error(`[provision] Location creation failed: ${createRes.status}`, errText)
