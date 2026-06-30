@@ -118,6 +118,23 @@ export async function middleware(request: NextRequest) {
     return withCookies(NextResponse.redirect(url))
   }
 
+  // Daily briefing gate — the first /dashboard hit each day shows /dashboard/recap.
+  // Cookie-only (no DB) so it adds zero latency: the recap page sets recap_seen=<today>
+  // when dismissed; until then every dashboard path bounces to the briefing.
+  if (
+    user &&
+    request.nextUrl.pathname.startsWith('/dashboard') &&
+    request.nextUrl.pathname !== '/dashboard/recap'
+  ) {
+    const today = new Date().toISOString().slice(0, 10)
+    if (request.cookies.get('recap_seen')?.value !== today) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard/recap'
+      url.search = ''
+      return withCookies(NextResponse.redirect(url))
+    }
+  }
+
   // /dashboard/ai is locked to mike@rocketopp.com only
   if (request.nextUrl.pathname.startsWith('/dashboard/ai')) {
     if (!user || user.email !== 'mike@rocketopp.com') {
