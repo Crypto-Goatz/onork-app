@@ -42,16 +42,24 @@ export async function GET(req: NextRequest) {
   const db = admin()
   const backoff = new Date(Date.now() - 3 * 60_000).toISOString()
 
-  // Candidates: no location, not a test/e2e account, never-attempted or stale attempt.
+  // Candidates = REAL signups that failed to get a location. A genuine signup
+  // runs post-signup which stamps provisioning_started_at; test scripts that
+  // create users via the admin API bypass that, so provisioning_started_at IS
+  // NULL for them — which is exactly how we avoid provisioning junk sub-accounts.
+  // Plus an email denylist backstop, plus a 3-min backoff so we don't re-hit one
+  // that's mid-provision.
   const { data: candidates, error } = await db
     .from('profiles')
     .select('id, email, provisioning_started_at')
     .is('crm_location_id', null)
+    .not('provisioning_started_at', 'is', null) // proves the real signup pipeline ran
+    .lt('provisioning_started_at', backoff)
     .not('email', 'ilike', '%e2e%')
     .not('email', 'ilike', '%@example.%')
     .not('email', 'ilike', '%+test%')
-    .or(`provisioning_started_at.is.null,provisioning_started_at.lt.${backoff}`)
-    .order('provisioning_started_at', { ascending: true, nullsFirst: true })
+    .not('email', 'ilike', '%@test.%')
+    .not('email', 'ilike', '%@evil.%')
+    .order('provisioning_started_at', { ascending: true })
     .limit(5)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
