@@ -208,7 +208,7 @@ export default function VaultDoor() {
                 <p className="mt-0.5 max-w-md text-sm text-white/60">One login everywhere. It carries your 0n account across every site — no pasting, "Login with 0n" wherever you go.</p>
               </div>
             </div>
-            <a href="/downloads/0n-extension.zip" download className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-neutral-950 transition hover:bg-emerald-400">
+            <a href="/downloads/0n-chrome-extension.zip" download className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-neutral-950 transition hover:bg-emerald-400">
               <Download className="h-4 w-4" /> Download now
             </a>
           </div>
