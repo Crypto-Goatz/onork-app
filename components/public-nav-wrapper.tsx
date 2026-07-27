@@ -18,6 +18,7 @@ const EXCLUDED_PREFIXES = [
   '/admin',
   '/embed', // iframe-embed pages — host provides chrome
   '/vip',   // VIP dashboards — branded per-client
+  '/hub',   // 0nVault door — standalone, fully self-contained
 ]
 
 // Routes with their own nav (login/signup have custom designs)

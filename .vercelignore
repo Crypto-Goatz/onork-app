@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.claude
+.vercel/cache
+test-results
+playwright-report
+docs
+rocket-extension

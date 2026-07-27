@@ -15,8 +15,6 @@ import {
   HelpCircle,
   Activity,
   Users,
-  Calendar,
-  TrendingUp,
 } from 'lucide-react'
 import SiteFooter from '@/components/SiteFooter'
 
@@ -97,11 +95,6 @@ const TESTIMONIALS = [
     name: 'Mike Mento',
     handle: 'RocketOpp',
     quote: '"This is the AI orchestration layer I\'ve been trying to build for 5 years. Existing tools call themselves orchestrators — 0nCore actually is one."',
-  },
-  {
-    name: 'Wellness operator',
-    handle: 'service business',
-    quote: '"I described the campaign in plain English and it built the workflow, the tags, the segment, and the social schedule. I clicked toggle. It just ran."',
   },
   {
     name: 'Designer @ studio',
@@ -306,8 +299,8 @@ function DashboardPreview() {
       <div className="grid grid-cols-4 gap-2 mx-4 mb-4">
         {[
           { Icon: Users,      l: 'Contacts',  v: '5,076',  s: '20 tags · 20 workflows' },
-          { Icon: Calendar,   l: 'Bookings',  v: '28',     s: '+47% vs last week', positive: true },
-          { Icon: TrendingUp, l: 'Revenue',   v: '$1,247', s: 'today' },
+          { Icon: Workflow,   l: 'Runs',      v: '124',    s: '+47% vs last week', positive: true },
+          { Icon: Zap,        l: 'Executed',  v: '1,640',  s: 'tools available' },
           { Icon: Activity,   l: 'ROAS',      v: '3.35×',  s: '$412 spend' },
         ].map((k) => (
           <div key={k.l} className="rounded-lg border border-white/10 bg-zinc-950 p-2.5">
