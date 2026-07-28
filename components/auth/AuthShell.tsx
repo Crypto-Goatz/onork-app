@@ -129,6 +129,22 @@ export function OAuthButton({
   disabled?: boolean
 }) {
   const labels = { google: 'Continue with Google', linkedin: 'Continue with LinkedIn', slack: 'Continue with Slack' }
+  if (provider === 'google') {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        className="flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-lg border border-border/60 bg-bg-primary/30 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:border-accent/50 hover:bg-bg-primary/60 disabled:opacity-50"
+      >
+        <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-accent text-[10px] font-black leading-none text-white">0n</span>
+        <span>Continue with 0n</span>
+        <span className="text-text-muted" aria-hidden="true">·</span>
+        <span className="text-xs font-medium text-text-muted">powered by</span>
+        <ProviderIcon provider="google" />
+      </button>
+    )
+  }
   return (
     <button
       type="button"
