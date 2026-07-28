@@ -33,6 +33,7 @@ export default function VaultDoor() {
   const [token, setToken] = useState<string | null>(null)
   const [connected, setConnected] = useState(0)
   const [copied, setCopied] = useState(false)
+  const [tab, setTab] = useState<'home' | 'products' | 'apps' | 'account'>('home')
 
   useEffect(() => {
     fetch('/api/hub/session', { credentials: 'same-origin' })
@@ -162,122 +163,150 @@ export default function VaultDoor() {
     )
   }
 
-  const NAV = [
-    { label: 'Overview', icon: Home, href: '#', active: true },
-    { label: 'Products', icon: LayoutGrid, href: '#products', active: false },
-    { label: 'Apps', icon: Puzzle, href: 'https://www.0nmcp.com/vault', active: false, ext: true },
-    { label: 'Analytics', icon: BarChart3, href: 'https://www.cro9.com', active: false, ext: true },
-    { label: 'Account', icon: User, href: 'https://www.0ncore.com/dashboard', active: false, ext: true },
+  const initial = (firstName || 'U').charAt(0).toUpperCase()
+  const TABS = [
+    { id: 'home' as const, label: 'Home', icon: Home },
+    { id: 'products' as const, label: 'Products', icon: LayoutGrid },
+    { id: 'apps' as const, label: 'Apps', icon: Puzzle },
+    { id: 'account' as const, label: 'You', icon: User },
   ]
-  const wordmark = (
-    <span className="text-xl font-extrabold tracking-tight text-white">0n<span className="text-emerald-400">Vault</span></span>
-  )
 
   return (
-    <div className="fixed inset-0 z-[100] flex overflow-hidden bg-neutral-50 text-neutral-900">
-      {/* Black sidebar — web0n dashboard shell */}
-      <aside className="hidden w-64 flex-col bg-black p-4 md:flex">
-        <div className="mb-6 px-2 pt-1">{wordmark}</div>
-        <nav className="space-y-1">
-          {NAV.map((n) => {
-            const Icon = n.icon
-            return (
-              <a key={n.label} href={n.href} target={n.ext ? '_blank' : undefined} rel={n.ext ? 'noreferrer' : undefined}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${n.active ? 'bg-emerald-600/90 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
-                <Icon className="h-[18px] w-[18px]" /> {n.label}
-                {n.ext && <ArrowRight className="ml-auto h-3.5 w-3.5 opacity-40" />}
+    <div className="fixed inset-0 z-[100] bg-[#0d1117] text-white">
+      <div className="mx-auto flex h-full max-w-md flex-col">
+        {/* App header */}
+        <header className="flex items-center justify-between px-5 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
+          <span className="text-lg font-extrabold tracking-tight">0n<span className="text-[#6EE05A]">Vault</span></span>
+          <span className="grid h-9 w-9 place-items-center rounded-full bg-[#6EE05A]/15 text-sm font-black text-[#6EE05A]">{initial}</span>
+        </header>
+
+        {/* Scrollable app body */}
+        <div className="flex-1 overflow-y-auto px-5 pb-32">
+          {tab === 'home' && (
+            <div>
+              <h1 className="pt-2 text-[26px] font-black tracking-tight">Hi, {firstName}.</h1>
+              <p className="mt-1 text-sm text-white/50">Your secure 0n home. One login, every product.</p>
+
+              {/* Your key — tap to copy */}
+              <button onClick={copy} disabled={!token} className="mt-5 w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition active:scale-[0.99] disabled:opacity-60">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#6EE05A]"><KeyRound className="h-3.5 w-3.5" /> Your 0n key</div>
+                <div className="mt-2 flex items-center gap-3">
+                  <code className="min-w-0 flex-1 truncate font-mono text-sm text-white/80">{token || 'Loading…'}</code>
+                  <span className="flex shrink-0 items-center gap-1 rounded-lg bg-[#6EE05A] px-3 py-1.5 text-xs font-bold text-[#0d1117]">
+                    {copied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy</>}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-white/40">One key for every 0n product. Tap to copy.</p>
+              </button>
+
+              {/* Get the extension */}
+              <a href="/downloads/0n-chrome-extension.zip" download className="mt-4 flex items-center gap-4 rounded-2xl border border-[#6EE05A]/25 bg-[#6EE05A]/[0.06] p-4 transition active:scale-[0.99]">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#6EE05A]/15 text-[#6EE05A]"><Chrome className="h-5 w-5" /></span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[15px] font-bold">Get the 0n extension</div>
+                  <p className="text-xs text-white/50">Login with 0n everywhere — no pasting.</p>
+                </div>
+                <span className="flex shrink-0 items-center gap-1 rounded-lg bg-[#6EE05A] px-3 py-2 text-xs font-bold text-[#0d1117]"><Download className="h-3.5 w-3.5" /> Get</span>
               </a>
-            )
-          })}
-        </nav>
-        <div className="mt-auto space-y-2 border-t border-white/10 pt-3">
-          <div className="px-3">
-            <p className="truncate text-sm font-semibold text-white">{firstName}</p>
-            <p className="text-xs text-white/40">{connected} app{connected === 1 ? '' : 's'} connected</p>
-          </div>
-          <button onClick={signOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white">
-            <LogOut className="h-[18px] w-[18px]" /> Sign out
-          </button>
-        </div>
-      </aside>
 
-      {/* Content */}
-      <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
-        {/* Mobile top bar */}
-        <div className="flex items-center justify-between bg-black px-4 py-3 md:hidden">
-          {wordmark}
-          <button onClick={signOut} className="text-xs font-semibold text-white/70 hover:text-white">Sign out</button>
-        </div>
-
-        <div className="mx-auto max-w-5xl px-6 py-8">
-          <h1 className="text-2xl font-extrabold tracking-tight">Welcome in, {firstName}.</h1>
-          <p className="mt-1 text-sm text-neutral-500">Your secure 0n home — one login, every product, all your connections.</p>
-
-          {/* Download the extension — the glue */}
-          <div className="mt-6 flex flex-col items-start justify-between gap-4 overflow-hidden rounded-2xl border border-neutral-900 bg-neutral-900 p-6 text-white sm:flex-row sm:items-center">
-            <div className="flex items-start gap-4">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-emerald-500/15 text-emerald-400"><Chrome className="h-6 w-6" /></span>
-              <div>
-                <div className="text-lg font-bold">Get the 0n extension</div>
-                <p className="mt-0.5 max-w-md text-sm text-white/60">One login everywhere. It carries your 0n account across every site — no pasting, "Login with 0n" wherever you go.</p>
+              {/* Quick launch */}
+              <div className="mb-3 mt-6 text-xs font-bold uppercase tracking-wider text-white/40">Jump back in</div>
+              <div className="grid grid-cols-2 gap-3">
+                {PRODUCTS.filter((p) => p.status !== 'soon').slice(0, 4).map((p) => {
+                  const Icon = p.icon
+                  return (
+                    <a key={p.name} href={p.url} target="_blank" rel="noreferrer" className="flex flex-col gap-2.5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition active:scale-[0.98]">
+                      <span className={`grid h-10 w-10 place-items-center rounded-xl ${p.tile}`}><Icon className="h-5 w-5" /></span>
+                      <span className="text-sm font-bold">{p.name}</span>
+                    </a>
+                  )
+                })}
               </div>
             </div>
-            <a href="/downloads/0n-chrome-extension.zip" download className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-neutral-950 transition hover:bg-emerald-400">
-              <Download className="h-4 w-4" /> Download now
-            </a>
-          </div>
+          )}
 
-          {/* Token */}
-          <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-            <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600"><KeyRound className="h-3.5 w-3.5" /> Your 0n token · one key for every 0n product</div>
-            <div className="flex flex-wrap items-center gap-3">
-              <code className="min-w-0 flex-1 truncate rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 font-mono text-sm text-neutral-800">{token || 'No token yet'}</code>
-              <button onClick={copy} disabled={!token} className="flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-neutral-950 hover:bg-emerald-400 disabled:opacity-40">
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied ? 'Copied' : 'Copy'}
-              </button>
+          {tab === 'products' && (
+            <div>
+              <h1 className="pt-2 text-xl font-black">Products</h1>
+              <p className="mt-1 text-sm text-white/50">Everything in your 0n account.</p>
+              <div className="mt-4 space-y-3">
+                {PRODUCTS.map((p) => {
+                  const Icon = p.icon
+                  const soon = p.status === 'soon'
+                  const inner = (
+                    <div className={`flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition ${soon ? 'opacity-50' : 'active:scale-[0.99]'}`}>
+                      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${p.tile}`}><Icon className="h-5 w-5" /></span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[15px] font-bold">{p.name}</span>
+                          {p.status === 'sso' && <span className="rounded-full bg-[#6EE05A]/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#6EE05A]">Login with 0n</span>}
+                          {soon && <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white/40">Soon</span>}
+                        </div>
+                        <p className="truncate text-xs text-white/50">{p.desc}</p>
+                      </div>
+                      {!soon && <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />}
+                    </div>
+                  )
+                  return soon ? <div key={p.name}>{inner}</div> : <a key={p.name} href={p.url} target="_blank" rel="noreferrer">{inner}</a>
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Products */}
-          <div id="products" className="mt-10 mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-500"><LayoutGrid className="h-3.5 w-3.5 text-emerald-600" /> Your 0n products</div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {PRODUCTS.map((p) => {
-              const Icon = p.icon
-              const soon = p.status === 'soon'
-              const Card = (
-                <div className={`group flex h-full flex-col rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition-all ${soon ? 'opacity-60' : 'hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md'}`}>
-                  <div className="flex items-start justify-between">
-                    <span className={`grid h-11 w-11 place-items-center rounded-xl ${p.tile}`}><Icon className="h-5 w-5" /></span>
-                    {p.status === 'sso'
-                      ? <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700"><ShieldCheck className="h-2.5 w-2.5" /> Login with 0n</span>
-                      : soon ? <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-neutral-400">Soon</span>
-                      : <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Live</span>}
-                  </div>
-                  <div className="mt-3 text-[17px] font-black">{p.name}</div>
-                  <div className="text-[12px] font-mono text-neutral-400">{p.tag}</div>
-                  <p className="mt-2 flex-1 text-[13px] leading-relaxed text-neutral-500">{p.desc}</p>
-                  <div className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold ${soon ? 'text-neutral-400' : 'text-emerald-600'}`}>
-                    {soon ? 'Coming soon' : <>Open <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></>}
-                  </div>
+          {tab === 'apps' && (
+            <div>
+              <h1 className="pt-2 text-xl font-black">Apps</h1>
+              <p className="mt-1 text-sm text-white/50">Connect once, use across every 0n product.</p>
+              <a href="https://www.0nmcp.com/vault" className="mt-4 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition active:scale-[0.99]">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#6EE05A]/15 text-[#6EE05A]"><Puzzle className="h-5 w-5" /></span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[15px] font-bold">Connect your apps</div>
+                  <p className="text-xs text-white/50">113 integrations — Slack, Gmail, Stripe, CRM & more.</p>
                 </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />
+              </a>
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-center">
+                <div className="text-3xl font-black text-[#6EE05A]">{connected}</div>
+                <div className="mt-0.5 text-xs text-white/50">app{connected === 1 ? '' : 's'} connected</div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'account' && (
+            <div>
+              <h1 className="pt-2 text-xl font-black">You</h1>
+              <div className="mt-4 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                <span className="grid h-12 w-12 place-items-center rounded-full bg-[#6EE05A]/15 text-lg font-black text-[#6EE05A]">{initial}</span>
+                <div className="min-w-0">
+                  <div className="text-[15px] font-bold">{firstName}</div>
+                  <div className="text-xs text-white/50">{connected} app{connected === 1 ? '' : 's'} connected</div>
+                </div>
+              </div>
+              <div className="mt-3 space-y-2">
+                <a href="https://www.0ncore.com/dashboard" className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold transition active:scale-[0.99]"><LayoutGrid className="h-4 w-4 text-[#6EE05A]" /> Dashboard <ArrowRight className="ml-auto h-4 w-4 text-white/30" /></a>
+                <a href="https://www.cro9.com" className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold transition active:scale-[0.99]"><BarChart3 className="h-4 w-4 text-[#6EE05A]" /> Analytics <ArrowRight className="ml-auto h-4 w-4 text-white/30" /></a>
+              </div>
+              <button onClick={signOut} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-white/70 transition active:scale-[0.99]"><LogOut className="h-4 w-4" /> Sign out</button>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom tab bar — the whole navigation, thumb-reachable */}
+        <nav className="fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-white/10 bg-[#0d1117]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+          <div className="grid grid-cols-4">
+            {TABS.map((t) => {
+              const Icon = t.icon
+              const on = tab === t.id
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)} className={`flex flex-col items-center gap-1 py-3 text-[11px] font-semibold transition ${on ? 'text-[#6EE05A]' : 'text-white/45'}`}>
+                  <Icon className="h-[22px] w-[22px]" strokeWidth={on ? 2.5 : 2} />
+                  {t.label}
+                </button>
               )
-              return soon ? <div key={p.name}>{Card}</div> : <a key={p.name} href={p.url} target="_blank" rel="noreferrer">{Card}</a>
             })}
           </div>
-
-          {/* Connect apps */}
-          <a href="https://www.0nmcp.com/vault" className="mt-6 flex items-center justify-between rounded-2xl border border-dashed border-neutral-300 bg-white p-5 transition hover:border-emerald-400">
-            <div className="flex items-center gap-3">
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-emerald-100 text-emerald-600"><Puzzle className="h-5 w-5" /></span>
-              <div>
-                <div className="text-[15px] font-bold">Connect your apps</div>
-                <div className="text-[13px] text-neutral-500">113 integrations — connect once, use across every 0n product.</div>
-              </div>
-            </div>
-            <ArrowRight className="h-5 w-5 text-emerald-600" />
-          </a>
-        </div>
-      </main>
+        </nav>
+      </div>
     </div>
   )
 }
