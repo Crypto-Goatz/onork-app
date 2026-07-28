@@ -18,6 +18,14 @@ const nextConfig: NextConfig = {
    */
   async rewrites() {
     return [
+      // vault.0ncore.com → the 0nVault door. Only the root is rewritten; every
+      // other path (/api/*, /login, /_next, /downloads…) serves normally on the
+      // subdomain, and the session rides the shared .0ncore.com cookie.
+      {
+        source: '/',
+        has: [{ type: 'host', value: 'vault.0ncore.com' }],
+        destination: '/hub',
+      },
       {
         source: '/',
         has: [{ type: 'host', value: 'dispatch.0ncore.com' }],
