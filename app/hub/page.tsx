@@ -173,15 +173,41 @@ export default function VaultDoor() {
 
   return (
     <div className="fixed inset-0 z-[100] bg-[#0d1117] text-white">
-      <div className="mx-auto flex h-full max-w-md flex-col">
-        {/* App header */}
-        <header className="flex items-center justify-between px-5 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
+      <div className="mx-auto flex h-full w-full max-w-6xl">
+        {/* Desktop side nav (md+) */}
+        <aside className="hidden w-60 shrink-0 flex-col border-r border-white/10 px-4 py-6 md:flex">
+          <span className="px-2 text-lg font-extrabold tracking-tight">0n<span className="text-[#6EE05A]">Vault</span></span>
+          <nav className="mt-8 space-y-1">
+            {TABS.map((t) => {
+              const Icon = t.icon
+              const on = tab === t.id
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${on ? 'bg-[#6EE05A]/15 text-[#6EE05A]' : 'text-white/55 hover:bg-white/5 hover:text-white'}`}>
+                  <Icon className="h-5 w-5" strokeWidth={on ? 2.5 : 2} /> {t.label}
+                </button>
+              )
+            })}
+          </nav>
+          <div className="mt-auto border-t border-white/10 pt-3">
+            <div className="flex items-center gap-3 px-3 py-2">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#6EE05A]/15 text-sm font-black text-[#6EE05A]">{initial}</span>
+              <div className="min-w-0"><div className="truncate text-sm font-bold">{firstName}</div><div className="text-xs text-white/40">{connected} app{connected === 1 ? '' : 's'}</div></div>
+            </div>
+            <button onClick={signOut} className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/55 transition hover:bg-white/5 hover:text-white"><LogOut className="h-5 w-5" /> Sign out</button>
+          </div>
+        </aside>
+
+        {/* Main column */}
+        <div className="flex h-full min-w-0 flex-1 flex-col">
+        {/* App header (mobile only — desktop brand lives in the side nav) */}
+        <header className="flex items-center justify-between px-5 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))] md:hidden">
           <span className="text-lg font-extrabold tracking-tight">0n<span className="text-[#6EE05A]">Vault</span></span>
           <span className="grid h-9 w-9 place-items-center rounded-full bg-[#6EE05A]/15 text-sm font-black text-[#6EE05A]">{initial}</span>
         </header>
 
         {/* Scrollable app body */}
-        <div className="flex-1 overflow-y-auto px-5 pb-32">
+        <div className="flex-1 overflow-y-auto px-5 pb-32 md:px-8 md:pb-10 md:pt-8">
+         <div className="mx-auto w-full max-w-3xl">
           {tab === 'home' && (
             <div>
               <h1 className="pt-2 text-[26px] font-black tracking-tight">Hi, {firstName}.</h1>
@@ -211,7 +237,7 @@ export default function VaultDoor() {
 
               {/* Quick launch */}
               <div className="mb-3 mt-6 text-xs font-bold uppercase tracking-wider text-white/40">Jump back in</div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {PRODUCTS.filter((p) => p.status !== 'soon').slice(0, 4).map((p) => {
                   const Icon = p.icon
                   return (
@@ -229,7 +255,7 @@ export default function VaultDoor() {
             <div>
               <h1 className="pt-2 text-xl font-black">Products</h1>
               <p className="mt-1 text-sm text-white/50">Everything in your 0n account.</p>
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 space-y-3 sm:grid sm:grid-cols-2 sm:gap-3 sm:space-y-0">
                 {PRODUCTS.map((p) => {
                   const Icon = p.icon
                   const soon = p.status === 'soon'
@@ -289,24 +315,26 @@ export default function VaultDoor() {
               <button onClick={signOut} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-white/70 transition active:scale-[0.99]"><LogOut className="h-4 w-4" /> Sign out</button>
             </div>
           )}
+         </div>
         </div>
-
-        {/* Bottom tab bar — the whole navigation, thumb-reachable */}
-        <nav className="fixed inset-x-0 bottom-0 z-10 mx-auto max-w-md border-t border-white/10 bg-[#0d1117]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
-          <div className="grid grid-cols-4">
-            {TABS.map((t) => {
-              const Icon = t.icon
-              const on = tab === t.id
-              return (
-                <button key={t.id} onClick={() => setTab(t.id)} className={`flex flex-col items-center gap-1 py-3 text-[11px] font-semibold transition ${on ? 'text-[#6EE05A]' : 'text-white/45'}`}>
-                  <Icon className="h-[22px] w-[22px]" strokeWidth={on ? 2.5 : 2} />
-                  {t.label}
-                </button>
-              )
-            })}
-          </div>
-        </nav>
+        </div>
       </div>
+
+      {/* Mobile bottom tabs — thumb-reachable, hidden on desktop */}
+      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-white/10 bg-[#0d1117]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+        <div className="grid grid-cols-4">
+          {TABS.map((t) => {
+            const Icon = t.icon
+            const on = tab === t.id
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)} className={`flex flex-col items-center gap-1 py-3 text-[11px] font-semibold transition ${on ? 'text-[#6EE05A]' : 'text-white/45'}`}>
+                <Icon className="h-[22px] w-[22px]" strokeWidth={on ? 2.5 : 2} />
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+      </nav>
     </div>
   )
 }
