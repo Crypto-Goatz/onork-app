@@ -167,12 +167,9 @@ export default function SignupCinematic({
       <div className="max-w-5xl mx-auto px-6 pt-16 pb-24 grid lg:grid-cols-[1.3fr_1fr] gap-16">
         {/* LEFT — editorial intro */}
         <div className="pt-2">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-[#6b7681] hover:text-white mb-12"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#6EE05A]" />
-            0nCore
+          <Link href="/" aria-label="0nCore" className="mb-12 inline-flex items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/0ncore-logo-dark.png" alt="0nCore" className="h-8 w-auto object-contain" />
           </Link>
 
           <motion.h1
@@ -214,11 +211,30 @@ export default function SignupCinematic({
             ))}
           </motion.ul>
 
+          {/* One-login SSO explainer — secured by 0nVault */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-10 flex items-start gap-4 rounded-2xl border border-[#30363d] bg-[#161b22]/60 p-5"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/onvault-light.png" alt="0nVault" className="h-8 w-auto shrink-0 object-contain" />
+            <div>
+              <div className="text-sm font-semibold text-white">One login for everything — secured by 0nVault</div>
+              <p className="mt-1 text-[13px] leading-relaxed text-[#8b949e]">
+                Your 0nCore account is your <span className="text-white">0nVault key</span>: one secure sign-in that
+                unlocks every 0n product — 0nTask, CRO9, web0n and more. Sign in with Google once; there are no
+                separate passwords to remember.
+              </p>
+            </div>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="mt-12 text-xs text-[#6b7681]"
+            className="mt-8 text-xs text-[#6b7681]"
           >
             Already have an account?{' '}
             <Link href="/login" className="text-[#6EE05A] hover:underline">

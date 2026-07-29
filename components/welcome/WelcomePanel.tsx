@@ -74,7 +74,7 @@ export default function WelcomePanel({
       <div className="mb-12 flex items-start justify-between gap-4">
         <Link href="/" className="block">
           <img
-            src="/brand/0ncore-logo.png"
+            src="/brand/0ncore-logo-light.png"
             alt="0nCore"
             className="h-10 w-auto object-contain"
           />

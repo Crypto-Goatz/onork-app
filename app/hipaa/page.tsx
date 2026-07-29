@@ -192,7 +192,7 @@ export default function HIPAAPage() {
         borderBottom: '1px solid rgba(255,255,255,0.04)',
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <img src="/brand/0ncore-logo.png" alt="0nCore" style={{ height: 32, objectFit: 'contain' }} />
+          <img src="/brand/0ncore-logo-dark.png" alt="0nCore" style={{ height: 32, objectFit: 'contain' }} />
         </Link>
         <div className="hipaa-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           <Link href="/platform" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Platform</Link>

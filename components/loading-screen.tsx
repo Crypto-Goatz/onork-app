@@ -136,7 +136,7 @@ export function LoadingScreen() {
       {/* Logo container with scan line */}
       <div className="relative z-[1]">
         <img
-          src="/brand/0ncore-logo.png"
+          src="/brand/0ncore-logo-dark.png"
           alt="0nCore"
           className={`ls-logo${phase >= 1 ? ' phase1' : ''}${phase >= 2 ? ' phase2' : ''}`}
         />

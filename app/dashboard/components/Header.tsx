@@ -212,7 +212,7 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
 
           {layoutMode === 'horizontal' && (
             <a href="/dashboard" className="flex items-center mr-4 no-underline">
-              <img src="/brand/0ncore-logo.png" alt="0nCore" className="h-7 object-contain" />
+              <img src="/brand/0ncore-logo-light.png" alt="0nCore" className="h-7 object-contain" />
             </a>
           )}
 

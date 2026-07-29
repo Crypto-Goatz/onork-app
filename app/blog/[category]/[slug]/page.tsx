@@ -84,7 +84,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ categ
     url: `https://0ncore.com/blog/${category}/${slug}`,
     datePublished: post.published_at, dateModified: post.updated_at,
     author: { '@type': 'Person', name: post.author_name },
-    publisher: { '@type': 'Organization', name: '0nCore', url: 'https://0ncore.com', logo: { '@type': 'ImageObject', url: 'https://0ncore.com/brand/0ncore-logo.png' } },
+    publisher: { '@type': 'Organization', name: '0nCore', url: 'https://0ncore.com', logo: { '@type': 'ImageObject', url: 'https://0ncore.com/brand/0ncore-logo-light.png' } },
     image: `https://0ncore.com/api/og/blog/${slug}`,
     wordCount: post.content?.split(/\s+/).length || 0,
     timeRequired: `PT${post.reading_time}M`,
@@ -95,7 +95,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ categ
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(10px, 2vw, 14px) clamp(16px, 4vw, 32px)', background: 'rgba(2,8,16,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-        <Link href="/" style={{ textDecoration: 'none' }}><img src="/brand/0ncore-logo.png" alt="0nCore" style={{ height: 28, objectFit: 'contain' }} /></Link>
+        <Link href="/" style={{ textDecoration: 'none' }}><img src="/brand/0ncore-logo-dark.png" alt="0nCore" style={{ height: 28, objectFit: 'contain' }} /></Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           <Link href="/blog" style={{ fontSize: 13, color: '#6EE05A', textDecoration: 'none', fontWeight: 600 }}>Blog</Link>
           <Link href="/login" style={{ fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Get Started</Link>

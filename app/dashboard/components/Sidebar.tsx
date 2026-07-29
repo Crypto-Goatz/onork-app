@@ -588,7 +588,7 @@ export default function Sidebar({ isOpen, onClose, isAdmin: isAdminProp }: Sideb
         {/* Header */}
         <div className="jp-sidebar-header px-5 pt-4 pb-3">
           <Link href="/dashboard" className="jp-sidebar-brand block" onClick={onClose}>
-            <img src="/brand/0ncore-logo.png" alt="0nCore" className="w-full max-h-9 object-contain object-left" />
+            <img src="/brand/0ncore-logo-dark.png" alt="0nCore" className="w-full max-h-9 object-contain object-left" />
           </Link>
         </div>
 

@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link href="/">
-            <img src="/brand/0ncore-logo.png" alt="0nCore" className="h-8 mx-auto object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            <img src="/brand/0ncore-logo-dark.png" alt="0nCore" className="h-8 mx-auto object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
           </Link>
         </div>
 

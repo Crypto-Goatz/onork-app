@@ -24,7 +24,7 @@ export function PublicNav() {
       <nav className="flex h-16 w-full items-center justify-between px-4 sm:px-8 lg:px-16 xl:px-24">
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-2.5 no-underline" aria-label="0nCore home">
-          <img src="/brand/0ncore-logo.png" alt="0nCore" className="h-8 object-contain" />
+          <img src="/brand/0ncore-logo-dark.png" alt="0nCore" className="h-8 object-contain" />
         </Link>
 
         {/* Center nav — desktop */}

@@ -22,22 +22,12 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
           aria-label="0nCore"
           className="relative z-10 mb-8 flex items-center justify-center"
         >
-          <span className="relative flex h-16 w-44 items-center justify-center">
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent/40 animate-logo-ring"
-            />
-            <span
-              aria-hidden
-              className="pointer-events-none absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent animate-logo-dot"
-            />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/brand/0ncore-logo.svg"
-              alt="0nCore"
-              className="relative h-10 w-auto object-contain animate-logo-entrance"
-            />
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/0ncore-logo-dark.png"
+            alt="0nCore"
+            className="h-11 w-auto object-contain animate-logo-entrance"
+          />
         </Link>
 
         <div className="relative z-10 w-full max-w-md rounded-2xl border border-border/50 bg-bg-card/80 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl">

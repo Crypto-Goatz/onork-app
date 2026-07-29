@@ -147,7 +147,7 @@ function ScanContent() {
         borderBottom: '1px solid rgba(255,255,255,0.04)',
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <img src="/brand/0ncore-logo.png" alt="0nCore" style={{ height: 32, objectFit: 'contain' }} />
+          <img src="/brand/0ncore-logo-dark.png" alt="0nCore" style={{ height: 32, objectFit: 'contain' }} />
         </Link>
         <Link href="/hipaa" style={{ fontSize: 13, color: '#7ed957', textDecoration: 'none', fontWeight: 600 }}>
           &larr; Back to Assessment

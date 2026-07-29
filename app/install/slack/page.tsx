@@ -94,7 +94,7 @@ export default function SlackInstallPage() {
       <div className="border-b border-white/[0.06] px-6 py-4">
         <div className="mx-auto max-w-4xl flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/brand/0ncore-logo.png" alt="0nCore" className="h-7 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            <img src="/brand/0ncore-logo-dark.png" alt="0nCore" className="h-7 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
           </Link>
           <div className="flex items-center gap-1 text-[11px] text-white/30">
             <span className={step === 'landing' ? 'text-[#7ed957]' : ''}>Install</span>
