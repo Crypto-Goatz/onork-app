@@ -145,6 +145,21 @@ export default function SiteFooter() {
       </div>
 
       {/* Legal strip */}
+      <div className="border-b border-white/5 bg-[#0d1117]">
+        <div className="mx-auto max-w-6xl px-6 py-5">
+          <div className="mb-3 text-[11px] font-bold uppercase tracking-widest text-white/40">The 0n ecosystem — by RocketOpp</div>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-white/55">
+            <a href="https://rocketopp.com" className="transition-colors hover:text-[#6EE05A]">RocketOpp — custom AI development</a>
+            <a href="https://www.0nmcp.com" className="transition-colors hover:text-[#6EE05A]">0nMCP — AI orchestration</a>
+            <a href="https://www.0ntask.com" className="transition-colors hover:text-[#6EE05A]">0nTask — AI task management</a>
+            <a href="https://www.cro9.com" className="transition-colors hover:text-[#6EE05A]">CRO9 — conversion optimization</a>
+            <a href="https://web0n.com" className="transition-colors hover:text-[#6EE05A]">web0n — AI website builder</a>
+            <a href="https://social0n.com" className="transition-colors hover:text-[#6EE05A]">social0n — AI social content</a>
+            <a href="https://sxowebsite.com" className="transition-colors hover:text-[#6EE05A]">SXO — search experience optimization</a>
+            <a href="https://verifiedsxo.com" className="transition-colors hover:text-[#6EE05A]">VerifiedSXO — verified agencies</a>
+          </div>
+        </div>
+      </div>
       <div className="bg-[#0d1117]">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-6 sm:flex-row">
           <div className="font-mono text-[11px] uppercase tracking-widest text-white/30">
