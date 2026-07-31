@@ -62,7 +62,10 @@ jobs:
           case "${{ steps.pm.outputs.name }}" in
             pnpm) pnpm install --no-frozen-lockfile ;;
             yarn) yarn install --network-timeout 600000 ;;
-            npm)  npm install --legacy-peer-deps --no-audit --no-fund ;;
+            # npm ci, not npm install: install reshapes the tree (1044 packages
+            # vs the lockfile's 1055 here), so CI was building against a
+            # dependency graph nobody had ever tested locally.
+            npm)  npm ci --legacy-peer-deps --no-audit --no-fund ;;
           esac
 
       - name: Build with Vercel CLI
@@ -78,7 +81,16 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=8192
         run: |
-          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          # Prebuilt saves Vercel build minutes, but a failure here must never
+          # leave main undeployed — that state went unnoticed for three commits
+          # on 31 Jul. If the prebuilt upload fails, ship it the slow way.
+          if DEPLOY_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}); then
+            echo "mode=prebuilt" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Prebuilt deploy failed — falling back to a Vercel-side build."
+            DEPLOY_URL=$(vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }})
+            echo "mode=vercel-build" >> "$GITHUB_OUTPUT"
+          fi
           echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
           echo "Deployed: $DEPLOY_URL"
 
@@ -86,5 +98,6 @@ jobs:
         run: |
           echo "### ✅ Deployed (zero Vercel build minutes used)" >> "$GITHUB_STEP_SUMMARY"
           echo "URL: ${{ steps.deploy.outputs.url }}"             >> "$GITHUB_STEP_SUMMARY"
+          echo "Build mode: \`${{ steps.deploy.outputs.mode }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Commit: \`${{ github.sha }}\`"                    >> "$GITHUB_STEP_SUMMARY"
           echo "Package manager: \`${{ steps.pm.outputs.name }}\`" >> "$GITHUB_STEP_SUMMARY"
