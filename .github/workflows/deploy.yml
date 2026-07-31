@@ -68,12 +68,17 @@ jobs:
       - name: Build with Vercel CLI
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
+      # NOTE: no --archive=tgz. The tgz packer follows symlinks that Next's
+      # file tracing leaves inside .vercel/output, and Vercel then fails on
+      # extraction with ENOENT lstat'ing the symlink target (seen repeatedly on
+      # node_modules/client-only/index.js). Uploading files individually is
+      # slower but does not lose the link targets.
       - name: Deploy pre-built artifacts to Vercel
         id: deploy
         env:
           NODE_OPTIONS: --max-old-space-size=8192
         run: |
-          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} --archive=tgz)
+          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
           echo "Deployed: $DEPLOY_URL"
 
