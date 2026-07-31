@@ -1,16 +1,17 @@
 /**
  * 0nCore pricing tiers — single source of truth.
  *
- * Stripe price IDs come from env. The same five env vars wire to:
- *   - this pricing table
- *   - /api/billing/checkout
- *   - the Stripe webhook handler
+ * Both the homepage pricing section and /pricing read from TIERS here, so the
+ * two never drift. Stripe price IDs come from env; the four paid tiers map to:
  *
- * Mapping:
- *   STRIPE_PRICE_TIER_1 → Starter
- *   STRIPE_PRICE_TIER_2 → Pro
- *   STRIPE_PRICE_TIER_3 → Agency
- *   STRIPE_PRICE_TIER_4 → Enterprise (placeholder — usually quoted custom)
+ *   STRIPE_PRICE_TIER_1 → Starter    ($47/mo)
+ *   STRIPE_PRICE_TIER_2 → Pro        ($97/mo)
+ *   STRIPE_PRICE_TIER_3 → Agency     ($297/mo)
+ *   STRIPE_PRICE_TIER_4 → Enterprise ($497/mo — flat, "everything", no sales call)
+ *
+ * The displayed price MUST equal the real Stripe unit_amount for that env var.
+ * If you change a price here, create a new Stripe price at the matching amount
+ * and re-point the env var — Stripe prices are immutable.
  */
 
 export type TierSlug = 'free' | 'starter' | 'pro' | 'agency' | 'enterprise'
@@ -19,7 +20,7 @@ export interface Tier {
   slug: TierSlug
   name: string
   price: string
-  priceCents: number | null // null = custom/free
+  priceCents: number | null // null = free (no checkout)
   cadence: string
   tagline: string
   ctaLabel: string
@@ -36,44 +37,45 @@ export const TIERS: Tier[] = [
     price: '$0',
     priceCents: 0,
     cadence: 'forever',
-    tagline: 'Try every capability in 60 seconds. No credit card.',
-    ctaLabel: 'Get started free',
+    tagline: 'See it work in 60 seconds. No card.',
+    ctaLabel: 'Start free',
     ctaHref: '/signup',
     features: [
-      'Browse the full 0nMCP catalog (1,598 tools, 106 services)',
+      'Browse the full catalog — 1,640+ tools, 109 services',
       'Connect 1 service',
       '100 tool executions / month',
-      'Read-only marketplace browse',
-      'Knowledge mode in Jaxx (read-only AI assistant)',
+      'Jaxx AI in read-only mode',
+      'Community support',
     ],
     limits: [
       { tag: 'Executions', value: '100/mo' },
-      { tag: 'Connected services', value: '1' },
-      { tag: 'Automations', value: '0' },
+      { tag: 'Services', value: '1' },
+      { tag: 'Automations', value: '—' },
     ],
   },
   {
     slug: 'starter',
     name: 'Starter',
-    price: '$29',
-    priceCents: 2900,
+    price: '$47',
+    priceCents: 4700,
     cadence: '/ month',
-    tagline: 'For solo founders and operators ready to wire it up.',
+    tagline: 'For the solo operator ready to wire it up.',
     ctaLabel: 'Start with Starter',
     ctaHref: '/api/billing/subscribe?tier=starter',
     features: [
       'Everything in Free, plus —',
       'Unlimited connected services',
-      '1,000 tool executions / month',
-      '5 active automations',
-      'Switches (save tool runs, replay any time)',
+      '2,000 tool executions / month',
+      '10 active automations',
       'Visual workflow builder',
+      'Switches — save any run, replay anytime',
+      'Jaxx executes your tools (not just read-only)',
       'Email support',
     ],
     limits: [
-      { tag: 'Executions', value: '1,000/mo' },
-      { tag: 'Connected services', value: 'Unlimited' },
-      { tag: 'Automations', value: '5' },
+      { tag: 'Executions', value: '2,000/mo' },
+      { tag: 'Services', value: 'Unlimited' },
+      { tag: 'Automations', value: '10' },
     ],
   },
   {
@@ -88,19 +90,19 @@ export const TIERS: Tier[] = [
     highlight: true,
     features: [
       'Everything in Starter, plus —',
-      '10,000 tool executions / month',
+      '15,000 tool executions / month',
       'Unlimited automations',
-      'Course Builder ($29/mo standalone — included)',
-      'Lead Magnet Loop ($49/mo standalone — included)',
-      'Jaxx with automation execution + commerce + Stripe checkout in chat',
-      'Agentic Automation Generator (outcome → plan → run)',
-      'CrewAI integration (50 free crew runs/mo via the free tier)',
+      'Agentic Automation Generator — outcome → plan → run',
+      'CRO9 conversion engine',
+      'Course Builder + Lead Magnet Loop (included)',
+      'CrewAI agent crews',
+      'Commerce + Stripe checkout inside Jaxx chat',
       'Priority support',
     ],
     limits: [
-      { tag: 'Executions', value: '10,000/mo' },
-      { tag: 'Connected services', value: 'Unlimited' },
+      { tag: 'Executions', value: '15,000/mo' },
       { tag: 'Automations', value: 'Unlimited' },
+      { tag: 'AI agents', value: 'Included' },
     ],
   },
   {
@@ -109,15 +111,16 @@ export const TIERS: Tier[] = [
     price: '$297',
     priceCents: 29700,
     cadence: '/ month',
-    tagline: 'Multi-client agencies running 0nCore as their delivery layer.',
+    tagline: 'Run 0nCore as your client-delivery layer.',
     ctaLabel: 'Go Agency',
     ctaHref: '/api/billing/subscribe?tier=agency',
     features: [
       'Everything in Pro, plus —',
       'Unlimited tool executions',
-      'White-label dashboard (your brand on /dashboard)',
-      '10 sub-accounts (full client isolation)',
-      'SaaS Factory — provision a SaaS per client in one shot',
+      'White-label dashboard — your brand on /dashboard',
+      '10 sub-accounts with full client isolation',
+      'SaaS Factory — spin up a SaaS per client in one shot',
+      'App Factory + Website Factory',
       'Bulk snapshot deploy across sub-accounts',
       'Client course management + revenue share',
       'Dedicated Slack channel + onboarding call',
@@ -131,24 +134,25 @@ export const TIERS: Tier[] = [
   {
     slug: 'enterprise',
     name: 'Enterprise',
-    price: 'Custom',
-    priceCents: null,
-    cadence: '',
-    tagline: 'Unlimited everything, dedicated infra, your terms.',
-    ctaLabel: 'Talk to us',
-    ctaHref: 'mailto:mike@rocketopp.com?subject=0nCore%20Enterprise',
+    price: '$497',
+    priceCents: 49700,
+    cadence: '/ month',
+    tagline: 'Everything, unlimited — without the sales call.',
+    ctaLabel: 'Get everything',
+    ctaHref: '/api/billing/subscribe?tier=enterprise',
     features: [
       'Everything in Agency, plus —',
       'Unlimited sub-accounts',
-      'Dedicated Supabase + Vercel deployment (single-tenant)',
       'Custom MCP servers + private registry',
       'SSO / SAML',
-      'Audit log export, SOC 2 path',
+      'Dedicated Supabase + Vercel option (single-tenant)',
+      'Audit log export + SOC 2 path',
       '99.9% uptime SLA',
       'Named CSM + monthly architecture reviews',
+      'Early access to every new capability',
     ],
     limits: [
-      { tag: 'Tenancy', value: 'Single-tenant' },
+      { tag: 'Sub-accounts', value: 'Unlimited' },
       { tag: 'SLA', value: '99.9%' },
       { tag: 'Support', value: 'Named CSM' },
     ],

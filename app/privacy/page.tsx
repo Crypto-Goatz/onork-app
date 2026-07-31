@@ -20,14 +20,14 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <>
         <p>
-          0nCore is operated by <strong className="text-[#e6edf3]">RocketOpp LLC</strong>{' '}
+          0nCore is operated by <strong className="text-white">RocketOpp LLC</strong>{' '}
           (&ldquo;0nCore&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;). This Privacy Policy
           describes how we collect, use, and share information when you use 0ncore.com,
           0nMCP, and any related products or services (collectively, the &ldquo;Service&rdquo;).
         </p>
         <p>
           Questions or requests about this policy can be sent to{' '}
-          <a href="mailto:mike@rocketopp.com" className="text-[#6EE05A] hover:underline">
+          <a href="mailto:mike@rocketopp.com" className="text-[#7ed957] hover:underline">
             mike@rocketopp.com
           </a>
           .
@@ -42,22 +42,22 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
         <p>We collect the following categories of information:</p>
         <ul className="list-disc pl-6 space-y-1.5">
           <li>
-            <strong className="text-[#e6edf3]">Account information.</strong> Name, email
+            <strong className="text-white">Account information.</strong> Name, email
             address, password hash, organization name, and billing details you provide when
             you sign up or subscribe.
           </li>
           <li>
-            <strong className="text-[#e6edf3]">Workflow and content data.</strong>{' '}
+            <strong className="text-white">Workflow and content data.</strong>{' '}
             Configurations, prompts, integrations, and assets you create or upload while
             using the Service.
           </li>
           <li>
-            <strong className="text-[#e6edf3]">Usage analytics.</strong> Pages viewed,
+            <strong className="text-white">Usage analytics.</strong> Pages viewed,
             features used, errors encountered, device and browser metadata, and approximate
             location derived from IP.
           </li>
           <li>
-            <strong className="text-[#e6edf3]">Support communications.</strong> Messages
+            <strong className="text-white">Support communications.</strong> Messages
             you send to us by email or community channels.
           </li>
         </ul>
@@ -91,27 +91,27 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
         </p>
         <ul className="list-disc pl-6 space-y-1.5">
           <li>
-            <strong className="text-[#e6edf3]">Supabase</strong> — managed Postgres
+            <strong className="text-white">Supabase</strong> — managed Postgres
             database, authentication, and storage.
           </li>
           <li>
-            <strong className="text-[#e6edf3]">Vercel</strong> — application hosting and
+            <strong className="text-white">Vercel</strong> — application hosting and
             edge delivery.
           </li>
           <li>
-            <strong className="text-[#e6edf3]">Groq</strong> — AI inference for
+            <strong className="text-white">Groq</strong> — AI inference for
             production-path AI features.
           </li>
           <li>
-            <strong className="text-[#e6edf3]">Stripe</strong> — subscription billing and
+            <strong className="text-white">Stripe</strong> — subscription billing and
             payment processing.
           </li>
           <li>
-            <strong className="text-[#e6edf3]">CRM platform</strong> — customer
+            <strong className="text-white">CRM platform</strong> — customer
             relationship management for users who connect their CRM workspace.
           </li>
           <li>
-            <strong className="text-[#e6edf3]">Google Analytics</strong> — aggregate usage
+            <strong className="text-white">Google Analytics</strong> — aggregate usage
             measurement.
           </li>
         </ul>
@@ -169,7 +169,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
         </ul>
         <p>
           To exercise any of these rights, email{' '}
-          <a href="mailto:mike@rocketopp.com" className="text-[#6EE05A] hover:underline">
+          <a href="mailto:mike@rocketopp.com" className="text-[#7ed957] hover:underline">
             mike@rocketopp.com
           </a>
           . We will respond within 30 days.
@@ -185,7 +185,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
           We use industry-standard safeguards including TLS encryption in transit,
           encryption at rest, scoped access controls, and audit logging. No system is
           perfectly secure — if you suspect a security issue, email{' '}
-          <a href="mailto:mike@rocketopp.com" className="text-[#6EE05A] hover:underline">
+          <a href="mailto:mike@rocketopp.com" className="text-[#7ed957] hover:underline">
             mike@rocketopp.com
           </a>{' '}
           with &ldquo;Security&rdquo; in the subject line.
@@ -238,7 +238,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
           RocketOpp LLC
           <br />
           Email:{' '}
-          <a href="mailto:mike@rocketopp.com" className="text-[#6EE05A] hover:underline">
+          <a href="mailto:mike@rocketopp.com" className="text-[#7ed957] hover:underline">
             mike@rocketopp.com
           </a>
         </p>
@@ -249,17 +249,19 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen bg-[#0d1117] text-[#c9d1d9] font-sans">
+    <main className="min-h-screen bg-[#020810] font-sans text-white antialiased">
       <div className="max-w-3xl mx-auto px-6 py-16 space-y-10">
         <header className="space-y-3">
-          <p className="text-xs font-medium tracking-wide uppercase text-[#6EE05A]">Legal</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-[#e6edf3]">
-            Privacy Policy
+          <span className="inline-block rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-white/60">Legal</span>
+          <h1 className="text-4xl font-black tracking-tight text-balance">
+            <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+              Privacy Policy
+            </span>
           </h1>
-          <p className="text-xs text-[#8b949e]">Effective date: May 1, 2026</p>
+          <p className="text-xs text-white/45">Effective date: May 1, 2026</p>
         </header>
 
-        <p className="text-sm text-[#c9d1d9] leading-relaxed">
+        <p className="text-sm text-white/70 leading-relaxed">
           This Privacy Policy explains how RocketOpp LLC handles information collected
           through 0nCore, 0nMCP, and related services. We&rsquo;ve tried to write this in
           plain language. If anything is unclear, email us — we&rsquo;ll explain.
@@ -268,24 +270,24 @@ export default function PrivacyPage() {
         <div className="space-y-8">
           {SECTIONS.map((section) => (
             <section key={section.title} className="space-y-3">
-              <h2 className="text-xl font-semibold text-[#e6edf3]">{section.title}</h2>
-              <div className="text-sm text-[#c9d1d9] leading-relaxed space-y-3">
+              <h2 className="text-xl font-bold text-white">{section.title}</h2>
+              <div className="text-sm text-white/70 leading-relaxed space-y-3">
                 {section.body}
               </div>
             </section>
           ))}
         </div>
 
-        <footer className="pt-6 border-t border-[#30363d] flex flex-wrap items-center justify-between gap-3 text-xs text-[#8b949e]">
+        <footer className="pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-white/45">
           <span>&copy; 2026 RocketOpp LLC. All rights reserved.</span>
           <div className="flex items-center gap-4">
-            <Link href="/support" className="hover:text-[#e6edf3] transition-colors">
+            <Link href="/support" className="hover:text-[#7ed957] transition-colors">
               Support
             </Link>
-            <Link href="/terms" className="hover:text-[#e6edf3] transition-colors">
+            <Link href="/terms" className="hover:text-[#7ed957] transition-colors">
               Terms
             </Link>
-            <Link href="/" className="hover:text-[#e6edf3] transition-colors">
+            <Link href="/" className="hover:text-[#7ed957] transition-colors">
               Home
             </Link>
           </div>

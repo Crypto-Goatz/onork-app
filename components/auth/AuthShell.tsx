@@ -10,11 +10,11 @@ interface AuthShellProps {
 
 export function AuthShell({ title, subtitle, children, footer }: AuthShellProps) {
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary font-sans antialiased">
-      <div className="flex min-h-screen flex-col items-center justify-center bg-bg-primary bg-grid px-4 py-12">
+    <div className="min-h-screen bg-[#020810] text-white font-sans antialiased">
+      <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#020810] bg-grid px-4 py-12">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-accent/10 blur-3xl" />
-          <div className="absolute -bottom-40 right-1/4 h-60 w-60 rounded-full bg-teal/10 blur-3xl" />
+          <div className="absolute -top-40 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-[#7ed957]/[0.07] blur-3xl" />
+          <div className="absolute -bottom-40 right-1/4 h-60 w-60 rounded-full bg-[#00d4ff]/[0.06] blur-3xl" />
         </div>
 
         <Link
@@ -22,23 +22,35 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
           aria-label="0nCore"
           className="relative z-10 mb-8 flex items-center justify-center"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/0ncore-logo-dark.png"
-            alt="0nCore"
-            className="h-11 w-auto object-contain animate-logo-entrance"
-          />
+          <span className="relative flex h-16 w-44 items-center justify-center">
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#7ed957]/40 animate-logo-ring"
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#7ed957] animate-logo-dot"
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/0ncore-logo.svg"
+              alt="0nCore"
+              className="relative h-10 w-auto object-contain animate-logo-entrance"
+            />
+          </span>
         </Link>
 
-        <div className="relative z-10 w-full max-w-md rounded-2xl border border-border/50 bg-bg-card/80 p-8 shadow-2xl shadow-black/40 backdrop-blur-xl">
+        <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/[0.08] bg-white/[0.03] p-8 shadow-2xl shadow-black/40 backdrop-blur-xl">
           <div className="mb-6 text-center">
-            <h1 className="text-2xl font-bold text-white">{title}</h1>
-            {subtitle && <p className="mt-1 text-sm text-text-muted">{subtitle}</p>}
+            <h1 className="text-2xl font-black tracking-tight">
+              <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">{title}</span>
+            </h1>
+            {subtitle && <p className="mt-1 text-sm text-white/45">{subtitle}</p>}
           </div>
           {children}
         </div>
 
-        {footer && <div className="relative z-10 mt-8 text-xs text-text-muted">{footer}</div>}
+        {footer && <div className="relative z-10 mt-8 text-xs text-white/45">{footer}</div>}
       </div>
     </div>
   )
@@ -60,14 +72,14 @@ export function AuthInput({
       </label>
       <div className="relative">
         {icon && (
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40">
             {icon}
           </span>
         )}
         <input
           id={id}
           {...props}
-          className={`w-full rounded-lg border border-border/60 bg-bg-primary/40 ${icon ? 'pl-10' : 'pl-3'} pr-3 py-2.5 text-sm text-white placeholder:text-text-muted/60 outline-none transition-colors focus:border-accent/60 focus:bg-bg-primary/60 ${props.className || ''}`}
+          className={`w-full rounded-lg border border-white/15 bg-white/[0.03] ${icon ? 'pl-10' : 'pl-3'} pr-3 py-2.5 text-sm text-white placeholder:text-white/35 outline-none transition-colors focus:border-[#7ed957]/50 focus:bg-white/[0.05] ${props.className || ''}`}
         />
       </div>
     </div>
@@ -83,7 +95,7 @@ export function AuthButton({
     <button
       {...props}
       disabled={loading || props.disabled}
-      className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-bg-primary transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full rounded-lg bg-[#7ed957] px-4 py-2.5 text-sm font-bold text-[#020810] shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {loading ? 'Working…' : children}
     </button>
@@ -102,9 +114,9 @@ export function AuthError({ message }: { message: string }) {
 export function AuthDivider({ label = 'or' }: { label?: string }) {
   return (
     <div className="my-5 flex items-center gap-3">
-      <div className="h-px flex-1 bg-border/50" />
-      <span className="text-xs uppercase tracking-wider text-text-muted">{label}</span>
-      <div className="h-px flex-1 bg-border/50" />
+      <div className="h-px flex-1 bg-white/10" />
+      <span className="text-xs uppercase tracking-wider text-white/45">{label}</span>
+      <div className="h-px flex-1 bg-white/10" />
     </div>
   )
 }
@@ -119,28 +131,12 @@ export function OAuthButton({
   disabled?: boolean
 }) {
   const labels = { google: 'Continue with Google', linkedin: 'Continue with LinkedIn', slack: 'Continue with Slack' }
-  if (provider === 'google') {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        className="flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-lg border border-border/60 bg-bg-primary/30 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:border-accent/50 hover:bg-bg-primary/60 disabled:opacity-50"
-      >
-        <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-accent text-[10px] font-black leading-none text-white">0n</span>
-        <span>Continue with 0n</span>
-        <span className="text-text-muted" aria-hidden="true">·</span>
-        <span className="text-xs font-medium text-text-muted">powered by</span>
-        <ProviderIcon provider="google" />
-      </button>
-    )
-  }
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex w-full items-center justify-center gap-2 rounded-lg border border-border/60 bg-bg-primary/30 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:border-accent/50 hover:bg-bg-primary/60 disabled:opacity-50"
+      className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:border-[#7ed957]/40 hover:bg-white/[0.05] disabled:opacity-50"
     >
       <ProviderIcon provider={provider} />
       <span>{labels[provider]}</span>

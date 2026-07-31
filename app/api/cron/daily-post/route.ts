@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   // Load all active bot configs
   const { data: configs, error } = await admin
-    .from('bot_config')
+    .from('bot_settings')
     .select('*')
     .eq('active', true)
 

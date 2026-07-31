@@ -56,7 +56,7 @@ export function LoadingScreen() {
         }
         .ls-particle.active { opacity: 1; }
 
-        .ls-p1 { width: 4px; height: 4px; background: #6EE05A; box-shadow: 0 0 8px rgba(126,217,87,0.8); }
+        .ls-p1 { width: 4px; height: 4px; background: #7ed957; box-shadow: 0 0 8px rgba(126,217,87,0.8); }
         .ls-p1.active { animation: orbit1 3s linear infinite; }
 
         .ls-p2 { width: 3px; height: 3px; background: #14b8a6; box-shadow: 0 0 6px rgba(20,184,166,0.8); }

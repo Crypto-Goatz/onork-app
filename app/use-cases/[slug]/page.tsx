@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
+import AnimatedGrid from '@/components/animated-grid'
 
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
@@ -64,7 +65,7 @@ export default async function UseCasePage({ params }: { params: Promise<{ slug: 
           <img src="/brand/0ncore-logo-dark.png" alt="0nCore" style={{ height: 28, objectFit: 'contain' }} />
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <Link href="/use-cases" style={{ fontSize: 13, color: '#6EE05A', textDecoration: 'none', fontWeight: 600 }}>Use Cases</Link>
+          <Link href="/use-cases" style={{ fontSize: 13, color: '#7ed957', textDecoration: 'none', fontWeight: 600 }}>Use Cases</Link>
           <Link href="/pricing" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Pricing</Link>
           <Link href="/login" style={{ fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Get Started</Link>
         </div>
@@ -82,12 +83,15 @@ export default async function UseCasePage({ params }: { params: Promise<{ slug: 
       </div>
 
       {/* Hero */}
-      <section style={{ maxWidth: 900, margin: '0 auto', padding: 'clamp(40px, 6vw, 60px) clamp(16px, 4vw, 24px)' }}>
-        <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, color: '#6EE05A', background: 'rgba(110,224,90,0.08)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(110,224,90,0.15)', marginBottom: 16, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+      <section style={{ position: 'relative', overflow: 'hidden' }}>
+        <AnimatedGrid />
+        <div aria-hidden style={{ pointerEvents: 'none', position: 'absolute', top: -120, left: '8%', height: 480, width: 480, borderRadius: '50%', background: 'rgba(126,217,87,0.07)', filter: 'blur(150px)' }} />
+        <div style={{ position: 'relative', maxWidth: 900, margin: '0 auto', padding: 'clamp(40px, 6vw, 60px) clamp(16px, 4vw, 24px)' }}>
+        <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.3)', marginBottom: 16, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
           {uc.category}
         </span>
         <h1 style={{ fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.15, margin: '0 0 12px' }}>
-          {uc.title}
+          <span style={{ backgroundImage: 'linear-gradient(135deg, #7ed957, #00d4ff, #a78bfa)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{uc.title}</span>
         </h1>
         {uc.subtitle && <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: '0 0 24px' }}>{uc.subtitle}</p>}
 
@@ -96,13 +100,14 @@ export default async function UseCasePage({ params }: { params: Promise<{ slug: 
           <div style={{ display: 'flex', gap: 'clamp(16px, 4vw, 32px)', flexWrap: 'wrap', padding: '20px 0', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 40 }}>
             {metrics.map((m, i) => (
               <div key={i}>
-                <div style={{ fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: 800, color: '#6EE05A' }}>{m.value}</div>
+                <div style={{ fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: 800, color: '#7ed957' }}>{m.value}</div>
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>{m.label}</div>
                 {m.detail && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{m.detail}</div>}
               </div>
             ))}
           </div>
         )}
+        </div>
       </section>
 
       {/* Problem / Solution */}
@@ -112,8 +117,8 @@ export default async function UseCasePage({ params }: { params: Promise<{ slug: 
             <div style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>The Problem</div>
             <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7 }}>{uc.problem}</p>
           </div>
-          <div style={{ padding: 24, borderRadius: 16, background: 'rgba(110,224,90,0.04)', border: '1px solid rgba(110,224,90,0.1)' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#6EE05A', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>The Solution</div>
+          <div style={{ padding: 24, borderRadius: 16, background: 'rgba(126,217,87,0.04)', border: '1px solid rgba(126,217,87,0.1)' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#7ed957', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>The Solution</div>
             <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7 }}>{uc.solution}</p>
           </div>
         </div>
@@ -126,7 +131,7 @@ export default async function UseCasePage({ params }: { params: Promise<{ slug: 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {howItWorks.map((s, i) => (
               <div key={i} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(110,224,90,0.1)', border: '1px solid rgba(110,224,90,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#6EE05A', flexShrink: 0 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(126,217,87,0.1)', border: '1px solid rgba(126,217,87,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#7ed957', flexShrink: 0 }}>
                   {s.step || i + 1}
                 </div>
                 <div>
@@ -157,7 +162,7 @@ export default async function UseCasePage({ params }: { params: Promise<{ slug: 
       {/* Testimonial */}
       {testimonial && (
         <section style={{ maxWidth: 700, margin: '0 auto', padding: '0 clamp(16px, 4vw, 24px) 60px', textAlign: 'center' }}>
-          <div style={{ padding: 32, borderRadius: 20, background: 'rgba(110,224,90,0.03)', border: '1px solid rgba(110,224,90,0.08)' }}>
+          <div style={{ padding: 32, borderRadius: 20, background: 'rgba(126,217,87,0.03)', border: '1px solid rgba(126,217,87,0.08)' }}>
             <p style={{ fontSize: 18, fontStyle: 'italic', color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, marginBottom: 16 }}>
               &ldquo;{testimonial.quote}&rdquo;
             </p>

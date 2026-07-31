@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   try {
     // Get all users with bot settings that have auto or manual post generation enabled
     const { data: users } = await supabase
-      .from('bot_config')
+      .from('bot_settings')
       .select('user_id, auto_post_enabled, emergency_pause, target_vpis_score, content_pillars, icp_description, value_prop, brand_voice')
       .eq('emergency_pause', false)
 

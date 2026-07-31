@@ -139,16 +139,19 @@ export default function MigratePage() {
   }
 
   return (
-    <div className="min-h-screen bg-core-bg px-4 py-16">
-      <div className="max-w-4xl mx-auto">
+    <div className="relative min-h-screen overflow-hidden bg-[#020810] px-4 py-16">
+      <div aria-hidden className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-[#7ed957]/[0.06] blur-[150px]" />
+      <div className="relative max-w-4xl mx-auto">
 
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <ArrowLeftRight className="w-8 h-8 text-core-cyan" />
+            <ArrowLeftRight className="w-8 h-8 text-[#00d4ff]" />
           </div>
-          <h1 className="text-3xl font-bold text-core-text mb-3">Coming from another platform?</h1>
-          <p className="text-sm text-core-text-muted max-w-lg mx-auto">
+          <h1 className="text-3xl font-bold mb-3">
+            <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">Coming from another platform?</span>
+          </h1>
+          <p className="text-sm text-white/45 max-w-lg mx-auto">
             We'll import your contacts, pipelines, templates, and automations automatically. Pick your current platform and connect — we handle the rest.
           </p>
         </div>
@@ -163,18 +166,18 @@ export default function MigratePage() {
                 disabled={p.status === 'coming'}
                 className={`group relative text-left p-5 rounded-xl border transition-all ${
                   p.status === 'coming'
-                    ? 'bg-core-card/50 border-core-border/50 opacity-60 cursor-not-allowed'
-                    : 'bg-core-card border-core-border hover:border-core-green/30 cursor-pointer'
+                    ? 'bg-white/[0.01] border-white/5 opacity-60 cursor-not-allowed'
+                    : 'bg-white/[0.02] border-white/10 hover:border-[#7ed957]/30 cursor-pointer'
                 }`}
               >
                 {p.status === 'coming' && (
-                  <span className="absolute top-3 right-3 text-[9px] font-bold text-core-amber bg-core-amber/10 px-2 py-0.5 rounded-full">SOON</span>
+                  <span className="absolute top-3 right-3 text-[9px] font-bold text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-0.5 rounded-full">SOON</span>
                 )}
                 {p.status === 'beta' && (
-                  <span className="absolute top-3 right-3 text-[9px] font-bold text-core-cyan bg-core-cyan/10 px-2 py-0.5 rounded-full">BETA</span>
+                  <span className="absolute top-3 right-3 text-[9px] font-bold text-[#00d4ff] bg-[#00d4ff]/10 px-2 py-0.5 rounded-full">BETA</span>
                 )}
                 {p.status === 'live' && (
-                  <span className="absolute top-3 right-3 text-[9px] font-bold text-core-green bg-core-green/10 px-2 py-0.5 rounded-full">LIVE</span>
+                  <span className="absolute top-3 right-3 text-[9px] font-bold text-[#7ed957] bg-[#7ed957]/10 px-2 py-0.5 rounded-full">LIVE</span>
                 )}
 
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 overflow-hidden"
@@ -185,11 +188,11 @@ export default function MigratePage() {
                     <span className="text-sm font-black" style={{ color: p.color }}>{p.name.slice(0, 2).toUpperCase()}</span>
                   )}
                 </div>
-                <div className="text-sm font-bold text-core-text mb-0.5">{p.name}</div>
-                <div className="text-[11px] text-core-text-muted mb-3">{p.tagline}</div>
+                <div className="text-sm font-bold text-white mb-0.5">{p.name}</div>
+                <div className="text-[11px] text-white/45 mb-3">{p.tagline}</div>
                 <div className="flex flex-wrap gap-1">
                   {p.features.slice(0, 3).map(f => (
-                    <span key={f} className="text-[9px] px-1.5 py-0.5 rounded bg-core-border/30 text-core-text-muted">{f}</span>
+                    <span key={f} className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/45">{f}</span>
                   ))}
                 </div>
               </button>
@@ -201,11 +204,11 @@ export default function MigratePage() {
         {selectedPlatform && platform && !importDone && (
           <div className="max-w-lg mx-auto animate-fade-in">
             <button onClick={() => { setSelectedPlatform(null); setApiKey(''); setScanResult(null) }}
-              className="text-xs text-core-text-muted hover:text-core-text mb-6 flex items-center gap-1 transition-colors">
+              className="text-xs text-white/45 hover:text-white mb-6 flex items-center gap-1 transition-colors">
               Back to platforms
             </button>
 
-            <div className="bg-core-card border border-core-border rounded-xl p-6 mb-4">
+            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-6 mb-4">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden"
                   style={{ background: `${platform.color}12` }}>
@@ -216,14 +219,14 @@ export default function MigratePage() {
                   )}
                 </div>
                 <div>
-                  <div className="text-lg font-bold text-core-text">Migrate from {platform.name}</div>
-                  <div className="text-xs text-core-text-muted">Connect your account to scan what we can import</div>
+                  <div className="text-lg font-bold text-white">Migrate from {platform.name}</div>
+                  <div className="text-xs text-white/45">Connect your account to scan what we can import</div>
                 </div>
               </div>
 
               {/* API Key input */}
               <div className="mb-4">
-                <label className="text-xs font-semibold text-core-text-muted uppercase tracking-wide mb-1.5 block">
+                <label className="text-xs font-semibold text-white/45 uppercase tracking-wide mb-1.5 block">
                   {platform.name} API Key
                 </label>
                 <input
@@ -231,19 +234,19 @@ export default function MigratePage() {
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
                   placeholder={`Paste your ${platform.name} API key...`}
-                  className="w-full bg-core-bg border border-core-border rounded-lg px-4 py-2.5 text-sm text-core-text font-mono focus:outline-none focus:border-core-cyan transition-colors"
+                  className="w-full bg-[#020810] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-[#00d4ff] transition-colors"
                 />
-                <p className="text-[10px] text-core-text-muted mt-1.5">
+                <p className="text-[10px] text-white/45 mt-1.5">
                   Your key is used only during migration and never stored permanently.
                 </p>
               </div>
 
               {/* What we'll import */}
               <div className="mb-4">
-                <div className="text-xs font-semibold text-core-text-muted uppercase tracking-wide mb-2">What we'll import</div>
+                <div className="text-xs font-semibold text-white/45 uppercase tracking-wide mb-2">What we'll import</div>
                 <div className="flex flex-wrap gap-1.5">
                   {platform.importCapabilities.map(cap => (
-                    <span key={cap} className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-core-green/5 border border-core-green/15 text-core-green">
+                    <span key={cap} className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-[#7ed957]/5 border border-[#7ed957]/15 text-[#7ed957]">
                       <CheckCircle className="w-3 h-3" />
                       {cap}
                     </span>
@@ -254,7 +257,7 @@ export default function MigratePage() {
               {/* Scan button */}
               {!scanResult && (
                 <button onClick={handleScan} disabled={!apiKey.trim() || scanning}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-core-cyan text-core-bg font-bold text-sm rounded-xl hover:brightness-110 transition-all disabled:opacity-50">
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#00d4ff] text-[#020810] font-bold text-sm rounded-xl hover:brightness-110 transition-all disabled:opacity-50">
                   {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
                   {scanning ? 'Scanning your account...' : 'Scan Account'}
                 </button>
@@ -263,23 +266,23 @@ export default function MigratePage() {
               {/* Scan results */}
               {scanResult && (
                 <div className="space-y-3">
-                  <div className="bg-core-green/5 border border-core-green/20 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-core-green mb-2">
+                  <div className="bg-[#7ed957]/5 border border-[#7ed957]/20 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-[#7ed957] mb-2">
                       <CheckCircle className="w-4 h-4" />
                       Account scanned
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       {Object.entries(scanResult).map(([key, count]) => (
                         <div key={key} className="text-center">
-                          <div className="text-lg font-bold text-core-text">{count.toLocaleString()}</div>
-                          <div className="text-[10px] text-core-text-muted capitalize">{key}</div>
+                          <div className="text-lg font-bold text-white">{count.toLocaleString()}</div>
+                          <div className="text-[10px] text-white/45 capitalize">{key}</div>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   <button onClick={handleImport} disabled={importing}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-core-green text-core-bg font-bold text-sm rounded-xl hover:brightness-110 transition-all disabled:opacity-50">
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#7ed957] text-[#020810] font-bold text-sm rounded-xl hover:brightness-110 transition-all disabled:opacity-50">
                     {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                     {importing ? 'Importing...' : 'Import Everything'}
                   </button>
@@ -292,15 +295,15 @@ export default function MigratePage() {
         {/* Import complete */}
         {importDone && platform && (
           <div className="max-w-lg mx-auto text-center animate-fade-in py-8">
-            <div className="w-20 h-20 rounded-2xl bg-core-green shadow-[0_0_40px_rgba(110,224,90,0.3)] flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-10 h-10 text-core-bg" />
+            <div className="w-20 h-20 rounded-2xl bg-[#7ed957] shadow-[0_0_40px_rgba(126,217,87,0.3)] flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-10 h-10 text-[#020810]" />
             </div>
-            <h2 className="text-2xl font-bold text-core-text mb-2">Migration complete</h2>
-            <p className="text-sm text-core-text-muted mb-6">
+            <h2 className="text-2xl font-bold text-white mb-2">Migration complete</h2>
+            <p className="text-sm text-white/45 mb-6">
               Your {platform.name} data is now in 0nCore. Everything is ready.
             </p>
             <button onClick={() => router.push('/dashboard')}
-              className="flex items-center justify-center gap-2 mx-auto px-8 py-3 bg-core-green text-core-bg font-bold text-sm rounded-xl hover:brightness-110 transition-all">
+              className="flex items-center justify-center gap-2 mx-auto px-8 py-3 bg-[#7ed957] text-[#020810] font-bold text-sm rounded-xl hover:brightness-110 transition-all">
               Launch Dashboard
               <ArrowRight className="w-4 h-4" />
             </button>
@@ -311,19 +314,19 @@ export default function MigratePage() {
         {!selectedPlatform && (
           <div className="text-center mt-8">
             <div className="flex items-center justify-center gap-3 mb-3">
-              <div className="h-px w-16 bg-core-border" />
-              <span className="text-xs text-core-text-muted">or</span>
-              <div className="h-px w-16 bg-core-border" />
+              <div className="h-px w-16 bg-white/10" />
+              <span className="text-xs text-white/45">or</span>
+              <div className="h-px w-16 bg-white/10" />
             </div>
             <div className="flex gap-3 justify-center">
               <button onClick={() => router.push('/import')}
-                className="flex items-center gap-2 px-5 py-2.5 bg-core-card border border-core-border rounded-xl text-sm text-core-text-dim hover:text-core-text hover:border-core-green/20 transition-all">
-                <Sparkles className="w-4 h-4 text-core-green" />
+                className="flex items-center gap-2 px-5 py-2.5 bg-white/[0.02] border border-white/10 rounded-xl text-sm text-white/60 hover:text-white hover:border-[#7ed957]/20 transition-all">
+                <Sparkles className="w-4 h-4 text-[#7ed957]" />
                 Start fresh with AI
               </button>
               <button onClick={() => router.push('/dashboard/onboarding')}
-                className="flex items-center gap-2 px-5 py-2.5 bg-core-card border border-core-border rounded-xl text-sm text-core-text-dim hover:text-core-text hover:border-core-cyan/20 transition-all">
-                <Zap className="w-4 h-4 text-core-cyan" />
+                className="flex items-center gap-2 px-5 py-2.5 bg-white/[0.02] border border-white/10 rounded-xl text-sm text-white/60 hover:text-white hover:border-[#00d4ff]/20 transition-all">
+                <Zap className="w-4 h-4 text-[#00d4ff]" />
                 Guided setup
               </button>
             </div>
@@ -333,20 +336,20 @@ export default function MigratePage() {
         {/* Value prop */}
         {!selectedPlatform && (
           <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-core-card border border-core-border rounded-xl p-5 text-center">
-              <Users className="w-6 h-6 text-core-cyan mx-auto mb-3" />
-              <div className="text-sm font-bold text-core-text mb-1">All Your Contacts</div>
-              <p className="text-xs text-core-text-muted">Contacts, tags, custom fields, and segments — all imported and mapped.</p>
+            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 text-center">
+              <Users className="w-6 h-6 text-[#00d4ff] mx-auto mb-3" />
+              <div className="text-sm font-bold text-white mb-1">All Your Contacts</div>
+              <p className="text-xs text-white/45">Contacts, tags, custom fields, and segments — all imported and mapped.</p>
             </div>
-            <div className="bg-core-card border border-core-border rounded-xl p-5 text-center">
-              <GitBranch className="w-6 h-6 text-core-green mx-auto mb-3" />
-              <div className="text-sm font-bold text-core-text mb-1">Pipelines + Deals</div>
-              <p className="text-xs text-core-text-muted">Your sales pipeline stages and open deals transfer with full history.</p>
+            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 text-center">
+              <GitBranch className="w-6 h-6 text-[#7ed957] mx-auto mb-3" />
+              <div className="text-sm font-bold text-white mb-1">Pipelines + Deals</div>
+              <p className="text-xs text-white/45">Your sales pipeline stages and open deals transfer with full history.</p>
             </div>
-            <div className="bg-core-card border border-core-border rounded-xl p-5 text-center">
-              <Mail className="w-6 h-6 text-core-purple mx-auto mb-3" />
-              <div className="text-sm font-bold text-core-text mb-1">Templates + Automations</div>
-              <p className="text-xs text-core-text-muted">Email templates and automation workflows converted to .0n files.</p>
+            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-5 text-center">
+              <Mail className="w-6 h-6 text-[#a78bfa] mx-auto mb-3" />
+              <div className="text-sm font-bold text-white mb-1">Templates + Automations</div>
+              <p className="text-xs text-white/45">Email templates and automation workflows converted to .0n files.</p>
             </div>
           </div>
         )}

@@ -204,7 +204,7 @@ export default function ConnectionsPage() {
           <Link href="/platform" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Platform</Link>
           <Link href="/use-cases" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Use Cases</Link>
           <Link href="/blog" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Blog</Link>
-          <Link href="/connections" style={{ fontSize: 13, color: '#6EE05A', textDecoration: 'none', fontWeight: 600 }}>Connections</Link>
+          <Link href="/connections" style={{ fontSize: 13, color: '#7ed957', textDecoration: 'none', fontWeight: 600 }}>Connections</Link>
           <Link href="/login" style={{ fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Get Started</Link>
         </div>
       </nav>
@@ -213,11 +213,11 @@ export default function ConnectionsPage() {
       <section style={{ textAlign: 'center', padding: 'clamp(48px, 8vw, 80px) clamp(16px, 4vw, 24px) clamp(32px, 4vw, 48px)', position: 'relative' }}>
         <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', width: 600, height: 600, background: 'radial-gradient(circle, rgba(126,217,87,0.05) 0%, transparent 60%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 2 }}>
-          <div style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, color: '#6EE05A', background: 'rgba(110,224,90,0.08)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(110,224,90,0.15)', marginBottom: 16, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          <div style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.15)', marginBottom: 16, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
             {totalServices} services · 1,554 tools · 14 categories
           </div>
           <h1 style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12 }}>
-            Connected to <span style={{ color: '#7ed957' }}>Everything</span>
+            Connected to <span style={{ background: 'linear-gradient(to bottom right, #7ed957, #00d4ff, #a78bfa)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Everything</span>
           </h1>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', maxWidth: 560, margin: '0 auto', lineHeight: 1.7 }}>
             Every integration is powered by 0nMCP — the universal AI orchestration engine. One API, every service.
@@ -250,7 +250,7 @@ export default function ConnectionsPage() {
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f4f8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {svc.name}
-                      {svc.tools && <span style={{ fontSize: 9, fontWeight: 700, color: '#6EE05A', marginLeft: 6 }}>{svc.tools} tools</span>}
+                      {svc.tools && <span style={{ fontSize: 9, fontWeight: 700, color: '#7ed957', marginLeft: 6 }}>{svc.tools} tools</span>}
                     </div>
                     <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{svc.desc}</div>
                   </div>
@@ -263,7 +263,7 @@ export default function ConnectionsPage() {
 
       {/* CTA */}
       <section style={{ textAlign: 'center', padding: '0 clamp(16px, 4vw, 24px) 80px' }}>
-        <div style={{ maxWidth: 600, margin: '0 auto', padding: 40, borderRadius: 20, background: 'rgba(110,224,90,0.03)', border: '1px solid rgba(110,224,90,0.08)' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto', padding: 40, borderRadius: 20, background: 'rgba(126,217,87,0.03)', border: '1px solid rgba(126,217,87,0.08)' }}>
           <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Need a service that&apos;s not listed?</h2>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>0nMCP is extensible. Add any REST API as a custom connector.</p>
           <Link href="/request" style={{ display: 'inline-block', padding: '12px 28px', background: '#7ed957', color: '#020810', fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15 }}>Request a Connection</Link>

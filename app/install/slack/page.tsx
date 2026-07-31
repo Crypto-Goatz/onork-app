@@ -123,8 +123,15 @@ export default function SlackInstallPage() {
                 <span className="text-white/20 text-3xl font-thin">+</span>
                 <img src="/brand/0n-icon-white.svg" alt="0n" className="h-12 object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
               </div>
-              <h1 className="text-3xl font-bold">0nCore for Slack</h1>
-              <p className="text-white/50 text-lg max-w-xl mx-auto">
+              <span className="inline-block rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-white/60">
+                Slack Integration
+              </span>
+              <h1 className="text-balance text-4xl font-black tracking-tight sm:text-5xl">
+                <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+                  0nCore for Slack
+                </span>
+              </h1>
+              <p className="text-white/60 text-lg max-w-xl mx-auto leading-relaxed">
                 1,554 AI tools in your Slack workspace. Chat with 0nAI, run commands, get real-time alerts — all without leaving Slack.
               </p>
             </div>
@@ -132,7 +139,7 @@ export default function SlackInstallPage() {
             {/* Feature grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map((f) => (
-                <div key={f.title} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-2">
+                <div key={f.title} className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-2 backdrop-blur transition-colors hover:border-white/[0.18]">
                   <f.icon className="h-5 w-5 text-[#7ed957]" />
                   <h3 className="font-semibold text-white text-[14px]">{f.title}</h3>
                   <p className="text-[12px] text-white/40 leading-relaxed">{f.desc}</p>
@@ -144,7 +151,7 @@ export default function SlackInstallPage() {
             <div className="text-center space-y-4">
               <button
                 onClick={() => user ? setStep('connect') : setStep('auth')}
-                className="rounded-xl bg-[#7ed957] px-8 py-3 text-[15px] font-bold text-[#020810] hover:bg-[#7ed957]/90 transition-colors"
+                className="rounded-xl bg-[#7ed957] px-8 py-3 text-[15px] font-bold text-[#020810] shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-transform hover:scale-[1.02]"
               >
                 Get Started
               </button>

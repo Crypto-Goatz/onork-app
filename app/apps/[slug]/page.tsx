@@ -75,24 +75,28 @@ export default async function SpawnedAppPage({
   if (!app) notFound()
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-[#0d1117] to-slate-950 text-white">
-      <main className="mx-auto max-w-5xl px-6 py-16">
+    <div className="relative min-h-screen overflow-hidden bg-[#020810] font-sans text-white antialiased">
+      <div aria-hidden className="pointer-events-none absolute -top-32 left-[8%] h-[560px] w-[560px] rounded-full bg-[#7ed957]/[0.07] blur-[150px]" />
+      <div aria-hidden className="pointer-events-none absolute top-[10%] right-[6%] h-[420px] w-[420px] rounded-full bg-[#00d4ff]/[0.05] blur-[130px]" />
+      <main className="relative mx-auto max-w-5xl px-6 py-16">
         <div className="mb-10">
           <Link
             href="/"
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-white/40 hover:text-white/70"
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-white/40 transition-colors hover:text-white/70"
           >
-            <Sparkles className="h-3 w-3 text-emerald-400" /> 0nCore
+            <Sparkles className="h-3 w-3 text-[#7ed957]" /> 0nCore
           </Link>
           <div className="mt-3 flex items-center gap-2">
-            <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 bg-emerald-500/10 text-emerald-300 ring-emerald-500/20">
+            <span className="rounded-full bg-[#7ed957]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#7ed957] ring-1 ring-[#7ed957]/20">
               {app.mode === 'chain' ? 'Workflow' : 'Composed app'}
             </span>
-            <span className="text-[10px] text-white/30 font-mono">/apps/{app.slug}</span>
+            <span className="font-mono text-[10px] text-white/30">/apps/{app.slug}</span>
           </div>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-4xl">{app.name}</h1>
+          <h1 className="mt-3 text-balance text-3xl font-black tracking-tight md:text-5xl">
+            <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">{app.name}</span>
+          </h1>
           {app.brief && (
-            <p className="mt-3 max-w-2xl text-sm text-white/50 leading-relaxed">{app.brief}</p>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/50">{app.brief}</p>
           )}
           <div className="mt-3 text-[11px] text-white/30">
             {app.capabilities.length} capabilit

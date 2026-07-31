@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight, BookOpen, Clock, DollarSign, Sparkles } from 'lucide-react'
 import { GUIDES } from '@/lib/guides/registry'
+import AnimatedGrid from '@/components/animated-grid'
 
 export const metadata: Metadata = {
   title: 'Build With 0n — Real Products. Built Live. Your Turn.',
@@ -30,17 +31,20 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function GuidesPage() {
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white">
+    <div className="min-h-screen bg-[#020810] text-white antialiased">
       <div className="max-w-6xl mx-auto px-6 py-16">
         {/* Hero */}
-        <div className="mb-16 max-w-3xl">
+        <div className="relative mb-16 overflow-hidden">
+          <AnimatedGrid />
+          <div aria-hidden className="pointer-events-none absolute -top-32 left-0 h-[480px] w-[480px] rounded-full bg-[#7ed957]/[0.07] blur-[150px]" />
+          <div className="relative max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#7ed957]/10 border border-[#7ed957]/30 mb-6">
             <Sparkles className="h-3.5 w-3.5 text-[#7ed957]" />
             <span className="text-xs font-semibold text-[#7ed957] uppercase tracking-wider">Build With 0n</span>
           </div>
-          <h1 className="text-5xl lg:text-6xl font-bold tracking-tight mb-5">
+          <h1 className="text-5xl lg:text-6xl font-bold tracking-tight mb-5 text-balance">
             Real products. Built live.<br/>
-            <span className="text-[#7ed957]">Your turn.</span>
+            <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">Your turn.</span>
           </h1>
           <p className="text-lg lg:text-xl text-white/60 leading-relaxed">
             Each guide shows how we built a real product using 0nMCP — and how you can build the same thing.
@@ -48,6 +52,7 @@ export default function GuidesPage() {
             <span className="text-white font-medium"> 0ncore.com</span> (dashboard / no-code).
             Same outcome.
           </p>
+          </div>
         </div>
 
         {/* The Point */}

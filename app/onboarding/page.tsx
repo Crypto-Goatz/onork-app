@@ -213,8 +213,9 @@ export default function OnboardingPage() {
     : Math.min(90, 15 + pollCount * 8)
 
   return (
-    <div className="min-h-screen bg-bg-primary flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
+    <div className="relative min-h-screen overflow-hidden bg-[#020810] flex items-center justify-center p-4">
+      <div aria-hidden className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-[#7ed957]/[0.07] blur-[150px]" />
+      <div className="relative w-full max-w-2xl">
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {[1, 2, 3, 4].map((s) => (
@@ -222,10 +223,10 @@ export default function OnboardingPage() {
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
                   s < step
-                    ? 'bg-accent text-bg-primary'
+                    ? 'bg-[#7ed957] text-[#020810]'
                     : s === step
-                      ? 'bg-accent/20 text-accent border border-accent'
-                      : 'bg-white/[0.04] text-text-muted border border-border'
+                      ? 'bg-[#7ed957]/20 text-[#7ed957] border border-[#7ed957]'
+                      : 'bg-white/[0.04] text-white/45 border border-white/10'
                 }`}
               >
                 {s < step ? <CheckCircle className="w-4 h-4" /> : s}
@@ -233,7 +234,7 @@ export default function OnboardingPage() {
               {s < 4 && (
                 <div
                   className={`w-12 h-px ${
-                    s < step ? 'bg-accent' : 'bg-border'
+                    s < step ? 'bg-[#7ed957]' : 'bg-white/10'
                   }`}
                 />
               )}
@@ -245,13 +246,15 @@ export default function OnboardingPage() {
         {step === 1 && (
           <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-8 text-center">
             <div className="mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
-                <Rocket className="w-8 h-8 text-accent" />
+              <div className="w-16 h-16 rounded-2xl bg-[#7ed957]/10 flex items-center justify-center mx-auto mb-4">
+                <Rocket className="w-8 h-8 text-[#7ed957]" />
               </div>
-              <h1 className="text-2xl font-bold text-text-primary mb-2">
-                Welcome to 0nCore
+              <h1 className="text-2xl font-bold mb-2">
+                <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+                  Welcome to 0nCore
+                </span>
               </h1>
-              <p className="text-text-secondary">
+              <p className="text-white/75">
                 Setting up your AI command center. This takes 30-90 seconds.
               </p>
             </div>
@@ -259,7 +262,7 @@ export default function OnboardingPage() {
             {/* Progress bar */}
             <div className="w-full bg-white/[0.04] rounded-full h-2 mb-4 overflow-hidden">
               <div
-                className="h-full bg-accent rounded-full transition-all duration-1000 ease-out"
+                className="h-full bg-[#7ed957] rounded-full transition-all duration-1000 ease-out"
                 /* percentage width via Tailwind arbitrary */
                 style={{ width: `${progressPercent}%` }}
               />
@@ -268,8 +271,8 @@ export default function OnboardingPage() {
             <div className="flex items-center justify-center gap-3 mb-6">
               {!provisionReady ? (
                 <>
-                  <Loader2 className="w-4 h-4 text-accent animate-spin" />
-                  <span className="text-text-secondary text-sm">
+                  <Loader2 className="w-4 h-4 text-[#7ed957] animate-spin" />
+                  <span className="text-white/75 text-sm">
                     {provisionStage === 'oauth_pending'
                       ? 'Connecting marketplace apps...'
                       : 'Provisioning your CRM workspace...'}
@@ -277,8 +280,8 @@ export default function OnboardingPage() {
                 </>
               ) : (
                 <>
-                  <CheckCircle className="w-4 h-4 text-accent" />
-                  <span className="text-accent text-sm font-medium">
+                  <CheckCircle className="w-4 h-4 text-[#7ed957]" />
+                  <span className="text-[#7ed957] text-sm font-medium">
                     Your workspace is ready
                   </span>
                 </>
@@ -310,8 +313,8 @@ export default function OnboardingPage() {
               disabled={!provisionReady}
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 provisionReady
-                  ? 'bg-accent text-bg-primary hover:bg-accent-dim cursor-pointer'
-                  : 'bg-white/[0.04] text-text-muted cursor-not-allowed'
+                  ? 'bg-[#7ed957] text-[#020810] hover:brightness-110 cursor-pointer'
+                  : 'bg-white/[0.04] text-white/45 cursor-not-allowed'
               }`}
             >
               {provisionReady ? (
@@ -329,20 +332,20 @@ export default function OnboardingPage() {
         {step === 2 && (
           <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-8">
             <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
-                <Building2 className="w-8 h-8 text-accent" />
+              <div className="w-16 h-16 rounded-2xl bg-[#7ed957]/10 flex items-center justify-center mx-auto mb-4">
+                <Building2 className="w-8 h-8 text-[#7ed957]" />
               </div>
-              <h1 className="text-2xl font-bold text-text-primary mb-2">
+              <h1 className="text-2xl font-bold text-white mb-2">
                 Tell us about your business
               </h1>
-              <p className="text-text-secondary">
+              <p className="text-white/75">
                 We will customize your AI and automations to fit your industry.
               </p>
             </div>
 
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                <label className="block text-sm font-medium text-white/75 mb-1.5">
                   Company Name
                 </label>
                 <input
@@ -350,22 +353,22 @@ export default function OnboardingPage() {
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="Acme Corp"
-                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.06] rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30 transition-colors"
+                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.06] rounded-lg text-white placeholder:text-white/45 focus:outline-none focus:border-[#7ed957]/50 focus:ring-1 focus:ring-[#7ed957]/30 transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                <label className="block text-sm font-medium text-white/75 mb-1.5">
                   Industry
                 </label>
                 <select
                   value={industry}
                   onChange={(e) => setIndustry(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.06] rounded-lg text-text-primary focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30 transition-colors appearance-none"
+                  className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.06] rounded-lg text-white focus:outline-none focus:border-[#7ed957]/50 focus:ring-1 focus:ring-[#7ed957]/30 transition-colors appearance-none"
                 >
-                  <option value="" className="bg-bg-secondary">Select your industry</option>
+                  <option value="" className="bg-[#0d1117]">Select your industry</option>
                   {INDUSTRIES.map((ind) => (
-                    <option key={ind} value={ind} className="bg-bg-secondary">
+                    <option key={ind} value={ind} className="bg-[#0d1117]">
                       {ind}
                     </option>
                   ))}
@@ -373,18 +376,18 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1.5">
+                <label className="block text-sm font-medium text-white/75 mb-1.5">
                   Website URL
                 </label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/45" />
                     <input
                       type="url"
                       value={website}
                       onChange={(e) => setWebsite(e.target.value)}
                       placeholder="https://example.com"
-                      className="w-full pl-10 pr-4 py-3 bg-white/[0.04] border border-white/[0.06] rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30 transition-colors"
+                      className="w-full pl-10 pr-4 py-3 bg-white/[0.04] border border-white/[0.06] rounded-lg text-white placeholder:text-white/45 focus:outline-none focus:border-[#7ed957]/50 focus:ring-1 focus:ring-[#7ed957]/30 transition-colors"
                     />
                   </div>
                   <button
@@ -392,10 +395,10 @@ export default function OnboardingPage() {
                     disabled={!website || scanning || scanComplete}
                     className={`px-4 py-3 rounded-lg font-medium text-sm whitespace-nowrap transition-all flex items-center gap-2 ${
                       scanComplete
-                        ? 'bg-accent/10 text-accent border border-accent/20'
+                        ? 'bg-[#7ed957]/10 text-[#7ed957] border border-[#7ed957]/20'
                         : !website || scanning
-                          ? 'bg-white/[0.04] text-text-muted cursor-not-allowed'
-                          : 'bg-accent/10 text-accent hover:bg-accent/20 border border-accent/20 cursor-pointer'
+                          ? 'bg-white/[0.04] text-white/45 cursor-not-allowed'
+                          : 'bg-[#7ed957]/10 text-[#7ed957] hover:bg-[#7ed957]/20 border border-[#7ed957]/20 cursor-pointer'
                     }`}
                   >
                     {scanning ? (
@@ -417,7 +420,7 @@ export default function OnboardingPage() {
                   </button>
                 </div>
                 {scanComplete && (
-                  <p className="text-xs text-accent mt-1.5">
+                  <p className="text-xs text-[#7ed957] mt-1.5">
                     Brand data extracted. Your AI will match your voice and style.
                   </p>
                 )}
@@ -427,7 +430,7 @@ export default function OnboardingPage() {
             <div className="flex justify-between mt-8">
               <button
                 onClick={() => setStep(1)}
-                className="px-4 py-2.5 text-text-secondary hover:text-text-primary transition-colors text-sm"
+                className="px-4 py-2.5 text-white/75 hover:text-white transition-colors text-sm"
               >
                 Back
               </button>
@@ -436,8 +439,8 @@ export default function OnboardingPage() {
                 disabled={!industry}
                 className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${
                   industry
-                    ? 'bg-accent text-bg-primary hover:bg-accent-dim cursor-pointer'
-                    : 'bg-white/[0.04] text-text-muted cursor-not-allowed'
+                    ? 'bg-[#7ed957] text-[#020810] hover:brightness-110 cursor-pointer'
+                    : 'bg-white/[0.04] text-white/45 cursor-not-allowed'
                 }`}
               >
                 Continue <ArrowRight className="w-4 h-4" />
@@ -450,13 +453,13 @@ export default function OnboardingPage() {
         {step === 3 && (
           <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-8">
             <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-accent" />
+              <div className="w-16 h-16 rounded-2xl bg-[#7ed957]/10 flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-8 h-8 text-[#7ed957]" />
               </div>
-              <h1 className="text-2xl font-bold text-text-primary mb-2">
+              <h1 className="text-2xl font-bold text-white mb-2">
                 Your Opportunities
               </h1>
-              <p className="text-text-secondary">
+              <p className="text-white/75">
                 Based on your industry, here is what 0nCore can automate for you right away.
               </p>
             </div>
@@ -467,25 +470,25 @@ export default function OnboardingPage() {
                 return (
                   <div
                     key={i}
-                    className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-5 hover:border-accent/20 transition-colors"
+                    className="bg-white/[0.03] border border-white/[0.06] rounded-lg p-5 hover:border-[#7ed957]/20 transition-colors"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
-                        <Icon className="w-5 h-5 text-accent" />
+                      <div className="w-10 h-10 rounded-lg bg-[#7ed957]/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <Icon className="w-5 h-5 text-[#7ed957]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-text-primary font-semibold">
+                          <h3 className="text-white font-semibold">
                             {match.title}
                           </h3>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent font-medium">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-[#7ed957]/10 text-[#7ed957] font-medium">
                             {match.score}% match
                           </span>
                         </div>
-                        <p className="text-sm text-text-secondary leading-relaxed">
+                        <p className="text-sm text-white/75 leading-relaxed">
                           {match.description}
                         </p>
-                        <span className="inline-block mt-2 text-xs text-text-muted">
+                        <span className="inline-block mt-2 text-xs text-white/45">
                           {typeLabels[match.type]}
                         </span>
                       </div>
@@ -498,7 +501,7 @@ export default function OnboardingPage() {
             <div className="flex justify-between mt-8">
               <button
                 onClick={() => setStep(2)}
-                className="px-4 py-2.5 text-text-secondary hover:text-text-primary transition-colors text-sm"
+                className="px-4 py-2.5 text-white/75 hover:text-white transition-colors text-sm"
               >
                 Back
               </button>
@@ -509,7 +512,7 @@ export default function OnboardingPage() {
                   }
                   setStep(4)
                 }}
-                className="px-6 py-2.5 rounded-lg font-medium bg-accent text-bg-primary hover:bg-accent-dim transition-all flex items-center gap-2 cursor-pointer"
+                className="px-6 py-2.5 rounded-lg font-medium bg-[#7ed957] text-[#020810] hover:brightness-110 transition-all flex items-center gap-2 cursor-pointer"
               >
                 Continue <ArrowRight className="w-4 h-4" />
               </button>
@@ -521,13 +524,13 @@ export default function OnboardingPage() {
         {step === 4 && (
           <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-8 text-center">
             <div className="mb-8">
-              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8 text-accent" />
+              <div className="w-16 h-16 rounded-2xl bg-[#7ed957]/10 flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-8 h-8 text-[#7ed957]" />
               </div>
-              <h1 className="text-2xl font-bold text-text-primary mb-2">
+              <h1 className="text-2xl font-bold text-white mb-2">
                 You are ready
               </h1>
-              <p className="text-text-secondary">
+              <p className="text-white/75">
                 Your AI command center is live. Here is what is set up:
               </p>
             </div>
@@ -545,7 +548,7 @@ export default function OnboardingPage() {
 
             <button
               onClick={completeOnboarding}
-              className="px-8 py-3 rounded-lg font-semibold bg-accent text-bg-primary hover:bg-accent-dim transition-all inline-flex items-center gap-2 cursor-pointer"
+              className="px-8 py-3 rounded-lg font-semibold bg-[#7ed957] text-[#020810] hover:brightness-110 transition-all inline-flex items-center gap-2 cursor-pointer"
             >
               Go to Dashboard <ChevronRight className="w-5 h-5" />
             </button>
@@ -560,11 +563,11 @@ function ProvisionItem({ label, done }: { label: string; done: boolean }) {
   return (
     <div className="flex items-center gap-3">
       {done ? (
-        <CheckCircle className="w-4 h-4 text-accent shrink-0" />
+        <CheckCircle className="w-4 h-4 text-[#7ed957] shrink-0" />
       ) : (
-        <Loader2 className="w-4 h-4 text-text-muted animate-spin shrink-0" />
+        <Loader2 className="w-4 h-4 text-white/45 animate-spin shrink-0" />
       )}
-      <span className={`text-sm ${done ? 'text-text-primary' : 'text-text-muted'}`}>
+      <span className={`text-sm ${done ? 'text-white' : 'text-white/45'}`}>
         {label}
       </span>
     </div>
@@ -575,13 +578,13 @@ function ReadyItem({ label, done, link }: { label: string; done: boolean; link?:
   const content = (
     <div className="flex items-center gap-3">
       <CheckCircle
-        className={`w-4 h-4 shrink-0 ${done ? 'text-accent' : 'text-white/[0.15]'}`}
+        className={`w-4 h-4 shrink-0 ${done ? 'text-[#7ed957]' : 'text-white/[0.15]'}`}
       />
-      <span className={`text-sm ${done ? 'text-text-primary' : 'text-text-muted'}`}>
+      <span className={`text-sm ${done ? 'text-white' : 'text-white/45'}`}>
         {label}
       </span>
       {link && !done && (
-        <ArrowRight className="w-3 h-3 text-text-muted ml-auto" />
+        <ArrowRight className="w-3 h-3 text-white/45 ml-auto" />
       )}
     </div>
   )

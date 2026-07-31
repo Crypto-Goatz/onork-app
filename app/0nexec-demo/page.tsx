@@ -73,7 +73,7 @@ export default function ExecDemoPage() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#04070f',
+        background: '#020810',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -112,9 +112,9 @@ export default function ExecDemoPage() {
                 height: '16px',
                 borderRadius: '50%',
                 border: error ? '2px solid #ef4444' : '2px solid #2a3a52',
-                background: i < pin.length ? (error ? '#ef4444' : '#6EE05A') : 'transparent',
+                background: i < pin.length ? (error ? '#ef4444' : '#7ed957') : 'transparent',
                 transition: 'all 0.15s',
-                boxShadow: i < pin.length && !error ? '0 0 8px rgba(110,224,90,0.4)' : 'none',
+                boxShadow: i < pin.length && !error ? '0 0 8px rgba(126,217,87,0.4)' : 'none',
               }} />
             ))}
           </div>
@@ -171,7 +171,7 @@ export default function ExecDemoPage() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#04070f',
+        background: '#020810',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -188,7 +188,7 @@ export default function ExecDemoPage() {
             display: 'inline-block',
             width: '2px',
             height: '28px',
-            background: '#6EE05A',
+            background: '#7ed957',
             marginLeft: '2px',
             verticalAlign: 'middle',
             animation: 'blink 0.8s step-end infinite',
@@ -208,7 +208,7 @@ export default function ExecDemoPage() {
         width: '100vw',
         height: '100vh',
         border: 'none',
-        background: '#04070f',
+        background: '#020810',
       }}
       title="0nExec Demo"
     />
@@ -224,16 +224,16 @@ const DEMO_HTML = `<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #04070f;
+  --bg: #020810;
   --s1: #080e1d;
   --s2: #0c1526;
   --s3: #101c30;
   --border: rgba(255,255,255,0.06);
   --border2: rgba(255,255,255,0.03);
-  --green: #6EE05A;
+  --green: #7ed957;
   --green2: #4ecb3a;
-  --gd: rgba(110,224,90,0.08);
-  --gb: rgba(110,224,90,0.22);
+  --gd: rgba(126,217,87,0.08);
+  --gb: rgba(126,217,87,0.22);
   --red: #ef4444;
   --rd: rgba(239,68,68,0.08);
   --rb: rgba(239,68,68,0.25);
@@ -268,7 +268,7 @@ body::before {
   position:fixed;
   inset:0;
   background:
-    radial-gradient(ellipse 700px 400px at 20% -10%, rgba(110,224,90,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 700px 400px at 20% -10%, rgba(126,217,87,0.04) 0%, transparent 60%),
     radial-gradient(ellipse 500px 300px at 80% 110%, rgba(96,165,250,0.03) 0%, transparent 60%);
   pointer-events:none;
   z-index:0;
@@ -326,9 +326,9 @@ body::before {
   white-space: nowrap;
 }
 .dept-btn:hover { color: var(--text); }
-.dept-btn.active { background: var(--green); color: #04070f; font-weight: 500; }
-.dept-btn.active-blue { background: var(--blue); color: #04070f; font-weight: 500; }
-.dept-btn.active-purple { background: var(--purple); color: #04070f; font-weight: 500; }
+.dept-btn.active { background: var(--green); color: #020810; font-weight: 500; }
+.dept-btn.active-blue { background: var(--blue); color: #020810; font-weight: 500; }
+.dept-btn.active-purple { background: var(--purple); color: #020810; font-weight: 500; }
 .tab-nav { display: flex; gap: 2px; margin-left: auto; }
 .tab-btn {
   font-family: var(--mono);
@@ -376,7 +376,7 @@ body::before {
   border-radius: 50%;
   background: linear-gradient(135deg, var(--green), #2a8f1a);
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: #04070f; font-family: var(--body);
+  font-size: 11px; font-weight: 700; color: #020810; font-family: var(--body);
 }
 .body-wrap {
   display: grid;
@@ -532,7 +532,7 @@ body::before {
 .right-panel { background: var(--s1); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
 .ai-header { padding: 12px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .ai-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.ai-icon { width: 26px; height: 26px; background: linear-gradient(135deg, rgba(110,224,90,0.2), rgba(110,224,90,0.05)); border: 1px solid var(--gb); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.ai-icon { width: 26px; height: 26px; background: linear-gradient(135deg, rgba(126,217,87,0.2), rgba(126,217,87,0.05)); border: 1px solid var(--gb); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
 .ai-title { font-family: var(--body); font-size: 13px; font-weight: 700; color: var(--bright); }
 .ai-sub { font-family: var(--mono); font-size: 8px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
 .k-layer { background: var(--s2); border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; }
@@ -563,7 +563,7 @@ body::before {
 .pd-field-lbl { font-family: var(--mono); font-size: 8px; color: var(--muted); }
 .pd-field-val { font-family: var(--mono); font-size: 10px; color: var(--text); }
 .brief-btn { width: 100%; padding: 10px; background: var(--gd); border: 1px solid var(--gb); color: var(--green); border-radius: 7px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; margin-top: 10px; }
-.brief-btn:hover { background: rgba(110,224,90,0.14); }
+.brief-btn:hover { background: rgba(126,217,87,0.14); }
 ::-webkit-scrollbar { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 2px; }
@@ -574,7 +574,7 @@ body::before {
 <body>
 <div class="topbar">
   <div class="logo-wrap">
-    <span style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;color:#e4efff;letter-spacing:-0.2px">0n<span style="color:#6EE05A">Exec</span></span>
+    <span style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;color:#e4efff;letter-spacing:-0.2px">0n<span style="color:#7ed957">Exec</span></span>
     <span class="logo-sub">Command Center</span>
   </div>
   <div class="dept-switcher">
@@ -695,7 +695,7 @@ body::before {
 </div>
 </div>
 <script>
-var BAND=function(s){return s>=80?{c:'#6EE05A',l:'NOMINAL'}:s>=60?{c:'#f5c518',l:'MONITOR'}:s>=40?{c:'#f97316',l:'REVIEW'}:{c:'#ef4444',l:'CRITICAL'}};
+var BAND=function(s){return s>=80?{c:'#7ed957',l:'NOMINAL'}:s>=60?{c:'#f5c518',l:'MONITOR'}:s>=40?{c:'#f97316',l:'REVIEW'}:{c:'#ef4444',l:'CRITICAL'}};
 var STAGES=[{id:'discovery',label:'Discovery',icon:'\\u25CE'},{id:'offer',label:'Offer Build',icon:'\\u2B21'},{id:'creative',label:'Creative',icon:'\\u25B7'},{id:'launch',label:'Launch',icon:'\\u25C6'},{id:'optimize',label:'Optimize',icon:'\\u27F3'},{id:'scale',label:'Scale',icon:'\\u221E'}];
 var LEADS=[
 {id:1,name:'Sarah Chen',company:'Hartwell Group',stage:'launch',score:38,dream:19,proof:12,speed:4,friction:3,revenue:'$18,400',pm:'Sarah K.',days:'Day 5',overdue:true,flags:[{type:'critical',msg:'Onboarding overrun 2d. No client contact logged.'}],pdDeal:'#HD-4821',pdStage:'Launch',pdActivity:'Call overdue 2 days',detail:'Hack #5 missing. No flaw owned. CTA says "Learn More."'},
@@ -725,9 +725,9 @@ var REV=[
 ];
 function scoreRing(s,sz,fs){var b=BAND(s),r=sz/2-3,c=2*Math.PI*r,d=(s/100)*c;return '<div class="ring-wrap" style="width:'+sz+'px;height:'+sz+'px"><svg width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'" style="transform:rotate(-90deg)"><circle cx="'+sz/2+'" cy="'+sz/2+'" r="'+r+'" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2.5"/><circle cx="'+sz/2+'" cy="'+sz/2+'" r="'+r+'" fill="none" stroke="'+b.c+'" stroke-width="2.5" stroke-dasharray="'+d+' '+c+'" stroke-linecap="round"/></svg><div class="ring-score" style="font-size:'+fs+'px;color:'+b.c+'">'+s+'</div></div>';}
 function subBar(v,mx,col){return '<div class="subscore-track"><div class="subscore-fill" style="width:'+Math.round(v/mx*100)+'%;background:'+col+'"></div></div>';}
-function renderCard(l){var b=BAND(l.score),fc=l.flags.length>0?(l.flags[0].type==='critical'?'flag-critical':'flag-warning'):'',dc=l.flags.length>0?(l.flags[0].type==='critical'?'flag-dot-red':'flag-dot-yellow'):'flag-dot-green';return '<div class="lead-card '+fc+'" onclick="selectLead('+l.id+')" id="card-'+l.id+'"><div class="lead-flag-dot '+dc+'"></div><div class="lead-name">'+l.company+'</div><div class="lead-company">'+l.name+'</div><div class="card-score-row">'+scoreRing(l.score,36,10)+'<div><div class="score-label" style="color:'+b.c+'">'+b.l+'</div><div class="lead-revenue">'+l.revenue+'</div></div></div><div class="subscores"><div class="subscore-row"><div class="subscore-key">D</div>'+subBar(l.dream,25,'#6EE05A')+'</div><div class="subscore-row"><div class="subscore-key">P</div>'+subBar(l.proof,25,'#818cf8')+'</div><div class="subscore-row"><div class="subscore-key">S</div>'+subBar(l.speed,25,'#f5c518')+'</div><div class="subscore-row"><div class="subscore-key">F</div>'+subBar(l.friction,25,'#f472b6')+'</div></div><div class="lead-meta"><div class="lead-pm">'+l.pm+'</div><div class="lead-days '+(l.overdue?'over':'')+'">'+l.days+'</div></div><div class="pd-indicator"><div class="pd-dot"></div><div class="pd-label">PD: '+l.pdDeal+'</div></div></div>';}
+function renderCard(l){var b=BAND(l.score),fc=l.flags.length>0?(l.flags[0].type==='critical'?'flag-critical':'flag-warning'):'',dc=l.flags.length>0?(l.flags[0].type==='critical'?'flag-dot-red':'flag-dot-yellow'):'flag-dot-green';return '<div class="lead-card '+fc+'" onclick="selectLead('+l.id+')" id="card-'+l.id+'"><div class="lead-flag-dot '+dc+'"></div><div class="lead-name">'+l.company+'</div><div class="lead-company">'+l.name+'</div><div class="card-score-row">'+scoreRing(l.score,36,10)+'<div><div class="score-label" style="color:'+b.c+'">'+b.l+'</div><div class="lead-revenue">'+l.revenue+'</div></div></div><div class="subscores"><div class="subscore-row"><div class="subscore-key">D</div>'+subBar(l.dream,25,'#7ed957')+'</div><div class="subscore-row"><div class="subscore-key">P</div>'+subBar(l.proof,25,'#818cf8')+'</div><div class="subscore-row"><div class="subscore-key">S</div>'+subBar(l.speed,25,'#f5c518')+'</div><div class="subscore-row"><div class="subscore-key">F</div>'+subBar(l.friction,25,'#f472b6')+'</div></div><div class="lead-meta"><div class="lead-pm">'+l.pm+'</div><div class="lead-days '+(l.overdue?'over':'')+'">'+l.days+'</div></div><div class="pd-indicator"><div class="pd-dot"></div><div class="pd-label">PD: '+l.pdDeal+'</div></div></div>';}
 function renderBoard(){var board=document.getElementById('pipelineBoard');board.innerHTML='';STAGES.forEach(function(st){var sl=LEADS.filter(function(l){return l.stage===st.id}).sort(function(a,b){return a.score-b.score});var avg=sl.length?Math.round(sl.reduce(function(s,l){return s+l.score},0)/sl.length):null;var b=avg!==null?BAND(avg):null;var col=document.createElement('div');col.className='stage-col';col.innerHTML='<div class="stage-header"><div><div class="stage-name">'+st.icon+' '+st.label+'</div><div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-top:1px">'+sl.length+' client'+(sl.length!==1?'s':'')+'</div></div>'+(avg!==null?'<div class="stage-avg" style="color:'+b.c+'">'+avg+'</div>':'')+'</div><div class="stage-body">'+(sl.length===0?'<div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-align:center;padding:12px 0">\\u2014</div>':sl.map(renderCard).join(''))+'</div>';board.appendChild(col)});}
-function selectLead(id){var l=LEADS.find(function(x){return x.id===id});if(!l)return;document.querySelectorAll('.lead-card').forEach(function(c){c.style.boxShadow=''});var card=document.getElementById('card-'+id);if(card)card.style.boxShadow='0 0 0 1.5px var(--green), 0 4px 20px rgba(110,224,90,0.15)';var b=BAND(l.score);var det=document.getElementById('leadDetail');det.innerHTML='<div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">'+scoreRing(l.score,52,14)+'<div><div class="detail-company">'+l.company+'</div><div style="font-family:var(--mono);font-size:9px;color:'+b.c+';letter-spacing:0.1em;margin:2px 0">'+b.l+'</div><div class="detail-contact">'+l.name+' \\u00B7 '+l.pm+'</div></div></div><div class="pd-sync-card"><div class="pd-sync-title"><div style="width:8px;height:8px;background:#00B0DB;border-radius:1px"></div>Pipedrive Sync \\u2014 Live</div><div class="pd-fields"><div><div class="pd-field-lbl">Deal</div><div class="pd-field-val">'+l.pdDeal+'</div></div><div><div class="pd-field-lbl">Stage</div><div class="pd-field-val">'+l.pdStage+'</div></div><div><div class="pd-field-lbl">Value</div><div class="pd-field-val">'+l.revenue+'</div></div><div><div class="pd-field-lbl">Activity</div><div class="pd-field-val" style="color:'+(l.overdue?'var(--red)':'var(--text)')+'">'+l.pdActivity+'</div></div></div></div><div class="veq-section"><div class="section-label">Value Equation</div><div class="veq-bars"><div class="veq-row"><div class="veq-label">Dream</div><div class="veq-track"><div class="veq-fill" style="width:'+(l.dream/25*100)+'%;background:#6EE05A"></div></div><div class="veq-val" style="color:#6EE05A">'+l.dream+'</div></div><div class="veq-row"><div class="veq-label">Proof</div><div class="veq-track"><div class="veq-fill" style="width:'+(l.proof/25*100)+'%;background:#818cf8"></div></div><div class="veq-val" style="color:#818cf8">'+l.proof+'</div></div><div class="veq-row"><div class="veq-label">Speed</div><div class="veq-track"><div class="veq-fill" style="width:'+(l.speed/25*100)+'%;background:#f5c518"></div></div><div class="veq-val" style="color:#f5c518">'+l.speed+'</div></div><div class="veq-row"><div class="veq-label">Friction</div><div class="veq-track"><div class="veq-fill" style="width:'+(l.friction/25*100)+'%;background:#f472b6"></div></div><div class="veq-val" style="color:#f472b6">'+l.friction+'</div></div></div></div>'+(l.flags.length>0?'<div class="veq-section"><div class="section-label">AI Flags</div><div class="flag-list">'+l.flags.map(function(f){return '<div class="flag-item '+f.type+'"><div class="flag-label">\\u2B21 '+f.type.toUpperCase()+'</div>'+f.msg+'</div>'}).join('')+'</div></div>':'<div class="veq-section"><div class="section-label">AI Status</div><div class="flag-item good">\\u2713 No anomalies detected.</div></div>')+'<div class="veq-section"><div class="section-label">Analysis</div><div style="font-size:11px;color:var(--text);line-height:1.6;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:10px 12px">'+l.detail+'</div></div>';}
+function selectLead(id){var l=LEADS.find(function(x){return x.id===id});if(!l)return;document.querySelectorAll('.lead-card').forEach(function(c){c.style.boxShadow=''});var card=document.getElementById('card-'+id);if(card)card.style.boxShadow='0 0 0 1.5px var(--green), 0 4px 20px rgba(126,217,87,0.15)';var b=BAND(l.score);var det=document.getElementById('leadDetail');det.innerHTML='<div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">'+scoreRing(l.score,52,14)+'<div><div class="detail-company">'+l.company+'</div><div style="font-family:var(--mono);font-size:9px;color:'+b.c+';letter-spacing:0.1em;margin:2px 0">'+b.l+'</div><div class="detail-contact">'+l.name+' \\u00B7 '+l.pm+'</div></div></div><div class="pd-sync-card"><div class="pd-sync-title"><div style="width:8px;height:8px;background:#00B0DB;border-radius:1px"></div>Pipedrive Sync \\u2014 Live</div><div class="pd-fields"><div><div class="pd-field-lbl">Deal</div><div class="pd-field-val">'+l.pdDeal+'</div></div><div><div class="pd-field-lbl">Stage</div><div class="pd-field-val">'+l.pdStage+'</div></div><div><div class="pd-field-lbl">Value</div><div class="pd-field-val">'+l.revenue+'</div></div><div><div class="pd-field-lbl">Activity</div><div class="pd-field-val" style="color:'+(l.overdue?'var(--red)':'var(--text)')+'">'+l.pdActivity+'</div></div></div></div><div class="veq-section"><div class="section-label">Value Equation</div><div class="veq-bars"><div class="veq-row"><div class="veq-label">Dream</div><div class="veq-track"><div class="veq-fill" style="width:'+(l.dream/25*100)+'%;background:#7ed957"></div></div><div class="veq-val" style="color:#7ed957">'+l.dream+'</div></div><div class="veq-row"><div class="veq-label">Proof</div><div class="veq-track"><div class="veq-fill" style="width:'+(l.proof/25*100)+'%;background:#818cf8"></div></div><div class="veq-val" style="color:#818cf8">'+l.proof+'</div></div><div class="veq-row"><div class="veq-label">Speed</div><div class="veq-track"><div class="veq-fill" style="width:'+(l.speed/25*100)+'%;background:#f5c518"></div></div><div class="veq-val" style="color:#f5c518">'+l.speed+'</div></div><div class="veq-row"><div class="veq-label">Friction</div><div class="veq-track"><div class="veq-fill" style="width:'+(l.friction/25*100)+'%;background:#f472b6"></div></div><div class="veq-val" style="color:#f472b6">'+l.friction+'</div></div></div></div>'+(l.flags.length>0?'<div class="veq-section"><div class="section-label">AI Flags</div><div class="flag-list">'+l.flags.map(function(f){return '<div class="flag-item '+f.type+'"><div class="flag-label">\\u2B21 '+f.type.toUpperCase()+'</div>'+f.msg+'</div>'}).join('')+'</div></div>':'<div class="veq-section"><div class="section-label">AI Status</div><div class="flag-item good">\\u2713 No anomalies detected.</div></div>')+'<div class="veq-section"><div class="section-label">Analysis</div><div style="font-size:11px;color:var(--text);line-height:1.6;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:10px 12px">'+l.detail+'</div></div>';}
 function renderRevTable(){var body=document.getElementById('revTableBody');body.innerHTML=REV.map(function(r){var b=BAND(r.score);return '<div class="rev-table-row"><div class="tc-name">'+r.name+'</div><div class="tc tc-mono tc-green">'+r.mo+'</div><div class="tc tc-mono" style="color:var(--blue)">'+r.spend+'</div><div class="tc tc-mono" style="color:'+b.c+'">'+r.score+'</div><div class="tc"><span class="health-pill '+r.health+'">'+b.l+'</span></div></div>'}).join('');}
 function switchTab(t){document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active')});document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active')});event.target.classList.add('active');document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');}
 function switchDept(){}

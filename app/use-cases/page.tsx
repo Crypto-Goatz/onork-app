@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import AnimatedGrid from '@/components/animated-grid'
 
 export const metadata: Metadata = {
   title: 'Use Cases — 0nCore AI Platform',
@@ -12,9 +13,9 @@ export const metadata: Metadata = {
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Platform: '#6EE05A', Marketing: '#00B4FF', Healthcare: '#ef4444', Agency: '#8b5cf6',
-  'E-Commerce': '#f59e0b', 'Real Estate': '#14b8a6', Legal: '#ec4899', SaaS: '#6EE05A',
-  Education: '#00B4FF', Finance: '#f59e0b', Automation: '#8b5cf6', AI: '#6EE05A',
+  Platform: '#7ed957', Marketing: '#00B4FF', Healthcare: '#ef4444', Agency: '#8b5cf6',
+  'E-Commerce': '#f59e0b', 'Real Estate': '#14b8a6', Legal: '#ec4899', SaaS: '#7ed957',
+  Education: '#00B4FF', Finance: '#f59e0b', Automation: '#8b5cf6', AI: '#7ed957',
 }
 
 export const revalidate = 3600
@@ -55,23 +56,33 @@ export default async function UseCasesPage() {
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           <Link href="/platform" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Platform</Link>
-          <Link href="/use-cases" style={{ fontSize: 13, color: '#6EE05A', textDecoration: 'none', fontWeight: 600 }}>Use Cases</Link>
+          <Link href="/use-cases" style={{ fontSize: 13, color: '#7ed957', textDecoration: 'none', fontWeight: 600 }}>Use Cases</Link>
           <Link href="/pricing" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Pricing</Link>
           <Link href="/login" style={{ fontSize: 13, fontWeight: 600, color: '#020810', background: '#7ed957', padding: '7px 18px', borderRadius: 8, textDecoration: 'none' }}>Get Started</Link>
         </div>
       </nav>
 
       {/* Hero */}
-      <section style={{ textAlign: 'center', padding: 'clamp(60px, 10vw, 100px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 60px)', maxWidth: 800, margin: '0 auto' }}>
-        <div style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, color: '#6EE05A', background: 'rgba(110,224,90,0.08)', padding: '4px 14px', borderRadius: 20, border: '1px solid rgba(110,224,90,0.15)', marginBottom: 20, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-          {cases.length} Use Cases · Updated Daily
+      <section style={{ position: 'relative', overflow: 'hidden', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <AnimatedGrid />
+        <div aria-hidden style={{ pointerEvents: 'none', position: 'absolute', top: -120, left: '20%', height: 480, width: 480, borderRadius: '50%', background: 'rgba(126,217,87,0.07)', filter: 'blur(150px)' }} />
+        <div aria-hidden style={{ pointerEvents: 'none', position: 'absolute', top: '10%', right: '10%', height: 380, width: 380, borderRadius: '50%', background: 'rgba(0,212,255,0.05)', filter: 'blur(130px)' }} />
+        <div style={{ position: 'relative', textAlign: 'center', padding: 'clamp(60px, 10vw, 100px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 60px)', maxWidth: 800, margin: '0 auto' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 10, fontWeight: 700, color: '#7ed957', background: 'rgba(126,217,87,0.08)', padding: '5px 16px', borderRadius: 20, border: '1px solid rgba(126,217,87,0.3)', marginBottom: 20, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+            <span style={{ position: 'relative', display: 'inline-flex', height: 8, width: 8 }}>
+              <span style={{ position: 'absolute', display: 'inline-flex', height: '100%', width: '100%', borderRadius: '50%', background: '#7ed957', opacity: 0.7, animation: 'ping 1s cubic-bezier(0,0,0.2,1) infinite' }} />
+              <span style={{ position: 'relative', display: 'inline-flex', height: 8, width: 8, borderRadius: '50%', background: '#7ed957' }} />
+            </span>
+            {cases.length} Use Cases · Updated Daily
+          </div>
+          <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 0 16px' }}>
+            What Will You{' '}
+            <span style={{ backgroundImage: 'linear-gradient(135deg, #7ed957, #00d4ff, #a78bfa)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Build</span>?
+          </h1>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 560, margin: '0 auto' }}>
+            Real use cases from businesses using 0nCore to automate, scale, and launch products. New use cases generated daily with SXO optimization.
+          </p>
         </div>
-        <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, margin: '0 0 16px' }}>
-          What Will You <span style={{ color: '#6EE05A' }}>Build</span>?
-        </h1>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 560, margin: '0 auto' }}>
-          Real use cases from businesses using 0nCore to automate, scale, and launch products. New use cases generated daily with SXO optimization.
-        </p>
       </section>
 
       {/* Category pills */}

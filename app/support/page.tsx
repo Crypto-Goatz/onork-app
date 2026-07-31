@@ -59,14 +59,16 @@ const FAQ = [
 
 export default function SupportPage() {
   return (
-    <main className="min-h-screen bg-[#0d1117] text-[#c9d1d9] font-sans">
+    <main className="min-h-screen bg-[#020810] font-sans text-white antialiased">
       <div className="max-w-3xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-3">
-          <p className="text-xs font-medium tracking-wide uppercase text-[#6EE05A]">Support</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-[#e6edf3]">
-            How can we help?
+          <span className="inline-block rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-white/60">Support</span>
+          <h1 className="text-4xl font-black tracking-tight text-balance sm:text-5xl">
+            <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+              How can we help?
+            </span>
           </h1>
-          <p className="text-sm text-[#8b949e] leading-relaxed max-w-2xl">
+          <p className="text-sm text-white/60 leading-relaxed max-w-2xl">
             0nCore is built and maintained by RocketOpp LLC. We answer every email personally —
             pick the channel that fits the question and we&rsquo;ll get back to you quickly.
           </p>
@@ -77,16 +79,16 @@ export default function SupportPage() {
             <a
               key={title}
               href={href}
-              className="group block bg-[#161b22] border border-[#30363d] rounded-xl p-5 hover:border-[#484f58] hover:bg-[#1c2128] hover:translate-y-[-1px] hover:shadow-lg hover:shadow-black/20 transition-all duration-200"
+              className="group block rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 backdrop-blur transition-colors hover:border-white/[0.18]"
             >
               <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#6EE05A]/10 border border-[#6EE05A]/20 shrink-0">
-                  <Icon className="w-5 h-5 text-[#6EE05A]" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl border bg-[#0d1117] shrink-0" style={{ borderColor: '#7ed95740', boxShadow: '0 0 24px #7ed95722' }}>
+                  <Icon className="w-5 h-5" style={{ color: '#7ed957' }} />
                 </div>
                 <div className="flex-1 space-y-2">
-                  <h2 className="text-base font-medium text-[#e6edf3]">{title}</h2>
-                  <p className="text-sm text-[#c9d1d9] leading-relaxed">{body}</p>
-                  <div className="inline-flex items-center gap-1.5 text-sm font-medium text-[#6EE05A] group-hover:gap-2 transition-all">
+                  <h2 className="text-base font-bold text-white">{title}</h2>
+                  <p className="text-sm text-white/60 leading-relaxed">{body}</p>
+                  <div className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#7ed957] group-hover:gap-2 transition-all">
                     {cta}
                     <ArrowRight className="w-3.5 h-3.5" />
                   </div>
@@ -97,41 +99,41 @@ export default function SupportPage() {
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold text-[#e6edf3]">Common questions</h2>
+          <h2 className="text-xl font-bold text-white">Common questions</h2>
           <div className="space-y-3">
             {FAQ.map((item) => (
               <div
                 key={item.q}
-                className="bg-[#161b22] border border-[#30363d] rounded-xl p-5 space-y-2"
+                className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 space-y-2 backdrop-blur"
               >
-                <h3 className="text-base font-medium text-[#e6edf3]">{item.q}</h3>
-                <p className="text-sm text-[#c9d1d9] leading-relaxed">{item.a}</p>
+                <h3 className="text-base font-bold text-white">{item.q}</h3>
+                <p className="text-sm text-white/60 leading-relaxed">{item.a}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="bg-[#161b22] border border-[#30363d] rounded-xl p-5 space-y-2">
-          <h2 className="text-base font-medium text-[#e6edf3]">Still stuck?</h2>
-          <p className="text-sm text-[#c9d1d9] leading-relaxed">
+        <section className="rounded-2xl border border-[#7ed957]/25 bg-gradient-to-br from-[#7ed957]/[0.05] via-[#00d4ff]/[0.02] to-[#a78bfa]/[0.05] p-6 space-y-2 backdrop-blur">
+          <h2 className="text-base font-bold text-white">Still stuck?</h2>
+          <p className="text-sm text-white/60 leading-relaxed">
             Send a note to{' '}
-            <a href="mailto:mike@rocketopp.com" className="text-[#6EE05A] hover:underline">
+            <a href="mailto:mike@rocketopp.com" className="text-[#7ed957] hover:underline">
               mike@rocketopp.com
             </a>{' '}
             and we&rsquo;ll route it to the right person on the team.
           </p>
         </section>
 
-        <footer className="pt-6 border-t border-[#30363d] flex flex-wrap items-center justify-between gap-3 text-xs text-[#8b949e]">
+        <footer className="pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-white/45">
           <span>&copy; 2026 RocketOpp LLC. All rights reserved.</span>
           <div className="flex items-center gap-4">
-            <Link href="/privacy" className="hover:text-[#e6edf3] transition-colors">
+            <Link href="/privacy" className="hover:text-[#7ed957] transition-colors">
               Privacy
             </Link>
-            <Link href="/terms" className="hover:text-[#e6edf3] transition-colors">
+            <Link href="/terms" className="hover:text-[#7ed957] transition-colors">
               Terms
             </Link>
-            <Link href="/" className="hover:text-[#e6edf3] transition-colors">
+            <Link href="/" className="hover:text-[#7ed957] transition-colors">
               Home
             </Link>
           </div>

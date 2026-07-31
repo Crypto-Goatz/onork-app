@@ -10,7 +10,7 @@ import {
   CreditCard, Tag, Mail, Share2, FileText, Link2, ClipboardList, Megaphone,
   Mic, Bot, Brain, Zap, RefreshCw, Phone, FolderOpen, FileCheck, Globe,
   GraduationCap, Palette, User, CheckSquare, Settings, Shield, Plug,
-  Building2, ShoppingCart, Download, UserPlus, PenLine, HeartPulse, ChevronDown, Check,
+  Building2, ShoppingCart, UserPlus, PenLine, HeartPulse, ChevronDown, Check,
   Package, Server, Briefcase, type LucideIcon,
 } from 'lucide-react'
 
@@ -64,14 +64,9 @@ const NAV_ITEMS: { label: string; href: string; keywords: string; Icon: LucideIc
   { label: 'Integrations', href: '/dashboard/integrations', keywords: 'integrations connect api services stripe', Icon: Plug },
   { label: 'Agency', href: '/dashboard/agency', keywords: 'agency locations sub-accounts management', Icon: Building2 },
   { label: 'Marketplace', href: '/marketplace', keywords: 'marketplace addons plugins store buy', Icon: ShoppingCart },
-  { label: 'Downloads', href: '/dashboard/downloads', keywords: 'downloads install cli mcp server', Icon: Download },
   { label: 'New Contact', href: '/dashboard/contacts?action=new', keywords: 'create new contact add person', Icon: UserPlus },
   { label: 'Send Email', href: '/dashboard/email/builder', keywords: 'compose new email send write', Icon: PenLine },
   { label: 'HIPAA Scanner', href: '/dashboard/hipaa', keywords: 'hipaa scan compliance healthcare security', Icon: HeartPulse },
-  { label: 'Service Packager', href: '/dashboard/service-packager', keywords: 'service packager fiverr upwork portfolio gig product landing page mcp', Icon: Package },
-  { label: 'New Package', href: '/dashboard/service-packager?tab=builder', keywords: 'create package fiverr gig generate service', Icon: Package },
-  { label: 'My Packages', href: '/dashboard/service-packager?tab=packages', keywords: 'packages list fiverr upwork generated', Icon: Briefcase },
-  { label: 'Portfolio', href: '/dashboard/service-packager?tab=portfolio', keywords: 'portfolio public gallery showcase work', Icon: Briefcase },
   { label: 'MCP Store', href: '/dashboard/mcp-store', keywords: 'mcp store browse servers registry connect', Icon: Server },
 ]
 
@@ -272,32 +267,6 @@ export default function Header({ userEmail, userName, onMenuToggle, onLogout, la
           <OpenInCrmButton />
           <TokenButton />
           <NotificationBell />
-
-          {/* Layout switcher */}
-          <div className="relative">
-            <button className="jp-header-btn" onClick={() => { setShowLayoutMenu(!showLayoutMenu); setShowUserMenu(false) }} title="Layout">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zm10-3a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1v-6z" />
-              </svg>
-            </button>
-            {showLayoutMenu && (
-              <>
-                <div className="fixed inset-0 z-[99]" onClick={() => setShowLayoutMenu(false)} />
-                <div className="absolute top-full right-0 mt-1.5 w-40 bg-core-card border border-core-border rounded-lg p-1 z-[100] shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-                  {layoutOptions.map(opt => (
-                    <button
-                      key={opt.mode}
-                      onClick={() => { onLayoutChange?.(opt.mode); setShowLayoutMenu(false) }}
-                      className={`w-full flex items-center justify-between px-2.5 py-2 text-[13px] font-medium rounded-md border-none cursor-pointer font-[inherit] transition-colors duration-100 ${layoutMode === opt.mode ? 'text-core-green bg-core-green/[0.06]' : 'text-core-text bg-transparent hover:bg-white/[0.03]'}`}
-                    >
-                      {opt.label}
-                      {layoutMode === opt.mode && <Check className="w-3.5 h-3.5" />}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
 
           {/* User menu */}
           <div className="jp-header-user relative" onClick={() => { setShowUserMenu(!showUserMenu); setShowLayoutMenu(false) }}>

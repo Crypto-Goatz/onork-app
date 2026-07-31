@@ -91,7 +91,7 @@ export default function GetStartedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-core-bg flex flex-col items-center justify-center px-4 py-16">
+    <div className="min-h-screen bg-[#020810] flex flex-col items-center justify-center px-4 py-16">
       <div className="w-full max-w-md">
 
         {/* Logo */}

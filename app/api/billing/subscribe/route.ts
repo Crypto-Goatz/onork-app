@@ -43,9 +43,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/signup', req.url))
   }
 
-  if (tier.slug === 'enterprise') {
-    return NextResponse.redirect('mailto:mike@rocketopp.com?subject=0nCore%20Enterprise')
-  }
+  // Enterprise is now a flat $497/mo checkout (STRIPE_PRICE_TIER_4) — "everything,
+  // no sales call" — so it flows through the same Stripe checkout as every paid tier.
 
   const supabase = await createServerClient()
   const user = (await supabase.auth.getSession()).data.session?.user ?? null

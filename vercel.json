@@ -55,6 +55,14 @@
     {
       "path": "/api/sxo-indexer/tick",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/stack-scan-drain",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/provision-repair",
+      "schedule": "*/2 * * * *"
     }
   ],
   "$schema": "https://openapi.vercel.sh/vercel.json",

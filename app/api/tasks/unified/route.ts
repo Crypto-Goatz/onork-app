@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
       tags: body.tags || [],
       assigned_to: body.assigned_to || null,
       client_id: body.client_id || null,
+      subtasks: body.subtasks || [],
       recurring: body.recurring || false,
       recurrence_rule: body.recurrence_rule || null,
       next_occurrence: body.next_occurrence || null,
@@ -92,6 +93,27 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ task: data })
+}
+
+export async function DELETE(req: NextRequest) {
+  const supabase = await createClient()
+  const user = (await supabase.auth.getSession()).data.session?.user ?? null
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id') || (await req.json().catch(() => ({})))?.id
+
+  if (!id) return NextResponse.json({ error: 'Task ID required' }, { status: 400 })
+
+  const { error } = await admin
+    .from('unified_tasks')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ ok: true })
 }
 
 export async function PATCH(req: NextRequest) {

@@ -86,34 +86,6 @@ export async function POST(req: Request) {
     return Response.json({ url: session.url })
   }
 
-  // CREDIT PACK (one-time)
-  if (pack_id) {
-    const { data: pack } = await supabase
-      .from('run_packs')
-      .select('*')
-      .eq('id', pack_id)
-      .eq('active', true)
-      .single()
-
-    if (!pack?.stripe_price_id) {
-      return Response.json({ error: 'Pack not available' }, { status: 400 })
-    }
-
-    const session = await getStripe().checkout.sessions.create({
-      mode: 'payment',
-      customer: customerId,
-      payment_method_types: ['card'],
-      line_items: [{ price: pack.stripe_price_id, quantity: 1 }],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/console?sparks=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/console`,
-      metadata: {
-        user_id: user.id,
-        pack_id: pack.id,
-        sparks: String(pack.sparks),
-      },
-    })
-    return Response.json({ url: session.url })
-  }
-
-  return Response.json({ error: 'tier_level or pack_id required' }, { status: 400 })
+  // Usage credits are now the prepaid wallet — see /api/wallet/topup.
+  return Response.json({ error: 'tier_level required' }, { status: 400 })
 }

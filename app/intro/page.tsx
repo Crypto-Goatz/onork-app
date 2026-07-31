@@ -60,7 +60,7 @@ export default function LandingPage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'var(--bg-deep, #040A1A)',
+        background: 'var(--bg-deep, #020810)',
         overflow: 'hidden',
         position: 'relative',
       }}
@@ -70,7 +70,7 @@ export default function LandingPage() {
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '16px 32px',
-        background: 'rgba(4, 10, 26, 0.6)',
+        background: 'rgba(2,8,16, 0.6)',
         backdropFilter: 'blur(16px)',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
       }}>
@@ -91,7 +91,7 @@ export default function LandingPage() {
             Pricing
           </a>
           <a href="/login" style={{
-            fontSize: 13, fontWeight: 600, color: 'var(--cta-text, #0d1117)',
+            fontSize: 13, fontWeight: 600, color: 'var(--cta-text, #020810)',
             background: 'var(--accent, #7ed957)', padding: '7px 18px', borderRadius: 8,
             textDecoration: 'none', transition: 'opacity 0.2s',
           }} onMouseEnter={e => (e.target as HTMLElement).style.opacity = '0.85'} onMouseLeave={e => (e.target as HTMLElement).style.opacity = '1'}>
@@ -115,8 +115,8 @@ export default function LandingPage() {
       <div style={{
         position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none',
         background: [
-          'radial-gradient(ellipse at 50% 40%, transparent 0%, rgba(4,10,26,0.3) 50%, rgba(4,10,26,0.85) 100%)',
-          'linear-gradient(180deg, rgba(4,10,26,0.1) 0%, rgba(4,10,26,0.4) 40%, rgba(4,10,26,0.7) 100%)',
+          'radial-gradient(ellipse at 50% 40%, transparent 0%, rgba(2,8,16,0.3) 50%, rgba(2,8,16,0.85) 100%)',
+          'linear-gradient(180deg, rgba(2,8,16,0.1) 0%, rgba(2,8,16,0.4) 40%, rgba(2,8,16,0.7) 100%)',
           'radial-gradient(circle at 50% 50%, rgba(126,217,87,0.06) 0%, transparent 60%)',
         ].join(', '),
       }} />
@@ -200,7 +200,7 @@ export default function LandingPage() {
             overflow: 'hidden',
             border: '1px solid rgba(126, 217, 87, 0.2)',
             boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 0 40px rgba(126, 217, 87, 0.08)',
-            background: 'rgba(4,10,26,0.6)',
+            background: 'rgba(2,8,16,0.6)',
             backdropFilter: 'blur(12px)',
           }}
         >
@@ -219,7 +219,7 @@ export default function LandingPage() {
             />
             <div style={{
               position: 'absolute', inset: 0,
-              background: 'linear-gradient(0deg, rgba(4,10,26,0.9) 0%, transparent 50%)',
+              background: 'linear-gradient(0deg, rgba(2,8,16,0.9) 0%, transparent 50%)',
               display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
               padding: '20px',
             }}>
@@ -324,7 +324,7 @@ export default function LandingPage() {
           font-size: clamp(4rem, 12vw, 10rem);
           font-weight: 900;
           letter-spacing: -0.02em;
-          color: var(--bg-deep, #040A1A);
+          color: var(--bg-deep, #020810);
           text-transform: lowercase;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           position: relative;
@@ -433,9 +433,9 @@ export default function LandingPage() {
         .toggle-track {
           width: 72px;
           height: 36px;
-          background: var(--bg-secondary, #161b22);
+          background: var(--bg-secondary, rgba(255,255,255,0.03));
           border-radius: 18px;
-          border: 1px solid var(--border, #30363d);
+          border: 1px solid var(--border, rgba(255,255,255,0.1));
           position: relative;
           transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }

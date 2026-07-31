@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: config } = await admin.from('bot_config').select('*').eq('user_id', user.id).single()
+  const { data: config } = await admin.from('bot_settings').select('*').eq('user_id', user.id).single()
   const body = await req.json()
   const { topic, hook_archetype = 'bait_and_flip', product_mention = 'moderate' } = body
 

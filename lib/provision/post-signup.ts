@@ -28,6 +28,7 @@ import { findFamilyMatch } from '@/lib/family-locations'
 import { getPitForLocation } from '@/lib/crm'
 import { ensureLocationInstall } from '@/lib/crm/location-token'
 import { provisionSubLocation } from '@/lib/provision'
+import { generateProfileToken } from '@/lib/0n-token'
 
 const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
@@ -96,7 +97,11 @@ export async function postSignupProvision(
     .maybeSingle()
 
   const alreadyProvisioned = !!existing?.provisioned_at
-  const token = existing?.access_token || `0n_${crypto.randomBytes(24).toString('hex')}`
+  // Reuse an existing VALID token; the raw `0n_<hex>` format used before never
+  // passed validation. A proper `0n_live_…` token is minted after the upsert
+  // (generateProfileToken needs the row to exist).
+  const hasValidToken = !!existing?.access_token && existing.access_token.startsWith('0n_live_')
+  let token = hasValidToken ? existing!.access_token! : ''
 
   // 2. Family match
   const family = findFamilyMatch(input.email)
@@ -125,6 +130,16 @@ export async function postSignupProvision(
       { onConflict: 'id' },
     )
 
+  // Mint a proper 0n_live_ token now that the profile row exists (fixes the
+  // old raw-hex tokens that never validated against the auth system).
+  if (!hasValidToken) {
+    try {
+      token = await generateProfileToken(input.userId)
+    } catch (err) {
+      console.error('[post-signup] token mint failed:', err)
+    }
+  }
+
   // 4. CRM contact (only if we don't already have one)
   let crmContactId: string | null = existing?.crm_contact_id || null
   if (!crmContactId) {
@@ -134,10 +149,10 @@ export async function postSignupProvision(
       ? getPitForLocation(familyLocationId) || MASTER_PIT
       : MASTER_PIT
     const contactTags = familyVip
-      ? ['0n User', 'VIP', 'Family']
+      ? ['0n User', 'VIP', 'Family', 'signed-up']
       : family
-        ? ['0n User', 'Family Signup', family.location.name.replace(/\s+/g, '-')]
-        : ['0n User', 'Trial', 'Signup']
+        ? ['0n User', 'Family Signup', family.location.name.replace(/\s+/g, '-'), 'signed-up']
+        : ['0n User', 'Trial', 'Signup', 'signed-up']
 
     try {
       const res = await fetch(`${CRM_API}/contacts/`, {
@@ -176,6 +191,43 @@ export async function postSignupProvision(
     } catch (err) {
       console.error('[post-signup] CRM contact threw:', err)
     }
+  }
+
+  // 4b. GUARANTEE the "signed-up" conversion is tagged + tracked on EVERY signup.
+  // New contacts already include the tag at creation; this also covers re-runs /
+  // pre-existing contacts, and records the conversion so it's visible to us + CRO9.
+  if (crmContactId) {
+    const tagPit = familyLocationId
+      ? getPitForLocation(familyLocationId) || MASTER_PIT
+      : MASTER_PIT
+    try {
+      await fetch(`${CRM_API}/contacts/${crmContactId}/tags`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tagPit}`, Version: CRM_VERSION, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tags: ['signed-up'] }),
+      })
+    } catch (err) {
+      console.error('[post-signup] signed-up tag failed:', err)
+    }
+  }
+
+  // Track the signup as a CRO9 conversion — durable, reportable, CRO9 reads it.
+  if (!alreadyProvisioned) {
+    const { error: convErr } = await sb.from('cro9_events').insert({
+      site_slug: '0ncore',
+      session_id: `signup:${input.userId}`,
+      event_type: 'conversion',
+      path: '/signup',
+      metadata: {
+        kind: 'signup',
+        email: input.email,
+        crm_contact_id: crmContactId,
+        crm_synced: !!crmContactId,
+        source: input.source || '0ncore-signup',
+        tag: 'signed-up',
+      },
+    })
+    if (convErr) console.error('[post-signup] cro9 conversion log failed:', convErr.message)
   }
 
   // 5. Sub-location provisioning OR location-token mint

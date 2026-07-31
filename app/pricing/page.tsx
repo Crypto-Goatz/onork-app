@@ -14,6 +14,7 @@ import {
 import { TIERS } from '@/lib/pricing'
 import AnimatedGrid from '@/components/animated-grid'
 import AnimatedConnectors from '@/components/animated-connectors'
+import PricingComparison from '@/components/pricing/PricingComparison'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -344,6 +345,9 @@ export default function PricingPage() {
           )
         })()}
       </section>
+
+      {/* ═══ Full feature comparison matrix ══════════════════════════ */}
+      <PricingComparison />
 
       {/* ═══ Replaces this stack ═════════════════════════════════════ */}
       <section className="relative overflow-hidden border-y border-white/5 bg-white/[0.015]">

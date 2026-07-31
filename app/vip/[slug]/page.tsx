@@ -654,17 +654,18 @@ function QuickLink({
 
 function UnauthorizedView({ clientName, email }: { clientName: string; email: string }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary,#0a0a0f)] text-white p-6">
-      <div className="max-w-md text-center">
-        <div className="w-12 h-12 mx-auto rounded-full bg-red-500/20 flex items-center justify-center mb-4">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#020810] font-sans text-white antialiased p-6">
+      <div aria-hidden className="pointer-events-none absolute -top-24 left-1/2 h-[460px] w-[460px] -translate-x-1/2 rounded-full bg-[#7ed957]/[0.06] blur-[140px]" />
+      <div className="relative max-w-md rounded-3xl border border-white/[0.08] bg-white/[0.02] p-10 text-center backdrop-blur">
+        <div className="w-12 h-12 mx-auto rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center mb-4">
           <ShieldCheck className="w-6 h-6 text-red-400" />
         </div>
-        <h1 className="text-2xl font-bold mb-2">Not authorized</h1>
-        <p className="opacity-70 text-sm mb-4">
-          You're signed in as <code>{email}</code>, but this email isn't on the access list
-          for the <strong>{clientName}</strong> dashboard.
+        <h1 className="text-2xl font-black tracking-tight mb-2">Not authorized</h1>
+        <p className="text-white/70 text-sm mb-4">
+          You're signed in as <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-white/80">{email}</code>, but this email isn't on the access list
+          for the <strong className="text-white">{clientName}</strong> dashboard.
         </p>
-        <p className="opacity-50 text-xs">
+        <p className="text-white/45 text-xs">
           Ask Mike to add you, or sign in with a different account.
         </p>
       </div>

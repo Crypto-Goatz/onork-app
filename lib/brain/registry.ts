@@ -57,28 +57,6 @@ export const BRAIN_REGISTRY: RegistryEntry[] = [
 
   // ── AI surfaces — all route through /api/<slug>/think (handleThink helper) ──
   {
-    slug: 'service_packager',
-    display_name: 'Service Packager',
-    category: 'ai',
-    handler_paths: ['app/api/service-packager/think/route.ts'],
-    required_imports: ['@/lib/brain/think-route'],
-    prohibited_imports: ['@anthropic-ai/sdk'],
-    required_calls: ['handleThink('],
-    surface_route: '/dashboard/service-packager',
-    description: 'Turn any service into 8 sellable outputs.',
-  },
-  {
-    slug: '0nexec',
-    display_name: '0nExec',
-    category: 'ai',
-    handler_paths: ['app/api/exec/think/route.ts'],
-    required_imports: ['@/lib/brain/think-route'],
-    prohibited_imports: ['@anthropic-ai/sdk'],
-    required_calls: ['handleThink('],
-    surface_route: '/console/exec',
-    description: 'Score-based orbit + formula engine.',
-  },
-  {
     slug: 'course_builder',
     display_name: 'Course Builder',
     category: 'ai',

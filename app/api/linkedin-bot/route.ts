@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
           vpis_score: bestScores?.adjusted_score, hook_score: bestScores?.hook,
           emotion_score: bestScores?.emotion, platform_score: bestScores?.platform,
           viral_score: bestScores?.viral, specificity_score: bestScores?.specificity,
-          structure_score: bestScores?.structure, keywords_score: bestScores?.keywords,
+          structure_score: bestScores?.structure, keyword_score: bestScores?.keywords,
           cta_score: bestScores?.cta, patterns_fired: bestScores?.patterns_fired,
           hook_archetype, status: 'pending_approval',
         }).select('id').single()
@@ -262,7 +262,7 @@ export async function POST(req: NextRequest) {
         if ((post.vpis_score || 0) < auto_approve_threshold) return NextResponse.json({ skipped: true, reason: `Score ${post.vpis_score} below threshold ${auto_approve_threshold}` })
 
         // Check kill switch
-        const { data: settings } = await supabase.from('bot_config')
+        const { data: settings } = await supabase.from('bot_settings')
           .select('auto_post_enabled, auto_comment_enabled, emergency_pause')
           .eq('user_id', user_id)
           .single()
@@ -392,7 +392,7 @@ export async function POST(req: NextRequest) {
 
         const apiKey = `0n_${crypto.randomUUID().replace(/-/g, '')}`
 
-        const { data, error } = await supabase.from('bot_config').upsert({
+        const { data, error } = await supabase.from('bot_settings').upsert({
           user_id,
           location_id: ghl_location_id || null,
           icp_description: icp_description || null,

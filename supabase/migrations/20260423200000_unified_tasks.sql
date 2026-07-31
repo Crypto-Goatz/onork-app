@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS unified_tasks (
   tags TEXT[] DEFAULT '{}',
   assigned_to TEXT,                 -- Name or email
   client_id TEXT,                   -- CRM contact ID if linked
+  subtasks JSONB DEFAULT '[]'::jsonb, -- [{id,title,done}]
 
   -- Recurrence
   recurring BOOLEAN DEFAULT false,

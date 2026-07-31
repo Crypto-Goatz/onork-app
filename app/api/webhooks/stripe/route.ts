@@ -126,6 +126,18 @@ export async function POST(req: Request) {
       const userId = session.metadata?.user_id
       if (!userId) break
 
+      // Wallet top-up — credit the user's prepaid execution balance.
+      if (session.metadata?.kind === 'wallet_topup') {
+        const cents = parseInt(session.metadata?.cents || '0', 10)
+        if (cents > 0) {
+          const { error: wErr } = await supabase.rpc('wallet_credit', {
+            p_user: userId, p_cents: cents, p_kind: 'topup', p_desc: 'Stripe top-up', p_ref: session.id,
+          })
+          if (wErr) console.error('[stripe/webhook] wallet_credit failed:', wErr.message)
+        }
+        break
+      }
+
       if (session.mode === 'subscription' && session.subscription) {
         const sub = await getStripe().subscriptions.retrieve(session.subscription)
         const { error: subErr } = await supabase.from('product_subscriptions').upsert({
@@ -186,17 +198,6 @@ export async function POST(req: Request) {
       }
 
       if (session.mode === 'payment') {
-        const sparks = parseInt(session.metadata?.sparks || '0')
-        if (sparks > 0) {
-          const { data: existing } = await supabase.from('run_balances').select('balance, lifetime_earned').eq('user_id', userId).single()
-          const { error: balErr } = await supabase.from('run_balances').upsert({
-            user_id: userId, balance: (existing?.balance || 0) + sparks,
-            lifetime_earned: (existing?.lifetime_earned || 0) + sparks,
-            stripe_customer_id: session.customer,
-          }, { onConflict: 'user_id' })
-          if (balErr) console.error('[stripe-webhook] run_balances upsert failed:', balErr)
-        }
-
         // Add-on purchase → write product_keys + report to CRM billing webhook
         if (session.metadata?.type === 'addon_purchase') {
           const productSlug = session.metadata.product_slug

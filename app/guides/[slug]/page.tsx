@@ -52,7 +52,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   const next = idx >= 0 ? GUIDES.slice(idx + 1).find(g => g.status === 'live') : null
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white">
+    <div className="min-h-screen bg-[#020810] text-white antialiased">
       <div className="max-w-4xl mx-auto px-6 py-12">
         <Link href="/guides" className="inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white mb-8 transition">
           <ArrowLeft className="h-4 w-4" /> All guides

@@ -29,7 +29,7 @@ interface PipelineResult {
 // ── K-Layer Definitions ──────────────────────────────────────────
 
 const K_LAYERS = [
-  { id: 'K1', label: 'Identity', color: '#6EE05A', icon: 'ID' },
+  { id: 'K1', label: 'Identity', color: '#7ed957', icon: 'ID' },
   { id: 'K2', label: 'Context', color: '#4ECDC4', icon: 'CTX' },
   { id: 'K3', label: 'Pain Points', color: '#FF6B6B', icon: 'PAIN' },
   { id: 'K4', label: 'Tech Stack', color: '#45B7D1', icon: 'TECH' },
@@ -210,7 +210,7 @@ export default function VideoDemoPage() {
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: '#080B0F',
+        backgroundColor: '#020810',
         color: '#E2E8F0',
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
@@ -218,7 +218,7 @@ export default function VideoDemoPage() {
       {/* Header */}
       <header
         style={{
-          borderBottom: '1px solid rgba(110, 224, 90, 0.15)',
+          borderBottom: '1px solid rgba(126, 217, 87, 0.15)',
           padding: '16px 24px',
           display: 'flex',
           alignItems: 'center',
@@ -230,13 +230,13 @@ export default function VideoDemoPage() {
             width: 32,
             height: 32,
             borderRadius: 8,
-            backgroundColor: 'rgba(110, 224, 90, 0.15)',
+            backgroundColor: 'rgba(126, 217, 87, 0.15)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: 14,
             fontWeight: 700,
-            color: '#6EE05A',
+            color: '#7ed957',
           }}
         >
           0n
@@ -249,8 +249,8 @@ export default function VideoDemoPage() {
             fontSize: 11,
             padding: '2px 8px',
             borderRadius: 9999,
-            backgroundColor: 'rgba(110, 224, 90, 0.12)',
-            color: '#6EE05A',
+            backgroundColor: 'rgba(126, 217, 87, 0.12)',
+            color: '#7ed957',
             fontWeight: 600,
           }}
         >
@@ -275,7 +275,7 @@ export default function VideoDemoPage() {
             style={{
               backgroundColor: '#0F1318',
               borderRadius: 12,
-              border: '1px solid rgba(110, 224, 90, 0.1)',
+              border: '1px solid rgba(126, 217, 87, 0.1)',
               padding: 24,
             }}
           >
@@ -283,7 +283,7 @@ export default function VideoDemoPage() {
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: '#6EE05A',
+                color: '#7ed957',
                 marginBottom: 16,
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
@@ -309,7 +309,7 @@ export default function VideoDemoPage() {
                   type="checkbox"
                   checked={testMode}
                   onChange={(e) => setTestMode(e.target.checked)}
-                  style={{ accentColor: '#6EE05A' }}
+                  style={{ accentColor: '#7ed957' }}
                 />
                 Test Mode (no actual video generation)
               </label>
@@ -324,8 +324,8 @@ export default function VideoDemoPage() {
                 padding: '12px 24px',
                 borderRadius: 8,
                 border: 'none',
-                backgroundColor: running ? '#1E293B' : '#6EE05A',
-                color: running ? '#64748B' : '#080B0F',
+                backgroundColor: running ? '#1E293B' : '#7ed957',
+                color: running ? '#64748B' : '#020810',
                 fontSize: 14,
                 fontWeight: 700,
                 cursor: running ? 'not-allowed' : 'pointer',
@@ -343,7 +343,7 @@ export default function VideoDemoPage() {
             style={{
               backgroundColor: '#0F1318',
               borderRadius: 12,
-              border: '1px solid rgba(110, 224, 90, 0.1)',
+              border: '1px solid rgba(126, 217, 87, 0.1)',
               padding: 24,
             }}
           >
@@ -351,7 +351,7 @@ export default function VideoDemoPage() {
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: '#6EE05A',
+                color: '#7ed957',
                 marginBottom: 16,
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
@@ -430,7 +430,7 @@ export default function VideoDemoPage() {
               style={{
                 backgroundColor: '#0F1318',
                 borderRadius: 12,
-                border: `1px solid ${result.success ? 'rgba(110, 224, 90, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+                border: `1px solid ${result.success ? 'rgba(126, 217, 87, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
                 padding: 24,
               }}
             >
@@ -438,7 +438,7 @@ export default function VideoDemoPage() {
                 style={{
                   fontSize: 14,
                   fontWeight: 600,
-                  color: result.success ? '#6EE05A' : '#EF4444',
+                  color: result.success ? '#7ed957' : '#EF4444',
                   marginBottom: 12,
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
@@ -471,8 +471,8 @@ export default function VideoDemoPage() {
                     style={{
                       padding: 12,
                       borderRadius: 8,
-                      backgroundColor: 'rgba(110, 224, 90, 0.05)',
-                      border: '1px solid rgba(110, 224, 90, 0.1)',
+                      backgroundColor: 'rgba(126, 217, 87, 0.05)',
+                      border: '1px solid rgba(126, 217, 87, 0.1)',
                       fontSize: 13,
                       lineHeight: 1.6,
                       color: '#CBD5E1',
@@ -493,7 +493,7 @@ export default function VideoDemoPage() {
             style={{
               backgroundColor: '#0F1318',
               borderRadius: 12,
-              border: '1px solid rgba(110, 224, 90, 0.1)',
+              border: '1px solid rgba(126, 217, 87, 0.1)',
               padding: 24,
               flex: 1,
               minHeight: 400,
@@ -505,7 +505,7 @@ export default function VideoDemoPage() {
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: '#6EE05A',
+                color: '#7ed957',
                 marginBottom: 16,
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
@@ -539,7 +539,7 @@ export default function VideoDemoPage() {
                             ? '#EF4444'
                             : log.status === 'active'
                             ? '#F59E0B'
-                            : '#6EE05A',
+                            : '#7ed957',
                         fontWeight: 600,
                         flexShrink: 0,
                         minWidth: 40,
@@ -559,7 +559,7 @@ export default function VideoDemoPage() {
             style={{
               backgroundColor: '#0F1318',
               borderRadius: 12,
-              border: '1px solid rgba(110, 224, 90, 0.1)',
+              border: '1px solid rgba(126, 217, 87, 0.1)',
               padding: 24,
             }}
           >
@@ -575,7 +575,7 @@ export default function VideoDemoPage() {
                 style={{
                   fontSize: 14,
                   fontWeight: 600,
-                  color: '#6EE05A',
+                  color: '#7ed957',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
                 }}
@@ -590,13 +590,13 @@ export default function VideoDemoPage() {
                     borderRadius: 9999,
                     backgroundColor:
                       pollStatus === 'completed'
-                        ? 'rgba(110, 224, 90, 0.12)'
+                        ? 'rgba(126, 217, 87, 0.12)'
                         : pollStatus === 'failed' || pollStatus === 'timeout'
                         ? 'rgba(239, 68, 68, 0.12)'
                         : 'rgba(245, 158, 11, 0.12)',
                     color:
                       pollStatus === 'completed'
-                        ? '#6EE05A'
+                        ? '#7ed957'
                         : pollStatus === 'failed' || pollStatus === 'timeout'
                         ? '#EF4444'
                         : '#F59E0B',
@@ -686,7 +686,7 @@ function InputField({
         }}
       >
         {label}
-        {required && <span style={{ color: '#6EE05A', marginLeft: 2 }}>*</span>}
+        {required && <span style={{ color: '#7ed957', marginLeft: 2 }}>*</span>}
       </label>
       <input
         type={type}

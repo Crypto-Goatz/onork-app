@@ -52,7 +52,7 @@ function StepField({ show, label, children }: StepFieldProps) {
 }
 
 const FIELD_CLASS =
-  'w-full bg-transparent border-0 border-b border-[#30363d] focus:border-[#6EE05A]/70 text-xl sm:text-2xl text-white placeholder:text-[#6b7681] pb-3 pt-1 focus:outline-none transition-colors'
+  'w-full bg-transparent border-0 border-b border-white/15 focus:border-[#7ed957]/50 text-xl sm:text-2xl text-white placeholder:text-white/35 pb-3 pt-1 focus:outline-none transition-colors'
 
 export default function SignupCinematic({
   refCode,
@@ -163,13 +163,16 @@ export default function SignupCinematic({
   }
 
   return (
-    <main className="min-h-screen bg-[#0d1117] text-white">
+    <main className="min-h-screen bg-[#020810] text-white">
       <div className="max-w-5xl mx-auto px-6 pt-16 pb-24 grid lg:grid-cols-[1.3fr_1fr] gap-16">
         {/* LEFT — editorial intro */}
         <div className="pt-2">
-          <Link href="/" aria-label="0nCore" className="mb-12 inline-flex items-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/0ncore-logo-dark.png" alt="0nCore" className="h-8 w-auto object-contain" />
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-[#6b7681] hover:text-white mb-12"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-[#7ed957]" />
+            0nCore
           </Link>
 
           <motion.h1
@@ -180,7 +183,9 @@ export default function SignupCinematic({
           >
             Your command
             <br />
-            center awaits.
+            <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
+              center awaits.
+            </span>
           </motion.h1>
 
           <motion.p
@@ -205,39 +210,20 @@ export default function SignupCinematic({
               'CRM workspace ready when you are — claim it in one click',
             ].map((line) => (
               <li key={line} className="flex items-start gap-2.5">
-                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#6EE05A] shrink-0" />
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#7ed957] shrink-0" />
                 <span>{line}</span>
               </li>
             ))}
           </motion.ul>
 
-          {/* One-login SSO explainer — secured by 0nVault */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-10 flex items-start gap-4 rounded-2xl border border-[#30363d] bg-[#161b22]/60 p-5"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/onvault-light.png" alt="0nVault" className="h-8 w-auto shrink-0 object-contain" />
-            <div>
-              <div className="text-sm font-semibold text-white">One login for everything — secured by 0nVault</div>
-              <p className="mt-1 text-[13px] leading-relaxed text-[#8b949e]">
-                Your 0nCore account is your <span className="text-white">0nVault key</span>: one secure sign-in that
-                unlocks every 0n product — 0nTask, CRO9, web0n and more. Sign in with Google once; there are no
-                separate passwords to remember.
-              </p>
-            </div>
-          </motion.div>
-
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="mt-8 text-xs text-[#6b7681]"
+            className="mt-12 text-xs text-[#6b7681]"
           >
             Already have an account?{' '}
-            <Link href="/login" className="text-[#6EE05A] hover:underline">
+            <Link href="/login" className="text-[#7ed957] hover:underline">
               Sign in
             </Link>
           </motion.div>
@@ -248,9 +234,9 @@ export default function SignupCinematic({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-[#161b22]/80 backdrop-blur border border-[#30363d] rounded-2xl p-7"
+          className="bg-white/[0.03] backdrop-blur border border-white/[0.08] rounded-2xl p-7"
         >
-          <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#6EE05A] mb-6">
+          <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-[#7ed957] mb-6">
             <Sparkles className="w-3.5 h-3.5" />
             Free signup
           </div>
@@ -267,11 +253,11 @@ export default function SignupCinematic({
           </div>
 
           <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-[#30363d]" />
+            <div className="flex-1 h-px bg-white/10" />
             <span className="text-[10px] uppercase tracking-[0.25em] text-[#6b7681]">
               or with email
             </span>
-            <div className="flex-1 h-px bg-[#30363d]" />
+            <div className="flex-1 h-px bg-white/10" />
           </div>
 
           <form onSubmit={onSubmit}>
@@ -352,7 +338,7 @@ export default function SignupCinematic({
                 scale: canSubmit ? 1 : 0.98,
               }}
               transition={{ duration: 0.3 }}
-              className="mt-8 w-full inline-flex items-center justify-center gap-2 bg-[#6EE05A] text-[#0d1117] py-3 rounded-lg font-semibold text-sm hover:bg-[#7dec6e] transition disabled:cursor-not-allowed"
+              className="mt-8 w-full inline-flex items-center justify-center gap-2 bg-[#7ed957] text-[#020810] py-3 rounded-lg font-bold text-sm shadow-[0_0_32px_rgba(126,217,87,0.4)] hover:brightness-110 transition disabled:cursor-not-allowed"
             >
               Create account
               <ArrowRight className="w-4 h-4" />

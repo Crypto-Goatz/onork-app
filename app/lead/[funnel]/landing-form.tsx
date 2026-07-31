@@ -56,7 +56,7 @@ export function LandingForm({ funnelId }: { funnelId: string }) {
   return (
     <form onSubmit={submit} className="space-y-3">
       <div>
-        <label htmlFor="ln-name" className="mb-1 block text-xs font-semibold text-zinc-700">
+        <label htmlFor="ln-name" className="mb-1 block text-xs font-semibold text-white/60">
           First name
         </label>
         <input
@@ -66,11 +66,11 @@ export function LandingForm({ funnelId }: { funnelId: string }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Your name"
-          className="w-full rounded-lg border-2 border-zinc-200 px-4 py-3 text-[15px] outline-none transition-colors focus:border-zinc-900"
+          className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[15px] text-white placeholder:text-white/30 outline-none backdrop-blur transition-colors focus:border-[#7ed957]/50"
         />
       </div>
       <div>
-        <label htmlFor="ln-email" className="mb-1 block text-xs font-semibold text-zinc-700">
+        <label htmlFor="ln-email" className="mb-1 block text-xs font-semibold text-white/60">
           Email address
         </label>
         <input
@@ -81,14 +81,14 @@ export function LandingForm({ funnelId }: { funnelId: string }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className="w-full rounded-lg border-2 border-zinc-200 px-4 py-3 text-[15px] outline-none transition-colors focus:border-zinc-900"
+          className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[15px] text-white placeholder:text-white/30 outline-none backdrop-blur transition-colors focus:border-[#7ed957]/50"
         />
       </div>
-      {err && <p className="text-sm text-red-500">{err}</p>}
+      {err && <p className="text-sm text-red-400">{err}</p>}
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-lg bg-zinc-900 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-zinc-700 disabled:bg-zinc-400"
+        className="w-full rounded-xl bg-[#7ed957] py-3.5 text-[15px] font-bold text-[#020810] shadow-[0_0_32px_rgba(126,217,87,0.4)] transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
       >
         {submitting ? 'Sending…' : 'Send me the free guide →'}
       </button>

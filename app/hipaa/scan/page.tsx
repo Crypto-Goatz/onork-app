@@ -216,7 +216,12 @@ function ScanContent() {
         {result && !scanning && (
           <>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <h1 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 800, marginBottom: 8 }}>
+              <h1 style={{
+                fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 800, marginBottom: 8,
+                background: 'linear-gradient(135deg, #7ed957 0%, #00d4ff 50%, #a78bfa 100%)',
+                WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent',
+                display: 'inline-block',
+              }}>
                 Your HIPAA Readiness Scores
               </h1>
               <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>

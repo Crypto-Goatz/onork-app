@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 
-type Tab = 'overview' | 'pages' | 'search' | 'cro'
+type Tab = 'overview' | 'pages' | 'search' | 'cro' | 'siphon'
 type DateRange = '7d' | '14d' | '30d' | '90d'
 
 interface Metric { label: string; value: string; sub?: string; color?: string }
@@ -98,7 +98,7 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
 
 export default function AnalyticsPage() {
   const searchParams = useSearchParams()
-  const initialTab = (['overview', 'pages', 'search', 'cro'].includes(searchParams.get('tab') || '') ? searchParams.get('tab') : 'overview') as Tab
+  const initialTab = (['overview', 'pages', 'search', 'cro', 'siphon'].includes(searchParams.get('tab') || '') ? searchParams.get('tab') : 'overview') as Tab
   const [tab, setTab] = useState<Tab>(initialTab)
   const [range, setRange] = useState<DateRange>('30d')
   const [loading, setLoading] = useState(false)
@@ -249,6 +249,7 @@ export default function AnalyticsPage() {
     { key: 'pages', label: 'Pages' },
     { key: 'search', label: 'Search' },
     { key: 'cro', label: 'CRO9' },
+    { key: 'siphon', label: 'Siphon' },
   ]
 
   const priorityClasses = (p: string): { badge: string; text: string } => {
@@ -508,6 +509,19 @@ export default function AnalyticsPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ═══ SIPHON TAB — adaptive data simulator (folded in from standalone) ═══ */}
+      {tab === 'siphon' && (
+        <div className="rounded-xl overflow-hidden border border-core-border bg-core-card">
+          <iframe
+            src="/widgets/adaptive-siphon/index.html"
+            title="Adaptive Siphon"
+            className="w-full block"
+            style={{ height: 'calc(100vh - 240px)', minHeight: 560, border: 0 }}
+            sandbox="allow-scripts allow-same-origin allow-downloads"
+          />
         </div>
       )}
 

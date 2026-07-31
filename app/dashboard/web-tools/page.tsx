@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -18,18 +18,16 @@ interface ServiceConnection {
 
 type TimeFrame = '7d' | '30d' | '90d' | '1yr' | 'custom'
 type ChartType = 'line' | 'bar' | 'area'
-type Metric = 'sessions' | 'users' | 'pageviews' | 'bounce_rate' | 'conversions' | 'revenue'
+type Metric = 'sessions' | 'users' | 'pageviews' | 'conversions'
 
 interface StatCard {
   label: string
   value: string
-  trend: number
-  up: boolean
 }
 
 interface TopPage {
   path: string
-  views: number
+  sessions: number
 }
 
 interface TrafficSource {
@@ -40,53 +38,17 @@ interface TrafficSource {
 
 // ── Helpers ────────────────────────────────────────────────
 
-function generateDemoData(timeframe: TimeFrame, metric: Metric): number[] {
-  const counts: Record<TimeFrame, number> = { '7d': 7, '30d': 30, '90d': 90, '1yr': 365, custom: 30 }
-  const len = counts[timeframe]
-  const baselines: Record<Metric, number> = {
-    sessions: 1200,
-    users: 800,
-    pageviews: 3200,
-    bounce_rate: 45,
-    conversions: 35,
-    revenue: 4500,
-  }
-  const amplitudes: Record<Metric, number> = {
-    sessions: 400,
-    users: 250,
-    pageviews: 1000,
-    bounce_rate: 10,
-    conversions: 12,
-    revenue: 1500,
-  }
-  const base = baselines[metric]
-  const amp = amplitudes[metric]
-  const seed = metric.length * 17 + len * 3
-  const data: number[] = []
-  for (let i = 0; i < len; i++) {
-    const sine = Math.sin((i / len) * Math.PI * 2 + seed) * amp
-    const noise = (Math.sin(i * 13.7 + seed * 2.3) * 0.5 + Math.cos(i * 7.1 + seed) * 0.3) * amp * 0.4
-    data.push(Math.max(0, Math.round(base + sine + noise)))
-  }
-  return data
-}
-
-function formatDate(index: number, total: number, timeframe: TimeFrame): string {
-  const now = new Date()
-  const daysBack = timeframe === '1yr' ? 365 : timeframe === '90d' ? 90 : timeframe === '7d' ? 7 : 30
-  const date = new Date(now.getTime() - (total - 1 - index) * 24 * 60 * 60 * 1000 * (daysBack / total))
-  const month = date.toLocaleString('en', { month: 'short' })
-  return `${month} ${date.getDate()}`
-}
-
 function formatNumber(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
   return n.toString()
 }
 
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000
-  return x - Math.floor(x)
+// GA4 `date` dimension arrives as "YYYYMMDD" — render as "Mon D".
+function formatGaDate(s: string): string {
+  if (!s || s.length !== 8) return s
+  const d = new Date(Number(s.slice(0, 4)), Number(s.slice(4, 6)) - 1, Number(s.slice(6, 8)))
+  const month = d.toLocaleString('en', { month: 'short' })
+  return `${month} ${d.getDate()}`
 }
 
 // ── Constants ──────────────────────────────────────────────
@@ -109,26 +71,16 @@ const METRICS: { key: Metric; label: string }[] = [
   { key: 'sessions', label: 'Sessions' },
   { key: 'users', label: 'Users' },
   { key: 'pageviews', label: 'Pageviews' },
-  { key: 'bounce_rate', label: 'Bounce Rate' },
   { key: 'conversions', label: 'Conversions' },
-  { key: 'revenue', label: 'Revenue' },
 ]
 
-const TOP_PAGES: TopPage[] = [
-  { path: '/', views: 12847 },
-  { path: '/store', views: 8432 },
-  { path: '/dashboard', views: 6219 },
-  { path: '/builder', views: 4103 },
-  { path: '/docs/getting-started', views: 3587 },
-]
+// Maps a TimeFrame chip to the GA4 relative startDate string.
+const RANGE_START: Record<TimeFrame, string> = {
+  '7d': '7daysAgo', '30d': '30daysAgo', '90d': '90daysAgo', '1yr': '365daysAgo', custom: '30daysAgo',
+}
 
-const TRAFFIC_SOURCES: TrafficSource[] = [
-  { name: 'Organic Search', sessions: 14230, color: '#6EE05A' },
-  { name: 'Direct', sessions: 8742, color: '#00d4ff' },
-  { name: 'Social Media', sessions: 5391, color: '#a78bfa' },
-  { name: 'Referral', sessions: 3218, color: '#f59e0b' },
-  { name: 'Email', sessions: 1876, color: '#ef4444' },
-]
+// Cosmetic palette for traffic-source bars (assigned by rank).
+const SOURCE_COLORS = ['#6EE05A', '#00d4ff', '#a78bfa', '#f59e0b', '#ef4444', '#ec4899', '#10b981']
 
 const INITIAL_SERVICES: Omit<ServiceConnection, 'value' | 'connected'>[] = [
   { id: 'ga4', name: 'Google Analytics', initials: 'GA', placeholder: 'G-XXXXXXXXXX', prefix: 'G-', storageKey: '0ncore-webtools-ga4' },
@@ -139,12 +91,16 @@ const INITIAL_SERVICES: Omit<ServiceConnection, 'value' | 'connected'>[] = [
 
 // ── Chart Drawing ──────────────────────────────────────────
 
+// Maps a service tile id → the server config column it persists to.
+const ID_TO_FIELD: Record<string, string> = {
+  ga4: 'ga4_id', fbpixel: 'fb_pixel_id', gads: 'gads_id', gtm: 'gtm_id',
+}
+
 function drawChart(
   canvas: HTMLCanvasElement,
   data: number[],
   chartType: ChartType,
-  timeframe: TimeFrame,
-  metric: Metric,
+  labels: string[],
 ) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
@@ -186,15 +142,7 @@ function drawChart(
     ctx.lineTo(w - padRight, y)
     ctx.stroke()
     const val = maxVal - (range / gridLines) * i
-    let label: string
-    if (metric === 'bounce_rate') {
-      label = `${val.toFixed(0)}%`
-    } else if (metric === 'revenue') {
-      label = `$${formatNumber(Math.round(val))}`
-    } else {
-      label = formatNumber(Math.round(val))
-    }
-    ctx.fillText(label, padLeft - 8, y + 4)
+    ctx.fillText(formatNumber(Math.round(val)), padLeft - 8, y + 4)
   }
 
   ctx.textAlign = 'center'
@@ -203,7 +151,7 @@ function drawChart(
     const idx = Math.round((i / (labelCount - 1)) * (data.length - 1))
     const x = padLeft + (idx / (data.length - 1)) * chartW
     const y = h - padBottom + 20
-    ctx.fillText(formatDate(idx, data.length, timeframe), x, y)
+    ctx.fillText(labels[idx] || '', x, y)
   }
 
   const accent = '#6EE05A'
@@ -274,26 +222,129 @@ export default function WebToolsPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // ── Real Google Analytics state ──────────────────────────
+  // gaConnected: null = unknown/loading, true = data flowing, false = not connected.
+  const [gaConnected, setGaConnected] = useState<boolean | null>(null)
+  const [gaLoading, setGaLoading] = useState(true)
+  const [gaError, setGaError] = useState<string | null>(null)
+  const [daily, setDaily] = useState<{ date: string; sessions: number; users: number; pageviews: number; conversions: number }[]>([])
+  const [stats, setStats] = useState<StatCard[]>([])
+  const [topPages, setTopPages] = useState<TopPage[]>([])
+  const [trafficSources, setTrafficSources] = useState<TrafficSource[]>([])
+
   useEffect(() => {
-    const loaded: ServiceConnection[] = INITIAL_SERVICES.map((s) => {
-      let stored: string | null = null
-      try {
-        stored = localStorage.getItem(s.storageKey)
-      } catch {
-        // ignore
-      }
-      return { ...s, value: stored || '', connected: !!stored }
-    })
-    setServices(loaded)
+    // Load saved tracking IDs from the server (persists across devices).
+    fetch('/api/web-tools')
+      .then((r) => r.json())
+      .then((d) => {
+        const cfg = d?.config || {}
+        setServices(INITIAL_SERVICES.map((s) => {
+          const v = (cfg[ID_TO_FIELD[s.id]] as string) || ''
+          return { ...s, value: v, connected: !!v }
+        }))
+      })
+      .catch(() => {
+        // Fallback to any local cache if the API is unreachable.
+        setServices(INITIAL_SERVICES.map((s) => {
+          let stored: string | null = null
+          try { stored = localStorage.getItem(s.storageKey) } catch { /* ignore */ }
+          return { ...s, value: stored || '', connected: !!stored }
+        }))
+      })
   }, [])
 
-  const chartData = generateDemoData(timeframe, metric)
+  // Fetch real GA4 data whenever the time frame changes.
+  const fetchAnalytics = useCallback(async () => {
+    setGaLoading(true)
+    setGaError(null)
+    const startDate = RANGE_START[timeframe]
+    try {
+      const [ovRes, dayRes, lpRes] = await Promise.all([
+        fetch(`/api/google/analytics?report=overview&startDate=${startDate}&endDate=today`),
+        fetch(`/api/google/analytics?report=daily&startDate=${startDate}&endDate=today`),
+        fetch(`/api/google/analytics?report=landing-pages&startDate=${startDate}&endDate=today`),
+      ])
+
+      // The overview call drives connection status. NOT_CONNECTED / NO_PROPERTY /
+      // TOKEN_EXPIRED all surface as non-2xx → show the honest connect state.
+      if (!ovRes.ok) {
+        const e = await ovRes.json().catch(() => ({}))
+        setGaConnected(false)
+        setGaError(e?.error || `HTTP ${ovRes.status}`)
+        setDaily([]); setStats([]); setTopPages([]); setTrafficSources([])
+        return
+      }
+
+      setGaConnected(true)
+      const ov = await ovRes.json()
+
+      // Summary stats — real overview metrics (no fabricated trend deltas).
+      const m = ov.traffic?.rows?.[0]?.metricValues || []
+      const users = Number(m[0]?.value || 0)
+      const sessions = Number(m[1]?.value || 0)
+      const pageViews = Number(m[2]?.value || 0)
+      const bounce = Number(m[3]?.value || 0)
+      const duration = Number(m[4]?.value || 0)
+      const conversions = Number(m[7]?.value || 0)
+      setStats([
+        { label: 'Sessions', value: sessions.toLocaleString() },
+        { label: 'Users', value: users.toLocaleString() },
+        { label: 'Pageviews', value: pageViews.toLocaleString() },
+        { label: 'Bounce Rate', value: `${(bounce * 100).toFixed(1)}%` },
+        { label: 'Avg Duration', value: `${Math.floor(duration / 60)}:${String(Math.round(duration % 60)).padStart(2, '0')}` },
+        { label: 'Conversions', value: conversions.toLocaleString() },
+      ])
+
+      // Traffic sources — real sessionDefaultChannelGroup breakdown.
+      const srcRows = ov.sources?.rows || []
+      setTrafficSources(srcRows.map((r: { dimensionValues?: { value?: string }[]; metricValues?: { value?: string }[] }, i: number) => ({
+        name: r.dimensionValues?.[0]?.value || 'Unknown',
+        sessions: Number(r.metricValues?.[0]?.value || 0),
+        color: SOURCE_COLORS[i % SOURCE_COLORS.length],
+      })))
+
+      // Daily time-series for the main chart.
+      if (dayRes.ok) {
+        const d = await dayRes.json()
+        setDaily((d.daily?.rows || []).map((r: { dimensionValues?: { value?: string }[]; metricValues?: { value?: string }[] }) => ({
+          date: r.dimensionValues?.[0]?.value || '',
+          users: Number(r.metricValues?.[0]?.value || 0),
+          sessions: Number(r.metricValues?.[1]?.value || 0),
+          pageviews: Number(r.metricValues?.[2]?.value || 0),
+          conversions: Number(r.metricValues?.[3]?.value || 0),
+        })))
+      } else {
+        setDaily([])
+      }
+
+      // Top landing pages.
+      if (lpRes.ok) {
+        const lp = await lpRes.json()
+        setTopPages((lp.landingPages?.rows || []).slice(0, 5).map((r: { dimensionValues?: { value?: string }[]; metricValues?: { value?: string }[] }) => ({
+          path: r.dimensionValues?.[0]?.value || '',
+          sessions: Number(r.metricValues?.[0]?.value || 0),
+        })))
+      } else {
+        setTopPages([])
+      }
+    } catch (err) {
+      setGaConnected(false)
+      setGaError(err instanceof Error ? err.message : 'Failed to load analytics')
+    } finally {
+      setGaLoading(false)
+    }
+  }, [timeframe])
+
+  useEffect(() => { fetchAnalytics() }, [fetchAnalytics])
+
+  const chartData = daily.map((d) => d[metric])
+  const chartLabels = daily.map((d) => formatGaDate(d.date))
 
   const redrawChart = useCallback(() => {
     if (canvasRef.current) {
-      drawChart(canvasRef.current, chartData, chartType, timeframe, metric)
+      drawChart(canvasRef.current, chartData, chartType, chartLabels)
     }
-  }, [chartData, chartType, timeframe, metric])
+  }, [chartData, chartLabels, chartType])
 
   useEffect(() => { redrawChart() }, [redrawChart])
 
@@ -305,34 +356,30 @@ export default function WebToolsPage() {
 
   const connectedCount = services.filter((s) => s.connected).length
 
-  const stats: StatCard[] = [
-    { label: 'Sessions', value: (12000 + Math.round(seededRandom(timeframe.length + 1) * 40000)).toLocaleString(), trend: 12.4, up: true },
-    { label: 'Users', value: (3000 + Math.round(seededRandom(timeframe.length + 2) * 6000)).toLocaleString(), trend: 8.2, up: true },
-    { label: 'Pageviews', value: (30000 + Math.round(seededRandom(timeframe.length + 3) * 50000)).toLocaleString(), trend: 15.1, up: true },
-    { label: 'Bounce Rate', value: `${(30 + Math.round(seededRandom(timeframe.length + 4) * 30))}%`, trend: 3.2, up: false },
-    { label: 'Avg Duration', value: `${1 + Math.floor(seededRandom(timeframe.length + 5) * 3)}:${String(Math.floor(seededRandom(timeframe.length + 6) * 59)).padStart(2, '0')}`, trend: 5.7, up: true },
-    { label: 'Conversions', value: String(20 + Math.round(seededRandom(timeframe.length + 7) * 80)), trend: 22.1, up: true },
-  ]
+  const persist = (arr: ServiceConnection[]) => {
+    const cfg: Record<string, string> = {}
+    arr.forEach((s) => { if (ID_TO_FIELD[s.id] && s.value) cfg[ID_TO_FIELD[s.id]] = s.value })
+    fetch('/api/web-tools', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) }).catch(() => {})
+  }
 
   const handleConnect = (serviceId: string) => {
     const val = inputValues[serviceId]
     if (!val || !val.trim()) return
-    try {
-      const svc = INITIAL_SERVICES.find((s) => s.id === serviceId)
-      if (svc) localStorage.setItem(svc.storageKey, val.trim())
-    } catch { /* ignore */ }
-    setServices((prev) => prev.map((s) => (s.id === serviceId ? { ...s, value: val.trim(), connected: true } : s)))
+    const next = services.map((s) => (s.id === serviceId ? { ...s, value: val.trim(), connected: true } : s))
+    setServices(next); persist(next)
+    try { const svc = INITIAL_SERVICES.find((s) => s.id === serviceId); if (svc) localStorage.setItem(svc.storageKey, val.trim()) } catch { /* ignore */ }
     setEditingService(null)
-    setInputValues((prev) => { const next = { ...prev }; delete next[serviceId]; return next })
+    setInputValues((prev) => { const n = { ...prev }; delete n[serviceId]; return n })
   }
 
   const handleDisconnect = (serviceId: string) => {
+    const next = services.map((s) => (s.id === serviceId ? { ...s, value: '', connected: false } : s))
+    setServices(next); persist(next)
     const svc = INITIAL_SERVICES.find((s) => s.id === serviceId)
     if (svc) { try { localStorage.removeItem(svc.storageKey) } catch { /* ignore */ } }
-    setServices((prev) => prev.map((s) => (s.id === serviceId ? { ...s, value: '', connected: false } : s)))
   }
 
-  const maxTrafficSessions = Math.max(...TRAFFIC_SOURCES.map((t) => t.sessions))
+  const maxTrafficSessions = Math.max(...trafficSources.map((t) => t.sessions), 1)
 
   return (
     <div className="min-h-screen bg-core-bg text-core-text font-mono py-8 px-6 max-w-[1280px] mx-auto">
@@ -492,70 +539,95 @@ export default function WebToolsPage() {
         </div>
       </div>
 
-      {/* Main chart */}
-      <div ref={containerRef} className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 mt-4">
-        <canvas ref={canvasRef} className="w-full block" style={{ height: 340 }} />
-      </div>
+      {gaConnected === false ? (
+        /* Honest empty state — no fabricated numbers when GA isn't connected. */
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-10 mt-4 text-center">
+          <div className="text-base font-semibold mb-2">Connect Google Analytics</div>
+          <p className="text-[13px] text-core-text-muted max-w-md mx-auto">
+            Connect your Google Analytics account in Settings &rarr; Analytics to see real
+            traffic, top pages, and source data here.
+          </p>
+          {gaError && (
+            <p className="text-[11px] text-core-text-muted/70 mt-3 font-mono">{gaError}</p>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Main chart */}
+          <div ref={containerRef} className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 mt-4">
+            {gaLoading && daily.length === 0 ? (
+              <div className="flex items-center justify-center gap-2 text-core-text-muted text-[13px]" style={{ height: 340 }}>
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading analytics&hellip;
+              </div>
+            ) : daily.length === 0 ? (
+              <div className="flex items-center justify-center text-core-text-muted text-[13px]" style={{ height: 340 }}>
+                No analytics data for this period.
+              </div>
+            ) : (
+              <canvas ref={canvasRef} className="w-full block" style={{ height: 340 }} />
+            )}
+          </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3 mt-3">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-4">
-            <div className="text-[22px] font-bold tracking-tight">{stat.value}</div>
-            <div className="text-[11px] text-core-text-muted mt-0.5">{stat.label}</div>
-            <div className={`flex items-center gap-0.5 text-[11px] font-semibold mt-0.5 ${stat.up ? 'text-core-green' : 'text-core-red'}`}>
-              {stat.up
-                ? <TrendingUp className="w-3 h-3" />
-                : <TrendingDown className="w-3 h-3" />
-              }
-              {stat.trend}%
+          {/* Stats row */}
+          {stats.length > 0 && (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3 mt-3">
+              {stats.map((stat) => (
+                <div key={stat.label} className="bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-4">
+                  <div className="text-[22px] font-bold tracking-tight">{stat.value}</div>
+                  <div className="text-[11px] text-core-text-muted mt-0.5">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Bottom section */}
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(400px,1fr))] gap-5 mt-3">
+            {/* Top Pages */}
+            <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 mt-6">
+              <div className="text-sm font-semibold mb-2">Top Pages</div>
+              <div>
+                {topPages.length === 0 ? (
+                  <div className="text-core-text-muted text-xs py-4">No page data for this period.</div>
+                ) : topPages.map((page, i) => (
+                  <div key={page.path} className="flex justify-between items-center py-2.5 border-b border-white/[0.04] text-sm last:border-0">
+                    <span className="text-core-text-muted w-5 text-xs shrink-0">{i + 1}.</span>
+                    <span className="flex-1 truncate">{page.path}</span>
+                    <span className="font-semibold ml-3 text-core-green text-[13px]">
+                      {page.sessions.toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Traffic Sources */}
+            <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 mt-6">
+              <div className="text-sm font-semibold mb-2">Traffic Sources</div>
+              <div>
+                {trafficSources.length === 0 ? (
+                  <div className="text-core-text-muted text-xs py-4">No source data for this period.</div>
+                ) : trafficSources.map((src) => (
+                  <div key={src.name} className="flex items-center justify-between py-2.5 border-b border-white/[0.04] text-sm last:border-0">
+                    <span className="min-w-[110px] text-xs">{src.name}</span>
+                    <div className="flex-1 h-1.5 rounded bg-white/[0.04] mx-3 relative overflow-hidden">
+                      <div
+                        className="absolute top-0 left-0 h-full rounded opacity-70"
+                        style={{
+                          width: `${(src.sessions / maxTrafficSessions) * 100}%`,
+                          background: src.color,
+                        }}
+                      />
+                    </div>
+                    <span className="font-semibold text-xs min-w-[50px] text-right">
+                      {src.sessions.toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Bottom section */}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(400px,1fr))] gap-5 mt-3">
-        {/* Top Pages */}
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 mt-6">
-          <div className="text-sm font-semibold mb-2">Top Pages</div>
-          <div>
-            {TOP_PAGES.map((page, i) => (
-              <div key={page.path} className="flex justify-between items-center py-2.5 border-b border-white/[0.04] text-sm last:border-0">
-                <span className="text-core-text-muted w-5 text-xs shrink-0">{i + 1}.</span>
-                <span className="flex-1 truncate">{page.path}</span>
-                <span className="font-semibold ml-3 text-core-green text-[13px]">
-                  {page.views.toLocaleString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Traffic Sources */}
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 mt-6">
-          <div className="text-sm font-semibold mb-2">Traffic Sources</div>
-          <div>
-            {TRAFFIC_SOURCES.map((src) => (
-              <div key={src.name} className="flex items-center justify-between py-2.5 border-b border-white/[0.04] text-sm last:border-0">
-                <span className="min-w-[110px] text-xs">{src.name}</span>
-                <div className="flex-1 h-1.5 rounded bg-white/[0.04] mx-3 relative overflow-hidden">
-                  <div
-                    className="absolute top-0 left-0 h-full rounded opacity-70"
-                    style={{
-                      width: `${(src.sessions / maxTrafficSessions) * 100}%`,
-                      background: src.color,
-                    }}
-                  />
-                </div>
-                <span className="font-semibold text-xs min-w-[50px] text-right">
-                  {src.sessions.toLocaleString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   )
 }

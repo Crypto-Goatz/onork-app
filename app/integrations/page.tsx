@@ -43,9 +43,13 @@ export default function IntegrationsPage() {
         </div>
       </nav>
 
-      <section style={{ textAlign: 'center', padding: '80px 24px 40px', maxWidth: 700, margin: '0 auto' }}>
-        <h1 style={{ fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 800, marginBottom: 12 }}>Connect to <span style={{ color: '#7ed957' }}>everything</span></h1>
-        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', lineHeight: 1.7 }}>96+ services connected through the 0nMCP SDK. Each integration becomes available as MCP tools in your AI workflows.</p>
+      <section style={{ position: 'relative', textAlign: 'center', padding: '80px 24px 40px', maxWidth: 700, margin: '0 auto', overflow: 'hidden' }}>
+        <div aria-hidden style={{ position: 'absolute', top: -120, left: '50%', transform: 'translateX(-50%)', width: 560, height: 560, borderRadius: '50%', background: 'rgba(126,217,87,0.07)', filter: 'blur(150px)', pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 999, padding: '4px 14px', marginBottom: 16, letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'monospace' }}>96+ Connected Services</span>
+          <h1 style={{ fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 900, letterSpacing: '-0.02em', marginBottom: 12 }}>Connect to <span style={{ background: 'linear-gradient(to bottom right, #7ed957, #00d4ff, #a78bfa)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>everything</span></h1>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', lineHeight: 1.7 }}>96+ services connected through the 0nMCP SDK. Each integration becomes available as MCP tools in your AI workflows.</p>
+        </div>
       </section>
 
       <section style={{ padding: '0 24px 40px', maxWidth: 800, margin: '0 auto' }}>

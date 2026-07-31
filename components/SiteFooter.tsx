@@ -18,6 +18,7 @@ const COLUMNS: Array<{ title: string; links: Array<{ label: string; href: string
       { label: 'Platform', href: '/platform' },
       { label: 'Connections', href: '/connections' },
       { label: 'Marketplace', href: '/marketplace' },
+      { label: 'Bulk Stack Scan', href: '/stack-scan' },
       { label: 'Pricing', href: '/pricing' },
     ],
   },
@@ -52,17 +53,17 @@ export default function SiteFooter() {
   return (
     <footer className="relative mt-24 overflow-hidden">
       {/* Aurora ribbon — green→teal→cyan gradient line */}
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-[#6EE05A] to-transparent opacity-40" />
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-[#7ed957] to-transparent opacity-40" />
 
       {/* Top CTA panel — bold gradient */}
       <div className="relative overflow-hidden border-b border-white/5">
         {/* gradient layer */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#6EE05A] via-[#14b8a6] to-[#06b6d4] opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#7ed957] via-[#14b8a6] to-[#06b6d4] opacity-90" />
         {/* dark scrim for text contrast */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0d1117]/30 to-[#0d1117]/70" />
         {/* aurora overlay */}
         <div className="pointer-events-none absolute -top-1/3 left-1/4 h-[40vh] w-[40vh] rounded-full bg-white opacity-15 blur-[120px]" />
-        <div className="pointer-events-none absolute -bottom-1/3 right-1/4 h-[40vh] w-[40vh] rounded-full bg-[#6EE05A] opacity-30 blur-[120px]" />
+        <div className="pointer-events-none absolute -bottom-1/3 right-1/4 h-[40vh] w-[40vh] rounded-full bg-[#7ed957] opacity-30 blur-[120px]" />
 
         <div className="relative mx-auto max-w-6xl px-6 py-20 sm:py-24">
           <div className="flex flex-col items-center text-center">
@@ -101,7 +102,7 @@ export default function SiteFooter() {
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-6 py-14 sm:grid-cols-4 lg:grid-cols-5">
           <div className="col-span-2 sm:col-span-4 lg:col-span-1">
             <div className="flex items-center gap-2">
-              <div className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-[#6EE05A] to-[#14b8a6] font-mono text-sm font-black text-[#0d1117]">
+              <div className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-[#7ed957] to-[#14b8a6] font-mono text-sm font-black text-[#0d1117]">
                 0n
               </div>
               <span className="font-bold text-white">0nCore</span>
@@ -124,14 +125,14 @@ export default function SiteFooter() {
                         href={link.href}
                         target={link.href.startsWith('mailto:') ? undefined : '_blank'}
                         rel="noopener noreferrer"
-                        className="text-sm text-white/70 transition-colors hover:text-[#6EE05A]"
+                        className="text-sm text-white/70 transition-colors hover:text-[#7ed957]"
                       >
                         {link.label}
                       </a>
                     ) : (
                       <Link
                         href={link.href}
-                        className="text-sm text-white/70 transition-colors hover:text-[#6EE05A]"
+                        className="text-sm text-white/70 transition-colors hover:text-[#7ed957]"
                       >
                         {link.label}
                       </Link>
@@ -171,7 +172,7 @@ export default function SiteFooter() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub"
-              className="text-white/40 transition-colors hover:text-[#6EE05A]"
+              className="text-white/40 transition-colors hover:text-[#7ed957]"
             >
               <Github className="h-4 w-4" />
             </a>
@@ -180,14 +181,14 @@ export default function SiteFooter() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="YouTube"
-              className="text-white/40 transition-colors hover:text-[#6EE05A]"
+              className="text-white/40 transition-colors hover:text-[#7ed957]"
             >
               <Youtube className="h-4 w-4" />
             </a>
             <a
               href="mailto:mike@rocketopp.com"
               aria-label="Email"
-              className="text-white/40 transition-colors hover:text-[#6EE05A]"
+              className="text-white/40 transition-colors hover:text-[#7ed957]"
             >
               <Mail className="h-4 w-4" />
             </a>
