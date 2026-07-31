@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
     }
     // Bounce to /login if hitting a protected route, else just continue
     const path = request.nextUrl.pathname
-    if (path.startsWith('/dashboard') || path.startsWith('/console') || path.startsWith('/canvas') || path.startsWith('/welcome')) {
+    if (path.startsWith('/dashboard') || path.startsWith('/console') || path.startsWith('/canvas') || path.startsWith('/welcome') || path.startsWith('/profile')) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('next', path)
@@ -110,6 +110,7 @@ export async function middleware(request: NextRequest) {
       || request.nextUrl.pathname.startsWith('/console')
       || request.nextUrl.pathname.startsWith('/canvas')
       || request.nextUrl.pathname.startsWith('/welcome')
+      || request.nextUrl.pathname.startsWith('/profile')
       || request.nextUrl.pathname.startsWith('/vip'))
   ) {
     const url = request.nextUrl.clone()
@@ -167,6 +168,8 @@ export const config = {
     '/console/:path*',
     '/canvas/:path*',
     '/welcome/:path*',
+    '/profile/:path*',
+    '/profile',
     '/vip/:path*',
     '/login',
     '/signup',

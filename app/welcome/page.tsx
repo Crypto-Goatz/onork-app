@@ -155,6 +155,17 @@ export default async function WelcomePage() {
       tierActions={tierCaps.onboardingActions}
       cards={[
         {
+          id: 'business_profile',
+          title: 'Business profile',
+          subtitle: 'Your company facts, brand and people — entered once',
+          description: 'Every 0n app reads from it. It also writes your LinkedIn profile, company page and boilerplate.',
+          href: '/profile',
+          access: 'unlocked',
+          tag: 'Free',
+          required_plan: null,
+          icon: 'Building2',
+        },
+        {
           id: 'canvas',
           title: 'Canvas',
           subtitle: 'Visual workspace + Jaxx flow builder',

@@ -27,7 +27,7 @@ export interface WelcomeCard {
 }
 
 const ICONS: Record<string, LucideIcon> = {
-  Workflow, Sparkles, Package, GraduationCap, Shield, Mic,
+  Workflow, Sparkles, Package, GraduationCap, Shield, Mic, Building2,
 }
 
 interface FamilyLocationProp {

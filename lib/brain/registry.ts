@@ -90,6 +90,17 @@ export const BRAIN_REGISTRY: RegistryEntry[] = [
     description: 'Adaptive SEO scoring + keyword tracking.',
   },
   {
+    slug: 'business_profile',
+    display_name: 'Business Profile',
+    category: 'ai',
+    handler_paths: ['app/api/business-profile/think/route.ts'],
+    required_imports: ['@/lib/brain/think-route'],
+    prohibited_imports: ['@anthropic-ai/sdk'],
+    required_calls: ['handleThink('],
+    surface_route: '/profile',
+    description: 'Writes LinkedIn profiles, company pages and boilerplate from your saved company facts — and refuses when the profile is too thin to be truthful.',
+  },
+  {
     slug: 'brand_builder',
     display_name: 'Brand Builder',
     category: 'ai',
