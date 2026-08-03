@@ -13,10 +13,20 @@
  * app.0ntask.com calls this so a 0nTask account gets its OWN sub-location
  * instead of writing contacts into the shared agency location.
  *
- * IDEMPOTENT BY EMAIL. Searches existing sub-locations first and only creates
- * when there is genuinely nothing — creating a second location for someone who
- * already has one splits their contacts across two accounts, which is the kind
- * of mess that has to be unpicked by hand.
+ * IT NEVER GUESSES BETWEEN EXISTING LOCATIONS.
+ *
+ * The first version searched by email and took the first match. Checked against
+ * the live agency on 2026-08-02: of 86 sub-locations, mike@rocketopp.com alone
+ * matches FOUR — APEX, RocketOpp Lead Generation, RocketOpp LLC — 0n, and
+ * VerifiedSXO — and every other 0nTask account matches two or three. "First
+ * match" is array order, so it would have silently bound an account to an
+ * arbitrary one of its four businesses and written that account's contacts
+ * there. Not creating a duplicate, but wrong in a quieter and worse way.
+ *
+ * So: 0 matches -> create. Exactly 1 -> link it. More than 1 -> return them all
+ * with `ambiguous: true` and create NOTHING. The caller asks a human which
+ * business this is. Guessing on someone's CRM data is not a decision code gets
+ * to make.
  *
  * Returns the minted token. That is deliberate and it is why the endpoint is
  * secret-gated and never reachable from a browser.
@@ -62,18 +72,35 @@ export async function POST(req: NextRequest) {
 
     // ── 1. Already have one? ──
     if (!locationId) {
+      // limit=200 against 86 live sub-locations. If the agency ever passes 200
+      // this silently stops finding existing accounts and starts creating
+      // duplicates, so it asserts rather than truncating quietly.
       const search = await fetch(
         `${CRM_API}/locations/search?companyId=${encodeURIComponent(companyId)}&limit=200`,
         { headers: agencyHeaders },
       )
       if (search.ok) {
         const j = (await search.json()) as { locations?: { id: string; name?: string; email?: string }[] }
-        const hit = (j.locations || []).find(
+        if ((j.locations || []).length >= 200) {
+          return NextResponse.json(
+            { error: 'Sub-location search hit its 200 cap — refusing to create, as an existing account may be unseen. Paginate this search.' },
+            { status: 500 },
+          )
+        }
+        const hits = (j.locations || []).filter(
           (l) => String(l.email || '').trim().toLowerCase() === email,
         )
-        if (hit) {
-          locationId = hit.id
-          locationName = hit.name || ''
+        if (hits.length > 1) {
+          return NextResponse.json({
+            ok: false,
+            ambiguous: true,
+            error: `This email is on ${hits.length} CRM sub-accounts. Pick which one 0nTask should use.`,
+            candidates: hits.map((l) => ({ id: l.id, name: l.name || '(unnamed)' })),
+          })
+        }
+        if (hits.length === 1) {
+          locationId = hits[0].id
+          locationName = hits[0].name || ''
         }
       }
     }
