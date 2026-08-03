@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { METERS, formatPrice, resale } from '@/lib/meters'
 import SiteFooter from '@/components/SiteFooter'
+import RequestAccessButton from '@/components/RequestAccessButton'
 
 /**
  * /agencies — the money page.
@@ -112,13 +113,17 @@ export default function AgenciesPage() {
         </p>
 
         <div className="mt-9 flex flex-wrap gap-3">
-          <a
-            href={listingUrl}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#6EE05A] px-6 py-3.5 font-semibold text-[#0d1117] transition-opacity hover:opacity-90"
-          >
-            {listingIsLive ? 'Install in your CRM' : 'Join the early group'}
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </a>
+          {listingIsLive ? (
+            <a
+              href={listingUrl}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#6EE05A] px-6 py-3.5 font-semibold text-[#0d1117] transition-opacity hover:opacity-90"
+            >
+              Install in your CRM
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </a>
+          ) : (
+            <RequestAccessButton label="Join the early group" source="agencies-hero" />
+          )}
           <Link
             href="/signup?ref=agencies"
             className="inline-flex items-center gap-2 rounded-xl border border-[#30363d] px-6 py-3.5 font-semibold transition-colors hover:border-[#6EE05A]/40"
@@ -280,12 +285,16 @@ export default function AgenciesPage() {
               Watch the walkthrough
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
-            <a
-              href={listingUrl}
-              className="inline-flex items-center gap-2 rounded-xl border border-[#30363d] px-6 py-3.5 font-semibold transition-colors hover:border-[#6EE05A]/40"
-            >
-              {listingIsLive ? 'Install in your CRM' : 'Join the early group'}
-            </a>
+            {listingIsLive ? (
+              <a
+                href={listingUrl}
+                className="inline-flex items-center gap-2 rounded-xl border border-[#30363d] px-6 py-3.5 font-semibold transition-colors hover:border-[#6EE05A]/40"
+              >
+                Install in your CRM
+              </a>
+            ) : (
+              <RequestAccessButton label="Join the early group" source="agencies-footer" variant="outline" />
+            )}
           </div>
         </div>
       </section>

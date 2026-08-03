@@ -4,6 +4,7 @@ import {
   ShieldCheck, Zap, ArrowRight,
 } from 'lucide-react'
 import AgentVideo from './AgentVideo'
+import RequestAccessButton from '@/components/RequestAccessButton'
 
 /**
  * /0nagent — the Agency Command Center walkthrough.
@@ -192,13 +193,9 @@ export default function AgentPage() {
             0nAgent is in private release while we run it on our own agency every day. Tell us
             about yours and we will get you in the next group.
           </p>
-          <a
-            href="/contact?ref=0nagent"
-            className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#6EE05A] px-6 py-3.5 font-semibold text-[#0d1117] transition-opacity hover:opacity-90"
-          >
-            Request access
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </a>
+          <div className="mt-7">
+            <RequestAccessButton source="0nagent" />
+          </div>
         </div>
       </section>
 
