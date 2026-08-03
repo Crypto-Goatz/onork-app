@@ -3,7 +3,7 @@ import {
   Terminal, Users, Workflow, ListChecks, TrendingUp, Gauge,
   ShieldCheck, Zap, ArrowRight,
 } from 'lucide-react'
-import AgentVideo from './AgentVideo'
+import CommandCenterVideo from '@/components/CommandCenterVideo'
 import RequestAccessButton from '@/components/RequestAccessButton'
 
 /**
@@ -121,7 +121,7 @@ export default function AgentPage() {
         </p>
 
         <div className="mt-9">
-          <AgentVideo />
+          <CommandCenterVideo />
         </div>
       </section>
 

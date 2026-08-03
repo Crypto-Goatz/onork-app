@@ -11,6 +11,8 @@ import {
   Sparkles,
 } from 'lucide-react'
 import SiteFooter from '@/components/SiteFooter'
+import CommandCenterVideo from '@/components/CommandCenterVideo'
+import AgencyDashboardSection, { AGENCY_DASHBOARD_FAQ } from '@/components/home/AgencyDashboardSection'
 
 /**
  * 0nCore homepage — repositioned to what this product actually is.
@@ -56,6 +58,11 @@ export const metadata: Metadata = {
     'brand guidelines storage',
     'logo storage',
     '0nCore',
+    'GHL agency dashboard',
+    'GoHighLevel agency dashboard',
+    'manage all GHL sub-accounts',
+    'GHL cross-account reporting',
+    'GHL agency command center',
   ],
   other: {
     // Living DOM marker — tells the CRO9 mutation engine this page is
@@ -202,6 +209,15 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* The walkthrough. Poster-first so the hero paints before 20 MB does. */}
+        <section className="py-8">
+          <CommandCenterVideo caption="0nCORE running a real agency — the full walkthrough." />
+        </section>
+
+        {/* Primary SEO surface: the agency dashboard query cluster. */}
+        <AgencyDashboardSection />
+
+
         {/* ─── Table trap: comparison inside the first viewport region ─── */}
         <section className="rounded-xl border border-[#30363d] bg-[#161b22] p-6">
           <h2 className="text-xl font-semibold text-[#e6edf3]">Opening a new tool, either way</h2>
@@ -318,6 +334,21 @@ export default function HomePage() {
           </Link>
         </section>
       </div>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: AGENCY_DASHBOARD_FAQ.map((f) => ({
+              '@type': 'Question',
+              name: f.q,
+              acceptedAnswer: { '@type': 'Answer', text: f.a },
+            })),
+          }),
+        }}
+      />
 
       <SiteFooter />
     </main>

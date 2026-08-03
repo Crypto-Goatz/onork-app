@@ -14,7 +14,7 @@ import { Play } from 'lucide-react'
  * Controls appear after the first play rather than sitting on the poster — the
  * first interaction should be one obvious target, not a scrubber bar.
  */
-export default function AgentVideo() {
+export default function CommandCenterVideo({ caption = 'Agency Command Center — the full walkthrough, about four minutes.' }: { caption?: string }) {
   const ref = useRef<HTMLVideoElement>(null)
   const [started, setStarted] = useState(false)
 
@@ -65,9 +65,7 @@ export default function AgentVideo() {
           </button>
         )}
       </div>
-      <figcaption className="mt-3 text-sm text-[#8b949e]">
-        Agency Command Center — the full walkthrough, about four minutes.
-      </figcaption>
+      <figcaption className="mt-3 text-sm text-[#8b949e]">{caption}</figcaption>
     </figure>
   )
 }
