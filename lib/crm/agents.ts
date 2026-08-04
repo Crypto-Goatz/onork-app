@@ -29,7 +29,25 @@ import { crmGet, crmPostRaw } from '@/lib/crm'
  * explicitly, and sending a boolean fails a call that otherwise looks correct.
  */
 
-const AGENTS = '/agent-studio/agents'
+/**
+ * SINGULAR. The path is /agent-studio/agent, not /agent-studio/agents.
+ *
+ * The plural path also answers — it is the older internal surface, and it is
+ * why probing produced Firestore 500s demanding isGhl, productSlug and
+ * agencyId. Those fields belong to that endpoint, not this one. The documented
+ * v3 contract needs none of them.
+ */
+const AGENT = '/agent-studio/agent'
+
+/**
+ * REQUIRED SCOPE: agent-studio.write (agent-studio.readonly to list).
+ *
+ * The sub-account app's twenty scopes do NOT include either, so agent
+ * creation is blocked on adding them — and scopes cannot be added to an
+ * existing install, so it needs a fresh one. Everything below is correct and
+ * will start working the moment that install lands.
+ */
+export const AGENT_SCOPES = ['agent-studio.readonly', 'agent-studio.write'] as const
 
 export interface AgentSummary {
   id: string
@@ -40,6 +58,8 @@ export interface AgentSummary {
 }
 
 export interface AgentSpec {
+  /** Required by the implementation even though the spec marks it optional. */
+  agencyId?: string
   name: string
   description?: string
   /** The whole job, in words. This is what makes the agent useful. */
@@ -50,7 +70,7 @@ export interface AgentSpec {
 
 export async function listAgents(locationId: string): Promise<{ agents: AgentSummary[]; error?: string }> {
   try {
-    const res = await crmGet(`${AGENTS}?`, locationId)
+    const res = await crmGet(`${AGENT}?`, locationId)
     if (!res.ok) return { agents: [], error: `Could not read agents (${res.status}).` }
     const j = (await res.json()) as { agents?: Record<string, unknown>[] }
     return {
@@ -103,38 +123,92 @@ export async function createAgent(locationId: string, spec: AgentSpec): Promise<
   if (!spec.prompt?.trim()) return { ok: false, error: 'An agent needs instructions.' }
 
   const versionName = spec.name.trim()
+
+  /**
+   * The documented v3 body. Only locationId, status and version are required —
+   * every array is sent explicitly because the API's own example sends them
+   * empty rather than omitting them.
+   */
   const body = {
-    // String, not boolean — the validator is explicit about this.
-    isGhl: 'false',
     locationId,
+    // The docs mark agencyId optional; the implementation does not — omitting
+    // it returns a Firestore 500 naming the field. Documented-optional is not
+    // the same as actually-optional, and only a live call tells you which.
+    ...(spec.agencyId ? { agencyId: spec.agencyId } : {}),
     name: spec.name.trim(),
     description: spec.description?.trim() || spec.name.trim(),
     // Created INACTIVE unless asked otherwise: a generated agent that starts
     // answering real customers before anyone has read its prompt is exactly the
     // kind of surprise this product must not produce.
     status: spec.status ?? 'inactive',
-    versionData: {
+    version: {
       versionName,
       description: spec.description?.trim() || versionName,
-      state: 'draft',
-      isPublished: false,
-      version: 1,
-      scopes: [],
       nodes: singleNodeGraph(spec),
+      edges: [],
+      uiNodes: [],
+      uiEdges: [],
+      globalVariables: [],
+      inputVariables: [],
+      runtimeVariables: [],
+      scopes: [],
     },
   }
 
   try {
-    const res = await crmPostRaw(`${AGENTS}?locationId=${encodeURIComponent(locationId)}`, locationId, body)
+    const res = await crmPostRaw(`${AGENT}?locationId=${encodeURIComponent(locationId)}`, locationId, body)
     const text = await res.text()
     if (!res.ok) {
       console.error(`[crm/agents] create ${res.status}: ${text.slice(0, 300)}`)
-      return { ok: false, error: `Could not create the agent (${res.status}).`, detail: text.slice(0, 300) }
+      const scopeIssue = res.status === 401 || /scope/i.test(text)
+      return {
+        ok: false,
+        error: scopeIssue
+          ? 'Agent creation needs the agent-studio scopes, which this install does not have yet.'
+          : `Could not create the agent (${res.status}).`,
+        detail: text.slice(0, 300),
+      }
     }
     const j = JSON.parse(text) as { agent?: { id?: string; agentId?: string; name?: string } }
-    const id = j.agent?.id || j.agent?.agentId || ''
-    return { ok: true, agentId: id, name: j.agent?.name ?? spec.name }
+    return { ok: true, agentId: j.agent?.id || j.agent?.agentId || '', name: j.agent?.name ?? spec.name }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Could not create the agent.' }
+  }
+}
+
+export interface ExecuteResult { ok: boolean; reply?: string; error?: string }
+
+/**
+ * Run an agent and get its answer back.
+ *
+ * THIS IS THE PART THAT MAKES AGENTS A PRODUCT RATHER THAN A SETTING. A
+ * generated agent we can also CALL means 0nCORE can build a worker for a client
+ * and then put it to work — from a command, a workflow action, or a widget —
+ * without a human opening Agent Studio at all.
+ */
+export async function executeAgent(args: {
+  locationId: string
+  agentId: string
+  message: string
+  contactId?: string
+  inputVariables?: Record<string, string>
+}): Promise<ExecuteResult> {
+  try {
+    const res = await crmPostRaw(
+      `${AGENT}/${encodeURIComponent(args.agentId)}/execute?locationId=${encodeURIComponent(args.locationId)}`,
+      args.locationId,
+      {
+        message: args.message,
+        locationId: args.locationId,
+        ...(args.contactId ? { contactId: args.contactId } : {}),
+        ...(args.inputVariables ? { inputVariables: args.inputVariables } : {}),
+      },
+    )
+    const text = await res.text()
+    if (!res.ok) return { ok: false, error: `Agent did not run (${res.status}).` }
+    const j = JSON.parse(text) as { response?: string; message?: string; output?: string }
+    return { ok: true, reply: j.response ?? j.message ?? j.output ?? '' }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Agent did not run.' }
   }
 }
