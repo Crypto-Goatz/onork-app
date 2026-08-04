@@ -1,4 +1,4 @@
-import { crmGet, crmPost } from '@/lib/crm'
+import { crmGet, crmPost, crmPostRaw } from '@/lib/crm'
 import { getValidAgencyToken } from '@/lib/crm/agency-token'
 import { capability, tokenAudienceFor, assertExecutable, legPriceCents } from '@/lib/crm/registry'
 
@@ -228,8 +228,12 @@ const HANDLERS: Record<string, Handler> = {
       // Guessing between people is how a private note lands on a stranger.
       return refuse(`"${query}" matches ${total} contacts. Tell me which one.`, total)
     }
-    const res = await crmPost(`/contacts/${contacts[0].id}/notes`, loc, { body: note })
-    if (!res.ok) return fail('Could not add the note.', `HTTP ${res.status}`)
+    // crmPostRaw, not crmPost: sub-resources reject an injected locationId.
+    const res = await crmPostRaw(`/contacts/${contacts[0].id}/notes`, loc, { body: note })
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '')
+      return fail('Could not add the note.', `HTTP ${res.status} ${detail.slice(0, 160)}`)
+    }
     return ok(`Note added to ${contacts[0].contactName || query}.`, 1, price)
   },
 
@@ -258,9 +262,9 @@ const HANDLERS: Record<string, Handler> = {
     let applied = 0
     const failures: string[] = []
     for (const c of contacts) {
-      const res = await crmPost(`/contacts/${c.id}/tags`, loc, { tags: [tag] })
+      const res = await crmPostRaw(`/contacts/${c.id}/tags`, loc, { tags: [tag] })
       if (res.ok) applied += 1
-      else failures.push(`${c.id}:${res.status}`)
+      else failures.push(`${c.id}:${res.status} ${(await res.text().catch(() => '')).slice(0, 90)}`)
     }
     if (applied === 0) return fail(`Could not apply "${tag}".`, failures.slice(0, 3).join(', '))
     // Partial success is reported as success WITH the shortfall named, because

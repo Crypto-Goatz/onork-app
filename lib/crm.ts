@@ -259,6 +259,23 @@ export async function crmPost(path: string, locationId: string, body: Record<str
   }, auth)
 }
 
+/**
+ * POST with the body EXACTLY as given — no locationId injected.
+ *
+ * crmPost merges `locationId` into every body, which is right for collection
+ * endpoints like POST /contacts/ and wrong for sub-resources: POST
+ * /contacts/{id}/notes and /contacts/{id}/tags reject it outright with 422
+ * "property locationId should not exist". The location is already implied by
+ * the contact in the path.
+ *
+ * Kept as a separate function rather than a flag on crmPost so no existing
+ * caller changes behaviour — several rely on the injection.
+ */
+export async function crmPostRaw(path: string, locationId: string, body: Record<string, unknown>): Promise<Response> {
+  const auth = await getAuthForLocation(locationId)
+  return authedFetch(`${CRM_API}${path}`, { method: 'POST', body: JSON.stringify(body) }, auth)
+}
+
 export async function crmPut(path: string, locationId: string, body: Record<string, unknown>): Promise<Response> {
   const auth = await getAuthForLocation(locationId)
   return authedFetch(`${CRM_API}${path}`, {
