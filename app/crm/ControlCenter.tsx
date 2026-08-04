@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   Workflow, Bot, Eye, Sparkles, Loader2, AlertCircle, Copy, Check,
-  RefreshCw, ShieldCheck, X,
+  RefreshCw, ShieldCheck, X, CreditCard, ExternalLink,
 } from 'lucide-react'
 import { authHeaders } from './useSso'
 
@@ -23,7 +23,7 @@ import { authHeaders } from './useSso'
  * actions, so they land in the same plan → approve → run gate as everything else.
  */
 
-type Section = 'actions' | 'agents' | 'visualizer' | 'insights'
+type Section = 'plans' | 'actions' | 'agents' | 'visualizer' | 'insights'
 
 interface ActionRow {
   key: string; name: string; blurb: string; live: boolean
@@ -33,6 +33,7 @@ interface ToolRow { id: string; intent: string; priceCents: number; writes: bool
 interface Finding { client: string; observation: string; command: string | null }
 
 const SECTIONS: { id: Section; icon: typeof Workflow; label: string; blurb: string }[] = [
+  { id: 'plans', icon: CreditCard, label: 'Plans & Rebilling', blurb: 'What each client pays you' },
   { id: 'actions', icon: Workflow, label: 'Workflow Actions', blurb: '0nCORE steps inside your own builder' },
   { id: 'agents', icon: Bot, label: 'AI Agent Connect', blurb: 'Give your agents 0nCORE tools' },
   { id: 'visualizer', icon: Eye, label: 'Automation Viewer', blurb: 'See any client\'s automations' },
@@ -47,7 +48,7 @@ export default function ControlCenter({
   onCommand: (command: string) => void
   onClose: () => void
 }) {
-  const [section, setSection] = useState<Section>('actions')
+  const [section, setSection] = useState<Section>('plans')
 
   return (
     <div className="oc-card oc-rise p-4 sm:p-5">
@@ -79,6 +80,7 @@ export default function ControlCenter({
         })}
       </div>
 
+      {section === 'plans' && <Plans token={token} />}
       {section === 'actions' && <Actions token={token} />}
       {section === 'agents' && <Agents token={token} />}
       {section === 'visualizer' && <Visualizer token={token} locations={locations} />}
@@ -436,6 +438,117 @@ function Loading() {
   return (
     <div className="flex items-center gap-2 py-6 text-[13px] text-[color:var(--oc-text)]/60">
       <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+    </div>
+  )
+}
+
+/* ──────────────────────────── Plans & Rebilling ───────────────────────── */
+
+interface PlanRow { id: string; name: string; priceCents?: number; interval?: string; clientCount: number; mrrCents: number }
+interface ClientRow { id: string; name: string; planName: string | null; priceCents: number | null; status: string | null; onPlan: boolean }
+
+const money = (cents: number) => {
+  const d = cents / 100
+  return Number.isInteger(d) ? `$${d.toLocaleString()}` : `$${d.toFixed(2)}`
+}
+
+function Plans({ token }: { token: string | null }) {
+  const [data, setData] = useState<
+    | { enabled: true; plans: PlanRow[]; clients: ClientRow[]; mrrCents: number; unbilled: number }
+    | { enabled: false; reason: string; needsInstall: boolean; installUrl?: string; clientCount: number }
+    | null
+  >(null)
+  const [err, setErr] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/saas', { headers: authHeaders(token) })
+      .then((r) => r.json())
+      .then((j) => (j?.error ? setErr(j.error) : setData(j)))
+      .catch(() => setErr('Could not read your plans.'))
+  }, [token])
+
+  if (err) return <p className="flex items-center gap-2 py-4 text-sm text-[color:var(--oc-red)]"><AlertCircle className="h-4 w-4" /> {err}</p>
+  if (!data) return <Loading />
+
+  // Not connected is not the same as no plans. It gets the one thing that
+  // resolves it — a link — rather than an empty table that looks like an answer.
+  if (!data.enabled) {
+    return (
+      <div className="rounded-[14px] border border-[color:var(--oc-border)] bg-white p-4">
+        <h3 className="text-[15px] font-semibold text-[color:var(--oc-ink)]">Connect your agency</h3>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-[color:var(--oc-text)]/75">{data.reason}</p>
+        <p className="mt-2 text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/65">
+          It takes one click and asks for read access to your plans, your snapshots and your
+          sub-accounts. You have {data.clientCount} client{data.clientCount === 1 ? '' : 's'} waiting.
+        </p>
+        {data.installUrl && (
+          <a href={data.installUrl} className="oc-btn mt-3 inline-flex items-center gap-2 px-4 py-2.5 text-[13px]">
+            Connect agency <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-2.5 sm:grid-cols-3">
+        <Stat label="Recurring, monthly" value={money(data.mrrCents)} accent />
+        <Stat label="Plans in use" value={String(data.plans.length)} />
+        {/* The most useful number on the screen: clients earning nothing. */}
+        <Stat label="Clients not billed" value={String(data.unbilled)} warn={data.unbilled > 0} />
+      </div>
+
+      {data.plans.length > 0 && (
+        <div className="space-y-1.5">
+          {data.plans.map((p) => (
+            <div key={p.id} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-3">
+              <div className="min-w-0">
+                <div className="truncate text-[13.5px] font-semibold text-[color:var(--oc-ink)]">{p.name}</div>
+                <div className="oc-mono text-[11px] text-[color:var(--oc-text)]/55">
+                  {p.clientCount} client{p.clientCount === 1 ? '' : 's'}
+                  {p.priceCents ? ` · ${money(p.priceCents)}${p.interval ? `/${p.interval}` : ''}` : ''}
+                </div>
+              </div>
+              <span className="oc-mono shrink-0 text-[13px] font-bold text-[color:var(--oc-green-d)]">{money(p.mrrCents)}</span>
+            </div>
+          ))}
+          {/* Said plainly: there is no endpoint that lists plans, only clients. */}
+          <p className="oc-mono pt-1 text-[10.5px] leading-relaxed text-[color:var(--oc-text)]/50">
+            Plans are shown through the clients on them — one with nobody on it will not appear here.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        <h3 className="text-[13px] font-semibold text-[color:var(--oc-ink)]">Every client</h3>
+        {data.clients.map((c) => (
+          <div key={c.id} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-2.5">
+            <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--oc-ink)]">{c.name}</span>
+            {c.onPlan ? (
+              <span className="oc-mono shrink-0 text-[11.5px] text-[color:var(--oc-text)]/70">
+                {c.planName}{c.priceCents ? ` · ${money(c.priceCents)}` : ''}
+              </span>
+            ) : (
+              <span className="oc-chip shrink-0 border border-[color:var(--oc-amber)]/40 bg-[color:var(--oc-amber)]/[0.08] px-2 py-0.5 text-[11px] text-[color:var(--oc-amber)]">
+                not billed
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function Stat({ label, value, accent, warn }: { label: string; value: string; accent?: boolean; warn?: boolean }) {
+  return (
+    <div className="rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-3">
+      <div className="oc-mono text-[10px] uppercase tracking-[.12em] text-[color:var(--oc-text)]/55">{label}</div>
+      <div className={`mt-0.5 text-[19px] font-bold ${
+        accent ? 'text-[color:var(--oc-green-d)]' : warn ? 'text-[color:var(--oc-amber)]' : 'text-[color:var(--oc-ink)]'}`}>
+        {value}
+      </div>
     </div>
   )
 }

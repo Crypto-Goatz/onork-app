@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { MARKETPLACE_APP, AGENCY_APP } from '@/lib/crm'
+import { AGENCY_V2_APP } from '@/lib/crm-apps'
 import { generateToken } from '@/lib/0n-token'
 import { logHealth } from '@/lib/connection-health'
 import { syncSnapshotToLocation } from '@/lib/snapshot-sync'
@@ -66,7 +67,26 @@ export async function GET(req: NextRequest) {
         appId: AGENCY_APP.appId,
         userType: 'Company' as const,
       },
+      {
+        // The agency app that actually holds saas/company.read, snapshots.* and
+        // companies.readonly. See AGENCY_V2_APP in lib/crm-apps.ts.
+        name: 'agency-v2',
+        clientId: process.env[AGENCY_V2_APP.clientIdEnv] || '',
+        clientSecret: process.env[AGENCY_V2_APP.clientSecretEnv] || '',
+        redirectUri: AGENCY_V2_APP.redirectUri,
+        appId: AGENCY_V2_APP.appId,
+        userType: 'Company' as const,
+      },
     ]
+
+    // An authorisation code is single-use. Trying apps in a fixed order burns it
+    // on the first mismatch, so when the install told us which app it was, that
+    // one goes first instead of being tried fourth with a spent code.
+    const state = req.nextUrl.searchParams.get('state')
+    if (state === 'agency') {
+      const i = apps.findIndex((a) => a.name === 'agency-v2')
+      if (i > 0) apps.unshift(apps.splice(i, 1)[0])
+    }
 
     let tokenData: Record<string, unknown> | null = null
     let usedApp = apps[0]

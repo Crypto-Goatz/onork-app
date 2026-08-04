@@ -281,3 +281,41 @@ export function categoryForPath(path: string): CrmOperationCategory | null {
   // Default: sub-location read
   return 'locations_read'
 }
+
+/**
+ * The AGENCY app — provisioning, snapshots and the agency's SaaS/rebilling data.
+ *
+ * SEPARATE FROM THE OLDER AGENCY APP (69cf4d25…) above, and from the
+ * sub-account app. The platform splits capability by token type: per-client work
+ * (contacts, conversations, calendars) can only be done with a location token,
+ * while creating sub-accounts, reading the snapshot library and reading SaaS
+ * plans are agency-token operations with scopes that are simply not offered on a
+ * sub-account target.
+ *
+ * WHY IT HAD TO BE A NEW APP: discovery showed the existing agency install 401s
+ * on both /saas-api/public-api/locations and /snapshots/ — "the token is not
+ * authorized for this scope". Those endpoints exist and answer; the older app
+ * was never granted saas/company.read, snapshots.readonly or companies.readonly,
+ * and scopes cannot be added to an install after the fact. A fresh install is
+ * the only way to hold them.
+ */
+export const AGENCY_V2_APP: CrmApp = {
+  key: 'agency',
+  name: '0nCORE Agency',
+  appId: process.env.CRM_AGENCY_V2_APP_ID || '6a71919be8d7c3c038df0839',
+  clientIdEnv: 'CRM_AGENCY_APP_CLIENT_ID',
+  clientSecretEnv: 'CRM_AGENCY_APP_CLIENT_SECRET',
+  pitEnv: 'CRM_AGENCY_V2_PIT',
+  authClass: 'Company',
+  redirectUri: 'https://app.0ncore.com/api/oauth/callback',
+  scopes: [
+    'locations.write',
+    'locations.readonly',
+    'snapshots.readonly',
+    'snapshots.write',
+    'companies.readonly',
+    'saas/company.read',
+    'saas/company.write',
+    'marketplace-installer-details.readonly',
+  ],
+}
