@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>oncore_social_proof</title>
+<style>html,body{margin:0;padding:0;background:transparent;font:400 14px/1.5 system-ui,-apple-system,sans-serif}</style>
+</head>
+<body><script>"use strict";(()=>{var c="application/x-postmate-v1+json",w=5,k=0,D=function(){return++k};var I=function(o){var t=document.createElement("a");t.href=o;var n=t.protocol.length>4?t.protocol:window.location.protocol,e=t.host.length?t.port==="80"||t.port==="443"?t.hostname:t.host:window.location.host;return t.origin||n+"//"+e},L={handshake:1,"handshake-reply":1,call:1,emit:1,reply:1,request:1},u=function(o,t){return!(typeof t=="string"&&o.origin!==t||!o.data||typeof o.data=="object"&&!("postmate"in o.data)||o.data.type!==c||!L[o.data.postmate])},V=function(o,t){var n=typeof o[t]=="function"?o[t]():o[t];return p.Promise.resolve(n)},C=(function(){function r(t){var n=this;this.parent=t.parent,this.frame=t.frame,this.child=t.child,this.childOrigin=t.childOrigin,this.events={},this.listener=function(e){if(!u(e,n.childOrigin))return!1;var s=((e||{}).data||{}).value||{},d=s.data,a=s.name;e.data.postmate==="emit"&&a in n.events&&n.events[a].call(n,d)},this.parent.addEventListener("message",this.listener,!1)}var o=r.prototype;return o.get=function(n){var e=this;return new p.Promise(function(s){var d=D(),a=function i(l){l.data.uid===d&&l.data.postmate==="reply"&&(e.parent.removeEventListener("message",i,!1),s(l.data.value))};e.parent.addEventListener("message",a,!1),e.child.postMessage({postmate:"request",type:c,property:n,uid:d},e.childOrigin)})},o.call=function(n,e){this.child.postMessage({postmate:"call",type:c,property:n,data:e},this.childOrigin)},o.on=function(n,e){this.events[n]=e},o.destroy=function(){window.removeEventListener("message",this.listener,!1),this.frame.parentNode.removeChild(this.frame)},r})(),S=(function(){function r(t){var n=this;this.model=t.model,this.parent=t.parent,this.parentOrigin=t.parentOrigin,this.child=t.child,this.child.addEventListener("message",function(e){if(u(e,n.parentOrigin)){var s=e.data,d=s.property,a=s.uid,i=s.data;if(e.data.postmate==="call"){d in n.model&&typeof n.model[d]=="function"&&n.model[d](i);return}V(n.model,d).then(function(l){return e.source.postMessage({property:d,postmate:"reply",type:c,uid:a,value:l},e.origin)})}})}var o=r.prototype;return o.emit=function(n,e){this.parent.postMessage({postmate:"emit",type:c,value:{name:n,data:e}},this.parentOrigin)},r})(),p=(function(){function r(t){var n=t.container,e=n===void 0?typeof e!="undefined"?e:document.body:n,s=t.model,d=t.url,a=t.name,i=t.classListArray,l=i===void 0?[]:i;return this.parent=window,this.frame=document.createElement("iframe"),this.frame.name=a||"",this.frame.classList.add.apply(this.frame.classList,l),e.appendChild(this.frame),this.child=this.frame.contentWindow||this.frame.contentDocument.parentWindow,this.model=s||{},this.sendHandshake(d)}var o=r.prototype;return o.sendHandshake=function(n){var e=this,s=I(n),d=0,a;return new r.Promise(function(i,l){var h=function m(f){return u(f,s)?f.data.postmate==="handshake-reply"?(clearInterval(a),e.parent.removeEventListener("message",m,!1),e.childOrigin=f.origin,i(new C(e))):l("Failed handshake"):!1};e.parent.addEventListener("message",h,!1);var v=function(){d++,e.child.postMessage({postmate:"handshake",type:c,model:e.model},s),d===w&&clearInterval(a)},y=function(){v(),a=setInterval(v,500)};e.frame.attachEvent?e.frame.attachEvent("onload",y):e.frame.onload=y,e.frame.src=n})},r})();p.debug=!1;p.Promise=(function(){try{return window?window.Promise:Promise}catch(r){return null}})();p.Model=(function(){function r(t){return this.child=window,this.model=t,this.parent=this.child.parent,this.sendHandshakeReply()}var o=r.prototype;return o.sendHandshakeReply=function(){var n=this;return new p.Promise(function(e,s){var d=function a(i){if(i.data.postmate){if(i.data.postmate==="handshake"){n.child.removeEventListener("message",a,!1),i.source.postMessage({postmate:"handshake-reply",type:c},i.origin),n.parentOrigin=i.origin;var l=i.data.model;return l&&Object.keys(l).forEach(function(h){n.model[h]=l[h]}),e(new S(n))}return s("Handshake Reply Failed")}};n.child.addEventListener("message",d,!1)})},r})();var E=p;var _="https://app.0ncore.com";function O({key:r,render:o,defaults:t={}}){let n={...t},e=null,s=()=>{let{html:a,js:i}=o(n,{API:_,key:r});return{html:a,js:i||"",elementStore:n}};return new E.Model({setElementStore(a){a&&typeof a=="object"&&(n={...t,...a}),e&&e(s())},getState(){return s()}}).then(a=>{if(e=i=>a.emit("widgetState",i),a.model&&typeof a.model=="object"){let i=a.model.elementStore;i&&typeof i=="object"&&(n={...t,...i})}e(s()),window.addEventListener("message",i=>{var l;((l=i==null?void 0:i.data)==null?void 0:l.type)==="oncore:setStore"&&i.data.store&&(n={...n,...i.data.store},e(s()))}),window.oncore={key:r,get store(){return n},set(i){n={...n,...i},e(s())},openPopup(){a.emit("customWidgetOpenPopup",{key:r})},nextStep(){a.emit("customWidgetGoToNextStep",{key:r})}}}),{build:s}}function g(r){return String(r!=null?r:"").replace(/[&<>"']/g,o=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[o])}function N(r){return`<script async src="${_}/widgets/${r}/embed.js?location={{location.id}}"><\/script>`}var P=".--mobile";O({key:"oncore_social_proof",defaults:{heading:"Recently",limit:"5"},render:r=>({html:`
+<div id="oncore-proof" class="oncore-w oncore-proof" data-limit="${g(r.limit)}">
+  <h3 class="oncore-proof__h">${g(r.heading)}</h3>
+  <div class="oncore-proof__list"></div>
+</div>
+<style>
+  .oncore-proof { font:400 15px/1.5 system-ui,-apple-system,sans-serif; }
+  .oncore-proof__h { font:700 17px/1.2 system-ui; margin:0 0 10px; }
+  .oncore-proof__list:empty { display:none; }
+  ${P} .oncore-proof { font-size:14px; }
+</style>
+${N("oncore_social_proof")}`.trim()})});})();
+/*! Bundled license information:
+
+postmate/build/postmate.es.js:
+  (**
+    postmate - A powerful, simple, promise-based postMessage library
+    @version v1.5.2
+    @link https://github.com/dollarshaveclub/postmate
+    @author Jacob Kelley <jakie8@gmail.com>
+    @license MIT
+  **)
+*/
+</script></body>
+</html>

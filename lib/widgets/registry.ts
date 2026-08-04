@@ -24,6 +24,18 @@ import type { MeterKey } from '@/lib/meters'
  * `live` is the honest flag. A widget whose backing product is not built yet
  * renders a clearly-labelled placeholder rather than a broken embed on a
  * customer's public site.
+ *
+ * ── DELIVERY, CORRECTED AFTER PORTAL DISCOVERY ──
+ * Builder widgets are NOT registered by URL. They are BUILT BUNDLES: a zipped
+ * dist folder, uploaded, which runs in an iframe inside the page builder and
+ * speaks postmate. Source in widgets/src, built by widgets/build.mjs.
+ *
+ * ANALYTICS AND SCRIPT MANAGEMENT DO NOT FIT THAT MODEL AT ALL. They are
+ * site-wide head/footer injection, and an element-level module cannot reach the
+ * page head. They therefore live in the SNAPSHOT layer — a script tag baked
+ * into the snapshot's pages — which is what /widgets/:key/embed.js serves.
+ * Mislabelling them as builder widgets would have produced two bundles that
+ * could never do the one thing they exist for.
  */
 
 /** Every widget registers on the SUB-ACCOUNT app — the one that owns UI. */
@@ -33,8 +45,9 @@ export type WidgetClass = 'builder' | 'injector'
 
 /** How the widget reaches a page. */
 export type Delivery =
-  | 'panel'   // an iframe surface inside the platform (dashboard / admin)
-  | 'embed'   // a <script> tag on a public site or funnel page
+  | 'builder'  // a .zip bundle uploaded as a custom element in the page builder
+  | 'panel'    // an iframe surface inside our own dashboard
+  | 'embed'    // a <script> tag baked into a snapshot page — the SNAPSHOT LAYER
 
 export interface WidgetField {
   key: string
@@ -73,7 +86,7 @@ export const WIDGETS: Widget[] = [
     pending: 'The site engine is not wired to this panel yet.',
   },
   {
-    key: 'oncore_lp_inject', name: '0nCORE Landing Page', cls: 'builder', delivery: 'embed',
+    key: 'oncore_lp_inject', name: '0nCORE Landing Page', cls: 'builder', delivery: 'builder',
     blurb: 'Fills a placeholder block in a snapshot funnel step with a generated landing page.',
     meter: 'SITE_BUILD',
     fields: [{ key: 'offer', label: 'What is the offer?', type: 'textarea' }],
@@ -81,7 +94,7 @@ export const WIDGETS: Widget[] = [
     pending: 'Depends on the site engine.',
   },
   {
-    key: 'oncore_booking_block', name: '0nCORE Booking Block', cls: 'builder', delivery: 'embed',
+    key: 'oncore_booking_block', name: '0nCORE Booking Block', cls: 'builder', delivery: 'builder',
     blurb: "A booking block wired to this client's own calendar.",
     fields: [
       { key: 'calendarId', label: 'Calendar', type: 'text' },
@@ -90,7 +103,7 @@ export const WIDGETS: Widget[] = [
     live: true,
   },
   {
-    key: 'oncore_form_capture', name: '0nCORE Form Capture', cls: 'builder', delivery: 'embed',
+    key: 'oncore_form_capture', name: '0nCORE Form Capture', cls: 'builder', delivery: 'builder',
     blurb: 'A lead form whose submissions land as contacts, tagged and ready for a burst.',
     fields: [
       { key: 'heading', label: 'Heading', type: 'text', placeholder: 'Get in touch' },
@@ -100,7 +113,7 @@ export const WIDGETS: Widget[] = [
     live: true,
   },
   {
-    key: 'oncore_course_embed', name: '0nCORE Course Player', cls: 'builder', delivery: 'embed',
+    key: 'oncore_course_embed', name: '0nCORE Course Player', cls: 'builder', delivery: 'builder',
     blurb: 'Embeds an automated course into a membership area.',
     fields: [{ key: 'courseId', label: 'Course', type: 'text' }],
     live: false,
@@ -111,12 +124,12 @@ export const WIDGETS: Widget[] = [
   {
     key: 'oncore_analytics', name: '0nCORE Analytics', cls: 'injector', delivery: 'embed',
     // House rule: every site we build or touch carries the collector.
-    blurb: 'Puts the CRO9 collector on every page. On by default and not billed.',
+    blurb: 'Puts the CRO9 collector on every page. Snapshot layer, not a builder element — an element cannot reach the page head.',
     fields: [],
     live: true,
   },
   {
-    key: 'oncore_chat', name: '0nCORE Chat', cls: 'injector', delivery: 'embed',
+    key: 'oncore_chat', name: '0nCORE Chat', cls: 'injector', delivery: 'builder',
     blurb: 'An AI chat bubble that answers from this client\'s own context.',
     fields: [
       { key: 'greeting', label: 'Opening line', type: 'text', placeholder: 'Hi — how can we help?' },
@@ -126,12 +139,12 @@ export const WIDGETS: Widget[] = [
   },
   {
     key: 'oncore_script_manager', name: '0nCORE Script Manager', cls: 'injector', delivery: 'panel',
-    blurb: 'Choose which pixels and scripts load on which client sites — from one screen.',
+    blurb: 'Choose which pixels and scripts load on which client sites. Snapshot layer — the scripts ride in the snapshot pages, not a builder element.',
     fields: [{ key: 'scripts', label: 'Scripts', type: 'textarea', placeholder: 'One script tag per line' }],
     live: true,
   },
   {
-    key: 'oncore_social_proof', name: '0nCORE Social Proof', cls: 'injector', delivery: 'embed',
+    key: 'oncore_social_proof', name: '0nCORE Social Proof', cls: 'injector', delivery: 'builder',
     blurb: 'Shows recent real activity from the client\'s CRM as social proof.',
     fields: [
       { key: 'heading', label: 'Heading', type: 'text', placeholder: 'Recently' },
@@ -140,7 +153,7 @@ export const WIDGETS: Widget[] = [
     live: true,
   },
   {
-    key: 'oncore_conversion_bar', name: '0nCORE Conversion Bar', cls: 'injector', delivery: 'embed',
+    key: 'oncore_conversion_bar', name: '0nCORE Conversion Bar', cls: 'injector', delivery: 'builder',
     blurb: 'A sticky offer bar you edit once and it changes on every client site.',
     fields: [
       { key: 'message', label: 'Message', type: 'text', placeholder: 'Spring offer — 20% off' },
