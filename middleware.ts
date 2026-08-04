@@ -224,5 +224,9 @@ export const config = {
     '/clients/:path*',
     '/automations',
     '/automations/:path*',
+    '/tools',
+    '/tools/:path*',
+    '/log',
+    '/log/:path*',
   ],
 }

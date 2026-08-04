@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Building2, ListChecks, PanelRightClose, Terminal, Users, Sparkles, Home, type LucideIcon } from 'lucide-react'
+import { Building2, ListChecks, PanelRightClose, Terminal, Users, Sparkles, Home, Wrench, ScrollText, type LucideIcon } from 'lucide-react'
 
 /**
  * The app's right-hand sidebar. ONE component, used by every page.
@@ -20,11 +20,13 @@ export const NAV: { href: string; view?: 'dashboard' | 'clients' | 'automations'
   { href: '/', view: 'dashboard', label: 'Command', icon: Terminal },
   { href: '/clients', view: 'clients', label: 'Clients', icon: Users },
   { href: '/automations', view: 'automations', label: 'Automations & AI', icon: Sparkles },
+  { href: '/tools', label: 'Tools', icon: Wrench },
+  { href: '/log', label: 'History', icon: ScrollText },
 ]
 
 export interface AppSidebarProps {
   /** Which nav item reads as current. 'home' for the welcome page. */
-  current: 'home' | 'dashboard' | 'clients' | 'automations'
+  current: 'home' | 'dashboard' | 'clients' | 'automations' | 'tools' | 'log'
   activeCount: number
   totalCount: number
   usageLabel: string
@@ -39,7 +41,10 @@ export default function AppSidebar({ current, activeCount, totalCount, usageLabe
         <nav aria-label="Sections" className="space-y-1">
           {NAV.map((n) => {
             const Icon = n.icon
-            const on = n.href === '/dashboard' ? current === 'home' : n.view === current
+            const on = n.href === '/dashboard' ? current === 'home'
+              : n.href === '/tools' ? current === 'tools'
+              : n.href === '/log' ? current === 'log'
+              : n.view === current
             return (
               <Link
                 key={n.href}
