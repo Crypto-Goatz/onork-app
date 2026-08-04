@@ -59,7 +59,7 @@ const str = (v: unknown, max = 300): string => (typeof v === 'string' ? v.slice(
  * many contacts are there" produced `limit: 0`, which the CRM rejects. A plain
  * `?? default` does not catch it: 0 is a perfectly good number.
  */
-const count = (v: unknown, d: number, min = 1, max = 100): number => {
+export const count = (v: unknown, d: number, min = 1, max = 100): number => {
   const n = typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : d
   return Math.min(Math.max(n, min), max)
 }
@@ -69,9 +69,21 @@ const count = (v: unknown, d: number, min = 1, max = 100): number => {
  * as a literal search term finds nothing, which then reads as "you have no
  * contacts" — a wrong answer delivered confidently.
  */
-const searchTerm = (v: unknown): string => {
-  const s = str(v, 120).trim()
-  return /^(\*|all|any|everyone|everything)$/i.test(s) ? '' : s
+export const searchTerm = (v: unknown): string => {
+  let s = str(v, 120).trim()
+  if (/^(\*|all|any|everyone|everything)$/i.test(s)) return ''
+
+  // Models reach for query LANGUAGE when asked for a search term — this one
+  // emitted `email = 'john@example.com'` and the CRM, quite reasonably, found
+  // nobody by that name. The prompt asks for plain text; this is the belt to
+  // that braces, because the failure is silent and reads as "no such contact".
+  const quoted = s.match(/["']([^"']+)["']/)
+  if (quoted) s = quoted[1]
+  else {
+    const rhs = s.match(/^[\w.]+\s*(?:=|==|:|\blike\b)\s*(.+)$/i)
+    if (rhs) s = rhs[1].trim()
+  }
+  return s.replace(/^["']|["']$/g, '').trim()
 }
 
 /* ────────────────────────── contact resolution ────────────────────────── */

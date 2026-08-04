@@ -36,9 +36,9 @@ const GROQ = 'https://api.groq.com/openai/v1/chat/completions'
 /** What each runnable capability needs. Fed to the model so it fills them in. */
 const PARAM_HINTS: Record<string, string> = {
   'contact.create': 'firstName, lastName, email, phone',
-  'contact.note': 'contactQuery (who), note (the text)',
-  'contact.tag': 'tag, contactQuery (which contacts)',
-  'contact.search': 'query, limit',
+  'contact.note': 'contactQuery (a plain name/email/phone — NOT a query expression), note (the text)',
+  'contact.tag': 'tag, contactQuery (a plain name/email/phone — NOT a query expression)',
+  'contact.search': 'query (plain words, or omit for all), limit',
 }
 
 export async function POST(req: NextRequest) {
@@ -91,6 +91,8 @@ export async function POST(req: NextRequest) {
     '  emit one step each — that is the whole point of the command bar.',
     '- `location` must be a client name from the list above, or null.',
     '- Fill `params` with whatever the instruction gives you for that step.',
+    '- Search params are PLAIN TEXT the CRM matches on — a name, an email, a',
+    '  phone. Never SQL, never `field = value`, never an operator.',
     '- If the instruction asks for something marked NOT POSSIBLE, still emit',
     '  that id so the interface can explain it. Do not silently substitute.',
     '- `intent` is what YOU will do, in plain words, specific to this request.',
