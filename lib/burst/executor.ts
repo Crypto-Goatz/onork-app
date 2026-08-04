@@ -1,6 +1,7 @@
 import { crmGet, crmPost, crmPostRaw } from '@/lib/crm'
 import { getValidAgencyToken } from '@/lib/crm/agency-token'
 import { capability, tokenAudienceFor, assertExecutable, legPriceCents } from '@/lib/crm/registry'
+import { canRun, settle } from '@/lib/billing/gate'
 
 /**
  * The executor — the only code in 0nCORE that changes a client's account.
@@ -50,6 +51,11 @@ export interface LegInput {
   locationName?: string
   params?: Record<string, unknown>
   companyId: string
+  /**
+   * The receipt this leg is being recorded under. Doubles as the wallet
+   * charge's idempotency key, so a retry cannot bill twice.
+   */
+  receiptId?: string
 }
 
 const str = (v: unknown, max = 300): string => (typeof v === 'string' ? v.slice(0, max) : '')
@@ -307,20 +313,54 @@ export async function executeLeg(leg: LegInput): Promise<LegResult> {
   // Price from the registry, never from the request.
   const price = legPriceCents(leg.capability)
 
-  // Anything billable stays off until the billing gate exists. Running paid work
-  // for free is a decision nobody made, and charging with no billing rail is
-  // worse.
-  if (price > 0) {
-    return refuse(`"${cap.intent}" costs money and billing is not switched on yet, so I did not run it.`)
-  }
-
   if (tokenAudienceFor(leg.capability) === 'location' && !leg.locationId) {
     return refuse('Pick a client for this step and I will run it.')
   }
 
+  // The gate decides BEFORE the work: unconfigured meter, feature not switched
+  // on, or a wallet that says no. It has no side effects, so a refusal here has
+  // cost the agency nothing.
+  const verdict = await canRun({
+    companyId: leg.companyId,
+    locationId: leg.locationId,
+    capabilityId: leg.capability,
+  })
+  if (!verdict.allowed) return refuse(verdict.reason)
+
+  let result: LegResult
   try {
-    return await handler(leg, price)
+    result = await handler(leg, price)
   } catch (err) {
     return fail('That step did not complete.', err instanceof Error ? err.message : String(err))
   }
+
+  // Charge only for work that DEMONSTRABLY happened. A leg that failed or was
+  // refused never reaches this, which is what makes "a failed step is never
+  // billed" structural rather than a rule somebody has to remember.
+  if (!verdict.free && result.status === 'ok') {
+    if (!leg.receiptId) {
+      // No idempotency key means a retry could double-charge. Reporting the
+      // work as done-and-unbilled is the safe direction to be wrong in.
+      console.error(`[executor] ${leg.capability} succeeded with no receiptId; not charging.`)
+      return { ...result, billed: false }
+    }
+    const settled = await settle({
+      companyId: leg.companyId,
+      locationId: leg.locationId,
+      meterKey: verdict.meterKey,
+      priceCents: verdict.priceCents,
+      description: result.detail,
+      receiptId: leg.receiptId,
+      units: 1,
+    })
+    return {
+      ...result,
+      priceCents: verdict.priceCents,
+      billed: settled.billed,
+      // The work happened; say so, and say it was not charged for.
+      ...(settled.billed ? {} : { detail: `${result.detail} (not billed: ${settled.error ?? 'unknown'})` }),
+    }
+  }
+
+  return result
 }

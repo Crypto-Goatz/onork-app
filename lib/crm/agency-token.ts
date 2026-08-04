@@ -59,15 +59,33 @@ interface AgencyInstallRow {
  */
 const AGENCY_V2_APP_ID = process.env.CRM_AGENCY_V2_APP_ID || '6a71919be8d7c3c038df0839'
 
-async function readAgencyInstall(companyId?: string): Promise<AgencyInstallRow | null> {
+async function readAgencyInstall(companyId?: string, needsScope?: string): Promise<AgencyInstallRow | null> {
   // Newest app first, then the legacy one. Ordering by app rather than by
   // updated_at is deliberate: a legacy row refreshed five minutes ago is still
   // the wrong token for a SaaS call, however recent it is.
+  //
+  // BUT THE APPS HOLD DIFFERENT SCOPES, so "newest" is not always "correct".
+  // The V2 agency app has snapshots and SaaS; it does NOT have oauth.write,
+  // because that scope is only offered on a sub-account target. Preferring it
+  // blindly broke location-token minting — every per-client call silently fell
+  // back to a PIT. When a caller names the scope it needs, an install that
+  // lacks it is skipped rather than handed over.
+  const candidates: AgencyInstallRow[] = []
   for (const appId of [AGENCY_V2_APP_ID, AGENCY_APP_ID]) {
     const row = await readAgencyInstallForApp(appId, companyId)
-    if (row?.access_token) return row
+    if (row?.access_token) candidates.push(row)
   }
-  return null
+  if (!candidates.length) return null
+  if (!needsScope) return candidates[0]
+
+  const withScope = candidates.find((c) => (c.scopes ?? '').split(/\s+/).includes(needsScope))
+  if (withScope) return withScope
+
+  // Nothing holds it. Return the best token anyway so the caller produces a
+  // real API error rather than a confusing "not connected" — but say so, since
+  // this means an install is missing a scope somebody assumed it had.
+  console.warn(`[crm/agency-token] no agency install holds "${needsScope}"; falling back to ${candidates[0].app_id}`)
+  return candidates[0]
 }
 
 async function readAgencyInstallForApp(appId: string, companyId?: string): Promise<AgencyInstallRow | null> {
@@ -186,12 +204,16 @@ async function refreshAgencyToken(install: AgencyInstallRow): Promise<string | n
  * the cached one expired. Returns null if no install exists OR refresh
  * has permanently failed.
  */
-export async function getValidAgencyToken(companyId?: string): Promise<{
+export async function getValidAgencyToken(
+  companyId?: string,
+  /** Pick an install that actually holds this scope, e.g. 'oauth.write'. */
+  needsScope?: string,
+): Promise<{
   token: string | null
   companyId: string | null
   error?: string
 }> {
-  const install = await readAgencyInstall(companyId)
+  const install = await readAgencyInstall(companyId, needsScope)
   if (!install) {
     return {
       token: null,

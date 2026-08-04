@@ -139,8 +139,13 @@ export async function ensureLocationInstall(locationId: string): Promise<Locatio
     }
   }
 
-  // 2. Need to mint — get agency token
-  const agency = await getValidAgencyToken()
+  // 2. Need to mint — and minting REQUIRES oauth.write.
+  //
+  // Naming the scope matters: the newer agency app carries snapshots and SaaS
+  // but not oauth.write (that scope is sub-account-only), so asking for "an
+  // agency token" would hand back one that cannot mint. The failure is quiet —
+  // the mint 400s and every per-client call drops to a PIT.
+  const agency = await getValidAgencyToken(undefined, 'oauth.write')
   if (!agency.token || !agency.companyId) {
     return {
       token: null,

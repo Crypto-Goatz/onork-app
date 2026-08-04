@@ -112,6 +112,8 @@ export async function POST(req: NextRequest) {
       locationName: locationName ?? undefined,
       params: leg.params,
       companyId,
+      // Written before the call, so the charge can key off it.
+      receiptId: receipt?.id,
     })
 
     if (result.status === 'ok') okCount += 1
