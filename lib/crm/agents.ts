@@ -58,8 +58,19 @@ export interface AgentSummary {
 }
 
 export interface AgentSpec {
-  /** Required by the implementation even though the spec marks it optional. */
+  /**
+   * Marked optional in the spec, required by the implementation. Same for the
+   * author fields — the Firestore write names each one in turn until all are
+   * present, so "optional" here means "the validator will not stop you, the
+   * database will".
+   */
   agencyId?: string
+  authorId?: string
+  authorName?: string
+  authorEmail?: string
+  /** Defaults match what the platform's own agents use. */
+  model?: string
+  provider?: string
   name: string
   description?: string
   /** The whole job, in words. This is what makes the agent useful. */
@@ -95,9 +106,9 @@ export async function listAgents(locationId: string): Promise<{ agents: AgentSum
  * something. Kept as its own function because multi-node graphs are the obvious
  * next step and only this needs to change.
  */
-function singleNodeGraph(spec: AgentSpec) {
+function singleNodeGraph(spec: AgentSpec, nodeId: string) {
   return [{
-    nodeId: crypto.randomUUID(),
+    nodeId,
     nodeName: 'ai_agent_node',
     nodeDisplayName: 'AI Agent',
     isStartNode: true,
@@ -123,6 +134,7 @@ export async function createAgent(locationId: string, spec: AgentSpec): Promise<
   if (!spec.prompt?.trim()) return { ok: false, error: 'An agent needs instructions.' }
 
   const versionName = spec.name.trim()
+  const nodeId = crypto.randomUUID()
 
   /**
    * The documented v3 body. Only locationId, status and version are required —
@@ -135,6 +147,11 @@ export async function createAgent(locationId: string, spec: AgentSpec): Promise<
     // it returns a Firestore 500 naming the field. Documented-optional is not
     // the same as actually-optional, and only a live call tells you which.
     ...(spec.agencyId ? { agencyId: spec.agencyId } : {}),
+    // Attribution has to be SOMETHING — the row records who made the agent, and
+    // an agent with no author is one nobody can be asked about later.
+    authorId: spec.authorId || '0ncore',
+    authorName: spec.authorName || '0nCORE',
+    authorEmail: spec.authorEmail || 'noreply@0ncore.com',
     name: spec.name.trim(),
     description: spec.description?.trim() || spec.name.trim(),
     // Created INACTIVE unless asked otherwise: a generated agent that starts
@@ -144,8 +161,26 @@ export async function createAgent(locationId: string, spec: AgentSpec): Promise<
     version: {
       versionName,
       description: spec.description?.trim() || versionName,
-      nodes: singleNodeGraph(spec),
+      nodes: singleNodeGraph(spec, nodeId),
       edges: [],
+      /**
+       * graphMetadata is NOT derived from nodes — the server reads the model
+       * and provider straight out of it, and a node alone leaves them
+       * undefined. `llms[].id` must be the node's own id, which is what ties
+       * the model choice to the node that uses it.
+       */
+      graphMetadata: {
+        llms: [{
+          id: nodeId,
+          name: 'AI Agent',
+          model: spec.model ?? 'gpt-4.1',
+          provider: spec.provider ?? 'openai',
+          conversational: true,
+          toolIds: [],
+        }],
+        standardNodes: [],
+        tools: [],
+      },
       uiNodes: [],
       uiEdges: [],
       globalVariables: [],
