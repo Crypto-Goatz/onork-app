@@ -248,16 +248,24 @@ export default function HomePage() {
 
         {/* ─────────────── Close ─────────────── */}
         <section className="rounded-xl border border-[#6EE05A]/40 bg-[#161b22] p-8 text-center">
-          <h2 className="text-xl font-semibold text-[#e6edf3]">Put your brand somewhere sensible.</h2>
+          <h2 className="text-xl font-semibold text-[#e6edf3]">Stop opening thirty accounts a morning.</h2>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[#c9d1d9]">
-            Free, about three minutes, and you will never send someone the wrong logo again.
+            Free to install. You pay only for what actually runs, and nothing runs until you say so.
           </p>
-          <Link
-            href="/signup"
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#6EE05A] px-6 py-3 text-sm font-medium text-[#0d1117] transition-colors hover:bg-[#5bc74a]"
-          >
-            Set up my brand — free <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/agencies"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#6EE05A] px-6 py-3 text-sm font-bold text-[#0d1117] transition-opacity hover:opacity-90"
+            >
+              See what it runs <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/0nagent"
+              className="inline-flex items-center gap-2 rounded-lg border border-[#30363d] px-6 py-3 text-sm font-semibold text-[#e6edf3] transition-colors hover:border-[#6EE05A]/40"
+            >
+              Watch the walkthrough
+            </Link>
+          </div>
         </section>
       </div>
 
