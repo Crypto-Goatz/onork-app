@@ -520,3 +520,19 @@ code, pre, .font-mono {
   .oc-tile:hover { transform: none; }
   .oc-rise { animation: none; }
 }
+
+/* ── 0nCORE app sidebar ───────────────────────────────────────────────
+   A soft vertical seam rather than a hard 1px border. On a #F6F6F7 page a
+   plain border-left reads as a table edge; the gradient wash plus a hairline
+   gives the panel depth without adding a box. */
+.oncore-app .oc-sidebar {
+  border-left: 1px solid var(--oc-border);
+  background:
+    linear-gradient(180deg, rgba(110, 224, 90, 0.045) 0%, rgba(110, 224, 90, 0) 220px),
+    #fff;
+}
+.oncore-app .oc-sidebar::-webkit-scrollbar { width: 6px; }
+.oncore-app .oc-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(24, 29, 25, 0.14);
+  border-radius: 999px;
+}

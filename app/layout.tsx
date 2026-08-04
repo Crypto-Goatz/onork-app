@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import type { Metadata } from "next";
 import "./globals.css";
 import "./jampack.css";
@@ -53,11 +54,14 @@ export const metadata: Metadata = {
   keywords: ["AI CRM", "AI automation", "MCP server", "0nMCP", "voice AI", "course generator", "CRM marketplace", "business automation", "AI assistant", "workflow builder", "agentic AI"],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // app.0ncore.com is the product surface; everything else is the marketing site.
+  const isAppHost = (await headers()).get('host') === 'app.0ncore.com'
+
   return (
     <html lang="en" className={cn("dark font-sans", inter.variable, mono.variable)}>
       <head>
@@ -106,11 +110,27 @@ export default function RootLayout({
       </head>
       <body className="antialiased min-h-screen">
         <Providers>
-        <LaunchBanner />
-        <GroqBanner />
-        <PublicNavWrapper />
+        {/*
+          THE APP HOST GETS NO MARKETING CHROME AT ALL.
+          app.0ncore.com is the product; www.0ncore.com is the site. Banners, the
+          public nav and the floating voice button belong to the site.
+
+          DECIDED BY HOST, NOT BY PATH. PublicNavWrapper excludes by pathname,
+          but middleware REWRITES every app-host path into /crm — and
+          usePathname() reports the pre-rewrite URL, so /clients and / never
+          matched an exclusion and the marketing header rendered straight over
+          the dashboard. Reading the host here is both correct and server-side,
+          so nothing flashes in before being hidden.
+        */}
+        {!isAppHost && (
+          <>
+            <LaunchBanner />
+            <GroqBanner />
+            <PublicNavWrapper />
+          </>
+        )}
         {children}
-        <VoiceAIFloatingButton />
+        {!isAppHost && <VoiceAIFloatingButton />}
         </Providers>
       </body>
     </html>

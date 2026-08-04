@@ -97,7 +97,14 @@ const EXAMPLES = [
 export default function AgencyDashboard({ initialView = 'dashboard' }: { initialView?: 'dashboard' | 'clients' | 'automations' } = {}) {
   const [boot, setBoot] = useState<Boot | null>(null)
   const [tile, setTile] = useState<TileId | null>(null)
-  const [activeLocation, setActiveLocation] = useState<string>('all')
+  /**
+   * The command bar targets every client by default now that the location rail
+   * is gone. Naming a client in the sentence is what scopes a step — the planner
+   * resolves it server-side against the real account list — so a separate
+   * "current client" selector would be a second, competing way to say the same
+   * thing.
+   */
+  const activeLocation = 'all'
   const [taskbarOpen, setTaskbarOpen] = useState(true)
   /**
    * Top-level view. The tiles remain the dashboard's own navigation; this is the
@@ -191,6 +198,12 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
   const blocked = (legs ?? []).filter((l) => l.blocked).length
   const locCount = new Set((legs ?? []).map((l) => l.location).filter(Boolean)).size
   const runnable = (legs ?? []).filter((l) => l.runnable).length
+  /**
+   * How many clients are switched on — the billed number. Until activation
+   * ships this reads the connected list, so it is honest rather than invented;
+   * it becomes the activated_locations count when Tile 6 lands.
+   */
+  const activeCount = boot?.locations.length ?? 0
 
   /**
    * Four states, not two. "Not connected" used to cover being mid-handshake,
@@ -263,54 +276,6 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
       </header>
 
       <div className="flex">
-        {/* ── LEFT RAIL ── */}
-        <aside className="hidden w-56 shrink-0 border-r border-[color:var(--oc-border)] bg-white/60 p-3 md:block">
-          <div className="oc-mono mb-2 px-2 text-[10px] font-bold uppercase tracking-[.12em] text-[color:var(--oc-text)]/55">
-            Clients
-          </div>
-          <button
-            type="button"
-            onClick={() => setActiveLocation('all')}
-            className={`mb-1 flex w-full items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-left text-[13.5px] font-semibold transition-colors ${
-              activeLocation === 'all'
-                ? 'bg-[color:var(--oc-green)]/12 text-[color:var(--oc-ink)]'
-                : 'text-[color:var(--oc-text)] hover:bg-black/[0.03]'
-            }`}
-          >
-            <span className="h-2 w-2 rounded-full bg-gradient-to-br from-[#6EE05A] to-[#2E9A1F]" />
-            All clients
-          </button>
-
-          {boot?.locations.length ? (
-            boot.locations.map((l) => (
-              <button
-                key={l.id}
-                type="button"
-                onClick={() => setActiveLocation(l.id)}
-                className={`flex w-full items-center gap-2.5 rounded-[12px] px-3 py-2.5 text-left text-[13.5px] transition-colors ${
-                  activeLocation === l.id ? 'bg-[color:var(--oc-green)]/12 text-[color:var(--oc-ink)]' : 'text-[color:var(--oc-text)] hover:bg-black/[0.03]'
-                }`}
-              >
-                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: l.color ?? '#3E8FC7' }} />
-                <span className="min-w-0 flex-1 truncate">{l.name}</span>
-                {!!l.openTasks && <span className="oc-mono text-[10px] text-[color:var(--oc-text)]/60">{l.openTasks}</span>}
-              </button>
-            ))
-          ) : (
-            <div className="rounded-[12px] border border-dashed border-[color:var(--oc-border)] px-3 py-4 text-[12px] leading-relaxed text-[color:var(--oc-text)]/70">
-              <Building2 className="mb-1.5 h-4 w-4 text-[color:var(--oc-text)]/40" />
-              {/* A failed READ and an empty LIST are different facts. Saying
-                  "no clients yet" when the CRM call actually errored would send
-                  someone hunting for a problem that isn't there. */}
-              {boot?.warning
-                ? boot.warning
-                : boot?.needs
-                  ? boot.needs
-                  : 'No clients switched on yet. They appear here once 0nCORE is installed on your agency.'}
-            </div>
-          )}
-        </aside>
-
         {/* ── MAIN ── */}
         <main className="min-w-0 flex-1 p-4 sm:p-6">
           {/* Mobile nav — the header row has no space for it below md. */}
@@ -592,19 +557,86 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
           )}
         </main>
 
-        {/* ── RIGHT TASKBAR ── */}
+        {/* ── RIGHT SIDEBAR ── */}
         {taskbarOpen && (
-          <aside className="hidden w-72 shrink-0 border-l border-[color:var(--oc-border)] bg-white/60 p-4 lg:block">
-            <div className="oc-mono mb-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-[.12em] text-[color:var(--oc-text)]/55">
-              <span>Tasks</span>
-              <button onClick={() => setTaskbarOpen(false)} aria-label="Hide tasks" className="text-[color:var(--oc-text)]/45 hover:text-[color:var(--oc-ink)]">
-                <PanelRightClose className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="rounded-[14px] border border-dashed border-[color:var(--oc-border)] p-4 text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/70">
-              <ListChecks className="mb-2 h-4 w-4 text-[color:var(--oc-text)]/40" />
-              People and agents share this list. Anything a command or a flow does lands here with a
-              receipt against the right client.
+          <aside className="oc-sidebar hidden w-[268px] shrink-0 lg:block">
+            <div className="sticky top-[57px] flex max-h-[calc(100vh-57px)] flex-col gap-4 overflow-y-auto p-4">
+
+              <nav aria-label="Sections" className="space-y-1">
+                {NAV.map((n) => {
+                  const Icon = n.icon
+                  const on = n.view !== undefined && view === n.view
+                  return (
+                    <Link
+                      key={n.href}
+                      href={n.href}
+                      aria-current={on ? 'page' : undefined}
+                      className={`group flex items-center gap-3 rounded-[13px] px-3 py-2.5 text-[13.5px] transition-all ${
+                        on
+                          ? 'bg-[color:var(--oc-ink)] font-semibold text-white shadow-[0_6px_16px_-6px_rgba(24,29,25,.5)]'
+                          : 'text-[color:var(--oc-text)] hover:bg-black/[0.035] hover:text-[color:var(--oc-ink)]'
+                      }`}
+                    >
+                      <Icon className={`h-4 w-4 shrink-0 ${on ? 'text-[color:var(--oc-green)]' : 'text-[color:var(--oc-text)]/45 group-hover:text-[color:var(--oc-green-d)]'}`} />
+                      {n.label}
+                    </Link>
+                  )
+                })}
+              </nav>
+
+              {/*
+                WHAT THE AGENCY IS PAYING FOR, not a list of every account they
+                own. Billing is per switched-on client — one free, the rest
+                monthly — so a rail listing all 86 sub-accounts advertised work
+                they are not being charged for and buried the number that
+                actually matters.
+              */}
+              <section className="rounded-[16px] border border-[color:var(--oc-border)] bg-white p-3.5">
+                <div className="oc-mono mb-2 text-[10px] font-bold uppercase tracking-[.12em] text-[color:var(--oc-text)]/50">
+                  Switched on
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-[26px] font-bold leading-none text-[color:var(--oc-ink)]">{activeCount}</span>
+                  <span className="text-[12px] text-[color:var(--oc-text)]/60">
+                    of {boot?.locations.length ?? 0} client{(boot?.locations.length ?? 0) === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <p className="mt-2 text-[11.5px] leading-relaxed text-[color:var(--oc-text)]/65">
+                  {activeCount === 0
+                    ? 'Your first client is free. Switch one on to start.'
+                    : activeCount === 1
+                      ? 'Your first client is free. Adding another is billed monthly.'
+                      : `${activeCount - 1} billed monthly, first one free.`}
+                </p>
+                <Link
+                  href="/clients"
+                  className="oc-chip mt-3 inline-flex w-full items-center justify-center gap-1.5 border border-[color:var(--oc-border)] bg-[color:var(--oc-bg)] px-3 py-2 text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)] hover:text-[color:var(--oc-ink)]"
+                >
+                  <Building2 className="h-3.5 w-3.5" /> Manage clients
+                </Link>
+              </section>
+
+              <section className="rounded-[16px] border border-[color:var(--oc-border)] bg-white p-3.5">
+                <div className="oc-mono mb-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-[.12em] text-[color:var(--oc-text)]/50">
+                  <span>Tasks</span>
+                  <button onClick={() => setTaskbarOpen(false)} aria-label="Hide sidebar" className="text-[color:var(--oc-text)]/40 transition-colors hover:text-[color:var(--oc-ink)]">
+                    <PanelRightClose className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <ListChecks className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--oc-text)]/35" />
+                  <p className="text-[11.5px] leading-relaxed text-[color:var(--oc-text)]/70">
+                    People and agents share one list. Anything a command or a flow does lands here
+                    with a receipt against the right client.
+                  </p>
+                </div>
+              </section>
+
+              <div className="mt-auto pt-1">
+                <div className="oc-mono text-[10px] text-[color:var(--oc-text)]/40">
+                  {boot?.usage.mtdLabel ?? '$0'} this month
+                </div>
+              </div>
             </div>
           </aside>
         )}
