@@ -76,8 +76,24 @@ export async function provisionSubLocation(userId: string): Promise<ProvisionRes
   try {
     // Create the sub-location via CRM Agency API.
     // NOTE: trailing slash is REQUIRED — `/locations` returns 404, `/locations/` is the canonical endpoint.
+    /**
+     * THE SNAPSHOT RIDES ON CREATION OR NOT AT ALL.
+     *
+     * `POST /locations/` with `snapshotId` is the only moment the platform will
+     * apply a snapshot — there is no re-push API. This call previously sent no
+     * snapshotId, so provisioned clients got the hand-built asset bundle below
+     * and NONE of the snapshot's workflows, triggers, actions or widget embeds.
+     * That is the difference between a client arriving wired and arriving bare.
+     *
+     * Configurable because there are currently TWO snapshots on the account
+     * with the identical name "0nMCP Sub-Location - CORE ACCOUNT" — an env var
+     * means correcting it is a setting, not a deploy.
+     */
+    const masterSnapshotId = process.env.CRM_MASTER_SNAPSHOT_ID || 'WHGzGLK0RKBFVAM439au'
+
     const createBody = JSON.stringify({
       companyId: process.env.CRM_COMPANY_ID || '',
+      ...(masterSnapshotId ? { snapshotId: masterSnapshotId } : {}),
       name: locationName,
       email: profile.email,
       phone: '',
