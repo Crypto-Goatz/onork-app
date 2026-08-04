@@ -211,7 +211,18 @@ export const config = {
     // Needed for the app-host rewrite above. On www these paths fall straight
     // through the auth block (none of them is in the protected list), so adding
     // them changes nothing for the marketing site.
+    //
+    // EVERY app.0ncore.com ROUTE MUST BE LISTED HERE. The rewrite lives inside
+    // middleware, and middleware only runs for paths the matcher covers — so a
+    // page added under app/crm/ that is not listed here 404s on the app host
+    // while working perfectly in the codebase. /clients and /automations did
+    // exactly that; /dashboard only worked because it was already matched for
+    // an unrelated reason.
     '/',
     '/crm/:path*',
+    '/clients',
+    '/clients/:path*',
+    '/automations',
+    '/automations/:path*',
   ],
 }
