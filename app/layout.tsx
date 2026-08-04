@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./jampack.css";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { Providers } from "@/components/providers";
 import { PublicNavWrapper } from "@/components/public-nav-wrapper";
@@ -12,6 +12,10 @@ import { GroqBanner } from "@/components/GroqBanner";
 // Per docs/0n-design-system.md §2 — Inter as font-sans, JetBrains Mono as font-mono.
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
+// Space Grotesk is the marketplace dashboard's UI face, per the 6-tile spec.
+// Scoped by variable rather than applied to body, so the rest of the site keeps
+// Inter and nothing else repaints.
+const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.0ncore.com"),

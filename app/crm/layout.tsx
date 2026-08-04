@@ -42,6 +42,12 @@ const POL_TESTS = [
 
 export default function CRMLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+
+  // The dashboard index renders its own three-zone shell (header, location
+  // rail, taskbar) per the 6-tile spec. Wrapping it in the legacy CRM sidebar
+  // would give it two navigations competing for the same job. The sub-pages
+  // (/crm/contacts, /crm/pipeline, …) keep the sidebar.
+  const isDashboardRoot = pathname === '/crm'
   const [locationId, setLocationId] = useState('')
   const [locationName, setLocationName] = useState('Loading...')
   const [showPOL, setShowPOL] = useState(false)
@@ -126,6 +132,8 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
     }
     setPolLoading(false)
   }
+
+  if (isDashboardRoot) return <>{children}</>
 
   return (
     <div className="flex h-screen bg-[#0a0e17]">

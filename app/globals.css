@@ -448,3 +448,75 @@ code, pre, .font-mono {
   .grid-anim { animation: none; }
   .card-hover:hover { transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   0nCORE MARKETPLACE DASHBOARD — exact tokens from the 6-tile spec.
+
+   Scoped to .oncore-app, not :root. This surface renders inside an iframe in
+   someone else's product; it needs its own closed palette that cannot be
+   nudged by a change made for the marketing site or the authenticated app.
+   ═══════════════════════════════════════════════════════════════════════ */
+.oncore-app {
+  --oc-bg:      #F6F6F7;
+  --oc-card:    #FFFFFF;
+  --oc-ink:     #181D19;
+  --oc-text:    #414A43;
+  --oc-green:   #6EE05A;   /* the neon — glow, accents, the EQ> prompt */
+  --oc-green-d: #2E9A1F;   /* readable green — anything a person must READ */
+  --oc-amber:   #C98A12;
+  --oc-red:     #D65454;
+  --oc-blue:    #3E8FC7;
+  --oc-border:  #E9E9EB;
+  --oc-shadow:  0 2px 4px rgba(24,29,25,.05), 0 10px 28px rgba(24,29,25,.09);
+  --oc-shadow-sm: 0 1px 2px rgba(24,29,25,.04), 0 4px 12px rgba(24,29,25,.06);
+
+  background: var(--oc-bg);
+  color: var(--oc-text);
+  font-family: var(--font-grotesk), 'Space Grotesk', system-ui, sans-serif;
+}
+.oncore-app h1, .oncore-app h2, .oncore-app h3 { color: var(--oc-ink); }
+.oncore-app .oc-mono { font-family: var(--font-mono), 'JetBrains Mono', monospace; }
+
+.oc-card {
+  background: var(--oc-card);
+  border: 1px solid var(--oc-border);
+  border-radius: 18px;
+  box-shadow: var(--oc-shadow-sm);
+}
+.oc-tile {
+  background: var(--oc-card);
+  border: 1px solid var(--oc-border);
+  border-radius: 18px;
+  box-shadow: var(--oc-shadow-sm);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+/* "soft shadow-lift, never janky" — transform + shadow only, both compositor
+   friendly. No width/height/top animation anywhere on this surface. */
+.oc-tile:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--oc-shadow);
+  border-color: rgba(110,224,90,.45);
+}
+.oc-input {
+  border-radius: 14px;
+  border: 1px solid var(--oc-border);
+  background: var(--oc-card);
+  color: var(--oc-ink);
+}
+.oc-input:focus { outline: none; border-color: var(--oc-green-d); box-shadow: 0 0 0 3px rgba(110,224,90,.18); }
+.oc-chip { border-radius: 11px; font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+.oc-btn {
+  border-radius: 14px; font-weight: 700;
+  background: linear-gradient(120deg, #6EE05A 0%, #2E9A1F 100%);
+  color: #0d1117; box-shadow: 0 8px 22px rgba(110,224,90,.34);
+  transition: opacity .16s ease, transform .16s ease;
+}
+.oc-btn:hover:not(:disabled) { opacity: .92; transform: translateY(-1px); }
+.oc-btn:disabled { background: #E4E5E4; color: #9AA29B; box-shadow: none; }
+
+@keyframes oc-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.oc-rise { animation: oc-rise .34s cubic-bezier(.2,.85,.3,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .oc-tile:hover { transform: none; }
+  .oc-rise { animation: none; }
+}
