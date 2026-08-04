@@ -9,6 +9,7 @@ import {
 import { METERS, formatPrice } from '@/lib/meters'
 import { useSso, authHeaders } from './useSso'
 import ControlCenter from './ControlCenter'
+import ClientsPage from './ClientsPage'
 
 /**
  * The 0nCORE marketplace dashboard — the agency's command surface.
@@ -73,6 +74,12 @@ interface LegOutcome {
   targets: number
 }
 
+const NAV: { id: 'dashboard' | 'clients' | 'automations'; label: string; icon: typeof Terminal }[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: Gauge },
+  { id: 'clients', label: 'Clients', icon: Users },
+  { id: 'automations', label: 'Automations & AI', icon: Sparkles },
+]
+
 const EXAMPLES = [
   'Tag all new leads across every client as September and add a note',
   'Book a discovery call for the Northside lead on Tuesday afternoon',
@@ -84,7 +91,12 @@ export default function AgencyDashboard() {
   const [tile, setTile] = useState<TileId | null>(null)
   const [activeLocation, setActiveLocation] = useState<string>('all')
   const [taskbarOpen, setTaskbarOpen] = useState(true)
-  const [controlCenter, setControlCenter] = useState(false)
+  /**
+   * Top-level view. The tiles remain the dashboard's own navigation; this is the
+   * layer above them, so Clients and Automations are places you go rather than
+   * panels that appear over the command bar.
+   */
+  const [view, setView] = useState<'dashboard' | 'clients' | 'automations'>('dashboard')
 
   const [command, setCommand] = useState('')
   const [planning, setPlanning] = useState(false)
@@ -210,17 +222,27 @@ export default function AgencyDashboard() {
             <span className={`h-1.5 w-1.5 rounded-full ${conn.dot}`} />
             <span className="text-[color:var(--oc-text)]">{conn.label}</span>
           </span>
-          <button
-            type="button"
-            onClick={() => setControlCenter((v) => !v)}
-            className={`oc-chip hidden items-center gap-1.5 border px-2.5 py-1.5 transition-colors sm:inline-flex ${
-              controlCenter
-                ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
-                : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)] hover:border-[color:var(--oc-green-d)]'
-            }`}
-          >
-            <Sparkles className="h-3.5 w-3.5" /> Automations &amp; AI
-          </button>
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
+            {NAV.map((n) => {
+              const Icon = n.icon
+              const on = view === n.id
+              return (
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => setView(n.id)}
+                  aria-current={on ? 'page' : undefined}
+                  className={`oc-chip inline-flex items-center gap-1.5 border px-2.5 py-1.5 transition-colors ${
+                    on
+                      ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
+                      : 'border-transparent bg-transparent text-[color:var(--oc-text)] hover:border-[color:var(--oc-border)] hover:bg-white'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" /> {n.label}
+                </button>
+              )
+            })}
+          </nav>
           <button
             type="button"
             onClick={() => setTaskbarOpen((v) => !v)}
@@ -283,6 +305,41 @@ export default function AgencyDashboard() {
 
         {/* ── MAIN ── */}
         <main className="min-w-0 flex-1 p-4 sm:p-6">
+          {/* Mobile nav — the header row has no space for it below md. */}
+          <div className="mb-4 flex gap-1.5 md:hidden">
+            {NAV.map((n) => {
+              const Icon = n.icon
+              const on = view === n.id
+              return (
+                <button key={n.id} type="button" onClick={() => setView(n.id)}
+                  aria-current={on ? 'page' : undefined}
+                  className={`oc-chip inline-flex flex-1 items-center justify-center gap-1.5 border px-2 py-2 text-[11.5px] transition-colors ${
+                    on ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
+                       : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]'}`}>
+                  <Icon className="h-3.5 w-3.5" /> {n.id === 'automations' ? 'Automations' : n.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {view === 'clients' && (
+            <ClientsPage
+              token={sso.token}
+              onCommand={(c) => { setCommand(c); setView('dashboard') }}
+            />
+          )}
+
+          {view === 'automations' && (
+            <ControlCenter
+              token={sso.token}
+              locations={boot?.locations ?? []}
+              onCommand={(c) => { setCommand(c); setView('dashboard') }}
+              onClose={() => setView('dashboard')}
+            />
+          )}
+
+          {view === 'dashboard' && (
+          <>
           <section className="oc-card oc-rise p-4 sm:p-5">
             <div className="oc-mono mb-2.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.14em] text-[color:var(--oc-green-d)]">
               <span>EQ&gt;</span>
@@ -474,17 +531,6 @@ export default function AgencyDashboard() {
             )}
           </section>
 
-          {controlCenter && (
-            <div className="mt-5">
-              <ControlCenter
-                token={sso.token}
-                locations={boot?.locations ?? []}
-                onCommand={(c) => { setCommand(c); setControlCenter(false) }}
-                onClose={() => setControlCenter(false)}
-              />
-            </div>
-          )}
-
           {/* ── TILE GRID ── */}
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {TILES.map((t, i) => {
@@ -534,6 +580,8 @@ export default function AgencyDashboard() {
               ))}
             </div>
           </section>
+          </>
+          )}
         </main>
 
         {/* ── RIGHT TASKBAR ── */}
