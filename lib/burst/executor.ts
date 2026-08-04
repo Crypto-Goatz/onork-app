@@ -53,7 +53,26 @@ export interface LegInput {
 }
 
 const str = (v: unknown, max = 300): string => (typeof v === 'string' ? v.slice(0, max) : '')
-const num = (v: unknown, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : d)
+
+/**
+ * Clamped, because a planner-supplied 0 is a real thing that happens — "how
+ * many contacts are there" produced `limit: 0`, which the CRM rejects. A plain
+ * `?? default` does not catch it: 0 is a perfectly good number.
+ */
+const count = (v: unknown, d: number, min = 1, max = 100): number => {
+  const n = typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : d
+  return Math.min(Math.max(n, min), max)
+}
+
+/**
+ * The model says "*" or "all" when it means "no filter". Passing that through
+ * as a literal search term finds nothing, which then reads as "you have no
+ * contacts" — a wrong answer delivered confidently.
+ */
+const searchTerm = (v: unknown): string => {
+  const s = str(v, 120).trim()
+  return /^(\*|all|any|everyone|everything)$/i.test(s) ? '' : s
+}
 
 /* ────────────────────────── contact resolution ────────────────────────── */
 
@@ -72,7 +91,11 @@ async function findContacts(
   query: string,
   limit: number,
 ): Promise<{ contacts: CrmContact[]; total: number; error?: string }> {
-  const qs = new URLSearchParams({ locationId, limit: String(Math.min(limit, 100)) })
+  // NO locationId HERE. crmGet appends it to every URL, and the CRM answers a
+  // duplicated locationId with 403 "the token does not have access to this
+  // location" — a message that sends you hunting for a scope problem that does
+  // not exist. Same for crmPost, which merges locationId into the body.
+  const qs = new URLSearchParams({ limit: String(limit) })
   if (query) qs.set('query', query)
   const res = await crmGet(`/contacts/?${qs.toString()}`, locationId)
   if (!res.ok) {
@@ -117,8 +140,8 @@ const HANDLERS: Record<string, Handler> = {
   'contact.search': async (leg) => {
     const loc = needsLocation(leg)
     if (!loc) return refuse('Tell me which client to search and I will run it.')
-    const q = str(leg.params?.query, 120)
-    const { contacts, total, error } = await findContacts(loc, q, num(leg.params?.limit, 20))
+    const q = searchTerm(leg.params?.query)
+    const { contacts, total, error } = await findContacts(loc, q, count(leg.params?.limit, 20))
     if (error) return fail('Could not search contacts.', error)
     return ok(
       `Found ${total} contact${total === 1 ? '' : 's'}${q ? ` matching "${q}"` : ''}.`,
@@ -130,7 +153,7 @@ const HANDLERS: Record<string, Handler> = {
   'workflow.list': async (leg) => {
     const loc = needsLocation(leg)
     if (!loc) return refuse('Tell me which client and I will list their automations.')
-    const res = await crmGet(`/workflows/?locationId=${encodeURIComponent(loc)}`, loc)
+    const res = await crmGet('/workflows/', loc)
     if (!res.ok) return fail('Could not read automations.', `HTTP ${res.status}`)
     const json = (await res.json().catch(() => ({}))) as { workflows?: { name?: string }[] }
     const list = Array.isArray(json.workflows) ? json.workflows : []
@@ -165,7 +188,6 @@ const HANDLERS: Record<string, Handler> = {
       return refuse('I need at least a name, an email or a phone number to create a contact.')
     }
     const res = await crmPost('/contacts/', loc, {
-      locationId: loc,
       ...(firstName ? { firstName } : {}),
       ...(str(p.lastName, 60) ? { lastName: str(p.lastName, 60) } : {}),
       ...(email ? { email } : {}),
@@ -183,7 +205,7 @@ const HANDLERS: Record<string, Handler> = {
     const loc = needsLocation(leg)
     if (!loc) return refuse('Tell me which client this note is for.')
     const note = str(leg.params?.note, 2000)
-    const query = str(leg.params?.contactQuery, 120)
+    const query = searchTerm(leg.params?.contactQuery)
     if (!note) return refuse('I need the text of the note.')
     if (!query) return refuse('I need to know which contact to add the note to.')
 
@@ -203,7 +225,7 @@ const HANDLERS: Record<string, Handler> = {
     const loc = needsLocation(leg)
     if (!loc) return refuse('Tell me which client to tag contacts in.')
     const tag = str(leg.params?.tag, 60)
-    const query = str(leg.params?.contactQuery, 120)
+    const query = searchTerm(leg.params?.contactQuery)
     if (!tag) return refuse('I need the tag to apply.')
 
     const { contacts, total, error } = await findContacts(loc, query, BLAST_RADIUS)
