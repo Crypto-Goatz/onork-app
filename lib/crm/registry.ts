@@ -49,6 +49,26 @@ export interface Capability {
   insteadOffer?: string
   /** For `snapshot` — the kind of template to match against snapshot_index. */
   snapshotKind?: 'workflow' | 'funnel' | 'agents' | 'full'
+  /**
+   * True when the capability can ONLY happen while a sub-account is being
+   * created. Snapshot loading is the case: POST /locations/ takes a snapshotId,
+   * and no endpoint exists to push one into a client that already exists.
+   * The planner must refuse these against an existing location rather than
+   * producing a leg the executor cannot run.
+   */
+  atCreateOnly?: boolean
+  /**
+   * WHICH INSTALL'S TOKEN RUNS THIS.
+   *
+   * The platform splits by token type and the split is not negotiable:
+   *   'location' — per-client work: contacts, conversations, calendars,
+   *                opportunities. Minted per location from the sub-account app.
+   *   'agency'   — locations.write (create + load snapshot), snapshots.*,
+   *                companies.readonly, saas/company.*. Agency token only; no
+   *                location-token variant of these endpoints exists.
+   * Two installs, one router, keyed off this field.
+   */
+  tokenAudience?: 'location' | 'agency'
 }
 
 export const CAPABILITIES: Capability[] = [
@@ -70,16 +90,35 @@ export const CAPABILITIES: Capability[] = [
   { id: 'opportunity.move', intent: 'move or update a deal', mechanism: 'native', requires: 'crm' },
 
   // ── provisioning ──
-  { id: 'location.create', intent: 'create a new client sub-account', mechanism: 'native', meter: 'CLIENT_PROVISION', requires: 'crm' },
-  { id: 'snapshot.apply', intent: 'apply or push a snapshot to a client', mechanism: 'native', requires: 'crm' },
-  { id: 'user.create', intent: 'add a team member or assign work to one', mechanism: 'native', requires: 'crm' },
+  { tokenAudience: 'agency', id: 'location.create', intent: 'create a new client sub-account', mechanism: 'native', meter: 'CLIENT_PROVISION', requires: 'crm' },
+  { tokenAudience: 'agency', id: 'snapshot.list', intent: 'see which snapshots the agency has', mechanism: 'native', requires: 'crm' },
+  {
+    // Snapshot application is bound to sub-account CREATION. The only endpoint
+    // that loads a snapshot is POST /locations/ with `snapshotId` — agency
+    // token, locations.write, and a plan that permits sub-account creation.
+    tokenAudience: 'agency',
+    id: 'snapshot.apply_at_create',
+    intent: 'create a client with one of my snapshots already loaded',
+    mechanism: 'native', meter: 'CLIENT_PROVISION', requires: 'crm',
+  },
+  {
+    // The thing everyone assumes exists, and does not.
+    id: 'snapshot.repush',
+    intent: 'push an updated snapshot into a client that already exists',
+    mechanism: 'blocked',
+    insteadOffer:
+      "There's no API for pushing a snapshot into an existing client — the platform only loads one when the sub-account is created. I can send you a share link for that snapshot to apply by hand, or set the pieces up individually in that client now.",
+  },
+  { tokenAudience: 'agency', id: 'user.create', intent: 'add a team member or assign work to one', mechanism: 'native', requires: 'crm' },
 
   // ── workflows: read + trigger + clone, never author ──
   { id: 'workflow.list', intent: 'see what automations a client has', mechanism: 'native', requires: 'crm' },
   { id: 'workflow.trigger', intent: 'start an existing workflow for contacts', mechanism: 'native', requires: 'crm' },
   {
-    id: 'workflow.deploy', intent: 'give a client one of my standard automations',
-    mechanism: 'snapshot', snapshotKind: 'workflow', requires: 'crm',
+    // Only at provision time — see snapshot.repush. Deploying into an EXISTING
+    // client is not an API operation; the planner must offer the share link.
+    id: 'workflow.deploy', intent: 'give a NEW client one of my standard automations',
+    mechanism: 'snapshot', snapshotKind: 'workflow', requires: 'crm', atCreateOnly: true,
   },
   {
     id: 'workflow.author', intent: 'build a brand-new workflow from a description',
@@ -89,7 +128,7 @@ export const CAPABILITIES: Capability[] = [
   },
 
   // ── funnels & sites ──
-  { id: 'funnel.clone', intent: 'give a client one of my funnels', mechanism: 'snapshot', snapshotKind: 'funnel', requires: 'crm' },
+  { id: 'funnel.clone', intent: 'give a NEW client one of my funnels', mechanism: 'snapshot', snapshotKind: 'funnel', requires: 'crm', atCreateOnly: true },
   { id: 'site.build', intent: 'build a website or landing page', mechanism: 'product', meter: 'SITE_BUILD' },
   {
     id: 'funnel.edit', intent: 'edit the content of an existing funnel page',
@@ -101,7 +140,7 @@ export const CAPABILITIES: Capability[] = [
   { id: 'social.schedule', intent: 'schedule or write social posts', mechanism: 'product', meter: 'SOCIAL_POST', requires: 'social' },
 
   // ── agents ──
-  { id: 'agents.deploy', intent: 'deploy an agent team to a client', mechanism: 'snapshot', snapshotKind: 'agents', requires: 'crm' },
+  { id: 'agents.deploy', intent: 'deploy an agent team to a NEW client', mechanism: 'snapshot', snapshotKind: 'agents', requires: 'crm', atCreateOnly: true },
   {
     id: 'agents.author', intent: 'create a brand-new native agent from a description',
     mechanism: 'blocked',
@@ -120,6 +159,19 @@ export const CAPABILITIES: Capability[] = [
 ]
 
 const BY_ID = new Map(CAPABILITIES.map((c) => [c.id, c]))
+
+/** Which install's token a capability needs. Defaults to per-location. */
+export function tokenAudienceFor(id: string): 'location' | 'agency' {
+  return BY_ID.get(id)?.tokenAudience ?? 'location'
+}
+
+/**
+ * Refuse a capability that can only run at sub-account creation when the
+ * planner has aimed it at an existing client.
+ */
+export function violatesAtCreateOnly(id: string, targetIsExistingLocation: boolean): boolean {
+  return targetIsExistingLocation && BY_ID.get(id)?.atCreateOnly === true
+}
 
 export function capability(id: string): Capability | undefined {
   return BY_ID.get(id)
