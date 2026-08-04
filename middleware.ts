@@ -21,7 +21,32 @@ const CURRENT_PROJECT_REF = (() => {
   return m ? m[1] : ''
 })()
 
+/** The app-surface host. Marketing lives on www; the CRM app lives here. */
+const APP_HOST = 'app.0ncore.com'
+
 export async function middleware(request: NextRequest) {
+  // ── Host routing ──────────────────────────────────────────────────
+  // app.0ncore.com serves the CRM app surface; www.0ncore.com serves
+  // marketing. Same deployment, split by hostname — which keeps SSO, the CRM
+  // SDK, the token vault and the Phase 1 libs in ONE place rather than porting
+  // them to a second project. Splitting into its own project later is a
+  // hosting decision and costs no code change.
+  //
+  // A REWRITE, never a redirect: the marketplace Custom Page loads this in an
+  // iframe, and a redirect inside an iframe is how you end up staring at a
+  // login page nested in someone's CRM.
+  const host = request.headers.get('host') || ''
+  if (host === APP_HOST) {
+    const p = request.nextUrl.pathname
+    // /api and Next internals pass through untouched — the SSO handshake and
+    // every data call must behave identically on both hosts.
+    if (!p.startsWith('/api') && !p.startsWith('/_next') && !p.startsWith('/crm')) {
+      const url = request.nextUrl.clone()
+      url.pathname = p === '/' ? '/crm' : `/crm${p}`
+      return NextResponse.rewrite(url)
+    }
+  }
+
   // ── Stale-cookie sweep ────────────────────────────────────────────
   // If the request carries `sb-<otherproject>-auth-token` but no cookie for
   // CURRENT_PROJECT_REF, the user has dead cookies from a previous Supabase
@@ -183,5 +208,10 @@ export const config = {
     '/signup',
     '/hippa',
     '/hippa/:path*',
+    // Needed for the app-host rewrite above. On www these paths fall straight
+    // through the auth block (none of them is in the protected list), so adding
+    // them changes nothing for the marketing site.
+    '/',
+    '/crm/:path*',
   ],
 }
