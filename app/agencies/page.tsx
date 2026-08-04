@@ -25,6 +25,49 @@ import CapabilityMatrix from '@/components/agencies/CapabilityMatrix'
  * one that says "AI-generated" and then cannot do it.
  */
 
+
+/**
+ * The questions agencies actually ask before handing over client accounts.
+ *
+ * These are the objections, answered straight — including the ones with an
+ * uncomfortable answer. A FAQ that only asks itself easy questions reads as
+ * marketing and converts like it.
+ *
+ * VISIBLE ON THE PAGE, not schema-only. FAQ markup that has no on-page
+ * counterpart is a structured-data violation, and it is also just dishonest:
+ * the point is to answer the reader, not the crawler.
+ */
+const AGENCY_FAQ: { q: string; a: string }[] = [
+  {
+    q: 'Can it change a client account without me approving it?',
+    a: 'No. There is no automatic path to a live write. 0nCORE produces a plan with a price, and only your approval runs it. The plan you approve is cryptographically signed, so what executes is exactly what you saw — not a version edited in between.',
+  },
+  {
+    q: 'What does it cost, and how do I make money on it?',
+    a: 'Free to install. Standard actions are free; premium ones are metered — a site build is $10, provisioning a client is $5, a social post is 15¢. Most agencies mark those up and rebill their clients, which turns usage into margin rather than an expense.',
+  },
+  {
+    q: 'Will you push your own automations into my accounts?',
+    a: 'Never. 0nCORE deploys YOUR snapshots and YOUR templates. We do not ship our own workflows into your clients, and we do not need to see your build to run it.',
+  },
+  {
+    q: 'Can it build a workflow from scratch in my CRM?',
+    a: 'No, and neither can anything else — your CRM exposes no write API for native workflows. What 0nCORE does is deploy your existing templates into a client where they land natively and stay editable by you, or build the automation as a 0nCORE flow that drives your CRM. We say which one you are getting.',
+  },
+  {
+    q: 'What happens if a step fails halfway through?',
+    a: 'Each step is recorded before it runs and settled afterwards, so a failure is visible rather than silent. A step that fails is never billed, and the steps that succeeded are reported as what they are.',
+  },
+  {
+    q: 'Is it safe to run a bulk action across every client?',
+    a: 'Within limits it enforces. Tags trigger automations in your CRM, so a wide tag is a wide send — above a safe threshold 0nCORE refuses and tells you how many contacts matched, instead of guessing on your behalf.',
+  },
+  {
+    q: 'Do my clients see 0nCORE?',
+    a: 'Only if you want them to. It runs inside the CRM you already white-label, under your brand.',
+  },
+]
+
 const listingUrl = process.env.NEXT_PUBLIC_MARKETPLACE_LISTING_URL || '/contact?ref=agencies-waitlist'
 const listingIsLive = Boolean(process.env.NEXT_PUBLIC_MARKETPLACE_LISTING_URL)
 
@@ -313,6 +356,22 @@ export default function AgenciesPage() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-4xl px-5 pb-16 sm:px-8" aria-labelledby="agency-faq">
+        <h2 id="agency-faq" className="text-2xl font-bold tracking-tight text-neutral-900">
+          Before you hand over a client account
+        </h2>
+        <div className="mt-5 space-y-3">
+          {AGENCY_FAQ.map((f) => (
+            <details key={f.q} className="rounded-2xl border border-neutral-200/70 bg-white p-5 shadow-cascade-sm">
+              <summary className="cursor-pointer list-none text-[15px] font-semibold text-neutral-900 marker:hidden">
+                {f.q}
+              </summary>
+              <p className="mt-2.5 text-[15px] leading-relaxed text-neutral-600">{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
       <SiteFooter />
 
       <script
@@ -320,6 +379,7 @@ export default function AgenciesPage() {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
+            '@graph': [{
             '@type': 'Product',
             name: '0nCORE for agencies',
             description:
@@ -332,6 +392,14 @@ export default function AgenciesPage() {
               priceCurrency: 'USD',
               description: m.when,
             })),
+            }, {
+              '@type': 'FAQPage',
+              mainEntity: AGENCY_FAQ.map((f) => ({
+                '@type': 'Question',
+                name: f.q,
+                acceptedAnswer: { '@type': 'Answer', text: f.a },
+              })),
+            }],
           }),
         }}
       />

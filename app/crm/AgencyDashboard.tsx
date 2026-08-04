@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import {
   Terminal, Users, Workflow, ListChecks, TrendingUp, Gauge,
   Send, Mic, ShieldCheck, Loader2, X, AlertCircle, CheckCircle2,
-  PanelRightClose, PanelRightOpen, Building2, Sparkles,
+  PanelRightClose, PanelRightOpen, Building2, Sparkles, Home,
 } from 'lucide-react'
 import { METERS, formatPrice } from '@/lib/meters'
 import { useSso, authHeaders } from './useSso'
@@ -74,10 +75,17 @@ interface LegOutcome {
   targets: number
 }
 
-const NAV: { id: 'dashboard' | 'clients' | 'automations'; label: string; icon: typeof Terminal }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: Gauge },
-  { id: 'clients', label: 'Clients', icon: Users },
-  { id: 'automations', label: 'Automations & AI', icon: Sparkles },
+/**
+ * Real routes, not view state. Each of these is a page an agency owner can
+ * bookmark, share with a colleague, or set as the one that opens first once the
+ * landing-page preference ships — none of which works if the whole app lives at
+ * a single URL.
+ */
+const NAV: { href: string; view?: 'dashboard' | 'clients' | 'automations'; label: string; icon: typeof Terminal }[] = [
+  { href: '/dashboard', label: 'Home', icon: Home },
+  { href: '/', view: 'dashboard', label: 'Command', icon: Terminal },
+  { href: '/clients', view: 'clients', label: 'Clients', icon: Users },
+  { href: '/automations', view: 'automations', label: 'Automations & AI', icon: Sparkles },
 ]
 
 const EXAMPLES = [
@@ -86,7 +94,7 @@ const EXAMPLES = [
   'Build a landing page for the med-spa microneedling offer',
 ]
 
-export default function AgencyDashboard() {
+export default function AgencyDashboard({ initialView = 'dashboard' }: { initialView?: 'dashboard' | 'clients' | 'automations' } = {}) {
   const [boot, setBoot] = useState<Boot | null>(null)
   const [tile, setTile] = useState<TileId | null>(null)
   const [activeLocation, setActiveLocation] = useState<string>('all')
@@ -96,7 +104,7 @@ export default function AgencyDashboard() {
    * layer above them, so Clients and Automations are places you go rather than
    * panels that appear over the command bar.
    */
-  const [view, setView] = useState<'dashboard' | 'clients' | 'automations'>('dashboard')
+  const [view, setView] = useState<'dashboard' | 'clients' | 'automations'>(initialView)
 
   const [command, setCommand] = useState('')
   const [planning, setPlanning] = useState(false)
@@ -226,12 +234,11 @@ export default function AgencyDashboard() {
           <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
             {NAV.map((n) => {
               const Icon = n.icon
-              const on = view === n.id
+              const on = n.view !== undefined && view === n.view
               return (
-                <button
-                  key={n.id}
-                  type="button"
-                  onClick={() => setView(n.id)}
+                <Link
+                  key={n.href}
+                  href={n.href}
                   aria-current={on ? 'page' : undefined}
                   className={`oc-chip inline-flex items-center gap-1.5 border px-2.5 py-1.5 transition-colors ${
                     on
@@ -240,7 +247,7 @@ export default function AgencyDashboard() {
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" /> {n.label}
-                </button>
+                </Link>
               )
             })}
           </nav>
@@ -310,15 +317,15 @@ export default function AgencyDashboard() {
           <div className="mb-4 flex gap-1.5 md:hidden">
             {NAV.map((n) => {
               const Icon = n.icon
-              const on = view === n.id
+              const on = n.view !== undefined && view === n.view
               return (
-                <button key={n.id} type="button" onClick={() => setView(n.id)}
+                <Link key={n.href} href={n.href}
                   aria-current={on ? 'page' : undefined}
                   className={`oc-chip inline-flex flex-1 items-center justify-center gap-1.5 border px-2 py-2 text-[11.5px] transition-colors ${
                     on ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
                        : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]'}`}>
-                  <Icon className="h-3.5 w-3.5" /> {n.id === 'automations' ? 'Automations' : n.label}
-                </button>
+                  <Icon className="h-3.5 w-3.5" /> {n.label === 'Automations & AI' ? 'Automations' : n.label}
+                </Link>
               )
             })}
           </div>

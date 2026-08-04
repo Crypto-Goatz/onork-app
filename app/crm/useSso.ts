@@ -47,6 +47,24 @@ export interface Sso {
   error: string | null
 }
 
+/**
+ * Read the exp claim without verifying anything.
+ *
+ * This is a CONVENIENCE check, not a security one — the signature is verified
+ * server-side on every call and that is what actually protects anything. All
+ * this does is avoid sending a token we already know is dead. Treat anything
+ * unreadable as expired, so a malformed value gets replaced rather than reused.
+ */
+function isExpired(token: string): boolean {
+  try {
+    const claims = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    // A 30-second margin: a token that expires mid-flight is a failed request.
+    return !claims?.exp || claims.exp * 1000 < Date.now() + 30_000
+  } catch {
+    return true
+  }
+}
+
 export function useSso(): Sso {
   const [sso, setSso] = useState<Sso>({ state: 'pending', token: null, user: null, error: null })
   // Guards the whole handshake against a second message arriving late, a
@@ -95,6 +113,24 @@ export function useSso(): Sso {
       const payload = data.payload
       if (typeof payload !== 'string' || !payload) return
       void exchange(payload)
+    }
+
+    // A token from earlier in this tab is reused rather than re-handshaking.
+    // Now that the app has more than one page, a fresh handshake per navigation
+    // would mean every page waits on a postMessage round trip before it can load
+    // anything — and the parent has no reason to answer faster the fifth time.
+    // Expiry is still enforced server-side, so a stale token simply 401s and the
+    // next mount asks again.
+    try {
+      const cached = sessionStorage.getItem(STORAGE_KEY)
+      if (cached && !isExpired(cached)) {
+        setSso({ state: 'authed', token: cached, user: null, error: null })
+        settled.current = true
+        return
+      }
+      if (cached) sessionStorage.removeItem(STORAGE_KEY)
+    } catch {
+      // Storage unavailable — fall through to a normal handshake.
     }
 
     // Not in an iframe — nobody to ask. Say so immediately.
