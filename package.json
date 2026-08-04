@@ -16,7 +16,8 @@
     "db:snapshot": "supabase db dump --linked -f /tmp/production_snapshot_$(date +%s).sql",
     "db:restore-local": "psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < /tmp/production_snapshot_*.sql 2>/dev/null | tail -5",
     "test:e2e": "playwright test --grep @smoke",
-    "test:e2e:cleanup": "tsx tests/e2e/cleanup.ts"
+    "test:e2e:cleanup": "tsx tests/e2e/cleanup.ts",
+    "test:jwt": "tsx scripts/test/app-jwt.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",

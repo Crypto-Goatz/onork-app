@@ -83,6 +83,22 @@ export default function RootLayout({
           data-account-id="acct_c48453c3b54655"
           async
         />
+        {/*
+          Detect & Refine, this site's own tracker.
+          Served from /api/dr/script/[siteId] on this domain, so it is
+          first-party: no cross-origin request, nothing for a tracking blocker
+          to recognise by hostname, and the config (siteId, domain, endpoint) is
+          baked in server-side rather than passed as data-attributes that can
+          drift from the site it is installed on.
+
+          Root layout, so it is on EVERY page including the marketing pages and
+          the app shell — which is the point, since the value is in seeing the
+          whole journey rather than one surface.
+        */}
+        <script
+          src="https://www.0ncore.com/api/dr/script/dr_0ncore_com_4wdui5.js"
+          async
+        />
       </head>
       <body className="antialiased min-h-screen">
         <Providers>
