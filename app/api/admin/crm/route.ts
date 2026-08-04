@@ -13,7 +13,7 @@
  */
 
 import { NextResponse } from 'next/server'
-import { getAdminPit } from '@/lib/admin-locations'
+import { getAdminPit } from '@/lib/admin-pits'
 import { verifyAdmin } from '@/lib/admin-gate'
 
 export const runtime = 'nodejs'

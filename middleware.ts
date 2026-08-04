@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
     }
     // Bounce to /login if hitting a protected route, else just continue
     const path = request.nextUrl.pathname
-    if (path.startsWith('/dashboard') || path.startsWith('/console') || path.startsWith('/canvas') || path.startsWith('/welcome') || path.startsWith('/profile')) {
+    if (path.startsWith('/dashboard') || path.startsWith('/console') || path.startsWith('/canvas') || path.startsWith('/welcome') || path.startsWith('/profile') || path.startsWith('/admin')) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('next', path)
@@ -111,7 +111,13 @@ export async function middleware(request: NextRequest) {
       || request.nextUrl.pathname.startsWith('/canvas')
       || request.nextUrl.pathname.startsWith('/welcome')
       || request.nextUrl.pathname.startsWith('/profile')
-      || request.nextUrl.pathname.startsWith('/vip'))
+      || request.nextUrl.pathname.startsWith('/vip')
+      // /admin renders live CRM data for three real client locations. It was
+      // reachable unauthenticated until 2026-08-04 — 200, no redirect — because
+      // it had never been added here. The API routes behind it are gated now
+      // too, but a public admin shell still leaks the client list and the
+      // surface itself.
+      || request.nextUrl.pathname.startsWith('/admin'))
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -171,6 +177,8 @@ export const config = {
     '/profile/:path*',
     '/profile',
     '/vip/:path*',
+    '/admin',
+    '/admin/:path*',
     '/login',
     '/signup',
     '/hippa',
