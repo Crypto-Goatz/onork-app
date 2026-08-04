@@ -9,17 +9,15 @@ import { createClient } from '@supabase/supabase-js'
  * "when 0nCORE builds a site, email the client the link."
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * FIRED THROUGH INBOUND WEBHOOKS, not a custom-trigger API.
+ * FIRED THROUGH SUBSCRIPTIONS, with a webhook fallback.
  *
- * The portal's custom-trigger shell has a fire contract that is only revealed
- * once a shell is saved — the same situation as the action callback, and it has
- * not been captured yet. Rather than guess at an endpoint, this uses the
- * mechanism that demonstrably works today: each location's workflow carries an
- * inbound-webhook trigger whose URL we store at provision time, and firing is a
- * POST to that URL.
+ * The platform POSTs to /api/crm/trigger/:key/subscribe when a workflow adds
+ * our trigger, handing over the URL to call. That is the primary path and it
+ * costs the agency nothing — dropping the trigger into a workflow wires it.
  *
- * The upgrade path is one function. When the custom-trigger contract is
- * captured, `deliver()` changes and every caller stays put.
+ * The inbound-webhook bridge stays as a fallback, because a client provisioned
+ * from the snapshot is already wired before anyone opens the builder to
+ * subscribe. Both resolve to a list of target URLs and one delivery function.
  * ─────────────────────────────────────────────────────────────────────────────
  *
  * NEVER THROWS. A trigger is a notification about work that already happened —
@@ -60,27 +58,47 @@ export async function fireTrigger(input: FireInput): Promise<FireResult> {
   try {
     if (!input.locationId) return { fired: false, reason: 'no location' }
 
-    const { data: hook } = await admin()
-      .from('location_webhooks')
-      .select('webhook_url')
-      .eq('location_id', input.locationId)
-      .eq('intent', input.trigger)
-      .maybeSingle()
+    const sb = admin()
 
-    if (!hook?.webhook_url) {
-      // Expected until a client is provisioned from a snapshot that carries the
-      // workflow. Not an error — just nothing listening yet.
-      return { fired: false, reason: 'no workflow listening for this trigger' }
+    // Subscriptions first — the platform tells us where to call when a workflow
+    // adds our trigger, so this needs nothing from the agency.
+    const { data: subs } = await sb
+      .from('trigger_subscriptions')
+      .select('target_url, workflow_id')
+      .eq('trigger_key', input.trigger)
+      .eq('location_id', input.locationId)
+      .eq('active', true)
+
+    const targets = (subs ?? []).map((s) => s.target_url).filter(Boolean)
+
+    // Fallback: a snapshot workflow listening on its own inbound webhook. Kept
+    // because a client provisioned from the snapshot is wired before anyone
+    // opens the workflow builder to subscribe.
+    if (!targets.length) {
+      const { data: hook } = await sb
+        .from('location_webhooks')
+        .select('webhook_url')
+        .eq('location_id', input.locationId)
+        .eq('intent', input.trigger)
+        .maybeSingle()
+      if (hook?.webhook_url) targets.push(hook.webhook_url)
     }
 
-    return await deliver(hook.webhook_url, {
+    if (!targets.length) return { fired: false, reason: 'no workflow listening for this trigger' }
+
+    const payload = {
       trigger: input.trigger,
       locationId: input.locationId,
       companyId: input.companyId ?? null,
       contactId: input.contactId ?? null,
       firedAt: new Date().toISOString(),
       ...(input.data ?? {}),
-    })
+    }
+
+    // Every subscriber gets it, and one dead endpoint does not stop the others.
+    const results = await Promise.all(targets.map((t) => deliver(t, payload)))
+    const fired = results.some((r) => r.fired)
+    return fired ? { fired: true } : { fired: false, reason: results[0]?.reason ?? 'delivery failed' }
   } catch (err) {
     console.error(`[crm/triggers] ${input.trigger} threw:`, err)
     return { fired: false, reason: 'error' }
