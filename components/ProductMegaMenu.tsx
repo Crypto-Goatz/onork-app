@@ -29,8 +29,13 @@ const MENU: Section[] = [
         title: 'Agency',
         items: [
           { label: '0n Agency Command', href: '/agencies', note: 'Run every client account from one chat' },
+          { label: 'Client management', href: '/client-management', note: 'Every client account, one screen' },
+          { label: 'AI task lists', href: '/ai-task-lists', note: 'People and agents on one list' },
+          { label: 'Website management', href: '/website-management', note: 'Build and manage client sites' },
+          { label: 'Course building', href: '/course-builder', note: 'Coming — courses by command' },
           { label: 'Watch the walkthrough', href: '/0nagent', note: 'Four minutes, the whole product' },
           { label: 'Pricing', href: '/pricing', note: 'Free to install, pay per use' },
+          { label: 'Security', href: '/security', note: 'How your credentials are held' },
         ],
       },
       {
