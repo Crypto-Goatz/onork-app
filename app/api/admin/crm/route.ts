@@ -5,10 +5,16 @@
  *
  * Resolves the PIT server-side via lib/admin-locations.getAdminPit() so the
  * raw token never ships to the browser.
+ *
+ * ADMIN-GATED. Keeping the token server-side stops it LEAKING; it does nothing
+ * to stop an anonymous caller USING it. Until 2026-08-04 this handler had no
+ * caller check, so anyone could drive agency-scoped CRM actions through it —
+ * the proxy was the credential.
  */
 
 import { NextResponse } from 'next/server'
 import { getAdminPit } from '@/lib/admin-locations'
+import { verifyAdmin } from '@/lib/admin-gate'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -54,6 +60,9 @@ async function crmFetch(
 }
 
 export async function POST(req: Request) {
+  const gate = await verifyAdmin()
+  if (!gate.ok) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.userId ? 403 : 401 })
+
   let body: Body
   try {
     body = (await req.json()) as Body

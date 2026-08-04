@@ -3,13 +3,24 @@
  * GET                      → pending + recent posts
  * POST { id, action }      → 'approve' | 'reject' | 'publish'
  *
- * Admin-gated by the dashboard middleware (/dashboard/* requires session).
- * Service-role reads/writes. Publishing requires a connected LinkedIn account
- * in user_connections — if none, 'publish' reports that cleanly.
+ * ADMIN-GATED HERE, IN THE HANDLER. This previously said it was covered by the
+ * dashboard middleware — it was not. The matcher lists /dashboard/:path* and
+ * friends; it has never included /api/admin/*. So every handler below was
+ * reachable unauthenticated, on the service-role client:
+ *
+ *   GET               returned 11 rows including user_id and post content
+ *   POST reject       deleted any user's queued post
+ *   POST approve      approved it
+ *   POST publish      looked up that user's stored LinkedIn token and posted
+ *                     to their real account
+ *
+ * Found by an audit on 2026-08-04 and confirmed live (HTTP 200, 10 KB). An API
+ * route is never protected by a page matcher — it protects itself.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyAdmin } from '@/lib/admin-gate'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -20,6 +31,9 @@ const admin = createClient(
 )
 
 export async function GET() {
+  const gate = await verifyAdmin()
+  if (!gate.ok) return NextResponse.json({ error: gate.error }, { status: gate.userId ? 403 : 401 })
+
   const { data, error } = await admin
     .from('bot_queue')
     .select('id, user_id, content_type, content_text, vpis_score, hook_archetype, status, created_at, posted_at, linkedin_post_id')
@@ -30,6 +44,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = await verifyAdmin()
+  if (!gate.ok) return NextResponse.json({ error: gate.error }, { status: gate.userId ? 403 : 401 })
+
   const { id, action } = await req.json().catch(() => ({}))
   if (!id || !['approve', 'reject', 'publish'].includes(action)) {
     return NextResponse.json({ error: 'id and valid action required' }, { status: 400 })

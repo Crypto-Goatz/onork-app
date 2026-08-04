@@ -5,10 +5,15 @@
  * Returns: { ok: true, message: string }
  *
  * Per CLAUDE.md Critical Rule #6 — Groq only, never Anthropic SDK.
+ *
+ * ADMIN-GATED as of 2026-08-04. It had no caller check, which made it an open
+ * model endpoint billed to us — the cheapest possible thing for someone to
+ * abuse, and invisible until the invoice.
  */
 
 import { NextResponse } from 'next/server'
 import { getAdminLocation } from '@/lib/admin-locations'
+import { verifyAdmin } from '@/lib/admin-gate'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -66,6 +71,9 @@ Assistant:
 }
 
 export async function POST(req: Request) {
+  const gate = await verifyAdmin()
+  if (!gate.ok) return NextResponse.json({ ok: false, error: gate.error }, { status: gate.userId ? 403 : 401 })
+
   let body: Body
   try {
     body = (await req.json()) as Body
