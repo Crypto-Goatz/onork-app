@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
-  plannerCatalogue, capability, legPriceCents, assertExecutable,
+  plannerCatalogue, capability, legPriceCents, assertExecutable, tokenAudienceFor,
 } from '@/lib/crm/registry'
 import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { listAgencyLocations, resolveLocation, type AgencyLocation } from '@/lib/crm/locations'
@@ -136,7 +136,11 @@ export async function POST(req: NextRequest) {
 
         const price = legPriceCents(id)
         const blocked = !check.ok
-        const runnable = !blocked && IMPLEMENTED.has(id) && price === 0
+        // A per-client step with no client resolved is NOT runnable, however
+        // confident the model sounded. Marking it runnable would put it behind
+        // an Approve button that can only refuse it.
+        const hasTarget = tokenAudienceFor(id) === 'agency' || !!match.location
+        const runnable = !blocked && IMPLEMENTED.has(id) && price === 0 && hasTarget
 
         if (runnable) {
           signable.push({ capability: id, locationId: match.location?.id, params })
