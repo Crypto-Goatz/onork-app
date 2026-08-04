@@ -113,23 +113,16 @@ const JSON_LD = {
   ],
 }
 
-const SWATCHES = [
-  { name: 'Primary', hex: '#6EE05A', cls: 'bg-[#6EE05A]' },
-  { name: 'Ink', hex: '#0d1117', cls: 'bg-[#0d1117]' },
-  { name: 'Accent', hex: '#58a6ff', cls: 'bg-[#58a6ff]' },
-  { name: 'Paper', hex: '#e6edf3', cls: 'bg-[#e6edf3]' },
-]
-
 const LADDER = [
-  { step: '01', icon: ImageIcon, title: 'Store it', body: 'Every logo variant, your colour values, your fonts, your company details. One place, organised, free.' },
-  { step: '02', icon: Share2, title: 'Share it', body: 'Send a designer, printer or new hire a link. They get the right files without an account and without you digging through email.' },
-  { step: '03', icon: Lock, title: 'Connect it', body: 'Your apps live here too — CRM, Google, Slack, Stripe — encrypted in your vault. Connect once, revoke once.' },
-  { step: '04', icon: Sparkles, title: 'Then it just shows up', body: 'Open any 0n app and it is already yours. Your logo, your colours, your details — set before you touch it.' },
+  { step: '01', icon: Lock, title: 'Install it', body: 'Add 0nCore to your agency and it opens inside the CRM you already use. Free to install — no seat fee, no minimum.' },
+  { step: '02', icon: Share2, title: 'Switch on your clients', body: 'Choose which sub-accounts it may act on. Nothing touches an account you have not switched on, and you can switch one off in a click.' },
+  { step: '03', icon: Sparkles, title: 'Say what you want', body: 'Name the clients and the outcome in one sentence. It splits the work per account, prices it, and shows you the plan before anything happens.' },
+  { step: '04', icon: ImageIcon, title: 'Approve, and it runs', body: 'Every step lands with a receipt against the right client. A step that fails is never billed, and nothing sends to a whole list without you confirming.' },
 ]
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[#0d1117] text-[#c9d1d9]">
+    <main className="grid-bg grid-anim min-h-screen text-neutral-800">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }} />
 
       <div className="mx-auto max-w-7xl px-6 py-8 space-y-8">
@@ -145,18 +138,18 @@ export default function HomePage() {
 
 
         {/* ─── Table trap: comparison inside the first viewport region ─── */}
-        <section className="rounded-xl border border-[#30363d] bg-[#161b22] p-6">
-          <h2 className="text-xl font-semibold text-[#e6edf3]">Opening a new tool, either way</h2>
+        <section className="card-hover rounded-2xl border border-neutral-200/70 bg-white p-6 shadow-cascade-sm">
+          <h2 className="text-xl font-semibold text-neutral-900">Opening a new tool, either way</h2>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[520px] border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-[#30363d]">
-                  <th scope="col" className="pb-3 pr-4 font-medium text-[#8b949e]">Step</th>
-                  <th scope="col" className="pb-3 pr-4 font-medium text-[#8b949e]">Everywhere else</th>
-                  <th scope="col" className="pb-3 font-medium text-[#6EE05A]">With 0nCore</th>
+                <tr className="border-b border-neutral-200/70">
+                  <th scope="col" className="pb-3 pr-4 font-medium text-neutral-500">Step</th>
+                  <th scope="col" className="pb-3 pr-4 font-medium text-neutral-500">Everywhere else</th>
+                  <th scope="col" className="pb-3 font-medium text-[color:var(--brand)]">With 0nCore</th>
                 </tr>
               </thead>
-              <tbody className="text-[#c9d1d9]">
+              <tbody className="text-neutral-700">
                 {[
                   ['Your logo', 'Find it, then upload it again', 'Already there'],
                   ['Your colours', 'Hunt for the hex codes', 'Already set'],
@@ -164,9 +157,9 @@ export default function HomePage() {
                   ['Connected apps', 'Reconnect each one', 'Already connected'],
                   ['Time to useful', 'Half an hour, if you are lucky', 'Immediately'],
                 ].map(([a, b, c]) => (
-                  <tr key={a} className="border-b border-[#30363d] last:border-0">
-                    <th scope="row" className="py-3 pr-4 font-medium text-[#e6edf3]">{a}</th>
-                    <td className="py-3 pr-4 text-[#8b949e]">{b}</td>
+                  <tr key={a} className="border-b border-neutral-200/70 last:border-0">
+                    <th scope="row" className="py-3 pr-4 font-medium text-neutral-900">{a}</th>
+                    <td className="py-3 pr-4 text-neutral-500">{b}</td>
                     <td className="py-3">{c}</td>
                   </tr>
                 ))}
@@ -178,8 +171,8 @@ export default function HomePage() {
         {/* ─────────────── The ladder ─────────────── */}
         <section id="how" className="space-y-6 py-6">
           <div>
-            <h2 className="text-xl font-semibold text-[#e6edf3]">It starts boring. Stay with it.</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#c9d1d9]">
+            <h2 className="text-xl font-semibold text-neutral-900">It starts boring. Stay with it.</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-700">
               The first two are just useful. The fourth is the reason people move their whole
               business onto it.
             </p>
@@ -191,16 +184,16 @@ export default function HomePage() {
               return (
                 <div
                   key={s.step}
-                  className={`rounded-xl border bg-[#161b22] p-5 transition-colors ${
-                    last ? 'border-[#6EE05A]/40' : 'border-[#30363d] hover:border-[#484f58]'
+                  className={`rounded-xl border bg-white p-5 transition-colors ${
+                    last ? 'border-[color:var(--brand)]/40' : 'border-neutral-200/70 hover:border-[#484f58]'
                   }`}
                 >
-                  <span className={`font-mono text-xs ${last ? 'text-[#6EE05A]' : 'text-[#8b949e]'}`}>
+                  <span className={`font-mono text-xs ${last ? 'text-[color:var(--brand)]' : 'text-neutral-500'}`}>
                     {s.step}
                   </span>
-                  <s.icon className={`mt-3 h-5 w-5 ${last ? 'text-[#6EE05A]' : 'text-[#8b949e]'}`} />
-                  <h3 className="mt-3 text-base font-medium text-[#e6edf3]">{s.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-[#c9d1d9]">{s.body}</p>
+                  <s.icon className={`mt-3 h-5 w-5 ${last ? 'text-[color:var(--brand)]' : 'text-neutral-500'}`} />
+                  <h3 className="mt-3 text-base font-medium text-neutral-900">{s.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-neutral-700">{s.body}</p>
                 </div>
               )
             })}
@@ -208,60 +201,60 @@ export default function HomePage() {
         </section>
 
         {/* ─────────────── The payoff ─────────────── */}
-        <section className="rounded-xl border border-[#30363d] bg-[#161b22] p-6 md:p-8">
-          <p className="text-xs text-[#6EE05A]">The part that sounds made up</p>
-          <h2 className="mt-3 max-w-3xl text-xl font-semibold text-[#e6edf3]">
+        <section className="card-hover rounded-2xl border border-neutral-200/70 bg-white p-6 shadow-cascade-sm md:p-8">
+          <p className="text-xs text-[color:var(--brand)]">The part that sounds made up</p>
+          <h2 className="mt-3 max-w-3xl text-xl font-semibold text-neutral-900">
             One account. Every tool already knows you.
           </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#c9d1d9]">
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-neutral-700">
             Not a second signup. Not another password. You open any tool in the stack and it is
             already yours — your clients, your brand, your connected apps — because it read them
             from your 0nCore account before the page rendered. Build a site, schedule a month of
             social, hand a task to an agent: same login, same clients, no re-setup anywhere.
           </p>
-          <p className="mt-4 text-sm text-[#8b949e]">
+          <p className="mt-4 text-sm text-neutral-500">
             Works across{' '}
-            <Link href="https://www.0ntask.com" className="text-[#58a6ff] hover:underline">0nTask</Link>,{' '}
-            <Link href="https://web0n.com" className="text-[#58a6ff] hover:underline">web0n</Link>,{' '}
-            <Link href="https://www.cro9.com" className="text-[#58a6ff] hover:underline">CRO9</Link>,{' '}
-            <Link href="https://www.0nmcp.com" className="text-[#58a6ff] hover:underline">0nMCP</Link>{' '}
+            <Link href="https://www.0ntask.com" className="text-[#0ea5e9] hover:underline">0nTask</Link>,{' '}
+            <Link href="https://web0n.com" className="text-[#0ea5e9] hover:underline">web0n</Link>,{' '}
+            <Link href="https://www.cro9.com" className="text-[#0ea5e9] hover:underline">CRO9</Link>,{' '}
+            <Link href="https://www.0nmcp.com" className="text-[#0ea5e9] hover:underline">0nMCP</Link>{' '}
             and everything that follows.
           </p>
         </section>
 
         {/* ─────────────── FAQ ─────────────── */}
         <section className="space-y-4 py-6">
-          <h2 className="text-xl font-semibold text-[#e6edf3]">Questions</h2>
+          <h2 className="text-xl font-semibold text-neutral-900">Questions</h2>
           <div className="space-y-3">
             {FAQS.map((f) => (
-              <details key={f.q} className="group rounded-xl border border-[#30363d] bg-[#161b22] p-5">
-                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-base font-medium text-[#e6edf3]">
+              <details key={f.q} className="group rounded-xl border border-neutral-200/70 bg-white p-5">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-base font-medium text-neutral-900">
                   {f.q}
-                  <span className="shrink-0 text-[#6EE05A] group-open:hidden">+</span>
-                  <span className="hidden shrink-0 text-[#6EE05A] group-open:block">&minus;</span>
+                  <span className="shrink-0 text-[color:var(--brand)] group-open:hidden">+</span>
+                  <span className="hidden shrink-0 text-[color:var(--brand)] group-open:block">&minus;</span>
                 </summary>
-                <p className="mt-3 text-sm leading-relaxed text-[#c9d1d9]">{f.a}</p>
+                <p className="mt-3 text-sm leading-relaxed text-neutral-700">{f.a}</p>
               </details>
             ))}
           </div>
         </section>
 
         {/* ─────────────── Close ─────────────── */}
-        <section className="rounded-xl border border-[#6EE05A]/40 bg-[#161b22] p-8 text-center">
-          <h2 className="text-xl font-semibold text-[#e6edf3]">Stop opening thirty accounts a morning.</h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[#c9d1d9]">
+        <section className="rounded-xl border border-[color:var(--brand)]/40 bg-white p-8 text-center">
+          <h2 className="text-xl font-semibold text-neutral-900">Stop opening thirty accounts a morning.</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-neutral-700">
             Free to install. You pay only for what actually runs, and nothing runs until you say so.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               href="/agencies"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#6EE05A] px-6 py-3 text-sm font-bold text-[#0d1117] transition-opacity hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-brand px-6 py-3 text-sm font-bold text-neutral-950 transition-opacity hover:opacity-90"
             >
               See what it runs <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/0nagent"
-              className="inline-flex items-center gap-2 rounded-lg border border-[#30363d] px-6 py-3 text-sm font-semibold text-[#e6edf3] transition-colors hover:border-[#6EE05A]/40"
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-200/70 px-6 py-3 text-sm font-semibold text-neutral-900 transition-colors hover:border-[color:var(--brand)]/40"
             >
               Watch the walkthrough
             </Link>
