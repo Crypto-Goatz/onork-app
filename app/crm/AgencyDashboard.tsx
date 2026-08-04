@@ -200,16 +200,17 @@ export default function AgencyDashboard() {
     <div className="oncore-app min-h-screen">
       {/* ── HEADER ── */}
       <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-white/90 px-4 py-3 backdrop-blur-md sm:px-6">
-        {/* The real mark, on a dark tile. 0ncore-icon.png is a white outline
-            with a neon glow — it is designed for dark and vanishes on our
-            #F6F6F7 background, so the tile is what makes the brand legible in a
-            light theme rather than a decoration. */}
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[11px] bg-[#0d1117]">
-          <img src="/brand/0ncore-icon.png" alt="" aria-hidden="true" className="h-[18px] w-[18px] object-contain" />
-        </span>
+        {/* The full wordmark, which already carries the name — so the "0nCORE"
+            text label that used to sit here is gone rather than saying it twice.
+            This is the light-background artwork (dark lettering); the neon icon
+            variant is for dark surfaces and would disappear on #F6F6F7. */}
+        <img
+          src="/brand/0ncore-logo-light.png"
+          alt="0nCORE"
+          className="h-[26px] w-auto shrink-0 object-contain"
+        />
         <div className="min-w-0">
-          <div className="text-[15px] font-bold leading-none text-[color:var(--oc-ink)]">0nCORE</div>
-          <div className="truncate text-[11px] text-[color:var(--oc-text)]/70">
+          <div className="truncate text-[12px] font-medium text-[color:var(--oc-text)]/75">
             {boot?.agency.name ?? sso.user?.name ?? 'Agency Command'}
           </div>
         </div>
