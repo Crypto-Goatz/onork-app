@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { METERS, formatPrice } from '@/lib/meters'
 import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { getValidAgencyToken } from '@/lib/crm/agency-token'
+import { readAgencyProfile } from '@/lib/crm/agency-profile'
 
 /**
  * GET /api/bootstrap — everything the shell needs on first paint.
@@ -94,13 +95,17 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const { list, error } = await fetchLocations(agency.token, companyId)
+  const [{ list, error }, profile] = await Promise.all([
+    fetchLocations(agency.token, companyId),
+    // Best-effort: a missing profile costs a header label, not the dashboard.
+    readAgencyProfile(companyId).catch(() => null),
+  ])
 
   return NextResponse.json({
     ok: true,
     connected: true,
     session: { companyId, email: email ?? null, role: role ?? null },
-    agency: { name: null, whiteLabelLogo: null },
+    agency: { name: profile?.name ?? null, whiteLabelLogo: profile?.logoUrl ?? null },
     locations: list
       .map((l) => ({ id: String(l.id || l._id || ''), name: l.name || 'Untitled client' }))
       .filter((l) => l.id),

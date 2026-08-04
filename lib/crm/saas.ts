@@ -4,6 +4,18 @@ import { getValidAgencyToken } from '@/lib/crm/agency-token'
  * The agency's SaaS/rebilling configuration — which client is on which plan,
  * at what price, and whether their subscription is healthy.
  *
+ * IT IS NOT A "LIST MY PLANS" ENDPOINT — CORRECTED 2026-08-04 AFTER INSTALL.
+ * With the agency app installed and saas/company.read finally granted, the one
+ * surviving SaaS route answers:
+ *
+ *   400 MISSING_STRIPE_ID — "It is necessary to provide either a Stripe
+ *   Subscription ID or a Customer ID"
+ *
+ * So it is a LOOKUP keyed by Stripe identity, not an enumeration. There is no
+ * call that returns "every plan this agency sells" or "every client and what
+ * they pay". Until the agency's Stripe connection is wired we cannot list plans
+ * at all, and this file says so rather than inventing a number.
+ *
  * ONE ENDPOINT, AND IT IS THE ONLY ONE. Discovery probed seven plausible SaaS
  * paths against a live agency token. Exactly one exists:
  *
@@ -113,6 +125,19 @@ export async function readSaas(companyId: string): Promise<SaasResult> {
   if (!res.ok) {
     const body = await res.text().catch(() => '')
     console.error(`[crm/saas] ${res.status}: ${body.slice(0, 200)}`)
+
+    // The endpoint is reachable and scoped — it simply needs a Stripe identity
+    // we do not hold. That is a completely different state from "not connected"
+    // and must not render as one, or the dashboard sends someone to reinstall an
+    // app that is already installed and working.
+    if (res.status === 400 && /STRIPE/i.test(body)) {
+      return {
+        ok: true,
+        enabled: false,
+        needsInstall: false,
+        reason: 'Your agency is connected. Plan and rebilling figures need your CRM\'s Stripe connection, which we cannot read yet.',
+      }
+    }
     return { ok: false, error: 'Could not read your plans.' }
   }
 
