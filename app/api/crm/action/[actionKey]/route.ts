@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 import { workflowAction } from '@/lib/crm/actions'
 import { executeLeg } from '@/lib/burst/executor'
 import { legPriceCents } from '@/lib/crm/registry'
+import { draftMessage, scoreAndRoute, noteOnContact } from '@/lib/burst/ai-actions'
+import { fireTrigger } from '@/lib/crm/triggers'
 
 /**
  * POST /api/crm/action/:actionKey — a native workflow step calling 0nCORE.
@@ -172,14 +174,52 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ actionKey:
     .select('id')
     .single()
 
-  // Reuse the dashboard executor rather than forking a second one. Two engines
-  // would mean two sets of safety rules, and the second one always drifts.
-  const result = await executeLeg({
-    capability: mapActionToCapability(actionKey),
-    locationId,
-    params: { ...(payload.config ?? {}), contactId },
-    companyId,
-  })
+  const cfg2 = (payload.config ?? {}) as Record<string, string>
+  const contact = payload.contactId
+
+  /**
+   * The AI actions answer directly; everything else goes through the burst
+   * executor. Reusing that engine matters — two executors would mean two sets
+   * of safety rules, and the second copy always drifts from the first.
+   *
+   * The returned `output` is what later workflow steps read, which is the whole
+   * reason an agency places one of these: the value has to come BACK.
+   */
+  let result: Awaited<ReturnType<typeof executeLeg>>
+  let output: Record<string, string | number> = {}
+
+  if (actionKey === 'oncore_ai_draft') {
+    const { draft, note } = await draftMessage({
+      locationId, contactId: contact,
+      purpose: cfg2.purpose || 'follow up with this contact',
+      tone: cfg2.tone,
+    })
+    if (draft && contact) await noteOnContact(locationId, contact, `0nCORE drafted:\n\n${draft}`)
+    output = { draft }
+    result = draft
+      ? { status: 'ok', detail: note, targets: 1, priceCents: 0, billed: false }
+      : { status: 'failed', detail: note, targets: 0, priceCents: 0, billed: false }
+  } else if (actionKey === 'oncore_score_route') {
+    const { score, branch, reason } = await scoreAndRoute({
+      locationId, contactId: contact,
+      criteria: cfg2.criteria || 'likelihood to buy soon',
+    })
+    if (contact) await noteOnContact(locationId, contact, `0nCORE scored ${score}/100 (${branch}) — ${reason}`)
+    output = { score, branch, reason }
+    result = { status: 'ok', detail: `Scored ${score}/100 — ${branch}.`, targets: 1, priceCents: 0, billed: false }
+
+    // A score is exactly the kind of event an agency wants their OWN automation
+    // to react to, so it starts one rather than ending here.
+    void fireTrigger({ trigger: 'oncore_lead_scored', locationId, companyId, contactId: contact, data: { score, branch } })
+  } else {
+    result = await executeLeg({
+      capability: mapActionToCapability(actionKey),
+      locationId,
+      params: { ...cfg2, contactId: contact },
+      companyId,
+      receiptId: receipt?.id,
+    })
+  }
 
   if (receipt?.id) {
     await sb.from('burst_receipts').update({
@@ -208,6 +248,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ actionKey:
     status: result.status,
     message: result.detail,
     priceCents: price,
+    // Flat keys: workflow fields cannot read a nested object.
+    ...output,
   })
 }
 

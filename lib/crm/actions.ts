@@ -43,8 +43,8 @@ export interface WorkflowAction {
 
 export const WORKFLOW_ACTIONS: WorkflowAction[] = [
   {
-    key: 'oncore_run_burst',
-    name: '0nCORE: Run a command',
+    key: 'oncore_run_command',
+    name: '0nCORE: Run Command',
     blurb: 'Runs a 0nCORE command against the contact that reached this step.',
     fields: [{ key: 'command', label: 'What should happen?', type: 'textarea', required: true }],
     returns: ['receiptId', 'status'],
@@ -52,7 +52,7 @@ export const WORKFLOW_ACTIONS: WorkflowAction[] = [
   },
   {
     key: 'oncore_ai_draft',
-    name: '0nCORE: Draft a message',
+    name: '0nCORE: AI Draft Message',
     blurb: 'Writes a message for this contact that later steps can send.',
     fields: [
       { key: 'purpose', label: 'What is the message for?', type: 'textarea', required: true },
@@ -63,23 +63,15 @@ export const WORKFLOW_ACTIONS: WorkflowAction[] = [
   },
   {
     key: 'oncore_score_route',
-    name: '0nCORE: Score and branch',
+    name: '0nCORE: Score & Route',
     blurb: 'Scores the contact and returns a branch value for an if/else step.',
     fields: [{ key: 'criteria', label: 'What are you scoring for?', type: 'textarea', required: true }],
     returns: ['score', 'branch'],
     live: true,
   },
   {
-    key: 'oncore_enrich',
-    name: '0nCORE: Enrich the contact',
-    blurb: 'Fills in what we can find about this contact from connected services.',
-    fields: [{ key: 'fields', label: 'What to look for', type: 'text' }],
-    returns: ['enriched'],
-    live: false,
-  },
-  {
     key: 'oncore_build_site',
-    name: '0nCORE: Build a site',
+    name: '0nCORE: Build Site',
     blurb: 'Builds a page from one of your templates and returns the URL.',
     meter: 'SITE_BUILD',
     fields: [
@@ -90,8 +82,8 @@ export const WORKFLOW_ACTIONS: WorkflowAction[] = [
     live: false,
   },
   {
-    key: 'oncore_post_social',
-    name: '0nCORE: Schedule a post',
+    key: 'oncore_schedule_social',
+    name: '0nCORE: Schedule Social',
     blurb: 'Writes and schedules a social post to a connected channel.',
     meter: 'SOCIAL_POST',
     fields: [

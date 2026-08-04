@@ -4,6 +4,7 @@ import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { verifyPlan } from '@/lib/burst/plan-token'
 import { executeLeg, type LegResult } from '@/lib/burst/executor'
 import { listAgencyLocations } from '@/lib/crm/locations'
+import { fireTrigger } from '@/lib/crm/triggers'
 
 /**
  * POST /api/burst/run — execute an approved plan.
@@ -136,6 +137,18 @@ export async function POST(req: NextRequest) {
     }
 
     results.push({ ...result, capability: leg.capability, location: locationName, receiptId: receipt?.id })
+
+    // T1 — let the agency's own native workflow react to what we just did.
+    // Deliberately not awaited: a burst must not wait on, or fail because of, a
+    // notification about work that has already happened.
+    if (result.status === 'ok' && leg.locationId) {
+      void fireTrigger({
+        trigger: 'oncore_burst_completed',
+        locationId: leg.locationId,
+        companyId,
+        data: { capability: leg.capability, detail: result.detail.slice(0, 200), targets: result.targets },
+      })
+    }
   }
 
   const status = failedCount === 0 ? 'complete' : okCount > 0 ? 'partial' : 'failed'
