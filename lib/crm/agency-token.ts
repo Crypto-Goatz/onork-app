@@ -34,6 +34,7 @@ function admin() {
 }
 
 interface AgencyInstallRow {
+  app_id?: string | null
   id: string
   access_token: string
   refresh_token: string | null
@@ -43,12 +44,38 @@ interface AgencyInstallRow {
   status: string | null
 }
 
+/**
+ * The canonical agency app — provisioning, snapshots and SaaS.
+ *
+ * PREFERRED OVER THE LEGACY APP, with fallback. The older install
+ * (AGENCY_APP_ID) still holds live tokens and still powers contacts, locations
+ * and every executor write, so it is NOT removed — ripping it out would break
+ * working features for a migration nobody asked to happen today.
+ *
+ * But it was never granted saas/company.read, snapshots.readonly or
+ * companies.readonly, and scopes cannot be added to an existing install. So the
+ * new install is tried FIRST: when it exists, SaaS and snapshots work; when it
+ * does not, everything falls back exactly as before.
+ */
+const AGENCY_V2_APP_ID = process.env.CRM_AGENCY_V2_APP_ID || '6a71919be8d7c3c038df0839'
+
 async function readAgencyInstall(companyId?: string): Promise<AgencyInstallRow | null> {
+  // Newest app first, then the legacy one. Ordering by app rather than by
+  // updated_at is deliberate: a legacy row refreshed five minutes ago is still
+  // the wrong token for a SaaS call, however recent it is.
+  for (const appId of [AGENCY_V2_APP_ID, AGENCY_APP_ID]) {
+    const row = await readAgencyInstallForApp(appId, companyId)
+    if (row?.access_token) return row
+  }
+  return null
+}
+
+async function readAgencyInstallForApp(appId: string, companyId?: string): Promise<AgencyInstallRow | null> {
   const sb = admin()
   let q = sb
     .from('crm_installations')
-    .select('id, access_token, refresh_token, expires_at, company_id, scopes, status')
-    .eq('app_id', AGENCY_APP_ID)
+    .select('id, app_id, access_token, refresh_token, expires_at, company_id, scopes, status')
+    .eq('app_id', appId)
     .or('location_id.is.null,location_id.eq.')
 
   // Scoping to the asking agency is what makes this safe with more than one
@@ -89,13 +116,24 @@ async function writeRefreshedAgencyToken(
 
 async function refreshAgencyToken(install: AgencyInstallRow): Promise<string | null> {
   if (!install.refresh_token) return null
-  const clientId =
-    process.env.CRM_MARKETPLACE_APP_CLIENT_ID ||
-    process.env.CRM_MARKETPLACE_CLIENT_ID ||
-    ''
-  const clientSecret = process.env.CRM_MARKETPLACE_CLIENT_SECRET || ''
+  /**
+   * Refresh with the credentials of the app that ISSUED this token.
+   *
+   * The old code always used the marketplace app's client id and secret. That
+   * happened to be right while there was only one agency install; the moment a
+   * second app issued a token, its refresh would be attempted with another
+   * app's credentials and fail — quietly, a day later, when the access token
+   * expired and nobody was watching.
+   */
+  const isV2 = install.app_id === AGENCY_V2_APP_ID
+  const clientId = isV2
+    ? (process.env.CRM_AGENCY_APP_CLIENT_ID || process.env.AGENCY_CLIENT_ID || '')
+    : (process.env.CRM_MARKETPLACE_APP_CLIENT_ID || process.env.CRM_MARKETPLACE_CLIENT_ID || '')
+  const clientSecret = isV2
+    ? (process.env.CRM_AGENCY_APP_CLIENT_SECRET || process.env.AGENCY_CLIENT_SECRET || '')
+    : (process.env.CRM_MARKETPLACE_CLIENT_SECRET || '')
   if (!clientId || !clientSecret) {
-    console.error('[crm/agency-token] CRM_MARKETPLACE_APP_CLIENT_ID/CLIENT_SECRET missing')
+    console.error(`[crm/agency-token] client credentials missing for app ${install.app_id}`)
     return null
   }
 
