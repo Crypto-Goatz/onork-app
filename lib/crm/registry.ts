@@ -102,12 +102,19 @@ export const CAPABILITIES: Capability[] = [
     mechanism: 'native', meter: 'CLIENT_PROVISION', requires: 'crm',
   },
   {
-    // The thing everyone assumes exists, and does not.
+    /**
+     * BLOCKED FOR US, NOT FOR THE AGENCY. Updating a snapshot and pushing that
+     * update to existing sub-accounts is a real feature — it just lives in the
+     * platform's own UI, with no API behind it. So this is not "impossible",
+     * it is "not automatable", and the wording must say the second thing.
+     * Telling an agency owner it cannot be done when they can see the button is
+     * how the assistant loses their trust in one sentence.
+     */
     id: 'snapshot.repush',
     intent: 'push an updated snapshot into a client that already exists',
     mechanism: 'blocked',
     insteadOffer:
-      "There's no API for pushing a snapshot into an existing client — the platform only loads one when the sub-account is created. I can send you a share link for that snapshot to apply by hand, or set the pieces up individually in that client now.",
+      "I can't push a snapshot update from here — that one's a manual step in your CRM, where you update the snapshot and push it to the sub-accounts you choose. Worth knowing: 0nCORE's own steps and widgets update centrally, so those change everywhere the moment we ship, snapshot untouched.",
   },
   { tokenAudience: 'agency', id: 'user.create', intent: 'add a team member or assign work to one', mechanism: 'native', requires: 'crm' },
 
