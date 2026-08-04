@@ -82,9 +82,12 @@ export async function GET(req: NextRequest) {
     // An authorisation code is single-use. Trying apps in a fixed order burns it
     // on the first mismatch, so when the install told us which app it was, that
     // one goes first instead of being tried fourth with a spent code.
-    const state = req.nextUrl.searchParams.get('state')
-    if (state === 'agency') {
-      const i = apps.findIndex((a) => a.name === 'agency-v2')
+    const state = req.nextUrl.searchParams.get('state') || ''
+    const preferred = state.startsWith('agency') ? 'agency-v2'
+      : state.startsWith('sub') ? 'marketplace'
+      : null
+    if (preferred) {
+      const i = apps.findIndex((a) => a.name === preferred)
       if (i > 0) apps.unshift(apps.splice(i, 1)[0])
     }
 
