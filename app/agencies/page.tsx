@@ -8,6 +8,7 @@ import {
 import { METERS, formatPrice, resale } from '@/lib/meters'
 import SiteFooter from '@/components/SiteFooter'
 import RequestAccessButton from '@/components/RequestAccessButton'
+import CapabilityMatrix from '@/components/agencies/CapabilityMatrix'
 
 /**
  * /agencies — the money page.
@@ -197,6 +198,19 @@ export default function AgenciesPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* The matrix — the sceptic's section. */}
+      <section className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-8">
+        <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          Where the walls actually are
+        </h2>
+        <p className="mb-7 mt-3 max-w-3xl leading-relaxed text-[#8b949e]">
+          Three setups on the same agency plan. Search it, filter it, or press
+          <span className="text-[#e6edf3]"> Only the gaps</span> — the point is the middle column,
+          and you should be able to check it rather than take our word.
+        </p>
+        <CapabilityMatrix />
       </section>
 
       {/* Pricing + the resale angle */}

@@ -4,8 +4,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { Menu, X, ArrowRight } from 'lucide-react'
+import ProductMegaMenu from './ProductMegaMenu'
 
 const NAV_LINKS: Array<{ href: string; label: string }> = [
+  { href: '/agencies', label: 'Agency Command' },
   { href: '/platform', label: 'Platform' },
   { href: '/possibilities', label: 'Possibilities' },
   { href: '/marketplace', label: 'Marketplace' },
@@ -30,6 +32,7 @@ export function PublicNav() {
 
         {/* Center nav — desktop */}
         <div className="hidden items-center gap-1 md:flex">
+          <ProductMegaMenu />
           {NAV_LINKS.map((link) => {
             const active = isActive(link.href)
             return (
