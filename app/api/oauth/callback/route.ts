@@ -79,23 +79,50 @@ export async function GET(req: NextRequest) {
       },
     ]
 
-    // An authorisation code is single-use. Trying apps in a fixed order burns it
-    // on the first mismatch, so when the install told us which app it was, that
-    // one goes first instead of being tried fourth with a spent code.
+    // The CURRENT sub-account app. Its absence was a real bug: `state=sub`
+    // resolved to `marketplace`, which is the OLDER app (69c762…) registered
+    // against https://0ncore.com — so a sub-account install could never succeed,
+    // whatever the credentials were.
+    apps.push({
+      name: 'subaccount-v2',
+      clientId: process.env.CRM_SUBACCT_CLIENT_ID || process.env.SUBACCT_CLIENT_ID || '',
+      clientSecret: process.env.CRM_SUBACCT_CLIENT_SECRET || process.env.SUBACCT_CLIENT_SECRET || '',
+      redirectUri: 'https://app.0ncore.com/api/oauth/callback',
+      appId: '6a7178a4e8d7c3c038c593b3',
+      userType: 'Location' as const,
+    })
+
+    /**
+     * ONE APP, chosen by state — never a sequence.
+     *
+     * An authorisation code is SINGLE-USE, and `redirect_uri` must match the
+     * one the authorise step used exactly. The legacy apps are registered
+     * against https://0ncore.com while our install routes send
+     * https://app.0ncore.com, so trying them first both fails AND spends the
+     * code — every later attempt then returns "Authorization code not found",
+     * which reads like a credential problem and is not one.
+     *
+     * When our own install route started the flow it told us which app this is.
+     * Guessing after that is strictly worse than failing with a clear message.
+     * No state means the flow began somewhere else (a marketplace listing), and
+     * only then is the legacy sequence the right behaviour.
+     */
     const state = req.nextUrl.searchParams.get('state') || ''
-    const preferred = state.startsWith('agency') ? 'agency-v2'
-      : state.startsWith('sub') ? 'marketplace'
+    const only = state.startsWith('agency') ? 'agency-v2'
+      : state.startsWith('sub') ? 'subaccount-v2'
       : null
-    if (preferred) {
-      const i = apps.findIndex((a) => a.name === preferred)
-      if (i > 0) apps.unshift(apps.splice(i, 1)[0])
-    }
+
+    const candidates = only
+      ? apps.filter((a) => a.name === only)
+      : apps.filter((a) => a.name !== 'subaccount-v2' && a.name !== 'agency-v2')
 
     let tokenData: Record<string, unknown> | null = null
-    let usedApp = apps[0]
+    let usedApp = candidates[0] || apps[0]
+    const failures: string[] = []
+    const skipped: string[] = []
 
-    for (const app of apps) {
-      if (!app.clientSecret) continue
+    for (const app of candidates) {
+      if (!app.clientSecret) { skipped.push(`${app.name}(no secret in env)`); continue }
 
       const tokenRes = await fetch(CRM_TOKEN_URL, {
         method: 'POST',
@@ -127,12 +154,24 @@ export async function GET(req: NextRequest) {
         break
       }
 
-      console.warn(`[oauth/callback] ${app.name} app token exchange failed:`, data.error || data.message || 'unknown')
+      // The RAW response, not a summary. "token exchange failed" told us
+      // nothing; the platform's own error_description is what identifies
+      // whether it is the client, the secret, the redirect_uri or the code.
+      const raw = JSON.stringify(data).slice(0, 300)
+      failures.push(`${app.name}(${tokenRes.status}): ${raw}`)
+      console.warn(`[oauth/callback] ${app.name} exchange failed ${tokenRes.status}: ${raw}`)
     }
 
     if (!tokenData || !tokenData.access_token) {
-      console.error('[oauth/callback] All token exchanges failed')
-      return NextResponse.redirect(new URL('/crm?error=token_failed', req.url))
+      console.error('[oauth/callback] all exchanges failed |', JSON.stringify({ state, skipped, failures }))
+      // The reason travels back in the URL. A bare `token_failed` sent us
+      // hunting through logs that only stream live; the platform's own message
+      // says immediately whether this is a secret, a redirect_uri or the code.
+      const why = (failures[0] || skipped[0] || 'no apps had credentials').slice(0, 220)
+      const url = new URL('/crm', req.url)
+      url.searchParams.set('error', 'token_failed')
+      url.searchParams.set('why', why)
+      return NextResponse.redirect(url)
     }
 
     const access_token = tokenData.access_token as string
