@@ -53,9 +53,23 @@ interface PlanLeg {
   capability: string
   intent: string
   location?: string
+  locationId?: string
+  ambiguous?: string[]
   priceCents: number
   blocked?: boolean
   insteadOffer?: string
+  /** Will actually execute if approved. Everything else is explained up front. */
+  runnable?: boolean
+  notYetWired?: boolean
+  needsBilling?: boolean
+}
+
+interface LegOutcome {
+  capability: string
+  status: 'ok' | 'failed' | 'refused' | 'unsupported'
+  detail: string
+  location?: string | null
+  targets: number
 }
 
 const EXAMPLES = [
@@ -74,6 +88,11 @@ export default function AgencyDashboard() {
   const [planning, setPlanning] = useState(false)
   const [legs, setLegs] = useState<PlanLeg[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
+
+  const [planToken, setPlanToken] = useState<string | null>(null)
+  const [running, setRunning] = useState(false)
+  const [outcomes, setOutcomes] = useState<LegOutcome[] | null>(null)
+  const [runErr, setRunErr] = useState<string | null>(null)
 
   const sso = useSso()
 
@@ -104,7 +123,11 @@ export default function AgencyDashboard() {
   async function plan() {
     const q = command.trim()
     if (!q || planning) return
+    // A new plan invalidates the last one completely — token, legs and the
+    // outcomes of whatever ran before. Leaving a stale token approvable next to
+    // fresh legs is how someone approves what they are not looking at.
     setPlanning(true); setErr(null); setLegs(null)
+    setPlanToken(null); setOutcomes(null); setRunErr(null)
     try {
       const r = await fetch('/api/burst/plan', {
         method: 'POST',
@@ -114,15 +137,38 @@ export default function AgencyDashboard() {
       const j = await r.json().catch(() => ({}))
       if (!r.ok) throw new Error(j?.error || `Planning failed (${r.status})`)
       setLegs(Array.isArray(j.legs) ? j.legs : [])
+      setPlanToken(typeof j.planToken === 'string' ? j.planToken : null)
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Something went wrong.')
     } finally { setPlanning(false) }
+  }
+
+  async function approveAndRun() {
+    if (!planToken || running) return
+    setRunning(true); setRunErr(null)
+    try {
+      const r = await fetch('/api/burst/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders(sso.token) },
+        body: JSON.stringify({ planToken }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) throw new Error(j?.error || `Run failed (${r.status})`)
+      setOutcomes(Array.isArray(j.results) ? j.results : [])
+      // The token is spent. The server enforces this too — the unique plan id
+      // means a replay is refused — but clearing it here stops the button from
+      // inviting a second click that can only fail.
+      setPlanToken(null)
+    } catch (e) {
+      setRunErr(e instanceof Error ? e.message : 'The run did not start.')
+    } finally { setRunning(false) }
   }
 
   const total = (legs ?? []).reduce((s, l) => s + (l.priceCents || 0), 0)
   const billable = (legs ?? []).filter((l) => l.priceCents > 0).length
   const blocked = (legs ?? []).filter((l) => l.blocked).length
   const locCount = new Set((legs ?? []).map((l) => l.location).filter(Boolean)).size
+  const runnable = (legs ?? []).filter((l) => l.runnable).length
 
   /**
    * Four states, not two. "Not connected" used to cover being mid-handshake,
@@ -311,6 +357,38 @@ export default function AgencyDashboard() {
                           {l.blocked && l.insteadOffer && (
                             <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--oc-amber)]">{l.insteadOffer}</p>
                           )}
+                          {/* Said BEFORE approval, never in the receipt. Finding
+                              out a step was never wired up after approving it is
+                              how a plan becomes a lie. */}
+                          {l.ambiguous?.length ? (
+                            <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--oc-amber)]">
+                              &ldquo;{l.location}&rdquo; matches {l.ambiguous.join(', ')} — say which one.
+                            </p>
+                          ) : null}
+                          {l.notYetWired && (
+                            <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/60">
+                              Planned, not wired up yet — this one will be skipped.
+                            </p>
+                          )}
+                          {l.needsBilling && (
+                            <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/60">
+                              Costs money, and billing is not switched on yet — this one will be skipped.
+                            </p>
+                          )}
+                          {!l.blocked && !l.locationId && !l.ambiguous?.length && (
+                            <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/60">
+                              No client matched — pick one on the left, or name it in the instruction.
+                            </p>
+                          )}
+                          {(() => {
+                            const o = outcomes?.find((x) => x.capability === l.capability)
+                            if (!o) return null
+                            const tone =
+                              o.status === 'ok' ? 'text-[color:var(--oc-green-d)]'
+                              : o.status === 'failed' ? 'text-[color:var(--oc-red)]'
+                              : 'text-[color:var(--oc-amber)]'
+                            return <p className={`mt-2 text-[12.5px] font-medium leading-relaxed ${tone}`}>{o.detail}</p>
+                          })()}
                         </div>
                         <span className="oc-mono shrink-0 text-[12px] text-[color:var(--oc-text)]/70">
                           {formatPrice(l.priceCents)}
@@ -325,14 +403,56 @@ export default function AgencyDashboard() {
                   )}
                 </div>
 
-                <div className="mt-3 flex items-start gap-2 rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-bg)] p-3.5">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--oc-green-d)]" />
-                  <p className="text-[12px] leading-relaxed text-[color:var(--oc-text)]/80">
-                    <b className="text-[color:var(--oc-ink)]">A plan, not an action.</b> Nothing has
-                    touched a client account. Approve &amp; Run arrives with the executor — until
-                    then this shows exactly what it would do and what it would cost.
+                {runErr && (
+                  <p className="mt-3 flex items-start gap-2 text-sm text-[color:var(--oc-red)]">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {runErr}
                   </p>
-                </div>
+                )}
+
+                {outcomes ? (
+                  <div className="mt-3 flex items-start gap-2 rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-bg)] p-3.5">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--oc-green-d)]" />
+                    <p className="text-[12px] leading-relaxed text-[color:var(--oc-text)]/80">
+                      <b className="text-[color:var(--oc-ink)]">
+                        {outcomes.filter((o) => o.status === 'ok').length} of {outcomes.length} steps ran.
+                      </b>{' '}
+                      Every one left a receipt against its client. Ask for something else to start a new plan.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex flex-col gap-3 rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-bg)] p-3.5 sm:flex-row sm:items-center">
+                    <ShieldCheck className="h-4 w-4 shrink-0 text-[color:var(--oc-green-d)]" />
+                    <p className="min-w-0 flex-1 text-[12px] leading-relaxed text-[color:var(--oc-text)]/80">
+                      {runnable > 0 ? (
+                        <>
+                          <b className="text-[color:var(--oc-ink)]">Nothing has run yet.</b>{' '}
+                          Approving runs {runnable} step{runnable === 1 ? '' : 's'} against{' '}
+                          {runnable === 1 ? 'that client' : 'those clients'}. The rest are skipped, and
+                          a step that fails is never billed.
+                        </>
+                      ) : (
+                        <>
+                          <b className="text-[color:var(--oc-ink)]">A plan, not an action.</b>{' '}
+                          {sso.state === 'authed'
+                            ? 'Nothing here can run yet — see the notes on each step.'
+                            : 'Open 0nCORE from inside your CRM to run a plan.'}
+                        </>
+                      )}
+                    </p>
+                    {runnable > 0 && planToken && (
+                      <button
+                        type="button"
+                        onClick={approveAndRun}
+                        disabled={running}
+                        className="oc-btn shrink-0 px-4 py-2.5 text-[13px]"
+                      >
+                        {running
+                          ? <span className="flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Running</span>
+                          : `Approve & run ${runnable} step${runnable === 1 ? '' : 's'}`}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </section>
