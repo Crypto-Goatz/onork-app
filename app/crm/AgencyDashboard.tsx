@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Terminal, Users, Workflow, ListChecks, TrendingUp, Gauge,
   Send, Mic, ShieldCheck, Loader2, X, AlertCircle, CheckCircle2,
-  PanelRightClose, PanelRightOpen, Building2,
+  PanelRightClose, PanelRightOpen, Building2, Sparkles,
 } from 'lucide-react'
 import { METERS, formatPrice } from '@/lib/meters'
 import { useSso, authHeaders } from './useSso'
+import ControlCenter from './ControlCenter'
 
 /**
  * The 0nCORE marketplace dashboard — the agency's command surface.
@@ -18,20 +19,20 @@ import { useSso, authHeaders } from './useSso'
  * which is what stops an iframe feeling like a second app bolted inside the
  * first.
  *
- * WHAT IS REAL: the command bar. It posts to /api/burst/plan and renders a
- * genuine costed plan off the capability registry — including refusing what the
- * platform's API cannot do and saying what it will do instead. Everything else
- * reads /api/bootstrap, which reports connected:false until SSO is wired.
+ * WHAT IS REAL: the command bar, end to end. It plans against the agency's
+ * actual clients, prices off the capability registry, and Approve & Run
+ * executes — signed plan, receipts, live writes. Automations & AI covers the
+ * rest: workflow actions, agent connect, the read-only automation viewer and
+ * cross-client insights.
  *
  * THE EMPTY STATE IS DELIBERATE. No sample clients, no invented counters. A
  * dashboard showing plausible fake locations is one somebody demos to a
  * customer; the honest empty state is also what tells us the wiring is not
  * finished.
  *
- * NO APPROVE BUTTON YET, on purpose. The live-write rule says a malformed parse
- * must never reach a client account without a human approving it — so
- * approve-and-run ships WITH the executor. A half-wired Approve pointed at real
- * client accounts is the one control that must not exist early.
+ * APPROVE IS THE ONLY ROUTE TO A LIVE WRITE. There is no auto-execute path in
+ * this component or behind it, and every step that CANNOT run says so before
+ * approval rather than in the receipt afterwards.
  */
 
 type TileId = 'command' | 'clients' | 'flows' | 'tasks' | 'grow' | 'usage'
@@ -83,6 +84,7 @@ export default function AgencyDashboard() {
   const [tile, setTile] = useState<TileId | null>(null)
   const [activeLocation, setActiveLocation] = useState<string>('all')
   const [taskbarOpen, setTaskbarOpen] = useState(true)
+  const [controlCenter, setControlCenter] = useState(false)
 
   const [command, setCommand] = useState('')
   const [planning, setPlanning] = useState(false)
@@ -186,8 +188,12 @@ export default function AgencyDashboard() {
     <div className="oncore-app min-h-screen">
       {/* ── HEADER ── */}
       <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-white/90 px-4 py-3 backdrop-blur-md sm:px-6">
-        <span className="grid h-8 w-8 place-items-center rounded-[11px] bg-gradient-to-br from-[#6EE05A] to-[#2E9A1F] text-[13px] font-black text-[#0d1117]">
-          0n
+        {/* The real mark, on a dark tile. 0ncore-icon.png is a white outline
+            with a neon glow — it is designed for dark and vanishes on our
+            #F6F6F7 background, so the tile is what makes the brand legible in a
+            light theme rather than a decoration. */}
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[11px] bg-[#0d1117]">
+          <img src="/brand/0ncore-icon.png" alt="" aria-hidden="true" className="h-[18px] w-[18px] object-contain" />
         </span>
         <div className="min-w-0">
           <div className="text-[15px] font-bold leading-none text-[color:var(--oc-ink)]">0nCORE</div>
@@ -204,6 +210,17 @@ export default function AgencyDashboard() {
             <span className={`h-1.5 w-1.5 rounded-full ${conn.dot}`} />
             <span className="text-[color:var(--oc-text)]">{conn.label}</span>
           </span>
+          <button
+            type="button"
+            onClick={() => setControlCenter((v) => !v)}
+            className={`oc-chip hidden items-center gap-1.5 border px-2.5 py-1.5 transition-colors sm:inline-flex ${
+              controlCenter
+                ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
+                : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)] hover:border-[color:var(--oc-green-d)]'
+            }`}
+          >
+            <Sparkles className="h-3.5 w-3.5" /> Automations &amp; AI
+          </button>
           <button
             type="button"
             onClick={() => setTaskbarOpen((v) => !v)}
@@ -456,6 +473,17 @@ export default function AgencyDashboard() {
               </div>
             )}
           </section>
+
+          {controlCenter && (
+            <div className="mt-5">
+              <ControlCenter
+                token={sso.token}
+                locations={boot?.locations ?? []}
+                onCommand={(c) => { setCommand(c); setControlCenter(false) }}
+                onClose={() => setControlCenter(false)}
+              />
+            </div>
+          )}
 
           {/* ── TILE GRID ── */}
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
