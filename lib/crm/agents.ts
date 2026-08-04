@@ -1,4 +1,4 @@
-import { crmGet, crmPostRaw } from '@/lib/crm'
+import { crmGet, crmPostRaw, crmPatchRaw } from '@/lib/crm'
 
 /**
  * Agent Studio — the ONE authoring surface the platform leaves open to us.
@@ -100,115 +100,136 @@ export async function listAgents(locationId: string): Promise<{ agents: AgentSum
 }
 
 /**
- * Build the node graph for a single-LLM agent.
+ * CREATE IS THREE CALLS, NOT ONE — and that is why every single-call attempt
+ * failed with `graphMetadata.llms[0].model` undefined.
  *
- * One node that is both start and end — the simplest agent that actually does
- * something. Kept as its own function because multi-node graphs are the obvious
- * next step and only this needs to change.
+ *   1. POST   /agent-studio/agent                       shell, nodes: []
+ *   2. PATCH  /agent-studio/agent/versions/{versionId}  the graph and prompt
+ *   3. POST   /agent-studio/agent/versions/{id}/publish promote it
+ *
+ * The documented create example sends EMPTY nodes. Sending a populated node
+ * made the server derive graphMetadata it had no model for; with no nodes there
+ * is nothing to derive, and the graph arrives in step 2 where the shape is
+ * actually documented.
+ *
+ * NOTE the node shape differs between the two calls: create/read use
+ * `nodeType`, the patch example uses `type`. Both are sent — a field the server
+ * ignores costs nothing, and guessing wrong costs another 500.
  */
-function singleNodeGraph(spec: AgentSpec, nodeId: string) {
-  return [{
+function llmNode(spec: AgentSpec, nodeId: string) {
+  return {
     nodeId,
-    nodeName: 'ai_agent_node',
+    nodeName: 'AI Agent',
     nodeDisplayName: 'AI Agent',
+    type: 'llm',
+    nodeType: 'llmNode',
     isStartNode: true,
     isEndNode: true,
-    nodeType: 'llmNode',
     nodeConfig: {
       output: 'message',
       prompt: spec.prompt,
+      model: spec.model ?? 'gpt-4.1',
+      provider: spec.provider ?? 'openai',
       // Deterministic by default. An agent talking to a real customer should
       // not paraphrase itself differently every time.
       temperature: spec.temperature ?? 0,
       streaming: true,
     },
-  }]
+  }
 }
 
 export type CreateResult =
-  | { ok: true; agentId: string; name: string }
-  | { ok: false; error: string; detail?: string }
+  | { ok: true; agentId: string; versionId: string; name: string; published: boolean }
+  | { ok: false; error: string; detail?: string; stage?: 'create' | 'patch' | 'publish' }
 
 export async function createAgent(locationId: string, spec: AgentSpec): Promise<CreateResult> {
   if (!spec.name?.trim()) return { ok: false, error: 'An agent needs a name.' }
   if (!spec.prompt?.trim()) return { ok: false, error: 'An agent needs instructions.' }
 
-  const versionName = spec.name.trim()
-  const nodeId = crypto.randomUUID()
+  const name = spec.name.trim()
+  const description = spec.description?.trim() || name
 
-  /**
-   * The documented v3 body. Only locationId, status and version are required —
-   * every array is sent explicitly because the API's own example sends them
-   * empty rather than omitting them.
-   */
-  const body = {
-    locationId,
-    // The docs mark agencyId optional; the implementation does not — omitting
-    // it returns a Firestore 500 naming the field. Documented-optional is not
-    // the same as actually-optional, and only a live call tells you which.
-    ...(spec.agencyId ? { agencyId: spec.agencyId } : {}),
-    // Attribution has to be SOMETHING — the row records who made the agent, and
-    // an agent with no author is one nobody can be asked about later.
-    authorId: spec.authorId || '0ncore',
-    authorName: spec.authorName || '0nCORE',
-    authorEmail: spec.authorEmail || 'noreply@0ncore.com',
-    name: spec.name.trim(),
-    description: spec.description?.trim() || spec.name.trim(),
-    // Created INACTIVE unless asked otherwise: a generated agent that starts
-    // answering real customers before anyone has read its prompt is exactly the
-    // kind of surprise this product must not produce.
-    status: spec.status ?? 'inactive',
-    version: {
-      versionName,
-      description: spec.description?.trim() || versionName,
-      nodes: singleNodeGraph(spec, nodeId),
-      edges: [],
-      /**
-       * graphMetadata is NOT derived from nodes — the server reads the model
-       * and provider straight out of it, and a node alone leaves them
-       * undefined. `llms[].id` must be the node's own id, which is what ties
-       * the model choice to the node that uses it.
-       */
-      graphMetadata: {
-        llms: [{
-          id: nodeId,
-          name: 'AI Agent',
-          model: spec.model ?? 'gpt-4.1',
-          provider: spec.provider ?? 'openai',
-          conversational: true,
-          toolIds: [],
-        }],
-        standardNodes: [],
-        tools: [],
-      },
-      uiNodes: [],
-      uiEdges: [],
-      globalVariables: [],
-      inputVariables: [],
-      runtimeVariables: [],
-      scopes: [],
-    },
-  }
-
+  // ── 1. the shell ──────────────────────────────────────────────────────
+  let agentId = ''
+  let versionId = ''
   try {
-    const res = await crmPostRaw(`${AGENT}?locationId=${encodeURIComponent(locationId)}`, locationId, body)
+    const res = await crmPostRaw(`${AGENT}?locationId=${encodeURIComponent(locationId)}`, locationId, {
+      locationId,
+      name,
+      description,
+      ...(spec.agencyId ? { agencyId: spec.agencyId } : {}),
+      authorId: spec.authorId || '0ncore',
+      authorName: spec.authorName || '0nCORE',
+      authorEmail: spec.authorEmail || 'noreply@0ncore.com',
+      // Created INACTIVE unless asked otherwise: a generated agent that starts
+      // answering real customers before anyone has read its prompt is exactly
+      // the kind of surprise this product must not produce.
+      status: spec.status ?? 'inactive',
+      version: {
+        versionName: name,
+        description,
+        nodes: [], edges: [], uiNodes: [], uiEdges: [],
+        globalVariables: [], inputVariables: [], runtimeVariables: [], scopes: [],
+      },
+    })
     const text = await res.text()
     if (!res.ok) {
-      console.error(`[crm/agents] create ${res.status}: ${text.slice(0, 300)}`)
-      const scopeIssue = res.status === 401 || /scope/i.test(text)
-      return {
-        ok: false,
-        error: scopeIssue
-          ? 'Agent creation needs the agent-studio scopes, which this install does not have yet.'
-          : `Could not create the agent (${res.status}).`,
-        detail: text.slice(0, 300),
-      }
+      console.error(`[crm/agents] create ${res.status}: ${text.slice(0, 260)}`)
+      return { ok: false, stage: 'create', error: `Could not create the agent (${res.status}).`, detail: text.slice(0, 260) }
     }
-    const j = JSON.parse(text) as { agent?: { id?: string; agentId?: string; name?: string } }
-    return { ok: true, agentId: j.agent?.id || j.agent?.agentId || '', name: j.agent?.name ?? spec.name }
+    const j = JSON.parse(text) as { agent?: { agentId?: string; id?: string }; versions?: { versionId?: string; id?: string }[] }
+    agentId = j.agent?.agentId || j.agent?.id || ''
+    versionId = j.versions?.[0]?.versionId || j.versions?.[0]?.id || ''
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'Could not create the agent.' }
+    return { ok: false, stage: 'create', error: err instanceof Error ? err.message : 'Could not create the agent.' }
   }
+
+  if (!agentId || !versionId) {
+    return { ok: false, stage: 'create', error: 'The agent was created but returned no version to configure.' }
+  }
+
+  // ── 2. the graph and the prompt ───────────────────────────────────────
+  const nodeId = crypto.randomUUID()
+  try {
+    const res = await crmPatchRaw(
+      `${AGENT}/versions/${encodeURIComponent(versionId)}?locationId=${encodeURIComponent(locationId)}`,
+      locationId,
+      {
+        locationId,
+        versionName: name,
+        description,
+        nodes: [llmNode(spec, nodeId)],
+        edges: [],
+        globalVariables: [], inputVariables: [], runtimeVariables: [],
+        // Where the system prompt actually lives — confirmed against a real
+        // agent, not inferred.
+        globalConfig: { globalPrompt: { currentPrompt: spec.prompt, history: [] } },
+      },
+    )
+    if (!res.ok) {
+      const t = await res.text().catch(() => '')
+      console.error(`[crm/agents] patch ${res.status}: ${t.slice(0, 260)}`)
+      // The shell exists and is inactive — harmless, and left in place so it
+      // can be inspected rather than silently deleted.
+      return { ok: false, stage: 'patch', error: `Created the agent but could not configure it (${res.status}).`, detail: t.slice(0, 260) }
+    }
+  } catch (err) {
+    return { ok: false, stage: 'patch', error: err instanceof Error ? err.message : 'Could not configure the agent.' }
+  }
+
+  // ── 3. promote ────────────────────────────────────────────────────────
+  let published = false
+  try {
+    const res = await crmPostRaw(
+      `${AGENT}/versions/${encodeURIComponent(versionId)}/publish?locationId=${encodeURIComponent(locationId)}`,
+      locationId,
+      { locationId, userId: spec.authorId || '0ncore', userName: spec.authorName || '0nCORE', userEmail: spec.authorEmail || 'noreply@0ncore.com' },
+    )
+    published = res.ok
+    if (!res.ok) console.warn(`[crm/agents] publish ${res.status}`)
+  } catch { /* an unpublished agent is still a real agent */ }
+
+  return { ok: true, agentId, versionId, name, published }
 }
 
 export interface ExecuteResult { ok: boolean; reply?: string; error?: string }

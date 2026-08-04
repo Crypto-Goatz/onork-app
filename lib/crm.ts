@@ -276,6 +276,12 @@ export async function crmPostRaw(path: string, locationId: string, body: Record<
   return authedFetch(`${CRM_API}${path}`, { method: 'POST', body: JSON.stringify(body) }, auth)
 }
 
+/** PATCH with the body exactly as given — see crmPostRaw for why. */
+export async function crmPatchRaw(path: string, locationId: string, body: Record<string, unknown>): Promise<Response> {
+  const auth = await getAuthForLocation(locationId)
+  return authedFetch(`${CRM_API}${path}`, { method: 'PATCH', body: JSON.stringify(body) }, auth)
+}
+
 export async function crmPut(path: string, locationId: string, body: Record<string, unknown>): Promise<Response> {
   const auth = await getAuthForLocation(locationId)
   return authedFetch(`${CRM_API}${path}`, {
