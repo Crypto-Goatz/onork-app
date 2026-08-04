@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   Workflow, Bot, Eye, Sparkles, Loader2, AlertCircle, Copy, Check,
-  RefreshCw, ShieldCheck, X, CreditCard, ExternalLink,
+  RefreshCw, ShieldCheck, X, CreditCard, ExternalLink, Radar as RadarIcon,
 } from 'lucide-react'
 import { authHeaders } from './useSso'
 
@@ -23,7 +23,7 @@ import { authHeaders } from './useSso'
  * actions, so they land in the same plan → approve → run gate as everything else.
  */
 
-type Section = 'plans' | 'actions' | 'agents' | 'visualizer' | 'insights'
+type Section = 'plans' | 'radar' | 'actions' | 'agents' | 'visualizer' | 'insights'
 
 interface ActionRow {
   key: string; name: string; blurb: string; live: boolean
@@ -34,6 +34,7 @@ interface Finding { client: string; observation: string; command: string | null 
 
 const SECTIONS: { id: Section; icon: typeof Workflow; label: string; blurb: string }[] = [
   { id: 'plans', icon: CreditCard, label: 'Plans & Rebilling', blurb: 'What each client pays you' },
+  { id: 'radar', icon: RadarIcon, label: 'Demand Radar', blurb: 'What the market is asking for, unbuilt' },
   { id: 'actions', icon: Workflow, label: 'Workflow Actions', blurb: '0nCORE steps inside your own builder' },
   { id: 'agents', icon: Bot, label: 'AI Agent Connect', blurb: 'Give your agents 0nCORE tools' },
   { id: 'visualizer', icon: Eye, label: 'Automation Viewer', blurb: 'See any client\'s automations' },
@@ -81,6 +82,7 @@ export default function ControlCenter({
       </div>
 
       {section === 'plans' && <Plans token={token} />}
+      {section === 'radar' && <Radar token={token} />}
       {section === 'actions' && <Actions token={token} />}
       {section === 'agents' && <Agents token={token} />}
       {section === 'visualizer' && <Visualizer token={token} locations={locations} />}
@@ -549,6 +551,98 @@ function Stat({ label, value, accent, warn }: { label: string; value: string; ac
         accent ? 'text-[color:var(--oc-green-d)]' : warn ? 'text-[color:var(--oc-amber)]' : 'text-[color:var(--oc-ink)]'}`}>
         {value}
       </div>
+    </div>
+  )
+}
+
+/* ────────────────────────────── Demand Radar ──────────────────────────── */
+
+interface IdeaRow { board: string; title: string; url: string; score: number; gain: number }
+interface BoardRow { board: string; posts: number; totalScore: number }
+
+function Radar({ token }: { token: string | null }) {
+  const [d, setD] = useState<{
+    loudest: IdeaRow[]; rising: IdeaRow[]; boards: BoardRow[]; total: number
+    stale: boolean; lastRun: { started_at: string; boards_ok: number; boards_failed: number; error: string | null } | null
+  } | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+  const [tab, setTab] = useState<'loudest' | 'rising' | 'boards'>('loudest')
+
+  useEffect(() => {
+    fetch('/api/ideas', { headers: authHeaders(token) })
+      .then((r) => r.json())
+      .then((j) => (j?.error ? setErr(j.error) : setD(j)))
+      .catch(() => setErr('Could not read the radar.'))
+  }, [token])
+
+  if (err) return <p className="flex items-center gap-2 py-4 text-sm text-[color:var(--oc-red)]"><AlertCircle className="h-4 w-4" /> {err}</p>
+  if (!d) return <Loading />
+
+  const rows = tab === 'rising' ? d.rising : d.loudest
+
+  return (
+    <div className="space-y-3">
+      {/* Freshness first. A stale table read as current is the failure mode
+          this whole feature has. */}
+      {(d.stale || d.lastRun?.error) && (
+        <div className="flex items-start gap-2 rounded-[14px] border border-[color:var(--oc-amber)]/45 bg-[color:var(--oc-amber)]/[0.07] p-3.5">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--oc-amber)]" />
+          <p className="text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/85">
+            {d.lastRun?.error
+              ? `Last collection failed: ${d.lastRun.error}`
+              : 'These numbers are more than a day old — the last collection has not run.'}
+          </p>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-1.5">
+          {([['loudest', 'Biggest'], ['rising', 'Gaining'], ['boards', 'By area']] as const).map(([k, label]) => (
+            <button key={k} type="button" onClick={() => setTab(k)}
+              className={`oc-chip border px-3 py-1.5 transition-colors ${
+                tab === k ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
+                          : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <span className="oc-mono text-[10.5px] text-[color:var(--oc-text)]/50">
+          {d.total} requests · {d.lastRun?.boards_ok ?? 0} areas
+        </span>
+      </div>
+
+      {tab === 'boards' ? (
+        <div className="space-y-1.5">
+          {d.boards.map((b) => (
+            <div key={b.board} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-2.5">
+              <span className="truncate text-[13px] text-[color:var(--oc-ink)]">{b.board.replace(/-/g, ' ')}</span>
+              <span className="oc-mono shrink-0 text-[11.5px] text-[color:var(--oc-text)]/60">
+                {b.posts} asks · <span className="font-bold text-[color:var(--oc-green-d)]">{b.totalScore.toLocaleString()}</span> votes
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {rows.map((p, i) => (
+            <a key={`${p.board}-${i}`} href={p.url} target="_blank" rel="noopener noreferrer"
+              className="flex items-start gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-2.5 transition-colors hover:border-[color:var(--oc-green-d)]">
+              <span className="oc-mono mt-0.5 w-11 shrink-0 text-right text-[13px] font-bold text-[color:var(--oc-green-d)]">
+                {tab === 'rising' ? `+${p.gain}` : p.score.toLocaleString()}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13px] text-[color:var(--oc-ink)]">{p.title}</span>
+                <span className="oc-mono block text-[10.5px] text-[color:var(--oc-text)]/50">{p.board.replace(/-/g, ' ')}</span>
+              </span>
+            </a>
+          ))}
+          {rows.length === 0 && (
+            <p className="py-6 text-center text-[13px] text-[color:var(--oc-text)]/60">
+              {tab === 'rising' ? 'Nothing has moved since the last collection.' : 'No data yet.'}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
