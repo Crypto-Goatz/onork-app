@@ -240,11 +240,11 @@ export default function AgenciesPage() {
                   </td>
                   <td className="px-6 py-5 text-sm leading-relaxed text-[#8b949e]">{m.when}</td>
                   <td className="px-6 py-5">
-                    <span className="font-mono font-semibold text-[#6EE05A]">{formatPrice(m.priceCents)}</span>
+                    <span className="font-mono font-semibold text-[#6EE05A]">{formatPrice(m.priceCents, m.pending)}</span>
                     {m.launchFree && <div className="text-xs text-[#8b949e]">free while we launch</div>}
                   </td>
                   <td className="px-6 py-5 font-mono text-[#8b949e]">
-                    {m.priceCents ? resale(m.priceCents) : '—'}
+                    {m.pending ? '—' : m.priceCents ? resale(m.priceCents) : '—'}
                   </td>
                 </tr>
               ))}

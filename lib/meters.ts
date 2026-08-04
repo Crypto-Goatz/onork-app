@@ -17,7 +17,7 @@
  * Prices in CENTS. 0.1 + 0.2 is not 0.3.
  */
 
-export type MeterKey = 'SITE_BUILD' | 'CLIENT_PROVISION' | 'SOCIAL_POST' | 'BURST_LEG'
+export type MeterKey = 'SITE_BUILD' | 'SITE_BUILD_NATIVE' | 'CLIENT_PROVISION' | 'SOCIAL_POST' | 'BURST_LEG'
 
 export interface Meter {
   key: MeterKey
@@ -34,6 +34,12 @@ export interface Meter {
    * instead of implying it is free forever.
    */
   launchFree?: boolean
+  /**
+   * Priced but not yet sellable — the capability is behind a discovery gate.
+   * Rendered as "coming" rather than a number, because quoting a price for
+   * something that may not ship is how a pricing page becomes a liability.
+   */
+  pending?: boolean
 }
 
 export const METERS: Meter[] = [
@@ -41,21 +47,32 @@ export const METERS: Meter[] = [
     key: 'SITE_BUILD',
     label: 'Site build',
     unit: 'per site',
-    priceCents: 1200,
-    when: 'A full site or landing page is generated and deployed for a client.',
+    priceCents: 1000,
+    when: 'A full site or landing page is generated and deployed, hosted at your 0nCORE URL.',
+  },
+  {
+    // Lane B — the page appearing in the client's own Sites area, which is the
+    // whole value of it. Gated on proving import fidelity; until that is
+    // tested, quoting a price would be selling something that may not exist.
+    key: 'SITE_BUILD_NATIVE',
+    label: 'Site build — in your CRM',
+    unit: 'per site',
+    priceCents: 0,
+    pending: true,
+    when: 'The page lands in the client\'s own Sites area, not just hosted by us.',
   },
   {
     key: 'CLIENT_PROVISION',
     label: 'Client provisioned',
     unit: 'per client',
-    priceCents: 2500,
-    when: 'A new sub-account is created, a snapshot applied and onboarding started.',
+    priceCents: 500,
+    when: 'A new sub-account is created with your snapshot loaded and onboarding started.',
   },
   {
     key: 'SOCIAL_POST',
     label: 'Social post',
     unit: 'per post',
-    priceCents: 25,
+    priceCents: 15,
     when: 'A post is written and scheduled to a connected channel.',
   },
   {
@@ -74,8 +91,9 @@ export function meter(key: MeterKey): Meter {
   return m
 }
 
-/** "$12" / "25¢" / "Free" — no trailing .00 on whole dollars. */
-export function formatPrice(cents: number): string {
+/** "$10" / "15¢" / "Free" — no trailing .00 on whole dollars. */
+export function formatPrice(cents: number, pending = false): string {
+  if (pending) return 'Coming'
   if (cents === 0) return 'Free'
   if (cents < 100) return `${cents}¢`
   const d = cents / 100

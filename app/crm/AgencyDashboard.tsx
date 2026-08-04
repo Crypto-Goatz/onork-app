@@ -207,7 +207,7 @@ export default function AgencyDashboard() {
             {METERS.map((m) => (
               <div key={m.key} className="rounded-xl border border-[#30363d] bg-[#0d1117] p-4">
                 <div className="text-sm font-semibold">{m.label}</div>
-                <div className="mt-1 font-mono text-lg font-bold text-[#6EE05A]">{formatPrice(m.priceCents)}</div>
+                <div className="mt-1 font-mono text-lg font-bold text-[#6EE05A]">{formatPrice(m.priceCents, m.pending)}</div>
                 <div className="mt-1 text-[11px] text-[#6e7681]">{m.unit}{m.launchFree ? ' · free while we launch' : ''}</div>
               </div>
             ))}
