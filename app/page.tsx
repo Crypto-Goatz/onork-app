@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import SiteFooter from '@/components/SiteFooter'
+import Hero from '@/components/home/Hero'
 import CommandCenterVideo from '@/components/CommandCenterVideo'
 import AgencyDashboardSection, { AGENCY_DASHBOARD_FAQ } from '@/components/home/AgencyDashboardSection'
 
@@ -42,9 +43,9 @@ import AgencyDashboardSection, { AGENCY_DASHBOARD_FAQ } from '@/components/home/
  */
 
 const SITE = 'https://www.0ncore.com'
-const title = '0nCore — Your Company Brand, Free and In One Place'
+const title = '0nCore — the AI agency CRM: run every client from one chat'
 const description =
-  'A free, organised home for your logo, colours, fonts and company details. Then every 0n app you open is already set up to look like you.'
+  'Run every client account from one chat. 0nCore plans the work, prices it, and runs it once you approve — free to install, pay only for what runs.'
 
 export const metadata: Metadata = {
   title,
@@ -52,11 +53,11 @@ export const metadata: Metadata = {
   alternates: { canonical: SITE },
   openGraph: { title, description, url: SITE, type: 'website' },
   keywords: [
-    'brand asset management',
-    'free brand kit storage',
-    'company brand assets',
-    'brand guidelines storage',
-    'logo storage',
+    'AI agency CRM',
+    'agency command center',
+    'manage all client accounts one dashboard',
+    'AI CRM for agencies',
+    'agency automation software',
     '0nCore',
     'GHL agency dashboard',
     'GoHighLevel agency dashboard',
@@ -72,13 +73,13 @@ export const metadata: Metadata = {
 }
 
 const FAQS = [
-  { q: 'What is 0nCore?', a: '0nCore is a free place to store your company brand — logo, colours, fonts and the details that go on everything — in one organised location, so everyone and everything uses the same version.' },
-  { q: 'Is it really free?', a: 'Yes. Storing your brand and using it across 0n apps is free. There is nothing to pay for the core of it.' },
-  { q: 'What can I store?', a: 'Logos in every variant you need, colour palettes with the actual values, fonts, and your company details — name, address, phone, social links, the boilerplate you retype constantly.' },
-  { q: 'What does "already configured" mean?', a: 'When you open another 0n app it reads your brand from your 0nCore profile, so it already has your logo, your colours and your details. You do not upload anything or pick colours again.' },
-  { q: 'Who can see my brand assets?', a: 'You do. Assets are private by default, and you can share a link with a designer, printer or agency without giving them an account.' },
-  { q: 'Where are my connected apps stored?', a: 'In the 0nVault, encrypted at rest under your account. Connect a service once and every 0n app can use it — and revoking it once revokes it everywhere.' },
-  { q: 'Do I need to be technical?', a: 'No. If you can upload a logo and pick a colour, you can use all of it.' },
+  { q: 'What is 0nCore?', a: '0nCore is an AI command centre for agencies. It installs into the CRM you already use and lets you run work across every client account from one chat — send the campaign, book the calls, move the stalled deals, build the landing page, provision the new client.' },
+  { q: 'Do I have to leave my CRM?', a: 'No. 0nCore opens inside it as a page and knows who you are the moment it loads, so there is no second login and no second tab.' },
+  { q: 'What does it cost?', a: 'Installing is free. You pay only when something runs — a site built, a client provisioned, a post scheduled. Every plan shows its cost before you approve it, and a step that fails is never billed.' },
+  { q: 'Can I mark it up and resell it?', a: 'Yes. Set your own markup on the usage prices and bill your clients through the platform you already use. Your margin, your invoice.' },
+  { q: 'Can it act on several clients at once?', a: 'That is the point of it. One instruction becomes one step per client, run together, with a receipt against each account. No native agency view can do this.' },
+  { q: 'Does it act without asking?', a: 'Never. You see the plan and the price first, nothing sends to a whole list without you confirming, and uninstalling ends access and billing the same day.' },
+  { q: 'What is the one login worth?', a: 'The same account carries you into 0nTask, web0n, social0n and CRO9 — sign in once and every tool already knows who you are, which brand is yours and which clients you manage.' },
 ]
 
 const JSON_LD = {
@@ -97,15 +98,15 @@ const JSON_LD = {
     },
     {
       '@type': 'HowTo',
-      name: 'How to set up your company brand in 0nCore',
-      description: 'Store your brand once, then every 0n app opens already configured to it.',
-      totalTime: 'PT3M',
+      name: 'How to run every client account from one chat with 0nCore',
+      description: 'Install it into your CRM, switch on the clients you manage, then say what you want done.',
+      totalTime: 'PT5M',
       estimatedCost: { '@type': 'MonetaryAmount', currency: 'USD', value: '0' },
       step: [
-        { '@type': 'HowToStep', position: 1, name: 'Store it', text: 'Upload your logo variants, colour values, fonts and company details.' },
-        { '@type': 'HowToStep', position: 2, name: 'Share it', text: 'Send a designer, printer or new hire a link to the right files — no account needed.' },
-        { '@type': 'HowToStep', position: 3, name: 'Connect it', text: 'Connect the apps you use. They are encrypted in your 0nVault.' },
-        { '@type': 'HowToStep', position: 4, name: 'Open any 0n app', text: 'It reads your brand from your profile and is already set up.' },
+        { '@type': 'HowToStep', position: 1, name: 'Install it', text: 'Add 0nCore to your agency. Installing is free and it opens inside the CRM you already use.' },
+        { '@type': 'HowToStep', position: 2, name: 'Switch on your clients', text: 'Choose which sub-accounts 0nCore may act on. Nothing touches an account you have not switched on.' },
+        { '@type': 'HowToStep', position: 3, name: 'Say what you want', text: 'Name the clients and the outcome in one sentence. It splits the work per account and prices it.' },
+        { '@type': 'HowToStep', position: 4, name: 'Approve it', text: 'Read the plan and the cost, then approve. Every step leaves a receipt against the right client.' },
       ],
     },
     { '@type': 'FAQPage', mainEntity: FAQS.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
@@ -132,82 +133,7 @@ export default function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }} />
 
       <div className="mx-auto max-w-7xl px-6 py-8 space-y-8">
-        {/* ─────────────── Hero ─────────────── */}
-        <section className="grid items-center gap-12 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:py-16">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-md border border-[#6EE05A]/30 bg-[#6EE05A]/10 px-3 py-1 text-xs font-medium text-[#6EE05A]">
-              <Check className="h-3.5 w-3.5" /> Free — no card
-            </span>
-
-            <h1 className="mt-6 text-3xl font-semibold leading-tight tracking-tight text-[#e6edf3] md:text-4xl">
-              Your company brand. One place. Free.
-            </h1>
-
-            {/* BLUF — the sentence an AI answer can lift whole. */}
-            <p className="mt-5 max-w-xl text-sm leading-relaxed text-[#c9d1d9]">
-              0nCore is a free, organised home for your logo, colours, fonts and company details —
-              so everyone and everything uses the same version. No more hunting for the right file,
-              and no more sending someone the old logo.
-            </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/signup"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#6EE05A] px-6 py-3 text-sm font-medium text-[#0d1117] transition-colors hover:bg-[#5bc74a]"
-              >
-                Set up my brand — free <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="#how"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#30363d] px-6 py-3 text-sm font-medium text-[#c9d1d9] transition-colors hover:border-[#484f58]"
-              >
-                See how it works
-              </Link>
-            </div>
-
-            <p className="mt-4 text-xs text-[#8b949e]">
-              About three minutes. You can add the rest later.
-            </p>
-          </div>
-
-          {/* The demo IS a brand kit — the page shows one rather than describing it. */}
-          <div className="rounded-xl border border-[#30363d] bg-[#161b22] p-6">
-            <p className="text-xs text-[#8b949e]">Your brand kit</p>
-
-            <div className="mt-4 flex items-center gap-4 rounded-lg border border-[#30363d] bg-[#0d1117] p-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#6EE05A] text-base font-semibold text-[#0d1117]">
-                0n
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-base font-medium text-[#e6edf3]">Your Company</p>
-                <p className="truncate text-xs text-[#8b949e]">yourcompany.com</p>
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-4 gap-2">
-              {SWATCHES.map((s) => (
-                <div key={s.name} className="rounded-lg border border-[#30363d] p-2">
-                  <div className={`h-12 w-full rounded ${s.cls}`} />
-                  <p className="mt-2 truncate text-xs text-[#c9d1d9]">{s.name}</p>
-                  <p className="truncate font-mono text-xs text-[#8b949e]">{s.hex}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <div className="rounded-lg border border-[#30363d] p-4">
-                <FileType2 className="h-4 w-4 text-[#8b949e]" />
-                <p className="mt-2 text-2xl font-semibold leading-none text-[#e6edf3]">Aa</p>
-                <p className="mt-1 text-xs text-[#8b949e]">Headings</p>
-              </div>
-              <div className="rounded-lg border border-[#30363d] p-4">
-                <Palette className="h-4 w-4 text-[#8b949e]" />
-                <p className="mt-2 text-sm text-[#c9d1d9]">Logo · 6 variants</p>
-                <p className="mt-1 text-xs text-[#8b949e]">SVG, PNG, mono</p>
-              </div>
-            </div>
-          </div>
-        </section>
+        <Hero />
 
         {/* The walkthrough. Poster-first so the hero paints before 20 MB does. */}
         <section className="py-8">
@@ -285,13 +211,13 @@ export default function HomePage() {
         <section className="rounded-xl border border-[#30363d] bg-[#161b22] p-6 md:p-8">
           <p className="text-xs text-[#6EE05A]">The part that sounds made up</p>
           <h2 className="mt-3 max-w-3xl text-xl font-semibold text-[#e6edf3]">
-            Open a brand-new app and it is already yours.
+            One account. Every tool already knows you.
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#c9d1d9]">
-            Not a theme you pick afterwards. Not a logo you upload again. You open it and your
-            colours are already there, your logo is already in the corner, and your company details
-            are already filled in — because it read them from your 0nCore profile before the page
-            rendered.
+            Not a second signup. Not another password. You open any tool in the stack and it is
+            already yours — your clients, your brand, your connected apps — because it read them
+            from your 0nCore account before the page rendered. Build a site, schedule a month of
+            social, hand a task to an agent: same login, same clients, no re-setup anywhere.
           </p>
           <p className="mt-4 text-sm text-[#8b949e]">
             Works across{' '}
