@@ -7,6 +7,7 @@ import {
   CheckCircle2, Circle, Receipt, Settings2, ExternalLink,
 } from 'lucide-react'
 import { useSso, authHeaders } from './useSso'
+import AppSidebar from './AppSidebar'
 
 /**
  * The welcome page — what an agency owner sees first.
@@ -103,12 +104,15 @@ export default function WelcomePage() {
             {boot?.agency.name ?? sso.user?.name ?? 'Agency Command'}
           </div>
         </div>
-        <Link href="/" className="oc-chip ml-auto inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-white px-2.5 py-1.5 text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]">
+        {/* Only below lg, where the sidebar is hidden — above it the nav
+            already offers this and two entry points is one too many. */}
+        <Link href="/" className="oc-chip ml-auto inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-white px-2.5 py-1.5 text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)] lg:hidden">
           <Terminal className="h-3.5 w-3.5" /> Command centre
         </Link>
       </header>
 
-      <main className="mx-auto max-w-5xl p-4 sm:p-6">
+      <div className="flex">
+      <main className="mx-auto min-w-0 max-w-4xl flex-1 p-4 sm:p-6">
         <h1 className="text-[26px] font-bold leading-tight text-[color:var(--oc-ink)] sm:text-[30px]">
           {greeting()}{sso.user?.name ? `, ${sso.user.name.split(' ')[0]}` : ''}.
         </h1>
@@ -237,6 +241,14 @@ export default function WelcomePage() {
           Soon you will be able to pick which of these opens first, from your 0n profile.
         </p>
       </main>
+
+      <AppSidebar
+        current="home"
+        activeCount={clients}
+        totalCount={clients}
+        usageLabel={boot?.usage.mtdLabel ?? '$0'}
+      />
+      </div>
     </div>
   )
 }
