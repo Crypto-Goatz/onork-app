@@ -276,6 +276,39 @@ export async function crmPostRaw(path: string, locationId: string, body: Record<
   return authedFetch(`${CRM_API}${path}`, { method: 'POST', body: JSON.stringify(body) }, auth)
 }
 
+/**
+ * Add a contact to an EXISTING workflow.
+ *
+ * THE MISSING LINK BETWEEN "DEPLOYED" AND "DYNAMIC". Native workflows cannot be
+ * created or edited through the API — workflows-v3 exposes exactly one path,
+ * GET /workflows/. But a contact CAN be enrolled into one, and that is what
+ * makes a snapshot-shipped workflow feel like something we built on demand:
+ * the workflow arrives with the client, and we decide who enters it and when.
+ *
+ * Needs only contacts.write, which every location token already carries.
+ */
+export async function enrollInWorkflow(
+  locationId: string,
+  contactId: string,
+  workflowId: string,
+  eventStartTime?: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await crmPostRaw(
+      `/contacts/${encodeURIComponent(contactId)}/workflow/${encodeURIComponent(workflowId)}`,
+      locationId,
+      eventStartTime ? { eventStartTime } : {},
+    )
+    if (!res.ok) {
+      const t = await res.text().catch(() => '')
+      return { ok: false, error: `Could not start that workflow (${res.status}). ${t.slice(0, 140)}` }
+    }
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Could not start that workflow.' }
+  }
+}
+
 /** PATCH with the body exactly as given — see crmPostRaw for why. */
 export async function crmPatchRaw(path: string, locationId: string, body: Record<string, unknown>): Promise<Response> {
   const auth = await getAuthForLocation(locationId)

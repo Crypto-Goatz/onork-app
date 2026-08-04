@@ -109,6 +109,8 @@ export const WIDGETS: Widget[] = [
       { key: 'heading', label: 'Heading', type: 'text', placeholder: 'Get in touch' },
       { key: 'tag', label: 'Tag new leads with', type: 'text', placeholder: 'website-lead' },
       { key: 'button', label: 'Button text', type: 'text', placeholder: 'Send' },
+      // The workflow is picked, not authored — it ships in the snapshot.
+      { key: 'workflowId', label: 'Start this workflow on submit', type: 'text' },
     ],
     live: true,
   },

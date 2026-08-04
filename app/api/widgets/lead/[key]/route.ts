@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { widget } from '@/lib/widgets/registry'
-import { crmPost, crmPostRaw } from '@/lib/crm'
+import { crmPost, crmPostRaw, enrollInWorkflow } from '@/lib/crm'
 
 /**
  * POST /api/widgets/lead/:key — a submission from a widget on a public page.
@@ -103,9 +103,20 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ key: strin
     const json = (await res.json().catch(() => ({}))) as { contact?: { id?: string } }
     const contactId = json.contact?.id ?? null
 
-    const tag = str((cfg.config as Record<string, string>)?.tag, 60)
+    const settings = (cfg.config ?? {}) as Record<string, string>
+    const tag = str(settings.tag, 60)
     if (contactId && tag) {
       await crmPostRaw(`/contacts/${contactId}/tags`, locationId, { tags: [tag] }).catch(() => {})
+    }
+
+    // "…and a form that goes to a thank-you workflow." The workflow itself
+    // ships in the snapshot — we cannot author one — but enrolling the new
+    // contact is a documented call, and that is the half that makes it feel
+    // built to order.
+    const workflowId = str(settings.workflowId, 64)
+    if (contactId && workflowId) {
+      const enrolled = await enrollInWorkflow(locationId, contactId, workflowId)
+      if (!enrolled.ok) console.warn(`[widgets/lead] enrol failed: ${enrolled.error}`)
     }
     if (lead?.id) await sb.from('widget_leads').update({ status: 'delivered', crm_contact_id: contactId }).eq('id', lead.id)
     return NextResponse.json({ ok: true }, { headers: CORS })
