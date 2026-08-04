@@ -7,6 +7,7 @@ import {
   PanelRightClose, PanelRightOpen, Building2,
 } from 'lucide-react'
 import { METERS, formatPrice } from '@/lib/meters'
+import { useSso, authHeaders } from './useSso'
 
 /**
  * The 0nCORE marketplace dashboard — the agency's command surface.
@@ -42,6 +43,10 @@ interface Boot {
   usage: { mtdLabel: string; byMeter: { key: string; label: string; count: number; costCents: number }[] }
   stats: { burstsToday: number; provisionedThisWeek: number; openTasks: number; flowsActive: number; growSignals: number }
   needs?: string
+  /** Present once SSO succeeded, even when no install is connected yet. */
+  session?: { companyId: string; email: string | null; role: string | null }
+  /** A read that failed — distinct from "you have none". */
+  warning?: string
 }
 
 interface PlanLeg {
@@ -70,9 +75,22 @@ export default function AgencyDashboard() {
   const [legs, setLegs] = useState<PlanLeg[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
+  const sso = useSso()
+
+  // Bootstrap waits for the handshake to SETTLE, not to succeed. Fetching at
+  // mount would fire an anonymous call and paint "not connected" a beat before
+  // the token arrives — the shell would visibly change its mind in front of the
+  // user. Every settled state (authed, standalone, rejected) fetches exactly
+  // once, and the token is simply absent for the ones without a session.
   useEffect(() => {
-    fetch('/api/bootstrap').then((r) => r.json()).then(setBoot).catch(() => setBoot(null))
-  }, [])
+    if (sso.state === 'pending') return
+    let live = true
+    fetch('/api/bootstrap', { headers: authHeaders(sso.token) })
+      .then((r) => r.json())
+      .then((j) => { if (live) setBoot(j) })
+      .catch(() => { if (live) setBoot(null) })
+    return () => { live = false }
+  }, [sso.state, sso.token])
 
   const TILES = useMemo(() => ([
     { id: 'command' as TileId, icon: Terminal, name: 'Command Chat', desc: 'One sentence, every client. It plans and prices before anything runs.', stat: `${boot?.stats.burstsToday ?? 0} bursts today`, ready: true },
@@ -90,7 +108,7 @@ export default function AgencyDashboard() {
     try {
       const r = await fetch('/api/burst/plan', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders(sso.token) },
         body: JSON.stringify({ command: q, activeLocationId: activeLocation === 'all' ? null : activeLocation }),
       })
       const j = await r.json().catch(() => ({}))
@@ -106,6 +124,18 @@ export default function AgencyDashboard() {
   const blocked = (legs ?? []).filter((l) => l.blocked).length
   const locCount = new Set((legs ?? []).map((l) => l.location).filter(Boolean)).size
 
+  /**
+   * Four states, not two. "Not connected" used to cover being mid-handshake,
+   * being signed in with nothing installed, and having the sign-in refused —
+   * three problems with three different fixes, all wearing the same amber dot.
+   */
+  const conn: { dot: string; label: string } =
+    sso.state === 'pending' ? { dot: 'bg-[color:var(--oc-text)]/30', label: 'connecting' }
+    : boot?.connected ? { dot: 'bg-[color:var(--oc-green-d)]', label: 'live' }
+    : sso.state === 'rejected' ? { dot: 'bg-[color:var(--oc-red)]', label: 'sign-in failed' }
+    : boot?.session ? { dot: 'bg-[color:var(--oc-amber)]', label: 'not installed' }
+    : { dot: 'bg-[color:var(--oc-amber)]', label: 'not connected' }
+
   return (
     <div className="oncore-app min-h-screen">
       {/* ── HEADER ── */}
@@ -116,7 +146,7 @@ export default function AgencyDashboard() {
         <div className="min-w-0">
           <div className="text-[15px] font-bold leading-none text-[color:var(--oc-ink)]">0nCORE</div>
           <div className="truncate text-[11px] text-[color:var(--oc-text)]/70">
-            {boot?.agency.name ?? 'Agency Command'}
+            {boot?.agency.name ?? sso.user?.name ?? 'Agency Command'}
           </div>
         </div>
 
@@ -125,8 +155,8 @@ export default function AgencyDashboard() {
             {boot?.usage.mtdLabel ?? '$0'} MTD
           </span>
           <span className="oc-chip inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-white px-2.5 py-1.5">
-            <span className={`h-1.5 w-1.5 rounded-full ${boot?.connected ? 'bg-[color:var(--oc-green-d)]' : 'bg-[color:var(--oc-amber)]'}`} />
-            <span className="text-[color:var(--oc-text)]">{boot?.connected ? 'live' : 'not connected'}</span>
+            <span className={`h-1.5 w-1.5 rounded-full ${conn.dot}`} />
+            <span className="text-[color:var(--oc-text)]">{conn.label}</span>
           </span>
           <button
             type="button"
@@ -176,7 +206,14 @@ export default function AgencyDashboard() {
           ) : (
             <div className="rounded-[12px] border border-dashed border-[color:var(--oc-border)] px-3 py-4 text-[12px] leading-relaxed text-[color:var(--oc-text)]/70">
               <Building2 className="mb-1.5 h-4 w-4 text-[color:var(--oc-text)]/40" />
-              No clients switched on yet. They appear here once 0nCORE is installed on your agency.
+              {/* A failed READ and an empty LIST are different facts. Saying
+                  "no clients yet" when the CRM call actually errored would send
+                  someone hunting for a problem that isn't there. */}
+              {boot?.warning
+                ? boot.warning
+                : boot?.needs
+                  ? boot.needs
+                  : 'No clients switched on yet. They appear here once 0nCORE is installed on your agency.'}
             </div>
           )}
         </aside>

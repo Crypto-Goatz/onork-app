@@ -43,13 +43,20 @@ interface AgencyInstallRow {
   status: string | null
 }
 
-async function readAgencyInstall(): Promise<AgencyInstallRow | null> {
+async function readAgencyInstall(companyId?: string): Promise<AgencyInstallRow | null> {
   const sb = admin()
-  const { data } = await sb
+  let q = sb
     .from('crm_installations')
     .select('id, access_token, refresh_token, expires_at, company_id, scopes, status')
     .eq('app_id', AGENCY_APP_ID)
     .or('location_id.is.null,location_id.eq.')
+
+  // Scoping to the asking agency is what makes this safe with more than one
+  // install. Without it the newest row wins, which is harmless while we are the
+  // only install and is a cross-tenant token hand-off the day we are not.
+  if (companyId) q = q.eq('company_id', companyId)
+
+  const { data } = await q
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle<AgencyInstallRow>()
@@ -141,17 +148,19 @@ async function refreshAgencyToken(install: AgencyInstallRow): Promise<string | n
  * the cached one expired. Returns null if no install exists OR refresh
  * has permanently failed.
  */
-export async function getValidAgencyToken(): Promise<{
+export async function getValidAgencyToken(companyId?: string): Promise<{
   token: string | null
   companyId: string | null
   error?: string
 }> {
-  const install = await readAgencyInstall()
+  const install = await readAgencyInstall(companyId)
   if (!install) {
     return {
       token: null,
-      companyId: null,
-      error: 'No agency-level marketplace install found. Install the agency app once at /api/oauth/install.',
+      companyId: companyId ?? null,
+      error: companyId
+        ? 'This agency has not connected 0nCORE yet.'
+        : 'No agency-level marketplace install found. Install the agency app once at /api/oauth/install.',
     }
   }
 
