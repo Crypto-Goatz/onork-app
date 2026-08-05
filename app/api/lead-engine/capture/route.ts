@@ -59,13 +59,33 @@ export async function POST(req: NextRequest) {
   const hook = str(body?.hook, 400)
   const address = str(body?.address, 200)
   const website = str(body?.website, 300)
+
+  /**
+   * LinkedIn leads arrive with a different shape and, crucially, often with
+   * NEITHER a phone nor an email — a profile URL is the only identifier. That
+   * is still a lead worth having, so the contact requirement is relaxed when a
+   * profile URL is present and the URL becomes the dedupe key.
+   *
+   * Without this, every LinkedIn prospect would be rejected at the door.
+   */
+  const profileUrl = str(body?.profileUrl, 300)
+  const headline = str(body?.headline, 300)
+  const company = str(body?.company, 160)
+  const source = str(body?.source, 40) || 'browse'
+
   if (!name) return NextResponse.json({ ok: false, error: 'A business needs a name.' }, { status: 400, headers: CORS })
-  if (!phone && !email) return NextResponse.json({ ok: false, error: 'Need a phone or an email.' }, { status: 400, headers: CORS })
+  if (!phone && !email && !profileUrl) {
+    return NextResponse.json({ ok: false, error: 'Need a phone, an email or a profile URL.' }, { status: 400, headers: CORS })
+  }
 
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
 
   // ── dedupe, cheapest check first ──
-  const key = phone ? `p:${digits(phone)}` : `e:${email.toLowerCase()}`
+  // Phone, then email, then the profile URL — strongest natural key first.
+  // A LinkedIn slug is stable and unique, which makes it a good last resort.
+  const key = phone ? `p:${digits(phone)}`
+    : email ? `e:${email.toLowerCase()}`
+    : `li:${profileUrl.toLowerCase().replace(/\/+$/, '').split('/in/').pop()}`
   const { data: seen } = await sb.from('lead_engine_seen').select('crm_contact_id').eq('dedupe_key', key).maybeSingle()
   if (seen) {
     return NextResponse.json({ ok: true, duplicate: true, reason: 'Already in the pipeline.', contactId: seen.crm_contact_id }, { headers: CORS })
@@ -73,7 +93,7 @@ export async function POST(req: NextRequest) {
 
   // Second pass against the CRM itself — our table only knows what WE added,
   // and a prospect Mike added by hand months ago is still a duplicate.
-  const q = phone || email
+  const q = phone || email || name
   const found = await crmGet(`/contacts/?query=${encodeURIComponent(q)}&limit=5`, locationId).catch(() => null)
   if (found?.ok) {
     const j = (await found.json().catch(() => ({}))) as { contacts?: { id: string; phone?: string; email?: string }[] }
@@ -94,9 +114,14 @@ export async function POST(req: NextRequest) {
     ...(email ? { email } : {}),
     ...(phone ? { phone } : {}),
     ...(address ? { address1: address } : {}),
-    ...(website ? { website } : {}),
+    ...(website || profileUrl ? { website: website || profileUrl } : {}),
+    ...(company ? { companyName: company } : {}),
     source: '0nCORE Lead Engine',
-    tags: ['website-prospect', 'daily-scan'],
+    // The source tag is what lets the 7-touch cadence branch: a LinkedIn
+    // prospect and a no-website local business need different opening lines.
+    tags: source === 'linkedin'
+      ? ['linkedin-prospect', 'daily-scan']
+      : ['website-prospect', 'daily-scan'],
   })
   if (!res.ok) {
     const t = await res.text().catch(() => '')
@@ -107,7 +132,12 @@ export async function POST(req: NextRequest) {
   // ── the note, starting with the source URL as specified ──
   if (contactId && sourceUrl) {
     await crmPostRaw(`/contacts/${contactId}/notes`, locationId, {
-      body: `Source URL: ${sourceUrl}\n\n${hook || 'No website found for this business.'}`,
+      body: [
+        `Source URL: ${sourceUrl || profileUrl}`,
+        headline ? `\nHeadline: ${headline}` : '',
+        company ? `\nCompany: ${company}` : '',
+        `\n\n${hook || (source === 'linkedin' ? 'Captured from LinkedIn.' : 'No website found for this business.')}`,
+      ].join(''),
     }).catch(() => {})
   }
 
