@@ -1,0 +1,97 @@
+{
+  "basePriceMonthly": 0,
+  "baseValueMonthly": 155,
+  "annualDiscountPct": 15,
+  "addons": [
+    {
+      "name": "Funnels & Landing Pages",
+      "blurb": "Drag-and-drop builder, templates, A/B testing",
+      "priceMonthly": 55,
+      "category": "Websites"
+    },
+    {
+      "name": "Email Marketing",
+      "blurb": "Campaigns, templates, sequences, analytics",
+      "priceMonthly": 40,
+      "category": "Marketing"
+    },
+    {
+      "name": "SMS & Text Marketing",
+      "blurb": "Two-way texting, bulk SMS, compliance tools",
+      "priceMonthly": 50,
+      "category": "Marketing"
+    },
+    {
+      "name": "Unified Inbox",
+      "blurb": "All conversations in one place - SMS, email, FB, IG",
+      "priceMonthly": 40,
+      "category": "CRM"
+    },
+    {
+      "name": "Social Media Manager",
+      "blurb": "Schedule posts, manage accounts, track engagement",
+      "priceMonthly": 45,
+      "category": "Marketing"
+    },
+    {
+      "name": "Reputation Management",
+      "blurb": "Review requests, monitoring, Google & Facebook",
+      "priceMonthly": 35,
+      "category": "Marketing"
+    },
+    {
+      "name": "Sales Pipeline",
+      "blurb": "Visual pipelines, deal tracking, opportunities",
+      "priceMonthly": 45,
+      "category": "CRM"
+    },
+    {
+      "name": "Workflow Automation",
+      "blurb": "Visual builder, triggers, multi-step campaigns",
+      "priceMonthly": 65,
+      "category": "Automation"
+    },
+    {
+      "name": "Smart Triggers",
+      "blurb": "Event-based automation, webhooks, integrations",
+      "priceMonthly": 40,
+      "category": "Automation"
+    },
+    {
+      "name": "Payments & Invoicing",
+      "blurb": "Accept payments, subscriptions, payment plans",
+      "priceMonthly": 45,
+      "category": "Commerce"
+    },
+    {
+      "name": "E-commerce & Products",
+      "blurb": "Product catalog, order management, cart",
+      "priceMonthly": 50,
+      "category": "Commerce"
+    },
+    {
+      "name": "Membership & Courses",
+      "blurb": "Course builder, membership areas, drip content",
+      "priceMonthly": 55,
+      "category": "Content"
+    },
+    {
+      "name": "Communities",
+      "blurb": "Build community spaces, discussions, engagement",
+      "priceMonthly": 40,
+      "category": "Content"
+    },
+    {
+      "name": "Call Tracking",
+      "blurb": "Track calls, recordings, analytics, attribution",
+      "priceMonthly": 45,
+      "category": "Analytics"
+    },
+    {
+      "name": "Rocket+ AI Mods",
+      "blurb": "Full AI suite: RocketFlow, Content AI, APEX & more",
+      "priceMonthly": 99,
+      "category": "AI"
+    }
+  ]
+}
