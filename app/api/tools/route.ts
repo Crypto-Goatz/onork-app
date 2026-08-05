@@ -6,6 +6,7 @@ import { WORKFLOW_ACTIONS } from '@/lib/crm/actions'
 import { TRIGGERS } from '@/lib/crm/triggers'
 import { IMPLEMENTED } from '@/lib/burst/executor'
 import { meterIdFor } from '@/lib/crm/wallet'
+import dashboardInventory from '@/lib/tools/dashboard-inventory.json'
 
 /**
  * GET /api/tools — every feature 0nCORE has, and whether it actually works.
@@ -31,6 +32,10 @@ export interface Tool {
   group: string
   what: string
   state: ToolState
+  /** Which API it talks to, and at what version — 'none' for pure UI. */
+  api?: string
+  /** External surfaces open in a new tab. */
+  external?: boolean
   /** Why it cannot run — shown when someone clicks a blocked tool. */
   reason?: string
   fix?: string
@@ -118,6 +123,31 @@ export async function GET(req: NextRequest) {
     tools.push({ ...s, group: 'Screens', state: 'ready' })
   }
 
+  // ── the customer portal on www, scanned from the code ──
+  // Derived by scripts/scan-tools.mjs: what each screen calls, and whether
+  // those endpoints exist. It proves wiring, not correctness — so a 'ready'
+  // here means "nothing is obviously missing", which the UI says plainly.
+  for (const d of dashboardInventory as {
+    key: string; name: string; href: string; api: string
+    state: 'ready' | 'partial' | 'broken'; reason?: string; missing: string[]
+  }[]) {
+    const state: ToolState = d.state === 'broken' ? 'blocked' : d.state === 'partial' ? 'building' : 'ready'
+    tools.push({
+      key: d.key,
+      name: d.name,
+      group: 'Customer portal',
+      what: describePortal(d.name),
+      state,
+      api: d.api,
+      external: true,
+      href: d.href,
+      reason: d.reason,
+      fix: d.missing?.length
+        ? `Build the missing endpoint${d.missing.length === 1 ? '' : 's'}: ${d.missing.slice(0, 4).join(', ')}`
+        : undefined,
+    })
+  }
+
   const counts = {
     ready: tools.filter((t) => t.state === 'ready').length,
     blocked: tools.filter((t) => t.state === 'blocked').length,
@@ -127,3 +157,48 @@ export async function GET(req: NextRequest) {
 }
 
 const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+/**
+ * A sentence per portal screen. Written rather than generated, because
+ * "Cro9 Engine" tells a reader nothing and a tile without meaning is a tile
+ * nobody clicks. Anything unnamed falls back to something honest.
+ */
+const PORTAL_COPY: Record<string, string> = {
+  'Ai': 'The AI console — prompts, models and what the assistant is allowed to do.',
+  'Analytics': 'Traffic, conversion and AI-visibility numbers for your sites.',
+  'Automations': 'Your automation library and what each one is currently doing.',
+  'Billing': 'Plan, invoices and what you have been charged for.',
+  'Blog': 'Write and publish posts, with AI drafting.',
+  'Brand': 'Logos, colours and voice — the details everything else inherits.',
+  'Calendar': 'Appointments and availability across connected calendars.',
+  'Campaigns': 'Outbound campaigns and how each is performing.',
+  'Capabilities': 'Every action the platform can take on your behalf.',
+  'Chat': 'Talk to the assistant and have it do the work.',
+  'Command': 'One instruction, executed across everything connected.',
+  'Config': 'System settings — phone numbers, senders and integrations.',
+  'Connections': 'Every service you have linked, and its health.',
+  'Contacts': 'People and companies, with everything known about them.',
+  'Conversation Ai': 'The chat agent that answers on your behalf.',
+  'Course Builder': 'Turn material into a structured course.',
+  'Courses': 'Courses you have published and who is taking them.',
+  'Crm': 'The CRM surface — contacts, pipeline, conversations.',
+  'Cro9 Engine': 'The conversion engine that tests and improves your pages.',
+  'Documents': 'Contracts and documents, sent and signed.',
+  'Domains': 'Domains, DNS and which site each points at.',
+  'Email': 'Send email and see what happened to it.',
+  'Enrich': 'Fill in what you do not know about a contact.',
+  'Files': 'Everything uploaded, in one place.',
+  'Flows': 'Build and edit multi-step flows.',
+  'Forms': 'Forms and the submissions they collect.',
+  'Freelancer': 'The freelancer workspace.',
+  'Funnels': 'Funnels and how each step converts.',
+  'Hipaa': 'HIPAA readiness scanning and reporting.',
+  'Installs': 'Apps installed, and where.',
+  'Integrations': 'Connect a service and see what it unlocks.',
+  'Invoices': 'Raise invoices and track payment.',
+  'Landing Pages': 'Build and publish landing pages.',
+  'Lead Magnets': 'Offers that capture leads, and their results.',
+}
+function describePortal(name: string): string {
+  return PORTAL_COPY[name] ?? `The ${name.toLowerCase()} screen in your 0nCORE portal.`
+}
