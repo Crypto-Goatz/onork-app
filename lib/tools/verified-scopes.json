@@ -1,0 +1,379 @@
+{
+  "total": 142,
+  "scopes": [
+    "agent-studio.readonly",
+    "agent-studio.write",
+    "associations.readonly",
+    "associations.write",
+    "associations/relation.readonly",
+    "associations/relation.write",
+    "blogs/author.readonly",
+    "blogs/category.readonly",
+    "blogs/check-slug.readonly",
+    "blogs/list.readonly",
+    "blogs/post-update.write",
+    "blogs/post.write",
+    "blogs/posts.readonly",
+    "brand-boards/design-kit.readonly",
+    "brand-boards/design-kit.write",
+    "businesses.readonly",
+    "businesses.write",
+    "calendars.readonly",
+    "calendars.write",
+    "calendars/events.readonly",
+    "calendars/events.write",
+    "calendars/groups.readonly",
+    "calendars/groups.write",
+    "calendars/resources.readonly",
+    "calendars/resources.write",
+    "campaigns.readonly",
+    "charges.readonly",
+    "charges.write",
+    "contacts.readonly",
+    "contacts.write",
+    "conversation-ai.readonly",
+    "conversation-ai.write",
+    "conversations.readonly",
+    "conversations.write",
+    "conversations/livechat.write",
+    "conversations/message.readonly",
+    "conversations/message.write",
+    "conversations/reports.readonly",
+    "courses.readonly",
+    "courses.write",
+    "documents_contracts/list.readonly",
+    "documents_contracts/sendLink.write",
+    "documents_contracts_template/list.readonly",
+    "documents_contracts_template/sendLink.write",
+    "emails/builder.readonly",
+    "emails/builder.write",
+    "emails/schedule.readonly",
+    "emails/schedule.write",
+    "forms.readonly",
+    "forms.write",
+    "funnels/funnel.readonly",
+    "funnels/page.readonly",
+    "funnels/pagecount.readonly",
+    "funnels/redirect.readonly",
+    "funnels/redirect.write",
+    "invoices.readonly",
+    "invoices.write",
+    "invoices/estimate.readonly",
+    "invoices/estimate.write",
+    "invoices/schedule.readonly",
+    "invoices/schedule.write",
+    "invoices/template.readonly",
+    "invoices/template.write",
+    "knowledge-bases.readonly",
+    "knowledge-bases.write",
+    "lc-email.readonly",
+    "links.readonly",
+    "links.write",
+    "locations.readonly",
+    "locations/customFields.readonly",
+    "locations/customFields.write",
+    "locations/customValues.readonly",
+    "locations/customValues.write",
+    "locations/tags.readonly",
+    "locations/tags.write",
+    "locations/tasks.readonly",
+    "locations/tasks.write",
+    "locations/templates.readonly",
+    "marketplace-external-auth-migration.write",
+    "marketplace-installer-details.readonly",
+    "medias.readonly",
+    "medias.write",
+    "numberpools.read",
+    "oauth.readonly",
+    "oauth.write",
+    "objects/record.readonly",
+    "objects/record.write",
+    "objects/schema.readonly",
+    "objects/schema.write",
+    "opportunities.readonly",
+    "opportunities.write",
+    "payments/coupons.readonly",
+    "payments/coupons.write",
+    "payments/custom-provider.readonly",
+    "payments/custom-provider.write",
+    "payments/integration.readonly",
+    "payments/integration.write",
+    "payments/orders.collectPayment",
+    "payments/orders.readonly",
+    "payments/orders.write",
+    "payments/subscriptions.readonly",
+    "payments/transactions.readonly",
+    "phonenumbers.read",
+    "phonenumbers.write",
+    "products.readonly",
+    "products.write",
+    "products/collection.readonly",
+    "products/collection.write",
+    "products/prices.readonly",
+    "products/prices.write",
+    "recurring-tasks.readonly",
+    "recurring-tasks.write",
+    "saas/location.read",
+    "saas/location.write",
+    "socialplanner/account.readonly",
+    "socialplanner/account.write",
+    "socialplanner/category.readonly",
+    "socialplanner/category.write",
+    "socialplanner/csv.readonly",
+    "socialplanner/csv.write",
+    "socialplanner/oauth.readonly",
+    "socialplanner/oauth.write",
+    "socialplanner/post.readonly",
+    "socialplanner/post.write",
+    "socialplanner/statistics.readonly",
+    "socialplanner/tag.readonly",
+    "socialplanner/tag.write",
+    "store/setting.readonly",
+    "store/setting.write",
+    "store/shipping.readonly",
+    "store/shipping.write",
+    "surveys.readonly",
+    "twilioaccount.read",
+    "users.readonly",
+    "users.write",
+    "voice-ai-agent-goals.readonly",
+    "voice-ai-agent-goals.write",
+    "voice-ai-agents.readonly",
+    "voice-ai-agents.write",
+    "voice-ai-dashboard.readonly",
+    "wordpress.site.readonly",
+    "workflows.readonly"
+  ],
+  "grouped": {
+    "agent-studio": [
+      "agent-studio.readonly",
+      "agent-studio.write"
+    ],
+    "associations": [
+      "associations.readonly",
+      "associations.write",
+      "associations/relation.readonly",
+      "associations/relation.write"
+    ],
+    "blogs": [
+      "blogs/author.readonly",
+      "blogs/category.readonly",
+      "blogs/check-slug.readonly",
+      "blogs/list.readonly",
+      "blogs/post-update.write",
+      "blogs/post.write",
+      "blogs/posts.readonly"
+    ],
+    "brand-boards": [
+      "brand-boards/design-kit.readonly",
+      "brand-boards/design-kit.write"
+    ],
+    "businesses": [
+      "businesses.readonly",
+      "businesses.write"
+    ],
+    "calendars": [
+      "calendars.readonly",
+      "calendars.write",
+      "calendars/events.readonly",
+      "calendars/events.write",
+      "calendars/groups.readonly",
+      "calendars/groups.write",
+      "calendars/resources.readonly",
+      "calendars/resources.write"
+    ],
+    "campaigns": [
+      "campaigns.readonly"
+    ],
+    "charges": [
+      "charges.readonly",
+      "charges.write"
+    ],
+    "contacts": [
+      "contacts.readonly",
+      "contacts.write"
+    ],
+    "conversation-ai": [
+      "conversation-ai.readonly",
+      "conversation-ai.write"
+    ],
+    "conversations": [
+      "conversations.readonly",
+      "conversations.write",
+      "conversations/livechat.write",
+      "conversations/message.readonly",
+      "conversations/message.write",
+      "conversations/reports.readonly"
+    ],
+    "courses": [
+      "courses.readonly",
+      "courses.write"
+    ],
+    "documents_contracts": [
+      "documents_contracts/list.readonly",
+      "documents_contracts/sendLink.write"
+    ],
+    "documents_contracts_template": [
+      "documents_contracts_template/list.readonly",
+      "documents_contracts_template/sendLink.write"
+    ],
+    "emails": [
+      "emails/builder.readonly",
+      "emails/builder.write",
+      "emails/schedule.readonly",
+      "emails/schedule.write"
+    ],
+    "forms": [
+      "forms.readonly",
+      "forms.write"
+    ],
+    "funnels": [
+      "funnels/funnel.readonly",
+      "funnels/page.readonly",
+      "funnels/pagecount.readonly",
+      "funnels/redirect.readonly",
+      "funnels/redirect.write"
+    ],
+    "invoices": [
+      "invoices.readonly",
+      "invoices.write",
+      "invoices/estimate.readonly",
+      "invoices/estimate.write",
+      "invoices/schedule.readonly",
+      "invoices/schedule.write",
+      "invoices/template.readonly",
+      "invoices/template.write"
+    ],
+    "knowledge-bases": [
+      "knowledge-bases.readonly",
+      "knowledge-bases.write"
+    ],
+    "lc-email": [
+      "lc-email.readonly"
+    ],
+    "links": [
+      "links.readonly",
+      "links.write"
+    ],
+    "locations": [
+      "locations.readonly",
+      "locations/customFields.readonly",
+      "locations/customFields.write",
+      "locations/customValues.readonly",
+      "locations/customValues.write",
+      "locations/tags.readonly",
+      "locations/tags.write",
+      "locations/tasks.readonly",
+      "locations/tasks.write",
+      "locations/templates.readonly"
+    ],
+    "marketplace-external-auth-migration": [
+      "marketplace-external-auth-migration.write"
+    ],
+    "marketplace-installer-details": [
+      "marketplace-installer-details.readonly"
+    ],
+    "medias": [
+      "medias.readonly",
+      "medias.write"
+    ],
+    "numberpools": [
+      "numberpools.read"
+    ],
+    "oauth": [
+      "oauth.readonly",
+      "oauth.write"
+    ],
+    "objects": [
+      "objects/record.readonly",
+      "objects/record.write",
+      "objects/schema.readonly",
+      "objects/schema.write"
+    ],
+    "opportunities": [
+      "opportunities.readonly",
+      "opportunities.write"
+    ],
+    "payments": [
+      "payments/coupons.readonly",
+      "payments/coupons.write",
+      "payments/custom-provider.readonly",
+      "payments/custom-provider.write",
+      "payments/integration.readonly",
+      "payments/integration.write",
+      "payments/orders.collectPayment",
+      "payments/orders.readonly",
+      "payments/orders.write",
+      "payments/subscriptions.readonly",
+      "payments/transactions.readonly"
+    ],
+    "phonenumbers": [
+      "phonenumbers.read",
+      "phonenumbers.write"
+    ],
+    "products": [
+      "products.readonly",
+      "products.write",
+      "products/collection.readonly",
+      "products/collection.write",
+      "products/prices.readonly",
+      "products/prices.write"
+    ],
+    "recurring-tasks": [
+      "recurring-tasks.readonly",
+      "recurring-tasks.write"
+    ],
+    "saas": [
+      "saas/location.read",
+      "saas/location.write"
+    ],
+    "socialplanner": [
+      "socialplanner/account.readonly",
+      "socialplanner/account.write",
+      "socialplanner/category.readonly",
+      "socialplanner/category.write",
+      "socialplanner/csv.readonly",
+      "socialplanner/csv.write",
+      "socialplanner/oauth.readonly",
+      "socialplanner/oauth.write",
+      "socialplanner/post.readonly",
+      "socialplanner/post.write",
+      "socialplanner/statistics.readonly",
+      "socialplanner/tag.readonly",
+      "socialplanner/tag.write"
+    ],
+    "store": [
+      "store/setting.readonly",
+      "store/setting.write",
+      "store/shipping.readonly",
+      "store/shipping.write"
+    ],
+    "surveys": [
+      "surveys.readonly"
+    ],
+    "twilioaccount": [
+      "twilioaccount.read"
+    ],
+    "users": [
+      "users.readonly",
+      "users.write"
+    ],
+    "voice-ai-agent-goals": [
+      "voice-ai-agent-goals.readonly",
+      "voice-ai-agent-goals.write"
+    ],
+    "voice-ai-agents": [
+      "voice-ai-agents.readonly",
+      "voice-ai-agents.write"
+    ],
+    "voice-ai-dashboard": [
+      "voice-ai-dashboard.readonly"
+    ],
+    "wordpress": [
+      "wordpress.site.readonly"
+    ],
+    "workflows": [
+      "workflows.readonly"
+    ]
+  }
+}
