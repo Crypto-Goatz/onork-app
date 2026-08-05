@@ -40,7 +40,10 @@ export async function middleware(request: NextRequest) {
     const p = request.nextUrl.pathname
     // /api and Next internals pass through untouched — the SSO handshake and
     // every data call must behave identically on both hosts.
-    if (!p.startsWith('/api') && !p.startsWith('/_next') && !p.startsWith('/crm')) {
+    // /portal is for MEMBERS — the agency's customers — not the agency
+    // dashboard, so it must not be rewritten into /crm. It is the one public
+    // surface on this host.
+    if (!p.startsWith('/api') && !p.startsWith('/_next') && !p.startsWith('/crm') && !p.startsWith('/portal') && !p.startsWith('/widgets')) {
       const url = request.nextUrl.clone()
       url.pathname = p === '/' ? '/crm' : `/crm${p}`
       return NextResponse.rewrite(url)
