@@ -2,6 +2,10 @@ import { crmGet, crmPost, crmPostRaw, crmPut } from '@/lib/crm'
 import { getValidAgencyToken } from '@/lib/crm/agency-token'
 import { capability, tokenAudienceFor, assertExecutable, legPriceCents } from '@/lib/crm/registry'
 import { canRun, settle } from '@/lib/billing/gate'
+import { publishAsBlogPost, resolveBlogTargets, slugify } from '@/lib/crm/blog'
+import { createProduct, createCollection, provisionStore, STORE_BLAST_RADIUS, type SourceProduct } from '@/lib/crm/store'
+import { renderPage } from '@/lib/render'
+
 
 /**
  * The executor — the only code in 0nCORE that changes a client's account.
@@ -172,6 +176,124 @@ function needsLocation(leg: LegInput): string | null {
 }
 
 const HANDLERS: Record<string, Handler> = {
+  /* ── generated pages ── */
+
+  'page.render': async (leg, price) => {
+    const spec = leg.params?.spec as any
+    if (!spec?.blocks?.length) return refuse('Give me a page design to render.')
+    const target = (leg.params?.target as any) || 'document'
+    const r = renderPage(spec, { target, personaliseEndpoint: '/api/personalize' })
+    // Warnings ride along rather than being swallowed: an empty live block or a
+    // skipped section is something the person approving needs to see.
+    return ok(
+      `Rendered ${r.stats.blocks} sections as ${target} HTML (${r.stats.bytes} bytes).`,
+      1, price, { html: r.html, css: r.css, warnings: r.warnings, stats: r.stats }
+    )
+  },
+
+  'blog.publish': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client’s blog to publish to.')
+
+    const title = String(leg.params?.title || '').trim()
+    if (!title) return refuse('The post needs a title.')
+
+    // Render here when handed a spec, so the caller cannot accidentally publish
+    // class-based HTML that arrives unstyled in a blog body.
+    let html = String(leg.params?.html || '')
+    if (!html && leg.params?.spec) {
+      html = renderPage(leg.params.spec as any, { target: 'blog' }).html
+    }
+    if (!html) return refuse('Give me either rendered HTML or a page design to publish.')
+
+    const targets = await resolveBlogTargets(loc)
+    if ('problem' in targets) return refuse(`${targets.problem} ${targets.fix}`)
+
+    const result = await publishAsBlogPost({
+      locationId: loc,
+      title,
+      description: String(leg.params?.description || title).slice(0, 300),
+      rawHTML: html,
+      urlSlug: String(leg.params?.slug || slugify(title)),
+      imageUrl: String(leg.params?.imageUrl || ''),
+      imageAltText: String(leg.params?.imageAlt || title).slice(0, 120),
+      // DRAFT unless the plan explicitly asked to publish. This writes to a real
+      // client's public website.
+      status: leg.params?.status === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT',
+      targets,
+    })
+
+    if (!result.ok) return fail('Blog post was rejected.', result.error)
+    return ok(
+      `Published "${title}" to ${targets.blogName} as ${result.status}.`,
+      1, price, { postId: result.postId, status: result.status, slug: result.url }
+    )
+  },
+
+  /* ── store ── */
+
+  'product.create': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client’s store to add to.')
+    const name = String(leg.params?.name || '').trim()
+    if (!name) return refuse('The product needs a name.')
+
+    const r = await createProduct(loc, {
+      name,
+      price: leg.params?.price as string,
+      description: leg.params?.description as string,
+      image: leg.params?.image as string,
+      productType: (leg.params?.productType as any) || 'PHYSICAL',
+      recurring: !!leg.params?.recurring,
+    })
+
+    // A product with no price is not a success — it exists and cannot be sold.
+    if (!r.ok) return fail(r.unsellable ? `"${name}" was created but has no price, so it cannot be sold.` : `Could not create "${name}".`, r.error)
+    return ok(`Added "${name}" at ${r.amount}.`, 1, price, r)
+  },
+
+  'product.collection': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client’s store.')
+    const name = String(leg.params?.name || '').trim()
+    if (!name) return refuse('The collection needs a name.')
+    const r = await createCollection(loc, name)
+    if (!r.ok) return fail(`Could not create collection "${name}".`, r.error)
+    return ok(`Created collection "${name}".`, 1, price, r)
+  },
+
+  'store.provision': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client’s store to build.')
+    const products = (leg.params?.products as SourceProduct[]) || []
+    if (!products.length) return refuse('Give me the products to add.')
+
+    // Same reasoning as the contact blast radius: a generator that invented two
+    // hundred products would otherwise create two hundred of them, and there is
+    // no bulk delete to undo it.
+    if (products.length > STORE_BLAST_RADIUS) {
+      return refuse(
+        `That is ${products.length} products in one go. I cap store builds at ${STORE_BLAST_RADIUS} — there is no bulk delete if the list is wrong. Send it in batches and I will run them.`,
+        products.length
+      )
+    }
+
+    const r = await provisionStore(loc, products, {
+      currency: (leg.params?.currency as string) || 'USD',
+      createCollections: leg.params?.createCollections !== false,
+    })
+
+    const { created, failed, unsellable, collections } = r.summary
+    const parts = [`${created} product${created === 1 ? '' : 's'} added`]
+    if (collections) parts.push(`${collections} collection${collections === 1 ? '' : 's'}`)
+    if (unsellable) parts.push(`${unsellable} with NO price (unsellable)`)
+    if (failed) parts.push(`${failed} failed`)
+
+    // Partial success is reported as ok with the detail spelled out, not as a
+    // clean success — the person needs to know which products need a price.
+    return ok(parts.join(', ') + '.', created, price, r)
+  },
+
   /* ── reads ── */
 
   'contact.search': async (leg) => {

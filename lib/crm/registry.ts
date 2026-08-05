@@ -143,6 +143,33 @@ export const CAPABILITIES: Capability[] = [
     insteadOffer: "I can't edit a native funnel's content. I can build the equivalent page for you instead and hand back the link.",
   },
 
+  // ── generated pages ──
+  // We render the HTML ourselves; the only question is where it lands.
+  { id: 'page.render', intent: 'turn a page design into HTML', mechanism: 'product' },
+  {
+    // The one native, indexable page type the platform lets us CREATE.
+    // Verified end to end against a live location: the body survives the
+    // sanitiser byte for byte, inline styles included.
+    id: 'blog.publish',
+    intent: 'publish a generated page as a blog post on the client’s site',
+    mechanism: 'native', requires: 'crm',
+  },
+
+  // ── store & commerce ──
+  // The most writable surface on the platform, and the inverse of funnels: we
+  // cannot create a page for anyone, but we can stock, price and categorise an
+  // entire storefront.
+  { id: 'product.create', intent: 'add a product with a price to the client’s store', mechanism: 'native', requires: 'crm' },
+  { id: 'product.collection', intent: 'create a product category or collection', mechanism: 'native', requires: 'crm' },
+  { id: 'store.provision', intent: 'build out a whole store from a list of products', mechanism: 'native', requires: 'crm' },
+  {
+    id: 'store.page',
+    intent: 'create the storefront page that displays the products',
+    mechanism: 'blocked',
+    insteadOffer:
+      "Store *pages* are part of the funnel builder, which has no create API — so I can't make that page. What I can do is stock the store itself with real products, prices and categories, and build you the storefront page separately with a link you can point anywhere.",
+  },
+
   // ── social ──
   { id: 'social.schedule', intent: 'schedule or write social posts', mechanism: 'product', meter: 'SOCIAL_POST', requires: 'social' },
 
