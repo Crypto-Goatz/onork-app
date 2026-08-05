@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   Workflow, Bot, Eye, Sparkles, Loader2, AlertCircle, Copy, Check,
-  RefreshCw, ShieldCheck, X, CreditCard, ExternalLink, Radar as RadarIcon,
+  RefreshCw, ShieldCheck, X, CreditCard, ExternalLink, Radar as RadarIcon, Plug2, Play,
 } from 'lucide-react'
 import { authHeaders } from './useSso'
 
@@ -23,7 +23,7 @@ import { authHeaders } from './useSso'
  * actions, so they land in the same plan → approve → run gate as everything else.
  */
 
-type Section = 'plans' | 'radar' | 'actions' | 'agents' | 'visualizer' | 'insights'
+type Section = 'plans' | 'radar' | 'actions' | 'fleet' | 'agents' | 'visualizer' | 'insights'
 
 interface ActionRow {
   key: string; name: string; blurb: string; live: boolean
@@ -36,7 +36,8 @@ const SECTIONS: { id: Section; icon: typeof Workflow; label: string; blurb: stri
   { id: 'plans', icon: CreditCard, label: 'Plans & Rebilling', blurb: 'What each client pays you' },
   { id: 'radar', icon: RadarIcon, label: 'Demand Radar', blurb: 'What the market is asking for, unbuilt' },
   { id: 'actions', icon: Workflow, label: 'Workflow Actions', blurb: '0nCORE steps inside your own builder' },
-  { id: 'agents', icon: Bot, label: 'AI Agent Connect', blurb: 'Give your agents 0nCORE tools' },
+  { id: 'fleet', icon: Bot, label: 'Agent Fleet', blurb: 'Every client\'s AI agents, in one list' },
+  { id: 'agents', icon: Plug2, label: 'AI Agent Connect', blurb: 'Give your agents 0nCORE tools' },
   { id: 'visualizer', icon: Eye, label: 'Automation Viewer', blurb: 'See any client\'s automations' },
   { id: 'insights', icon: Sparkles, label: 'Insights', blurb: 'One question, every client' },
 ]
@@ -83,6 +84,7 @@ export default function ControlCenter({
 
       {section === 'plans' && <Plans token={token} />}
       {section === 'radar' && <Radar token={token} />}
+      {section === 'fleet' && <Fleet token={token} />}
       {section === 'actions' && <Actions token={token} />}
       {section === 'agents' && <Agents token={token} />}
       {section === 'visualizer' && <Visualizer token={token} locations={locations} />}
@@ -641,6 +643,122 @@ function Radar({ token }: { token: string | null }) {
               {tab === 'rising' ? 'Nothing has moved since the last collection.' : 'No data yet.'}
             </p>
           )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+/* ─────────────────────────────── Agent Fleet ──────────────────────────── */
+
+interface FleetRow { locationId: string; client: string; agents: { id: string; name: string; status: string }[]; error?: string }
+
+function Fleet({ token }: { token: string | null }) {
+  const [d, setD] = useState<{ fleet: FleetRow[]; totals: { clients: number; agents: number; active: number }; notChecked: number } | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+  const [ask, setAsk] = useState<{ locationId: string; agentId: string; name: string } | null>(null)
+  const [msg, setMsg] = useState('')
+  const [reply, setReply] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/agents/fleet', { headers: authHeaders(token) })
+      .then((r) => r.json())
+      .then((j) => (j?.error ? setErr(j.error) : setD(j)))
+      .catch(() => setErr('Could not read your agents.'))
+  }, [token])
+
+  async function run() {
+    if (!ask || !msg.trim() || busy) return
+    setBusy(true); setReply(null)
+    try {
+      const r = await fetch('/api/agents/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+        body: JSON.stringify({ locationId: ask.locationId, agentId: ask.agentId, message: msg.trim() }),
+      })
+      const j = await r.json()
+      setReply(j.reply || j.error || 'No answer came back.')
+    } catch { setReply('Could not reach the agent.') } finally { setBusy(false) }
+  }
+
+  if (err) return <p className="flex items-center gap-2 py-4 text-sm text-[color:var(--oc-red)]"><AlertCircle className="h-4 w-4" /> {err}</p>
+  if (!d) return <Loading />
+
+  return (
+    <div className="space-y-3">
+      <div className="grid gap-2.5 sm:grid-cols-3">
+        <Stat label="Agents" value={String(d.totals.agents)} accent />
+        <Stat label="Live right now" value={String(d.totals.active)} warn={d.totals.active > 0} />
+        <Stat label="Clients with agents" value={String(d.totals.clients)} />
+      </div>
+
+      {/* An agent left on in a client nobody opens is the risk this view exists
+          to surface, so it is said rather than left to be noticed. */}
+      {d.totals.active > 0 && (
+        <p className="text-[12px] leading-relaxed text-[color:var(--oc-text)]/70">
+          {d.totals.active} agent{d.totals.active === 1 ? ' is' : 's are'} active and answering. Test any of them below before you trust it with a customer.
+        </p>
+      )}
+
+      {d.fleet.map((f) => (
+        <div key={f.locationId} className="rounded-[14px] border border-[color:var(--oc-border)] bg-white p-3.5">
+          <div className="text-[13px] font-semibold text-[color:var(--oc-ink)]">{f.client}</div>
+          {f.error ? (
+            <p className="mt-1 text-[12px] text-[color:var(--oc-amber)]">{f.error}</p>
+          ) : (
+            <div className="mt-2 space-y-1">
+              {f.agents.map((a) => (
+                <div key={a.id} className="flex items-center justify-between gap-3 rounded-[10px] border border-[color:var(--oc-border)] px-3 py-2">
+                  <span className="min-w-0 flex-1 truncate text-[12.5px] text-[color:var(--oc-ink)]">{a.name}</span>
+                  <span className={`oc-chip shrink-0 border px-2 py-0.5 text-[10.5px] ${
+                    a.status === 'active'
+                      ? 'border-[color:var(--oc-green-d)]/35 bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
+                      : 'border-[color:var(--oc-border)] bg-[color:var(--oc-bg)] text-[color:var(--oc-text)]/55'}`}>
+                    {a.status}
+                  </span>
+                  <button type="button" onClick={() => { setAsk({ locationId: f.locationId, agentId: a.id, name: a.name }); setReply(null); setMsg('') }}
+                    className="oc-chip shrink-0 inline-flex items-center gap-1 border border-[color:var(--oc-border)] bg-white px-2 py-0.5 text-[10.5px] text-[color:var(--oc-text)] hover:border-[color:var(--oc-green-d)]">
+                    <Play className="h-3 w-3" /> Test
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {d.notChecked > 0 && (
+        <p className="oc-mono text-[10.5px] text-[color:var(--oc-text)]/50">{d.notChecked} more clients not checked in this sweep.</p>
+      )}
+
+      {ask && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-[2px] sm:items-center sm:p-6"
+          onClick={() => setAsk(null)} role="presentation">
+          <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true"
+            className="w-full max-w-lg rounded-t-[20px] border border-[color:var(--oc-border)] bg-[color:var(--oc-bg)] p-5 sm:rounded-[20px]">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <h3 className="text-[16px] font-bold text-[color:var(--oc-ink)]">Test {ask.name}</h3>
+              <button type="button" onClick={() => setAsk(null)} aria-label="Close"
+                className="grid h-8 w-8 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mb-2 text-[12px] text-[color:var(--oc-text)]/70">
+              This runs the real agent. Nothing is sent to a customer.
+            </p>
+            <textarea value={msg} onChange={(e) => setMsg(e.target.value)} rows={2}
+              placeholder="Ask it something a customer would ask" className="oc-input w-full resize-none" />
+            <button type="button" onClick={run} disabled={busy || !msg.trim()} className="oc-btn mt-2 px-4 py-2.5 text-[13px]">
+              {busy ? <span className="flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Asking</span> : 'Ask it'}
+            </button>
+            {reply && (
+              <div className="mt-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white p-3.5 text-[13px] leading-relaxed text-[color:var(--oc-text)]/85">
+                {reply}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -79,7 +79,7 @@ export interface AgentSpec {
   status?: 'active' | 'inactive' | 'archived'
 }
 
-export async function listAgents(locationId: string): Promise<{ agents: AgentSummary[]; error?: string }> {
+export async function listAgentsForLocation(locationId: string): Promise<{ agents: AgentSummary[]; error?: string }> {
   try {
     const res = await crmGet(`${AGENT}?`, locationId)
     if (!res.ok) return { agents: [], error: `Could not read agents (${res.status}).` }
@@ -232,7 +232,15 @@ export async function createAgent(locationId: string, spec: AgentSpec): Promise<
   return { ok: true, agentId, versionId, name, published }
 }
 
-export interface ExecuteResult { ok: boolean; reply?: string; error?: string }
+export interface ExecuteResult {
+  ok: boolean
+  reply?: string
+  error?: string
+  executionId?: string
+  /** The agent believes it finished what it was asked. */
+  goalReached?: boolean
+  status?: string
+}
 
 /**
  * Run an agent and get its answer back.
@@ -250,8 +258,10 @@ export async function executeAgent(args: {
   inputVariables?: Record<string, string>
 }): Promise<ExecuteResult> {
   try {
+    // locationId belongs in the BODY, not the query — the only documented
+    // query param here is `source`, and passing locationId returned 400.
     const res = await crmPostRaw(
-      `${AGENT}/${encodeURIComponent(args.agentId)}/execute?locationId=${encodeURIComponent(args.locationId)}`,
+      `${AGENT}/${encodeURIComponent(args.agentId)}/execute`,
       args.locationId,
       {
         message: args.message,
@@ -261,10 +271,110 @@ export async function executeAgent(args: {
       },
     )
     const text = await res.text()
-    if (!res.ok) return { ok: false, error: `Agent did not run (${res.status}).` }
-    const j = JSON.parse(text) as { response?: string; message?: string; output?: string }
-    return { ok: true, reply: j.response ?? j.message ?? j.output ?? '' }
+    if (!res.ok) {
+      console.error(`[crm/agents] execute ${res.status}: ${text.slice(0, 200)}`)
+      return { ok: false, error: `Agent did not run (${res.status}).` }
+    }
+    const j = JSON.parse(text) as {
+      response?: string; executionId?: string; goalCompletion?: boolean; executionStatus?: string
+    }
+    return {
+      ok: true,
+      reply: j.response ?? '',
+      executionId: j.executionId,
+      goalReached: j.goalCompletion,
+      status: j.executionStatus,
+    }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Agent did not run.' }
   }
+}
+
+/** Kept as the old name so existing callers do not have to change. */
+export const listAgents = listAgentsForLocation
+
+/* ────────────────────────────── agent teams ───────────────────────────── */
+
+/**
+ * The four roles a provisioned client gets.
+ *
+ * FOUR NARROW AGENTS RATHER THAN ONE BROAD ONE. A single agent told to do
+ * everything gives worse answers at every individual job, and — more
+ * importantly here — cannot be switched off selectively. An agency that wants
+ * upsell messaging paused but onboarding running needs those to be separate
+ * things.
+ *
+ * The prompts take the client's own details, so what ships is briefed on their
+ * business rather than a generic assistant wearing their name.
+ */
+export interface ClientBrief {
+  businessName: string
+  whatTheySell?: string
+  tone?: string
+  /** Anything the agent must never say or promise. */
+  guardrails?: string
+}
+
+export const AGENT_ROLES = ['onboarding', 'service', 'upsell', 'crosssell'] as const
+export type AgentRole = typeof AGENT_ROLES[number]
+
+function roleSpec(role: AgentRole, b: ClientBrief): AgentSpec {
+  const guard = [
+    'Never invent prices, availability or policies — if you do not know, say so and offer to find out.',
+    b.guardrails,
+  ].filter(Boolean).join(' ')
+  const who = `${b.businessName}${b.whatTheySell ? `, which sells ${b.whatTheySell}` : ''}`
+  const tone = b.tone || 'warm and direct'
+
+  const byRole: Record<AgentRole, { name: string; prompt: string }> = {
+    onboarding: {
+      name: `${b.businessName} — Onboarding`,
+      prompt: `You welcome new customers of ${who}. Get them to their first success quickly: confirm what they bought, tell them the single next step, and answer setup questions. Tone: ${tone}. ${guard}`,
+    },
+    service: {
+      name: `${b.businessName} — Service`,
+      prompt: `You answer questions from existing customers of ${who}. Be brief and concrete. If something needs a human, say so plainly rather than guessing. Tone: ${tone}. ${guard}`,
+    },
+    upsell: {
+      name: `${b.businessName} — Upsell`,
+      prompt: `You spot when a happy customer of ${who} would genuinely benefit from more, and say so once, without pressure. If they are unhappy, do not sell — hand off. Tone: ${tone}. ${guard}`,
+    },
+    crosssell: {
+      name: `${b.businessName} — Cross-sell`,
+      prompt: `You suggest complementary products from ${who} only where they fit what the customer already bought. One suggestion, with the reason. Never bundle for its own sake. Tone: ${tone}. ${guard}`,
+    },
+  }
+  const r = byRole[role]
+  return {
+    name: r.name,
+    description: `${role} agent for ${b.businessName}, created by 0nCORE`,
+    prompt: r.prompt,
+    // Every generated agent starts inactive. See createAgent.
+    status: 'inactive',
+  }
+}
+
+export interface TeamResult {
+  created: { role: AgentRole; agentId: string; name: string }[]
+  failed: { role: AgentRole; error: string }[]
+}
+
+/**
+ * Build a client's agent team. Partial success is reported as partial success —
+ * three working agents and one failure is a useful outcome, and rolling the
+ * three back to punish the fourth helps nobody.
+ */
+export async function createAgentTeam(
+  locationId: string,
+  brief: ClientBrief,
+  opts: { agencyId?: string; roles?: AgentRole[] } = {},
+): Promise<TeamResult> {
+  const out: TeamResult = { created: [], failed: [] }
+  for (const role of opts.roles ?? AGENT_ROLES) {
+    const spec = { ...roleSpec(role, brief), agencyId: opts.agencyId }
+    const r = await createAgent(locationId, spec)
+    if (r.ok) out.created.push({ role, agentId: r.agentId, name: r.name })
+    else out.failed.push({ role, error: r.error })
+  }
+  return out
 }

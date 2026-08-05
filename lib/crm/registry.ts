@@ -158,6 +158,13 @@ export const CAPABILITIES: Capability[] = [
   { id: 'task.create', intent: 'add a task, for a person or an agent', mechanism: 'product' },
   { id: 'invoice.create', intent: 'create or send an invoice', mechanism: 'native', requires: 'crm' },
 
+  // ── agents ──
+  // Writable, unlike workflows and funnels — so the planner may genuinely
+  // choose these rather than explaining why it cannot.
+  { id: 'agent.list', intent: 'see what AI agents a client has', mechanism: 'native', requires: 'crm' },
+  { id: 'agent.run', intent: 'ask an AI agent to do something or answer', mechanism: 'native', requires: 'crm' },
+  { id: 'agent.create', intent: 'create a new AI agent for a client', mechanism: 'native', requires: 'crm' },
+
   // ── beyond the CRM ──
   { id: 'external.call', intent: 'do something in another service — mail, payments, docs', mechanism: 'onmcp', requires: 'onmcp' },
 

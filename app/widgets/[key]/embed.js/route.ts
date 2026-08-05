@@ -111,6 +111,42 @@ const RENDERERS: Record<string, string> = {
     d.appendChild(x);
     document.body.appendChild(d);`,
 
+  oncore_chat: `
+    var b=document.createElement('button');
+    b.setAttribute('aria-label','Chat with us');
+    b.style.cssText='position:fixed;right:18px;bottom:18px;z-index:2147483000;width:56px;height:56px;border-radius:50%;border:0;cursor:pointer;background:'+(C.cfg.accent||'#2E9A1F')+';color:#fff;font:600 22px/1 system-ui;box-shadow:0 8px 24px -8px rgba(0,0,0,.45)';
+    b.textContent='\u2709';
+    var panel=null;
+    b.onclick=function(){
+      if(panel){panel.remove();panel=null;return}
+      panel=document.createElement('div');
+      panel.style.cssText='position:fixed;right:18px;bottom:84px;z-index:2147483000;width:min(360px,calc(100vw - 36px));height:min(460px,70vh);display:flex;flex-direction:column;background:#fff;border:1px solid #e4e7e5;border-radius:16px;overflow:hidden;box-shadow:0 18px 48px -18px rgba(0,0,0,.35);font:400 14px/1.5 system-ui,-apple-system,sans-serif';
+      panel.innerHTML='<div style="padding:12px 14px;border-bottom:1px solid #eceeed;font-weight:600">'+(C.cfg.greeting||'How can we help?')+'</div>'
+        +'<div id="oc-chat-log" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px"></div>'
+        +'<form id="oc-chat-f" style="display:flex;gap:8px;padding:10px;border-top:1px solid #eceeed">'
+        +'<input id="oc-chat-i" placeholder="Type a message" style="flex:1;padding:9px 12px;border:1px solid #d8dcd9;border-radius:999px;font:inherit">'
+        +'<button style="border:0;border-radius:999px;padding:9px 14px;background:'+(C.cfg.accent||'#2E9A1F')+';color:#fff;font-weight:600;cursor:pointer">Send</button></form>';
+      document.body.appendChild(panel);
+      var log=panel.querySelector('#oc-chat-log');
+      function say(who,text){
+        var d=document.createElement('div');
+        d.style.cssText='max-width:85%;padding:8px 11px;border-radius:12px;'+(who==='you'?'align-self:flex-end;background:#eef6ec':'align-self:flex-start;background:#f3f4f3');
+        d.textContent=text; log.appendChild(d); log.scrollTop=log.scrollHeight;
+      }
+      panel.querySelector('#oc-chat-f').onsubmit=function(e){
+        e.preventDefault();
+        var i=panel.querySelector('#oc-chat-i'); var msg=i.value.trim(); if(!msg) return;
+        i.value=''; say('you',msg); say('them','…');
+        var thinking=log.lastChild;
+        fetch(C.api+'/api/widgets/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({locationId:C.locationId,message:msg})})
+          .then(function(r){return r.json()})
+          .then(function(j){thinking.textContent=j.reply||j.error||'Sorry — I could not answer that.'})
+          .catch(function(){thinking.textContent='Sorry — I could not reach us just now.'});
+      };
+    };
+    document.body.appendChild(b);`,
+
   oncore_member_profile: `
     var mount=document.getElementById('oncore-portal'); if(!mount) return;
     var k=new URLSearchParams(location.search).get('k');

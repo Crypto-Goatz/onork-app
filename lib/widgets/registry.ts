@@ -150,7 +150,7 @@ export const WIDGETS: Widget[] = [
   },
   {
     key: 'oncore_chat', name: '0nCORE Chat', cls: 'injector', delivery: 'builder',
-    blurb: 'An AI chat bubble that answers from this client\'s own context.',
+    blurb: 'A chat bubble answered by this client\'s own AI agent — same voice as their inbox.',
     fields: [
       { key: 'greeting', label: 'Opening line', type: 'text', placeholder: 'Hi — how can we help?' },
       { key: 'accent', label: 'Accent colour', type: 'color' },

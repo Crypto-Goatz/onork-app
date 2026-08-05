@@ -193,7 +193,53 @@ const HANDLERS: Record<string, Handler> = {
       { names: list.slice(0, 10).map((s) => s.name).filter(Boolean) })
   },
 
+  'agent.list': async (leg) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client and I will list their agents.')
+    const { listAgents } = await import('@/lib/crm/agents')
+    const { agents, error } = await listAgents(loc)
+    if (error) return fail('Could not read their agents.', error)
+    return ok(`${agents.length} agent${agents.length === 1 ? '' : 's'} in this account.`, agents.length, 0,
+      { names: agents.slice(0, 10).map((a) => a.name) })
+  },
+
+  'agent.run': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client the agent belongs to.')
+    const message = str(leg.params?.message ?? leg.params?.command, 1200)
+    if (!message) return refuse('Tell me what to ask the agent.')
+
+    const { listAgents, executeAgent } = await import('@/lib/crm/agents')
+    const { agents } = await listAgents(loc)
+    if (!agents.length) return fail('This client has no agents yet.')
+
+    // Match by name when one is named, otherwise use the first ACTIVE agent —
+    // picking an inactive one would run something the agency switched off.
+    const wanted = str(leg.params?.agent, 80).toLowerCase()
+    const target = wanted
+      ? agents.find((a) => a.name.toLowerCase().includes(wanted))
+      : agents.find((a) => a.status === 'active') ?? agents[0]
+    if (!target) return fail(`No agent matching "${wanted}".`)
+
+    const r = await executeAgent({ locationId: loc, agentId: target.id, message, contactId: str(leg.params?.contactId, 64) || undefined })
+    if (!r.ok) return fail(`"${target.name}" could not run.`, r.error)
+    return ok(`${target.name}: ${(r.reply ?? '').slice(0, 220)}`, 1, price, { reply: r.reply, agent: target.name })
+  },
+
   /* ── writes ── */
+
+  'agent.create': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client the agent is for.')
+    const name = str(leg.params?.name, 80)
+    const prompt = str(leg.params?.prompt ?? leg.params?.instructions, 2000)
+    if (!name || !prompt) return refuse('An agent needs a name and instructions.')
+    const { createAgent } = await import('@/lib/crm/agents')
+    const r = await createAgent(loc, { name, prompt, description: str(leg.params?.description, 200), agencyId: leg.companyId })
+    if (!r.ok) return fail('Could not create the agent.', r.detail ?? r.error)
+    // Created inactive on purpose — the agency reads it before it speaks.
+    return ok(`Created "${r.name}". It is switched off until you turn it on.`, 1, price, { agentId: r.agentId })
+  },
 
   'contact.create': async (leg, price) => {
     const loc = needsLocation(leg)
