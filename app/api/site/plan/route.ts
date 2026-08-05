@@ -21,7 +21,7 @@ import { STORE_BLAST_RADIUS } from '@/lib/crm/store'
  */
 
 /** Capabilities this route is allowed to plan. Deny by default. */
-const ALLOWED = new Set(['blog.publish', 'product.create', 'product.collection', 'store.provision'])
+const ALLOWED = new Set(['blog.publish', 'product.create', 'product.collection', 'store.provision', 'menu.link'])
 
 export async function POST(req: Request) {
   // Authed like every other plan route. A signed plan is a capability token —
@@ -140,6 +140,23 @@ export async function POST(req: Request) {
         continue
       }
       preview.push({ capability, summary: `Add product "${params.name}" at ${params.price ?? 'NO PRICE'}` })
+    }
+
+    if (capability === 'menu.link') {
+      if (!params.title || !params.url) {
+        blockers.push('menu.link needs a title and an absolute URL.')
+        continue
+      }
+      // Named loudly: this changes navigation for every user of every selected
+      // sub-account, which is a wider blast radius than it looks.
+      preview.push({
+        capability,
+        summary: `Add "${params.title}" to the CRM sidebar`,
+        reach: params.showToAllLocations === true ? 'ALL sub-accounts' : `${(params.locations as string[])?.length ?? 1} sub-account(s)`,
+        ...(params.showToAllLocations === true
+          ? { warning: 'This appears in EVERY sub-account you manage, for every user.' }
+          : {}),
+      })
     }
 
     if (capability === 'product.collection') {

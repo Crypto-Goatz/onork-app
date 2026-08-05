@@ -5,6 +5,7 @@ import { canRun, settle } from '@/lib/billing/gate'
 import { publishAsBlogPost, resolveBlogTargets, slugify } from '@/lib/crm/blog'
 import { createProduct, createCollection, provisionStore, STORE_BLAST_RADIUS, type SourceProduct } from '@/lib/crm/store'
 import { renderPage } from '@/lib/render'
+import { createMenuLink } from '@/lib/crm/menu'
 
 
 /**
@@ -176,6 +177,28 @@ function needsLocation(leg: LegInput): string | null {
 }
 
 const HANDLERS: Record<string, Handler> = {
+  'menu.link': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client to add the menu link to.')
+    const title = String(leg.params?.title || '').trim()
+    const url = String(leg.params?.url || '').trim()
+    if (!title || !url) return refuse('The menu link needs a title and an absolute URL.')
+
+    const all = leg.params?.showToAllLocations === true
+    const r = await createMenuLink(loc, {
+      title, url,
+      icon: leg.params?.icon as string,
+      locations: (leg.params?.locations as string[]) || undefined,
+      showToAllLocations: all,
+      openMode: (leg.params?.openMode as any) || 'iframe',
+    })
+    if (!r.ok) return fail(`Could not add "${title}" to the sidebar.`, r.error)
+    return ok(
+      `Added "${title}" to the CRM sidebar for ${r.reach === 'all' ? 'ALL sub-accounts' : `${r.reach} sub-account(s)`}.`,
+      typeof r.reach === 'number' ? r.reach : 1, price, r
+    )
+  },
+
   /* ── generated pages ── */
 
   'page.render': async (leg, price) => {

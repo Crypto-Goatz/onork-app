@@ -159,6 +159,16 @@ export const CAPABILITIES: Capability[] = [
   // The most writable surface on the platform, and the inverse of funnels: we
   // cannot create a page for anyone, but we can stock, price and categorise an
   // entire storefront.
+  {
+    // How an agent REACHES the builder without leaving the CRM. openMode:'iframe'
+    // renders our app inside their chrome; combined with Custom Page SSO they
+    // land signed in.
+    tokenAudience: 'agency',
+    id: 'menu.link',
+    intent: 'add 0nCORE to a client’s CRM sidebar',
+    mechanism: 'native', requires: 'crm',
+  },
+
   { id: 'product.create', intent: 'add a product with a price to the client’s store', mechanism: 'native', requires: 'crm' },
   { id: 'product.collection', intent: 'create a product category or collection', mechanism: 'native', requires: 'crm' },
   { id: 'store.provision', intent: 'build out a whole store from a list of products', mechanism: 'native', requires: 'crm' },
