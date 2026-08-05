@@ -273,7 +273,14 @@ export async function executeAgent(args: {
     const text = await res.text()
     if (!res.ok) {
       console.error(`[crm/agents] execute ${res.status}: ${text.slice(0, 200)}`)
-      return { ok: false, error: `Agent did not run (${res.status}).` }
+      // A 404 on a real agent id is not "missing" — it means there is no
+      // PUBLISHED version to run. Verified against a live account: agents with
+      // a production version execute, agents without one 404. Saying "not found"
+      // would send someone hunting for a deleted agent that is sitting there.
+      if (res.status === 404) {
+        return { ok: false, error: 'This agent has no published version yet, so there is nothing to run. Publish it in Agent Studio first.' }
+      }
+      return { ok: false, error: `The agent did not run (${res.status}).` }
     }
     const j = JSON.parse(text) as {
       response?: string; executionId?: string; goalCompletion?: boolean; executionStatus?: string
