@@ -1,4 +1,4 @@
-import { crmGet, crmPost, crmPostRaw } from '@/lib/crm'
+import { crmGet, crmPost, crmPostRaw, crmPut } from '@/lib/crm'
 import { getValidAgencyToken } from '@/lib/crm/agency-token'
 import { capability, tokenAudienceFor, assertExecutable, legPriceCents } from '@/lib/crm/registry'
 import { canRun, settle } from '@/lib/billing/gate'
@@ -131,6 +131,25 @@ async function findContacts(
   return { contacts, total }
 }
 
+/**
+ * Resolve exactly ONE contact, or explain why not.
+ *
+ * Shared because every per-person action needs it and each one getting this
+ * subtly different is how a message ends up with the wrong person. Ambiguity is
+ * a refusal, never a guess — texting the wrong customer cannot be undone.
+ */
+async function oneContact(
+  locationId: string,
+  query: string,
+): Promise<{ contact: CrmContact } | { problem: LegResult }> {
+  if (!query) return { problem: refuse('Tell me which contact you mean.') }
+  const { contacts, total, error } = await findContacts(locationId, query, 5)
+  if (error) return { problem: fail('Could not find that contact.', error) }
+  if (total === 0) return { problem: fail(`No contact matching "${query}".`) }
+  if (total > 1) return { problem: refuse(`"${query}" matches ${total} contacts. Tell me which one.`, total) }
+  return { contact: contacts[0] }
+}
+
 /* ────────────────────────────── handlers ──────────────────────────────── */
 
 type Handler = (leg: LegInput, price: number) => Promise<LegResult>
@@ -224,6 +243,201 @@ const HANDLERS: Record<string, Handler> = {
     const r = await executeAgent({ locationId: loc, agentId: target.id, message, contactId: str(leg.params?.contactId, 64) || undefined })
     if (!r.ok) return fail(`"${target.name}" could not run.`, r.error)
     return ok(`${target.name}: ${(r.reply ?? '').slice(0, 220)}`, 1, price, { reply: r.reply, agent: target.name })
+  },
+
+
+  /* ── messaging ── */
+
+  'sms.send': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client to message from.')
+    const text = str(leg.params?.message ?? leg.params?.body, 1200)
+    const who = searchTerm(leg.params?.contactQuery ?? leg.params?.to)
+    if (!text) return refuse('I need the text of the message.')
+    const target = await oneContact(loc, who)
+    if ('problem' in target) return target.problem
+    // type/subType/status are all required by the API — omitting any is a 422.
+    const res = await crmPostRaw('/conversations/messages', loc, {
+      type: 'SMS', subType: 'manual', status: 'pending',
+      contactId: target.contact.id, message: text,
+    })
+    if (!res.ok) return fail('Could not send the message.', `HTTP ${res.status} ${(await res.text().catch(() => '')).slice(0, 140)}`)
+    return ok(`Texted ${target.contact.contactName || who}.`, 1, price)
+  },
+
+  'email.send': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client to email from.')
+    const subject = str(leg.params?.subject, 200)
+    const html = str(leg.params?.html ?? leg.params?.body ?? leg.params?.message, 8000)
+    const who = searchTerm(leg.params?.contactQuery ?? leg.params?.to)
+    if (!html) return refuse('I need the body of the email.')
+    const target = await oneContact(loc, who)
+    if ('problem' in target) return target.problem
+    const res = await crmPostRaw('/conversations/messages', loc, {
+      type: 'Email', subType: 'manual', status: 'pending',
+      contactId: target.contact.id,
+      subject: subject || 'A message for you',
+      html,
+    })
+    if (!res.ok) return fail('Could not send the email.', `HTTP ${res.status} ${(await res.text().catch(() => '')).slice(0, 140)}`)
+    return ok(`Emailed ${target.contact.contactName || who}.`, 1, price)
+  },
+
+  'conversation.read': async (leg) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client to look in.')
+    const res = await crmGet(`/conversations/search?limit=${count(leg.params?.limit, 10)}`, loc)
+    if (!res.ok) return fail('Could not read conversations.', `HTTP ${res.status}`)
+    const j = (await res.json().catch(() => ({}))) as { conversations?: { lastMessageBody?: string; contactName?: string }[] }
+    const list = j.conversations ?? []
+    return ok(`${list.length} recent conversation${list.length === 1 ? '' : 's'}.`, list.length, 0,
+      { recent: list.slice(0, 5).map((c) => `${c.contactName ?? 'someone'}: ${(c.lastMessageBody ?? '').slice(0, 80)}`) })
+  },
+
+  /* ── the rest of the CRM ── */
+
+  'contact.update': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client the contact is in.')
+    const who = searchTerm(leg.params?.contactQuery)
+    const target = await oneContact(loc, who)
+    if ('problem' in target) return target.problem
+    const patch: Record<string, string> = {}
+    for (const f of ['firstName', 'lastName', 'email', 'phone', 'address1', 'city', 'state', 'postalCode', 'website']) {
+      const v = str(leg.params?.[f], 200)
+      if (v) patch[f] = v
+    }
+    if (!Object.keys(patch).length) return refuse('Tell me what to change about them.')
+    const res = await crmPut(`/contacts/${target.contact.id}`, loc, patch)
+    if (!res.ok) return fail('Could not update the contact.', `HTTP ${res.status}`)
+    return ok(`Updated ${target.contact.contactName || who}.`, 1, price)
+  },
+
+  'customfield.create': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client to add the field to.')
+    const name = str(leg.params?.name, 80)
+    if (!name) return refuse('The field needs a name.')
+    const res = await crmPostRaw(`/locations/${loc}/customFields`, loc, {
+      name, dataType: str(leg.params?.dataType, 30) || 'TEXT', model: 'contact',
+    })
+    if (!res.ok) return fail('Could not create the field.', `HTTP ${res.status}`)
+    return ok(`Created the field "${name}".`, 1, price)
+  },
+
+  'task.create': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client this task belongs to.')
+    const title = str(leg.params?.title ?? leg.params?.task, 200)
+    if (!title) return refuse('The task needs a title.')
+    const target = await oneContact(loc, searchTerm(leg.params?.contactQuery))
+    if ('problem' in target) return target.problem
+    // dueDate and completed are required — a task with no due date is rejected.
+    const due = str(leg.params?.dueDate, 40) || new Date(Date.now() + 86400_000).toISOString()
+    const res = await crmPostRaw(`/contacts/${target.contact.id}/tasks`, loc, {
+      title, body: str(leg.params?.body, 1000), dueDate: due, completed: false,
+    })
+    if (!res.ok) return fail('Could not create the task.', `HTTP ${res.status}`)
+    return ok(`Task "${title}" added for ${target.contact.contactName || 'the contact'}.`, 1, price)
+  },
+
+  'workflow.trigger': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client to run the automation in.')
+    const wanted = searchTerm(leg.params?.workflow ?? leg.params?.name)
+    const target = await oneContact(loc, searchTerm(leg.params?.contactQuery))
+    if ('problem' in target) return target.problem
+
+    const wf = await crmGet('/workflows/', loc)
+    if (!wf.ok) return fail('Could not read the automations.', `HTTP ${wf.status}`)
+    const list = ((await wf.json().catch(() => ({}))) as { workflows?: { id?: string; name?: string }[] }).workflows ?? []
+    const match = wanted
+      ? list.find((w) => (w.name ?? '').toLowerCase().includes(wanted.toLowerCase()))
+      : undefined
+    if (!match?.id) return refuse(wanted ? `No automation matching "${wanted}".` : 'Tell me which automation to start.')
+
+    const { enrollInWorkflow } = await import('@/lib/crm')
+    const r = await enrollInWorkflow(loc, target.contact.id, match.id)
+    if (!r.ok) return fail('Could not start that automation.', r.error)
+    return ok(`Started "${match.name}" for ${target.contact.contactName || 'the contact'}.`, 1, price)
+  },
+
+  'opportunity.move': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client the deal is in.')
+    const target = await oneContact(loc, searchTerm(leg.params?.contactQuery))
+    if ('problem' in target) return target.problem
+    const stageWanted = searchTerm(leg.params?.stage)
+    if (!stageWanted) return refuse('Tell me which stage to move it to.')
+
+    const pRes = await crmGet('/opportunities/pipelines', loc)
+    if (!pRes.ok) return fail('Could not read the pipelines.', `HTTP ${pRes.status}`)
+    const pipes = ((await pRes.json().catch(() => ({}))) as {
+      pipelines?: { id?: string; name?: string; stages?: { id?: string; name?: string }[] }[]
+    }).pipelines ?? []
+
+    let stageId = '', pipelineId = '', stageName = ''
+    for (const p of pipes) {
+      const st = (p.stages ?? []).find((x) => (x.name ?? '').toLowerCase().includes(stageWanted.toLowerCase()))
+      if (st?.id) { stageId = st.id; pipelineId = p.id ?? ''; stageName = st.name ?? stageWanted; break }
+    }
+    if (!stageId) return refuse(`No pipeline stage matching "${stageWanted}".`)
+
+    const oRes = await crmGet(`/opportunities/search?contact_id=${target.contact.id}&limit=1`, loc)
+    const opp = oRes.ok
+      ? (((await oRes.json().catch(() => ({}))) as { opportunities?: { id?: string }[] }).opportunities ?? [])[0]
+      : undefined
+    if (!opp?.id) return fail(`${target.contact.contactName || 'That contact'} has no deal to move.`)
+
+    const res = await crmPut(`/opportunities/${opp.id}`, loc, { pipelineId, pipelineStageId: stageId })
+    if (!res.ok) return fail('Could not move the deal.', `HTTP ${res.status}`)
+    return ok(`Moved ${target.contact.contactName || 'the deal'} to "${stageName}".`, 1, price)
+  },
+
+  'appointment.book': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client the booking is for.')
+    const target = await oneContact(loc, searchTerm(leg.params?.contactQuery))
+    if ('problem' in target) return target.problem
+    const startTime = str(leg.params?.startTime ?? leg.params?.when, 60)
+    if (!startTime) return refuse('Tell me when the appointment should be.')
+
+    const cRes = await crmGet('/calendars/', loc)
+    if (!cRes.ok) return fail('Could not read the calendars.', `HTTP ${cRes.status}`)
+    const cals = ((await cRes.json().catch(() => ({}))) as { calendars?: { id?: string; name?: string }[] }).calendars ?? []
+    const wanted = searchTerm(leg.params?.calendar)
+    const cal = wanted ? cals.find((c) => (c.name ?? '').toLowerCase().includes(wanted.toLowerCase())) : cals[0]
+    if (!cal?.id) return refuse(wanted ? `No calendar matching "${wanted}".` : 'This client has no calendar to book into.')
+
+    const res = await crmPostRaw('/calendars/events/appointments', loc, {
+      calendarId: cal.id, locationId: loc, contactId: target.contact.id,
+      startTime, title: str(leg.params?.title, 120) || 'Appointment',
+    })
+    if (!res.ok) return fail('Could not book it.', `HTTP ${res.status} ${(await res.text().catch(() => '')).slice(0, 140)}`)
+    return ok(`Booked ${target.contact.contactName || 'the contact'} into "${cal.name}".`, 1, price)
+  },
+
+  'external.call': async (leg, price) => {
+    /**
+     * The bridge to everything outside the CRM.
+     *
+     * 0nMCP already speaks to 113 services; re-implementing any of them here
+     * would be duplication with a second set of bugs. What stays OURS is the
+     * decision to run at all — the plan, the approval and the receipt — which
+     * is why this is a leg like any other rather than a back door.
+     */
+    const tool = str(leg.params?.tool, 80)
+    if (!tool) return refuse('Tell me which service and action you mean.')
+    try {
+      const { call0nMCP } = await import('@/lib/onmcp/client')
+      const args = (leg.params?.args && typeof leg.params.args === 'object' ? leg.params.args : {}) as Record<string, unknown>
+      const r = await call0nMCP(tool, args)
+      if (!r.ok) return fail(`${tool} did not run.`, r.error)
+      return ok(`${tool} ran.`, 1, price, { result: (r.text || '').slice(0, 400) })
+    } catch (err) {
+      return fail(`${tool} did not run.`, err instanceof Error ? err.message : String(err))
+    }
   },
 
   /* ── writes ── */

@@ -39,6 +39,16 @@ const PARAM_HINTS: Record<string, string> = {
   'contact.note': 'contactQuery (a plain name/email/phone — NOT a query expression), note (the text)',
   'contact.tag': 'tag, contactQuery (a plain name/email/phone — NOT a query expression)',
   'contact.search': 'query (plain words, or omit for all), limit',
+  'contact.update': 'contactQuery (who), then any of firstName, lastName, email, phone, city',
+  'sms.send': 'contactQuery (who), message',
+  'email.send': 'contactQuery (who), subject, body',
+  'conversation.read': 'limit',
+  'customfield.create': 'name, dataType (TEXT/NUMERICAL/DATE)',
+  'task.create': 'contactQuery (who), title, body, dueDate',
+  'workflow.trigger': 'contactQuery (who), workflow (its name)',
+  'agent.run': 'agent (name, optional), message',
+  'agent.create': 'name, prompt (what it should do)',
+  'agent.list': '',
 }
 
 export async function POST(req: NextRequest) {
