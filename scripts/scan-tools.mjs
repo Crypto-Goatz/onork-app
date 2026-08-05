@@ -19,8 +19,20 @@ import path from 'node:path'
  * lower bound on brokenness, and it says so rather than implying certainty.
  */
 
+/**
+ * Usage: node scripts/scan-tools.mjs [repoPath] [appDir] [urlBase] [outFile]
+ * Defaults scan this repo's own /app against www.0ncore.com.
+ *
+ * Parameterised because the ecosystem has more than one dashboard, and a second
+ * copy of this script would drift from the first — which is the same failure
+ * the inventory itself exists to prevent.
+ */
+const REPO = process.argv[2] ? path.resolve(process.argv[2]) : process.cwd()
+const APP_DIR = process.argv[3] || 'app'
+const URL_BASE = process.argv[4] || 'https://www.0ncore.com/dashboard'
+const OUT = process.argv[5] || 'lib/tools/dashboard-inventory.json'
 const ROOT = process.cwd()
-const APP = path.join(ROOT, 'app')
+const APP = path.join(REPO, APP_DIR)
 
 const listDirs = (p) => existsSync(p) ? readdirSync(p).filter((d) => statSync(path.join(p, d)).isDirectory()) : []
 
@@ -30,6 +42,9 @@ function apiRoutes() {
   const walk = (dir, prefix) => {
     for (const d of listDirs(dir)) {
       const next = path.join(dir, d)
+      // A (group) folder is organisational and contributes NO url segment —
+      // treating it as one made every route inside it look missing.
+      if (/^\(.*\)$/.test(d)) { walk(next, prefix); continue }
       const seg = d.startsWith('[') ? ':param' : d
       if (existsSync(path.join(next, 'route.ts')) || existsSync(path.join(next, 'route.js'))) {
         found.add(`${prefix}/${seg}`)
@@ -110,19 +125,41 @@ function analyse(pageDir, name) {
   }
 }
 
-const out = []
-for (const name of listDirs(path.join(APP, 'dashboard'))) {
-  const t = analyse(path.join(APP, 'dashboard', name), name)
-  if (t) out.push(t)
+/** Dashboard roots to walk — plain folders and any (group) that holds one. */
+function dashboardRoots() {
+  const roots = []
+  if (existsSync(path.join(APP, 'dashboard'))) roots.push({ dir: path.join(APP, 'dashboard'), prefix: '' })
+  for (const d of listDirs(APP)) {
+    if (!/^\(.*\)$/.test(d)) continue
+    for (const inner of listDirs(path.join(APP, d))) {
+      roots.push({ dir: path.join(APP, d, inner), prefix: inner })
+    }
+  }
+  return roots
 }
-const root = analyse(path.join(APP, 'dashboard'), '')
-if (root) out.push({ ...root, key: 'dash_home', name: 'Dashboard Home', slug: '', href: 'https://www.0ncore.com/dashboard' })
+
+const out = []
+const seenKeys = new Set()
+for (const { dir, prefix } of dashboardRoots()) {
+  // The root screen of this area.
+  const rootTool = analyse(dir, prefix || 'home')
+  if (rootTool && !seenKeys.has(rootTool.key)) {
+    seenKeys.add(rootTool.key)
+    out.push({ ...rootTool, href: prefix ? `${URL_BASE}/${prefix}` : URL_BASE })
+  }
+  for (const name of listDirs(dir)) {
+    const t = analyse(path.join(dir, name), name)
+    if (!t || seenKeys.has(t.key)) continue
+    seenKeys.add(t.key)
+    out.push({ ...t, href: prefix ? `${URL_BASE}/${prefix}/${name}` : `${URL_BASE}/${name}` })
+  }
+}
 
 out.sort((a, b) => a.name.localeCompare(b.name))
-writeFileSync(path.join(ROOT, 'lib/tools/dashboard-inventory.json'), JSON.stringify(out, null, 2))
+writeFileSync(path.join(ROOT, OUT), JSON.stringify(out, null, 2))
 
 const by = (s) => out.filter((t) => t.state === s).length
-console.log(`${out.length} dashboard tools scanned`)
+console.log(`${out.length} tools scanned from ${APP_DIR} in ${path.basename(REPO)} -> ${OUT}`)
 console.log(`  ready ${by('ready')} · partial ${by('partial')} · broken ${by('broken')}`)
 console.log(`  API endpoints known: ${ROUTES.size}`)
 for (const t of out.filter((x) => x.state === 'broken').slice(0, 8)) console.log(`   BROKEN  ${t.name}: ${t.reason}`)

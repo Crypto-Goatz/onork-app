@@ -7,6 +7,7 @@ import { TRIGGERS } from '@/lib/crm/triggers'
 import { IMPLEMENTED } from '@/lib/burst/executor'
 import { meterIdFor } from '@/lib/crm/wallet'
 import dashboardInventory from '@/lib/tools/dashboard-inventory.json'
+import onmcpInventory from '@/lib/tools/onmcp-inventory.json'
 
 /**
  * GET /api/tools — every feature 0nCORE has, and whether it actually works.
@@ -123,29 +124,37 @@ export async function GET(req: NextRequest) {
     tools.push({ ...s, group: 'Screens', state: 'ready' })
   }
 
-  // ── the customer portal on www, scanned from the code ──
-  // Derived by scripts/scan-tools.mjs: what each screen calls, and whether
-  // those endpoints exist. It proves wiring, not correctness — so a 'ready'
-  // here means "nothing is obviously missing", which the UI says plainly.
-  for (const d of dashboardInventory as {
+  // ── the other dashboards in the family, scanned from their own code ──
+  // Same scanner, same rules, so the three surfaces are judged identically —
+  // a per-repo eyeball would grade them differently and the comparison is the
+  // point.
+  type Scanned = {
     key: string; name: string; href: string; api: string
     state: 'ready' | 'partial' | 'broken'; reason?: string; missing: string[]
-  }[]) {
-    const state: ToolState = d.state === 'broken' ? 'blocked' : d.state === 'partial' ? 'building' : 'ready'
-    tools.push({
-      key: d.key,
-      name: d.name,
-      group: 'Customer portal',
-      what: describePortal(d.name),
-      state,
-      api: d.api,
-      external: true,
-      href: d.href,
-      reason: d.reason,
-      fix: d.missing?.length
-        ? `Build the missing endpoint${d.missing.length === 1 ? '' : 's'}: ${d.missing.slice(0, 4).join(', ')}`
-        : undefined,
-    })
+  }
+  const portals: { group: string; rows: Scanned[]; copy: Record<string, string> }[] = [
+    { group: '0nCORE portal', rows: dashboardInventory as Scanned[], copy: PORTAL_COPY },
+    { group: '0nMCP portal', rows: onmcpInventory as Scanned[], copy: ONMCP_COPY },
+  ]
+
+  for (const { group, rows, copy } of portals) {
+    for (const d of rows) {
+      const state: ToolState = d.state === 'broken' ? 'blocked' : d.state === 'partial' ? 'building' : 'ready'
+      tools.push({
+        key: `${group === '0nMCP portal' ? 'mcp' : 'core'}_${d.key}`,
+        name: d.name,
+        group,
+        what: copy[d.name] ?? `The ${d.name.toLowerCase()} screen.`,
+        state,
+        api: d.api,
+        external: true,
+        href: d.href,
+        reason: d.reason,
+        fix: d.missing?.length
+          ? `Build the missing endpoint${d.missing.length === 1 ? '' : 's'}: ${d.missing.slice(0, 4).join(', ')}`
+          : undefined,
+      })
+    }
   }
 
   const counts = {
@@ -199,6 +208,38 @@ const PORTAL_COPY: Record<string, string> = {
   'Landing Pages': 'Build and publish landing pages.',
   'Lead Magnets': 'Offers that capture leads, and their results.',
 }
-function describePortal(name: string): string {
-  return PORTAL_COPY[name] ?? `The ${name.toLowerCase()} screen in your 0nCORE portal.`
+/** 0nMCP's own screens. Same reason as above: a tile without meaning is unclicked. */
+const ONMCP_COPY: Record<string, string> = {
+  'Console': 'The 0nMCP control console — everything you have connected.',
+  'Admin': 'Site administration: content, users and the AI that writes.',
+  '0ncode': 'The code workspace.',
+  'Mods': 'Modules you can switch on.',
+  'Campaigns': 'Outbound campaigns and their results.',
+  'Orders': 'Orders and fulfilment.',
+  'Pricing': 'Plans and what each includes.',
+  'Ai Employee': 'The AI employee — what it knows and what it may do.',
+  'Whatsapp': 'WhatsApp messaging and templates.',
+  'Vault': 'Encrypted credentials for every connected service.',
+  'Linkedin': 'LinkedIn posting, engagement and ad accounts.',
+  'Convert': 'Convert a config between AI platform formats.',
+  'Store': 'The 0nMCP store.',
+  'Builder': 'Visual builder for flows and pages.',
+  'Site Builder': 'Generate and publish site pages.',
+  'Ai Settings': 'Which model runs where, and with what prompt.',
+  'Catalog': 'The full service and tool catalogue.',
+  'Content': 'Content pipeline and what is scheduled.',
+  'Qa': 'Question-and-answer pages, generated and reviewed.',
+  'Blog': 'Blog posts, drafting and SEO.',
+  'Personas': 'AI personas that write and reply.',
+  'Forum': 'Community forum moderation.',
+  'Users': 'Accounts and permissions.',
+  'Email': 'Email sending and templates.',
+  'Analytics': 'Traffic and AI-visibility numbers.',
+  'Billing': 'Plan, invoices and usage.',
+  'Connect': 'Link a service to 0nMCP.',
+  'Downloads': 'Installers and packages.',
+  'Grid': 'The service grid — everything available.',
+  'Install': 'Install 0nMCP into an AI platform.',
+  'Projects': 'Your projects.',
+  'Settings': 'Account and workspace settings.',
 }

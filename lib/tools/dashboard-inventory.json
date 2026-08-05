@@ -274,16 +274,6 @@
     "state": "ready"
   },
   {
-    "key": "dash_home",
-    "name": "Dashboard Home",
-    "slug": "",
-    "href": "https://www.0ncore.com/dashboard",
-    "calls": 5,
-    "missing": [],
-    "api": "Supabase",
-    "state": "ready"
-  },
-  {
     "key": "dash_documents",
     "name": "Documents",
     "slug": "documents",
@@ -394,6 +384,16 @@
     "api": "Supabase",
     "state": "partial",
     "reason": "The page still contains placeholder or \"coming soon\" content."
+  },
+  {
+    "key": "dash_home",
+    "name": "Home",
+    "slug": "home",
+    "href": "https://www.0ncore.com/dashboard",
+    "calls": 5,
+    "missing": [],
+    "api": "Supabase",
+    "state": "ready"
   },
   {
     "key": "dash_installs",
