@@ -24,7 +24,7 @@ export type Result = 'ok' | 'failed' | 'refused' | 'waiting'
 
 export interface LogEntry {
   at: string
-  source: 'command' | 'workflow action' | 'billing' | 'form' | 'radar' | 'connection'
+  source: 'command' | 'workflow action' | 'billing' | 'form' | 'radar' | 'connection' | 'lead engine'
   what: string
   result: Result
   why?: string
@@ -66,7 +66,7 @@ export async function collectLog(companyId: string, limit = 120): Promise<LogEnt
   const sb = admin()
   const out: LogEntry[] = []
 
-  const [receipts, usage, leads, runs, installs] = await Promise.all([
+  const [receipts, usage, leads, runs, installs, prospects] = await Promise.all([
     sb.from('burst_receipts')
       .select('created_at, capability, status, detail, error, location_name, source, id')
       .eq('company_id', companyId).order('created_at', { ascending: false }).limit(limit),
@@ -82,6 +82,9 @@ export async function collectLog(companyId: string, limit = 120): Promise<LogEnt
     sb.from('crm_installations')
       .select('updated_at, app_id, location_id, status, health_status, last_error')
       .eq('company_id', companyId).order('updated_at', { ascending: false }).limit(15),
+    sb.from('lead_engine_seen')
+      .select('created_at, business, outcome, source_url')
+      .order('created_at', { ascending: false }).limit(30),
   ])
 
   for (const r of receipts.data ?? []) {
@@ -158,6 +161,19 @@ export async function collectLog(companyId: string, limit = 120): Promise<LogEnt
         : 'This connection is unhealthy; calls through it are likely failing.',
       raw: i.last_error ?? undefined,
       client: i.location_id || null,
+    })
+  }
+
+  for (const p of prospects.data ?? []) {
+    out.push({
+      at: p.created_at,
+      source: 'lead engine',
+      what: `Caught ${p.business}`,
+      result: p.outcome === 'created' ? 'ok' : p.outcome === 'already-in-crm' ? 'refused' : 'failed',
+      why: p.outcome === 'created' ? 'Contact and a $1,085 opportunity created.'
+        : p.outcome === 'already-in-crm' ? 'Already in the CRM — skipped rather than duplicated.'
+        : 'Contact created but no opportunity — no pipeline stage matched.',
+      client: null,
     })
   }
 

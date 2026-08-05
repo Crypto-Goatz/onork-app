@@ -117,6 +117,7 @@ export async function GET(req: NextRequest) {
   // ── surfaces ──
   for (const s of [
     { key: 'command', name: 'Command centre', what: 'Say what you want done across every client.', href: '/' },
+    { key: 'leads', name: 'Lead Engine', what: 'Businesses with no website, caught while you browse and dropped into the pipeline.', href: '/automations' },
     { key: 'clients', name: 'Clients', what: 'Every sub-account, what they pay, what has been done.', href: '/clients' },
     { key: 'radar', name: 'Demand Radar', what: 'What the market is asking for and nobody has built.', href: '/automations' },
     { key: 'history', name: 'History & diagnostics', what: 'Everything that ran, and a live system check.', href: '/log' },

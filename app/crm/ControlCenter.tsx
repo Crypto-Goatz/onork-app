@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   Workflow, Bot, Eye, Sparkles, Loader2, AlertCircle, Copy, Check,
-  RefreshCw, ShieldCheck, X, CreditCard, ExternalLink, Radar as RadarIcon, Plug2, Play,
+  RefreshCw, ShieldCheck, X, CreditCard, ExternalLink, Radar as RadarIcon, Plug2, Play, Magnet,
 } from 'lucide-react'
 import { authHeaders } from './useSso'
 
@@ -23,7 +23,7 @@ import { authHeaders } from './useSso'
  * actions, so they land in the same plan → approve → run gate as everything else.
  */
 
-type Section = 'plans' | 'radar' | 'actions' | 'fleet' | 'agents' | 'visualizer' | 'insights'
+type Section = 'plans' | 'leads' | 'radar' | 'actions' | 'fleet' | 'agents' | 'visualizer' | 'insights'
 
 interface ActionRow {
   key: string; name: string; blurb: string; live: boolean
@@ -34,6 +34,7 @@ interface Finding { client: string; observation: string; command: string | null 
 
 const SECTIONS: { id: Section; icon: typeof Workflow; label: string; blurb: string }[] = [
   { id: 'plans', icon: CreditCard, label: 'Plans & Rebilling', blurb: 'What each client pays you' },
+  { id: 'leads', icon: Magnet, label: 'Lead Engine', blurb: 'Businesses with no website, caught while you browse' },
   { id: 'radar', icon: RadarIcon, label: 'Demand Radar', blurb: 'What the market is asking for, unbuilt' },
   { id: 'actions', icon: Workflow, label: 'Workflow Actions', blurb: '0nCORE steps inside your own builder' },
   { id: 'fleet', icon: Bot, label: 'Agent Fleet', blurb: 'Every client\'s AI agents, in one list' },
@@ -83,6 +84,7 @@ export default function ControlCenter({
       </div>
 
       {section === 'plans' && <Plans token={token} />}
+      {section === 'leads' && <Leads token={token} />}
       {section === 'radar' && <Radar token={token} />}
       {section === 'fleet' && <Fleet token={token} />}
       {section === 'actions' && <Actions token={token} />}
@@ -761,6 +763,92 @@ function Fleet({ token }: { token: string | null }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+
+/* ─────────────────────────────── Lead Engine ──────────────────────────── */
+
+interface LeadRow { business: string; crm_contact_id: string | null; source_url: string | null; outcome: string; created_at: string }
+
+function Leads({ token }: { token: string | null }) {
+  const [d, setD] = useState<{
+    totals: { captured: number; created: number; duplicates: number; contactOnly: number; pipelineValue: number }
+    today: number; thisWeek: number; recent: LeadRow[]; lastCapture: string | null
+  } | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/lead-engine/stats', { headers: authHeaders(token) })
+      .then((r) => r.json())
+      .then((j) => (j?.error ? setErr(j.error) : setD(j)))
+      .catch(() => setErr('Could not read the lead engine.'))
+  }, [token])
+
+  if (err) return <p className="flex items-center gap-2 py-4 text-sm text-[color:var(--oc-red)]"><AlertCircle className="h-4 w-4" /> {err}</p>
+  if (!d) return <Loading />
+
+  const hours = d.lastCapture ? Math.round((Date.now() - new Date(d.lastCapture).getTime()) / 3600_000) : null
+  const money = (c: number) => `$${c.toLocaleString()}`
+
+  return (
+    <div className="space-y-3">
+      <div className="grid gap-2.5 sm:grid-cols-3">
+        <Stat label="In the pipeline" value={String(d.totals.created)} accent />
+        <Stat label="Worth" value={money(d.totals.pipelineValue)} accent />
+        <Stat label="Caught today" value={String(d.today)} />
+      </div>
+
+      {/* An engine that has quietly stopped looks identical to one nobody has
+          fed. Saying the age is what makes the difference visible. */}
+      {hours !== null && hours > 48 && (
+        <div className="flex items-start gap-2 rounded-[14px] border border-[color:var(--oc-amber)]/45 bg-[color:var(--oc-amber)]/[0.07] p-3.5">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--oc-amber)]" />
+          <p className="text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/85">
+            Nothing caught for {hours} hours. The extension only finds prospects on pages you visit — open Maps and search a trade in a town.
+          </p>
+        </div>
+      )}
+
+      <p className="text-[12px] leading-relaxed text-[color:var(--oc-text)]/70">
+        {d.totals.captured} businesses seen · {d.totals.duplicates} already known
+        {d.totals.contactOnly > 0 && (
+          <span className="text-[color:var(--oc-amber)]">
+            {' '}· {d.totals.contactOnly} landed without an opportunity — no pipeline stage matched
+          </span>
+        )}
+      </p>
+
+      <div className="space-y-1.5">
+        {d.recent.map((r, i) => (
+          <div key={i} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-2.5">
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[13px] font-medium text-[color:var(--oc-ink)]">{r.business}</span>
+              {r.source_url && (
+                <a href={r.source_url} target="_blank" rel="noopener noreferrer"
+                  className="oc-mono block truncate text-[10.5px] text-[color:var(--oc-text)]/50 hover:text-[color:var(--oc-green-d)]">
+                  {r.source_url.replace(/^https?:\/\//, '').slice(0, 52)}
+                </a>
+              )}
+            </span>
+            <span className={`oc-chip shrink-0 border px-2 py-0.5 text-[10.5px] ${
+              r.outcome === 'created'
+                ? 'border-[color:var(--oc-green-d)]/35 bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
+                : r.outcome === 'contact-only'
+                  ? 'border-[color:var(--oc-amber)]/40 bg-[color:var(--oc-amber)]/[0.08] text-[color:var(--oc-amber)]'
+                  : 'border-[color:var(--oc-border)] bg-[color:var(--oc-bg)] text-[color:var(--oc-text)]/55'}`}>
+              {r.outcome === 'created' ? '$1,085' : r.outcome === 'already-in-crm' ? 'known' : r.outcome}
+            </span>
+          </div>
+        ))}
+        {d.recent.length === 0 && (
+          <div className="rounded-[14px] border border-dashed border-[color:var(--oc-border)] p-5 text-center text-[13px] leading-relaxed text-[color:var(--oc-text)]/65">
+            Nothing yet. Load the extension, open Google Maps, and search a trade in a town —
+            every business without a website lands here.
+          </div>
+        )}
+      </div>
     </div>
   )
 }
