@@ -6,6 +6,7 @@ import { executeLeg } from '@/lib/burst/executor'
 import { legPriceCents } from '@/lib/crm/registry'
 import { draftMessage, scoreAndRoute, noteOnContact } from '@/lib/burst/ai-actions'
 import { fireTrigger } from '@/lib/crm/triggers'
+import { mintMemberLink } from '@/lib/member/token'
 
 /**
  * POST /api/crm/action/:actionKey — a native workflow step calling 0nCORE.
@@ -188,7 +189,17 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ actionKey:
   let result: Awaited<ReturnType<typeof executeLeg>>
   let output: Record<string, string | number> = {}
 
-  if (actionKey === 'oncore_ai_draft') {
+  if (actionKey === 'oncore_member_link') {
+    if (!contact) {
+      result = { status: 'refused', detail: 'This step needs a contact to make a portal link for.', targets: 0, priceCents: 0, billed: false }
+    } else {
+      const days = Math.min(90, Math.max(1, Number(cfg2.expiryDays) || 14))
+      const link = mintMemberLink(contact, locationId, days * 24 * 3600)
+      const portalUrl = `${cfg2.portalUrl || 'https://app.0ncore.com/portal'}?k=${encodeURIComponent(link)}`
+      output = { portalUrl }
+      result = { status: 'ok', detail: `Portal link created, valid ${days} days.`, targets: 1, priceCents: 0, billed: false }
+    }
+  } else if (actionKey === 'oncore_ai_draft') {
     const { draft, note } = await draftMessage({
       locationId, contactId: contact,
       purpose: cfg2.purpose || 'follow up with this contact',

@@ -46,17 +46,24 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ key: string
   if (!w.live) return noop(`${w.key} is not finished yet`)
 
   const locationId = req.nextUrl.searchParams.get('location') || ''
+
+  /**
+   * The member portal is the one widget that does NOT need a location in the
+   * tag: its signed session already names the contact AND the location, which
+   * is stronger than anything a page could tell us. Every other widget still
+   * refuses without one.
+   */
+  const selfIdentifying = key === 'oncore_member_profile'
+
   // An unresolved merge field means the tag was pasted outside a page that can
   // resolve it. Rendering nothing beats rendering someone else's data.
-  if (!locationId || locationId.includes('{{')) return noop('no location resolved')
+  if (!selfIdentifying && (!locationId || locationId.includes('{{'))) return noop('no location resolved')
 
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
-  const { data } = await sb
-    .from('widget_configs')
-    .select('enabled, config')
-    .eq('widget_key', key)
-    .eq('location_id', locationId)
-    .maybeSingle()
+  const { data } = locationId && !locationId.includes('{{')
+    ? await sb.from('widget_configs').select('enabled, config')
+        .eq('widget_key', key).eq('location_id', locationId).maybeSingle()
+    : { data: null }
 
   if (data && data.enabled === false) return noop('switched off for this client')
   const cfg = (data?.config ?? {}) as Record<string, string>
@@ -103,6 +110,57 @@ const RENDERERS: Record<string, string> = {
     x.onclick=function(){d.remove()};
     d.appendChild(x);
     document.body.appendChild(d);`,
+
+  oncore_member_profile: `
+    var mount=document.getElementById('oncore-portal'); if(!mount) return;
+    var k=new URLSearchParams(location.search).get('k');
+    var S=sessionStorage.getItem('oncore.member');
+    function box(h){mount.innerHTML='<div style="font:400 15px/1.55 system-ui,-apple-system,sans-serif;max-width:560px">'+h+'</div>'}
+    function fields(p,editable){
+      var labels={firstName:'First name',lastName:'Last name',email:'Email',phone:'Phone',address1:'Address',city:'City',state:'State',postalCode:'Postcode',companyName:'Company',website:'Website'};
+      return Object.keys(labels).map(function(f){
+        var v=(p[f]||'');
+        return editable
+          ? '<label style="display:block;margin-bottom:10px"><span style="display:block;font-size:12px;color:#5c6660;margin-bottom:4px">'+labels[f]+'</span><input name="'+f+'" value="'+String(v).replace(/"/g,'&quot;')+'" style="width:100%;padding:10px 12px;border:1px solid #d8dcd9;border-radius:10px;font:inherit"></label>'
+          : '<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #eceeed"><span style="color:#5c6660">'+labels[f]+'</span><span style="font-weight:500;text-align:right">'+(v||'—')+'</span></div>';
+      }).join('');
+    }
+    function render(session){
+      fetch(C.api+'/api/member/profile',{headers:{'x-member-session':session}})
+        .then(function(r){return r.json()})
+        .then(function(j){
+          if(!j.ok){box('<p>'+(j.error||'Please open your portal link again.')+'</p>');return}
+          var edit=C.cfg.mode==='edit';
+          box('<h2 style="font:700 20px/1.2 system-ui;margin:0 0 4px">'+(C.cfg.heading||('Hello, '+j.name))+'</h2>'
+            +'<p style="color:#5c6660;margin:0 0 16px">'+(C.cfg.subheading||(edit?'Update your details below.':'Your details.'))+'</p>'
+            +(edit?'<form id="oncore-pf">'+fields(j.profile,true)+'<button style="margin-top:6px;padding:11px 18px;border:0;border-radius:999px;background:#2E9A1F;color:#fff;font-weight:600;cursor:pointer">Save changes</button><span id="oncore-pmsg" style="margin-left:10px;font-size:13px"></span></form>':fields(j.profile,false));
+          var f=document.getElementById('oncore-pf');
+          if(f) f.onsubmit=function(e){
+            e.preventDefault();
+            var fd=new FormData(f),body={};fd.forEach(function(v,k){body[k]=v});
+            var msg=document.getElementById('oncore-pmsg');msg.textContent='Saving…';
+            fetch(C.api+'/api/member/profile',{method:'PUT',headers:{'Content-Type':'application/json','x-member-session':session},body:JSON.stringify(body)})
+              .then(function(r){return r.json()})
+              .then(function(x){msg.textContent=x.ok?'Saved.':(x.error||'Could not save.');msg.style.color=x.ok?'#2E9A1F':'#D65454'})
+              .catch(function(){msg.textContent='Could not save.';msg.style.color='#D65454'});
+          };
+        })
+        .catch(function(){box('<p>Could not load your details.</p>')});
+    }
+    if(S){render(S)}
+    else if(k){
+      fetch(C.api+'/api/member/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({link:k})})
+        .then(function(r){return r.json()})
+        .then(function(j){
+          if(!j.ok){box('<p>'+(j.error||'This link is not valid any more.')+'</p>');return}
+          sessionStorage.setItem('oncore.member',j.session);
+          history.replaceState({},'',location.pathname);
+          render(j.session);
+        })
+        .catch(function(){box('<p>Could not sign you in.</p>')});
+    } else {
+      box('<p style="color:#5c6660">Open the link from your email to see your details.</p>');
+    }`,
 
   oncore_form_capture: `
     var mount=document.getElementById('oncore-form')||document.currentScript&&document.currentScript.parentNode;

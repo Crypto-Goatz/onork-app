@@ -22,6 +22,7 @@ export interface ActionField {
   type: 'text' | 'textarea' | 'select'
   options?: string[]
   required?: boolean
+  placeholder?: string
 }
 
 export interface WorkflowAction {
@@ -67,6 +68,22 @@ export const WORKFLOW_ACTIONS: WorkflowAction[] = [
     blurb: 'Scores the contact and returns a branch value for an if/else step.',
     fields: [{ key: 'criteria', label: 'What are you scoring for?', type: 'textarea', required: true }],
     returns: ['score', 'branch'],
+    live: true,
+  },
+  {
+    /**
+     * The action that makes the portal usable: it mints a signed link for the
+     * contact the workflow is running on, which an email step then sends.
+     * Without this the agency would have to generate links by hand, and a
+     * portal nobody can reach is not a portal.
+     */
+    key: 'oncore_member_link',
+    name: '0nCORE: Send Portal Link',
+    blurb: 'Creates this member\'s private portal link for the next step to email them.',
+    fields: [
+      { key: 'expiryDays', label: 'Link valid for (days)', type: 'text', placeholder: '14' },
+    ],
+    returns: ['portalUrl'],
     live: true,
   },
   {

@@ -122,6 +122,24 @@ export const WIDGETS: Widget[] = [
     pending: 'Course building is on the roadmap.',
   },
 
+  /**
+   * ── MEMBERSHIP PORTAL ──
+   * The most-requested thing on the platform's own idea board (965 votes).
+   * One widget, two modes: read-only profile, or the edit form. Same bundle and
+   * same runtime, because a portal where "view" and "edit" drift apart is how
+   * a member sees one set of fields and saves another.
+   */
+  {
+    key: 'oncore_member_profile', name: '0nCORE Member Profile', cls: 'builder', delivery: 'builder',
+    blurb: 'A member sees their own details, and can update them if you allow it.',
+    fields: [
+      { key: 'mode', label: 'Mode', type: 'select', options: ['view', 'edit'] },
+      { key: 'heading', label: 'Heading', type: 'text', placeholder: 'Your account' },
+      { key: 'subheading', label: 'Sub-heading', type: 'text' },
+    ],
+    live: true,
+  },
+
   /* ── INJECTORS ── */
   {
     key: 'oncore_analytics', name: '0nCORE Analytics', cls: 'injector', delivery: 'embed',

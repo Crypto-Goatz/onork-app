@@ -228,5 +228,7 @@ export const config = {
     '/tools/:path*',
     '/log',
     '/log/:path*',
+    '/portal',
+    '/portal/:path*',
   ],
 }

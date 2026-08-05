@@ -31,6 +31,9 @@ export const TRIGGERS = [
   { key: 'oncore_client_provisioned', name: '0nCORE: Client Provisioned', when: 'a new sub-account finishes provisioning' },
   { key: 'oncore_lead_scored', name: '0nCORE: AI Lead Scored', when: 'a contact is scored past a threshold' },
   { key: 'oncore_recovery_fired', name: '0nCORE: Recovery Fired', when: 'a failed step recovered another way' },
+  // ── membership portal ──
+  { key: 'oncore_member_updated', name: '0nCORE: Member Updated Profile', when: 'a member edits their own details' },
+  { key: 'oncore_member_viewed', name: '0nCORE: Member Opened Portal', when: 'a member opens their portal' },
 ] as const
 
 export type TriggerKey = typeof TRIGGERS[number]['key']
