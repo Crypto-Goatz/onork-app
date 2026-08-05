@@ -6,6 +6,7 @@ import { WORKFLOW_ACTIONS } from '@/lib/crm/actions'
 import { TRIGGERS } from '@/lib/crm/triggers'
 import { IMPLEMENTED } from '@/lib/burst/executor'
 import { meterIdFor } from '@/lib/crm/wallet'
+import { PLATFORM_FACTS, factCounts } from '@/lib/crm/platform-facts'
 import dashboardInventory from '@/lib/tools/dashboard-inventory.json'
 import onmcpInventory from '@/lib/tools/onmcp-inventory.json'
 
@@ -163,7 +164,16 @@ export async function GET(req: NextRequest) {
     blocked: tools.filter((t) => t.state === 'blocked').length,
     building: tools.filter((t) => t.state === 'building').length,
   }
-  return NextResponse.json({ ok: true, tools, counts })
+  // The WHY behind the states above. A tool marked blocked is only actionable
+  // if you know whether the wall is ours or the platform's — these say which,
+  // with the endpoints that prove it.
+  return NextResponse.json({
+    ok: true,
+    tools,
+    counts,
+    platform: PLATFORM_FACTS,
+    platformCounts: factCounts(),
+  })
 }
 
 const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)

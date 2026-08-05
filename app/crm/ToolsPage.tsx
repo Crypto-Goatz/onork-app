@@ -25,6 +25,12 @@ import AppSidebar from './AppSidebar'
  * something works when it does not.
  */
 
+type FactStatus = 'open' | 'closed' | 'partial'
+interface PlatformFact {
+  area: string; status: FactStatus; headline: string
+  evidence: string; workaround?: string; verified: string
+}
+
 type ToolState = 'ready' | 'blocked' | 'building'
 interface Tool {
   key: string; name: string; group: string; what: string
@@ -95,6 +101,8 @@ const STATE_UI: Record<ToolState, {
 export default function ToolsPage() {
   const sso = useSso()
   const [tools, setTools] = useState<Tool[] | null>(null)
+  const [platform, setPlatform] = useState<PlatformFact[]>([])
+  const [showPlatform, setShowPlatform] = useState(false)
   const [counts, setCounts] = useState({ ready: 0, blocked: 0, building: 0 })
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<'all' | ToolState>('all')
@@ -104,7 +112,7 @@ export default function ToolsPage() {
     if (sso.state === 'pending') return
     fetch('/api/tools', { headers: authHeaders(sso.token) })
       .then((r) => r.json())
-      .then((j) => { setTools(j.tools ?? []); setCounts(j.counts ?? counts) })
+      .then((j) => { setTools(j.tools ?? []); setCounts(j.counts ?? counts); setPlatform(j.platform ?? []) })
       .catch(() => setTools([]))
   }, [sso.state, sso.token])
 
@@ -142,6 +150,71 @@ export default function ToolsPage() {
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a tool…" className="oc-input w-full pl-9" />
             </div>
           </div>
+
+          {/*
+            WHAT THE PLATFORM ITSELF ALLOWS.
+            A tool marked broken is only actionable once you know whether the
+            wall is ours or the CRM's. "Not built yet" and "no endpoint exists
+            for anyone" look identical on a tile and mean completely different
+            things — one is a roadmap item, the other is a promise never to
+            make to a client. Each row carries the endpoints that prove it.
+          */}
+          {platform.length > 0 && (
+            <section className="mb-5 overflow-hidden rounded-xl border border-[color:var(--oc-border)] bg-white">
+              <button
+                type="button"
+                onClick={() => setShowPlatform((v) => !v)}
+                className="flex w-full items-center gap-2.5 px-4 py-3 text-left transition-colors hover:bg-[color:var(--oc-bg)]/40"
+              >
+                <ShieldCheck className="h-4 w-4 shrink-0 text-[color:var(--oc-green-d)]" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-semibold text-[color:var(--oc-ink)]">
+                    What your CRM actually allows
+                  </span>
+                  <span className="block text-[11.5px] text-[color:var(--oc-text)]/65">
+                    {platform.filter((f) => f.status === 'open').length} surfaces open ·{' '}
+                    {platform.filter((f) => f.status === 'partial').length} partial ·{' '}
+                    {platform.filter((f) => f.status === 'closed').length} closed to everyone — verified against the API
+                  </span>
+                </span>
+                <ArrowRight className={`h-4 w-4 shrink-0 text-[color:var(--oc-text)]/40 transition-transform ${showPlatform ? 'rotate-90' : ''}`} />
+              </button>
+
+              {showPlatform && (
+                <div className="border-t border-[color:var(--oc-border)]">
+                  {platform.map((f) => (
+                    <div key={f.area} className="border-b border-[color:var(--oc-border)] px-4 py-3 last:border-b-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[12.5px] font-semibold text-[color:var(--oc-ink)]">{f.area}</span>
+                        <span
+                          className={`oc-chip px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                            f.status === 'open'
+                              ? 'bg-[color:var(--oc-green)]/15 text-[color:var(--oc-green-d)]'
+                              : f.status === 'partial'
+                              ? 'bg-[color:var(--oc-amber)]/15 text-[color:var(--oc-amber)]'
+                              : 'bg-[color:var(--oc-red)]/12 text-[color:var(--oc-red)]'
+                          }`}
+                        >
+                          {f.status === 'open' ? 'Writable' : f.status === 'partial' ? 'Partial' : 'Read-only'}
+                        </span>
+                        <span className="oc-mono ml-auto text-[10px] text-[color:var(--oc-text)]/35">
+                          checked {f.verified}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[12px] leading-relaxed text-[color:var(--oc-text)]/80">{f.headline}</p>
+                      {f.workaround && (
+                        <p className="mt-1.5 flex gap-1.5 text-[11.5px] leading-relaxed text-[color:var(--oc-green-d)]">
+                          <ArrowRight className="mt-[3px] h-3 w-3 shrink-0" />
+                          {f.workaround}
+                        </p>
+                      )}
+                      <p className="oc-mono mt-1.5 text-[10.5px] leading-relaxed text-[color:var(--oc-text)]/45">{f.evidence}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
           <div className="mb-4 flex flex-wrap gap-1.5">
             {([['all', 'All'], ['ready', 'Working'], ['building', 'Almost'], ['blocked', 'Broken']] as const).map(([k, label]) => (

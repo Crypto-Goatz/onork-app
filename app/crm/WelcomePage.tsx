@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import {
-  Terminal, Users, Sparkles, Gauge, ArrowRight, Loader2, AlertCircle,
-  CheckCircle2, Circle, Receipt, Settings2, ExternalLink,
-} from 'lucide-react'
+import { AlertCircle, ArrowRight, CheckCircle2, Circle, ExternalLink, Gauge, Loader2, Receipt, Settings2, Sparkles, Terminal, Users } from 'lucide-react'
 import { useSso, authHeaders } from './useSso'
 import AppSidebar from './AppSidebar'
 
@@ -143,6 +140,54 @@ export default function WelcomePage() {
             </div>
           </section>
         )}
+
+        {/*
+          NEW CAPABILITIES, stated in terms of what an agency can now SELL.
+          A changelog entry ("blog.publish shipped") means nothing to someone
+          whose job is winning clients; "you can now hand a client a stocked
+          store" is the same fact in the only framing that changes behaviour.
+          The limitation sits in the same card rather than a footnote, because
+          the fastest way to lose trust is to let someone promise a funnel page
+          and find out afterwards.
+        */}
+        <section className="oc-card mt-5 border-l-4 border-l-[color:var(--oc-green-d)] p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--oc-green-d)]" />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[15px] font-bold text-[color:var(--oc-ink)]">New: build and publish client sites</h2>
+              <p className="mt-1 text-[13px] leading-relaxed text-[color:var(--oc-text)]/80">
+                Describe a business and 0nCORE writes the page, then puts it somewhere real.
+              </p>
+              <ul className="mt-2.5 space-y-1.5 text-[12.5px] text-[color:var(--oc-text)]/80">
+                <li className="flex gap-2">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--oc-green-d)]" />
+                  <span><b>Publish as a blog post</b> on the client&rsquo;s own site — native, indexable, and it keeps your styling exactly.</span>
+                </li>
+                <li className="flex gap-2">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--oc-green-d)]" />
+                  <span><b>Stock a store</b> — products, prices and collections created for you, ready to sell.</span>
+                </li>
+                <li className="flex gap-2">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--oc-green-d)]" />
+                  <span><b>Host the page</b> and point their domain at it.</span>
+                </li>
+                <li className="flex gap-2 text-[color:var(--oc-text)]/60">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--oc-amber)]" />
+                  <span>
+                    Native <b>funnel pages</b> cannot be created by anyone — your CRM has no API for it.
+                    Use one of the three above instead.
+                  </span>
+                </li>
+              </ul>
+              <p className="mt-2.5 text-[12px] text-[color:var(--oc-text)]/60">
+                Nothing is written to a client account until you approve the plan.
+              </p>
+              <Link href="/tools" className="oc-btn mt-3 inline-flex items-center gap-2 px-4 py-2.5 text-[13px]">
+                See what your CRM allows <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        </section>
 
         <div className="mt-5 grid gap-2.5 sm:grid-cols-3">
           <Stat label="Client accounts" value={boot ? String(clients) : '—'} />
