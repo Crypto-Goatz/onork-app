@@ -59,21 +59,45 @@ export async function getScanStats(locationId = ROCKETOPP_LOCATION): Promise<Sca
   const problems: string[] = []
   const contacts: Record<string, unknown>[] = []
 
-  // Cursor pagination, not offset. /contacts/ rejects `skip` outright —
-  // 422 "property skip should not exist" — and pages with startAfterId.
-  let cursor = ''
-  for (let page = 0; page < 5; page++) {
-    const res = await crmGet(`/contacts/?limit=100${cursor ? `&startAfterId=${cursor}` : ''}`, locationId)
+  // Cursor pagination, and it needs BOTH cursors.
+  //
+  // /contacts/ rejects `skip` outright (422 "property skip should not exist").
+  // It pages with startAfterId — but startAfterId ALONE returns the same page
+  // forever, because the cursor is (timestamp, id) and the timestamp half is
+  // `startAfter`. Sending only the id silently loops: five passes over the same
+  // hundred contacts read as five times the leads and five times the pipeline
+  // value, which is a wrong number that looks entirely plausible.
+  //
+  // The id set is belt and braces. If the cursor ever misbehaves again, the
+  // count stays honest instead of inflating.
+  const seenIds = new Set<string>()
+  let afterId = ''
+  let afterTs = ''
+  for (let page = 0; page < 10; page++) {
+    const cursor = afterId ? `&startAfterId=${afterId}&startAfter=${afterTs}` : ''
+    const res = await crmGet(`/contacts/?limit=100${cursor}`, locationId)
     if (!res.ok) {
       problems.push(`Contact list returned ${res.status} on page ${page + 1}.`)
       break
     }
     const body = await json(res)
     const batch = Array.isArray(body.contacts) ? (body.contacts as Record<string, unknown>[]) : []
-    contacts.push(...batch)
-    if (batch.length < 100) break
-    cursor = String(batch[batch.length - 1]?.id || '')
-    if (!cursor) break
+
+    const fresh = batch.filter((c) => {
+      const id = String(c.id || '')
+      if (!id || seenIds.has(id)) return false
+      seenIds.add(id)
+      return true
+    })
+    contacts.push(...fresh)
+
+    // No new ids means the cursor stopped advancing — stop rather than spin.
+    if (batch.length < 100 || fresh.length === 0) break
+
+    const last = batch[batch.length - 1]
+    afterId = String(last?.id || '')
+    afterTs = String(Date.parse(String(last?.dateAdded || '')) || '')
+    if (!afterId || !afterTs) break
   }
 
   const scanned = contacts.filter((c) => {
