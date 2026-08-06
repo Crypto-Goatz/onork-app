@@ -308,6 +308,14 @@ export const AGENCY_V2_APP: CrmApp = {
   pitEnv: 'CRM_AGENCY_V2_PIT',
   authClass: 'Company',
   redirectUri: 'https://app.0ncore.com/api/oauth/callback',
+  // The install grants ONLY what it requests, and only what the app offers.
+  // v2.0.0 of this app additionally offers custom-menu-link.* and
+  // saas/location.* — so they are requested here, or a fresh install lands back
+  // at eight. oauth.readonly / oauth.write are deliberately absent: the portal
+  // tags them Sub-Account and marks them 🔒 Unavailable on an agency-type app.
+  // They cannot be granted here at all — location-token minting (oauth.write)
+  // and installed-location listing (oauth.readonly) belong to a separate
+  // sub-account app, which is what the legacy 69c762… app appears to be for.
   scopes: [
     'locations.write',
     'locations.readonly',
@@ -316,6 +324,10 @@ export const AGENCY_V2_APP: CrmApp = {
     'companies.readonly',
     'saas/company.read',
     'saas/company.write',
+    'saas/location.read',
+    'saas/location.write',
+    'custom-menu-link.readonly',
+    'custom-menu-link.write',
     'marketplace-installer-details.readonly',
   ],
 }

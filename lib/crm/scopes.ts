@@ -81,40 +81,29 @@ export const SUBACCOUNT_SCOPES = [
 ] as const
 
 /**
- * Agency-only scopes — the agency app, installed once at the company level.
- *
- * These are the six-plus that a sub-account install cannot hold, and the reason
- * menu links, the SaaS configurator, snapshot deploys, and writing a location's
- * feature permissions all return 401 today. Each line is annotated with what it
- * unlocks so a future reader knows why removing one breaks a feature.
+ * The AGENCY scope list is NOT here — it lives on `AGENCY_V2_APP.scopes` in
+ * lib/crm-apps.ts, because that constant is what the install route actually
+ * requests, and two lists drift. Import it from there. What matters about the
+ * split is a portal fact learned the hard way: an agency-type app can hold
+ * `custom-menu-link.*`, `saas/*`, `snapshots.*`, `locations.write` and
+ * `companies.readonly`, but NOT `oauth.readonly` / `oauth.write` — the portal
+ * tags those Sub-Account and marks them Unavailable on an agency app. Minting
+ * location tokens therefore needs a separate sub-account app; it can never come
+ * from the agency install, no matter how many times you reinstall.
  */
-export const AGENCY_SCOPES = [
-  'custom-menu-link.readonly', 'custom-menu-link.write', // POST /custom-menus/ — the marketplace menu links
-  'saas/company.read', 'saas/company.write',            // agency-level SaaS configurator
-  'saas/location.read', 'saas/location.write',           // per-client plan assignment / rebilling
-  'snapshots.readonly',                                  // load + deploy the master snapshot on provision
-  'locations.write',                                     // PUT /locations/{id}/permissions — 25 feature toggles
-  'companies.readonly',                                  // list installed locations, mint location tokens
-  'oauth.readonly', 'oauth.write',                       // POST /oauth/locationToken from the agency token
-] as const
 
-export type CrmScope = (typeof SUBACCOUNT_SCOPES)[number] | (typeof AGENCY_SCOPES)[number]
+export type CrmScope = (typeof SUBACCOUNT_SCOPES)[number]
 
 /**
  * Build the `scope=` value for an install URL.
  *
  * The CRM's authorize endpoint wants scopes space-delimited, and a `+` in a
  * query string IS an encoded space — so the join is deliberate, not a
- * concatenation bug. `dedupe` guards the overlap (`oauth.*` is on both lists).
+ * concatenation bug. The `Set` guards any accidental duplicate.
  */
 export function scopeString(scopes: readonly string[]): string {
   return Array.from(new Set(scopes)).join('+')
 }
-
-/** What an agency-app install URL should request: sub-account work PLUS the agency-only set. */
-export const AGENCY_INSTALL_SCOPES = Array.from(
-  new Set([...SUBACCOUNT_SCOPES, ...AGENCY_SCOPES]),
-) as string[]
 
 /**
  * Read the scopes a token actually came back with.

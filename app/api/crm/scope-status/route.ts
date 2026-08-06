@@ -13,12 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { AGENCY_V2_APP } from '@/lib/crm-apps'
-import {
-  AGENCY_SCOPES,
-  SUBACCOUNT_SCOPES,
-  grantedFrom,
-  missingFrom,
-} from '@/lib/crm/scopes'
+import { SUBACCOUNT_SCOPES, grantedFrom, missingFrom } from '@/lib/crm/scopes'
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -26,7 +21,13 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const level = req.nextUrl.searchParams.get('level') === 'sub' ? 'sub' : 'agency'
-  const requested: string[] = level === 'agency' ? [...AGENCY_SCOPES] : [...SUBACCOUNT_SCOPES]
+  // The requested set is whatever the install route actually asks for, so the
+  // diff reflects reality: AGENCY_V2_APP.scopes for the agency app (which is
+  // what GET /api/oauth/install/agency requests), SUBACCOUNT_SCOPES for the
+  // marketplace app. oauth.* is intentionally not in either agency list —
+  // it is ungrantable on an agency app, so it must not read as "missing".
+  const requested: string[] =
+    level === 'agency' ? [...AGENCY_V2_APP.scopes] : [...SUBACCOUNT_SCOPES]
 
   // Find the install to inspect. Agency: the one AGENCY_V2 app. Sub: the
   // install tied to the caller's location.
