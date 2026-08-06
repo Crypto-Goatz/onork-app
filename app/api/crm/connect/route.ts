@@ -17,7 +17,9 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const clientId = process.env.CRM_MARKETPLACE_APP_CLIENT_ID || '69c762225a31e1cd2f28dd4c-mnu5pazi'
-  const redirectUri = encodeURIComponent('https://0ncore.com/api/oauth/callback')
+  // app.0ncore.com — the redirect the live sub-account app allows. Must match
+  // the callback's exchange redirect exactly or the token swap 400s.
+  const redirectUri = encodeURIComponent('https://app.0ncore.com/api/oauth/callback')
   const scopes = scopeString(SUBACCOUNT_SCOPES)
 
   const installUrl = `https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=${redirectUri}&client_id=${clientId}&scope=${scopes}`

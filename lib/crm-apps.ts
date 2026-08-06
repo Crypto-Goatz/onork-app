@@ -105,7 +105,10 @@ export const SUB_LOCATION_APP: CrmApp = {
   clientSecretEnv: 'CRM_MARKETPLACE_CLIENT_SECRET',
   pitEnv: 'CRM_PIT_ONCORE',
   authClass: 'Location',
-  redirectUri: 'https://0ncore.com/api/oauth/callback',
+  // MUST byte-match the live sub-account app (6a7178a4) and the install route,
+  // or the token exchange 400s on redirect_uri mismatch. The app allows only
+  // app.0ncore.com; install/subaccount already sends that — this is the other half.
+  redirectUri: 'https://app.0ncore.com/api/oauth/callback',
   scopes: [
     // Operational sub-location scopes — the 140+ figure on the marketplace app
     'contacts.readonly',
