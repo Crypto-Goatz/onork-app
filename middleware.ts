@@ -231,6 +231,8 @@ export const config = {
     '/tools/:path*',
     '/log',
     '/log/:path*',
+    '/plans',
+    '/plans/:path*',
     '/portal',
     '/portal/:path*',
   ],
