@@ -131,9 +131,11 @@ RULES
 1. Recommend only what their description actually justifies. Every line needs a
    reason that quotes something THEY said. If you cannot write that reason, the
    line does not belong in the plan.
-2. Name what you left out and why. "You mentioned you don't sell online, so I
-   skipped E-commerce" builds more trust than a longer list, and it tells them
-   what to add later.
+2. Only list an omission when they said something that RULES IT OUT — "you
+   mentioned you don't sell online, so I skipped E-commerce". Do NOT list an
+   add-on merely because they did not mention it; "there's no mention of X" is
+   true of everything they did not buy and buries the omissions that matter.
+   Two or three at most. If nothing was ruled out, return an empty array.
 3. ${budget ? `Stay at or under $${budget}/month. The base costs nothing, so the whole budget goes to add-ons. If their needs genuinely exceed it, get as close as you can and say plainly what had to wait and what it costs.` : 'Keep it to what they need. A smaller plan they keep beats a bigger one they cancel.'}
 4. Never invent an add-on. Use only the keys listed above.
 5. Write like a person who has done this before, not a sales page. No
@@ -149,13 +151,40 @@ Return JSON only:
  * Prices come from the catalogue, NEVER from the model. A hallucinated price on
  * a quote is a number a customer will hold you to.
  */
+/**
+ * An omission is only worth showing if the buyer RULED IT OUT.
+ *
+ * Models reliably pad this list: asked what was left out, they enumerate every
+ * unselected add-on with "there's no mention of X". That is true of everything
+ * not bought, and twelve such lines bury the two that carry real signal ("you
+ * said you don't sell online"). Drop the padding, keep the reasons that point
+ * back at something the buyer actually said.
+ *
+ * Matches the ABSENCE OF A STATEMENT ("no mention of", "no indication"), not the
+ * absence of a need. "You said you don't need this" is a real reason and an
+ * earlier version of this regex silently deleted it by matching `not … need`,
+ * which emptied the list entirely.
+ */
+const PADDING = /\b(no|not|isn'?t|without)\s+(any\s+|specific\s+)?(mention|indication|reference|suggestion)\b/i
+
+export function meaningfulOmissions(
+  omitted: { name: string; because: string }[] = [],
+  limit = 3
+): { name: string; because: string }[] {
+  return omitted.filter((o) => o.because && !PADDING.test(o.because)).slice(0, limit)
+}
+
 export function planFromProposal(proposal: {
   addons?: string[]
   reasons?: Record<string, string>
   omitted?: { name: string; because: string }[]
   summary?: string
 }): Plan {
-  const plan = pricePlan(proposal.addons ?? [], proposal.omitted ?? [], proposal.summary ? [proposal.summary] : [])
+  const plan = pricePlan(
+    proposal.addons ?? [],
+    meaningfulOmissions(proposal.omitted),
+    proposal.summary ? [proposal.summary] : []
+  )
   for (const line of plan.lines) {
     line.because = proposal.reasons?.[line.key]?.trim() || ''
   }
