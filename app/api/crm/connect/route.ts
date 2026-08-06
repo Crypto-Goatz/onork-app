@@ -1,55 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import {
+  SUBACCOUNT_SCOPES,
+  AGENCY_INSTALL_SCOPES,
+  scopeString,
+} from '@/lib/crm/scopes'
 
-// GET /api/crm/connect — Generate CRM OAuth install URL
-// This lets users install the marketplace app FROM the 0nCore dashboard
-export async function GET() {
+// GET /api/crm/connect — Generate a CRM OAuth install URL.
+//
+// Two install shapes, chosen by ?level=. They are genuinely different installs,
+// not two views of one:
+//
+//   sub  (default) — the marketplace app, installed per location via
+//                    `chooselocation`. Day-to-day scopes only.
+//   agency         — the agency app, installed once at the company level via
+//                    `chooseaccount`. Carries the agency-only scopes (menu
+//                    links, SaaS configurator, snapshots, locations.write) that
+//                    a sub-account install can never hold.
+//
+// The scope lists live in lib/crm/scopes.ts so they are reviewable in a diff
+// rather than buried in this handler.
+export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const clientId = process.env.CRM_MARKETPLACE_APP_CLIENT_ID || '69c762225a31e1cd2f28dd4c-mnu5pazi'
+  const level = req.nextUrl.searchParams.get('level') === 'agency' ? 'agency' : 'sub'
   const redirectUri = encodeURIComponent('https://0ncore.com/api/oauth/callback')
 
-  // All scopes the app needs
-  const scopes = [
-    'contacts.readonly', 'contacts.write',
-    'conversations.readonly', 'conversations.write', 'conversations/message.readonly', 'conversations/message.write',
-    'calendars.readonly', 'calendars.write', 'calendars/events.readonly', 'calendars/events.write',
-    'opportunities.readonly', 'opportunities.write',
-    'invoices.readonly', 'invoices.write',
-    'payments/orders.readonly', 'payments/orders.write', 'payments/transactions.readonly',
-    'socialplanner/oauth.readonly', 'socialplanner/oauth.write',
-    'socialplanner/post.readonly', 'socialplanner/post.write',
-    'socialplanner/account.readonly', 'socialplanner/account.write',
-    'socialplanner/csv.readonly', 'socialplanner/csv.write',
-    'socialplanner/category.readonly', 'socialplanner/category.write',
-    'emails/builder.readonly', 'emails/builder.write',
-    'forms.readonly', 'forms.write',
-    'funnels/funnel.readonly', 'funnels/page.readonly', 'funnels/redirect.readonly', 'funnels/redirect.write',
-    'locations.readonly', 'locations/customFields.readonly', 'locations/customFields.write',
-    'locations/customValues.readonly', 'locations/customValues.write',
-    'locations/tasks.readonly', 'locations/tasks.write',
-    'locations/tags.readonly', 'locations/tags.write',
-    'medias.readonly', 'medias.write',
-    'users.readonly', 'users.write',
-    'products.readonly', 'products.write',
-    'campaigns.readonly',
-    'workflows.readonly',
-    'phonenumbers.read', 'phonenumbers.write',
-    'objects/schema.readonly', 'objects/schema.write', 'objects/record.readonly', 'objects/record.write',
-    'knowledge-bases.readonly', 'knowledge-bases.write',
-    'blogs/posts.readonly', 'blogs/post.write', 'blogs/list.readonly',
-    'brand-boards/design-kit.readonly', 'brand-boards/design-kit.write',
-    'voice-ai-agents.readonly', 'voice-ai-agents.write',
-    'courses.readonly', 'courses.write',
-    'surveys.readonly',
-    'businesses.readonly', 'businesses.write',
-    'oauth.readonly', 'oauth.write',
-    'saas/location.read', 'saas/location.write',
-  ].join('+')
+  const clientId =
+    level === 'agency'
+      ? process.env.CRM_AGENCY_APP_CLIENT_ID || '6a71919be8d7c3c038df0839-mnu5pazi'
+      : process.env.CRM_MARKETPLACE_APP_CLIENT_ID || '69c762225a31e1cd2f28dd4c-mnu5pazi'
 
-  const installUrl = `https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=${redirectUri}&client_id=${clientId}&scope=${scopes}`
+  // Agency installs choose a whole account; sub-account installs choose a
+  // location. Requesting agency scopes through `chooselocation` is exactly how
+  // they get silently dropped from the grant.
+  const chooser = level === 'agency' ? 'chooseaccount' : 'chooselocation'
+  const scopes = scopeString(level === 'agency' ? AGENCY_INSTALL_SCOPES : SUBACCOUNT_SCOPES)
 
-  return NextResponse.json({ url: installUrl })
+  const installUrl = `https://marketplace.gohighlevel.com/oauth/${chooser}?response_type=code&redirect_uri=${redirectUri}&client_id=${clientId}&scope=${scopes}`
+
+  return NextResponse.json({ url: installUrl, level })
 }
