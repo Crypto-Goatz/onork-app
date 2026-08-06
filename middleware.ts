@@ -43,7 +43,11 @@ export async function middleware(request: NextRequest) {
     // /portal is for MEMBERS — the agency's customers — not the agency
     // dashboard, so it must not be rewritten into /crm. It is the one public
     // surface on this host.
-    if (!p.startsWith('/api') && !p.startsWith('/_next') && !p.startsWith('/crm') && !p.startsWith('/portal') && !p.startsWith('/widgets')) {
+    // /p and /scan are standalone surfaces like /portal — they must NOT be
+    // rewritten under /crm. Adding them to the matcher without adding them here
+    // turned a working page into a 404: the matcher makes middleware RUN, and
+    // running middleware is what applies the rewrite.
+    if (!p.startsWith('/api') && !p.startsWith('/_next') && !p.startsWith('/crm') && !p.startsWith('/portal') && !p.startsWith('/widgets') && !p.startsWith('/p/') && !p.startsWith('/scan')) {
       const url = request.nextUrl.clone()
       url.pathname = p === '/' ? '/crm' : `/crm${p}`
       return NextResponse.rewrite(url)

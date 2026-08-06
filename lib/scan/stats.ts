@@ -59,10 +59,11 @@ export async function getScanStats(locationId = ROCKETOPP_LOCATION): Promise<Sca
   const problems: string[] = []
   const contacts: Record<string, unknown>[] = []
 
-  // Page through. A single request caps out and would silently under-report the
-  // pipeline, which is worse than showing nothing.
+  // Cursor pagination, not offset. /contacts/ rejects `skip` outright —
+  // 422 "property skip should not exist" — and pages with startAfterId.
+  let cursor = ''
   for (let page = 0; page < 5; page++) {
-    const res = await crmGet(`/contacts/?limit=100&skip=${page * 100}`, locationId)
+    const res = await crmGet(`/contacts/?limit=100${cursor ? `&startAfterId=${cursor}` : ''}`, locationId)
     if (!res.ok) {
       problems.push(`Contact list returned ${res.status} on page ${page + 1}.`)
       break
@@ -71,6 +72,8 @@ export async function getScanStats(locationId = ROCKETOPP_LOCATION): Promise<Sca
     const batch = Array.isArray(body.contacts) ? (body.contacts as Record<string, unknown>[]) : []
     contacts.push(...batch)
     if (batch.length < 100) break
+    cursor = String(batch[batch.length - 1]?.id || '')
+    if (!cursor) break
   }
 
   const scanned = contacts.filter((c) => {
