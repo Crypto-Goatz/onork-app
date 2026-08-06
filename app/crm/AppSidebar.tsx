@@ -35,29 +35,8 @@ export interface AppSidebarProps {
 
 export default function AppSidebar({ current, activeCount, totalCount, usageLabel, onHide }: AppSidebarProps) {
   return (
-    <aside className="oc-sidebar hidden w-[268px] shrink-0 lg:block">
-      {/*
-        Dark gradient + grid. The rail is chrome, not content — giving it its own
-        surface stops it competing with the cards it sits beside and makes the
-        page read as "tool" rather than "another white panel".
-
-        The grid is two repeating-linear-gradients rather than an image: no
-        request, no asset to lose, and it scales at any DPI. Held at 4% white so
-        it reads as texture and never as lines to focus on.
-      */}
-      <div
-        className="sticky top-[57px] flex max-h-[calc(100vh-57px)] flex-col gap-4 overflow-y-auto p-4"
-        style={{
-          backgroundColor: '#181D19',
-          backgroundImage: [
-            'repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, transparent 1px 32px)',
-            'repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 1px, transparent 1px 32px)',
-            'radial-gradient(120% 80% at 50% 0%, rgba(110,224,90,.10) 0%, transparent 55%)',
-            'linear-gradient(180deg, #1F2621 0%, #181D19 45%, #12160F 100%)',
-          ].join(', '),
-          borderLeft: '1px solid rgba(255,255,255,.07)',
-        }}
-      >
+    <aside className="oc-sidebar hidden min-h-[calc(100vh-57px)] w-[268px] shrink-0 lg:block">
+      <div className="sticky top-[57px] flex max-h-[calc(100vh-57px)] flex-col gap-4 overflow-y-auto p-4">
 
         <nav aria-label="Sections" className="space-y-1">
           {NAV.map((n) => {
@@ -71,13 +50,11 @@ export default function AppSidebar({ current, activeCount, totalCount, usageLabe
                 key={n.href}
                 href={n.href}
                 aria-current={on ? 'page' : undefined}
-                className={`group flex items-center gap-3 rounded-[13px] px-3 py-2.5 text-[13.5px] transition-all ${
-                  on
-                    ? 'bg-white/[0.10] font-semibold text-white shadow-[0_6px_16px_-6px_rgba(0,0,0,.6)] ring-1 ring-inset ring-white/15'
-                    : 'text-white/70 hover:bg-white/[0.06] hover:text-white'
+                className={`oc-navitem group flex items-center gap-3 rounded-[13px] px-3 py-2.5 text-[13.5px] ${
+                  on ? 'font-semibold text-white' : 'text-white/80 hover:text-white'
                 }`}
               >
-                <Icon className={`h-4 w-4 shrink-0 ${on ? 'text-[color:var(--oc-green)]' : 'text-white/40 group-hover:text-[color:var(--oc-green)]'}`} />
+                <Icon className={`h-4 w-4 shrink-0 ${on ? 'text-[color:var(--oc-green)]' : 'text-white/70 group-hover:text-white'}`} />
                 {n.label}
               </Link>
             )
@@ -90,13 +67,13 @@ export default function AppSidebar({ current, activeCount, totalCount, usageLabe
           86 sub-accounts advertised work nobody is charged for and buried the
           number that actually matters.
         */}
-        <section className="rounded-[16px] border border-white/10 bg-white/[0.05] p-3.5 backdrop-blur-sm">
-          <div className="oc-mono mb-2 text-[10px] font-bold uppercase tracking-[.12em] text-white/45">
+        <section className="rounded-[16px] oc-glass p-3.5">
+          <div className="oc-mono mb-2 text-[10px] font-bold uppercase tracking-[.12em] text-white/60">
             Switched on
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-[26px] font-bold leading-none text-white">{activeCount}</span>
-            <span className="text-[12px] text-white/55">
+            <span className="text-[12px] text-white/70">
               of {totalCount} client{totalCount === 1 ? '' : 's'}
             </span>
           </div>
@@ -109,14 +86,14 @@ export default function AppSidebar({ current, activeCount, totalCount, usageLabe
           </p>
           <Link
             href="/clients"
-            className="oc-chip mt-3 inline-flex w-full items-center justify-center gap-1.5 border border-white/15 bg-white/[0.06] px-3 py-2 text-white/80 transition-colors hover:border-[color:var(--oc-green)] hover:text-white"
+            className="oc-chip mt-3 inline-flex w-full items-center justify-center gap-1.5 oc-navitem border-white/15 bg-white/[0.06] px-3 py-2 text-white/85 hover:text-white"
           >
             <Building2 className="h-3.5 w-3.5" /> Manage clients
           </Link>
         </section>
 
-        <section className="rounded-[16px] border border-white/10 bg-white/[0.05] p-3.5 backdrop-blur-sm">
-          <div className="oc-mono mb-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-[.12em] text-white/45">
+        <section className="rounded-[16px] oc-glass p-3.5">
+          <div className="oc-mono mb-2 flex items-center justify-between text-[10px] font-bold uppercase tracking-[.12em] text-white/60">
             <span>Tasks</span>
             {onHide && (
               <button onClick={onHide} aria-label="Hide sidebar" className="text-white/70/40 transition-colors hover:text-white">
