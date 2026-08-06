@@ -6,6 +6,7 @@ import { publishAsBlogPost, resolveBlogTargets, slugify } from '@/lib/crm/blog'
 import { createProduct, createCollection, provisionStore, STORE_BLAST_RADIUS, type SourceProduct } from '@/lib/crm/store'
 import { renderPage } from '@/lib/render'
 import { createMenuLink } from '@/lib/crm/menu'
+import { applyFeatures, planFeatureChange } from '@/lib/crm/permissions'
 
 
 /**
@@ -197,6 +198,27 @@ const HANDLERS: Record<string, Handler> = {
       `Added "${title}" to the CRM sidebar for ${r.reach === 'all' ? 'ALL sub-accounts' : `${r.reach} sub-account(s)`}.`,
       typeof r.reach === 'number' ? r.reach : 1, price, r
     )
+  },
+
+  'location.features': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client account to configure.')
+    const addons = (leg.params?.addons as string[]) || []
+
+    const r = await applyFeatures(loc, addons, {
+      // Disabling can hide a client's existing funnels, workflows or membership
+      // content behind a paywall they did not know they crossed. Additive
+      // unless the plan explicitly asked to remove.
+      allowDisable: leg.params?.allowDisable === true,
+    })
+    if (!r.ok) return fail('Could not update the CRM features.', r.error)
+
+    const on = r.enabled?.length ?? 0
+    const off = r.disabled?.length ?? 0
+    const parts = [`${on} feature${on === 1 ? '' : 's'} switched on`]
+    if (off) parts.push(`${off} switched off`)
+    if (!on && !off) parts.push('nothing to change — already matches the plan')
+    return ok(parts.join(', ') + '.', on + off, price, r)
   },
 
   /* ── generated pages ── */

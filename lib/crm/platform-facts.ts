@@ -102,6 +102,24 @@ export const PLATFORM_FACTS: PlatformFact[] = [
     verified: '2026-08-04',
   },
   {
+    area: 'Per-client feature control',
+    status: 'open',
+    headline:
+      'Features can be switched on and off per sub-account — 25 of them. This is what lets a client pick their services and get a CRM containing only those.',
+    evidence:
+      'PUT /locations/{locationId}/permissions takes the exact feature set. Needs locations/write, which is on the AGENCY token — a location PIT answers 401 "not authorized for this scope", which reads like a broken endpoint and is not one.',
+    verified: '2026-08-05',
+  },
+  {
+    area: 'SaaS plans & subscriptions',
+    status: 'open',
+    headline:
+      'Larger than it first appears: agency plans CAN be listed, SaaS enabled per location, and subscriptions updated or paused.',
+    evidence:
+      'GET /saas-api/public-api/agency-plans/{companyId} · POST enable-saas/{locationId} · PUT update-saas-subscription/{locationId} · POST pause/{locationId} · bulk-enable/disable. Creating a NEW plan definition is still UI-only.',
+    verified: '2026-08-05',
+  },
+  {
     area: 'Media library',
     status: 'open',
     headline: 'Files can be uploaded and organised into folders — generated images and assets have a home.',

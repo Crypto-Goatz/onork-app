@@ -5,6 +5,7 @@ import { assertExecutable, legPriceCents } from '@/lib/crm/registry'
 import { renderPage } from '@/lib/render'
 import { resolveBlogTargets, slugify } from '@/lib/crm/blog'
 import { STORE_BLAST_RADIUS } from '@/lib/crm/store'
+import { planFeatureChange } from '@/lib/crm/permissions'
 
 /**
  * Propose site work. Writes NOTHING.
@@ -21,7 +22,7 @@ import { STORE_BLAST_RADIUS } from '@/lib/crm/store'
  */
 
 /** Capabilities this route is allowed to plan. Deny by default. */
-const ALLOWED = new Set(['blog.publish', 'product.create', 'product.collection', 'store.provision', 'menu.link'])
+const ALLOWED = new Set(['blog.publish', 'product.create', 'product.collection', 'store.provision', 'menu.link', 'location.features'])
 
 export async function POST(req: Request) {
   // Authed like every other plan route. A signed plan is a capability token —
@@ -155,6 +156,24 @@ export async function POST(req: Request) {
         reach: params.showToAllLocations === true ? 'ALL sub-accounts' : `${(params.locations as string[])?.length ?? 1} sub-account(s)`,
         ...(params.showToAllLocations === true
           ? { warning: 'This appears in EVERY sub-account you manage, for every user.' }
+          : {}),
+      })
+    }
+
+    if (capability === 'location.features') {
+      const addons = (params.addons as string[]) || []
+      const diff = await planFeatureChange(locationId, addons)
+      if ('error' in diff) { blockers.push(diff.error); continue }
+      // Removals are shown as prominently as additions: switching a feature off
+      // is the part that can hide a client's existing work.
+      preview.push({
+        capability,
+        summary: `Match CRM features to the plan (${addons.length} add-on(s))`,
+        enabling: diff.enabling,
+        ...(params.allowDisable === true && diff.disabling.length
+          ? { warning: `Will SWITCH OFF: ${diff.disabling.join(', ')} — any existing content behind these becomes inaccessible.` }
+          : diff.disabling.length
+          ? { note: `${diff.disabling.length} feature(s) are on but not in the plan. They stay on unless you ask to remove them.` }
           : {}),
       })
     }

@@ -155,6 +155,16 @@ export const CAPABILITIES: Capability[] = [
     mechanism: 'native', requires: 'crm',
   },
 
+  {
+    // THE ENDPOINT THAT MAKES THE CONFIGURATOR REAL. Until this, a plan was a
+    // priced list and the sub-account still arrived with all 25 features
+    // whether they were paid for or not.
+    tokenAudience: 'agency',
+    id: 'location.features',
+    intent: 'turn a client’s CRM features on or off to match their plan',
+    mechanism: 'native', requires: 'crm',
+  },
+
   // ── store & commerce ──
   // The most writable surface on the platform, and the inverse of funnels: we
   // cannot create a page for anyone, but we can stock, price and categorise an
