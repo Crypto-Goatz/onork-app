@@ -136,7 +136,18 @@ export const CAPABILITIES: Capability[] = [
 
   // ── funnels & sites ──
   { id: 'funnel.clone', intent: 'give a NEW client one of my funnels', mechanism: 'snapshot', snapshotKind: 'funnel', requires: 'crm', atCreateOnly: true },
-  { id: 'site.build', intent: 'build a website or landing page', mechanism: 'product', meter: 'SITE_BUILD' },
+  {
+    // HONEST DOWNGRADE. There is no create-API for a native multi-page site, and
+    // 0nCORE has no site builder of its own yet — so this cannot be an
+    // "almost". What IS real is page.render + blog.publish: a single landing
+    // page, rendered by us and published as an indexable page on the client's
+    // blog (verified end to end). The offer says exactly that instead of
+    // promising a whole site we cannot build.
+    id: 'site.build', intent: 'build a website or landing page',
+    mechanism: 'blocked',
+    insteadOffer:
+      "I can't spin up a full multi-page website from here — the platform has no create-API for native sites, and 0nCORE's own site builder isn't live yet. What I can do right now is generate a landing page and publish it as an indexable page on the client's blog, or hand you the rendered HTML to host anywhere.",
+  },
   {
     id: 'funnel.edit', intent: 'edit the content of an existing funnel page',
     mechanism: 'blocked',
@@ -216,7 +227,9 @@ export const CAPABILITIES: Capability[] = [
   { id: 'external.call', intent: 'do something in another service — mail, payments, docs', mechanism: 'onmcp', requires: 'onmcp' },
 
   // ── our side only ──
-  { id: 'report.rollup', intent: 'report across every client at once', mechanism: 'product' },
+  // Agency audience: a rollup spans every client, so it must NOT demand a single
+  // locationId — without this the executor refuses it as a per-location step.
+  { tokenAudience: 'agency', id: 'report.rollup', intent: 'report across every client at once', mechanism: 'product' },
 ]
 
 const BY_ID = new Map(CAPABILITIES.map((c) => [c.id, c]))

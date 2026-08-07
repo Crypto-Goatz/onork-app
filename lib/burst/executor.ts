@@ -1,5 +1,7 @@
+import { createClient } from '@supabase/supabase-js'
 import { crmGet, crmPost, crmPostRaw, crmPut } from '@/lib/crm'
 import { getValidAgencyToken } from '@/lib/crm/agency-token'
+import { listAgencyLocations } from '@/lib/crm/locations'
 import { capability, tokenAudienceFor, assertExecutable, legPriceCents } from '@/lib/crm/registry'
 import { canRun, settle } from '@/lib/billing/gate'
 import { publishAsBlogPost, resolveBlogTargets, slugify } from '@/lib/crm/blog'
@@ -706,6 +708,42 @@ const HANDLERS: Record<string, Handler> = {
       ? `Tagged ${applied} of ${contacts.length} with "${tag}" — ${failures.length} failed.`
       : `Tagged ${applied} contact${applied === 1 ? '' : 's'} with "${tag}".`
     return ok(detail, applied, price)
+  },
+
+  // Our-side rollup across every sub-account on the agency. Same two sources
+  // the Clients page uses — the CRM's own location list and burst_receipts —
+  // so the number here and the number there can never disagree.
+  'report.rollup': async (leg) => {
+    const { locations, error } = await listAgencyLocations(leg.companyId)
+    if (error) return fail('Could not read your client list.', error)
+
+    const sb = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } },
+    )
+    const { data: receipts } = await sb
+      .from('burst_receipts')
+      .select('location_id, status')
+      .eq('company_id', leg.companyId)
+      .limit(5000)
+
+    let runs = 0
+    let failures = 0
+    const active = new Set<string>()
+    for (const r of receipts ?? []) {
+      runs += 1
+      if (r.status !== 'ok') failures += 1
+      if (r.location_id) active.add(r.location_id)
+    }
+
+    const clients = locations.length
+    const detail =
+      `${clients} client${clients === 1 ? '' : 's'} on the agency · ` +
+      `${runs} action${runs === 1 ? '' : 's'} run across ${active.size} of them` +
+      (failures ? ` · ${failures} failed` : '') + '.'
+    // A report costs nothing — it only reads.
+    return ok(detail, clients, 0, { clients, runs, failures, activeClients: active.size })
   },
 }
 
