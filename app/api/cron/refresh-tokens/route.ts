@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { logHealth } from '@/lib/connection-health'
+import { credsForApp } from '@/lib/crm'
 
 const CRM_TOKEN_URL = 'https://services.leadconnectorhq.com/oauth/token'
 
@@ -43,14 +44,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ refreshed: 0, message: 'No tokens expiring soon' })
   }
 
-  const clientId = process.env.CRM_MARKETPLACE_APP_CLIENT_ID || process.env.CRM_MARKETPLACE_CLIENT_ID || ''
-  const clientSecret = process.env.CRM_MARKETPLACE_CLIENT_SECRET || ''
-
   const results: { id: string; status: string; error?: string }[] = []
 
   for (const install of expiring) {
     if (!install.refresh_token) {
       results.push({ id: install.id, status: 'skipped', error: 'No refresh token' })
+      continue
+    }
+
+    // Credentials + user_type are chosen from THIS install's issuing app. A
+    // hardcoded marketplace client_id refreshes only legacy 69c762 tokens; App A
+    // (6a7178a4) and the agency app each need their own client, and the CRM
+    // requires the matching user_type to return a rotated token.
+    const { clientId, clientSecret, userType } = credsForApp(install.app_id)
+    if (!clientId || !clientSecret) {
+      results.push({ id: install.id, status: 'skipped', error: `No creds for app ${install.app_id}` })
       continue
     }
 
@@ -63,6 +71,7 @@ export async function GET(req: NextRequest) {
           client_id: clientId,
           client_secret: clientSecret,
           refresh_token: install.refresh_token,
+          user_type: userType,
         }),
       })
 

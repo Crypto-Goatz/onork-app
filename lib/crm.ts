@@ -20,7 +20,7 @@ const CRM_TOKEN_URL = 'https://services.leadconnectorhq.com/oauth/token'
  *   sub-location ops (contacts, conversations, etc.) → 0nCORE Marketplace
  *   agency ops (sub-accounts, snapshots, billing)    → 0nAGENCY
  */
-import { AGENCY_APP as AGENCY_APP_DEF, SUB_LOCATION_APP } from './crm-apps'
+import { AGENCY_APP as AGENCY_APP_DEF, SUB_LOCATION_APP, AGENCY_V2_APP } from './crm-apps'
 
 export const AGENCY_APP = {
   appId: AGENCY_APP_DEF.appId,
@@ -88,13 +88,59 @@ export function getPitForLocation(locationId: string): string {
 type Auth = { token: string; source: 'oauth' | 'pit'; installId?: string; locationId: string }
 
 /**
- * Refresh an OAuth install's access token via the stored refresh_token,
- * then write the new tokens back to crm_installations.
+ * The client credentials that can refresh a token depend on WHICH app issued
+ * it. A refresh_token minted by App A (the lean sub-account app, 6a7178a4) is
+ * rejected by the CRM if presented with the legacy marketplace app's client_id
+ * — the platform binds a refresh_token to its issuing client. Hardcoding one
+ * app here is the bug that silently kills every external install ~24h after it
+ * lands: the first token works, the refresh fails, and (for a location that is
+ * NOT under our agency) there is no minting fallback to hide it.
+ *
+ * `user_type` must also match how the app installs: Location for a sub-account
+ * app, Company for an agency app — the CRM will not return a rotated token
+ * otherwise.
  */
-async function refreshInstall(installId: string, refreshToken: string): Promise<string | null> {
-  const clientId = MARKETPLACE_APP.clientId
-  const clientSecret = MARKETPLACE_APP.clientSecret || process.env.CRM_MARKETPLACE_CLIENT_SECRET || ''
-  if (!clientSecret || !refreshToken) return null
+export function credsForApp(appId: string): { clientId: string; clientSecret: string; userType: 'Location' | 'Company' } {
+  // App A — the lean sub-account marketplace app going for approval.
+  if (appId === '6a7178a4e8d7c3c038c593b3' || appId === SUB_LOCATION_APP.appId) {
+    return {
+      clientId: process.env.CRM_SUBACCT_CLIENT_ID || process.env.CRM_MARKETPLACE_APP_CLIENT_ID || MARKETPLACE_APP.clientId,
+      clientSecret: process.env.CRM_SUBACCT_CLIENT_SECRET || process.env.CRM_MARKETPLACE_CLIENT_SECRET || MARKETPLACE_APP.clientSecret,
+      userType: 'Location',
+    }
+  }
+  // Agency v2 (6a71919b) — company-level install.
+  if (appId === '6a71919be8d7c3c038df0839' || appId === AGENCY_V2_APP.appId) {
+    return {
+      clientId: process.env[AGENCY_V2_APP.clientIdEnv] || '',
+      clientSecret: process.env[AGENCY_V2_APP.clientSecretEnv] || '',
+      userType: 'Company',
+    }
+  }
+  // Legacy 0nAGENCY (69cf4d25) — company-level install.
+  if (appId === AGENCY_APP.appId) {
+    return {
+      clientId: AGENCY_APP.clientId,
+      clientSecret: AGENCY_APP.clientSecret || process.env.CRM_AGENCY_CLIENT_SECRET || '',
+      userType: 'Company',
+    }
+  }
+  // Legacy marketplace (69c762) and any unknown app → sub-account default.
+  return {
+    clientId: MARKETPLACE_APP.clientId,
+    clientSecret: MARKETPLACE_APP.clientSecret || process.env.CRM_MARKETPLACE_CLIENT_SECRET || '',
+    userType: 'Location',
+  }
+}
+
+/**
+ * Refresh an OAuth install's access token via the stored refresh_token,
+ * then write the new tokens back to crm_installations. Credentials are chosen
+ * from the install's own `appId` — see credsForApp above for why that matters.
+ */
+async function refreshInstall(installId: string, refreshToken: string, appId: string): Promise<string | null> {
+  const { clientId, clientSecret, userType } = credsForApp(appId)
+  if (!clientId || !clientSecret || !refreshToken) return null
 
   const res = await fetch(CRM_TOKEN_URL, {
     method: 'POST',
@@ -107,7 +153,7 @@ async function refreshInstall(installId: string, refreshToken: string): Promise<
       client_id: clientId,
       client_secret: clientSecret,
       refresh_token: refreshToken,
-      user_type: 'Location',
+      user_type: userType,
     }),
   })
 
@@ -146,7 +192,7 @@ export async function getAuthForLocation(locationId: string): Promise<Auth> {
   try {
     const { data } = await getAdmin()
       .from('crm_installations')
-      .select('id, access_token, refresh_token, expires_at, status')
+      .select('id, access_token, refresh_token, expires_at, status, app_id')
       .eq('location_id', locationId)
       .eq('status', 'active')
       .order('updated_at', { ascending: false })
@@ -155,16 +201,19 @@ export async function getAuthForLocation(locationId: string): Promise<Auth> {
 
     if (data?.access_token) {
       const expiresAt = data.expires_at ? new Date(data.expires_at).getTime() : 0
-      const expiringSoon = expiresAt && expiresAt - Date.now() < 60_000
-      if (expiringSoon && data.refresh_token) {
-        const fresh = await refreshInstall(data.id, data.refresh_token)
-        if (fresh) return { token: fresh, source: 'oauth', installId: data.id, locationId }
-      }
-      // If expired AND no refresh token (location-token mints don't return one),
-      // fall through to ensureLocationInstall which will re-mint from agency token.
-      if (!expiringSoon || data.refresh_token) {
+      const stillValid = expiresAt && expiresAt - Date.now() > 60_000
+      if (stillValid) {
         return { token: data.access_token, source: 'oauth', installId: data.id, locationId }
       }
+      // Expired or within 60s of expiry — refresh via the install's OWN app
+      // credentials (App A tokens can't be refreshed with the legacy app's).
+      if (data.refresh_token) {
+        const fresh = await refreshInstall(data.id, data.refresh_token, data.app_id)
+        if (fresh) return { token: fresh, source: 'oauth', installId: data.id, locationId }
+      }
+      // No refresh_token, or the refresh failed → fall through to mint / PIT.
+      // Never return a known-expired access_token: it can only 401, and for a
+      // location under our agency the mint below is the correct recovery.
     }
   } catch (err) {
     console.error('[crm.getAuthForLocation] lookup failed:', err)
@@ -216,11 +265,11 @@ async function authedFetch(url: string, init: RequestInit, auth: Auth): Promise<
       console.log(`[CRM] 401 on OAuth — attempting token refresh for install ${auth.installId}`)
       const { data } = await getAdmin()
         .from('crm_installations')
-        .select('refresh_token')
+        .select('refresh_token, app_id')
         .eq('id', auth.installId)
         .maybeSingle()
       if (data?.refresh_token) {
-        const fresh = await refreshInstall(auth.installId, data.refresh_token)
+        const fresh = await refreshInstall(auth.installId, data.refresh_token, data.app_id)
         if (fresh) {
           console.log(`[CRM] Token refreshed — retrying request`)
           res = await fetch(url, {
