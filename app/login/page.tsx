@@ -35,8 +35,14 @@ export default function LoginPage() {
   }
 
   async function handleOAuth(provider: 'google' | 'linkedin_oidc') {
+    // Forward ?next so social sign-in returns to the same place email login does
+    // (e.g. /login?next=/crm → back to /crm). /auth/callback reads this param.
+    const next = new URLSearchParams(window.location.search).get('next')
+    const cb = next && next.startsWith('/') && !next.startsWith('//')
+      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+      : `${window.location.origin}/auth/callback`
     const options: Record<string, unknown> = {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: cb,
     }
     if (provider === 'google') {
       options.queryParams = {
