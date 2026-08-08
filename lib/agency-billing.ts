@@ -27,6 +27,14 @@ export const AGENCY_BILLING = {
   /** Clients included at no charge before per-client billing starts. */
   freeClients: 1,
   /**
+   * Owner / VIP free-forever: these emails get a 100%-off coupon auto-applied at
+   * checkout, so they walk the entire real flow (card, confirm) and pay $0. Keeps
+   * the founder able to dogfood every paid path without spending. (VIP bypass is
+   * the ecosystem norm.)
+   */
+  freeForeverCoupon: 'nho3CmoH',
+  freeForeverEmails: ['mike@rocketopp.com'],
+  /**
    * Monthly base access fee — $19/mo — but WAIVED FOREVER for the first 50
    * agencies (founding). Agency #51+ pays it; the founding 50 never do, even
    * after the fee turns on. Founding status is recorded per agency at signup so

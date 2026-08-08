@@ -101,16 +101,24 @@ export async function POST() {
   if (quantity > 0) line_items.push({ price: AGENCY_BILLING.perClientPriceId, quantity })
   if (!isFounding) line_items.push({ price: AGENCY_BILLING.basePriceId, quantity: 1 })
 
+  // Owner/VIP walks the full flow for free — auto-apply the 100%-off coupon.
+  // (Stripe forbids discounts + allow_promotion_codes together, so it's one or
+  // the other.)
+  const email = (user.email ?? '').toLowerCase()
+  const freeForever = AGENCY_BILLING.freeForeverEmails.map((e) => e.toLowerCase()).includes(email)
+
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     customer: customerId,
     line_items,
-    metadata: { user_id: user.id, company_id: companyId, kind: 'agency', billable_clients: String(quantity) },
+    metadata: { user_id: user.id, company_id: companyId, kind: 'agency', billable_clients: String(quantity), free_forever: String(freeForever) },
     subscription_data: { metadata: { user_id: user.id, company_id: companyId, kind: 'agency' } },
     success_url: `${APP}/crm?subscribed=1`,
     cancel_url: `${APP}/crm?billing=canceled`,
     billing_address_collection: 'auto',
-    allow_promotion_codes: true,
+    ...(freeForever
+      ? { discounts: [{ coupon: AGENCY_BILLING.freeForeverCoupon }] }
+      : { allow_promotion_codes: true }),
   })
 
   if (!session.url) return NextResponse.json({ error: 'Could not start checkout.' }, { status: 502 })

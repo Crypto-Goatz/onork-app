@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Building2, ListChecks, PanelRightClose, Terminal, Users, Sparkles, Home, Wrench, ScrollText, type LucideIcon } from 'lucide-react'
+import { Building2, ListChecks, PanelRightClose, Terminal, Users, Sparkles, Home, Wrench, ScrollText, CreditCard, type LucideIcon } from 'lucide-react'
 
 /**
  * The app's right-hand sidebar. ONE component, used by every page.
@@ -21,6 +21,7 @@ export const NAV: { href: string; view?: 'dashboard' | 'clients' | 'automations'
   { href: '/clients', view: 'clients', label: 'Clients', icon: Users },
   { href: '/automations', view: 'automations', label: 'Automations & AI', icon: Sparkles },
   { href: '/tools', label: 'Tools', icon: Wrench },
+  { href: '/crm/billing', label: 'Billing', icon: CreditCard },
   { href: '/log', label: 'History', icon: ScrollText },
 ]
 
