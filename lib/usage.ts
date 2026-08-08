@@ -11,18 +11,31 @@
  */
 import { createClient } from '@supabase/supabase-js'
 import { AGENCY_BILLING } from './agency-billing'
+import { chargeWallet } from './crm/wallet-charge'
 
 function admin() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
 }
 
 /**
- * Report `count` API calls for an agency. Resolves the agency's Stripe customer
- * from agency_billing; no customer (not subscribed yet) → nothing to bill.
+ * Bill `count` API calls for an agency. MARKETPLACE FIRST: charge the agency's
+ * GHL wallet (their payment method on file with GHL). If that path isn't live
+ * for them (no CRM token / portal pricing not configured), fall back to the
+ * Stripe meter for standalone agencies.
  */
 export async function reportApiUsage(companyId: string | null | undefined, count: number): Promise<void> {
   try {
     if (!companyId || count <= 0) return
+
+    // 1) Marketplace path — charge the GHL wallet.
+    const wallet = await chargeWallet({
+      companyId,
+      amountCents: count * AGENCY_BILLING.perCallCents,
+      description: `0nCORE — ${count} API call${count === 1 ? '' : 's'}`,
+    })
+    if (wallet.ok) return // billed through the marketplace; done
+
+    // 2) Standalone fallback — Stripe meter.
     const key = process.env.STRIPE_SECRET_KEY
     if (!key) return
 

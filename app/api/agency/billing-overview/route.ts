@@ -8,7 +8,6 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
-import { listAgencyLocations } from '@/lib/crm/locations'
 import { AGENCY_BILLING, billingSummary } from '@/lib/agency-billing'
 
 export const runtime = 'nodejs'
@@ -36,9 +35,12 @@ export async function GET() {
     .order('updated_at', { ascending: false }).limit(1).maybeSingle()
   const companyId = install?.company_id ?? null
 
-  // Live client count + founding.
+  // ADDED clients only — never the whole CRM roster.
   let clients = 0
-  if (companyId) { try { clients = (await listAgencyLocations(companyId)).locations.length } catch {} }
+  if (companyId) {
+    const { count } = await sb.from('agency_added_clients').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active')
+    clients = count ?? 0
+  }
   const summary = billingSummary(clients)
   let isFounding = true
   if (companyId) {

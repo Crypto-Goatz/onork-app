@@ -14,7 +14,6 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
-import { listAgencyLocations } from '@/lib/crm/locations'
 import { AGENCY_BILLING, billableClients } from '@/lib/agency-billing'
 
 export const runtime = 'nodejs'
@@ -55,18 +54,29 @@ export async function POST() {
     return NextResponse.json({ error: 'No agency is linked to this account yet.' }, { status: 403 })
   }
 
-  // Client count → billable quantity. If it can't be read, fall back to 0
-  // billable (metered-only) rather than blocking the sale.
+  // Billable quantity = clients the agency has EXPLICITLY ADDED (first free),
+  // NOT their whole CRM roster. At signup this is 0 (they add clients later via
+  // the add-on flow), so we never charge for sub-accounts they didn't opt into.
   let quantity = 0
-  try {
-    const { locations } = await listAgencyLocations(companyId)
-    quantity = billableClients(locations.length)
-  } catch { /* metered-only */ }
+  {
+    const { count } = await sb.from('agency_added_clients').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active')
+    quantity = billableClients(count ?? 0)
+  }
 
-  // Customer on the owner's profile (create + persist if missing).
+  // Customer on the owner's profile. A stored id can be stale or from a different
+  // Stripe account (test mode, an old setup) — using it blindly fails checkout
+  // with "No such customer". Verify it exists in THIS account; recreate if not.
   const { data: profile } = await sb.from('profiles').select('stripe_customer_id, email').eq('id', user.id).maybeSingle()
   const stripe = getStripe()
   let customerId = profile?.stripe_customer_id ?? undefined
+  if (customerId) {
+    try {
+      const c = await stripe.customers.retrieve(customerId)
+      if ((c as Stripe.DeletedCustomer).deleted) customerId = undefined
+    } catch {
+      customerId = undefined // resource_missing → recreate below
+    }
+  }
   if (!customerId) {
     const customer = await stripe.customers.create({
       email: user.email ?? profile?.email ?? undefined,
