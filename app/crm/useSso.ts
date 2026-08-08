@@ -106,6 +106,25 @@ export function useSso(): Sso {
       }
     }
 
+    // The OTHER front door. Outside the GHL iframe there is no parent to hand us
+    // a payload — but the user may be signed in to 0nCORE directly. Ask the
+    // server to mint a token from that session; only if there is none are we
+    // truly standalone. The token is the same shape the iframe path produces.
+    async function standaloneOrMint() {
+      try {
+        const res = await fetch('/api/auth/standalone-token', { method: 'POST' })
+        const json = await res.json().catch(() => null)
+        if (res.ok && json?.token) {
+          try { sessionStorage.setItem(STORAGE_KEY, json.token) } catch {}
+          finish({ state: 'authed', token: json.token, user: json.user ?? null, error: null })
+          return
+        }
+      } catch {
+        // Network error — fall through to standalone rather than hang.
+      }
+      finish({ state: 'standalone', token: null, user: null, error: null })
+    }
+
     function onMessage(event: MessageEvent) {
       const data = event.data
       if (!data || typeof data !== 'object') return
@@ -133,10 +152,10 @@ export function useSso(): Sso {
       // Storage unavailable — fall through to a normal handshake.
     }
 
-    // Not in an iframe — nobody to ask. Say so immediately.
+    // Not in an iframe — no parent to ask. Try a direct session before declaring
+    // standalone, so a signed-in agency owner lands straight in the dashboard.
     if (window.parent === window) {
-      setSso({ state: 'standalone', token: null, user: null, error: null })
-      settled.current = true
+      void standaloneOrMint()
       return
     }
 
@@ -147,7 +166,9 @@ export function useSso(): Sso {
     window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*')
 
     timer = setTimeout(() => {
-      finish({ state: 'standalone', token: null, user: null, error: null })
+      // The parent never answered. Same fallback as the no-iframe case — a
+      // direct session may still get us in.
+      void standaloneOrMint()
     }, HANDSHAKE_TIMEOUT_MS)
 
     return () => {

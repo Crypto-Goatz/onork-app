@@ -74,7 +74,11 @@ export default function LoginPage() {
         setLoading(false)
         return
       }
-      window.location.href = '/dashboard'
+      // Honour ?next= so /login?next=/crm lands the agency straight in the
+      // command centre. Same-origin paths only — never an open redirect.
+      const next = new URLSearchParams(window.location.search).get('next')
+      const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
+      window.location.href = dest
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed. Please try again.')
       setLoading(false)
