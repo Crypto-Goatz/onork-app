@@ -6,11 +6,12 @@ import {
   Terminal, Users, Workflow, ListChecks, TrendingUp, Gauge,
   Send, Mic, ShieldCheck, Loader2, X, AlertCircle, CheckCircle2,
   PanelRightClose, PanelRightOpen, Building2, Sparkles, Home,
-  Crosshair, ArrowLeft,
+  Crosshair, ArrowLeft, LogOut,
 } from 'lucide-react'
 import { METERS, formatPrice } from '@/lib/meters'
-import { useSso, authHeaders } from './useSso'
+import { useSso, authHeaders, STORAGE_KEY } from './useSso'
 import { LockGate } from '@/components/auth/LockGate'
+import { createClient } from '@/lib/supabase/client'
 import ControlCenter from './ControlCenter'
 import ClientsPage from './ClientsPage'
 import AppSidebar, { NAV } from './AppSidebar'
@@ -98,6 +99,15 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
   const [focusName, setFocusName] = useState<string>('')
   const focusOn = (id: string, name: string) => { setActiveLocation(id); setFocusName(name); setView('dashboard') }
   const clearFocus = () => { setActiveLocation('all'); setFocusName('') }
+
+  // Sign out. The app JWT lives in sessionStorage and is what useSso reads first
+  // — clearing the Supabase session alone would leave that cached token valid for
+  // hours, so the user would still be "in". Drop both, then land on login.
+  const signOut = async () => {
+    try { sessionStorage.removeItem(STORAGE_KEY) } catch { /* private mode */ }
+    try { await createClient().auth.signOut() } catch { /* already gone */ }
+    window.location.href = '/login?next=/crm'
+  }
   const [taskbarOpen, setTaskbarOpen] = useState(true)
   /**
    * Top-level view. The tiles remain the dashboard's own navigation; this is the
@@ -271,6 +281,15 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
             className="grid h-8 w-8 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)] lg:hidden"
           >
             {taskbarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={signOut}
+            aria-label="Sign out"
+            title="Sign out"
+            className="grid h-8 w-8 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-red)] hover:text-[color:var(--oc-red)]"
+          >
+            <LogOut className="h-4 w-4" />
           </button>
         </div>
       </header>

@@ -28,7 +28,7 @@ import { useEffect, useRef, useState } from 'react'
  * the worst of the possible outcomes.
  */
 
-const STORAGE_KEY = 'oncore.app.jwt'
+export const STORAGE_KEY = 'oncore.app.jwt'
 const HANDSHAKE_TIMEOUT_MS = 4000
 
 export type SsoState = 'pending' | 'authed' | 'standalone' | 'rejected'
