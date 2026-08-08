@@ -19,9 +19,9 @@ export const AGENCY_BILLING = {
   /** $5/mo, licensed — quantity = billable clients. */
   perClientPriceId: 'price_1U2FqsHThmAuKVQMq9ynnwev',
   perClientCents: 500,
-  /** $0.10/call, metered — fed by the meter below. */
-  apiMeteredPriceId: 'price_1U2FrBHThmAuKVQMld5UE9UL',
-  perCallCents: 10,
+  /** $0.01/call (a penny), metered — fed by the meter below. */
+  apiMeteredPriceId: 'price_1U2G3aHThmAuKVQMOLiUWs7p',
+  perCallCents: 1,
   /** Stripe billing meter event name for an API call. */
   apiMeterEvent: 'oncore_api_call',
   /** Clients included at no charge before per-client billing starts. */

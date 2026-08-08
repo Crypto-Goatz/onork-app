@@ -350,7 +350,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
             </span>
             <span className="ml-2 text-[12.5px] text-[color:var(--oc-text)]/70">
               {billing.isFounding ? '$0 base · ' : '$19/mo base · '}
-              $5/client/mo (1 free) + $0.10/API call ·{' '}
+              $5/client/mo (1 free) + $0.01/API call ·{' '}
               {billing.billableClients > 0
                 ? `${billing.clients} clients → ${billing.billableClients} × $5 = $${(billing.monthlyClientCents / 100).toFixed(0)}/mo + usage`
                 : `${billing.clients} client${billing.clients === 1 ? '' : 's'} (free) + usage only`}
