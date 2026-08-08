@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Search, Loader2, AlertCircle, Building2, ChevronRight, Users,
-  Workflow, Receipt, Mail, Phone, MapPin, X,
+  Workflow, Receipt, Mail, Phone, MapPin, X, Crosshair,
 } from 'lucide-react'
 import { authHeaders } from './useSso'
 
@@ -39,7 +39,7 @@ const money = (c: number) => {
   return Number.isInteger(d) ? `$${d.toLocaleString()}` : `$${d.toFixed(2)}`
 }
 
-export default function ClientsPage({ token, onCommand }: { token: string | null; onCommand: (c: string) => void }) {
+export default function ClientsPage({ token, onCommand, onFocus }: { token: string | null; onCommand: (c: string) => void; onFocus?: (id: string, name: string) => void }) {
   const [rows, setRows] = useState<ClientRow[] | null>(null)
   const [billing, setBilling] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -92,18 +92,23 @@ export default function ClientsPage({ token, onCommand }: { token: string | null
 
       <div className="space-y-1.5">
         {shown.map((c) => (
-          <button key={c.id} type="button" onClick={() => setOpen(c.id)}
+          <div key={c.id}
             className="flex w-full items-center gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-3 text-left transition-colors hover:border-[color:var(--oc-green-d)]">
-            <Building2 className="h-4 w-4 shrink-0 text-[color:var(--oc-text)]/35" />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[13.5px] font-semibold text-[color:var(--oc-ink)]">{c.name}</span>
-              {c.activity.runs > 0 && (
-                <span className="oc-mono block text-[11px] text-[color:var(--oc-text)]/55">
-                  {c.activity.runs} action{c.activity.runs === 1 ? '' : 's'} run
-                  {c.activity.failures > 0 && <span className="text-[color:var(--oc-amber)]"> · {c.activity.failures} failed</span>}
-                </span>
-              )}
-            </span>
+            {/* Primary gesture: click the client to ZOOM the whole dashboard onto
+                them. Falls back to opening detail when focus isn't wired. */}
+            <button type="button" onClick={() => (onFocus ? onFocus(c.id, c.name) : setOpen(c.id))}
+              className="flex min-w-0 flex-1 items-center gap-3 text-left">
+              <Building2 className="h-4 w-4 shrink-0 text-[color:var(--oc-text)]/35" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13.5px] font-semibold text-[color:var(--oc-ink)]">{c.name}</span>
+                {c.activity.runs > 0 && (
+                  <span className="oc-mono block text-[11px] text-[color:var(--oc-text)]/55">
+                    {c.activity.runs} action{c.activity.runs === 1 ? '' : 's'} run
+                    {c.activity.failures > 0 && <span className="text-[color:var(--oc-amber)]"> · {c.activity.failures} failed</span>}
+                  </span>
+                )}
+              </span>
+            </button>
             {billing && (
               c.onPlan ? (
                 <span className="oc-mono shrink-0 text-[11.5px] text-[color:var(--oc-text)]/65">
@@ -115,8 +120,12 @@ export default function ClientsPage({ token, onCommand }: { token: string | null
                 </span>
               )
             )}
-            <ChevronRight className="h-4 w-4 shrink-0 text-[color:var(--oc-text)]/30" />
-          </button>
+            {/* Detail without leaving the global view. */}
+            <button type="button" onClick={() => setOpen(c.id)} aria-label={`Details for ${c.name}`}
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-[9px] border border-[color:var(--oc-border)] text-[color:var(--oc-text)]/40 transition-colors hover:border-[color:var(--oc-green-d)] hover:text-[color:var(--oc-green-d)]">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         ))}
         {shown.length === 0 && (
           <p className="py-6 text-center text-[13px] text-[color:var(--oc-text)]/60">
@@ -125,12 +134,12 @@ export default function ClientsPage({ token, onCommand }: { token: string | null
         )}
       </div>
 
-      {open && <ClientDetail token={token} id={open} onClose={() => setOpen(null)} onCommand={onCommand} />}
+      {open && <ClientDetail token={token} id={open} onClose={() => setOpen(null)} onCommand={onCommand} onFocus={onFocus} />}
     </div>
   )
 }
 
-function ClientDetail({ token, id, onClose, onCommand }: { token: string | null; id: string; onClose: () => void; onCommand: (c: string) => void }) {
+function ClientDetail({ token, id, onClose, onCommand, onFocus }: { token: string | null; id: string; onClose: () => void; onCommand: (c: string) => void; onFocus?: (id: string, name: string) => void }) {
   const [d, setD] = useState<Detail | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
@@ -211,12 +220,22 @@ function ClientDetail({ token, id, onClose, onCommand }: { token: string | null;
               )}
             </div>
 
-            {/* Straight back into the one safe path — a prefilled command, not an action. */}
-            <button type="button"
-              onClick={() => { onCommand(`In ${d.client.name}, `); onClose() }}
-              className="oc-btn w-full px-4 py-2.5 text-[13px]">
-              Do something in {d.client.name}
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {/* Zoom the whole dashboard onto this client. */}
+              {onFocus && (
+                <button type="button"
+                  onClick={() => { onFocus(d.client.id, d.client.name); onClose() }}
+                  className="oc-btn inline-flex flex-1 items-center justify-center gap-2 px-4 py-2.5 text-[13px]">
+                  <Crosshair className="h-4 w-4" /> Focus on {d.client.name}
+                </button>
+              )}
+              {/* Straight back into the one safe path — a prefilled command, not an action. */}
+              <button type="button"
+                onClick={() => { onCommand(`In ${d.client.name}, `); onClose() }}
+                className="inline-flex flex-1 items-center justify-center rounded-[12px] border border-[color:var(--oc-border)] bg-white px-4 py-2.5 text-[13px] font-medium text-[color:var(--oc-ink)] transition-colors hover:border-[color:var(--oc-green-d)]">
+                Do something here
+              </button>
+            </div>
           </div>
         )}
       </div>

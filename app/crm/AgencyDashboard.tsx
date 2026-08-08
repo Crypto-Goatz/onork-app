@@ -6,6 +6,7 @@ import {
   Terminal, Users, Workflow, ListChecks, TrendingUp, Gauge,
   Send, Mic, ShieldCheck, Loader2, X, AlertCircle, CheckCircle2,
   PanelRightClose, PanelRightOpen, Building2, Sparkles, Home,
+  Crosshair, ArrowLeft,
 } from 'lucide-react'
 import { METERS, formatPrice } from '@/lib/meters'
 import { useSso, authHeaders } from './useSso'
@@ -87,13 +88,16 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
   const [boot, setBoot] = useState<Boot | null>(null)
   const [tile, setTile] = useState<TileId | null>(null)
   /**
-   * The command bar targets every client by default now that the location rail
-   * is gone. Naming a client in the sentence is what scopes a step — the planner
-   * resolves it server-side against the real account list — so a separate
-   * "current client" selector would be a second, competing way to say the same
-   * thing.
+   * FOCUS. The agency's whole reason to be here: see every client at once, then
+   * zoom into ONE. 'all' is the global view; a locationId focuses the dashboard
+   * on that client — the command bar targets them (the planner already honours
+   * activeLocationId), and a focus bar makes it obvious and reversible. Naming a
+   * client in the sentence still works too; focus is the persistent version of it.
    */
-  const activeLocation = 'all'
+  const [activeLocation, setActiveLocation] = useState<string>('all')
+  const [focusName, setFocusName] = useState<string>('')
+  const focusOn = (id: string, name: string) => { setActiveLocation(id); setFocusName(name); setView('dashboard') }
+  const clearFocus = () => { setActiveLocation('all'); setFocusName('') }
   const [taskbarOpen, setTaskbarOpen] = useState(true)
   /**
    * Top-level view. The tiles remain the dashboard's own navigation; this is the
@@ -271,6 +275,27 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
         </div>
       </header>
 
+      {/* ── FOCUS BAR ── the "zoomed into one client" state, persistent and
+          reversible. Hidden in the global (all-clients) view. */}
+      {activeLocation !== 'all' && (
+        <div className="sticky top-[57px] z-20 flex items-center gap-3 border-b border-[color:var(--oc-green-d)]/25 bg-[color:var(--oc-green)]/[0.10] px-4 py-2.5 backdrop-blur-md sm:px-6">
+          <Crosshair className="h-4 w-4 shrink-0 text-[color:var(--oc-green-d)]" />
+          <div className="min-w-0 flex-1">
+            <span className="text-[13px] font-semibold text-[color:var(--oc-ink)]">
+              Focused on {focusName || 'this client'}
+            </span>
+            <span className="ml-2 text-[12px] text-[color:var(--oc-text)]/65">commands run here</span>
+          </div>
+          <button
+            type="button"
+            onClick={clearFocus}
+            className="oc-chip inline-flex shrink-0 items-center gap-1.5 border border-[color:var(--oc-border)] bg-white px-2.5 py-1.5 text-[12px] font-medium text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> All clients
+          </button>
+        </div>
+      )}
+
       <div className="flex">
         {/* ── MAIN ── */}
         <main className="min-w-0 flex-1 p-4 sm:p-6">
@@ -295,6 +320,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
             <ClientsPage
               token={sso.token}
               onCommand={(c) => { setCommand(c); setView('dashboard') }}
+              onFocus={focusOn}
             />
           )}
 
@@ -313,7 +339,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
             <div className="oc-mono mb-2.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.14em] text-[color:var(--oc-green-d)]">
               <span>EQ&gt;</span>
               <span className="text-[color:var(--oc-text)]/55">
-                {activeLocation === 'all' ? 'all clients' : boot?.locations.find((l) => l.id === activeLocation)?.name ?? 'client'}
+                {activeLocation === 'all' ? 'all clients' : (focusName || boot?.locations.find((l) => l.id === activeLocation)?.name || 'client')}
               </span>
             </div>
 
