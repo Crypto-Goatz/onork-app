@@ -36,6 +36,21 @@ export async function middleware(request: NextRequest) {
   // iframe, and a redirect inside an iframe is how you end up staring at a
   // login page nested in someone's CRM.
   const host = request.headers.get('host') || ''
+
+  // ── OAuth rescue ──────────────────────────────────────────────────
+  // Supabase redirects an OAuth ?code to the requested redirect_to ONLY if it is
+  // in the project's allow-list; otherwise it falls back to the Site URL and
+  // strands the code on the site root, where nothing exchanges it. Catch a code
+  // at "/" and hand it to /auth/callback (which does the exchange). The real fix
+  // is allow-listing app.0ncore.com/auth/callback — this makes login work
+  // meanwhile, on either host.
+  if (request.nextUrl.pathname === '/' && request.nextUrl.searchParams.get('code')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/callback'
+    if (!url.searchParams.get('next')) url.searchParams.set('next', '/crm')
+    return NextResponse.redirect(url)
+  }
+
   if (host === APP_HOST) {
     const p = request.nextUrl.pathname
     // /api and Next internals pass through untouched — the SSO handshake and
