@@ -5,6 +5,7 @@ import { verifyPlan } from '@/lib/burst/plan-token'
 import { executeLeg, type LegResult } from '@/lib/burst/executor'
 import { listAgencyLocations } from '@/lib/crm/locations'
 import { fireTrigger } from '@/lib/crm/triggers'
+import { reportApiUsage } from '@/lib/usage'
 
 /**
  * POST /api/burst/run — execute an approved plan.
@@ -162,6 +163,10 @@ export async function POST(req: NextRequest) {
       completed_at: new Date().toISOString(),
     })
     .eq('id', run.id)
+
+  // Meter usage — each successful action is one billable API call ($0.01).
+  // Fire-and-forget: a metering failure must never affect the run's response.
+  void reportApiUsage(companyId, okCount)
 
   return NextResponse.json({
     ok: true,
