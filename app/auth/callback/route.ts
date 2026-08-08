@@ -30,6 +30,17 @@ import { postSignupProvision, kickOffBackgroundProvision } from '@/lib/provision
 export const maxDuration = 60
 export const runtime = 'nodejs'
 
+// The app surface lives on app.0ncore.com; marketing + auth on www. When a login
+// targets an app path, it must land on the app host — even if the code was
+// exchanged on www (Supabase's Site-URL fallback). The auth cookie is shared
+// across .0ncore.com, so a cross-subdomain landing carries the session cleanly.
+const APP_ORIGIN = 'https://app.0ncore.com'
+const APP_PATHS = ['/crm', '/clients', '/automations', '/tools', '/log', '/plans', '/portal', '/scan', '/p']
+function landOn(next: string, origin: string): string {
+  const onApp = APP_PATHS.some((p) => next === p || next.startsWith(p + '/'))
+  return `${onApp ? APP_ORIGIN : origin}${next}`
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
@@ -171,8 +182,10 @@ export async function GET(request: Request) {
   }
 
   // ── 4. Decide where to land ──────────────────────────────────
-  if (next) {
-    return NextResponse.redirect(`${origin}${next}`)
+  // Same-origin only (guard against an open redirect), and app paths go to the
+  // app host regardless of which host exchanged the code.
+  if (next && next.startsWith('/') && !next.startsWith('//')) {
+    return NextResponse.redirect(landOn(next, origin))
   }
 
   const { data: profile } = await admin
