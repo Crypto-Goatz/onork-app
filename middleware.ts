@@ -47,7 +47,11 @@ export async function middleware(request: NextRequest) {
     // rewritten under /crm. Adding them to the matcher without adding them here
     // turned a working page into a 404: the matcher makes middleware RUN, and
     // running middleware is what applies the rewrite.
-    if (!p.startsWith('/api') && !p.startsWith('/_next') && !p.startsWith('/crm') && !p.startsWith('/portal') && !p.startsWith('/widgets') && !p.startsWith('/p/') && !p.startsWith('/scan')) {
+    // Auth pages must serve as-is on the app host too, or the standalone login
+    // (app.0ncore.com/login?next=/crm) rewrites to /crm/login and 404s — the
+    // exact break that made "log in outside GHL" impossible.
+    const isAuthPage = p === '/login' || p === '/signup' || p.startsWith('/auth') || p.startsWith('/forgot-password') || p.startsWith('/reset-password')
+    if (!isAuthPage && !p.startsWith('/api') && !p.startsWith('/_next') && !p.startsWith('/crm') && !p.startsWith('/portal') && !p.startsWith('/widgets') && !p.startsWith('/p/') && !p.startsWith('/scan')) {
       const url = request.nextUrl.clone()
       url.pathname = p === '/' ? '/crm' : `/crm${p}`
       return NextResponse.rewrite(url)
@@ -190,10 +194,14 @@ export async function middleware(request: NextRequest) {
     return withCookies(NextResponse.redirect(url, 301))
   }
 
-  // Logged in user hitting /login or /signup — straight to /dashboard.
+  // Logged in user hitting /login or /signup — honour ?next (same-origin only),
+  // else /dashboard. Without the ?next check, an already-signed-in agency owner
+  // clicking the gate's "sign in" link lands on /dashboard instead of /crm.
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+    const next = request.nextUrl.searchParams.get('next')
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
+    url.search = ''
     return withCookies(NextResponse.redirect(url))
   }
 
