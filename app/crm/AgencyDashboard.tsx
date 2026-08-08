@@ -6,7 +6,7 @@ import {
   Terminal, Users, Workflow, ListChecks, TrendingUp, Gauge,
   Send, Mic, ShieldCheck, Loader2, X, AlertCircle, CheckCircle2,
   PanelRightClose, PanelRightOpen, Building2, Sparkles, Home,
-  Crosshair, ArrowLeft, LogOut,
+  Crosshair, ArrowLeft, LogOut, CreditCard,
 } from 'lucide-react'
 import { METERS, formatPrice } from '@/lib/meters'
 import { useSso, authHeaders, STORAGE_KEY } from './useSso'
@@ -108,6 +108,21 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
     try { await createClient().auth.signOut() } catch { /* already gone */ }
     window.location.href = '/login?next=/crm'
   }
+
+  // Agency billing state — drives the Activate banner ($5/client + $0.10/call).
+  const [billing, setBilling] = useState<{ authed: boolean; subscribed: boolean; isFounding: boolean; baseFeeCents: number; clients: number; freeClients: number; billableClients: number; monthlyClientCents: number; perCallCents: number } | null>(null)
+  const [subscribing, setSubscribing] = useState(false)
+  const subscribe = async () => {
+    if (subscribing) return
+    setSubscribing(true)
+    try {
+      const r = await fetch('/api/agency/subscribe', { method: 'POST', credentials: 'same-origin' })
+      const j = await r.json()
+      if (j?.url) { window.location.href = j.url; return }
+      alert(j?.error || 'Could not start checkout.')
+    } catch { alert('Could not start checkout.') }
+    finally { setSubscribing(false) }
+  }
   const [taskbarOpen, setTaskbarOpen] = useState(true)
   /**
    * Top-level view. The tiles remain the dashboard's own navigation; this is the
@@ -142,6 +157,15 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
       .catch(() => { if (live) setBoot(null) })
     return () => { live = false }
   }, [sso.state, sso.token])
+
+  // Billing status — drives the Activate banner. Cookie session (no bearer).
+  useEffect(() => {
+    if (sso.state === 'pending') return
+    let live = true
+    fetch('/api/agency/billing-status', { credentials: 'same-origin' })
+      .then((r) => r.json()).then((j) => { if (live) setBilling(j) }).catch(() => {})
+    return () => { live = false }
+  }, [sso.state])
 
   const TILES = useMemo(() => ([
     { id: 'command' as TileId, icon: Terminal, name: 'Command Chat', desc: 'One sentence, every client. It plans and prices before anything runs.', stat: `${boot?.stats.burstsToday ?? 0} bursts today`, ready: true },
@@ -311,6 +335,34 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
             className="oc-chip inline-flex shrink-0 items-center gap-1.5 border border-[color:var(--oc-border)] bg-white px-2.5 py-1.5 text-[12px] font-medium text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> All clients
+          </button>
+        </div>
+      )}
+
+      {/* ── BILLING ACTIVATION ── the revenue gate. Shown until the agency has a
+          subscription; states the exact cost from their live client count. */}
+      {billing?.authed && !billing.subscribed && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-[color:var(--oc-amber)]/30 bg-[color:var(--oc-amber)]/[0.08] px-4 py-3 sm:px-6">
+          <CreditCard className="h-4 w-4 shrink-0 text-[color:var(--oc-amber)]" />
+          <div className="min-w-0 flex-1">
+            <span className="text-[13px] font-semibold text-[color:var(--oc-ink)]">
+              {billing.isFounding ? 'Activate your agency — founding: no monthly fee, ever' : 'Activate your agency'}
+            </span>
+            <span className="ml-2 text-[12.5px] text-[color:var(--oc-text)]/70">
+              {billing.isFounding ? '$0 base · ' : '$19/mo base · '}
+              $5/client/mo (1 free) + $0.10/API call ·{' '}
+              {billing.billableClients > 0
+                ? `${billing.clients} clients → ${billing.billableClients} × $5 = $${(billing.monthlyClientCents / 100).toFixed(0)}/mo + usage`
+                : `${billing.clients} client${billing.clients === 1 ? '' : 's'} (free) + usage only`}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={subscribe}
+            disabled={subscribing}
+            className="oc-btn shrink-0 px-4 py-2 text-[13px] disabled:opacity-60"
+          >
+            {subscribing ? 'Starting…' : 'Activate billing'}
           </button>
         </div>
       )}
