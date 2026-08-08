@@ -43,7 +43,7 @@ export function LockGate({
     <div className={`${SHELL} grid place-items-center px-6`}>
       <div className="text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/0ncore-logo.svg" alt="0nCORE" width={180} height={44} className="mx-auto h-11 w-auto object-contain opacity-90" />
+        <img src="/brand/0ncore-logo-dark.png" alt="0nCORE" width={180} height={44} className="mx-auto h-11 w-auto object-contain opacity-90" />
         <div className="mx-auto mt-10 grid h-20 w-20 place-items-center rounded-full border border-white/10 bg-white/[0.03]">
           <Lock className="h-8 w-8 text-[#6b7c9c]" />
         </div>

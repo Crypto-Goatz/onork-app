@@ -33,7 +33,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/brand/0ncore-logo.svg"
+              src="/brand/0ncore-logo-dark.png"
               alt="0nCore"
               className="relative h-10 w-auto object-contain animate-logo-entrance"
             />
