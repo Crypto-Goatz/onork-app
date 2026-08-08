@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { METERS, formatPrice } from '@/lib/meters'
 import { useSso, authHeaders } from './useSso'
+import { LockGate } from '@/components/auth/LockGate'
 import ControlCenter from './ControlCenter'
 import ClientsPage from './ClientsPage'
 import AppSidebar, { NAV } from './AppSidebar'
@@ -204,6 +205,13 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
     : sso.state === 'rejected' ? { dot: 'bg-[color:var(--oc-red)]', label: 'sign-in failed' }
     : boot?.session ? { dot: 'bg-[color:var(--oc-amber)]', label: 'not installed' }
     : { dot: 'bg-[color:var(--oc-amber)]', label: 'not connected' }
+
+  // Logged out (opened outside GHL with no 0nCORE session, or sign-in failed):
+  // show the one branded lock gate instead of a dashboard that would only 401.
+  // 'pending' still shows the dashboard chrome while the handshake/mint runs.
+  if (sso.state === 'standalone' || sso.state === 'rejected') {
+    return <LockGate next="/crm" title="Your agency command centre" subtitle="Sign in to your 0nCORE account to open every client at once." />
+  }
 
   return (
     <div className="oncore-app min-h-screen">
