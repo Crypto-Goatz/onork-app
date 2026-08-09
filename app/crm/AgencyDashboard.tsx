@@ -167,6 +167,23 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
     return () => { live = false }
   }, [sso.state])
 
+  // Launch handoff — a "Launch" click on the Tools page arrives as ?do=<intent>.
+  // Load it into the command bar and show the command view, so Launch actually
+  // launches the tool instead of dropping the user at an empty bar. Reads
+  // window.location directly (not useSearchParams) to avoid the SSR bailout.
+  useEffect(() => {
+    try {
+      const doParam = new URLSearchParams(window.location.search).get('do')
+      if (doParam) {
+        setCommand(decodeURIComponent(doParam) + ' ')
+        setView('dashboard')
+        const url = new URL(window.location.href)
+        url.searchParams.delete('do')
+        window.history.replaceState({}, '', url.toString())
+      }
+    } catch { /* no-op */ }
+  }, [])
+
   const TILES = useMemo(() => ([
     { id: 'command' as TileId, icon: Terminal, name: 'Command Chat', desc: 'One sentence, every client. It plans and prices before anything runs.', stat: `${boot?.stats.burstsToday ?? 0} bursts today`, ready: true },
     { id: 'clients' as TileId, icon: Users, name: 'New Clients', desc: 'Describe a client in a paragraph — account, snapshot, team, first email.', stat: `${boot?.stats.provisionedThisWeek ?? 0} this week`, ready: false },

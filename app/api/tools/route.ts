@@ -78,7 +78,9 @@ export async function GET(req: NextRequest) {
     tools.push({
       key: c.id, name: capitalise(c.intent), group: 'Commands',
       what: c.intent, state, reason, fix, priceCents: price,
-      href: state === 'ready' ? '/' : undefined,
+      // Launch loads THIS command into the command bar (via ?do=) rather than
+      // dumping the user at an empty one — so "Launch" actually launches it.
+      href: state === 'ready' ? `/?do=${encodeURIComponent(c.intent)}` : undefined,
     })
   }
 
