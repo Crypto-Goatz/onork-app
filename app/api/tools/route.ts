@@ -141,7 +141,12 @@ export async function GET(req: NextRequest) {
     { group: '0nMCP portal', rows: onmcpInventory as Scanned[], copy: ONMCP_COPY },
   ]
 
-  for (const { group, rows, copy } of portals) {
+  // These two groups are a cross-repo completeness scan of OTHER dashboards
+  // (0nmcp.com + the portal) — an internal map, NOT agency tools. Showing them
+  // buried the real product under ~100 "almost" tiles that have nothing to do
+  // with 0nCORE. Hidden by default; ?internal=1 brings them back for us.
+  const showPortals = req.nextUrl.searchParams.get('internal') === '1'
+  for (const { group, rows, copy } of (showPortals ? portals : [])) {
     for (const d of rows) {
       const state: ToolState = d.state === 'broken' ? 'blocked' : d.state === 'partial' ? 'building' : 'ready'
       tools.push({
