@@ -17,6 +17,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { MARKETPLACE_APP, AGENCY_APP } from '@/lib/crm'
 import { AGENCY_V2_APP } from '@/lib/crm-apps'
 import { generateToken } from '@/lib/0n-token'
+import { issueAppJwt } from '@/lib/auth/app-jwt'
 import { logHealth } from '@/lib/connection-health'
 import { syncSnapshotToLocation } from '@/lib/snapshot-sync'
 
@@ -302,28 +303,26 @@ export async function GET(req: NextRequest) {
         },
       })
 
-      // Redirect to CRM dashboard with location context
-      const dashUrl = new URL('/crm', req.url)
-      dashUrl.searchParams.set('connected', 'true')
-      if (locationId) dashUrl.searchParams.set('locationId', locationId)
-
-      if (onToken) {
-        const response = NextResponse.redirect(dashUrl)
-        response.cookies.set('0n_token_once', onToken, {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'lax',
-          maxAge: 300,
-          path: '/dashboard',
-        })
-        return response
-      }
+      void onToken // persisted by generateToken; the /dashboard one-time cookie
+                   // is superseded by the app-JWT boot cookie set below.
     }
 
+    // Land the installer INTO the dashboard, ALREADY AUTHENTICATED. This is the
+    // fix for "install finishes but dumps me on a login gate": a GHL install has
+    // no 0nCORE Supabase session, so useSso would read 'standalone' and gate.
+    // Mint the app JWT from the verified companyId (from the token exchange) and
+    // hand it over in a short-lived, NON-httpOnly boot cookie that useSso moves
+    // into sessionStorage on first load — same shape as the iframe/standalone
+    // token, so the whole dashboard just works.
     const dashUrl = new URL('/crm', req.url)
     dashUrl.searchParams.set('connected', 'true')
     if (locationId) dashUrl.searchParams.set('locationId', locationId)
-    return NextResponse.redirect(dashUrl)
+    const response = NextResponse.redirect(dashUrl)
+    if (companyId) {
+      const bootJwt = issueAppJwt({ sub: crmUserId || companyId, companyId }, 60 * 60 * 8)
+      response.cookies.set('oncore.boot.jwt', bootJwt, { httpOnly: false, secure: true, sameSite: 'lax', maxAge: 300, path: '/' })
+    }
+    return response
   } catch (error) {
     console.error('[oauth/callback] Error:', error)
     return NextResponse.redirect(new URL('/crm?error=oauth_failed', req.url))

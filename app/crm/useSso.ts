@@ -134,6 +134,24 @@ export function useSso(): Sso {
       void exchange(payload)
     }
 
+    // Boot handoff — a fresh GHL install (server-side, no sessionStorage access)
+    // drops the app JWT in a short-lived cookie. Adopt it, clear the cookie so
+    // it's used once, and we're authed without a handshake. THIS is what lands an
+    // installer straight in the dashboard instead of on the login gate.
+    try {
+      const m = document.cookie.match(/(?:^|;\s*)oncore\.boot\.jwt=([^;]+)/)
+      if (m) {
+        const bootTok = decodeURIComponent(m[1])
+        document.cookie = 'oncore.boot.jwt=; Max-Age=0; path=/'
+        if (bootTok && !isExpired(bootTok)) {
+          try { sessionStorage.setItem(STORAGE_KEY, bootTok) } catch {}
+          setSso({ state: 'authed', token: bootTok, user: null, error: null })
+          settled.current = true
+          return
+        }
+      }
+    } catch { /* cookie unreadable — fall through */ }
+
     // A token from earlier in this tab is reused rather than re-handshaking.
     // Now that the app has more than one page, a fresh handshake per navigation
     // would mean every page waits on a postMessage round trip before it can load
