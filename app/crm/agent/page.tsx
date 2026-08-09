@@ -13,7 +13,9 @@ export default function AgentPage() {
   const sso = useSso()
   const [goal, setGoal] = useState('')
   const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<{ kind: 'soon' | 'running' | 'error'; text: string; sessionId?: string } | null>(null)
+  type Leg = { capability: string; intent: string; location?: string; blocked?: boolean; runnable?: boolean; priceCents?: number }
+  type Ran = { capability: string; status: string; detail?: string }
+  const [result, setResult] = useState<{ kind: 'ok' | 'error'; text?: string; planned?: Leg[]; ran?: Ran[]; note?: string } | null>(null)
 
   const run = async () => {
     if (!goal.trim() || busy) return
@@ -25,9 +27,8 @@ export default function AgentPage() {
         body: JSON.stringify({ goal: goal.trim() }),
       })
       const j = await r.json().catch(() => ({}))
-      if (r.status === 503) setResult({ kind: 'soon', text: 'Autonomous agents are almost here — this launches the moment the 0nAGENT engine is connected.' })
-      else if (!r.ok) setResult({ kind: 'error', text: j?.error || 'Could not start the agent.' })
-      else setResult({ kind: 'running', text: 'Agent running…', sessionId: j?.sessionId })
+      if (!r.ok) setResult({ kind: 'error', text: j?.error || 'The agent could not run.' })
+      else setResult({ kind: 'ok', planned: j?.planned ?? [], ran: j?.ran ?? [], note: j?.note })
     } catch {
       setResult({ kind: 'error', text: 'Could not reach the agent.' })
     } finally { setBusy(false) }
@@ -44,7 +45,7 @@ export default function AgentPage() {
         <div className="mb-6 flex items-center gap-2.5">
           <Bot className="h-5 w-5 text-[color:var(--oc-green-d)]" />
           <h1 className="text-[20px] font-bold text-[color:var(--oc-ink)]">0nAGENT</h1>
-          <span className="oc-chip border border-[color:var(--oc-amber)]/40 bg-[color:var(--oc-amber)]/[0.10] px-2 py-0.5 text-[11px] text-[color:var(--oc-amber)]">Coming soon</span>
+          <span className="oc-chip border border-[color:var(--oc-green-d)]/40 bg-[color:var(--oc-green)]/12 px-2 py-0.5 text-[11px] text-[color:var(--oc-green-d)]">Live · runs on your CRM</span>
           <a href="/crm" className="ml-auto text-[13px] font-medium text-[color:var(--oc-text)]/60 hover:text-[color:var(--oc-green-d)]">← Dashboard</a>
         </div>
 
@@ -73,14 +74,35 @@ export default function AgentPage() {
             </div>
           </div>
 
-          {result && (
-            <div className={`mt-4 rounded-[12px] border px-4 py-3 text-[13px] ${
-              result.kind === 'soon' ? 'border-[color:var(--oc-amber)]/30 bg-[color:var(--oc-amber)]/[0.07] text-[color:var(--oc-ink)]'
-              : result.kind === 'running' ? 'border-[color:var(--oc-green-d)]/30 bg-[color:var(--oc-green)]/[0.08] text-[color:var(--oc-ink)]'
-              : 'border-[color:var(--oc-red)]/30 bg-[color:var(--oc-red)]/[0.06] text-[color:var(--oc-red)]'}`}>
-              {result.text}{result.sessionId ? ` (${result.sessionId})` : ''}
+          {result && (result.kind === 'error' ? (
+            <div className="mt-4 rounded-[12px] border border-[color:var(--oc-red)]/30 bg-[color:var(--oc-red)]/[0.06] px-4 py-3 text-[13px] text-[color:var(--oc-red)]">{result.text}</div>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {result.note && <div className="rounded-[12px] border border-[color:var(--oc-amber)]/30 bg-[color:var(--oc-amber)]/[0.07] px-4 py-3 text-[12.5px] text-[color:var(--oc-ink)]">{result.note}</div>}
+              {result.planned && result.planned.length > 0 ? (
+                <div>
+                  <div className="mb-1.5 text-[12px] font-bold uppercase tracking-wider text-[color:var(--oc-text)]/55">Plan · {result.planned.length} step{result.planned.length === 1 ? '' : 's'}</div>
+                  <div className="space-y-1.5">
+                    {result.planned.map((l, i) => {
+                      const done = result.ran?.find((r) => r.capability === l.capability && r.status === 'ok')
+                      const tag = done ? 'done' : l.blocked ? 'not possible' : l.runnable ? 'ran' : l.priceCents ? 'needs billing' : 'needs approval'
+                      return (
+                        <div key={i} className="flex items-start gap-2.5 rounded-[10px] border border-[color:var(--oc-border)] bg-white px-3 py-2">
+                          <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${done ? 'bg-[color:var(--oc-green-d)]' : l.blocked ? 'bg-[color:var(--oc-red)]' : 'bg-[color:var(--oc-amber)]'}`} />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[13px] text-[color:var(--oc-ink)]">{l.intent}</div>
+                            <div className="oc-mono text-[10.5px] text-[color:var(--oc-text)]/50">{l.capability}{l.location ? ' · ' + l.location : ''} · {tag}</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-[12px] border border-[color:var(--oc-border)] bg-white px-4 py-3 text-[13px] text-[color:var(--oc-text)]/70">The agent didn’t find a step for that goal. Try naming a client and a concrete action.</div>
+              )}
             </div>
-          )}
+          ))}
         </div>
 
         {/* How it works */}
