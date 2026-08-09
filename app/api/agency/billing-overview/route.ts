@@ -1,13 +1,12 @@
 /**
- * GET /api/agency/billing-overview — everything an agency owner should see about
- * their billing, in one call: plan, what it costs, usage this month, the card on
- * file, recent invoices, and a link to manage it. All tied to their SSO (the
- * Stripe customer on their profile). Read-only; Stripe is the source of truth.
+ * GET /api/agency/billing-overview — full billing view for the agency profile.
+ * Auth is the APP JWT (companyId from the signed token), keyed off agency_billing
+ * — same auth as the whole dashboard. Stripe is the source of truth.
  */
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { AGENCY_BILLING, billingSummary } from '@/lib/agency-billing'
 
 export const runtime = 'nodejs'
@@ -21,46 +20,30 @@ function getStripe() {
 function admin() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
 }
-
 const OURS = new Set<string>([AGENCY_BILLING.perClientPriceId, AGENCY_BILLING.apiMeteredPriceId, AGENCY_BILLING.basePriceId])
 
-export async function GET() {
-  const supabase = await createServerClient()
-  const user = (await supabase.auth.getSession()).data.session?.user ?? null
-  if (!user) return NextResponse.json({ authed: false }, { status: 401 })
+export async function GET(req: NextRequest) {
+  const session = verifyAppJwt(bearer(req))
+  if (!session.ok) return NextResponse.json({ authed: false }, { status: 401 })
+  const { companyId } = session.claims
 
   const sb = admin()
-  const { data: install } = await sb.from('crm_installations')
-    .select('company_id').eq('user_id', user.id).eq('status', 'active').not('company_id', 'is', null)
-    .order('updated_at', { ascending: false }).limit(1).maybeSingle()
-  const companyId = install?.company_id ?? null
 
-  // ADDED clients only — never the whole CRM roster.
-  let clients = 0
-  if (companyId) {
-    const { count } = await sb.from('agency_added_clients').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active')
-    clients = count ?? 0
-  }
+  const { count } = await sb.from('agency_added_clients').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active')
+  const clients = count ?? 0
   const summary = billingSummary(clients)
+
+  const { data: bill } = await sb.from('agency_billing').select('is_founding, stripe_customer_id').eq('company_id', companyId).maybeSingle()
   let isFounding = true
-  if (companyId) {
-    const { data: bill } = await sb.from('agency_billing').select('is_founding').eq('company_id', companyId).maybeSingle()
-    if (bill) isFounding = !!bill.is_founding
-    else { const { count } = await sb.from('agency_billing').select('*', { count: 'exact', head: true }); isFounding = (count ?? 0) < AGENCY_BILLING.foundingLimit }
-  }
+  if (bill) isFounding = !!bill.is_founding
+  else { const { count: n } = await sb.from('agency_billing').select('*', { count: 'exact', head: true }); isFounding = (n ?? 0) < AGENCY_BILLING.foundingLimit }
 
-  // Usage this month = successful actions billed (matches what the meter got).
-  let usageThisMonth = 0
-  if (companyId) {
-    const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0)
-    const { count } = await sb.from('burst_receipts').select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId).eq('status', 'ok').gte('created_at', monthStart.toISOString())
-    usageThisMonth = count ?? 0
-  }
+  // Usage this month = successful actions (matches what the meter/wallet got).
+  const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0)
+  const { count: usageThisMonth } = await sb.from('burst_receipts').select('*', { count: 'exact', head: true })
+    .eq('company_id', companyId).eq('status', 'ok').gte('created_at', monthStart.toISOString())
 
-  const { data: profile } = await sb.from('profiles').select('stripe_customer_id').eq('id', user.id).maybeSingle()
-  const customerId = profile?.stripe_customer_id ?? null
-
+  const customerId = bill?.stripe_customer_id ?? null
   let subscribed = false, subStatus: string | null = null, discount: string | null = null
   let card: { brand: string; last4: string } | null = null
   let invoices: { amount: number; status: string; date: number; url: string | null }[] = []
@@ -74,10 +57,7 @@ export async function GET() {
       if (ours) {
         subscribed = ours.status === 'active' || ours.status === 'trialing'
         subStatus = ours.status
-        // Stripe renamed subscription.discount → discounts[]. Any discount on an
-        // owner sub is our 100%-off founder coupon.
-        const hasDiscount = Array.isArray(ours.discounts) && ours.discounts.length > 0
-        discount = hasDiscount ? 'Free forever (founder)' : null
+        discount = Array.isArray(ours.discounts) && ours.discounts.length > 0 ? 'Free forever (founder)' : null
       }
     } catch {}
     try {
@@ -100,7 +80,7 @@ export async function GET() {
     isFounding, baseFeeCents: isFounding ? 0 : AGENCY_BILLING.baseFeeCents,
     perClientCents: AGENCY_BILLING.perClientCents, perCallCents: AGENCY_BILLING.perCallCents,
     ...summary,
-    usageThisMonth, usageCostCents: usageThisMonth * AGENCY_BILLING.perCallCents,
+    usageThisMonth: usageThisMonth ?? 0, usageCostCents: (usageThisMonth ?? 0) * AGENCY_BILLING.perCallCents,
     card, invoices, portalUrl,
   })
 }

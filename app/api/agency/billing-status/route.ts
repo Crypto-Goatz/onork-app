@@ -1,15 +1,15 @@
 /**
- * GET /api/agency/billing-status — is this agency on 0nCORE billing, and what
- * would/does it cost. Drives the dashboard's Activate vs. Active state.
+ * GET /api/agency/billing-status — is this agency on 0nCORE billing + what it costs.
  *
- * Source of truth is Stripe (the customer's live subscriptions), not a mirror
- * table — a mirror can lag a webhook. Falls back gracefully so the dashboard
- * never blocks on it.
+ * Auth is the APP JWT (same as the whole dashboard) — companyId comes from the
+ * signed token, never a Supabase cookie. Everything keys off companyId +
+ * agency_billing, so it works however the agency signed in (GHL install boot,
+ * standalone login, or the iframe SSO).
  */
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { AGENCY_BILLING, billingSummary } from '@/lib/agency-billing'
 
 export const runtime = 'nodejs'
@@ -23,48 +23,34 @@ function getStripe() {
 function admin() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
 }
+const OURS = new Set<string>([AGENCY_BILLING.perClientPriceId, AGENCY_BILLING.apiMeteredPriceId, AGENCY_BILLING.basePriceId])
 
-export async function GET() {
-  const supabase = await createServerClient()
-  const user = (await supabase.auth.getSession()).data.session?.user ?? null
-  if (!user) return NextResponse.json({ authed: false, subscribed: false })
+export async function GET(req: NextRequest) {
+  const session = verifyAppJwt(bearer(req))
+  if (!session.ok) return NextResponse.json({ authed: false, subscribed: false }, { status: 401 })
+  const { companyId } = session.claims
 
   const sb = admin()
-  const { data: install } = await sb
-    .from('crm_installations')
-    .select('company_id')
-    .eq('user_id', user.id).eq('status', 'active').not('company_id', 'is', null)
-    .order('updated_at', { ascending: false }).limit(1).maybeSingle()
-  const companyId = install?.company_id ?? null
 
-  // ADDED clients only — never their whole CRM roster.
-  let clients = 0
-  if (companyId) {
-    const { count } = await sb.from('agency_added_clients').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active')
-    clients = count ?? 0
-  }
+  // ADDED clients only — never the whole CRM roster.
+  const { count } = await sb.from('agency_added_clients').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active')
+  const clients = count ?? 0
   const summary = billingSummary(clients)
 
-  // Founding = first 50 agencies, base fee waived forever. If this agency has no
-  // row yet, it WOULD be founding as long as fewer than 50 exist — show that.
+  // Founding + the stored Stripe customer, both keyed to the agency.
+  const { data: bill } = await sb.from('agency_billing').select('is_founding, stripe_customer_id').eq('company_id', companyId).maybeSingle()
   let isFounding = true
-  if (companyId) {
-    const { data: bill } = await sb.from('agency_billing').select('is_founding').eq('company_id', companyId).maybeSingle()
-    if (bill) isFounding = !!bill.is_founding
-    else {
-      const { count } = await sb.from('agency_billing').select('*', { count: 'exact', head: true })
-      isFounding = (count ?? 0) < AGENCY_BILLING.foundingLimit
-    }
+  if (bill) isFounding = !!bill.is_founding
+  else {
+    const { count: n } = await sb.from('agency_billing').select('*', { count: 'exact', head: true })
+    isFounding = (n ?? 0) < AGENCY_BILLING.foundingLimit
   }
 
-  // Is there an active subscription carrying our agency prices?
   let subscribed = false
-  const { data: profile } = await sb.from('profiles').select('stripe_customer_id').eq('id', user.id).maybeSingle()
-  if (profile?.stripe_customer_id) {
+  if (bill?.stripe_customer_id) {
     try {
-      const subs = await getStripe().subscriptions.list({ customer: profile.stripe_customer_id, status: 'active', limit: 20 })
-      const ours = new Set<string>([AGENCY_BILLING.perClientPriceId, AGENCY_BILLING.apiMeteredPriceId])
-      subscribed = subs.data.some((s) => s.items.data.some((i) => i.price?.id && ours.has(i.price.id)))
+      const subs = await getStripe().subscriptions.list({ customer: bill.stripe_customer_id, status: 'active', limit: 20 })
+      subscribed = subs.data.some((s) => s.items.data.some((i) => i.price?.id && OURS.has(i.price.id)))
     } catch { /* treat as not subscribed */ }
   }
 

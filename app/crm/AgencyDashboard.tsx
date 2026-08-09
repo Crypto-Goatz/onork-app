@@ -116,7 +116,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
     if (subscribing) return
     setSubscribing(true)
     try {
-      const r = await fetch('/api/agency/subscribe', { method: 'POST', credentials: 'same-origin' })
+      const r = await fetch('/api/agency/subscribe', { method: 'POST', headers: authHeaders(sso.token) })
       const j = await r.json()
       if (j?.url) { window.location.href = j.url; return }
       alert(j?.error || 'Could not start checkout.')
@@ -162,7 +162,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
   useEffect(() => {
     if (sso.state === 'pending') return
     let live = true
-    fetch('/api/agency/billing-status', { credentials: 'same-origin' })
+    fetch('/api/agency/billing-status', { headers: authHeaders(sso.token) })
       .then((r) => r.json()).then((j) => { if (live) setBilling(j) }).catch(() => {})
     return () => { live = false }
   }, [sso.state])

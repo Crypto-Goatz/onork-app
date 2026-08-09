@@ -37,7 +37,7 @@ export default function BillingPage() {
   const subscribe = async () => {
     if (busy) return; setBusy(true)
     try {
-      const r = await fetch('/api/agency/subscribe', { method: 'POST', credentials: 'same-origin' })
+      const r = await fetch('/api/agency/subscribe', { method: 'POST', headers: authHeaders(sso.token) })
       const j = await r.json()
       if (j?.url) { window.location.href = j.url; return }
       alert(j?.error || 'Could not start checkout.')

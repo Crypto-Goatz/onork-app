@@ -34,6 +34,9 @@ export const AGENCY_BILLING = {
    */
   freeForeverCoupon: 'nho3CmoH',
   freeForeverEmails: ['mike@rocketopp.com'],
+  /** Owner agencies (by companyId) that get the free-forever coupon — the app
+   *  JWT carries companyId, not email, so this is what we actually check. */
+  freeForeverCompanyIds: ['bknfhTkdDLapbwfZqQNi'], // RocketOpp
   /**
    * Monthly base access fee — $19/mo — but WAIVED FOREVER for the first 50
    * agencies (founding). Agency #51+ pays it; the founding 50 never do, even
