@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const endpoint = (process.env.PRIME_AGENT_ENDPOINT || '').replace(/\/$/, '')
   if (!endpoint) return NextResponse.json({ error: 'Agent daemon not connected.' }, { status: 503 })
 
-  const headers = process.env.PRIME_AGENT_KEY ? { Authorization: `Bearer ${process.env.PRIME_AGENT_KEY}` } : {}
+  const headers: Record<string, string> = process.env.PRIME_AGENT_KEY ? { Authorization: `Bearer ${process.env.PRIME_AGENT_KEY}` } : {}
   try {
     const [statusRes, resultRes] = await Promise.all([
       fetch(`${endpoint}/status/${encodeURIComponent(id)}`, { headers, signal: AbortSignal.timeout(15_000) }),
