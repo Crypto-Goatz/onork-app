@@ -115,6 +115,14 @@ export const SUB_LOCATION_APP: CrmApp = {
   // delivered through a MINTED location token from the broad agency/company
   // OAuth token (which holds oauth.write), verified working. Keep this in
   // sync with the marketplace app's configured scopes.
+  // ONLY the scopes the marketplace app is actually configured to OFFER in the
+  // GHL portal. Requesting any scope the app doesn't offer makes GHL reject the
+  // WHOLE install ("Invalid scope(s)"). These 12 are verified accepted; the rest
+  // (custom fields/values, tags, forms, products, links, tasks, campaigns,
+  // businesses, locations, webhooks) must be ENABLED on the app in the developer
+  // portal first — and with GHL's real names (locations/customFields.*, not
+  // custom-fields.*; webhooks are a separate page, not a scope) — before they
+  // can be added back here.
   scopes: [
     'contacts.readonly',
     'contacts.write',
@@ -124,30 +132,10 @@ export const SUB_LOCATION_APP: CrmApp = {
     'calendars.write',
     'calendars/events.readonly',
     'calendars/events.write',
-    'custom-fields.readonly',
-    'custom-fields.write',
-    'custom-values.readonly',
-    'custom-values.write',
-    'tags.readonly',
-    'tags.write',
-    'locations/tags.readonly',
-    'locations/tags.write',
-    'locations/tasks.readonly',
-    'locations/tasks.write',
-    'forms.readonly',
-    'forms.write',
     'workflows.readonly',
-    'campaigns.readonly',
     'users.readonly',
-    'locations.readonly',
-    'businesses.readonly',
     'medias.readonly',
     'medias.write',
-    'products.readonly',
-    'products.write',
-    'links.readonly',
-    'links.write',
-    'webhooks.write',
   ],
 }
 

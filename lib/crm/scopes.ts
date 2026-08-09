@@ -39,6 +39,9 @@
  * here is grantable to a `chooselocation` install and has been observed to
  * come back on the token.
  */
+// ONLY what the marketplace app currently OFFERS in the portal — requesting more
+// makes GHL reject the whole install. Expand here only after enabling the scope
+// (with GHL's real name) on the app in the developer portal.
 export const SUBACCOUNT_SCOPES = [
   'contacts.readonly',
   'contacts.write',
@@ -48,30 +51,10 @@ export const SUBACCOUNT_SCOPES = [
   'calendars.write',
   'calendars/events.readonly',
   'calendars/events.write',
-  'custom-fields.readonly',
-  'custom-fields.write',
-  'custom-values.readonly',
-  'custom-values.write',
-  'tags.readonly',
-  'tags.write',
-  'locations/tags.readonly',
-  'locations/tags.write',
-  'locations/tasks.readonly',
-  'locations/tasks.write',
-  'forms.readonly',
-  'forms.write',
   'workflows.readonly',
-  'campaigns.readonly',
   'users.readonly',
-  'locations.readonly',
-  'businesses.readonly',
   'medias.readonly',
   'medias.write',
-  'products.readonly',
-  'products.write',
-  'links.readonly',
-  'links.write',
-  'webhooks.write',
 ] as const
 
 /**
