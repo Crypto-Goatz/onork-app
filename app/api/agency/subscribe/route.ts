@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   if (quantity > 0) line_items.push({ price: AGENCY_BILLING.perClientPriceId, quantity })
   if (!isFounding) line_items.push({ price: AGENCY_BILLING.basePriceId, quantity: 1 })
 
-  const freeForever = AGENCY_BILLING.freeForeverCompanyIds.includes(companyId)
+  const freeForever = (AGENCY_BILLING.freeForeverCompanyIds as readonly string[]).includes(companyId)
 
   const checkout = await stripe.checkout.sessions.create({
     mode: 'subscription',
