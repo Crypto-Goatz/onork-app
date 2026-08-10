@@ -233,6 +233,19 @@ export async function getAuthForLocation(locationId: string): Promise<Auth> {
     console.warn('[crm.getAuthForLocation] mint threw:', err)
   }
 
+  // Agency-supplied PIT for this location, stored at connect time.
+  //
+  // Ranked above the env map because it is the ONLY source that scales past the
+  // handful of 0n-owned accounts hardcoded below: a customer agency's token can
+  // never appear in our environment. Lazy-imported to avoid a circular dep.
+  try {
+    const { getStoredLocationPit } = await import('./connect/pit')
+    const stored = await getStoredLocationPit(locationId)
+    if (stored) return { token: stored, source: 'pit', locationId }
+  } catch (err) {
+    console.warn('[crm.getAuthForLocation] stored PIT lookup threw:', err)
+  }
+
   return { token: getPitForLocation(locationId), source: 'pit', locationId }
 }
 
