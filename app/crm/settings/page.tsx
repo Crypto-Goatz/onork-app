@@ -1,4 +1,5 @@
 import SidebarSideToggle from '../SidebarSideToggle'
+import SettingsRows from '../SettingsRows'
 import LegacyCrmSettings from '@/app/dashboard/crm/settings/page'
 
 export const metadata = { title: 'Settings — 0nCORE', robots: { index: false, follow: false } }
@@ -26,7 +27,17 @@ export default function Page() {
           <SidebarSideToggle />
         </section>
 
-        <section className="mt-10">
+        <section className="mt-6">
+          <SettingsRows />
+        </section>
+
+        {/* The existing CRM settings — custom fields, custom values, team —
+            kept below rather than dropped. The design's five rows are the
+            navigation; this is the surface that actually works today. */}
+        <section className="mt-10 border-t border-[color:var(--console-border)] pt-8">
+          <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.05em] text-[color:var(--console-text-3)]">
+            CRM configuration
+          </h2>
           <LegacyCrmSettings />
         </section>
       </div>
