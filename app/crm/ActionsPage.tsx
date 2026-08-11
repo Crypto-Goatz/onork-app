@@ -87,7 +87,7 @@ export default function ActionsPage() {
   }, [filtered])
 
   return (
-    <div className="flex min-h-screen bg-[color:var(--oc-bg)]">
+    <div className="oncore-app flex min-h-screen bg-[color:var(--oc-bg)]">
       <AppSidebar current="tools" activeCount={0} totalCount={0} usageLabel="$0" />
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-4xl px-6 py-8">

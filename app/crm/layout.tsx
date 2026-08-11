@@ -1,5 +1,6 @@
 import { headers } from 'next/headers'
 import LegacyCrmChrome from './LegacyCrmChrome'
+import SetupAlert from './SetupAlert'
 
 /**
  * Everything under /crm, with the right chrome for the host it is served on.
@@ -20,6 +21,9 @@ import LegacyCrmChrome from './LegacyCrmChrome'
  */
 export default async function CRMLayout({ children }: { children: React.ReactNode }) {
   const isAppHost = (await headers()).get('host') === 'app.0ncore.com'
-  if (isAppHost) return <>{children}</>
-  return <LegacyCrmChrome>{children}</LegacyCrmChrome>
+  // The setup alert rides above whichever chrome is used. Unfinished setup is
+  // the difference between "broken product" and "one step left", so it must be
+  // visible on every CRM surface, not only on /connect.
+  if (isAppHost) return <><SetupAlert />{children}</>
+  return <LegacyCrmChrome><SetupAlert />{children}</LegacyCrmChrome>
 }
