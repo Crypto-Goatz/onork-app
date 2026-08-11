@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import {
-  BookOpen, Building2, ListChecks, PanelRightClose, Terminal, Users, Sparkles, Home, Wrench, ScrollText, CreditCard, Bot, type LucideIcon } from 'lucide-react'
+  BookOpen,
+  Plug, Building2, ListChecks, PanelRightClose, Terminal, Users, Sparkles, Home, Wrench, ScrollText, CreditCard, Bot, type LucideIcon } from 'lucide-react'
 
 /**
  * The app's right-hand sidebar. ONE component, used by every page.
@@ -24,6 +25,9 @@ export const NAV: { href: string; view?: 'dashboard' | 'clients' | 'automations'
   { href: '/crm/agent', label: 'Agent', icon: Bot },
   { href: '/tools', label: 'Tools', icon: Wrench },
   { href: '/crm/actions', label: 'Actions', icon: BookOpen },
+  // Where the agency token, the free account and each client's key are entered.
+  // Unlinked until 2026-08-11, which made setup effectively unreachable.
+  { href: '/connect', label: 'Setup & Keys', icon: Plug },
   { href: '/crm/billing', label: 'Billing', icon: CreditCard },
   { href: '/log', label: 'History', icon: ScrollText },
 ]

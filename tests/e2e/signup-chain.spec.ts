@@ -9,22 +9,22 @@ const TEST_EMAIL = `e2e-test-${Date.now()}@cryptogoatz.com`
 const TEST_PASSWORD = 'E2eTest!Password123'
 
 test.describe('@smoke signup chain', () => {
-  test('homepage loads @smoke', async ({ page }) => {
+  // The homepage carries no inline email capture — the CTA is a link to
+  // /signup. These two tests asserted an input that the page has not had since
+  // the CRM rebuild, so the suite failed on EVERY commit and stopped meaning
+  // anything. Assert the real entry path instead.
+  test('homepage loads and offers signup @smoke', async ({ page }) => {
     const res = await page.goto('/')
     expect(res?.ok()).toBeTruthy()
-    await expect(page.locator('input[type="email"]').first()).toBeVisible()
+    await expect(page.locator('a[href="/signup"]').first()).toBeVisible()
   })
 
-  test('homepage email form routes to /signup with email prefilled @smoke', async ({ page }) => {
-    await page.goto('/')
-    const email = page.locator('input[type="email"][name="email"]').first()
-    await email.fill(TEST_EMAIL)
-    await Promise.all([
-      page.waitForURL(/\/signup\?.*email=/, { timeout: 15_000 }),
-      email.press('Enter'),
-    ])
-    expect(page.url()).toContain('/signup')
-    expect(page.url()).toContain(encodeURIComponent(TEST_EMAIL))
+  test('signup page takes an email and honours ?email= prefill @smoke', async ({ page }) => {
+    // The form is client-rendered, so wait for hydration rather than for HTML.
+    await page.goto(`/signup?email=${encodeURIComponent(TEST_EMAIL)}`)
+    const email = page.locator('input[type="email"]').first()
+    await expect(email).toBeVisible({ timeout: 15_000 })
+    await expect(email).toHaveValue(TEST_EMAIL)
   })
 
   test('POST /api/auth/signup creates a user @smoke', async ({ playwright }) => {
