@@ -181,14 +181,34 @@ async function refreshInstall(installId: string, refreshToken: string, appId: st
  * Resolve the auth credential for a given location.
  *
  * Resolution order:
- *   1. Active, non-expiring OAuth install in crm_installations (refresh if within 60s)
- *   2. Auto-mint via the agency app — POST /oauth/locationToken using the
- *      cached agency-OAuth token. This is what makes auto-provisioning
- *      hands-off: every sub-location gets a scoped token without per-location
- *      OAuth consent.
- *   3. Env PIT (CRM_PIT_<LOCATION_ID>, then fallback chain)
+ *   1. The key the AGENCY PASTED for this account (location_connections).
+ *   2. Active, non-expiring OAuth install in crm_installations (refresh if within 60s)
+ *   3. Auto-mint via the agency app — POST /oauth/locationToken using the
+ *      cached agency-OAuth token, so a sub-location can get a scoped token
+ *      without per-location OAuth consent.
+ *   4. Env PIT (CRM_PIT_<LOCATION_ID>, then fallback chain) — 0n-owned only.
+ *
+ * WHY THE PASTED KEY IS FIRST. It used to sit at position 3, and that was
+ * wrong in a way that hid itself: proven on 2026-08-11 by storing a
+ * deliberately invalid key for a location and watching the write SUCCEED
+ * anyway, because refresh/mint resolved first. An agency who pastes a key,
+ * sees "connected", and rotates it in the CRM would keep running on a stale
+ * minted token — and the day the inferred credentials stop working, the thing
+ * they explicitly configured has never actually been exercised.
+ *
+ * Everything below position 1 is inherited or inferred. Position 1 is the only
+ * credential a customer chose, can see in Clients, and can revoke. It wins.
  */
 export async function getAuthForLocation(locationId: string): Promise<Auth> {
+  // 1 — what the agency actually configured for this account.
+  try {
+    const { getStoredLocationPit } = await import('./connect/pit')
+    const stored = await getStoredLocationPit(locationId)
+    if (stored) return { token: stored, source: 'pit', locationId }
+  } catch (err) {
+    console.warn('[crm.getAuthForLocation] stored key lookup threw:', err)
+  }
+
   try {
     const { data } = await getAdmin()
       .from('crm_installations')
@@ -231,19 +251,6 @@ export async function getAuthForLocation(locationId: string): Promise<Auth> {
     }
   } catch (err) {
     console.warn('[crm.getAuthForLocation] mint threw:', err)
-  }
-
-  // Agency-supplied PIT for this location, stored at connect time.
-  //
-  // Ranked above the env map because it is the ONLY source that scales past the
-  // handful of 0n-owned accounts hardcoded below: a customer agency's token can
-  // never appear in our environment. Lazy-imported to avoid a circular dep.
-  try {
-    const { getStoredLocationPit } = await import('./connect/pit')
-    const stored = await getStoredLocationPit(locationId)
-    if (stored) return { token: stored, source: 'pit', locationId }
-  } catch (err) {
-    console.warn('[crm.getAuthForLocation] stored PIT lookup threw:', err)
   }
 
   return { token: getPitForLocation(locationId), source: 'pit', locationId }
