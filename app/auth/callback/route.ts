@@ -194,6 +194,7 @@ export async function GET(request: Request) {
     .eq('id', user.id)
     .maybeSingle()
 
-  const dest = profile?.onboarding_complete ? '/dashboard' : '/onboarding'
+  // Land in the CRM, not the legacy /dashboard sprawl.
+  const dest = profile?.onboarding_complete ? '/crm' : '/onboarding'
   return NextResponse.redirect(`${origin}${dest}`)
 }

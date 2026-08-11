@@ -176,22 +176,17 @@ export async function middleware(request: NextRequest) {
     return withCookies(NextResponse.redirect(url))
   }
 
-  // Daily briefing gate — the first /dashboard hit each day shows /dashboard/recap.
-  // Cookie-only (no DB) so it adds zero latency: the recap page sets recap_seen=<today>
-  // when dismissed; until then every dashboard path bounces to the briefing.
-  if (
-    user &&
-    request.nextUrl.pathname.startsWith('/dashboard') &&
-    request.nextUrl.pathname !== '/dashboard/recap'
-  ) {
-    const today = new Date().toISOString().slice(0, 10)
-    if (request.cookies.get('recap_seen')?.value !== today) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/dashboard/recap'
-      url.search = ''
-      return withCookies(NextResponse.redirect(url))
-    }
-  }
+  // REMOVED 2026-08-11 — the daily briefing gate.
+  //
+  // It bounced EVERY /dashboard request to /dashboard/recap until a client-side
+  // cookie happened to match today, and it did `url.search = ''` on the way,
+  // which threw away the `next=` param login had just set. The result was that
+  // signing in never landed where you asked for; it landed on the recap, every
+  // time the cookie failed to stick. An interstitial that eats the destination
+  // is not a briefing, it is a trap.
+  //
+  // 0ncore.com is a CRM now. The working surface is /crm, so there is nothing
+  // for a /dashboard-only gate to usefully guard.
 
   // /dashboard/ai is locked to mike@rocketopp.com only
   if (request.nextUrl.pathname.startsWith('/dashboard/ai')) {
@@ -210,12 +205,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // Logged in user hitting /login or /signup — honour ?next (same-origin only),
-  // else /dashboard. Without the ?next check, an already-signed-in agency owner
-  // clicking the gate's "sign in" link lands on /dashboard instead of /crm.
+  // else /crm. 0ncore.com is a CRM; /crm is the working surface.
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
     const next = request.nextUrl.searchParams.get('next')
     const url = request.nextUrl.clone()
-    url.pathname = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
+    url.pathname = next && next.startsWith('/') && !next.startsWith('//') ? next : '/crm'
     url.search = ''
     return withCookies(NextResponse.redirect(url))
   }

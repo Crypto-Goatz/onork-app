@@ -82,8 +82,10 @@ export default function LoginPage() {
       }
       // Honour ?next= so /login?next=/crm lands the agency straight in the
       // command centre. Same-origin paths only — never an open redirect.
+      // 0ncore.com is a CRM. /crm is the working surface, so that is where a
+      // sign-in lands — not /dashboard, which is the legacy sprawl.
       const next = new URLSearchParams(window.location.search).get('next')
-      const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
+      const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/crm'
       window.location.href = dest
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed. Please try again.')
