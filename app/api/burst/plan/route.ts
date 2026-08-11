@@ -74,6 +74,24 @@ export async function POST(req: NextRequest) {
   const activeLocationId = typeof body?.activeLocationId === 'string' ? body.activeLocationId : null
   const activeLocation = locations.find((l) => l.id === activeLocationId) || null
 
+  /**
+   * Answers to "which client did you mean?", keyed by the phrase the user said.
+   *
+   * An agency can have several sub-accounts with the SAME name — there are three
+   * called "RocketOpp LLC" — so the name is not a usable answer and neither is
+   * asking the user to retype it. The UI offers the candidates as buttons and
+   * sends back the id they picked; only ids are honoured here, and only ids that
+   * belong to this agency, so a pin can never widen what a plan may touch.
+   */
+  const pins = new Map<string, string>()
+  if (body?.pins && typeof body.pins === 'object') {
+    for (const [spoken, id] of Object.entries(body.pins as Record<string, unknown>)) {
+      if (typeof id === 'string' && locations.some((l) => l.id === id)) {
+        pins.set(spoken.trim().toLowerCase(), id)
+      }
+    }
+  }
+
   const cat = plannerCatalogue()
   const system = [
     "You turn an agency owner's instruction into a plan of steps.",
@@ -141,7 +159,13 @@ export async function POST(req: NextRequest) {
         const check = assertExecutable(id)
 
         const spoken = l?.location ? String(l.location).slice(0, 80) : null
-        const match = resolveLocation(spoken ?? activeLocation?.name, locations)
+        // A pin the user clicked wins over name matching — it is the one answer
+        // that cannot be ambiguous.
+        const pinned = spoken ? pins.get(spoken.trim().toLowerCase()) : undefined
+        const pinnedLocation = pinned ? locations.find((l2) => l2.id === pinned) : undefined
+        const match = pinnedLocation
+          ? { location: pinnedLocation }
+          : resolveLocation(spoken ?? activeLocation?.name, locations)
         const params = (l?.params && typeof l.params === 'object' ? l.params : {}) as Record<string, unknown>
 
         const price = legPriceCents(id)
@@ -163,7 +187,14 @@ export async function POST(req: NextRequest) {
           locationId: match.location?.id,
           // A name that matched several clients. Surfaced as a question rather
           // than resolved to a guess.
-          ambiguous: match.ambiguous?.map((a) => a.name),
+          //
+          // id AND name — mapping to name alone made the question unanswerable
+          // when the duplicates share a name ('"RocketOpp LLC" matches RocketOpp
+          // LLC, RocketOpp LLC, RocketOpp LLC'). The id is what distinguishes
+          // them, and it is what the UI sends back as a pin.
+          ambiguous: match.ambiguous?.map((a) => ({ id: a.id, name: a.name })),
+          /** Echoed so the UI can key its pin to exactly what the model said. */
+          spoken: spoken ?? undefined,
           params,
           priceCents: price,
           blocked,

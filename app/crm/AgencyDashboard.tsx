@@ -61,7 +61,9 @@ interface PlanLeg {
   intent: string
   location?: string
   locationId?: string
-  ambiguous?: string[]
+  ambiguous?: { id: string; name: string }[]
+  /** Exactly what the planner called this client — the key a pin is stored under. */
+  spoken?: string
   priceCents: number
   blocked?: boolean
   insteadOffer?: string
@@ -133,6 +135,12 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
 
   const [command, setCommand] = useState('')
   const [planning, setPlanning] = useState(false)
+  /**
+   * Which sub-account the user picked for an ambiguous name, keyed by the phrase
+   * the planner used. Kept across re-plans so answering "which RocketOpp LLC?"
+   * once does not have to be answered again for the next command.
+   */
+  const [pins, setPins] = useState<Record<string, string>>({})
   const [legs, setLegs] = useState<PlanLeg[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
@@ -193,7 +201,22 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
     { id: 'usage' as TileId, icon: Gauge, name: 'Plan & Usage', desc: 'Which clients are switched on, what ran, and what it cost.', stat: boot?.usage.mtdLabel ?? '$0', ready: false },
   ]), [boot])
 
-  async function plan() {
+  /**
+   * Answer "which client did you mean?" with one click, then re-plan.
+   *
+   * Re-plans immediately with the pin applied rather than patching the existing
+   * leg: the plan is signed server-side, so a leg edited in the browser would no
+   * longer match the token that authorises it.
+   */
+  function pickClient(spoken: string, locationId: string) {
+    const key = spoken.trim().toLowerCase()
+    if (!key) return
+    const next = { ...pins, [key]: locationId }
+    setPins(next)
+    void plan(next)
+  }
+
+  async function plan(pinOverrides?: Record<string, string>) {
     const q = command.trim()
     if (!q || planning) return
     // A new plan invalidates the last one completely — token, legs and the
@@ -205,7 +228,11 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
       const r = await fetch('/api/burst/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders(sso.token) },
-        body: JSON.stringify({ command: q, activeLocationId: activeLocation === 'all' ? null : activeLocation }),
+        body: JSON.stringify({
+          command: q,
+          activeLocationId: activeLocation === 'all' ? null : activeLocation,
+          pins: pinOverrides ?? pins,
+        }),
       })
       const j = await r.json().catch(() => ({}))
       if (!r.ok) throw new Error(j?.error || `Planning failed (${r.status})`)
@@ -451,7 +478,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
               </button>
               <button
                 type="button"
-                onClick={plan}
+                onClick={() => plan()}
                 disabled={planning || !command.trim()}
                 className="oc-btn grid h-11 w-11 shrink-0 place-items-center"
                 aria-label="Plan this"
@@ -518,9 +545,29 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
                               out a step was never wired up after approving it is
                               how a plan becomes a lie. */}
                           {l.ambiguous?.length ? (
-                            <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--oc-amber)]">
-                              &ldquo;{l.location}&rdquo; matches {l.ambiguous.join(', ')} — say which one.
-                            </p>
+                            <div className="mt-1.5">
+                              <p className="text-[12.5px] leading-relaxed text-[color:var(--oc-amber)]">
+                                &ldquo;{l.spoken || l.location}&rdquo; matches {l.ambiguous.length} clients — which one?
+                              </p>
+                              {/* Buttons, not prose. These sub-accounts can share
+                                  a name, so the id is the only thing that tells
+                                  them apart and typing it back is not an answer
+                                  a person should have to give. */}
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {l.ambiguous.map((c) => (
+                                  <button
+                                    key={c.id}
+                                    type="button"
+                                    onClick={() => pickClient(l.spoken || l.location || '', c.id)}
+                                    disabled={planning}
+                                    className="rounded-lg border border-[color:var(--oc-line)] bg-white px-3 py-1.5 text-left text-[12px] transition hover:border-[color:var(--oc-green)] hover:bg-[color:var(--oc-green)]/5 disabled:opacity-50"
+                                  >
+                                    <span className="font-medium text-[color:var(--oc-ink)]">{c.name}</span>
+                                    <span className="ml-2 font-mono text-[11px] text-[color:var(--oc-text)]/50">{c.id}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           ) : null}
                           {l.notYetWired && (
                             <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/60">
