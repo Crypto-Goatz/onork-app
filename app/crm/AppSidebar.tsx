@@ -91,7 +91,7 @@ export default function AppSidebar({
   const active = ALIAS[current] ?? current
 
   return (
-    <aside className="oc-rail hidden w-[236px] shrink-0 border-r border-[#21262d] bg-[color:var(--console-page)] lg:block">
+    <aside className="oc-rail hidden w-[236px] shrink-0 border-r border-[#21262d] bg-[color:var(--oc-bg)] lg:block">
       <div className="sticky top-0 flex max-h-screen min-h-screen flex-col gap-5 overflow-y-auto p-4">
         <Link href="/crm" className="block px-2 pt-2" aria-label="0nCORE home">
           {/* NOT the file the handoff README names. The assets are named for
@@ -125,7 +125,7 @@ export default function AppSidebar({
                     className={[
                       'group flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-[13.5px] font-medium transition-all duration-150',
                       on
-                        ? 'bg-[#21262d] text-white shadow-[inset_2px_0_0_0_var(--0n-neon)]'
+                        ? 'bg-[#21262d] text-white shadow-[inset_2px_0_0_0_var(--oc-green-d)]'
                         : 'text-[#8b949e] hover:translate-x-0.5 hover:bg-[#21262d] hover:text-[#e6edf3]',
                     ].join(' ')}
                   >
@@ -139,11 +139,11 @@ export default function AppSidebar({
         </nav>
 
         {/* The answer to "why did that fail", kept where you never hunt for it. */}
-        <div className="rounded-xl border border-[color:var(--console-border)] bg-[color:var(--console-card)] p-3">
+        <div className="rounded-xl border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--0n-neon)] opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[color:var(--0n-neon)]" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--oc-green-d)] opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[color:var(--oc-green-d)]" />
             </span>
             <span className="text-[12px] text-[#c9d1d9]">
               {activeCount} of {totalCount} clients switched on
@@ -153,7 +153,7 @@ export default function AppSidebar({
           {freeAccountName && (
             <div className="mt-1.5 flex items-baseline gap-1.5 text-[11px]">
               <span className="shrink-0 text-[#8b949e]">Free account</span>
-              <span className="truncate font-mono text-[color:var(--0n-neon)]">{freeAccountName}</span>
+              <span className="truncate font-mono text-[color:var(--oc-green-d)]">{freeAccountName}</span>
             </div>
           )}
         </div>

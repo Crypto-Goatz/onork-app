@@ -100,12 +100,12 @@ export default function ActionsPage() {
         <div className="mx-auto max-w-4xl px-6 py-8">
           <div className="flex items-start justify-between gap-6">
             <header className="min-w-0">
-              <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--console-text-1)]">
+              <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--oc-ink)]">
                 Actions
               </h1>
-              <p className="mt-1 max-w-md text-[13.5px] leading-relaxed text-[color:var(--console-text-3)]">
+              <p className="mt-1 max-w-md text-[13.5px] leading-relaxed text-[color:var(--oc-muted)]">
                 {actions && (
-                  <span className="font-medium text-[color:var(--0n-neon)]">
+                  <span className="font-medium text-[color:var(--oc-green-d)]">
                     {actions.filter((a) => a.status === 'works').length} of {actions.length}
                   </span>
                 )}{' '}
@@ -114,16 +114,16 @@ export default function ActionsPage() {
             </header>
 
             <div className="relative w-[280px] shrink-0">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--console-text-3)]" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--oc-muted)]" />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={`Search ${actions?.length ?? 41} actions`}
-                className="w-full rounded-[10px] border border-[color:var(--console-border)] bg-[color:var(--console-card)] py-2.5 pl-9 pr-9 text-[13.5px] text-[color:var(--console-text-1)] outline-none transition placeholder:text-[color:var(--console-text-3)] focus:border-[color:var(--0n-neon)]"
+                className="w-full rounded-[10px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] py-2.5 pl-9 pr-9 text-[13.5px] text-[color:var(--oc-ink)] outline-none transition placeholder:text-[color:var(--oc-muted)] focus:border-[color:var(--oc-green-d)]"
               />
               {q && (
                 <button onClick={() => setQ('')} aria-label="Clear search"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-[color:var(--console-text-3)] transition hover:bg-[color:var(--console-hover)]">
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-[color:var(--oc-muted)] transition hover:bg-[color:var(--oc-hover)]">
                   <X className="h-4 w-4" />
                 </button>
               )}
@@ -137,8 +137,8 @@ export default function ActionsPage() {
                 onClick={() => setGroup(g)}
                 className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition-all duration-150 ${
                   group === g
-                    ? 'border border-[color:var(--0n-neon)]/40 bg-[color:var(--0n-neon)]/12 text-[color:var(--0n-neon)]'
-                    : 'border border-[color:var(--console-border)] bg-[color:var(--console-card)] text-[color:var(--console-text-3)] hover:border-[color:var(--console-border-hover)] hover:text-[color:var(--console-text-1)]'
+                    ? 'border border-[color:var(--oc-green-d)]/40 bg-[color:var(--oc-green-d)]/12 text-[color:var(--oc-green-d)]'
+                    : 'border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-muted)] hover:border-[color:var(--oc-border)] hover:text-[color:var(--oc-ink)]'
                 }`}
               >
                 {g === 'all' ? 'All' : g}
@@ -172,19 +172,19 @@ export default function ActionsPage() {
               return (
                 <div
                   key={a.id}
-                  className="rounded-2xl border border-[color:var(--console-border)] bg-[color:var(--console-card)] transition-colors duration-150 hover:border-[color:var(--console-border-hover)]"
+                  className="rounded-2xl border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] transition-colors duration-150 hover:border-[color:var(--oc-border)]"
                 >
                   <button
                     onClick={() => setOpenId(open ? null : a.id)}
                     aria-expanded={open}
                     className="flex w-full items-center gap-3 p-4 text-left"
                   >
-                    <Lead className="h-[18px] w-[18px] shrink-0 text-[color:var(--console-text-3)]" strokeWidth={2} />
+                    <Lead className="h-[18px] w-[18px] shrink-0 text-[color:var(--oc-muted)]" strokeWidth={2} />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[14.5px] font-semibold text-[color:var(--console-text-1)]">
+                      <span className="block text-[14.5px] font-semibold text-[color:var(--oc-ink)]">
                         {a.name}
                       </span>
-                      <span className="mt-0.5 block text-[12.5px] leading-relaxed text-[color:var(--console-text-3)]">
+                      <span className="mt-0.5 block text-[12.5px] leading-relaxed text-[color:var(--oc-muted)]">
                         {a.what}
                       </span>
                     </span>
@@ -193,28 +193,28 @@ export default function ActionsPage() {
                       {meta.label}
                     </span>
                     <ChevronDown
-                      className={`h-4 w-4 shrink-0 text-[color:var(--console-text-3)] transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+                      className={`h-4 w-4 shrink-0 text-[color:var(--oc-muted)] transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
                     />
                   </button>
 
                   {open && (
-                    <div className="space-y-3 border-t border-[color:var(--console-border)] px-4 pb-4 pt-3">
+                    <div className="space-y-3 border-t border-[color:var(--oc-border)] px-4 pb-4 pt-3">
                       {a.example && (
                         <div>
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[color:var(--console-text-3)]">
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[color:var(--oc-muted)]">
                             Say it like this
                           </div>
-                          <p className="mt-1.5 rounded-lg bg-[color:var(--console-page)] px-3 py-2 font-mono text-[12px] leading-relaxed text-[color:var(--console-text-1)]">
+                          <p className="mt-1.5 rounded-lg bg-[color:var(--oc-bg)] px-3 py-2 font-mono text-[12px] leading-relaxed text-[color:var(--oc-ink)]">
                             {a.example}
                           </p>
                         </div>
                       )}
                       {a.instead && (
                         <div>
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[color:var(--status-warning-dark)]">
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[color:var(--oc-amber)]">
                             Do this instead
                           </div>
-                          <p className="mt-1 text-[12.5px] leading-relaxed text-[color:var(--console-text-2)]">
+                          <p className="mt-1 text-[12.5px] leading-relaxed text-[color:var(--oc-text)]">
                             {a.instead}
                           </p>
                         </div>
@@ -222,12 +222,12 @@ export default function ActionsPage() {
                       {a.status === 'works' && a.example && (
                         <Link
                           href={`/crm?command=${encodeURIComponent(a.example)}`}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--0n-neon)] px-3 py-1.5 text-[12.5px] font-semibold text-[#0d1117] transition hover:opacity-90 active:scale-[0.98]"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--oc-green-d)] px-3 py-1.5 text-[12.5px] font-semibold text-[#0d1117] transition hover:opacity-90 active:scale-[0.98]"
                         >
                           Try it
                         </Link>
                       )}
-                      <div className="font-mono text-[11px] text-[color:var(--console-text-3)]/70">{a.id}</div>
+                      <div className="font-mono text-[11px] text-[color:var(--oc-muted)]/70">{a.id}</div>
                     </div>
                   )}
                 </div>

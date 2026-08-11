@@ -62,10 +62,13 @@ export default async function RootLayout({
   // app.0ncore.com is the product surface; everything else is the marketing site.
   const isAppHost = (await headers()).get('host') === 'app.0ncore.com'
 
-  // Which side the agency rail sits on. Read on the SERVER so the page renders
-  // on the chosen side immediately — reading it client-side would paint the
-  // rail on one edge and snap it to the other, on every navigation.
-  const sidebarSide = (await cookies()).get('oc_sidebar_side')?.value === 'right' ? 'right' : 'left'
+  // Which side the agency rail sits on. RIGHT by default: the reading order of
+  // this product is command first, result second, so the thing you type into
+  // deserves the left edge and the natural start of the line.
+  //
+  // Read on the SERVER so the page renders on the chosen side immediately —
+  // client-side would paint one edge and snap to the other, every navigation.
+  const sidebarSide = (await cookies()).get('oc_sidebar_side')?.value === 'left' ? 'left' : 'right'
 
   return (
     <html

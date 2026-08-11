@@ -42,27 +42,27 @@ export default function SettingsRows() {
             className={[
               'flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-150',
               r.danger
-                ? 'border-[color:var(--status-danger-dark)]/30 bg-[color:var(--console-card)] hover:border-[color:var(--status-danger-dark)]/60'
-                : 'border-[color:var(--console-border)] bg-[color:var(--console-card)] hover:border-[color:var(--console-border-hover)]',
+                ? 'border-[color:var(--oc-red)]/30 bg-[color:var(--oc-card)] hover:border-[color:var(--oc-red)]/60'
+                : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] hover:border-[color:var(--oc-border)]',
             ].join(' ')}
           >
             <Icon
               className={`h-[18px] w-[18px] shrink-0 ${
-                r.danger ? 'text-[color:var(--status-danger-dark)]' : 'text-[color:var(--console-text-3)]'
+                r.danger ? 'text-[color:var(--oc-red)]' : 'text-[color:var(--oc-muted)]'
               }`}
               strokeWidth={2}
             />
             <span className="min-w-0 flex-1">
               <span
                 className={`block text-[14.5px] font-semibold ${
-                  r.danger ? 'text-[color:var(--status-danger-dark)]' : 'text-[color:var(--console-text-1)]'
+                  r.danger ? 'text-[color:var(--oc-red)]' : 'text-[color:var(--oc-ink)]'
                 }`}
               >
                 {r.label}
               </span>
-              <span className="mt-0.5 block text-[12.5px] text-[color:var(--console-text-3)]">{r.sub}</span>
+              <span className="mt-0.5 block text-[12.5px] text-[color:var(--oc-muted)]">{r.sub}</span>
             </span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-[color:var(--console-text-3)]" />
+            <ChevronRight className="h-4 w-4 shrink-0 text-[color:var(--oc-muted)]" />
           </Link>
         )
       })}

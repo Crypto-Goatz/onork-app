@@ -23,13 +23,13 @@ const COOKIE = 'oc_sidebar_side'
 const ONE_YEAR = 60 * 60 * 24 * 365
 
 function readSide(): Side {
-  if (typeof document === 'undefined') return 'left'
+  if (typeof document === 'undefined') return 'right'
   const fromDom = document.documentElement.getAttribute('data-sidebar-side')
-  return fromDom === 'right' ? 'right' : 'left'
+  return fromDom === 'left' ? 'left' : 'right'
 }
 
 export default function SidebarSideToggle() {
-  const [side, setSide] = useState<Side>('left')
+  const [side, setSide] = useState<Side>('right')
 
   // Sync from the DOM the server already stamped, so this control shows the
   // truth rather than a default that happens to be wrong.
@@ -42,18 +42,18 @@ export default function SidebarSideToggle() {
   }
 
   const options: { value: Side; label: string; icon: typeof PanelLeft }[] = [
-    { value: 'left', label: 'Left', icon: PanelLeft },
     { value: 'right', label: 'Right', icon: PanelRight },
+    { value: 'left', label: 'Left', icon: PanelLeft },
   ]
 
   return (
-    <div className="rounded-xl border border-[color:var(--console-border)] bg-[color:var(--console-card)] p-4">
+    <div className="rounded-xl border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-4">
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0">
-          <div className="text-[14px] font-medium text-[color:var(--console-text-1)]">
+          <div className="text-[14px] font-medium text-[color:var(--oc-ink)]">
             Navigation side
           </div>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-[color:var(--console-text-3)]">
+          <p className="mt-1 text-[12.5px] leading-relaxed text-[color:var(--oc-muted)]">
             Which edge the menu sits on. Applies immediately and is remembered on this browser.
           </p>
         </div>
@@ -61,7 +61,7 @@ export default function SidebarSideToggle() {
         <div
           role="radiogroup"
           aria-label="Navigation side"
-          className="flex shrink-0 gap-1 rounded-[10px] border border-[color:var(--console-border)] bg-[color:var(--console-page)] p-1"
+          className="flex shrink-0 gap-1 rounded-[10px] border border-[color:var(--oc-border)] bg-[color:var(--oc-bg)] p-1"
         >
           {options.map((o) => {
             const Icon = o.icon
@@ -76,8 +76,8 @@ export default function SidebarSideToggle() {
                 className={[
                   'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-medium transition-all duration-150 active:scale-[0.98]',
                   on
-                    ? 'bg-[color:var(--console-hover)] text-[color:var(--console-text-1)]'
-                    : 'text-[color:var(--console-text-3)] hover:text-[color:var(--console-text-1)]',
+                    ? 'bg-[color:var(--oc-hover)] text-[color:var(--oc-ink)]'
+                    : 'text-[color:var(--oc-muted)] hover:text-[color:var(--oc-ink)]',
                 ].join(' ')}
               >
                 <Icon className="h-4 w-4" strokeWidth={2} />

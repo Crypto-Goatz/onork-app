@@ -107,31 +107,31 @@ export default function ClientsManager() {
       <div className="mx-auto max-w-4xl px-6 py-8">
         <div className="flex items-start justify-between gap-6">
           <header className="min-w-0">
-            <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--console-text-1)]">
+            <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--oc-ink)]">
               Clients
             </h1>
-            <p className="mt-1 text-[13.5px] leading-relaxed text-[color:var(--console-text-3)]">
+            <p className="mt-1 text-[13.5px] leading-relaxed text-[color:var(--oc-muted)]">
               {connected.length} connected · additional accounts {PRICE}/mo each ·{' '}
               {runningTotal}/month running total
             </p>
           </header>
 
           <div className="relative w-[280px] shrink-0">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--console-text-3)]" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--oc-muted)]" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Name or account ID"
-              className="w-full rounded-[10px] border border-[color:var(--console-border)] bg-[color:var(--console-card)] py-2.5 pl-9 pr-3 text-[13.5px] text-[color:var(--console-text-1)] outline-none transition placeholder:text-[color:var(--console-text-3)] focus:border-[color:var(--0n-neon)]"
+              className="w-full rounded-[10px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] py-2.5 pl-9 pr-3 text-[13.5px] text-[color:var(--oc-ink)] outline-none transition placeholder:text-[color:var(--oc-muted)] focus:border-[color:var(--oc-green-d)]"
             />
           </div>
         </div>
 
         {note && (
-          <div className="mt-4 flex items-start gap-2 rounded-xl border border-[color:var(--console-border)] bg-[color:var(--console-card)] p-3">
-            <p className="flex-1 text-[12.5px] text-[color:var(--console-text-1)]">{note}</p>
-            <button onClick={() => setNote(null)} aria-label="Dismiss" className="rounded p-1 hover:bg-[color:var(--console-hover)]">
-              <X className="h-3.5 w-3.5 text-[color:var(--console-text-3)]" />
+          <div className="mt-4 flex items-start gap-2 rounded-xl border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3">
+            <p className="flex-1 text-[12.5px] text-[color:var(--oc-ink)]">{note}</p>
+            <button onClick={() => setNote(null)} aria-label="Dismiss" className="rounded p-1 hover:bg-[color:var(--oc-hover)]">
+              <X className="h-3.5 w-3.5 text-[color:var(--oc-muted)]" />
             </button>
           </div>
         )}
@@ -162,8 +162,8 @@ export default function ClientsManager() {
                       className={[
                         'group rounded-2xl border p-4 transition-colors duration-150',
                         broken
-                          ? 'border-[color:var(--status-danger-dark)]/40 bg-[color:var(--status-danger-dark)]/[0.07]'
-                          : 'border-[color:var(--console-border)] bg-[color:var(--console-card)] hover:border-[color:var(--console-border-hover)]',
+                          ? 'border-[color:var(--oc-red)]/40 bg-[color:var(--oc-red)]/[0.07]'
+                          : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] hover:border-[color:var(--oc-border)]',
                       ].join(' ')}
                     >
                       <div className="flex items-center gap-3">
@@ -172,24 +172,24 @@ export default function ClientsManager() {
                           className={[
                             'h-2.5 w-2.5 shrink-0 rounded-full',
                             broken
-                              ? 'bg-[color:var(--status-danger-dark)]'
-                              : 'bg-[color:var(--0n-neon)]',
+                              ? 'bg-[color:var(--oc-red)]'
+                              : 'bg-[color:var(--oc-green-d)]',
                           ].join(' ')}
                           aria-hidden
                         />
 
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="truncate text-[15px] font-semibold text-[color:var(--console-text-1)]">
+                            <span className="truncate text-[15px] font-semibold text-[color:var(--oc-ink)]">
                               {a.name}
                             </span>
                             {a.isFree && (
-                              <span className="rounded-full bg-[color:var(--0n-neon)]/12 px-2 py-0.5 text-[11px] font-medium text-[color:var(--0n-neon)]">
+                              <span className="rounded-full bg-[color:var(--oc-green-d)]/12 px-2 py-0.5 text-[11px] font-medium text-[color:var(--oc-green-d)]">
                                 Free · default
                               </span>
                             )}
                             {broken && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-[color:var(--status-danger-dark)]/12 px-2 py-0.5 text-[11px] font-medium text-[color:var(--status-danger-dark)]">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-[color:var(--oc-red)]/12 px-2 py-0.5 text-[11px] font-medium text-[color:var(--oc-red)]">
                                 <TriangleAlert className="h-3 w-3" />
                                 {a.error}
                               </span>
@@ -199,9 +199,9 @@ export default function ClientsManager() {
                           {/* ID, key and price on ONE line — three stacked lines
                               made every row look like a form. */}
                           <div className="mt-1 flex flex-wrap items-center gap-3 text-[12px]">
-                            <span className="font-mono text-[color:var(--console-text-3)]">{a.locationId}</span>
-                            <span className="font-mono tracking-[0.2em] text-[color:var(--console-text-3)]">••••••••</span>
-                            <span className="text-[color:var(--console-text-2)]">
+                            <span className="font-mono text-[color:var(--oc-muted)]">{a.locationId}</span>
+                            <span className="font-mono tracking-[0.2em] text-[color:var(--oc-muted)]">••••••••</span>
+                            <span className="text-[color:var(--oc-text)]">
                               {a.isFree ? 'Included' : `${PRICE}/mo`}
                             </span>
                           </div>
@@ -210,7 +210,7 @@ export default function ClientsManager() {
                         {broken ? (
                           <button
                             onClick={() => setEditing(editing === a.locationId ? null : a.locationId)}
-                            className="shrink-0 rounded-full bg-[color:var(--status-danger-dark)] px-4 py-1.5 text-[12.5px] font-semibold text-[#0d1117] transition hover:opacity-90 active:scale-[0.98]"
+                            className="shrink-0 rounded-full bg-[color:var(--oc-red)] px-4 py-1.5 text-[12.5px] font-semibold text-[#0d1117] transition hover:opacity-90 active:scale-[0.98]"
                           >
                             Reconnect
                           </button>
@@ -221,17 +221,17 @@ export default function ClientsManager() {
                           <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
                             <button onClick={() => copyKey(a.locationId)} title="Copy key"
                               aria-label={`Copy key for ${a.name}`}
-                              className="rounded-lg p-2 text-[color:var(--console-text-3)] transition hover:bg-[color:var(--console-hover)] hover:text-[color:var(--console-text-1)]">
+                              className="rounded-lg p-2 text-[color:var(--oc-muted)] transition hover:bg-[color:var(--oc-hover)] hover:text-[color:var(--oc-ink)]">
                               <Copy className="h-4 w-4" />
                             </button>
                             <button onClick={() => setEditing(editing === a.locationId ? null : a.locationId)} title="Replace key"
                               aria-label={`Replace key for ${a.name}`}
-                              className="rounded-lg p-2 text-[color:var(--console-text-3)] transition hover:bg-[color:var(--console-hover)] hover:text-[color:var(--console-text-1)]">
+                              className="rounded-lg p-2 text-[color:var(--oc-muted)] transition hover:bg-[color:var(--oc-hover)] hover:text-[color:var(--oc-ink)]">
                               <Pencil className="h-4 w-4" />
                             </button>
                             <button onClick={() => remove(a.locationId, a.name)} disabled={busy} title="Disconnect"
                               aria-label={`Disconnect ${a.name}`}
-                              className="rounded-lg p-2 text-[color:var(--status-danger-dark)]/80 transition hover:bg-[color:var(--status-danger-dark)]/10 hover:text-[color:var(--status-danger-dark)] disabled:opacity-50">
+                              className="rounded-lg p-2 text-[color:var(--oc-red)]/80 transition hover:bg-[color:var(--oc-red)]/10 hover:text-[color:var(--oc-red)] disabled:opacity-50">
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>

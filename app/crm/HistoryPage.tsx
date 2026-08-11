@@ -33,10 +33,10 @@ interface Receipt {
 }
 
 const STATUS_CLS: Record<string, string> = {
-  ok: 'bg-[color:var(--0n-neon)]/12 text-[color:var(--0n-neon)]',
-  failed: 'bg-[color:var(--status-danger-dark)]/12 text-[color:var(--status-danger-dark)]',
-  partial: 'bg-[color:var(--status-warning-dark)]/12 text-[color:var(--status-warning-dark)]',
-  pending: 'bg-black/20 text-[color:var(--console-text-3)]',
+  ok: 'bg-[color:var(--oc-green-d)]/12 text-[color:var(--oc-green-d)]',
+  failed: 'bg-[color:var(--oc-red)]/12 text-[color:var(--oc-red)]',
+  partial: 'bg-[color:var(--oc-amber)]/12 text-[color:var(--oc-amber)]',
+  pending: 'bg-black/20 text-[color:var(--oc-muted)]',
 }
 const STATUS_LABEL: Record<string, string> = {
   ok: 'Success', failed: 'Failed', partial: 'Partial', pending: 'Pending',
@@ -95,7 +95,7 @@ export default function HistoryPage() {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="rounded-full border border-[color:var(--console-border)] bg-[color:var(--console-card)] px-3.5 py-2 text-[12.5px] text-[color:var(--console-text-2)] outline-none transition hover:border-[color:var(--console-border-hover)] focus:border-[color:var(--0n-neon)]"
+      className="rounded-full border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3.5 py-2 text-[12.5px] text-[color:var(--oc-text)] outline-none transition hover:border-[color:var(--oc-border)] focus:border-[color:var(--oc-green-d)]"
     >
       {children}
     </select>
@@ -108,8 +108,8 @@ export default function HistoryPage() {
         <div className="mx-auto max-w-[1080px] px-10 py-12">
           <div className="flex items-start justify-between gap-6">
             <header className="min-w-0">
-              <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--console-text-1)]">History</h1>
-              <p className="mt-1 max-w-md text-[13.5px] leading-relaxed text-[color:var(--console-text-3)]">
+              <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--oc-ink)]">History</h1>
+              <p className="mt-1 max-w-md text-[13.5px] leading-relaxed text-[color:var(--oc-muted)]">
                 Every receipt, newest first. If something went wrong in a client&apos;s account, the
                 answer lives here.
               </p>
@@ -117,7 +117,7 @@ export default function HistoryPage() {
             <button
               onClick={exportCsv}
               disabled={!rows?.length}
-              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[color:var(--console-border)] bg-[color:var(--console-card)] px-4 py-2.5 text-[12.5px] font-medium text-[color:var(--console-text-2)] transition hover:border-[color:var(--console-border-hover)] hover:text-[color:var(--console-text-1)] disabled:opacity-40"
+              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-4 py-2.5 text-[12.5px] font-medium text-[color:var(--oc-text)] transition hover:border-[color:var(--oc-border)] hover:text-[color:var(--oc-ink)] disabled:opacity-40"
             >
               <Download className="h-4 w-4" /> Export CSV
             </button>
@@ -145,13 +145,13 @@ export default function HistoryPage() {
           </div>
 
           {!rows && (
-            <div className="mt-8 flex items-center gap-2 text-sm text-[color:var(--console-text-3)]">
+            <div className="mt-8 flex items-center gap-2 text-sm text-[color:var(--oc-muted)]">
               <Loader2 className="h-4 w-4 animate-spin" /> Loading receipts…
             </div>
           )}
 
           {rows?.length === 0 && (
-            <p className="mt-8 text-sm text-[color:var(--console-text-3)]">
+            <p className="mt-8 text-sm text-[color:var(--oc-muted)]">
               Nothing in this window. Every approved run writes a receipt here.
             </p>
           )}
@@ -161,28 +161,28 @@ export default function HistoryPage() {
               const isOpen = open === r.id
               const cost = r.price_cents ? `$${(r.price_cents / 100).toFixed(2)}` : 'Free'
               return (
-                <div key={r.id} className="rounded-2xl border border-[color:var(--console-border)] bg-[color:var(--console-card)] transition-colors duration-150 hover:border-[color:var(--console-border-hover)]">
+                <div key={r.id} className="rounded-2xl border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] transition-colors duration-150 hover:border-[color:var(--oc-border)]">
                   <button
                     onClick={() => setOpen(isOpen ? null : r.id)}
                     className="grid w-full grid-cols-[130px_1fr_1fr_auto_70px] items-center gap-3 p-4 text-left"
                   >
-                    <span className="font-mono text-[12px] text-[color:var(--console-text-3)]">{when(r.created_at)}</span>
-                    <span className="truncate text-[13.5px] font-semibold text-[color:var(--console-text-1)]">
+                    <span className="font-mono text-[12px] text-[color:var(--oc-muted)]">{when(r.created_at)}</span>
+                    <span className="truncate text-[13.5px] font-semibold text-[color:var(--oc-ink)]">
                       {r.location_name ?? '—'}
                     </span>
-                    <span className="truncate text-[12.5px] text-[color:var(--console-text-3)]">
+                    <span className="truncate text-[12.5px] text-[color:var(--oc-muted)]">
                       {r.detail || r.intent || r.capability}
                     </span>
                     <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${STATUS_CLS[r.status] ?? STATUS_CLS.pending}`}>
                       {STATUS_LABEL[r.status] ?? r.status}
                     </span>
-                    <span className={`text-right font-mono text-[12px] ${r.billed ? 'text-[color:var(--status-warning-dark)]' : 'text-[color:var(--console-text-3)]'}`}>
+                    <span className={`text-right font-mono text-[12px] ${r.billed ? 'text-[color:var(--oc-amber)]' : 'text-[color:var(--oc-muted)]'}`}>
                       {cost}
                     </span>
                   </button>
 
                   {isOpen && (
-                    <div className="space-y-3 border-t border-[color:var(--console-border)] px-4 pb-4 pt-3 text-[12.5px]">
+                    <div className="space-y-3 border-t border-[color:var(--oc-border)] px-4 pb-4 pt-3 text-[12.5px]">
                       <Field label="Capability" mono>{r.capability}</Field>
                       {r.intent && <Field label="What it was for">{r.intent}</Field>}
                       <Field label="Targets touched">{r.targets ?? 0}</Field>
@@ -192,7 +192,7 @@ export default function HistoryPage() {
                       {r.detail && (
                         <div>
                           <Label>Result</Label>
-                          <p className="mt-1 rounded-lg bg-[color:var(--console-page)] px-3 py-2 font-mono text-[11.5px] leading-relaxed text-[color:var(--0n-neon)]">
+                          <p className="mt-1 rounded-lg bg-[color:var(--oc-bg)] px-3 py-2 font-mono text-[11.5px] leading-relaxed text-[color:var(--oc-green-d)]">
                             {r.detail}
                           </p>
                         </div>
@@ -200,7 +200,7 @@ export default function HistoryPage() {
                       {r.error && (
                         <div>
                           <Label>Error</Label>
-                          <p className="mt-1 rounded-lg bg-[color:var(--console-page)] px-3 py-2 font-mono text-[11.5px] leading-relaxed text-[color:var(--status-danger-dark)]">
+                          <p className="mt-1 rounded-lg bg-[color:var(--oc-bg)] px-3 py-2 font-mono text-[11.5px] leading-relaxed text-[color:var(--oc-red)]">
                             {r.error}
                           </p>
                         </div>
@@ -219,7 +219,7 @@ export default function HistoryPage() {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[color:var(--console-text-3)]">
+    <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[color:var(--oc-muted)]">
       {children}
     </div>
   )
@@ -227,8 +227,8 @@ function Label({ children }: { children: React.ReactNode }) {
 function Field({ label, children, mono }: { label: string; children: React.ReactNode; mono?: boolean }) {
   return (
     <div className="flex gap-3">
-      <span className="w-[130px] shrink-0 text-[color:var(--console-text-3)]">{label}</span>
-      <span className={mono ? 'font-mono text-[11.5px] text-[color:var(--console-text-2)]' : 'text-[color:var(--console-text-2)]'}>
+      <span className="w-[130px] shrink-0 text-[color:var(--oc-muted)]">{label}</span>
+      <span className={mono ? 'font-mono text-[11.5px] text-[color:var(--oc-text)]' : 'text-[color:var(--oc-text)]'}>
         {children}
       </span>
     </div>

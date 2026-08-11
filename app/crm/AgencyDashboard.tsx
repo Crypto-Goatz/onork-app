@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
-  Terminal, Users, Workflow, ListChecks, TrendingUp, Gauge,
+  Terminal,
   Send, Mic, ShieldCheck, Loader2, X, AlertCircle, CheckCircle2,
   PanelRightClose, PanelRightOpen, Building2, Sparkles, Home,
   Crosshair, ArrowLeft, LogOut, CreditCard,
@@ -192,13 +192,16 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
     } catch { /* no-op */ }
   }, [])
 
+  /**
+   * Only what actually works.
+   *
+   * Five of the original six were `ready: false` and opened a panel that did
+   * nothing — a landing page advertising features it does not have teaches
+   * people not to click anything. The sections that DO work are in the rail;
+   * they do not need a second, decorative entrance.
+   */
   const TILES = useMemo(() => ([
     { id: 'command' as TileId, icon: Terminal, name: 'Command Chat', desc: 'One sentence, every client. It plans and prices before anything runs.', stat: `${boot?.stats.burstsToday ?? 0} bursts today`, ready: true },
-    { id: 'clients' as TileId, icon: Users, name: 'New Clients', desc: 'Describe a client in a paragraph — account, snapshot, team, first email.', stat: `${boot?.stats.provisionedThisWeek ?? 0} this week`, ready: false },
-    { id: 'flows' as TileId, icon: Workflow, name: 'Onboarding Flows', desc: 'A flowchart you edit in place. Click any step to change it.', stat: `${boot?.stats.flowsActive ?? 0} active`, ready: false },
-    { id: 'tasks' as TileId, icon: ListChecks, name: 'Tasks', desc: 'One list for people, automations and AI agents — side by side.', stat: `${boot?.stats.openTasks ?? 0} open`, ready: false },
-    { id: 'grow' as TileId, icon: TrendingUp, name: 'Grow', desc: 'Upsell, cross-sell and reactivation plays per client.', stat: `${boot?.stats.growSignals ?? 0} signals`, ready: false },
-    { id: 'usage' as TileId, icon: Gauge, name: 'Plan & Usage', desc: 'Which clients are switched on, what ran, and what it cost.', stat: boot?.usage.mtdLabel ?? '$0', ready: false },
   ]), [boot])
 
   /**
@@ -661,37 +664,8 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
             )}
           </section>
 
-          {/* ── TILE GRID ── */}
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {TILES.map((t, i) => {
-              const Icon = t.icon
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTile(t.id)}
-                  style={{ animationDelay: `${i * 40}ms` }}
-                  className="oc-tile oc-rise p-5 text-left"
-                >
-                  <div className="flex items-start justify-between">
-                    <span className="grid h-11 w-11 place-items-center rounded-[13px] bg-[color:var(--oc-green)]/14">
-                      <Icon className="h-5 w-5 text-[color:var(--oc-green-d)]" />
-                    </span>
-                    <span className={`oc-chip px-2 py-1 ${
-                      t.ready
-                        ? 'border border-[color:var(--oc-green-d)]/30 bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
-                        : 'border border-[color:var(--oc-border)] bg-[color:var(--oc-bg)] text-[color:var(--oc-text)]/55'
-                    }`}>
-                      {t.ready ? 'LIVE' : 'BUILDING'}
-                    </span>
-                  </div>
-                  <h2 className="mt-4 text-[17px] font-bold">{t.name}</h2>
-                  <p className="mt-1.5 text-[13px] leading-relaxed text-[color:var(--oc-text)]/80">{t.desc}</p>
-                  <div className="oc-mono mt-3 text-[11px] text-[color:var(--oc-text)]/55">{t.stat}</div>
-                </button>
-              )
-            })}
-          </div>
+          {/* TILE GRID REMOVED. It advertised five panels that did nothing.
+              Command is the landing surface; everything else lives in the rail. */}
 
           {/* ── what it costs ── */}
           <section className="oc-card mt-5 p-5">
