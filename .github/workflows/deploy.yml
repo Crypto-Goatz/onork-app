@@ -71,11 +71,39 @@ jobs:
       - name: Build with Vercel CLI
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
-      # NOTE: no --archive=tgz. The tgz packer follows symlinks that Next's
-      # file tracing leaves inside .vercel/output, and Vercel then fails on
-      # extraction with ENOENT lstat'ing the symlink target (seen repeatedly on
-      # node_modules/client-only/index.js). Uploading files individually is
-      # slower but does not lose the link targets.
+      # Dereference symlinks left in .vercel/output by Next's file tracing.
+      #
+      # WHY. The traced output contains symlinks pointing at ABSOLUTE build-machine
+      # paths (/vercel/path0/node_modules/...). Those paths do not exist on the
+      # deploy side, so the upload dies with
+      #   ENOENT: no such file or directory, lstat '/vercel/path0/node_modules/client-only/index.js'
+      # Dropping --archive=tgz was tried first and did NOT fix it — the same link
+      # fails on the individual-file path too. The fix is to replace each link
+      # with the bytes it points at, before anything is uploaded.
+      #
+      # Broken links (target genuinely missing) are deleted rather than kept:
+      # a dangling link is what caused the failure, and nothing can read it.
+      - name: Flatten symlinks in build output
+        run: |
+          set -euo pipefail
+          links=$(find .vercel/output -type l 2>/dev/null | wc -l | tr -d ' ')
+          echo "symlinks found: $links"
+          resolved=0; dropped=0
+          while IFS= read -r link; do
+            [ -z "$link" ] && continue
+            target=$(readlink -f "$link" 2>/dev/null || true)
+            if [ -n "$target" ] && [ -e "$target" ]; then
+              rm -f "$link"
+              cp -RL "$target" "$link"
+              resolved=$((resolved+1))
+            else
+              rm -f "$link"
+              dropped=$((dropped+1))
+            fi
+          done < <(find .vercel/output -type l 2>/dev/null)
+          echo "resolved=$resolved dropped=$dropped"
+          echo "remaining symlinks: $(find .vercel/output -type l 2>/dev/null | wc -l | tr -d ' ')"
+
       - name: Deploy pre-built artifacts to Vercel
         id: deploy
         env:
@@ -96,7 +124,15 @@ jobs:
 
       - name: Summary
         run: |
-          echo "### ✅ Deployed (zero Vercel build minutes used)" >> "$GITHUB_STEP_SUMMARY"
+          # Tell the truth about build minutes. This line printed "zero" no matter
+          # what, so a prebuilt failure that fell back to a billed Vercel build
+          # looked identical to a clean prebuilt deploy — which is why the
+          # fallback ran unnoticed on every push.
+          if [ "${{ steps.deploy.outputs.mode }}" = "prebuilt" ]; then
+            echo "### Deployed — prebuilt, zero Vercel build minutes" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Deployed — FELL BACK to a Vercel-side build (build minutes were used)" >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo "URL: ${{ steps.deploy.outputs.url }}"             >> "$GITHUB_STEP_SUMMARY"
           echo "Build mode: \`${{ steps.deploy.outputs.mode }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Commit: \`${{ github.sha }}\`"                    >> "$GITHUB_STEP_SUMMARY"
