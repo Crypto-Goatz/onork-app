@@ -19,7 +19,7 @@ function admin() {
 
 /**
  * Bill `count` API calls for an agency. MARKETPLACE FIRST: charge the agency's
- * GHL wallet (their payment method on file with GHL). If that path isn't live
+ * CRM wallet (their payment method on file with the CRM). If that path isn't live
  * for them (no CRM token / portal pricing not configured), fall back to the
  * Stripe meter for standalone agencies.
  */
@@ -27,7 +27,18 @@ export async function reportApiUsage(companyId: string | null | undefined, count
   try {
     if (!companyId || count <= 0) return
 
-    // 1) Marketplace path — charge the GHL wallet.
+    // FREE-FOREVER AGENCIES ARE NEVER METERED. Checked HERE, before either
+    // billing path, because the 100%-off Stripe coupon does not protect the
+    // first one: chargeWallet() debits the agency's card on file with the CRM
+    // marketplace and never touches Stripe, so a Stripe discount cannot zero
+    // it. Relying on the coupon alone would have billed the owner in real money
+    // for every action while the checkout page said "Free Forever".
+    //
+    // A guard in code also survives the coupon being edited, expiring, or being
+    // detached from the subscription — none of which anyone would notice.
+    if ((AGENCY_BILLING.freeForeverCompanyIds as readonly string[]).includes(companyId)) return
+
+    // 1) Marketplace path — charge the CRM wallet.
     const wallet = await chargeWallet({
       companyId,
       amountCents: count * AGENCY_BILLING.perCallCents,
