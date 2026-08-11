@@ -14,12 +14,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/connect/service-client'
 import { verifyLocationPit, type CrmLocation } from '@/lib/connect/pit'
+import { syncAgencyQuantity } from '@/lib/connect/sync-billing'
+import { AGENCY_BILLING } from '@/lib/agency-billing'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-/** Price per additional account, in cents. Configuration, not a constant. */
-const DEFAULT_PRICE_CENTS = 899
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -93,12 +92,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Could not save that account.' }, { status: 500 })
   }
 
+  // The count changed, so the bill changed. Best-effort by design — see
+  // sync-billing: a Stripe hiccup must not undo a connect the agency just
+  // proved they were entitled to make.
+  await syncAgencyQuantity(agency.company_id)
+
   return NextResponse.json({
     ok: true,
     locationId,
     name: match.name,
     isFree: wantFree,
-    priceCents: wantFree ? 0 : DEFAULT_PRICE_CENTS,
+    priceCents: wantFree ? 0 : AGENCY_BILLING.perClientCents,
   })
 }
 
@@ -126,6 +130,9 @@ export async function DELETE(req: NextRequest) {
     .update({ status: 'disconnected', is_free: false, updated_at: new Date().toISOString() })
     .eq('company_id', agency.company_id)
     .eq('location_id', locationId)
+
+  // Disconnecting must lower the bill as promptly as connecting raises it.
+  await syncAgencyQuantity(agency.company_id)
 
   return NextResponse.json({ ok: true })
 }

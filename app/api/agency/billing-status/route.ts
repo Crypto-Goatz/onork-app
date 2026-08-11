@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
-import { AGENCY_BILLING, billingSummary } from '@/lib/agency-billing'
+import { AGENCY_BILLING, billingSummary, countAgencyClients } from '@/lib/agency-billing'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -33,8 +33,9 @@ export async function GET(req: NextRequest) {
   const sb = admin()
 
   // ADDED clients only — never the whole CRM roster.
-  const { count } = await sb.from('agency_added_clients').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active')
-  const clients = count ?? 0
+  // Unknown (null) reads as 0 clients here because this is a read-only view;
+  // the paths that CHARGE refuse on null instead. See countAgencyClients.
+  const clients = (await countAgencyClients(sb, companyId)) ?? 0
   const summary = billingSummary(clients)
 
   // Founding + the stored Stripe customer, both keyed to the agency.

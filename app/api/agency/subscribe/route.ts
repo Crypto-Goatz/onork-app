@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
-import { AGENCY_BILLING, billableClients } from '@/lib/agency-billing'
+import { AGENCY_BILLING, billableClients, countAgencyClients } from '@/lib/agency-billing'
 import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 
 export const runtime = 'nodejs'
@@ -35,8 +35,13 @@ export async function POST(req: NextRequest) {
   const stripe = getStripe()
 
   // Billable = ADDED clients beyond the first (free). 0 at signup.
-  const { count } = await sb.from('agency_added_clients').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active')
-  const quantity = billableClients(count ?? 0)
+  const clientCount = await countAgencyClients(sb, companyId)
+  // null = the count could not be read. Refuse rather than silently charging
+  // for zero clients — that mistake ran undetected until 2026-08-10.
+  if (clientCount === null) {
+    return NextResponse.json({ error: 'Could not read your client count. Try again.' }, { status: 503 })
+  }
+  const quantity = billableClients(clientCount)
 
   // Founding + the agency's Stripe customer, both on agency_billing.
   const { data: bill } = await sb.from('agency_billing').select('is_founding, stripe_customer_id').eq('company_id', companyId).maybeSingle()

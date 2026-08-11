@@ -7,10 +7,12 @@
  * Structured so the three steps are separable components once design lands.
  *
  * The flow it encodes: agency PIT + company ID → their client list → pick the
- * one free account → connect any others at $8.99/mo. The per-account PIT step
- * is unavoidable — an agency token can list accounts but cannot act inside one.
+ * one free account → connect any others at the per-client rate in
+ * lib/agency-billing.ts. The per-account PIT step is unavoidable — an agency
+ * token can list accounts but cannot act inside one.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AGENCY_BILLING } from '@/lib/agency-billing'
 import {
   Building2,
   Check,
@@ -23,7 +25,12 @@ import {
   TriangleAlert,
 } from 'lucide-react'
 
-const PRICE_PER_ACCOUNT = '$8.99'
+/**
+ * Rendered from the billing model, never a literal typed here. A price the UI
+ * invents will eventually disagree with the price Stripe charges, and the user
+ * believes the UI.
+ */
+const PRICE_PER_ACCOUNT = `$${(AGENCY_BILLING.perClientCents / 100).toFixed(2)}`
 
 interface Account {
   locationId: string

@@ -53,6 +53,37 @@ export function billableClients(totalClients: number): number {
   return Math.max(0, totalClients - AGENCY_BILLING.freeClients)
 }
 
+/**
+ * How many clients this agency has connected. ONE READER for every billing
+ * surface.
+ *
+ * Counts `location_connections` — the row that holds a sub-account's token IS
+ * the record that it was added, so there is no second register to drift out of
+ * sync with. Three routes previously counted `agency_added_clients`, a table no
+ * migration ever created; the read silently yielded 0 and nobody was ever
+ * billed per client. Keeping this in one function means a mistake like that
+ * shows up in one place instead of three.
+ *
+ * Returns null when the count cannot be read. Callers MUST treat null as
+ * "unknown" and refuse to bill — never as zero. Charging nothing because a
+ * query failed is precisely the bug this replaces.
+ */
+export async function countAgencyClients(
+  sb: { from: (t: string) => any },
+  companyId: string,
+): Promise<number | null> {
+  const { count, error } = await sb
+    .from('location_connections')
+    .select('*', { count: 'exact', head: true })
+    .eq('company_id', companyId)
+    .eq('status', 'active')
+  if (error) {
+    console.error('[agency-billing] client count failed:', error.message)
+    return null
+  }
+  return count ?? 0
+}
+
 /** Plain-language summary of what an agency will pay, for the UI. */
 export function billingSummary(totalClients: number): {
   clients: number; freeClients: number; billableClients: number; monthlyClientCents: number
