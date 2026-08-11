@@ -35,7 +35,9 @@ async function defaultLocationFor(userId: string): Promise<string | null> {
     .select('free_location_id')
     .eq('user_id', userId)
     .eq('status', 'active')
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
   return data?.free_location_id ?? null
 }
 

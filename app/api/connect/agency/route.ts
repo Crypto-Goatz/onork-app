@@ -41,10 +41,13 @@ export async function POST(req: NextRequest) {
   const db = createServiceClient()
   if (!db) return NextResponse.json({ error: 'Storage is not configured.' }, { status: 500 })
 
+  // The CRM's own answer wins over what was typed — see verifyAgencyPit.
+  const realCompanyId = check.companyId
+
   const { error } = await db.from('agency_connections').upsert(
     {
       user_id: user.id,
-      company_id: companyId,
+      company_id: realCompanyId,
       agency_pit: agencyPit,
       locations: check.locations,
       locations_synced_at: new Date().toISOString(),
@@ -62,7 +65,10 @@ export async function POST(req: NextRequest) {
   // Never echo the token back.
   return NextResponse.json({
     ok: true,
-    companyId,
+    companyId: realCompanyId,
+    // Surfaced rather than silently corrected: pasting a location ID here is an
+    // easy mistake and the user should know which agency they actually linked.
+    correctedCompanyId: realCompanyId !== companyId ? companyId : null,
     accountCount: check.locations.length,
     locations: check.locations,
   })

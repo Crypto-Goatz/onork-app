@@ -51,6 +51,8 @@ export async function POST(req: NextRequest) {
       .select('company_id')
       .eq('user_id', ctx.userId)
       .eq('status', 'active')
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle()
     companyId = data?.company_id ?? null
   }

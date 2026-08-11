@@ -49,7 +49,9 @@ export async function POST(req: NextRequest) {
     .select('company_id, locations')
     .eq('user_id', user.id)
     .eq('status', 'active')
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
   if (!agency) {
     return NextResponse.json({ error: 'Connect your agency first.' }, { status: 400 })
@@ -134,7 +136,9 @@ export async function DELETE(req: NextRequest) {
     .from('agency_connections')
     .select('company_id')
     .eq('user_id', user.id)
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
   if (!agency) return NextResponse.json({ error: 'No agency connection.' }, { status: 400 })
 
   await db

@@ -60,7 +60,7 @@ function explain(status: number, body: string): string {
 export async function verifyAgencyPit(
   pit: string,
   companyId: string,
-): Promise<{ ok: true; locations: CrmLocation[] } | { ok: false; error: string }> {
+): Promise<{ ok: true; locations: CrmLocation[]; companyId: string } | { ok: false; error: string }> {
   try {
     const res = await fetch(
       `${CRM_API}/locations/search?companyId=${encodeURIComponent(companyId)}&limit=500`,
@@ -71,13 +71,31 @@ export async function verifyAgencyPit(
       return { ok: false, error: explain(res.status, body) }
     }
     const json = (await res.json()) as {
-      locations?: { id?: string; _id?: string; name?: string }[]
+      locations?: { id?: string; _id?: string; name?: string; companyId?: string }[]
     }
-    const locations = (Array.isArray(json.locations) ? json.locations : [])
+    const raw = Array.isArray(json.locations) ? json.locations : []
+    const locations = raw
       .map((l) => ({ id: String(l.id || l._id || ''), name: l.name || 'Untitled account' }))
       .filter((l) => l.id)
 
-    return { ok: true, locations }
+    if (locations.length === 0) {
+      return { ok: false, error: 'That token returned no client accounts. Check it is an AGENCY token.' }
+    }
+
+    /**
+     * TRUST THE CRM, NOT THE TYPED VALUE.
+     *
+     * /locations/search IGNORES a wrong companyId and returns the token's own
+     * accounts anyway — so a location ID pasted into the company field passes
+     * every check and writes a bogus connection. That happened on 2026-08-11
+     * and left two agency rows for one user, which broke every reader (they all
+     * use .maybeSingle(), and two rows is an error).
+     *
+     * The response carries the real companyId on each location, so derive it.
+     */
+    const derived = raw.find((l) => typeof l.companyId === 'string' && l.companyId)?.companyId
+
+    return { ok: true, locations, companyId: derived || companyId }
   } catch {
     return { ok: false, error: 'Could not reach the CRM.' }
   }

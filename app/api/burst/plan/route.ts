@@ -115,7 +115,9 @@ export async function POST(req: NextRequest) {
         .select('free_location_id')
         .eq('company_id', companyId)
         .eq('status', 'active')
-        .maybeSingle()
+        .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
       const freeId = data?.free_location_id
       defaultLocation = locations.find((l) => l.id === freeId) ?? null
     }

@@ -33,7 +33,9 @@ export async function GET(req: NextRequest) {
     .select('company_id')
     .eq('user_id', user.id)
     .eq('status', 'active')
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
   if (!agency) return NextResponse.json({ error: 'No agency connection.' }, { status: 403 })
 
   // Scoped to THIS agency's company_id — a valid location id belonging to

@@ -36,7 +36,9 @@ export async function POST(req: NextRequest) {
     .select('company_id, locations, free_location_id, free_locked_at')
     .eq('user_id', user.id)
     .eq('status', 'active')
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
   if (!agency) {
     return NextResponse.json({ error: 'Add your agency token first.' }, { status: 400 })

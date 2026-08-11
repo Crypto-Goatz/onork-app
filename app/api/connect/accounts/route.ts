@@ -30,7 +30,9 @@ export async function GET() {
     .select('company_id, company_name, locations, locations_synced_at')
     .eq('user_id', user.id)
     .eq('status', 'active')
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
   if (!agency) {
     return NextResponse.json({ connected: false, accounts: [], freeAccountId: null })

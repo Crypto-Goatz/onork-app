@@ -55,7 +55,9 @@ export async function GET() {
     .select('company_id, locations, free_location_id, free_locked_at')
     .eq('user_id', user.id)
     .eq('status', 'active')
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
   // No agency token yet → nothing else can be asked of them.
   if (!agency) {
