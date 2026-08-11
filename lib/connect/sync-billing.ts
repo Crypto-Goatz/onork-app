@@ -21,6 +21,17 @@ export async function syncAgencyQuantity(companyId: string): Promise<void> {
   const key = process.env.STRIPE_SECRET_KEY
   if (!key) return
 
+  /**
+   * FREE-FOREVER AGENCIES NEVER GET A PER-CLIENT ITEM.
+   *
+   * The 100%-off coupon would zero the charge anyway, but only for as long as
+   * it stays attached — edit it, expire it, or detach it and a per-client line
+   * quietly starts billing. Not adding the item at all does not depend on
+   * anything staying true, which is the same reasoning as the guard in
+   * reportApiUsage.
+   */
+  if ((AGENCY_BILLING.freeForeverCompanyIds as readonly string[]).includes(companyId)) return
+
   const sb = createServiceClient()
   if (!sb) return
 

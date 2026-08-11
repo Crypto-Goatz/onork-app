@@ -30,7 +30,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             Try Again
           </button>
           <a
-            href="/dashboard"
+            href="/crm"
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 text-white/60 text-sm font-medium no-underline hover:bg-white/[0.03] transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

@@ -9,7 +9,7 @@ export default function NotFound() {
         <p className="text-sm text-white/40 mb-8">This page doesn't exist or has been moved.</p>
         <div className="flex gap-3 justify-center">
           <Link
-            href="/dashboard"
+            href="/crm"
             className="px-5 py-2.5 rounded-xl bg-[#7ed957] text-[#020810] text-sm font-bold no-underline hover:bg-[#7ed957]/90 transition-colors"
           >
             Go to Dashboard
