@@ -3,7 +3,7 @@ import {
   plannerCatalogue, capability, legPriceCents, assertExecutable, tokenAudienceFor,
 } from '@/lib/crm/registry'
 import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
-import { listAgencyLocations, resolveLocation, type AgencyLocation } from '@/lib/crm/locations'
+import { listConnectedClients, resolveLocation, type AgencyLocation } from '@/lib/crm/locations'
 import { IMPLEMENTED } from '@/lib/burst/executor'
 import { signPlan, type SignedLeg } from '@/lib/burst/plan-token'
 
@@ -82,11 +82,16 @@ export async function POST(req: NextRequest) {
   const session = verifyAppJwt(bearer(req))
   const companyId = session.ok ? session.claims.companyId : null
 
+  /**
+   * CONNECTED clients only — never the agency's whole CRM roster.
+   *
+   * The roster is 87 sub-accounts for a real agency; we hold a key for the ones
+   * that were switched on and cannot act in the rest. Planning against an
+   * account that can never run produces a leg that only ever fails, and it put
+   * 87 names into every prompt.
+   */
   let locations: AgencyLocation[] = []
-  if (companyId) {
-    const res = await listAgencyLocations(companyId)
-    locations = res.locations
-  }
+  if (companyId) locations = await listConnectedClients(companyId)
 
   const activeLocationId = typeof body?.activeLocationId === 'string' ? body.activeLocationId : null
   const activeLocation = locations.find((l) => l.id === activeLocationId) || null
@@ -123,19 +128,18 @@ export async function POST(req: NextRequest) {
    * to a capped slice — a shortlist that omits the intended client would turn a
    * capacity problem into a correctness one.
    */
-  const shortlist = (() => {
-    if (locations.length <= 25) return locations
-    const words = new Set(
-      command.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4),
-    )
-    const hit = locations.filter((l) => {
-      const name = l.name.toLowerCase()
-      for (const w of words) if (name.includes(w)) return true
-      return false
-    })
-    if (activeLocation && !hit.some((l) => l.id === activeLocation.id)) hit.push(activeLocation)
-    return hit.length >= 3 ? hit.slice(0, 40) : locations.slice(0, 40)
-  })()
+  // Connected clients are few by definition — one on a new agency. A shortlist
+  // was only ever needed because the roster was being sent instead.
+  const shortlist = locations.slice(0, 40)
+
+  // Nothing connected means nothing can run. Say so before planning work that
+  // could only fail.
+  if (companyId && locations.length === 0) {
+    return NextResponse.json({
+      error: 'No clients are connected yet. Add one in Clients, then try that again.',
+      legs: [], runnableCount: 0,
+    }, { status: 400 })
+  }
 
   const cat = plannerCatalogue()
   const system = [

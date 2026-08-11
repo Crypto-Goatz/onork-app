@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { crmGet, crmPost, crmPostRaw, crmPut } from '@/lib/crm'
 import { getValidAgencyToken } from '@/lib/crm/agency-token'
-import { listAgencyLocations } from '@/lib/crm/locations'
+import { listAgencyLocations, listConnectedClients } from '@/lib/crm/locations'
 import { capability, tokenAudienceFor, assertExecutable, legPriceCents } from '@/lib/crm/registry'
 import { canRun, settle } from '@/lib/billing/gate'
 import { publishAsBlogPost, resolveBlogTargets, slugify } from '@/lib/crm/blog'
@@ -714,7 +714,10 @@ const HANDLERS: Record<string, Handler> = {
   // the Clients page uses — the CRM's own location list and burst_receipts —
   // so the number here and the number there can never disagree.
   'report.rollup': async (leg) => {
-    const { locations, error } = await listAgencyLocations(leg.companyId)
+    // "Every client" = every CONNECTED client. Rolling up the whole CRM roster
+    // reports on 86 accounts we hold no key for and returns nothing for them.
+    const locations = await listConnectedClients(leg.companyId)
+    const error = null
     if (error) return fail('Could not read your client list.', error)
 
     const sb = createClient(

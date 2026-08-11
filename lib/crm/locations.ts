@@ -77,3 +77,38 @@ export function resolveLocation(
 
   return {}
 }
+
+
+/**
+ * The clients this agency has actually CONNECTED — the only ones we can act in.
+ *
+ * listAgencyLocations() returns the agency's whole CRM roster, which for one
+ * real agency is 87 sub-accounts. That list is right for SETUP ("which of these
+ * do you want to switch on?") and wrong for everything that acts: 0nCORE has no
+ * key for 86 of them and cannot touch them.
+ *
+ * Grounding the planner in the roster meant it would happily plan work against
+ * accounts that could never run, and it put 87 names in every prompt — which is
+ * what actually exhausted the model's per-minute token budget.
+ *
+ * Reads location_connections, which is also where the key lives, so "appears in
+ * this list" and "we hold a working credential" cannot drift apart.
+ */
+export async function listConnectedClients(companyId: string): Promise<AgencyLocation[]> {
+  const { createServiceClient } = await import('@/lib/connect/service-client')
+  const db = createServiceClient()
+  if (!db) return []
+  const { data, error } = await db
+    .from('location_connections')
+    .select('location_id, location_name')
+    .eq('company_id', companyId)
+    .eq('status', 'active')
+  if (error) {
+    console.error('[crm/locations] connected clients read failed:', error.message)
+    return []
+  }
+  return (data ?? []).map((r: { location_id: string; location_name: string | null }) => ({
+    id: r.location_id,
+    name: r.location_name || 'Untitled client',
+  }))
+}
