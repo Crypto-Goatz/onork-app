@@ -90,21 +90,68 @@ export async function POST(req: NextRequest) {
 
   // ── 5. Independent verification — never trust the executor's word alone.
   //       Read each contact back from the CRM under that location's own auth. ──
+  /**
+   * Verify with backoff, because /contacts/?query= is an eventually-consistent
+   * SEARCH INDEX, not a read of the record.
+   *
+   * Measured against production on 2026-08-11: a contact created at t+0 is
+   * absent from the search at t+0 and present by t+3s, while GET /contacts/{id}
+   * returns it immediately. Verifying inline with a single search therefore
+   * reports FAIL for a create that plainly worked — the first run of this route
+   * did exactly that. Polling removes the race without needing the executor to
+   * hand back an id.
+   */
   async function verify(locationId: string, email: string): Promise<boolean> {
-    const res = await crmGet(`/contacts/?${new URLSearchParams({ query: email, limit: '5' })}`, locationId)
-    if (!res.ok) return false
-    const j = (await res.json().catch(() => ({}))) as { contacts?: { email?: string }[] }
-    return (j.contacts ?? []).some((c) => (c.email || '').toLowerCase() === email.toLowerCase())
+    const deadline = Date.now() + 20_000
+    let attempt = 0
+    while (Date.now() < deadline) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 2_000))
+      attempt += 1
+      const res = await crmGet(`/contacts/?${new URLSearchParams({ query: email, limit: '5' })}`, locationId)
+      if (res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { contacts?: { email?: string }[] }
+        if ((j.contacts ?? []).some((c) => (c.email || '').toLowerCase() === email.toLowerCase())) return true
+      }
+    }
+    return false
   }
   const foundA = await verify(locA.id, emailA)
   const foundB = await verify(locB.id, emailB)
+
+  // A planned leg that never ran must SAY so. The first run reported
+  // "planned: 2, ran: 1" and nothing else, which reads as partial success when
+  // the truth was that one client was unreachable. The planner already knows
+  // why — it returns runnable/blocked/notYetWired per leg — so surface it.
+  type PlanLeg = {
+    capability?: string
+    location?: string | null
+    runnable?: boolean
+    blocked?: boolean
+    notYetWired?: boolean
+    needsBilling?: boolean
+  }
+  const planLegs: PlanLeg[] = Array.isArray(plan.legs) ? plan.legs : []
+  const notRun = planLegs
+    .filter((l) => !l.runnable)
+    .map((l) => ({
+      capability: l.capability ?? null,
+      location: l.location ?? null,
+      reason: l.blocked
+        ? 'No usable credential for that client — connect it at /connect.'
+        : l.notYetWired
+          ? 'That capability is not wired yet.'
+          : l.needsBilling
+            ? 'That capability requires billing.'
+            : 'Planner marked it not runnable.',
+    }))
 
   const pass = foundA && foundB
   return NextResponse.json({
     pass,
     command,
-    planned: Array.isArray(plan.legs) ? plan.legs.length : 0,
+    planned: planLegs.length,
     ran: results.length,
+    notRun,
     verification: [
       { location: locA.name, locationId: locA.id, email: emailA, foundInCrm: foundA },
       { location: locB.name, locationId: locB.id, email: emailB, foundInCrm: foundB },
