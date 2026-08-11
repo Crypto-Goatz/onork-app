@@ -91,10 +91,40 @@ export async function POST(req: NextRequest) {
    * 87 names into every prompt.
    */
   let locations: AgencyLocation[] = []
-  if (companyId) locations = await listConnectedClients(companyId)
+  let defaultLocation: AgencyLocation | null = null
+  if (companyId) {
+    locations = await listConnectedClients(companyId)
+
+    /**
+     * The client a command means when it names none.
+     *
+     * Setup tells the agency in as many words that the free account "becomes
+     * the default for every command unless you name a different client". That
+     * was never implemented, so a perfectly good three-part instruction came
+     * back with every leg unrunnable for want of a client the product had
+     * already promised to assume.
+     *
+     * Falls back to the sole connected client: with one client there is no
+     * ambiguity to protect anyone from.
+     */
+    const { createServiceClient } = await import('@/lib/connect/service-client')
+    const db = createServiceClient()
+    if (db) {
+      const { data } = await db
+        .from('agency_connections')
+        .select('free_location_id')
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .maybeSingle()
+      const freeId = data?.free_location_id
+      defaultLocation = locations.find((l) => l.id === freeId) ?? null
+    }
+    if (!defaultLocation && locations.length === 1) defaultLocation = locations[0]
+  }
 
   const activeLocationId = typeof body?.activeLocationId === 'string' ? body.activeLocationId : null
-  const activeLocation = locations.find((l) => l.id === activeLocationId) || null
+  // An explicitly selected client beats the default; the default beats nothing.
+  const activeLocation = locations.find((l) => l.id === activeLocationId) || defaultLocation
 
   /**
    * Answers to "which client did you mean?", keyed by the phrase the user said.
