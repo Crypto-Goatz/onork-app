@@ -13,7 +13,24 @@
  * one states what to do instead.
  */
 import { useEffect, useMemo, useState } from 'react'
-import { Search, X, Check, Ban, Wrench, CreditCard, Loader2 } from 'lucide-react'
+import {
+  Ban, BarChart3, Check, CreditCard, FileText, Loader2, MessageSquare, Search,
+  ChevronDown, Sparkles, UserPlus, Users, Wrench, X, Workflow, type LucideIcon,
+} from 'lucide-react'
+
+/** A leading icon per group — the design leads every row with one. */
+const GROUP_ICON: Record<string, LucideIcon> = {
+  'Contacts': UserPlus,
+  'Messaging': MessageSquare,
+  'Tasks & Calendar': Check,
+  'Sales': BarChart3,
+  'Automations': Workflow,
+  'AI Agents': Sparkles,
+  'Clients & Setup': Users,
+  'Content & Store': FileText,
+  'Reporting': BarChart3,
+}
+import Link from 'next/link'
 import AppSidebar from './AppSidebar'
 
 type Status = 'works' | 'not_possible' | 'not_wired' | 'needs_billing'
@@ -75,65 +92,58 @@ export default function ActionsPage() {
     })
   }, [actions, q, group])
 
-  /** A→Z buckets. Built from the filtered set so headings never sit empty. */
-  const buckets = useMemo(() => {
-    const m = new Map<string, Action[]>()
-    for (const a of filtered) {
-      const letter = (a.name[0] || '#').toUpperCase()
-      if (!m.has(letter)) m.set(letter, [])
-      m.get(letter)!.push(a)
-    }
-    return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b))
-  }, [filtered])
 
   return (
     <div className="oncore-app flex min-h-screen bg-[color:var(--oc-bg)]">
       <AppSidebar current="tools" activeCount={0} totalCount={0} usageLabel="$0" />
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-4xl px-6 py-8">
-          <header className="space-y-3">
-            <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--oc-ink)]">Actions</h1>
-            <p className="text-sm leading-relaxed text-[color:var(--oc-text)]/70">
-              Everything you can ask for, in plain English, with an example of how to say it.
-              {actions ? ` ${actions.filter((a) => a.status === 'works').length} of ${actions.length} work right now.` : ''}
-            </p>
-          </header>
+          <div className="flex items-start justify-between gap-6">
+            <header className="min-w-0">
+              <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--console-text-1)]">
+                Actions
+              </h1>
+              <p className="mt-1 max-w-md text-[13.5px] leading-relaxed text-[color:var(--console-text-3)]">
+                {actions && (
+                  <span className="font-medium text-[color:var(--0n-neon)]">
+                    {actions.filter((a) => a.status === 'works').length} of {actions.length}
+                  </span>
+                )}{' '}
+                work right now. The rest are listed, never hidden.
+              </p>
+            </header>
 
-          <div className="mt-6 space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--oc-text)]/40" />
+            <div className="relative w-[280px] shrink-0">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--console-text-3)]" />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search actions — try “tag”, “invoice”, “text”…"
-                className="w-full rounded-xl border border-[color:var(--oc-line)] bg-[color:var(--oc-card)] py-2.5 pl-9 pr-9 text-sm text-[color:var(--oc-ink)] outline-none transition focus:border-[color:var(--oc-green)]"
+                placeholder={`Search ${actions?.length ?? 41} actions`}
+                className="w-full rounded-[10px] border border-[color:var(--console-border)] bg-[color:var(--console-card)] py-2.5 pl-9 pr-9 text-[13.5px] text-[color:var(--console-text-1)] outline-none transition placeholder:text-[color:var(--console-text-3)] focus:border-[color:var(--0n-neon)]"
               />
               {q && (
-                <button
-                  onClick={() => setQ('')}
-                  aria-label="Clear search"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-[color:var(--oc-text)]/40 transition hover:bg-black/5"
-                >
+                <button onClick={() => setQ('')} aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-[color:var(--console-text-3)] transition hover:bg-[color:var(--console-hover)]">
                   <X className="h-4 w-4" />
                 </button>
               )}
             </div>
+          </div>
 
-            <div className="flex flex-wrap gap-2">
-              {['all', ...groups].map((g) => (
-                <button
-                  key={g}
-                  onClick={() => setGroup(g)}
-                  className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition ${
-                    group === g
-                      ? 'bg-[color:var(--oc-ink)] text-white'
-                      : 'border border-[color:var(--oc-line)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]/70 hover:border-[color:var(--oc-green)]'
-                  }`}
-                >
-                  {g === 'all' ? 'All' : g}
-                </button>
-              ))}
-            </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {['all', ...groups].map((g) => (
+              <button
+                key={g}
+                onClick={() => setGroup(g)}
+                className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition-all duration-150 ${
+                  group === g
+                    ? 'border border-[color:var(--0n-neon)]/40 bg-[color:var(--0n-neon)]/12 text-[color:var(--0n-neon)]'
+                    : 'border border-[color:var(--console-border)] bg-[color:var(--console-card)] text-[color:var(--console-text-3)] hover:border-[color:var(--console-border-hover)] hover:text-[color:var(--console-text-1)]'
+                }`}
+              >
+                {g === 'all' ? 'All' : g}
+              </button>
+            ))}
           </div>
 
           {err && <p className="mt-6 text-sm text-[color:var(--oc-red)]">{err}</p>}
@@ -150,69 +160,79 @@ export default function ActionsPage() {
             </p>
           )}
 
-          <div className="mt-8 space-y-8">
-            {buckets.map(([letter, items]) => (
-              <section key={letter}>
-                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[color:var(--oc-text)]/40">
-                  {letter}
-                </h2>
-                <div className="space-y-2">
-                  {items.map((a) => {
-                    const meta = STATUS_META[a.status]
-                    const Icon = meta.icon
-                    const open = openId === a.id
-                    return (
-                      <div
-                        key={a.id}
-                        className="rounded-xl border border-[color:var(--oc-line)] bg-[color:var(--oc-card)] transition hover:border-[color:var(--oc-green)]"
-                      >
-                        <button
-                          onClick={() => setOpenId(open ? null : a.id)}
-                          className="flex w-full items-start justify-between gap-4 p-4 text-left"
-                        >
-                          <div className="min-w-0">
-                            <div className="text-[14px] font-semibold text-[color:var(--oc-ink)]">{a.name}</div>
-                            <p className="mt-1 text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/70">{a.what}</p>
-                          </div>
-                          <span
-                            className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${meta.cls}`}
-                          >
-                            <Icon className="h-3 w-3" />
-                            {meta.label}
-                          </span>
-                        </button>
+          {/* FLAT list, not A-Z buckets. Letter headings were my reading of the
+              spec; the design overrides it — someone scanning for "tag" wants
+              one continuous list, and the group chips do the sorting. */}
+          <div className="mt-6 space-y-2">
+            {filtered.map((a) => {
+              const meta = STATUS_META[a.status]
+              const Icon = meta.icon
+              const Lead = GROUP_ICON[a.group] ?? Sparkles
+              const open = openId === a.id
+              return (
+                <div
+                  key={a.id}
+                  className="rounded-2xl border border-[color:var(--console-border)] bg-[color:var(--console-card)] transition-colors duration-150 hover:border-[color:var(--console-border-hover)]"
+                >
+                  <button
+                    onClick={() => setOpenId(open ? null : a.id)}
+                    aria-expanded={open}
+                    className="flex w-full items-center gap-3 p-4 text-left"
+                  >
+                    <Lead className="h-[18px] w-[18px] shrink-0 text-[color:var(--console-text-3)]" strokeWidth={2} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[14.5px] font-semibold text-[color:var(--console-text-1)]">
+                        {a.name}
+                      </span>
+                      <span className="mt-0.5 block text-[12.5px] leading-relaxed text-[color:var(--console-text-3)]">
+                        {a.what}
+                      </span>
+                    </span>
+                    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${meta.cls}`}>
+                      <Icon className="h-3 w-3" />
+                      {meta.label}
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-[color:var(--console-text-3)] transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+                    />
+                  </button>
 
-                        {open && (
-                          <div className="space-y-3 border-t border-[color:var(--oc-line)] px-4 pb-4 pt-3">
-                            {a.example && (
-                              <div>
-                                <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--oc-text)]/40">
-                                  Say it like this
-                                </div>
-                                <p className="mt-1 font-mono text-[12px] leading-relaxed text-[color:var(--oc-ink)]">
-                                  {a.example}
-                                </p>
-                              </div>
-                            )}
-                            {a.instead && (
-                              <div>
-                                <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--oc-amber)]">
-                                  Do this instead
-                                </div>
-                                <p className="mt-1 text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/70">
-                                  {a.instead}
-                                </p>
-                              </div>
-                            )}
-                            <div className="font-mono text-[11px] text-[color:var(--oc-text)]/35">{a.id}</div>
+                  {open && (
+                    <div className="space-y-3 border-t border-[color:var(--console-border)] px-4 pb-4 pt-3">
+                      {a.example && (
+                        <div>
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[color:var(--console-text-3)]">
+                            Say it like this
                           </div>
-                        )}
-                      </div>
-                    )
-                  })}
+                          <p className="mt-1.5 rounded-lg bg-[color:var(--console-page)] px-3 py-2 font-mono text-[12px] leading-relaxed text-[color:var(--console-text-1)]">
+                            {a.example}
+                          </p>
+                        </div>
+                      )}
+                      {a.instead && (
+                        <div>
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[color:var(--status-warning-dark)]">
+                            Do this instead
+                          </div>
+                          <p className="mt-1 text-[12.5px] leading-relaxed text-[color:var(--console-text-2)]">
+                            {a.instead}
+                          </p>
+                        </div>
+                      )}
+                      {a.status === 'works' && a.example && (
+                        <Link
+                          href={`/crm?command=${encodeURIComponent(a.example)}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--0n-neon)] px-3 py-1.5 text-[12.5px] font-semibold text-[#0d1117] transition hover:opacity-90 active:scale-[0.98]"
+                        >
+                          Try it
+                        </Link>
+                      )}
+                      <div className="font-mono text-[11px] text-[color:var(--console-text-3)]/70">{a.id}</div>
+                    </div>
+                  )}
                 </div>
-              </section>
-            ))}
+              )
+            })}
           </div>
         </div>
       </main>
