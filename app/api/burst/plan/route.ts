@@ -65,8 +65,13 @@ export async function POST(req: NextRequest) {
    * retry at all. Adding keys to GROQ_API_KEYS now widens the cap with no code
    * change.
    */
-  const keys = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '')
-    .split(',').map((k) => k.trim()).filter(Boolean)
+  const keys = [
+    process.env.GROQ_API_KEYS || '',
+    process.env.GROQ_API_KEY || '',
+    // Already provisioned and previously unread — the planner ran on one key
+    // while a second sat unused.
+    process.env.GROQ_API_KEY_FALLBACK || '',
+  ].join(',').split(',').map((k) => k.trim()).filter(Boolean)
   if (keys.length === 0) {
     return NextResponse.json({ error: 'Planner is not configured.' }, { status: 503 })
   }
@@ -104,6 +109,34 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  /**
+   * Only the clients this command could plausibly mean.
+   *
+   * The full list was sent on EVERY request: 87 names is ~600 tokens, and with
+   * the capability catalogue the system prompt reached ~1,520 tokens. Against a
+   * 12,000 tokens/minute ceiling that capped the entire product at about seven
+   * commands a minute — which is what actually caused the sweep to 429, not a
+   * daily cap.
+   *
+   * Matching is generous on purpose: any name sharing a word of 4+ characters
+   * with the command, plus the active client. If that finds too few, fall back
+   * to a capped slice — a shortlist that omits the intended client would turn a
+   * capacity problem into a correctness one.
+   */
+  const shortlist = (() => {
+    if (locations.length <= 25) return locations
+    const words = new Set(
+      command.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4),
+    )
+    const hit = locations.filter((l) => {
+      const name = l.name.toLowerCase()
+      for (const w of words) if (name.includes(w)) return true
+      return false
+    })
+    if (activeLocation && !hit.some((l) => l.id === activeLocation.id)) hit.push(activeLocation)
+    return hit.length >= 3 ? hit.slice(0, 40) : locations.slice(0, 40)
+  })()
+
   const cat = plannerCatalogue()
   const system = [
     "You turn an agency owner's instruction into a plan of steps.",
@@ -117,10 +150,13 @@ export async function POST(req: NextRequest) {
       return `  ${c.id} — ${c.intent}${flags ? ` ${flags}` : ''}`
     }),
     '',
-    ...(locations.length
+    ...(shortlist.length
       ? [
           'CLIENTS on this agency — use these names exactly in `location`:',
-          ...locations.slice(0, 120).map((l) => `  ${l.name}`),
+          ...shortlist.map((l) => `  ${l.name}`),
+          ...(shortlist.length < locations.length
+            ? [`  (+${locations.length - shortlist.length} more not shown — if the client you need is not listed, set location to null)`]
+            : []),
           '',
         ]
       : []),
