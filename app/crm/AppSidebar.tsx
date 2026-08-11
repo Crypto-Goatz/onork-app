@@ -94,8 +94,14 @@ export default function AppSidebar({
     <aside className="oc-rail hidden w-[236px] shrink-0 border-r border-[#21262d] bg-[color:var(--console-page)] lg:block">
       <div className="sticky top-0 flex max-h-screen min-h-screen flex-col gap-5 overflow-y-auto p-4">
         <Link href="/crm" className="block px-2 pt-2" aria-label="0nCORE home">
+          {/* NOT the file the handoff README names. The assets are named for
+              the SURFACE they sit on, not the ink they contain:
+                0ncore-logo-dark.png  = WHITE wordmark → dark surfaces (this rail)
+                0ncore-logo-light.png = INK wordmark   → light surfaces
+              The README says the opposite; the files are the authority. Using
+              -light here put a near-black "0n" on a #0d1117 rail. */}
           <Image
-            src="/0ncore-logo-light.png"
+            src="/0ncore-logo-dark.png"
             alt="0nCORE"
             width={120}
             height={26}
@@ -145,8 +151,9 @@ export default function AppSidebar({
           </div>
           <div className="mt-1.5 text-[12px] text-[#8b949e]">{usageLabel} this month</div>
           {freeAccountName && (
-            <div className="mt-1.5 truncate font-mono text-[11px] text-[color:var(--0n-neon)]">
-              {freeAccountName}
+            <div className="mt-1.5 flex items-baseline gap-1.5 text-[11px]">
+              <span className="shrink-0 text-[#8b949e]">Free account</span>
+              <span className="truncate font-mono text-[color:var(--0n-neon)]">{freeAccountName}</span>
             </div>
           )}
         </div>

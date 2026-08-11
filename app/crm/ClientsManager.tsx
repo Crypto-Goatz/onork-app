@@ -48,6 +48,11 @@ export default function ClientsManager() {
   useEffect(() => { void load() }, [load])
 
   const connected = useMemo(() => (accounts ?? []).filter((a) => a.connected), [accounts])
+  /** Billable = connected minus the one included account. Never a literal. */
+  const runningTotal = useMemo(() => {
+    const billable = connected.filter((a) => !a.isFree).length
+    return `$${((billable * AGENCY_BILLING.perClientCents) / 100).toFixed(2)}`
+  }, [connected])
   const available = useMemo(() => (accounts ?? []).filter((a) => !a.connected), [accounts])
 
   const shown = useCallback(
@@ -100,32 +105,36 @@ export default function ClientsManager() {
   return (
     <div className="oncore-app min-h-screen bg-[color:var(--oc-bg)]">
       <div className="mx-auto max-w-4xl px-6 py-8">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--oc-ink)]">Clients</h1>
-          <p className="text-sm leading-relaxed text-[color:var(--oc-text)]/70">
-            {connected.length} connected. Additional accounts are {PRICE}/month each — your free
-            account is marked and is the default for any command that does not name a client.
-          </p>
-        </header>
+        <div className="flex items-start justify-between gap-6">
+          <header className="min-w-0">
+            <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--console-text-1)]">
+              Clients
+            </h1>
+            <p className="mt-1 text-[13.5px] leading-relaxed text-[color:var(--console-text-3)]">
+              {connected.length} connected · additional accounts {PRICE}/mo each ·{' '}
+              {runningTotal}/month running total
+            </p>
+          </header>
+
+          <div className="relative w-[280px] shrink-0">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--console-text-3)]" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Name or account ID"
+              className="w-full rounded-[10px] border border-[color:var(--console-border)] bg-[color:var(--console-card)] py-2.5 pl-9 pr-3 text-[13.5px] text-[color:var(--console-text-1)] outline-none transition placeholder:text-[color:var(--console-text-3)] focus:border-[color:var(--0n-neon)]"
+            />
+          </div>
+        </div>
 
         {note && (
-          <div className="mt-4 flex items-start gap-2 rounded-xl border border-[color:var(--oc-line)] bg-[color:var(--oc-card)] p-3">
-            <p className="flex-1 text-[12.5px] text-[color:var(--oc-ink)]">{note}</p>
-            <button onClick={() => setNote(null)} aria-label="Dismiss" className="rounded p-1 hover:bg-black/5">
-              <X className="h-3.5 w-3.5 text-[color:var(--oc-text)]/50" />
+          <div className="mt-4 flex items-start gap-2 rounded-xl border border-[color:var(--console-border)] bg-[color:var(--console-card)] p-3">
+            <p className="flex-1 text-[12.5px] text-[color:var(--console-text-1)]">{note}</p>
+            <button onClick={() => setNote(null)} aria-label="Dismiss" className="rounded p-1 hover:bg-[color:var(--console-hover)]">
+              <X className="h-3.5 w-3.5 text-[color:var(--console-text-3)]" />
             </button>
           </div>
         )}
-
-        <div className="relative mt-6">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--oc-text)]/40" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name or account ID…"
-            className="w-full rounded-xl border border-[color:var(--oc-line)] bg-[color:var(--oc-card)] py-2.5 pl-9 pr-3 text-sm text-[color:var(--oc-ink)] outline-none transition focus:border-[color:var(--oc-green)]"
-          />
-        </div>
 
         {!accounts && (
           <div className="mt-8 flex items-center gap-2 text-sm text-[color:var(--oc-text)]/60">
@@ -145,87 +154,100 @@ export default function ClientsManager() {
                 </p>
               )}
               <div className="space-y-2">
-                {shown(connected).map((a) => (
-                  <div
-                    key={a.locationId}
-                    className="rounded-xl border border-[color:var(--oc-line)] bg-[color:var(--oc-card)] p-4"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          {/* The free account reads at a glance — it is also the
-                              default target, so it must be obvious which it is. */}
-                          {a.isFree && (
-                            <Circle
-                              className="h-2.5 w-2.5 shrink-0 fill-[color:var(--oc-green)] text-[color:var(--oc-green)]"
-                              aria-label="Free account"
-                            />
-                          )}
-                          <span className="truncate text-[14px] font-semibold text-[color:var(--oc-ink)]">
-                            {a.name}
-                          </span>
-                          {a.isFree && (
-                            <span className="rounded-full bg-[color:var(--oc-green)]/10 px-2 py-0.5 text-[11px] font-medium text-[color:var(--oc-green-d)]">
-                              Free · default
+                {shown(connected).map((a) => {
+                  const broken = Boolean(a.error)
+                  return (
+                    <div
+                      key={a.locationId}
+                      className={[
+                        'group rounded-2xl border p-4 transition-colors duration-150',
+                        broken
+                          ? 'border-[color:var(--status-danger-dark)]/40 bg-[color:var(--status-danger-dark)]/[0.07]'
+                          : 'border-[color:var(--console-border)] bg-[color:var(--console-card)] hover:border-[color:var(--console-border-hover)]',
+                      ].join(' ')}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Orb reads state at a glance: green connected, red broken. */}
+                        <span
+                          className={[
+                            'h-2.5 w-2.5 shrink-0 rounded-full',
+                            broken
+                              ? 'bg-[color:var(--status-danger-dark)]'
+                              : 'bg-[color:var(--0n-neon)]',
+                          ].join(' ')}
+                          aria-hidden
+                        />
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="truncate text-[15px] font-semibold text-[color:var(--console-text-1)]">
+                              {a.name}
                             </span>
-                          )}
+                            {a.isFree && (
+                              <span className="rounded-full bg-[color:var(--0n-neon)]/12 px-2 py-0.5 text-[11px] font-medium text-[color:var(--0n-neon)]">
+                                Free · default
+                              </span>
+                            )}
+                            {broken && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-[color:var(--status-danger-dark)]/12 px-2 py-0.5 text-[11px] font-medium text-[color:var(--status-danger-dark)]">
+                                <TriangleAlert className="h-3 w-3" />
+                                {a.error}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* ID, key and price on ONE line — three stacked lines
+                              made every row look like a form. */}
+                          <div className="mt-1 flex flex-wrap items-center gap-3 text-[12px]">
+                            <span className="font-mono text-[color:var(--console-text-3)]">{a.locationId}</span>
+                            <span className="font-mono tracking-[0.2em] text-[color:var(--console-text-3)]">••••••••</span>
+                            <span className="text-[color:var(--console-text-2)]">
+                              {a.isFree ? 'Included' : `${PRICE}/mo`}
+                            </span>
+                          </div>
                         </div>
-                        <div className="mt-1 font-mono text-[11px] text-[color:var(--oc-text)]/50">
-                          {a.locationId}
-                        </div>
-                        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[color:var(--oc-text)]/50">
-                          <span>Key</span>
-                          <span className="font-mono tracking-widest">••••••••</span>
-                          <span>·</span>
-                          <span>{a.isFree ? 'Included' : `${PRICE}/mo`}</span>
-                        </div>
+
+                        {broken ? (
+                          <button
+                            onClick={() => setEditing(editing === a.locationId ? null : a.locationId)}
+                            className="shrink-0 rounded-full bg-[color:var(--status-danger-dark)] px-4 py-1.5 text-[12.5px] font-semibold text-[#0d1117] transition hover:opacity-90 active:scale-[0.98]"
+                          >
+                            Reconnect
+                          </button>
+                        ) : (
+                          /* Revealed on hover: three icon buttons on every row is
+                             visual noise on a list of 12. Focus-within keeps them
+                             reachable by keyboard. */
+                          <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                            <button onClick={() => copyKey(a.locationId)} title="Copy key"
+                              aria-label={`Copy key for ${a.name}`}
+                              className="rounded-lg p-2 text-[color:var(--console-text-3)] transition hover:bg-[color:var(--console-hover)] hover:text-[color:var(--console-text-1)]">
+                              <Copy className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => setEditing(editing === a.locationId ? null : a.locationId)} title="Replace key"
+                              aria-label={`Replace key for ${a.name}`}
+                              className="rounded-lg p-2 text-[color:var(--console-text-3)] transition hover:bg-[color:var(--console-hover)] hover:text-[color:var(--console-text-1)]">
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => remove(a.locationId, a.name)} disabled={busy} title="Disconnect"
+                              aria-label={`Disconnect ${a.name}`}
+                              className="rounded-lg p-2 text-[color:var(--status-danger-dark)]/80 transition hover:bg-[color:var(--status-danger-dark)]/10 hover:text-[color:var(--status-danger-dark)] disabled:opacity-50">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="flex shrink-0 items-center gap-1">
-                        <button
-                          onClick={() => copyKey(a.locationId)}
-                          aria-label={`Copy key for ${a.name}`}
-                          title="Copy key"
-                          className="rounded-lg p-2 text-[color:var(--oc-text)]/50 transition hover:bg-black/5 hover:text-[color:var(--oc-ink)]"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setEditing(editing === a.locationId ? null : a.locationId)}
-                          aria-label={`Replace key for ${a.name}`}
-                          title="Replace key"
-                          className="rounded-lg p-2 text-[color:var(--oc-text)]/50 transition hover:bg-black/5 hover:text-[color:var(--oc-ink)]"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => remove(a.locationId, a.name)}
-                          disabled={busy}
-                          aria-label={`Disconnect ${a.name}`}
-                          title="Disconnect"
-                          className="rounded-lg p-2 text-[color:var(--oc-red)]/70 transition hover:bg-[color:var(--oc-red)]/10 hover:text-[color:var(--oc-red)] disabled:opacity-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                      {editing === a.locationId && (
+                        <KeyForm
+                          locationId={a.locationId}
+                          isFree={a.isFree}
+                          onDone={() => { setEditing(null); void load(); setNote(`${a.name} updated.`) }}
+                        />
+                      )}
                     </div>
-
-                    {a.error && (
-                      <p className="mt-2 flex items-start gap-2 text-[12px] text-[color:var(--oc-red)]">
-                        <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                        {a.error}
-                      </p>
-                    )}
-
-                    {editing === a.locationId && (
-                      <KeyForm
-                        locationId={a.locationId}
-                        isFree={a.isFree}
-                        onDone={() => { setEditing(null); void load(); setNote(`${a.name} updated.`) }}
-                      />
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </section>
 
