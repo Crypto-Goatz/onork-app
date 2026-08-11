@@ -56,7 +56,7 @@ export const NAV_GROUPS: NavItem[][] = [
   [
     { key: 'history', href: '/crm/log', label: 'History', icon: ScrollText },
     { key: 'usage', href: '/crm/billing', label: 'Plan & Usage', icon: CreditCard },
-    { key: 'setup', href: '/connect', label: 'Setup & Keys', icon: Plug },
+    { key: 'setup', href: '/crm/setup', label: 'Setup & Keys', icon: Plug },
     { key: 'settings', href: '/crm/settings', label: 'Settings', icon: Settings },
   ],
 ]
