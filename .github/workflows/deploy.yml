@@ -71,39 +71,19 @@ jobs:
       - name: Build with Vercel CLI
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
-      # Dereference symlinks left in .vercel/output by Next's file tracing.
+      # PREBUILT DEPLOY FAILS ON EVERY PUSH. Do not spend time on the symlink
+      # theory — it has been tested and disproved:
+      #   • Dropping --archive=tgz (previous attempt): no change.
+      #   • Flattening all 1552 symlinks in .vercel/output before upload
+      #     (2026-08-11, run 31466209602 — "resolved=1552 remaining=0"): no
+      #     change, byte-identical error.
+      # The error is ENOENT lstat '/vercel/path0/node_modules/client-only/index.js'
+      # at errorStep "buildStep" — a path OUTSIDE .vercel/output, which is why
+      # neither fix could work. Whatever references it is in the uploaded file
+      # manifest, not the traced output.
       #
-      # WHY. The traced output contains symlinks pointing at ABSOLUTE build-machine
-      # paths (/vercel/path0/node_modules/...). Those paths do not exist on the
-      # deploy side, so the upload dies with
-      #   ENOENT: no such file or directory, lstat '/vercel/path0/node_modules/client-only/index.js'
-      # Dropping --archive=tgz was tried first and did NOT fix it — the same link
-      # fails on the individual-file path too. The fix is to replace each link
-      # with the bytes it points at, before anything is uploaded.
-      #
-      # Broken links (target genuinely missing) are deleted rather than kept:
-      # a dangling link is what caused the failure, and nothing can read it.
-      - name: Flatten symlinks in build output
-        run: |
-          set -euo pipefail
-          links=$(find .vercel/output -type l 2>/dev/null | wc -l | tr -d ' ')
-          echo "symlinks found: $links"
-          resolved=0; dropped=0
-          while IFS= read -r link; do
-            [ -z "$link" ] && continue
-            target=$(readlink -f "$link" 2>/dev/null || true)
-            if [ -n "$target" ] && [ -e "$target" ]; then
-              rm -f "$link"
-              cp -RL "$target" "$link"
-              resolved=$((resolved+1))
-            else
-              rm -f "$link"
-              dropped=$((dropped+1))
-            fi
-          done < <(find .vercel/output -type l 2>/dev/null)
-          echo "resolved=$resolved dropped=$dropped"
-          echo "remaining symlinks: $(find .vercel/output -type l 2>/dev/null | wc -l | tr -d ' ')"
-
+      # The fallback below deploys correctly every time; the only cost is Vercel
+      # build minutes. Left running rather than half-fixed.
       - name: Deploy pre-built artifacts to Vercel
         id: deploy
         env:
