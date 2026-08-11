@@ -56,8 +56,20 @@ export async function POST(req: NextRequest) {
   const command = String(body?.command ?? '').trim()
   if (!command) return NextResponse.json({ error: 'Say what you want done.' }, { status: 400 })
 
-  const key = process.env.GROQ_API_KEY
-  if (!key) return NextResponse.json({ error: 'Planner is not configured.' }, { status: 503 })
+  /**
+   * Key POOL, falling back to the single key.
+   *
+   * The command bar is the product's front door, and it was failing outright on
+   * a 429 — a burst of commands, or a shared daily cap, and the whole surface
+   * reads as broken. The course generator already rotates a pool; this had no
+   * retry at all. Adding keys to GROQ_API_KEYS now widens the cap with no code
+   * change.
+   */
+  const keys = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '')
+    .split(',').map((k) => k.trim()).filter(Boolean)
+  if (keys.length === 0) {
+    return NextResponse.json({ error: 'Planner is not configured.' }, { status: 503 })
+  }
 
   // A session is optional for planning and required for running. Planning
   // without one still works — it just cannot resolve clients or sign anything,
@@ -129,19 +141,44 @@ export async function POST(req: NextRequest) {
   ].join('\n')
 
   try {
-    const r = await fetch(GROQ, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-        temperature: 0.1,
-        response_format: { type: 'json_object' },
-        messages: [{ role: 'system', content: system }, { role: 'user', content: command }],
-      }),
-      signal: AbortSignal.timeout(25000),
-    })
-    if (!r.ok) {
-      return NextResponse.json({ error: `Planner unavailable (${r.status}).` }, { status: 502 })
+    /**
+     * Retry on rate limit, rotating keys and honouring Retry-After.
+     *
+     * Only 429 and 5xx are retried: a 400 means the request itself is wrong and
+     * sending it again just burns the cap.
+     */
+    let r: Response | null = null
+    for (let attempt = 0; attempt < Math.max(3, keys.length); attempt++) {
+      const k = keys[attempt % keys.length]
+      r = await fetch(GROQ, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${k}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+          temperature: 0.1,
+          response_format: { type: 'json_object' },
+          messages: [{ role: 'system', content: system }, { role: 'user', content: command }],
+        }),
+        signal: AbortSignal.timeout(25000),
+      })
+      if (r.ok) break
+      if (r.status !== 429 && r.status < 500) break
+
+      // Respect the server's own backoff when it gives one; it knows the cap.
+      const retryAfter = Number(r.headers.get('retry-after'))
+      const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
+        ? Math.min(retryAfter * 1000, 6000)
+        : 600 * (attempt + 1)
+      await new Promise((res) => setTimeout(res, waitMs))
+    }
+
+    if (!r || !r.ok) {
+      const status = r?.status ?? 0
+      return NextResponse.json({
+        error: status === 429
+          ? 'The planner is rate limited right now. Try that again in a moment.'
+          : `Planner unavailable (${status}).`,
+      }, { status: 502 })
     }
 
     const j = await r.json()
