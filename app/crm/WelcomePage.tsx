@@ -94,7 +94,7 @@ export default function WelcomePage() {
 
   return (
     <div className="oncore-app min-h-screen">
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-white/90 px-4 py-3 backdrop-blur-md sm:px-6">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-[color:var(--oc-card)]/90 px-4 py-3 backdrop-blur-md sm:px-6">
         <img src="/brand/0ncore-logo-light.png" alt="0nCORE" className="h-[26px] w-auto shrink-0 object-contain" />
         <div className="min-w-0">
           <div className="truncate text-[12px] font-medium text-[color:var(--oc-text)]/75">
@@ -103,7 +103,7 @@ export default function WelcomePage() {
         </div>
         {/* Only below lg, where the sidebar is hidden — above it the nav
             already offers this and two entry points is one too many. */}
-        <Link href="/" className="oc-chip ml-auto inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-white px-2.5 py-1.5 text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)] lg:hidden">
+        <Link href="/" className="oc-chip ml-auto inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-2.5 py-1.5 text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)] lg:hidden">
           <Terminal className="h-3.5 w-3.5" /> Command centre
         </Link>
       </header>

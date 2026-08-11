@@ -93,7 +93,7 @@ export default function ClientsPage({ token, onCommand, onFocus }: { token: stri
       <div className="space-y-1.5">
         {shown.map((c) => (
           <div key={c.id}
-            className="flex w-full items-center gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-3 text-left transition-colors hover:border-[color:var(--oc-green-d)]">
+            className="flex w-full items-center gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3.5 py-3 text-left transition-colors hover:border-[color:var(--oc-green-d)]">
             {/* Primary gesture: click the client to ZOOM the whole dashboard onto
                 them. Falls back to opening detail when focus isn't wired. */}
             <button type="button" onClick={() => (onFocus ? onFocus(c.id, c.name) : setOpen(c.id))}
@@ -159,7 +159,7 @@ function ClientDetail({ token, id, onClose, onCommand, onFocus }: { token: strin
         <div className="mb-4 flex items-start justify-between gap-3">
           <h3 className="text-[17px] font-bold text-[color:var(--oc-ink)]">{d?.client.name ?? 'Loading…'}</h3>
           <button type="button" onClick={onClose} aria-label="Close"
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]">
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -175,7 +175,7 @@ function ClientDetail({ token, id, onClose, onCommand, onFocus }: { token: strin
             </div>
 
             {(d.client.email || d.client.phone || d.client.city) && (
-              <div className="space-y-1.5 rounded-[14px] border border-[color:var(--oc-border)] bg-white p-3.5">
+              <div className="space-y-1.5 rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3.5">
                 {d.client.email && <Line icon={Mail} text={d.client.email} />}
                 {d.client.phone && <Line icon={Phone} text={d.client.phone} />}
                 {(d.client.city || d.client.state) && <Line icon={MapPin} text={[d.client.city, d.client.state].filter(Boolean).join(', ')} />}
@@ -187,7 +187,7 @@ function ClientDetail({ token, id, onClose, onCommand, onFocus }: { token: strin
                 <h4 className="mb-1.5 text-[13px] font-semibold text-[color:var(--oc-ink)]">Their automations</h4>
                 <div className="space-y-1">
                   {d.workflows.slice(0, 8).map((w, i) => (
-                    <div key={i} className="flex items-center justify-between gap-3 rounded-[10px] border border-[color:var(--oc-border)] bg-white px-3 py-2">
+                    <div key={i} className="flex items-center justify-between gap-3 rounded-[10px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3 py-2">
                       <span className="truncate text-[12.5px] text-[color:var(--oc-ink)]">{w.name || 'Untitled'}</span>
                       <span className="oc-mono shrink-0 text-[10.5px] text-[color:var(--oc-text)]/55">{w.status || 'draft'}</span>
                     </div>
@@ -206,7 +206,7 @@ function ClientDetail({ token, id, onClose, onCommand, onFocus }: { token: strin
               ) : (
                 <div className="space-y-1">
                   {d.receipts.map((r, i) => (
-                    <div key={i} className="rounded-[10px] border border-[color:var(--oc-border)] bg-white px-3 py-2">
+                    <div key={i} className="rounded-[10px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3 py-2">
                       <div className="flex items-center gap-2">
                         <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${
                           r.status === 'ok' ? 'bg-[color:var(--oc-green-d)]'
@@ -232,7 +232,7 @@ function ClientDetail({ token, id, onClose, onCommand, onFocus }: { token: strin
               {/* Straight back into the one safe path — a prefilled command, not an action. */}
               <button type="button"
                 onClick={() => { onCommand(`In ${d.client.name}, `); onClose() }}
-                className="inline-flex flex-1 items-center justify-center rounded-[12px] border border-[color:var(--oc-border)] bg-white px-4 py-2.5 text-[13px] font-medium text-[color:var(--oc-ink)] transition-colors hover:border-[color:var(--oc-green-d)]">
+                className="inline-flex flex-1 items-center justify-center rounded-[12px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-4 py-2.5 text-[13px] font-medium text-[color:var(--oc-ink)] transition-colors hover:border-[color:var(--oc-green-d)]">
                 Do something here
               </button>
             </div>
@@ -245,7 +245,7 @@ function ClientDetail({ token, id, onClose, onCommand, onFocus }: { token: strin
 
 function Tile({ icon: Icon, label, value, dim }: { icon: typeof Users; label: string; value: string; dim?: boolean }) {
   return (
-    <div className="rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-3">
+    <div className="rounded-[12px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3.5 py-3">
       <div className="oc-mono flex items-center gap-1.5 text-[10px] uppercase tracking-[.12em] text-[color:var(--oc-text)]/55">
         <Icon className="h-3 w-3" /> {label}
       </div>

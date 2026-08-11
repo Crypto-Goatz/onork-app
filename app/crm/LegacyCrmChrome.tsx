@@ -160,7 +160,7 @@ export default function LegacyCrmChrome({ children }: { children: React.ReactNod
         {/* POL Tester Toggle */}
         <div className="px-3 mb-3">
           <button onClick={() => setShowPOL(!showPOL)}
-            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white/[0.02] border border-white/[0.04] text-[10px] text-white/30 font-semibold cursor-pointer hover:text-white/50 hover:border-white/[0.08] transition-all">
+            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[color:var(--oc-card)]/[0.02] border border-white/[0.04] text-[10px] text-white/30 font-semibold cursor-pointer hover:text-white/50 hover:border-white/[0.08] transition-all">
             <span className="flex items-center gap-1.5"><Activity className="w-3 h-3" /> Proof of Life</span>
             <ChevronDown className={`w-3 h-3 transition-transform ${showPOL ? 'rotate-180' : ''}`} />
           </button>
@@ -169,7 +169,7 @@ export default function LegacyCrmChrome({ children }: { children: React.ReactNod
             <div className="mt-2 space-y-2">
               {/* Test selector */}
               <select value={polTest.label} onChange={e => setPolTest(POL_TESTS.find(t => t.label === e.target.value) || POL_TESTS[0])}
-                className="w-full px-2 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white text-[10px] outline-none [&>option]:bg-[#0d1117]">
+                className="w-full px-2 py-1.5 rounded-lg bg-[color:var(--oc-card)]/[0.03] border border-white/[0.06] text-white text-[10px] outline-none [&>option]:bg-[#0d1117]">
                 {POL_TESTS.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
               </select>
 
@@ -216,7 +216,7 @@ export default function LegacyCrmChrome({ children }: { children: React.ReactNod
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-colors no-underline ${
                   isActive
                     ? 'bg-[#7ed957]/10 text-[#7ed957] font-semibold'
-                    : 'text-white/50 hover:text-white hover:bg-white/[0.04]'
+                    : 'text-white/50 hover:text-white hover:bg-[color:var(--oc-card)]/[0.04]'
                 }`}>
                 <Icon className="w-4 h-4 shrink-0" />
                 {item.label}

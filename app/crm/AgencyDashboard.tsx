@@ -288,7 +288,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
     : boot?.session ? { dot: 'bg-[color:var(--oc-amber)]', label: 'not installed' }
     : { dot: 'bg-[color:var(--oc-amber)]', label: 'not connected' }
 
-  // Logged out (opened outside GHL with no 0nCORE session, or sign-in failed):
+  // Logged out (opened outside the CRM with no 0nCORE session, or sign-in failed):
   // show the one branded lock gate instead of a dashboard that would only 401.
   // 'pending' still shows the dashboard chrome while the handshake/mint runs.
   if (sso.state === 'standalone' || sso.state === 'rejected') {
@@ -298,7 +298,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
   return (
     <div className="oncore-app min-h-screen">
       {/* ── HEADER ── */}
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-white/90 px-4 py-3 backdrop-blur-md sm:px-6">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-[color:var(--oc-card)]/90 px-4 py-3 backdrop-blur-md sm:px-6">
         {/* The full wordmark, which already carries the name — so the "0nCORE"
             text label that used to sit here is gone rather than saying it twice.
             This is the light-background artwork (dark lettering); the neon icon
@@ -315,10 +315,10 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="oc-chip hidden border border-[color:var(--oc-border)] bg-white px-2.5 py-1.5 text-[color:var(--oc-text)] sm:inline-block">
+          <span className="oc-chip hidden border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-2.5 py-1.5 text-[color:var(--oc-text)] sm:inline-block">
             {boot?.usage.mtdLabel ?? '$0'} MTD
           </span>
-          <span className="oc-chip inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-white px-2.5 py-1.5">
+          <span className="oc-chip inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-2.5 py-1.5">
             <span className={`h-1.5 w-1.5 rounded-full ${conn.dot}`} />
             <span className="text-[color:var(--oc-text)]">{conn.label}</span>
           </span>
@@ -334,7 +334,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
                   className={`oc-chip inline-flex items-center gap-1.5 border px-2.5 py-1.5 transition-colors ${
                     on
                       ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
-                      : 'border-transparent bg-transparent text-[color:var(--oc-text)] hover:border-[color:var(--oc-border)] hover:bg-white'
+                      : 'border-transparent bg-transparent text-[color:var(--oc-text)] hover:border-[color:var(--oc-border)] hover:bg-[color:var(--oc-card)]'
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" /> {n.label}
@@ -346,7 +346,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
             type="button"
             onClick={() => setTaskbarOpen((v) => !v)}
             aria-label={taskbarOpen ? 'Hide tasks' : 'Show tasks'}
-            className="grid h-8 w-8 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)] lg:hidden"
+            className="grid h-8 w-8 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)] lg:hidden"
           >
             {taskbarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
           </button>
@@ -355,7 +355,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
             onClick={signOut}
             aria-label="Sign out"
             title="Sign out"
-            className="grid h-8 w-8 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-red)] hover:text-[color:var(--oc-red)]"
+            className="grid h-8 w-8 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-red)] hover:text-[color:var(--oc-red)]"
           >
             <LogOut className="h-4 w-4" />
           </button>
@@ -376,7 +376,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
           <button
             type="button"
             onClick={clearFocus}
-            className="oc-chip inline-flex shrink-0 items-center gap-1.5 border border-[color:var(--oc-border)] bg-white px-2.5 py-1.5 text-[12px] font-medium text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]"
+            className="oc-chip inline-flex shrink-0 items-center gap-1.5 border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-2.5 py-1.5 text-[12px] font-medium text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> All clients
           </button>
@@ -424,7 +424,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
                   aria-current={on ? 'page' : undefined}
                   className={`oc-chip inline-flex flex-1 items-center justify-center gap-1.5 border px-2 py-2 text-[11.5px] transition-colors ${
                     on ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
-                       : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]'}`}>
+                       : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]'}`}>
                   <Icon className="h-3.5 w-3.5" /> {n.label === 'Automations & AI' ? 'Automations' : n.label}
                 </Link>
               )
@@ -472,7 +472,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
                 type="button"
                 disabled
                 title="Voice — ships with the executor"
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] border border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]/35"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]/35"
               >
                 <Mic className="h-4 w-4" />
               </button>
@@ -494,7 +494,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
                     key={x}
                     type="button"
                     onClick={() => setCommand(x)}
-                    className="oc-chip border border-[color:var(--oc-border)] bg-white px-3 py-2 text-left font-normal text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]"
+                    className="oc-chip border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3 py-2 text-left font-normal text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]"
                   >
                     {x}
                   </button>
@@ -527,7 +527,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
                       className={`rounded-[14px] border p-3.5 ${
                         l.blocked
                           ? 'border-[color:var(--oc-amber)]/45 bg-[color:var(--oc-amber)]/[0.07]'
-                          : 'border-[color:var(--oc-border)] bg-white'
+                          : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)]'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -560,7 +560,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
                                     type="button"
                                     onClick={() => pickClient(l.spoken || l.location || '', c.id)}
                                     disabled={planning}
-                                    className="rounded-lg border border-[color:var(--oc-line)] bg-white px-3 py-1.5 text-left text-[12px] transition hover:border-[color:var(--oc-green)] hover:bg-[color:var(--oc-green)]/5 disabled:opacity-50"
+                                    className="rounded-lg border border-[color:var(--oc-line)] bg-[color:var(--oc-card)] px-3 py-1.5 text-left text-[12px] transition hover:border-[color:var(--oc-green)] hover:bg-[color:var(--oc-green)]/5 disabled:opacity-50"
                                   >
                                     <span className="font-medium text-[color:var(--oc-ink)]">{c.name}</span>
                                     <span className="ml-2 font-mono text-[11px] text-[color:var(--oc-text)]/50">{c.id}</span>

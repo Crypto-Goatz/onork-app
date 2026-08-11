@@ -106,7 +106,7 @@ export default function ActionsPage() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search actions — try “tag”, “invoice”, “text”…"
-                className="w-full rounded-xl border border-[color:var(--oc-line)] bg-white py-2.5 pl-9 pr-9 text-sm text-[color:var(--oc-ink)] outline-none transition focus:border-[color:var(--oc-green)]"
+                className="w-full rounded-xl border border-[color:var(--oc-line)] bg-[color:var(--oc-card)] py-2.5 pl-9 pr-9 text-sm text-[color:var(--oc-ink)] outline-none transition focus:border-[color:var(--oc-green)]"
               />
               {q && (
                 <button
@@ -127,7 +127,7 @@ export default function ActionsPage() {
                   className={`rounded-full px-3 py-1.5 text-[12px] font-medium transition ${
                     group === g
                       ? 'bg-[color:var(--oc-ink)] text-white'
-                      : 'border border-[color:var(--oc-line)] bg-white text-[color:var(--oc-text)]/70 hover:border-[color:var(--oc-green)]'
+                      : 'border border-[color:var(--oc-line)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]/70 hover:border-[color:var(--oc-green)]'
                   }`}
                 >
                   {g === 'all' ? 'All' : g}
@@ -164,7 +164,7 @@ export default function ActionsPage() {
                     return (
                       <div
                         key={a.id}
-                        className="rounded-xl border border-[color:var(--oc-line)] bg-white transition hover:border-[color:var(--oc-green)]"
+                        className="rounded-xl border border-[color:var(--oc-line)] bg-[color:var(--oc-card)] transition hover:border-[color:var(--oc-green)]"
                       >
                         <button
                           onClick={() => setOpenId(open ? null : a.id)}

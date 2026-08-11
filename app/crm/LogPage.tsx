@@ -65,11 +65,11 @@ export default function LogPage() {
 
   return (
     <div className="oncore-app min-h-screen">
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-white/90 px-4 py-3 backdrop-blur-md sm:px-6">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-[color:var(--oc-card)]/90 px-4 py-3 backdrop-blur-md sm:px-6">
         <img src="/brand/0ncore-logo-light.png" alt="0nCORE" className="h-[26px] w-auto shrink-0 object-contain" />
         <div className="truncate text-[12px] font-medium text-[color:var(--oc-text)]/75">History &amp; diagnostics</div>
         <button type="button" onClick={load} disabled={busy}
-          className="oc-chip ml-auto inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-white px-2.5 py-1.5 text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]">
+          className="oc-chip ml-auto inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-2.5 py-1.5 text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]">
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Re-run
         </button>
       </header>
@@ -81,7 +81,7 @@ export default function LogPage() {
               <button key={k} type="button" onClick={() => setTab(k)}
                 className={`oc-chip inline-flex items-center gap-1.5 border px-3 py-2 transition-colors ${
                   tab === k ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
-                            : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]'}`}>
+                            : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]'}`}>
                 <Icon className="h-3.5 w-3.5" /> {label}
               </button>
             ))}
@@ -102,7 +102,7 @@ export default function LogPage() {
                     : c.state === 'warn' ? 'text-[color:var(--oc-amber)]' : 'text-[color:var(--oc-text)]/40'
                   const Icon = c.state === 'pass' ? CheckCircle2 : c.state === 'fail' ? XCircle : c.state === 'warn' ? AlertCircle : MinusCircle
                   return (
-                    <div key={c.id} className="flex items-start gap-3 rounded-[14px] border border-[color:var(--oc-border)] bg-white p-3.5">
+                    <div key={c.id} className="flex items-start gap-3 rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3.5">
                       <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${tone}`} />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-baseline gap-2">
@@ -129,7 +129,7 @@ export default function LogPage() {
                     <button key={k} type="button" onClick={() => setOnly(k)}
                       className={`oc-chip border px-3 py-1.5 transition-colors ${
                         only === k ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
-                                   : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]'}`}>
+                                   : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]'}`}>
                       {label}
                     </button>
                   ))}
@@ -145,7 +145,7 @@ export default function LogPage() {
                 const ui = RESULT_UI[e.result]
                 const Icon = ui.icon
                 return (
-                  <div key={i} className="rounded-[14px] border border-[color:var(--oc-border)] bg-white p-3.5">
+                  <div key={i} className="rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3.5">
                     <div className="flex items-start gap-3">
                       <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${ui.tone}`} />
                       <div className="min-w-0 flex-1">

@@ -116,7 +116,7 @@ export default function SaasConfigurator() {
 
   return (
     <div className="oncore-app min-h-screen">
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-white/90 px-4 py-3 backdrop-blur-md sm:px-6">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-[color:var(--oc-card)]/90 px-4 py-3 backdrop-blur-md sm:px-6">
         <img src="/brand/0ncore-logo-light.png" alt="0nCORE" className="h-[26px] w-auto shrink-0 object-contain" />
         <div className="truncate text-[12px] font-medium text-[color:var(--oc-text)]/75">Plan builder</div>
       </header>
@@ -244,7 +244,7 @@ export default function SaasConfigurator() {
                           className={`rounded-xl border p-3.5 text-left transition-all ${
                             on
                               ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/[0.07]'
-                              : 'border-[color:var(--oc-border)] bg-white hover:border-[color:var(--oc-text)]/30'
+                              : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] hover:border-[color:var(--oc-text)]/30'
                           }`}
                         >
                           <div className="flex items-start gap-2">
@@ -289,7 +289,7 @@ export default function SaasConfigurator() {
 
       {/* ── the running total. Sticky, because the number is the decision. ── */}
       {catalogue && (
-        <div className="sticky bottom-0 z-20 border-t border-[color:var(--oc-border)] bg-white/95 px-4 py-3 backdrop-blur-md sm:px-6">
+        <div className="sticky bottom-0 z-20 border-t border-[color:var(--oc-border)] bg-[color:var(--oc-card)]/95 px-4 py-3 backdrop-blur-md sm:px-6">
           <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-3">
             <div>
               <p className="text-[11px] text-[color:var(--oc-text)]/55">
@@ -311,7 +311,7 @@ export default function SaasConfigurator() {
               className={`oc-chip border px-3 py-1.5 text-[11px] font-semibold transition-colors ${
                 annual
                   ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
-                  : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]'
+                  : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]'
               }`}
             >
               {annual ? `Annual · ${catalogue.annualDiscountPct}% off` : `Pay annually, save ${catalogue.annualDiscountPct}%`}

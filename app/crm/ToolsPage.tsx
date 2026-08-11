@@ -128,7 +128,7 @@ export default function ToolsPage() {
 
   return (
     <div className="oncore-app min-h-screen">
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-white/90 px-4 py-3 backdrop-blur-md sm:px-6">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-[color:var(--oc-card)]/90 px-4 py-3 backdrop-blur-md sm:px-6">
         <img src="/brand/0ncore-logo-light.png" alt="0nCORE" className="h-[26px] w-auto shrink-0 object-contain" />
         <div className="truncate text-[12px] font-medium text-[color:var(--oc-text)]/75">Tools</div>
       </header>
@@ -160,7 +160,7 @@ export default function ToolsPage() {
             make to a client. Each row carries the endpoints that prove it.
           */}
           {platform.length > 0 && (
-            <section className="mb-5 overflow-hidden rounded-xl border border-[color:var(--oc-border)] bg-white">
+            <section className="mb-5 overflow-hidden rounded-xl border border-[color:var(--oc-border)] bg-[color:var(--oc-card)]">
               <button
                 type="button"
                 onClick={() => setShowPlatform((v) => !v)}
@@ -221,7 +221,7 @@ export default function ToolsPage() {
               <button key={k} type="button" onClick={() => setFilter(k)}
                 className={`oc-chip border px-3 py-1.5 transition-colors ${
                   filter === k ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
-                               : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]'}`}>
+                               : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]'}`}>
                 {label}
               </button>
             ))}
@@ -247,7 +247,7 @@ export default function ToolsPage() {
                       {/* 1:1 tile face — the icon, with its status badge on the corner. */}
                       <span className="relative mb-3 grid aspect-square w-11 place-items-center rounded-[13px] bg-[color:var(--oc-green)]/12">
                         <Icon className="h-5 w-5 text-[color:var(--oc-green-d)]" aria-hidden="true" />
-                        <Badge className={`absolute -right-1.5 -top-1.5 h-4 w-4 rounded-full bg-white ${ui.dot}`} aria-hidden="true" />
+                        <Badge className={`absolute -right-1.5 -top-1.5 h-4 w-4 rounded-full bg-[color:var(--oc-card)] ${ui.dot}`} aria-hidden="true" />
                       </span>
                       <span className="block text-[13.5px] font-semibold leading-tight text-[color:var(--oc-ink)]">{t.name}</span>
                       <span className="mt-1 line-clamp-2 block text-[11.5px] leading-relaxed text-[color:var(--oc-text)]/65">{t.what}</span>
@@ -297,7 +297,7 @@ export default function ToolsPage() {
                 </span>
               </div>
               <button type="button" onClick={() => setOpen(null)} aria-label="Close"
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]">
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -315,7 +315,7 @@ export default function ToolsPage() {
             )}
 
             {open.fix && (
-              <div className="mt-2.5 rounded-[12px] border border-[color:var(--oc-border)] bg-white p-3.5">
+              <div className="mt-2.5 rounded-[12px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3.5">
                 <div className="oc-mono mb-1 text-[10px] font-bold uppercase tracking-[.12em] text-[color:var(--oc-green-d)]">What clears it</div>
                 <p className="text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/85">{open.fix}</p>
               </div>
@@ -323,12 +323,12 @@ export default function ToolsPage() {
 
             {open.href && (
               <a href={open.href} target={open.external ? '_blank' : undefined} rel="noopener noreferrer"
-                className="oc-chip mr-2 mt-3 inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-white px-3 py-2 text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]">
+                className="oc-chip mr-2 mt-3 inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3 py-2 text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]">
                 Open it anyway <ExternalLink className="h-3 w-3" />
               </a>
             )}
             <Link href="/log" onClick={() => setOpen(null)}
-              className="oc-chip mt-3 inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-white px-3 py-2 text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]">
+              className="oc-chip mt-3 inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3 py-2 text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]">
               <Wrench className="h-3.5 w-3.5" /> Run the system check <ArrowRight className="h-3 w-3" />
             </Link>
           </div>

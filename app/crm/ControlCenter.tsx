@@ -63,7 +63,7 @@ export default function ControlCenter({
           </p>
         </div>
         <button type="button" onClick={onClose} aria-label="Close"
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]">
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -76,7 +76,7 @@ export default function ControlCenter({
             <button key={s.id} type="button" onClick={() => setSection(s.id)}
               className={`oc-chip inline-flex items-center gap-2 border px-3 py-2 transition-colors ${
                 on ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-ink)]'
-                   : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)] hover:border-[color:var(--oc-green-d)]'}`}>
+                   : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)] hover:border-[color:var(--oc-green-d)]'}`}>
               <Icon className="h-3.5 w-3.5" /> {s.label}
             </button>
           )
@@ -145,7 +145,7 @@ function Actions({ token }: { token: string | null }) {
       {err && <p className="flex items-center gap-2 text-sm text-[color:var(--oc-red)]"><AlertCircle className="h-4 w-4" /> {err}</p>}
 
       {rows.map((a) => (
-        <div key={a.key} className="rounded-[14px] border border-[color:var(--oc-border)] bg-white p-3.5">
+        <div key={a.key} className="rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3.5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -164,7 +164,7 @@ function Actions({ token }: { token: string | null }) {
             <button type="button" disabled={!a.live || busy === a.key} onClick={() => toggle(a)}
               className={`oc-chip shrink-0 border px-3 py-2 transition-colors ${
                 a.enabled ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/15 text-[color:var(--oc-green-d)]'
-                          : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]'} ${!a.live ? 'opacity-40' : ''}`}>
+                          : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]'} ${!a.live ? 'opacity-40' : ''}`}>
               {busy === a.key ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : a.enabled ? 'On' : 'Off'}
             </button>
           </div>
@@ -214,7 +214,7 @@ function Agents({ token }: { token: string | null }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-[14px] border border-[color:var(--oc-border)] bg-white p-3.5">
+      <div className="rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3.5">
         <h3 className="text-[14px] font-semibold text-[color:var(--oc-ink)]">Connect an agent</h3>
         <p className="mt-1 text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/75">
           Your CRM has no way to wire this up automatically, so it is a copy and paste — once per agent.
@@ -254,7 +254,7 @@ function Agents({ token }: { token: string | null }) {
         </ol>
       </div>
 
-      <div className="rounded-[14px] border border-[color:var(--oc-border)] bg-white p-3.5">
+      <div className="rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3.5">
         <div className="flex items-start gap-2">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--oc-green-d)]" />
           <div>
@@ -279,7 +279,7 @@ function Agents({ token }: { token: string | null }) {
                   <button key={m} type="button" onClick={() => setMode(t, m)}
                     className={`oc-chip border px-2 py-1 text-[11px] transition-colors ${
                       t.mode === m ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/15 text-[color:var(--oc-green-d)]'
-                                   : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]/70'}`}>
+                                   : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]/70'}`}>
                     {m === 'auto' ? 'Allow' : m === 'approve' ? 'Ask me' : 'Never'}
                   </button>
                 ))}
@@ -300,7 +300,7 @@ function Field({ label, value, mono, onCopy, copied }: { label: string; value: s
         <div className={`truncate text-[13px] text-[color:var(--oc-ink)] ${mono ? 'oc-mono' : ''}`}>{value}</div>
       </div>
       <button type="button" onClick={onCopy} aria-label={`Copy ${label}`}
-        className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] border border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]">
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]">
         {copied ? <Check className="h-3.5 w-3.5 text-[color:var(--oc-green-d)]" /> : <Copy className="h-3.5 w-3.5" />}
       </button>
     </div>
@@ -349,7 +349,7 @@ function Visualizer({ token, locations }: { token: string | null; locations: { i
           </p>
           <div className="space-y-1.5">
             {data.workflows.map((w) => (
-              <div key={w.id} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3 py-2.5">
+              <div key={w.id} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3 py-2.5">
                 <span className="truncate text-[13.5px] text-[color:var(--oc-ink)]">{w.name || 'Untitled'}</span>
                 <span className={`oc-chip shrink-0 border px-2 py-0.5 text-[11px] ${
                   w.status === 'published'
@@ -413,14 +413,14 @@ function Insights({ token, onCommand }: { token: string | null; onCommand: (c: s
           <p className="text-[13.5px] leading-relaxed text-[color:var(--oc-ink)]">{res.summary}</p>
 
           {res.findings.map((f, i) => (
-            <div key={i} className="rounded-[14px] border border-[color:var(--oc-border)] bg-white p-3.5">
+            <div key={i} className="rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3.5">
               <div className="oc-chip mb-1 inline-block border border-[color:var(--oc-border)] bg-[color:var(--oc-bg)] px-2 py-0.5 text-[color:var(--oc-text)]">{f.client}</div>
               <p className="text-[13px] leading-relaxed text-[color:var(--oc-text)]/85">{f.observation}</p>
               {f.command && (
                 // A finding becomes a COMMAND, never an action. It goes back
                 // through plan → approve → run like anything else.
                 <button type="button" onClick={() => onCommand(f.command!)}
-                  className="oc-chip mt-2 border border-[color:var(--oc-border)] bg-white px-3 py-2 text-left font-normal text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]">
+                  className="oc-chip mt-2 border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3 py-2 text-left font-normal text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]">
                   {f.command}
                 </button>
               )}
@@ -480,7 +480,7 @@ function Plans({ token }: { token: string | null }) {
   // resolves it — a link — rather than an empty table that looks like an answer.
   if (!data.enabled) {
     return (
-      <div className="rounded-[14px] border border-[color:var(--oc-border)] bg-white p-4">
+      <div className="rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-4">
         <h3 className="text-[15px] font-semibold text-[color:var(--oc-ink)]">Connect your agency</h3>
         <p className="mt-1.5 text-[13px] leading-relaxed text-[color:var(--oc-text)]/75">{data.reason}</p>
         <p className="mt-2 text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/65">
@@ -508,7 +508,7 @@ function Plans({ token }: { token: string | null }) {
       {data.plans.length > 0 && (
         <div className="space-y-1.5">
           {data.plans.map((p) => (
-            <div key={p.id} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-3">
+            <div key={p.id} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3.5 py-3">
               <div className="min-w-0">
                 <div className="truncate text-[13.5px] font-semibold text-[color:var(--oc-ink)]">{p.name}</div>
                 <div className="oc-mono text-[11px] text-[color:var(--oc-text)]/55">
@@ -529,7 +529,7 @@ function Plans({ token }: { token: string | null }) {
       <div className="space-y-1.5">
         <h3 className="text-[13px] font-semibold text-[color:var(--oc-ink)]">Every client</h3>
         {data.clients.map((c) => (
-          <div key={c.id} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-2.5">
+          <div key={c.id} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3.5 py-2.5">
             <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--oc-ink)]">{c.name}</span>
             {c.onPlan ? (
               <span className="oc-mono shrink-0 text-[11.5px] text-[color:var(--oc-text)]/70">
@@ -549,7 +549,7 @@ function Plans({ token }: { token: string | null }) {
 
 function Stat({ label, value, accent, warn }: { label: string; value: string; accent?: boolean; warn?: boolean }) {
   return (
-    <div className="rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-3">
+    <div className="rounded-[12px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3.5 py-3">
       <div className="oc-mono text-[10px] uppercase tracking-[.12em] text-[color:var(--oc-text)]/55">{label}</div>
       <div className={`mt-0.5 text-[19px] font-bold ${
         accent ? 'text-[color:var(--oc-green-d)]' : warn ? 'text-[color:var(--oc-amber)]' : 'text-[color:var(--oc-ink)]'}`}>
@@ -605,7 +605,7 @@ function Radar({ token }: { token: string | null }) {
             <button key={k} type="button" onClick={() => setTab(k)}
               className={`oc-chip border px-3 py-1.5 transition-colors ${
                 tab === k ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
-                          : 'border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]'}`}>
+                          : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]'}`}>
               {label}
             </button>
           ))}
@@ -618,7 +618,7 @@ function Radar({ token }: { token: string | null }) {
       {tab === 'boards' ? (
         <div className="space-y-1.5">
           {d.boards.map((b) => (
-            <div key={b.board} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-2.5">
+            <div key={b.board} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3.5 py-2.5">
               <span className="truncate text-[13px] text-[color:var(--oc-ink)]">{b.board.replace(/-/g, ' ')}</span>
               <span className="oc-mono shrink-0 text-[11.5px] text-[color:var(--oc-text)]/60">
                 {b.posts} asks · <span className="font-bold text-[color:var(--oc-green-d)]">{b.totalScore.toLocaleString()}</span> votes
@@ -630,7 +630,7 @@ function Radar({ token }: { token: string | null }) {
         <div className="space-y-1.5">
           {rows.map((p, i) => (
             <a key={`${p.board}-${i}`} href={p.url} target="_blank" rel="noopener noreferrer"
-              className="flex items-start gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-2.5 transition-colors hover:border-[color:var(--oc-green-d)]">
+              className="flex items-start gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3.5 py-2.5 transition-colors hover:border-[color:var(--oc-green-d)]">
               <span className="oc-mono mt-0.5 w-11 shrink-0 text-right text-[13px] font-bold text-[color:var(--oc-green-d)]">
                 {tab === 'rising' ? `+${p.gain}` : p.score.toLocaleString()}
               </span>
@@ -705,7 +705,7 @@ function Fleet({ token }: { token: string | null }) {
       )}
 
       {d.fleet.map((f) => (
-        <div key={f.locationId} className="rounded-[14px] border border-[color:var(--oc-border)] bg-white p-3.5">
+        <div key={f.locationId} className="rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3.5">
           <div className="text-[13px] font-semibold text-[color:var(--oc-ink)]">{f.client}</div>
           {f.error ? (
             <p className="mt-1 text-[12px] text-[color:var(--oc-amber)]">{f.error}</p>
@@ -721,7 +721,7 @@ function Fleet({ token }: { token: string | null }) {
                     {a.status}
                   </span>
                   <button type="button" onClick={() => { setAsk({ locationId: f.locationId, agentId: a.id, name: a.name }); setReply(null); setMsg('') }}
-                    className="oc-chip shrink-0 inline-flex items-center gap-1 border border-[color:var(--oc-border)] bg-white px-2 py-0.5 text-[10.5px] text-[color:var(--oc-text)] hover:border-[color:var(--oc-green-d)]">
+                    className="oc-chip shrink-0 inline-flex items-center gap-1 border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-2 py-0.5 text-[10.5px] text-[color:var(--oc-text)] hover:border-[color:var(--oc-green-d)]">
                     <Play className="h-3 w-3" /> Test
                   </button>
                 </div>
@@ -743,7 +743,7 @@ function Fleet({ token }: { token: string | null }) {
             <div className="mb-3 flex items-start justify-between gap-3">
               <h3 className="text-[16px] font-bold text-[color:var(--oc-ink)]">Test {ask.name}</h3>
               <button type="button" onClick={() => setAsk(null)} aria-label="Close"
-                className="grid h-8 w-8 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-white text-[color:var(--oc-text)]">
+                className="grid h-8 w-8 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -756,7 +756,7 @@ function Fleet({ token }: { token: string | null }) {
               {busy ? <span className="flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Asking</span> : 'Ask it'}
             </button>
             {reply && (
-              <div className="mt-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white p-3.5 text-[13px] leading-relaxed text-[color:var(--oc-text)]/85">
+              <div className="mt-3 rounded-[12px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3.5 text-[13px] leading-relaxed text-[color:var(--oc-text)]/85">
                 {reply}
               </div>
             )}
@@ -822,7 +822,7 @@ function Leads({ token }: { token: string | null }) {
 
       <div className="space-y-1.5">
         {d.recent.map((r, i) => (
-          <div key={i} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-white px-3.5 py-2.5">
+          <div key={i} className="flex items-center justify-between gap-3 rounded-[12px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3.5 py-2.5">
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13px] font-medium text-[color:var(--oc-ink)]">{r.business}</span>
               {r.source_url && (

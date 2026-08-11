@@ -1,4 +1,4 @@
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import type { Metadata } from "next";
 import "./globals.css";
 import "./jampack.css";
@@ -62,8 +62,17 @@ export default async function RootLayout({
   // app.0ncore.com is the product surface; everything else is the marketing site.
   const isAppHost = (await headers()).get('host') === 'app.0ncore.com'
 
+  // Which side the agency rail sits on. Read on the SERVER so the page renders
+  // on the chosen side immediately — reading it client-side would paint the
+  // rail on one edge and snap it to the other, on every navigation.
+  const sidebarSide = (await cookies()).get('oc_sidebar_side')?.value === 'right' ? 'right' : 'left'
+
   return (
-    <html lang="en" className={cn("dark font-sans", inter.variable, mono.variable)}>
+    <html
+      lang="en"
+      data-sidebar-side={sidebarSide}
+      className={cn("dark font-sans", inter.variable, mono.variable)}
+    >
       <head>
         {/* PWA */}
         <link rel="manifest" href="/manifest.json" />

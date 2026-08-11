@@ -449,6 +449,41 @@ code, pre, .font-mono {
   .card-hover:hover { transform: none; }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   0n Ecosystem Design System — ported from design_handoff_0ncore/_ds.
+   Values are COPIED, not re-derived: the handoff is binding, and a second set
+   of "close enough" hexes is how two surfaces stop matching.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Brand green family — never a fourth green. */
+  --0n-neon:#6EE05A; --0n-green:#22c55e; --0n-deep:#16a34a;
+  --0n-gradient:linear-gradient(120deg,#6EE05A 0%,#22c55e 100%);
+  --0n-soft:rgba(110,224,90,0.14);
+  --0n-teal:#0891b2;
+
+  /* Surface C — Console dark (Agency CRM + extension panel) */
+  --console-page:#0d1117; --console-card:#161b22; --console-elevated:#1c2128;
+  --console-hover:#21262d; --console-border:#30363d; --console-border-hover:#484f58;
+  --console-accent:#6EE05A; --console-accent-hover:#5bc74a;
+  --console-text-1:#e6edf3; --console-text-2:#c9d1d9; --console-text-3:#8b949e;
+
+  /* Surface B — Dashboard light (Client Console) */
+  --dash-canvas:#fafafa; --dash-rail:#000000; --dash-card:#ffffff;
+  --dash-border:rgba(229,229,229,0.7);
+  --dash-ink:#171717; --dash-muted:#737373; --dash-faint:#a3a3a3;
+
+  /* Status — dark variants exist because the light ones are unreadable on #0d1117. */
+  --status-success:#16a34a;
+  --status-warning:#d97706; --status-warning-dark:#fbbf24;
+  --status-danger:#dc2626;  --status-danger-dark:#f87171;
+  --status-info:#0891b2;    --status-info-dark:#58a6ff;
+
+  --shadow-glow-sm:0 10px 26px rgba(110,224,90,.34);
+  --ring-neon:0 0 0 1px rgba(110,224,90,.35),0 0 24px rgba(110,224,90,.25);
+}
+.ring-neon{box-shadow:var(--ring-neon)}
+.shadow-glow-sm{box-shadow:var(--shadow-glow-sm)}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    0nCORE MARKETPLACE DASHBOARD — exact tokens from the 6-tile spec.
 
@@ -457,18 +492,23 @@ code, pre, .font-mono {
    nudged by a change made for the marketing site or the authenticated app.
    ═══════════════════════════════════════════════════════════════════════ */
 .oncore-app {
-  --oc-bg:      #F6F6F7;
-  --oc-card:    #FFFFFF;
-  --oc-ink:     #181D19;
-  --oc-text:    #414A43;
-  --oc-green:   #6EE05A;   /* the neon — glow, accents, the EQ> prompt */
-  --oc-green-d: #2E9A1F;   /* readable green — anything a person must READ */
-  --oc-amber:   #C98A12;
-  --oc-red:     #D65454;
-  --oc-blue:    #3E8FC7;
-  --oc-border:  #E9E9EB;
-  --oc-shadow:  0 2px 4px rgba(24,29,25,.05), 0 10px 28px rgba(24,29,25,.09);
-  --oc-shadow-sm: 0 1px 2px rgba(24,29,25,.04), 0 4px 12px rgba(24,29,25,.06);
+  /* Console dark (design_handoff_0ncore): the agency CRM is Surface C.
+     Status colours switch to their DARK variants — #C98A12 and #2E9A1F are
+     unreadable on #0d1117, which is exactly why the system defines both. */
+  --oc-bg:      var(--console-page);
+  --oc-card:    var(--console-card);
+  --oc-ink:     var(--console-text-1);
+  --oc-text:    var(--console-text-2);
+  --oc-green:   var(--0n-neon);
+  --oc-green-d: var(--0n-neon);
+  --oc-amber:   var(--status-warning-dark);
+  --oc-red:     var(--status-danger-dark);
+  --oc-blue:    var(--status-info-dark);
+  --oc-border:  var(--console-border);
+  --oc-elevated:var(--console-elevated);
+  --oc-hover:   var(--console-hover);
+  --oc-shadow:  0 2px 4px rgba(0,0,0,.30), 0 10px 28px rgba(0,0,0,.40);
+  --oc-shadow-sm: 0 1px 2px rgba(0,0,0,.25), 0 4px 12px rgba(0,0,0,.30);
 
   background: var(--oc-bg);
   color: var(--oc-text);
@@ -579,4 +619,16 @@ code, pre, .font-mono {
   backdrop-filter: blur(16px) saturate(150%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 10px 26px -14px rgba(0, 0, 0, 0.9);
+}
+
+/* ── Agency rail side ──────────────────────────────────────────────────────
+   Left by default (design_handoff_0ncore). A person who reads the result
+   column first, or runs a second app down the left of their screen, can flip
+   it in Settings. Done in CSS off an attribute the SERVER sets, so the rail
+   never paints on one edge and jumps to the other.
+   `order` works because every rail sits in a flex row beside its content. */
+:root[data-sidebar-side="right"] .oc-rail {
+  order: 2;
+  border-right: 0;
+  border-left: 1px solid #21262d;
 }
