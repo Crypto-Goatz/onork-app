@@ -29,9 +29,16 @@ export async function POST(req: NextRequest) {
   const locationId = typeof body?.locationId === 'string' ? body.locationId.trim() : ''
   const pit = typeof body?.pit === 'string' ? body.pit.trim() : ''
   const wantFree = body?.isFree === true
+  // Adding a client and switching it on are two acts. Requiring the key up front
+  // meant leaving the page to fetch a token and starting over; a pending add
+  // records the choice now and waits for the key.
+  const pending = body?.pending === true
 
-  if (!locationId || !pit) {
-    return NextResponse.json({ error: 'Account and token are both required.' }, { status: 400 })
+  if (!locationId) {
+    return NextResponse.json({ error: 'Which account?' }, { status: 400 })
+  }
+  if (!pending && !pit) {
+    return NextResponse.json({ error: 'That account needs its key.' }, { status: 400 })
   }
 
   const db = createServiceClient()
@@ -59,8 +66,12 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const check = await verifyLocationPit(pit, locationId)
-  if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 })
+  // Only verify when a key was actually supplied. A pending add has nothing to
+  // prove yet — verified_at stays null, which is what marks it "not switched on".
+  if (!pending) {
+    const check = await verifyLocationPit(pit, locationId)
+    if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 })
+  }
 
   // Exactly one free account per agency is a DB constraint. Clear the old one
   // first so choosing a new free account is a move, not a conflict.
@@ -77,10 +88,10 @@ export async function POST(req: NextRequest) {
       company_id: agency.company_id,
       location_id: locationId,
       location_name: match.name,
-      location_pit: pit,
+      ...(pending ? {} : { location_pit: pit }),
       is_free: wantFree,
       billing_status: wantFree ? 'active' : 'pending',
-      verified_at: new Date().toISOString(),
+      verified_at: pending ? null : new Date().toISOString(),
       last_error: null,
       status: 'active',
       updated_at: new Date().toISOString(),
@@ -102,6 +113,7 @@ export async function POST(req: NextRequest) {
     locationId,
     name: match.name,
     isFree: wantFree,
+    pending,
     priceCents: wantFree ? 0 : AGENCY_BILLING.perClientCents,
   })
 }

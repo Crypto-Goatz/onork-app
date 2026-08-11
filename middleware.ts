@@ -73,6 +73,22 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // ── Bare app paths on www ─────────────────────────────────────────
+  // The sidebar links to /clients, /tools, /log and friends because on
+  // app.0ncore.com the whole host is rewritten into /crm. On www there is no
+  // such rewrite, so every one of those links was a 404 — /clients included,
+  // which is the main screen of the product. Redirect (not rewrite) so the
+  // address bar shows where you actually are.
+  if (host !== APP_HOST) {
+    const p = request.nextUrl.pathname
+    const bare = ['/clients', '/automations', '/tools', '/log', '/plans']
+    if (bare.some((b) => p === b || p.startsWith(b + '/'))) {
+      const url = request.nextUrl.clone()
+      url.pathname = `/crm${p}`
+      return NextResponse.redirect(url)
+    }
+  }
+
   // ── Stale-cookie sweep ────────────────────────────────────────────
   // If the request carries `sb-<otherproject>-auth-token` but no cookie for
   // CURRENT_PROJECT_REF, the user has dead cookies from a previous Supabase
