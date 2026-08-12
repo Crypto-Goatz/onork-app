@@ -113,9 +113,17 @@ export async function GET(req: NextRequest) {
       : state.startsWith('sub') ? 'subaccount-v2'
       : null
 
+    // NO STATE MEANS A MARKETPLACE-LISTING INSTALL, and those are the CURRENT
+    // apps — so try the current apps FIRST and keep the legacy pair as the tail.
+    // Ordering this the other way round is what produced
+    // `marketplace(401): Invalid client credentials` on a fresh agency install:
+    // the flow never reached the agency app at all, and the error named the one
+    // app the user had not installed.
     const candidates = only
       ? apps.filter((a) => a.name === only)
-      : apps.filter((a) => a.name !== 'subaccount-v2' && a.name !== 'agency-v2')
+      : ['agency-v2', 'subaccount-v2', 'marketplace', 'marketplace-alt']
+          .map((n) => apps.find((a) => a.name === n))
+          .filter((a): a is (typeof apps)[number] => Boolean(a))
 
     let tokenData: Record<string, unknown> | null = null
     let usedApp = candidates[0] || apps[0]
@@ -161,6 +169,23 @@ export async function GET(req: NextRequest) {
       const raw = JSON.stringify(data).slice(0, 300)
       failures.push(`${app.name}(${tokenRes.status}): ${raw}`)
       console.warn(`[oauth/callback] ${app.name} exchange failed ${tokenRes.status}: ${raw}`)
+
+      /**
+       * TRYING THE NEXT APP IS ONLY SAFE WHILE THE CODE IS STILL UNSPENT.
+       *
+       * Rejected credentials fail BEFORE the code is redeemed, so the code
+       * survives and the next app gets a fair attempt. A rejected *code* is the
+       * opposite: it is gone, every later attempt returns "code not found", and
+       * that message then buries the real first failure — which is exactly how a
+       * credentials problem ends up looking like an expired-code problem.
+       *
+       * So on any code-shaped rejection we stop here and report the failure we
+       * actually have.
+       */
+      if (/code (?:not found|is invalid|expired)|invalid_grant|authorization code/i.test(raw)) {
+        console.error(`[oauth/callback] ${app.name} consumed or rejected the code — not trying further apps.`)
+        break
+      }
     }
 
     if (!tokenData || !tokenData.access_token) {
