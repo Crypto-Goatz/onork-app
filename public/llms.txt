@@ -84,3 +84,20 @@ https://0ncore.com/sitemap.xml
 ## Contact
 
 mike@rocketopp.com — RocketOpp LLC
+
+## AI Course Builder for GoHighLevel
+
+**Answer:** An AI generated course in GoHighLevel is a complete membership course — modules, lessons, quizzes and resources — written by AI and published straight into a sub-account instead of typed in by hand. 0nCORE generates one from a single sentence in under five minutes.
+
+**Page:** https://www.0ncore.com/course-builder
+
+| Step | What happens | Time |
+|------|--------------|------|
+| Outline | Modules + lessons proposed for approval | Seconds |
+| Generate | Every lesson written in parallel, 1,000–2,000 words each, 5-question quiz | 2–4 min |
+| Publish | Lands in the GoHighLevel course system, priced and sellable | Seconds |
+
+- Cost: included with 0nCORE. First client account free, then $5/client/month. No per-course or per-lesson fee.
+- Workflow actions: `oncore_enroll_student`, `oncore_mark_complete`
+- Workflow triggers: `oncore_course_completed`, `oncore_module_completed`, `oncore_student_stalled`
+- Publishing requires a sub-account key. An agency token lists sub-accounts but cannot write inside one.
