@@ -85,7 +85,7 @@ export function getPitForLocation(locationId: string): string {
     || ''
 }
 
-type Auth = { token: string; source: 'oauth' | 'pit'; installId?: string; locationId: string }
+export type Auth = { token: string; source: 'oauth' | 'pit'; installId?: string; locationId: string }
 
 /**
  * The client credentials that can refresh a token depend on WHICH app issued
@@ -260,6 +260,24 @@ export async function getAuthForLocation(locationId: string): Promise<Auth> {
  * Send a fetch with the resolved auth. On 401 with an OAuth install,
  * refresh the token once and retry.
  */
+/**
+ * Credentials to try after a scope refusal, in order, excluding the one that
+ * just failed. Deliberately small: the agency's pasted key, then the env map.
+ */
+export async function fallbackCredentials(failed: Auth): Promise<{ label: string; token: string }[]> {
+  const out: { label: string; token: string }[] = []
+  try {
+    const { getStoredLocationPit } = await import('./connect/pit')
+    const stored = await getStoredLocationPit(failed.locationId)
+    if (stored && stored !== failed.token) out.push({ label: 'the client key', token: stored })
+  } catch { /* not fatal — try the env map */ }
+  const env = getPitForLocation(failed.locationId)
+  if (env && env !== failed.token && !out.some((c) => c.token === env)) {
+    out.push({ label: 'the env PIT', token: env })
+  }
+  return out
+}
+
 async function authedFetch(url: string, init: RequestInit, auth: Auth): Promise<Response> {
   const headers = {
     ...(init.headers as Record<string, string> | undefined),
@@ -307,6 +325,35 @@ async function authedFetch(url: string, init: RequestInit, auth: Auth): Promise<
       }
     } else if (res.status === 401 && auth.source === 'pit') {
       console.error(`[CRM] 401 on PIT token — token may be expired or invalid. PIT: ${auth.token.substring(0, 20)}...`)
+    }
+
+    /**
+     * SCOPE 401 — try the NEXT credential, not the same one again.
+     *
+     * Refreshing an OAuth token cannot fix a missing scope: the fresh token
+     * carries exactly the same grants. Proven on 2026-08-12 — publishing a
+     * course to nphConTwfHcVE1oA0uep failed 401 "not authorized for this
+     * scope" on the OAuth install (12 scopes, none for courses) while the env
+     * PIT returned 201 for the identical payload. A working credential was
+     * sitting one position further down the chain and was never tried.
+     *
+     * getAuthForLocation returns the FIRST credential, not one that works for
+     * this particular operation — and it cannot know, because scope is only
+     * discoverable by being refused. So discovering it here and falling
+     * through is the fix, and it serves every capability rather than courses
+     * alone.
+     */
+    if (res.status === 401 && /scope/i.test(errorBody)) {
+      for (const next of await fallbackCredentials(auth)) {
+        console.log(`[CRM] scope 401 on ${auth.source} — retrying with ${next.label}`)
+        const retry = await fetch(url, {
+          ...init,
+          headers: { ...headers, Authorization: `Bearer ${next.token}` },
+          cache: 'no-store',
+        })
+        if (retry.ok) return retry
+        console.error(`[CRM] ${next.label} also refused: ${retry.status}`)
+      }
     }
   }
 

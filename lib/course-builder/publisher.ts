@@ -17,7 +17,7 @@
  * sub-location is the system of record.
  */
 
-import { crmGet, crmPost, getAuthForLocation } from '@/lib/crm'
+import { crmGet, crmPost, getAuthForLocation, fallbackCredentials } from '@/lib/crm'
 import type {
   GeneratedCourse,
   GeneratedLesson,
@@ -166,18 +166,39 @@ async function publishViaBulkImport(
     ],
   }
 
-  const res = await fetch(`${CRM_BASE}/courses/courses-exporter/public/import`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${auth.token}`,
-      Version: CRM_VERSION,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  })
+  const send = (token: string) =>
+    fetch(`${CRM_BASE}/courses/courses-exporter/public/import`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Version: CRM_VERSION,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+  let res = await send(auth.token)
+  let txt = res.ok ? '' : await res.text().catch(() => '')
+
+  /**
+   * A scope refusal is not the end — try the next credential.
+   *
+   * The OAuth install for a location can be perfectly valid and still carry no
+   * courses grant. Verified 2026-08-12: nphConTwfHcVE1oA0uep returned 401 "not
+   * authorized for this scope" on the OAuth token and 201 on the env PIT for
+   * the identical payload. This path used ONE credential and reported the
+   * whole publish as failed while a working one sat unused.
+   */
+  if (!res.ok && res.status === 401 && /scope/i.test(txt)) {
+    for (const next of await fallbackCredentials(auth)) {
+      console.log(`[course-builder.publish] scope 401 — retrying with ${next.label}`)
+      res = await send(next.token)
+      if (res.ok) { txt = ''; break }
+      txt = await res.text().catch(() => '')
+    }
+  }
 
   if (!res.ok) {
-    const txt = await res.text().catch(() => '')
     return {
       ok: false,
       error: `bulk import failed: ${res.status}`,
