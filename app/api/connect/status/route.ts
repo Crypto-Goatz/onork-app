@@ -18,7 +18,7 @@ import type { CrmLocation } from '@/lib/connect/pit'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export type Step = 'agency' | 'pick_free' | 'need_pit' | 'done'
+export type Step = 'agency' | 'pick_free' | 'need_pit' | 'clients_need_key' | 'done'
 
 const COPY: Record<Step, { title: string; detail: string; cta: string }> = {
   agency: {
@@ -38,6 +38,12 @@ const COPY: Record<Step, { title: string; detail: string; cta: string }> = {
     detail:
       'We have the account, but not its key yet. Until that key is added, anything that writes to this client will fail at the last step.',
     cta: 'Add the key',
+  },
+  clients_need_key: {
+    title: 'Some clients have no key yet',
+    detail:
+      'These clients are added and billing, but 0nCORE has no verified key for them — so any command that writes to them will fail at the last step. Add each key to switch them on.',
+    cta: 'Add client keys',
   },
   done: { title: 'Setup complete', detail: '', cta: '' },
 }
@@ -86,6 +92,40 @@ export async function GET() {
         freeLocationId: agency.free_location_id,
         freeLocationName: name,
         ...COPY.need_pit,
+      })
+    }
+
+    /**
+     * THE FREE ACCOUNT BEING CONNECTED IS NOT THE SAME AS SETUP BEING DONE.
+     *
+     * Every client added after it needs its own key, and a client sitting there
+     * with none is the exact failure this endpoint exists to pre-empt: the
+     * agency is billed $5 for it, the command plans against it, and only the
+     * final write fails. Previously setup went quiet once the free account was
+     * connected, so those clients were invisible until something broke.
+     *
+     * This stays incomplete — and therefore stays on screen — until every
+     * client has a verified key.
+     */
+    const { data: unverified } = await db
+      .from('location_connections')
+      .select('location_id, location_name')
+      .eq('company_id', agency.company_id)
+      .eq('status', 'active')
+      .is('verified_at', null)
+
+    if (unverified?.length) {
+      const names = unverified.map(
+        (c) => c.location_name || locations.find((l) => l.id === c.location_id)?.name || c.location_id,
+      )
+      return NextResponse.json({
+        authed: true,
+        step: 'clients_need_key',
+        complete: false,
+        freeLocationId: agency.free_location_id,
+        missingCount: unverified.length,
+        missingClients: names.slice(0, 12),
+        ...COPY.clients_need_key,
       })
     }
 

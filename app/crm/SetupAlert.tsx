@@ -16,12 +16,14 @@ import { AlertTriangle, ArrowRight, X } from 'lucide-react'
 
 interface Status {
   authed: boolean
-  step: 'agency' | 'pick_free' | 'need_pit' | 'done'
+  step: 'agency' | 'pick_free' | 'need_pit' | 'clients_need_key' | 'done'
   complete: boolean
   title: string
   detail: string
   cta: string
   freeLocationName?: string | null
+  missingCount?: number
+  missingClients?: string[]
 }
 
 export default function SetupAlert() {
@@ -37,7 +39,16 @@ export default function SetupAlert() {
     return () => { live = false }
   }, [])
 
-  if (!status || status.complete || hidden) return null
+  // A missing client key is NOT dismissible. Every other setup step is a task
+  // the agency has not started; this one is money already being charged for a
+  // client that cannot be written to, and a banner they can wave away is how
+  // that stays true for a month.
+  const dismissible = status?.step !== 'clients_need_key'
+
+  if (!status || status.complete || (hidden && dismissible)) return null
+
+  const missing = status.step === 'clients_need_key' ? status.missingClients ?? [] : []
+  const href = status.step === 'clients_need_key' ? '/crm/clients' : '/connect'
 
   return (
     <div className="border-b border-[color:var(--oc-line)] bg-[color:var(--oc-amber)]/10">
@@ -51,9 +62,19 @@ export default function SetupAlert() {
               ? ` Account: ${status.freeLocationName}.`
               : ''}
           </p>
+          {/* NAMED, not counted. "3 clients need keys" sends someone hunting
+              through the list; the names say which rows to open. */}
+          {missing.length > 0 && (
+            <p className="mt-1 text-[12px] leading-relaxed text-[color:var(--oc-amber)]">
+              {missing.join(' · ')}
+              {(status.missingCount ?? 0) > missing.length
+                ? ` +${(status.missingCount ?? 0) - missing.length} more`
+                : ''}
+            </p>
+          )}
         </div>
         <Link
-          href="/connect"
+          href={href}
           className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[color:var(--oc-ink)] px-3 py-1.5 text-[12px] font-medium text-white transition hover:opacity-90"
         >
           {status.cta}
@@ -62,13 +83,15 @@ export default function SetupAlert() {
         {/* Dismissible for this page view only — deliberately NOT remembered.
             Setup is not optional, and a banner that stays dismissed is how an
             agency forgets why nothing writes to their clients. */}
-        <button
-          onClick={() => setHidden(true)}
-          aria-label="Hide for now"
-          className="shrink-0 rounded-lg p-1.5 text-[color:var(--oc-text)]/40 transition hover:bg-black/5"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {dismissible && (
+          <button
+            onClick={() => setHidden(true)}
+            aria-label="Hide for now"
+            className="shrink-0 rounded-lg p-1.5 text-[color:var(--oc-text)]/40 transition hover:bg-black/5"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </div>
   )
