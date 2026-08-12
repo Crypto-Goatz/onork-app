@@ -70,16 +70,59 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Could not read the session context.' }, { status: 400 })
   }
 
-  const secret = process.env.CRM_SSO_KEY || ''
-  if (!secret) {
+  // EVERY CANDIDATE KEY IS TRIED, in order, and the first that decrypts wins.
+  //
+  // This is not belt-and-braces — it is recovery from a real failure. A key was
+  // once saved to Vercel already-encrypted, so the running process received the
+  // literal envelope `{"v":"v2","c":"…"}` as its secret. Decryption then failed
+  // on every request, SSO fell through to the sign-in screen, and inside an
+  // iframe that screen cannot work at all. One malformed variable took the whole
+  // in-CRM experience down and looked like a login bug.
+  //
+  // So: skip anything that is obviously an envelope rather than a key, and try
+  // the others. Which one worked is logged BY NAME — never by value — so the
+  // config can be corrected instead of quietly depending on the fallback.
+  const CANDIDATES = ['CRM_SSO_KEY', 'CRM_MARKETPLACE_SHARED_SECRET', 'CRM_AGENCY_SSO_KEY'] as const
+
+  /** A Vercel encryption envelope stored as a value. Never a usable key. */
+  const isEnvelope = (v: string) => {
+    if (!v.startsWith('eyJ2Ijoidj')) return false
+    try {
+      const parsed = JSON.parse(Buffer.from(v, 'base64').toString('utf8'))
+      return parsed?.v === 'v2' && typeof parsed?.c === 'string'
+    } catch {
+      return false
+    }
+  }
+
+  const usable = CANDIDATES.map((name) => [name, (process.env[name] || '').trim()] as const)
+    .filter(([name, value]) => {
+      if (!value) return false
+      if (isEnvelope(value)) {
+        console.error(`[sso] ${name} holds a Vercel encryption envelope, not a key — re-add it as type:plain. Skipping.`)
+        return false
+      }
+      return true
+    })
+
+  if (!usable.length) {
     // Ours to fix, not the caller's — say so distinctly and loudly in logs.
-    console.error('[sso] CRM_SSO_KEY is not set; no Custom Page session can be issued.')
+    console.error('[sso] No usable SSO key is configured; no Custom Page session can be issued.')
     return NextResponse.json({ ok: false, error: 'Single sign-on is not configured.' }, { status: 503 })
   }
 
-  const result = decryptSsoPayload(payload, secret)
+  let result: ReturnType<typeof decryptSsoPayload> = { ok: false } as ReturnType<typeof decryptSsoPayload>
+  for (const [name, secret] of usable) {
+    result = decryptSsoPayload(payload, secret)
+    if (result.ok) {
+      if (name !== 'CRM_SSO_KEY') console.warn(`[sso] decrypted with ${name}; set CRM_SSO_KEY to this value.`)
+      break
+    }
+  }
+
   if (!result.ok) {
     // ONE message for every failure mode. See the note above.
+    console.error(`[sso] payload did not decrypt under any of: ${usable.map(([n]) => n).join(', ')}`)
     return NextResponse.json({ ok: false, error: 'Could not verify this session.' }, { status: 401 })
   }
 

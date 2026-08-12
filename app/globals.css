@@ -248,6 +248,18 @@ body {
   font-family: var(--font-body);
 }
 
+/* Selected text, app-wide. Left undeclared, the browser's default pair was
+   effectively invisible against the dark surfaces — highlighting looked like a
+   no-op. .oncore-app overrides this with its own light-surface pair. */
+::selection {
+  background: rgba(110, 224, 90, 0.35);
+  color: #ffffff;
+}
+::-moz-selection {
+  background: rgba(110, 224, 90, 0.35);
+  color: #ffffff;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
 }
@@ -525,6 +537,29 @@ code, pre, .font-mono {
 }
 .oncore-app h1, .oncore-app h2, .oncore-app h3 { color: var(--oc-ink); }
 .oncore-app .oc-mono { font-family: var(--font-mono), 'JetBrains Mono', monospace; }
+
+/* SELECTED TEXT MUST STAY READABLE.
+   With no ::selection declared, the browser picks its own pair — and against
+   this palette it landed on a highlight you could not see, so selecting text
+   looked like nothing happened. Both halves are set explicitly: the neon as the
+   band, near-black as the ink on top of it. Never a transparent or inherited
+   colour here, which is exactly how selections go invisible. */
+.oncore-app ::selection,
+.oncore-app::selection {
+  background: var(--oc-green);
+  color: #0d1117;
+}
+.oncore-app ::-moz-selection {
+  background: var(--oc-green);
+  color: #0d1117;
+}
+/* Dark inputs invert the pair — neon ink on a dark band, since #0d1117 text on
+   #6EE05A inside an almost-black field reads as a hole in the box. */
+.oncore-app input::selection,
+.oncore-app textarea::selection {
+  background: rgba(110, 224, 90, 0.32);
+  color: #f5f5f5;
+}
 
 .oc-card {
   background: var(--oc-card);

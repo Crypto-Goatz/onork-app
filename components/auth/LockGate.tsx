@@ -28,7 +28,27 @@ export function LockGate({
   const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '/'
   const enc = encodeURIComponent(safeNext)
 
+  /**
+   * GOOGLE OAUTH CANNOT RUN IN AN IFRAME. Google refuses to render its consent
+   * screen inside a frame and answers with a bare 403 page — not an error we can
+   * catch, just a dead end where the sign-in used to be. Embedded in the CRM,
+   * clicking this button was guaranteed to fail every single time.
+   *
+   * So when we are framed, sign-in happens in a NEW TAB. The session cookie is
+   * set on the same browser, so returning to the CRM tab and reloading the frame
+   * finds the user signed in.
+   *
+   * This is the fallback path, not the main one — inside the CRM the SSO
+   * handshake should have authenticated the user before this screen ever
+   * renders. Reaching here at all means SSO did not answer.
+   */
+  const framed = typeof window !== 'undefined' && window.parent !== window
+
   const signInWithGoogle = async () => {
+    if (framed) {
+      window.open(`${window.location.origin}/login?next=${enc}`, '_blank', 'noopener,noreferrer')
+      return
+    }
     try {
       await createClient().auth.signInWithOAuth({
         provider: 'google',
@@ -59,13 +79,34 @@ export function LockGate({
             <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
             <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
           </svg>
-          Continue with Google
+          {framed ? 'Continue with Google — opens a new tab' : 'Continue with Google'}
         </button>
-        <a href={`/login?next=${enc}`} className="mt-3 inline-block text-xs font-semibold text-[#9fb0cc] hover:text-[#6EE05A]">
+        <a
+          href={`/login?next=${enc}`}
+          target={framed ? '_blank' : undefined}
+          rel={framed ? 'noopener noreferrer' : undefined}
+          className="mt-3 inline-block text-xs font-semibold text-[#9fb0cc] hover:text-[#6EE05A]"
+        >
           or sign in with email
         </a>
+        {framed && (
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 block w-full text-xs font-semibold text-[#6EE05A] hover:underline"
+          >
+            Signed in already? Reload this panel
+          </button>
+        )}
         <p className="mt-3 text-xs text-[#6b7c9c]">
-          No account? <a href={`/signup?next=${enc}`} className="font-semibold text-[#6EE05A] hover:underline">Create one free</a>
+          No account?{' '}
+          <a
+            href={`/signup?next=${enc}`}
+            target={framed ? '_blank' : undefined}
+            rel={framed ? 'noopener noreferrer' : undefined}
+            className="font-semibold text-[#6EE05A] hover:underline"
+          >
+            Create one free
+          </a>
         </p>
       </div>
     </div>
