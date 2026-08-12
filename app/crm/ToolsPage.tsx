@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useSso, authHeaders } from './useSso'
 import AppSidebar from './AppSidebar'
+import McpToolsPanel from './McpToolsPanel'
 
 /**
  * Every feature, and whether it actually works.
@@ -279,7 +280,9 @@ export default function ToolsPage() {
               </div>
             </section>
           ))}
-        </main>
+
+          <McpToolsPanel />
+      </main>
 
         <AppSidebar current="tools" activeCount={0} totalCount={0} usageLabel="$0" />
       </div>
