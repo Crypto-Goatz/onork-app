@@ -492,25 +492,30 @@ code, pre, .font-mono {
    nudged by a change made for the marketing site or the authenticated app.
    ═══════════════════════════════════════════════════════════════════════ */
 .oncore-app {
-  /* LIGHT surface (Surface B — the ecosystem dashboard standard).
-     Status colours go back to their LIGHT variants: #fbbf24 and #6EE05A are
-     the dark-surface pair and wash out on #fafafa, which is exactly why the
-     system defines both. The neon stays for glow and dots only — anything a
-     person must READ uses the deep green. */
-  --oc-bg:      var(--dash-canvas);
-  --oc-card:    var(--dash-card);
-  --oc-ink:     var(--dash-ink);
-  --oc-text:    #414A43;
-  --oc-green:   var(--0n-neon);
-  --oc-green-d: var(--0n-deep);
-  --oc-amber:   var(--status-warning);
-  --oc-red:     var(--status-danger);
-  --oc-blue:    var(--status-info);
-  --oc-border:  var(--dash-border);
-  --oc-elevated:#ffffff;
-  --oc-hover:   #f4f4f5;
-  --oc-muted:   var(--dash-muted);   /* captions, meta, inactive nav */
-  --oc-faint:   var(--dash-faint);   /* micro-labels */
+  /* Surface B light — design_handoff_0ncore 3, v2 mapping. Values COPIED.
+     The neon survives ONLY as glow, live dots and the focused command border;
+     anything a person must READ uses the deep green, because #6EE05A on white
+     is not readable and that is the entire reason the system defines two. */
+  --oc-bg:       #fafafa;
+  --oc-card:     #ffffff;
+  --oc-elevated: #f4f4f4;
+  --oc-hover:    #ececec;
+  --oc-border:   #e5e5e5;
+  --oc-border-h: #b3b3b3;
+  --oc-ink:      #171717;
+  --oc-text:     #404040;
+  --oc-muted:    #737373;
+  --oc-faint:    #a3a3a3;
+  --oc-green:    #6EE05A;   /* glow / live dots / focus ring ONLY */
+  --oc-green-d:  #16a34a;   /* every readable green */
+  --oc-amber:    #d97706;
+  --oc-red:      #dc2626;
+  --oc-blue:     #0891b2;
+  /* The rail is BLACK on the light canvas — Surface B, same as Client Console. */
+  --oc-rail:     #000000;
+  /* Inputs stay dark even on light. Deliberate design-system rule: a chat box
+     must contrast its container, not blend into the page. */
+  --oc-input:    #141414;
   --oc-shadow:  0 2px 4px rgba(24,29,25,.05), 0 10px 28px rgba(24,29,25,.09);
   --oc-shadow-sm: 0 1px 2px rgba(24,29,25,.04), 0 4px 12px rgba(24,29,25,.06);
 
@@ -631,13 +636,5 @@ code, pre, .font-mono {
    it in Settings. Done in CSS off an attribute the SERVER sets, so the rail
    never paints on one edge and jumps to the other.
    `order` works because every rail sits in a flex row beside its content. */
-:root[data-sidebar-side="right"] .oc-rail {
-  order: 2;
-  border-right: 0;
-  border-left: 1px solid var(--dash-border);
-}
-:root[data-sidebar-side="left"] .oc-rail {
-  order: -1;
-  border-left: 0;
-  border-right: 1px solid var(--dash-border);
-}
+:root[data-sidebar-side="right"] .oc-rail { order: 2;  }
+:root[data-sidebar-side="left"]  .oc-rail { order: -1; }

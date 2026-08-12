@@ -18,16 +18,17 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  BookOpen, CreditCard, FileText, GitBranch, Plug, ScrollText, Settings,
-  Sparkles, Terminal, Users, type LucideIcon,
+  BookOpen, CreditCard, Download, FileText, GitBranch, Plug, ScrollText,
+  Settings, Sparkles, Terminal, Users, Wrench, type LucideIcon,
 } from 'lucide-react'
 
 export type NavKey =
   | 'command' | 'clients' | 'actions'
   | 'automations' | 'content' | 'pipeline'
-  | 'history' | 'usage' | 'setup' | 'settings'
+  | 'history' | 'usage' | 'setup' | 'downloads' | 'settings'
+  | 'tools'
   // Legacy keys still passed by older pages — kept so nothing 404s mid-port.
-  | 'home' | 'dashboard' | 'tools' | 'log'
+  | 'home' | 'dashboard' | 'log'
 
 interface NavItem {
   key: NavKey
@@ -52,11 +53,13 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'automations', href: '/crm/automations', label: 'Automations & AI', icon: Sparkles, view: 'automations' },
     { key: 'content', href: '/crm/courses', label: 'Content', icon: FileText },
     { key: 'pipeline', href: '/crm/pipeline', label: 'Pipeline', icon: GitBranch },
+    { key: 'tools', href: '/crm/tools', label: 'Tools', icon: Wrench },
   ],
   [
     { key: 'history', href: '/crm/log', label: 'History', icon: ScrollText },
     { key: 'usage', href: '/crm/billing', label: 'Plan & Usage', icon: CreditCard },
     { key: 'setup', href: '/crm/setup', label: 'Setup & Keys', icon: Plug },
+    { key: 'downloads', href: '/crm/downloads', label: 'Downloads', icon: Download },
     { key: 'settings', href: '/crm/settings', label: 'Settings', icon: Settings },
   ],
 ]
@@ -72,7 +75,7 @@ export const NAV: NavItem[] = NAV_GROUPS.flat()
 
 /** Old callers pass these; map them onto the new keys rather than break. */
 const ALIAS: Partial<Record<NavKey, NavKey>> = {
-  home: 'command', dashboard: 'command', tools: 'actions', log: 'history',
+  home: 'command', dashboard: 'command', log: 'history',
 }
 
 export interface AppSidebarProps {
@@ -91,7 +94,7 @@ export default function AppSidebar({
   const active = ALIAS[current] ?? current
 
   return (
-    <aside className="oc-rail hidden w-[236px] shrink-0 border-r border-[#21262d] bg-[color:var(--oc-bg)] lg:block">
+    <aside className="oc-rail hidden w-[236px] shrink-0 bg-[color:var(--oc-rail)] lg:block">
       <div className="sticky top-0 flex max-h-screen min-h-screen flex-col gap-5 overflow-y-auto p-4">
         <Link href="/crm" className="block px-2 pt-2" aria-label="0nCORE home">
           {/* NOT the file the handoff README names. The assets are named for
@@ -113,7 +116,7 @@ export default function AppSidebar({
         <nav aria-label="Sections" className="flex-1 space-y-4">
           {NAV_GROUPS.map((group, gi) => (
             <div key={gi} className="space-y-1">
-              {gi > 0 && <div className="mb-3 h-px bg-[#21262d]" />}
+              {gi > 0 && <div className="mb-3 h-px bg-white/10" />}
               {group.map((n) => {
                 const Icon = n.icon
                 const on = active === n.key
@@ -139,20 +142,20 @@ export default function AppSidebar({
         </nav>
 
         {/* The answer to "why did that fail", kept where you never hunt for it. */}
-        <div className="rounded-xl border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-3">
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--oc-green-d)] opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-[color:var(--oc-green-d)]" />
             </span>
-            <span className="text-[12px] text-[#c9d1d9]">
+            <span className="text-[12px] text-white/80">
               {activeCount} of {totalCount} clients switched on
             </span>
           </div>
-          <div className="mt-1.5 text-[12px] text-[#8b949e]">{usageLabel} this month</div>
+          <div className="mt-1.5 text-[12px] text-white/50">{usageLabel} this month</div>
           {freeAccountName && (
             <div className="mt-1.5 flex items-baseline gap-1.5 text-[11px]">
-              <span className="shrink-0 text-[#8b949e]">Free account</span>
+              <span className="shrink-0 text-white/50">Free account</span>
               <span className="truncate font-mono text-[color:var(--oc-green-d)]">{freeAccountName}</span>
             </div>
           )}
