@@ -15,9 +15,10 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  Check, Circle, Copy, Loader2, Pencil, Search, Trash2, TriangleAlert, X,
+  Check, Circle, Copy, Loader2, Pencil, Search, ShieldCheck, Trash2, TriangleAlert, X,
 } from 'lucide-react'
 import { AGENCY_BILLING } from '@/lib/agency-billing'
+import AppSidebar from './AppSidebar'
 
 const PRICE = `$${(AGENCY_BILLING.perClientCents / 100).toFixed(2)}`
 
@@ -31,9 +32,44 @@ interface Account {
   error: string | null
 }
 
+/**
+ * The connected-and-secured mark.
+ *
+ * TWO SEPARATE CLAIMS, so they are two separate marks. The tick says the key
+ * was accepted by the CRM; the vault says the key is sealed rather than sitting
+ * somewhere readable. Merging them into one badge would let a client that is
+ * merely reachable look like a client that is reachable AND protected.
+ *
+ * `justConnected` drives the animation only. The marks themselves persist for
+ * as long as the client stays verified.
+ */
+function ConnectedSeal({ justConnected }: { justConnected: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        className={`oc-seal relative ${justConnected ? 'oc-seal-enter' : ''}`}
+        role="img"
+        aria-label="Connected"
+      >
+        <Check className="oc-seal-check h-3 w-3" strokeWidth={3.5} />
+      </span>
+      <span
+        className="inline-flex items-center gap-1 rounded-full bg-[color:var(--oc-green-d)]/12 px-2 py-0.5 text-[11px] font-medium text-[color:var(--oc-green-d)]"
+        title="This key is sealed in 0nVault — encrypted at rest and never rendered in the page."
+      >
+        <ShieldCheck className="h-3 w-3" strokeWidth={2.5} />
+        0nVault
+      </span>
+    </span>
+  )
+}
+
 export default function ClientsManager() {
   const [accounts, setAccounts] = useState<Account[] | null>(null)
   const [query, setQuery] = useState('')
+  // The client whose key was just accepted, so the seal animates once on the
+  // row that earned it rather than on every verified row at every render.
+  const [justConnected, setJustConnected] = useState<string | null>(null)
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
@@ -103,7 +139,18 @@ export default function ClientsManager() {
   }
 
   return (
-    <div className="oncore-app min-h-screen bg-[color:var(--oc-bg)]">
+    <div className="oncore-app flex min-h-screen bg-[color:var(--oc-bg)]">
+      {/* The rail belongs on every page. Clients was the one surface without it,
+          which made switching a client on feel like leaving the product. The
+          counts come from the list already loaded here, so the rail agrees with
+          the page instead of fetching the same thing again. */}
+      <AppSidebar
+        current="clients"
+        activeCount={connected.length}
+        totalCount={accounts?.length ?? 0}
+        usageLabel={runningTotal}
+      />
+      <main className="min-w-0 flex-1 overflow-y-auto">
       <div className="mx-auto max-w-4xl px-6 py-8">
         <div className="flex items-start justify-between gap-6">
           <header className="min-w-0">
@@ -183,6 +230,13 @@ export default function ClientsManager() {
                             <span className="truncate text-[15px] font-semibold text-[color:var(--oc-ink)]">
                               {a.name}
                             </span>
+                            {/* Only a VERIFIED key earns the seal. A row that is
+                                added but unverified must stay visibly unfinished,
+                                because that is the state that silently fails on
+                                the last step of a command. */}
+                            {!broken && a.verifiedAt && (
+                              <ConnectedSeal justConnected={justConnected === a.locationId} />
+                            )}
                             {a.isFree && (
                               <span className="rounded-full bg-[color:var(--oc-green-d)]/12 px-2 py-0.5 text-[11px] font-medium text-[color:var(--oc-green-d)]">
                                 Free · default
@@ -242,7 +296,12 @@ export default function ClientsManager() {
                         <KeyForm
                           locationId={a.locationId}
                           isFree={a.isFree}
-                          onDone={() => { setEditing(null); void load(); setNote(`${a.name} updated.`) }}
+                          onDone={() => {
+                            setEditing(null)
+                            setJustConnected(a.locationId)
+                            void load()
+                            setNote(`${a.name} is connected and secured.`)
+                          }}
                         />
                       )}
                     </div>
@@ -307,6 +366,7 @@ export default function ClientsManager() {
           </>
         )}
       </div>
+      </main>
     </div>
   )
 }
