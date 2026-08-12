@@ -222,6 +222,100 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ actionKey:
     // A score is exactly the kind of event an agency wants their OWN automation
     // to react to, so it starts one rather than ending here.
     void fireTrigger({ trigger: 'oncore_lead_scored', locationId, companyId, contactId: contact, data: { score, branch } })
+  } else if (actionKey === 'oncore_enroll_student') {
+    const courseId = (cfg2.course_id || '').trim()
+    if (!contact) {
+      result = { status: 'refused', detail: 'This step needs a contact to enrol.', targets: 0, priceCents: 0, billed: false }
+    } else if (!courseId) {
+      result = { status: 'refused', detail: 'This step needs a course to enrol them in.', targets: 0, priceCents: 0, billed: false }
+    } else {
+      /**
+       * UPSERT, NOT INSERT. A workflow can legitimately reach its enrol step
+       * twice — a contact re-entering the automation, a retry after a timeout —
+       * and the honest answer to "enrol them again" is that they are already
+       * enrolled. Erroring there would break a live customer journey over
+       * something that is not a problem.
+       *
+       * The existing row's progress is deliberately NOT reset: someone who
+       * re-enters the workflow half way through a course has not un-learned it.
+       */
+      const { data: existing } = await sb
+        .from('crm_course_enrollments')
+        .select('id, status, enrolled_at')
+        .eq('location_id', locationId)
+        .eq('contact_id', contact)
+        .eq('course_id', courseId)
+        .maybeSingle()
+
+      if (existing) {
+        await sb
+          .from('crm_course_enrollments')
+          .update({ last_activity_at: new Date().toISOString(), stalled_fired_at: null, updated_at: new Date().toISOString() })
+          .eq('id', existing.id)
+        output = { enrollment_id: existing.id, status: 'already_enrolled' }
+        result = { status: 'ok', detail: 'Already enrolled — progress left as it was.', targets: 1, priceCents: 0, billed: false }
+      } else {
+        const { data: row, error } = await sb
+          .from('crm_course_enrollments')
+          .insert({ company_id: companyId, location_id: locationId, contact_id: contact, course_id: courseId })
+          .select('id')
+          .single()
+
+        if (error || !row) {
+          result = { status: 'failed', detail: 'Could not record the enrolment.', targets: 0, priceCents: 0, billed: false }
+        } else {
+          output = { enrollment_id: row.id, status: 'enrolled' }
+          result = { status: 'ok', detail: 'Enrolled and progress tracking started.', targets: 1, priceCents: 0, billed: false }
+        }
+      }
+    }
+  } else if (actionKey === 'oncore_mark_complete') {
+    const courseId = (cfg2.course_id || '').trim()
+    const moduleId = (cfg2.module_id || '').trim()
+    if (!contact || !courseId) {
+      result = { status: 'refused', detail: 'This step needs a contact and a course.', targets: 0, priceCents: 0, billed: false }
+    } else {
+      const { data: row } = await sb
+        .from('crm_course_enrollments')
+        .select('id, modules_completed, status')
+        .eq('location_id', locationId)
+        .eq('contact_id', contact)
+        .eq('course_id', courseId)
+        .maybeSingle()
+
+      if (!row) {
+        // Branchable, not an error. Marking an un-enrolled contact complete is
+        // a workflow the agency built in the wrong order, and they need to see
+        // that rather than have us invent an enrolment to hide it.
+        output = { status: 'not_enrolled' }
+        result = { status: 'refused', detail: 'That contact is not enrolled in this course.', targets: 0, priceCents: 0, billed: false }
+      } else {
+        const now = new Date().toISOString()
+
+        if (moduleId) {
+          // ONE MODULE. The course stays open — only a step without a module id
+          // completes the whole thing, because the CRM has no notion of how many
+          // modules a course has and guessing "that was the last one" would end
+          // courses early.
+          const modules = Array.from(new Set([...(row.modules_completed ?? []), moduleId]))
+          await sb
+            .from('crm_course_enrollments')
+            .update({ modules_completed: modules, last_activity_at: now, stalled_fired_at: null, updated_at: now })
+            .eq('id', row.id)
+          output = { status: 'module_complete', completed_at: now }
+          result = { status: 'ok', detail: `Module recorded — ${modules.length} done.`, targets: 1, priceCents: 0, billed: false }
+          void fireTrigger({ trigger: 'oncore_module_completed', locationId, companyId, contactId: contact, data: { course_id: courseId, module_id: moduleId } })
+        } else {
+          await sb
+            .from('crm_course_enrollments')
+            .update({ status: 'completed', completed_at: now, last_activity_at: now, stalled_fired_at: null, updated_at: now })
+            .eq('id', row.id)
+          output = { status: 'completed', completed_at: now }
+          result = { status: 'ok', detail: 'Course marked complete.', targets: 1, priceCents: 0, billed: false }
+          void fireTrigger({ trigger: 'oncore_course_completed', locationId, companyId, contactId: contact, data: { course_id: courseId } })
+        }
+      }
+    }
   } else {
     result = await executeLeg({
       capability: mapActionToCapability(actionKey),

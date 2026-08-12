@@ -110,6 +110,40 @@ export const WORKFLOW_ACTIONS: WorkflowAction[] = [
     returns: ['postId'],
     live: false,
   },
+  {
+    /**
+     * The two Course Builder steps.
+     *
+     * These are what turn a generated course into something an agency can
+     * actually operate: a workflow enrols the contact when they buy, and marks
+     * them complete when they finish. Without them a course is published and
+     * then entirely manual, which is the part of the job agencies are paying to
+     * avoid.
+     *
+     * NO METER. Enrolment and completion are bookkeeping on work already paid
+     * for when the course was generated; charging per enrolment would price the
+     * automation out of the workflows it exists to sit in.
+     */
+    key: 'oncore_enroll_student',
+    name: '0nCORE: Enroll in course',
+    blurb: 'Adds this contact to a course you have deployed to this account and starts tracking their progress.',
+    fields: [
+      { key: 'course_id', label: 'Course', type: 'text', required: true },
+    ],
+    returns: ['enrollment_id', 'status'],
+    live: true,
+  },
+  {
+    key: 'oncore_mark_complete',
+    name: '0nCORE: Mark course complete',
+    blurb: 'Records completion for this contact and updates their progress record.',
+    fields: [
+      { key: 'course_id', label: 'Course', type: 'text', required: true },
+      { key: 'module_id', label: 'Module (leave empty to complete the whole course)', type: 'text' },
+    ],
+    returns: ['status', 'completed_at'],
+    live: true,
+  },
 ]
 
 const BY_KEY = new Map(WORKFLOW_ACTIONS.map((a) => [a.key, a]))

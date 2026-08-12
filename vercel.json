@@ -67,6 +67,10 @@
     {
       "path": "/api/cron/ideas",
       "schedule": "17 5,13,21 * * *"
+    },
+    {
+      "path": "/api/cron/course-stalled",
+      "schedule": "0 14 * * *"
     }
   ],
   "$schema": "https://openapi.vercel.sh/vercel.json",

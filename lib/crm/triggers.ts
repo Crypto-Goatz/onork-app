@@ -32,6 +32,13 @@ export const TRIGGERS = [
   { key: 'oncore_lead_scored', name: '0nCORE: AI Lead Scored', when: 'a contact is scored past a threshold' },
   { key: 'oncore_recovery_fired', name: '0nCORE: Recovery Fired', when: 'a failed step recovered another way' },
   // ── membership portal ──
+  // Course Builder. The stalled one is the commercially interesting trigger:
+  // completion is a nice-to-know, but a student who has gone quiet is a refund
+  // waiting to happen, and it is the only one of the three that fires without
+  // the student doing anything.
+  { key: 'oncore_course_completed', name: '0nCORE: Course Completed', when: 'a contact finishes a whole course' },
+  { key: 'oncore_module_completed', name: '0nCORE: Module Completed', when: 'a contact finishes one module of a course' },
+  { key: 'oncore_student_stalled', name: '0nCORE: Student Stalled', when: 'an enrolled contact has made no progress for a while' },
   { key: 'oncore_member_updated', name: '0nCORE: Member Updated Profile', when: 'a member edits their own details' },
   { key: 'oncore_member_viewed', name: '0nCORE: Member Opened Portal', when: 'a member opens their portal' },
 ] as const

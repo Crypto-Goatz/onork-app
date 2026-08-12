@@ -55,7 +55,10 @@ function ConnectedSeal({ justConnected }: { justConnected: boolean }) {
       </span>
       <span
         className="inline-flex items-center gap-1 rounded-full bg-[color:var(--oc-green-d)]/12 px-2 py-0.5 text-[11px] font-medium text-[color:var(--oc-green-d)]"
-        title="This key is sealed in 0nVault — encrypted at rest and never rendered in the page."
+        /* CLAIM ONLY WHAT IS TRUE. The key is row-level-security protected and
+           never rendered — it is fetched only on a deliberate copy. It is NOT
+           yet encrypted at rest, so this does not say that it is. */
+        title="Held in 0nVault — row-level protected, never rendered in this page, and only fetched when you press copy."
       >
         <ShieldCheck className="h-3 w-3" strokeWidth={2.5} />
         0nVault
