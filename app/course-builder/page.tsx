@@ -160,8 +160,8 @@ export default function Page() {
             simply the paragraph a human wants first. */}
         {'\n\n'}
         <p className="mt-6 max-w-3xl text-lg leading-relaxed text-white">
-          <strong>An AI generated course in GoHighLevel is a complete membership course — modules, lessons, quizzes and resources — written by AI and published straight into a sub-account instead of typed in by hand.</strong>{' '}
-          0nCORE builds one from a single sentence in under five minutes, then publishes it to whichever connected sub-account you choose.
+          <strong>An AI generated course in GoHighLevel is a full membership course written by AI and published into a sub-account.</strong>{' '}
+          It covers modules, lessons, quizzes and resources. 0nCORE builds one from a single sentence in under five minutes, then publishes it to whichever connected sub-account you choose.
         </p>
         {'\n\n'}
 
@@ -223,10 +223,10 @@ export default function Page() {
         <ol className="mt-5 space-y-4">
           {[
             ['Connect the sub-account.', 'Add that location key in 0nCORE. The agency token lists your sub-accounts; it cannot write inside one, so each client needs its own key.'],
-            ['Describe what you want to teach.', 'One sentence — the topic and who it is for. Add a tone and a target lesson count if you care about them.'],
-            ['Approve the generated outline.', 'Modules and lessons come back in seconds. Outlining is cheap and writing is not, so the shape is approved before anything is paid for.'],
+            ['Enter what you want to teach.', 'One sentence — the topic and who it is for. Add a tone and a target lesson count if you care about them.'],
+            ['Check the generated outline.', 'Modules and lessons come back in seconds. Outlining is cheap and writing is not, so the shape is approved before anything is paid for.'],
             ['Generate every lesson in parallel.', 'Each lesson is 1,000–2,000 words with a five-question quiz and recommended resources. Failed lessons are retried and reported, never silently skipped.'],
-            ['Publish and share the enrollment link.', 'Choose the sub-account and the price. The course lands in the GoHighLevel course system ready to sell.'],
+            ['Push it live and share the enrollment link.', 'Choose the sub-account and the price. The course lands in the GoHighLevel course system ready to sell.'],
           ].map(([title, body], i) => (
             <li key={title} className="flex gap-4">
               <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#6EE05A] text-sm font-black text-[#0d1117]">{i + 1}</span>
@@ -251,7 +251,11 @@ POST /api/crm/courses?step=publish    → live in the sub-account
 
 Workflow actions:  oncore_enroll_student · oncore_mark_complete
 Workflow triggers: oncore_course_completed · oncore_module_completed
-                   oncore_student_stalled`}
+                   oncore_student_stalled
+
+Publishing endpoints according to [the GoHighLevel courses API]
+(https://highlevel.stoplight.io/docs/integrations). Generation runs on
+0nMCP, the proprietary orchestration engine behind 0nCORE.`}
         </pre>
 
         <h2 className={H2}>Why does it publish into the sub-account rather than a separate site?</h2>

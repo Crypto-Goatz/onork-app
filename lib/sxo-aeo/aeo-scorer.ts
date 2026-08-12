@@ -242,13 +242,111 @@ export interface ScoreInputs {
   hasOrganization?: boolean
 }
 
+/**
+ * Turn a page of HTML into the shape these detectors were written for.
+ *
+ * THIS FIXES A REAL SCORING BUG, not a formatting nicety. The detectors were
+ * ported from an engine that scored MARKDOWN, and the scan path feeds them raw
+ * HTML. Three of them are structurally unable to pass on any HTML page as a
+ * result:
+ *
+ *   detectBLUF   splits on blank lines. Rendered HTML has almost none, so the
+ *                "first paragraph" is the entire document — always over 100
+ *                words, always 0.3, no matter how good the opening line is.
+ *   detectDefinition  reads only the first 200 whitespace tokens. On a modern
+ *                framework page those are all <head> scripts, so a perfect
+ *                definition in the body is never even looked at.
+ *   detectProcedure   wants "1. Connect …" text lines; an <ol><li> has the
+ *                numbers supplied by the browser and never matches.
+ *
+ * Every customer scanning a normal website has been losing up to 44 points to
+ * this. Converting first — headings and paragraphs to blank-line-separated
+ * blocks, <strong> to **bold**, list items to numbered lines, table rows to
+ * pipe rows — means the detectors judge the content rather than the transport.
+ *
+ * Markdown input is passed through untouched, so existing markdown scores are
+ * unchanged and remain comparable with the 0nmcp engine.
+ */
+export function htmlToScorableText(input: string): string {
+  const looksLikeHtml = /<html[\s>]|<body[\s>]|<p[\s>]|<div[\s>]/i.test(input)
+  if (!looksLikeHtml) return input
+
+  let s = input
+    // Script and style content is not prose and must never be scored as it.
+    // JSON-LD is read separately via the has* flags.
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<head[\s\S]*?<\/head>/gi, ' ')
+
+  // Emphasis survives as markdown so detectDefinition can see a bolded claim.
+  s = s.replace(/<(strong|b)[^>]*>([\s\S]*?)<\/\1>/gi, (_m, _t, inner) => `**${String(inner).replace(/<[^>]+>/g, '').trim()}**`)
+
+  // A whole table at a time, not row by row. detectComparison matches a GFM
+  // table, which needs the |---|---| separator under the header — emitting bare
+  // pipe rows would strip the HTML fallback away and score a good comparison
+  // table as no table at all.
+  s = s.replace(/<table[\s\S]*?<\/table>/gi, (table) => {
+    const rows = (table.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) ?? []).map((row) =>
+      (row.match(/<(td|th)[^>]*>[\s\S]*?<\/(td|th)>/gi) ?? []).map((c) =>
+        c.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim(),
+      ),
+    ).filter((r) => r.length > 0)
+    if (rows.length < 2) return '\n\n'
+    const sep = `| ${rows[0].map(() => '---').join(' | ')} |`
+    return '\n\n' + [`| ${rows[0].join(' | ')} |`, sep, ...rows.slice(1).map((r) => `| ${r.join(' | ')} |`)].join('\n') + '\n\n'
+  })
+
+  // Ordered list items get the numbers the browser would have drawn.
+  s = s.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (_m, list) => {
+    const items = String(list).match(/<li[^>]*>([\s\S]*?)<\/li>/gi) ?? []
+    return (
+      '\n\n' +
+      items
+        .map((li, i) => `${i + 1}. ${li.replace(/<[^>]+>/g, ' ').replace(/\*\*/g, '').replace(/\s+/g, ' ').trim()}`)
+        .join('\n') +
+      '\n\n'
+    )
+  })
+
+  s = s
+    .replace(/<li[^>]*>/gi, '\n- ')
+    .replace(/<h[1-6][^>]*>/gi, '\n\n## ')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<\/(p|div|section|article|tr|table|pre|ul|ol)>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+
+  // Entities that change how a sentence reads or is counted.
+  s = s
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&mdash;/g, '—')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+
+  // Collapse runs of spaces without destroying the blank lines that carry the
+  // paragraph structure the detectors depend on.
+  return s
+    .split('\n')
+    .map((line) => line.replace(/[ \t]+/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 export function scoreAEOFactors(input: ScoreInputs): AEOFactors {
+  // Prose detectors read the normalised text; schema and freshness flags are
+  // passed in separately and are unaffected.
+  const prose = htmlToScorableText(input.text)
   return {
-    bluf: detectBLUF(input.text),
-    definition: detectDefinition(input.text),
-    procedure: detectProcedure(input.text),
-    comparison: detectComparison(input.text),
-    faq: detectFAQ(input.text),
+    bluf: detectBLUF(prose),
+    definition: detectDefinition(prose),
+    procedure: detectProcedure(prose),
+    comparison: detectComparison(prose),
+    faq: detectFAQ(prose),
     authorEEAT: detectAuthorEEAT(input.text, { author: input.author, authorTitle: input.authorTitle }),
     freshness: detectFreshness(input.text, { updatedAt: input.updatedAt }),
     schema: detectSchema({
@@ -258,7 +356,7 @@ export function scoreAEOFactors(input: ScoreInputs): AEOFactors {
       hasOrganization: input.hasOrganization,
     }),
     informationGain: detectInformationGain(input.text),
-    specificity: detectSpecificity(input.text),
+    specificity: detectSpecificity(prose),
   }
 }
 
