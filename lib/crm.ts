@@ -63,27 +63,37 @@ function validatePit(name: string, value: string | undefined): string {
   return '' // Return empty so we fall through to a working token
 }
 
+/**
+ * DEPRECATED — 0n-owned keys for four hardcoded location ids.
+ *
+ * Kept only so a legacy caller does not crash mid-migration. It must not be
+ * used to resolve a client's credential, and getAuthForLocation no longer
+ * calls it.
+ *
+ * WHY IT WAS DANGEROUS. The old fallback chain returned SOME key for ANY
+ * location — ask for a client we hold nothing for and it handed back the
+ * agency PIT or 0nCORE's own PIT. A credential for a different account is not
+ * a fallback; it is a write into the wrong client waiting to happen. It also
+ * masked failures: a scope refusal on one key silently succeeded on another,
+ * so an operation looked healthy on our accounts and failed for every real
+ * agency, who has none of these env vars.
+ *
+ * THE MODEL IS TWO KEYS, BOTH SUPPLIED BY THE AGENCY:
+ *   agency key  → lists their sub-accounts        (agency_connections.agency_pit)
+ *   client key  → acts inside ONE sub-account     (location_connections.location_pit)
+ * Neither is ours, neither is hardcoded, and a missing one is an error to
+ * report rather than a gap to paper over.
+ */
 export function getPitForLocation(locationId: string): string {
-  // Prefer 0nCore-named env vars; fall back to legacy names during transition.
-  const onCorePit = validatePit('CRM_PIT_ONCORE', process.env.CRM_PIT_ONCORE)
-    || validatePit('CRM_PIT_RAW', process.env.CRM_PIT_RAW)
-  const pits: Record<string, string> = {
+  const legacy: Record<string, string> = {
     '6MSqx0trfxgLxeHBJE1k': validatePit('CRM_PIT_ROCKETOPP', process.env.CRM_PIT_ROCKETOPP),
-    'nphConTwfHcVE1oA0uep': onCorePit,
-    'AZLSL7r6X2tDV1A48Yrb': validatePit('CRM_PIT_FAIRICE', process.env.CRM_PIT_FAIRICE)
-      || validatePit('CRM_AGENCY_PIT_NEW', process.env.CRM_AGENCY_PIT_NEW),
+    'nphConTwfHcVE1oA0uep': validatePit('CRM_PIT_ONCORE', process.env.CRM_PIT_ONCORE),
     'F76MNKOMQCMruMrumtdf': validatePit('CRM_PIT_SPA', process.env.CRM_PIT_SPA),
   }
-  const specific = pits[locationId]
-  if (specific) return specific
-
-  // Fallback chain — each validated
-  return validatePit('CRM_AGENCY_PIT_NEW', process.env.CRM_AGENCY_PIT_NEW)
-    || onCorePit
-    || validatePit('CRM_PIT_ROCKETOPP', process.env.CRM_PIT_ROCKETOPP)
-    || validatePit('CRM_PIT', process.env.CRM_PIT)
-    || ''
+  // Exact match only. No cross-account fallback, ever.
+  return legacy[locationId] || ''
 }
+
 
 export type Auth = { token: string; source: 'oauth' | 'pit'; installId?: string; locationId: string }
 
@@ -262,18 +272,51 @@ export async function getAuthForLocation(locationId: string): Promise<Auth> {
  */
 /**
  * Credentials to try after a scope refusal, in order, excluding the one that
- * just failed. Deliberately small: the agency's pasted key, then the env map.
+ * just failed.
+ *
+ * A location can legitimately have SEVERAL credentials, all agency-granted:
+ * the client key they pasted, and any of our apps they installed. Those apps
+ * carry very different grants — the marketplace app has 142 scopes including
+ * courses and oauth.write; the sub-account app has 12 and neither. Verified
+ * 2026-08-12.
+ *
+ * getAuthForLocation picks ONE install, ordered by updated_at — the freshest,
+ * not the one that can do the job. It cannot know which is right, because
+ * scope is only discoverable by being refused. So on refusal, walk the rest,
+ * widest grants first.
+ *
+ * SAME LOCATION ONLY. Never another account's key: a credential for a
+ * different client is not a fallback, it is a write into the wrong account.
  */
 export async function fallbackCredentials(failed: Auth): Promise<{ label: string; token: string }[]> {
   const out: { label: string; token: string }[] = []
+
+  // 1 — the key the agency pasted for THIS client.
   try {
     const { getStoredLocationPit } = await import('./connect/pit')
     const stored = await getStoredLocationPit(failed.locationId)
     if (stored && stored !== failed.token) out.push({ label: 'the client key', token: stored })
-  } catch { /* not fatal — try the env map */ }
+  } catch { /* not fatal */ }
+
+  // 2 — our other installs on THIS location, widest grants first.
+  try {
+    const { data } = await getAdmin()
+      .from('crm_installations')
+      .select('access_token, app_id, scopes, expires_at')
+      .eq('location_id', failed.locationId)
+      .eq('status', 'active')
+    for (const row of (data ?? [])
+      .filter((r) => r.access_token && r.access_token !== failed.token)
+      .filter((r) => !r.expires_at || new Date(r.expires_at).getTime() > Date.now())
+      .sort((a, b) => (b.scopes?.split(' ').length ?? 0) - (a.scopes?.split(' ').length ?? 0))) {
+      out.push({ label: `app ${String(row.app_id).slice(0, 8)} (${row.scopes?.split(' ').length ?? 0} scopes)`, token: row.access_token })
+    }
+  } catch { /* not fatal */ }
+
+  // 3 — the legacy env key for THIS location, if one was configured.
   const env = getPitForLocation(failed.locationId)
   if (env && env !== failed.token && !out.some((c) => c.token === env)) {
-    out.push({ label: 'the env PIT', token: env })
+    out.push({ label: 'the legacy env key', token: env })
   }
   return out
 }
