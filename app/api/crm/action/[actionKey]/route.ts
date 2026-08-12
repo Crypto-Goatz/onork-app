@@ -94,8 +94,32 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ actionKey:
   const rawBody = await req.text()
   const sig = verifySignature(req, rawBody)
   if (!sig.ok) {
+    /**
+     * CAPTURE THE CONTRACT ON THE FIRST REAL CALL.
+     *
+     * verifySignature expects an HMAC of the raw body under a shared secret,
+     * but nobody has ever seen a genuine request from the platform — the secret
+     * has never been set, so every call has been refused before reaching this
+     * point and the assumption has never been tested. Guessing the scheme from
+     * memory is how an app ships a verifier that rejects every real request.
+     *
+     * So a refused call now says what actually arrived: which headers, how long
+     * the signature-shaped ones are, and how big the body was. That is enough to
+     * identify the scheme without printing a single secret — names and lengths
+     * only, never values, because the signature and the payload both belong to
+     * the agency, not to our logs.
+     */
+    const names = [...req.headers.keys()].sort().join(',')
+    const sigHeaders = [...req.headers.entries()]
+      .filter(([k]) => /sign|hmac|hub|hash|token|auth/i.test(k))
+      .map(([k, v]) => `${k}:len=${v.length}${v.startsWith('sha256=') ? ':sha256-prefixed' : ''}`)
+      .join(' ')
+    console.error(
+      `[crm/action] refused ${actionKey} (${sig.why}) | bodyBytes=${rawBody.length} | ` +
+      `sigHeaders=[${sigHeaders || 'none'}] | allHeaders=[${names}]`,
+    )
+
     if (sig.why === 'unconfigured') {
-      console.error(`[crm/action] refused ${actionKey}: CRM_ACTION_SECRET is not set — callback contract not captured yet.`)
       return NextResponse.json(
         { success: false, error: 'This action is not finished being set up.' },
         { status: 503 },
