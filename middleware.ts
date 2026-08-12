@@ -66,7 +66,7 @@ export async function middleware(request: NextRequest) {
     // (app.0ncore.com/login?next=/crm) rewrites to /crm/login and 404s — the
     // exact break that made "log in outside GHL" impossible.
     const isAuthPage = p === '/login' || p === '/signup' || p.startsWith('/auth') || p.startsWith('/forgot-password') || p.startsWith('/reset-password')
-    if (!isAuthPage && !p.startsWith('/api') && !p.startsWith('/_next') && !p.startsWith('/crm') && !p.startsWith('/portal') && !p.startsWith('/widgets') && !p.startsWith('/p/') && !p.startsWith('/scan')) {
+    if (!isAuthPage && !p.startsWith('/api') && !p.startsWith('/_next') && !p.startsWith('/crm') && !p.startsWith('/portal') && !p.startsWith('/widgets') && !p.startsWith('/p/') && !p.startsWith('/scan') && !p.startsWith('/decisions')) {
       const url = request.nextUrl.clone()
       url.pathname = p === '/' ? '/crm' : `/crm${p}`
       return NextResponse.rewrite(url)
