@@ -363,7 +363,10 @@ export function scoreAEOFactors(input: ScoreInputs): AEOFactors {
     comparison: detectComparison(prose),
     faq: Math.max(detectFAQ(prose), detectFAQ(input.text)),
     authorEEAT: detectAuthorEEAT(input.text, { author: input.author, authorTitle: input.authorTitle }),
-    freshness: detectFreshness(input.text, { updatedAt: input.updatedAt }),
+    // Prose, not raw: SSR frameworks split text nodes with HTML comments,
+    // so 'Updated <!-- -->August 2026' never matched the inline-date pattern
+    // and a freshly dated page scored zero for freshness.
+    freshness: detectFreshness(prose, { updatedAt: input.updatedAt }),
     schema: detectSchema({
       hasArticle: input.hasArticle,
       hasFAQ: input.hasFAQ,

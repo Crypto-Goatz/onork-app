@@ -376,8 +376,37 @@ export async function runCombinedScan(rawUrl: string): Promise<CombinedScanResul
   ]
 
   // ── AEO findings ── (run scorer against the rendered text + html for schema/structure cues)
+  /**
+   * THE AUTHOR AND THE DATE ARE ALREADY ON THE PAGE — in the Article schema the
+   * publisher wrote for exactly this purpose. Not reading them meant a page
+   * declaring a named author with a job title still scored 0.4 for E-E-A-T and
+   * 0 for freshness, and the recommendation told them to add what they had
+   * already added.
+   */
+  let ldAuthor: string | undefined
+  let ldAuthorTitle: string | undefined
+  let ldUpdated: string | undefined
+  for (const raw of jsonLdScripts) {
+    try {
+      const parsed = JSON.parse(raw)
+      for (const node of Array.isArray(parsed) ? parsed : [parsed]) {
+        const a = node?.author
+        const author = Array.isArray(a) ? a[0] : a
+        if (!ldAuthor && typeof author?.name === 'string') ldAuthor = author.name
+        if (!ldAuthorTitle && typeof author?.jobTitle === 'string') ldAuthorTitle = author.jobTitle
+        if (!ldUpdated && typeof node?.dateModified === 'string') ldUpdated = node.dateModified
+        if (!ldUpdated && typeof node?.datePublished === 'string') ldUpdated = node.datePublished
+      }
+    } catch {
+      // A malformed block is already reported by the JSON-LD check above.
+    }
+  }
+
   const scoredAEO = scoreAEO({
     text: html, // raw HTML so detectors can see <h2>, tables, JSON-LD, bolded definitions
+    author: ldAuthor,
+    authorTitle: ldAuthorTitle,
+    updatedAt: ldUpdated,
     hasArticle: hasArticleSchema,
     hasFAQ: hasFAQSchema,
     hasHowTo: hasHowToSchema,
