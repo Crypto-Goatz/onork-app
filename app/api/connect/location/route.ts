@@ -57,13 +57,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Connect your agency first.' }, { status: 400 })
   }
 
-  // The account must be one of theirs. Without this, a valid PIT for an account
-  // outside this agency would attach to their workspace.
+  /**
+   * Ownership is proved by a WORKING KEY, not by presence in a cached list.
+   *
+   * The list comes from the agency token and can be stale, paginated, or
+   * simply not include a sub-account they just created — so requiring a match
+   * blocked legitimate clients and forced a re-sync to fix. A key that the CRM
+   * accepts FOR THAT LOCATION is stronger evidence anyway: it cannot be
+   * obtained without access to the account.
+   *
+   * So a listed client keeps its name; an unlisted one is allowed through on
+   * the strength of its key, and is named by whatever the agency typed.
+   */
   const locations = (agency.locations as CrmLocation[]) ?? []
-  const match = locations.find((l) => l.id === locationId)
-  if (!match) {
+  const listed = locations.find((l) => l.id === locationId)
+  const typedName = typeof body?.name === 'string' ? body.name.trim().slice(0, 120) : ''
+  const match = listed ?? { id: locationId, name: typedName || locationId }
+
+  // An unlisted client MUST prove itself with a key — it cannot be added pending.
+  if (!listed && pending) {
     return NextResponse.json(
-      { error: 'That account is not in your CRM client list.' },
+      { error: 'A client that is not in your list needs its key to be added.' },
       { status: 400 },
     )
   }

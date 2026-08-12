@@ -397,3 +397,72 @@ function AddPicked({
     </button>
   )
 }
+
+/**
+ * Type a location ID and its key directly.
+ *
+ * This is the path every agency will use for a client the agency token cannot
+ * see — a sub-account created after the last sync, or one outside the listed
+ * page. It is also the path that had to exist before any of this could ship:
+ * a product that only works when the cached list happens to contain the client
+ * is not a product.
+ */
+function ManualAdd({ onDone }: { onDone: () => void }) {
+  const [locationId, setLocationId] = useState('')
+  const [pit, setPit] = useState('')
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function add() {
+    setBusy(true); setError(null)
+    try {
+      const res = await fetch('/api/connect/location', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locationId: locationId.trim(), pit: pit.trim(), name: name.trim() }),
+      })
+      const j = await res.json()
+      if (!res.ok) setError(j.error || 'Could not add that client.')
+      else { setLocationId(''); setPit(''); setName(''); onDone() }
+    } catch {
+      setError('Could not reach the server.')
+    } finally { setBusy(false) }
+  }
+
+  const ready = locationId.trim().length > 10 && pit.trim().startsWith('pit-')
+
+  return (
+    <div className="rounded-2xl border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-5">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div>
+          <label className="mb-1.5 block text-[12px] font-medium text-[color:var(--oc-muted)]">Location ID</label>
+          <input value={locationId} onChange={(e) => setLocationId(e.target.value)}
+            placeholder="AeY8M0GNOuJPNkLQ7AAC"
+            className="w-full rounded-xl border border-[#2a2a2a] bg-[color:var(--oc-input)] px-3 py-2.5 font-mono text-[12.5px] text-[#f5f5f5] outline-none placeholder:text-[#8a8a8a] focus:border-[color:var(--oc-green-d)]" />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[12px] font-medium text-[color:var(--oc-muted)]">Client key</label>
+          <input type="password" value={pit} onChange={(e) => setPit(e.target.value)}
+            placeholder="pit-…"
+            className="w-full rounded-xl border border-[#2a2a2a] bg-[color:var(--oc-input)] px-3 py-2.5 font-mono text-[12.5px] text-[#f5f5f5] outline-none placeholder:text-[#8a8a8a] focus:border-[color:var(--oc-green-d)]" />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[12px] font-medium text-[color:var(--oc-muted)]">Name (optional)</label>
+          <input value={name} onChange={(e) => setName(e.target.value)}
+            placeholder="Harbor Dental"
+            className="w-full rounded-xl border border-[#2a2a2a] bg-[color:var(--oc-input)] px-3 py-2.5 text-[12.5px] text-[#f5f5f5] outline-none placeholder:text-[#8a8a8a] focus:border-[color:var(--oc-green-d)]" />
+        </div>
+      </div>
+      {error && <p className="mt-2.5 text-[12.5px] text-[color:var(--oc-red)]">{error}</p>}
+      <p className="mt-2.5 text-[11.5px] text-[color:var(--oc-muted)]">
+        The key is checked against that exact location before anything is saved.
+      </p>
+      <button onClick={add} disabled={busy || !ready}
+        className="mt-3 inline-flex items-center gap-2 rounded-full bg-[color:var(--oc-ink)] px-5 py-2.5 text-[13px] font-semibold text-white shadow-glow-sm transition hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:shadow-none">
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+        Verify and add
+      </button>
+    </div>
+  )
+}
