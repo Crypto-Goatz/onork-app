@@ -93,6 +93,20 @@ export async function GET(req: NextRequest) {
       userType: 'Location' as const,
     })
 
+    // The 0n Course Builder — a Conversation AI app installed per sub-account,
+    // listed separately in the marketplace and heading for public approval. It
+    // is its own app with its own credentials, so it needs its own entry here;
+    // borrowing another app's pair is what produced "Invalid client
+    // credentials" on the agency install.
+    apps.push({
+      name: 'course-builder',
+      clientId: process.env.CRM_COURSE_APP_CLIENT_ID || '',
+      clientSecret: process.env.CRM_COURSE_APP_CLIENT_SECRET || '',
+      redirectUri: 'https://app.0ncore.com/api/oauth/callback',
+      appId: process.env.CRM_COURSE_APP_ID || '69801f7a533633818a22921c',
+      userType: 'Location' as const,
+    })
+
     /**
      * ONE APP, chosen by state — never a sequence.
      *
@@ -110,6 +124,7 @@ export async function GET(req: NextRequest) {
      */
     const state = req.nextUrl.searchParams.get('state') || ''
     const only = state.startsWith('agency') ? 'agency-v2'
+      : state.startsWith('course') ? 'course-builder'
       : state.startsWith('sub') ? 'subaccount-v2'
       : null
 
@@ -121,7 +136,7 @@ export async function GET(req: NextRequest) {
     // app the user had not installed.
     const candidates = only
       ? apps.filter((a) => a.name === only)
-      : ['agency-v2', 'subaccount-v2', 'marketplace', 'marketplace-alt']
+      : ['agency-v2', 'subaccount-v2', 'course-builder', 'marketplace', 'marketplace-alt']
           .map((n) => apps.find((a) => a.name === n))
           .filter((a): a is (typeof apps)[number] => Boolean(a))
 
