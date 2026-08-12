@@ -78,7 +78,18 @@ export function detectBLUF(text: string): number {
     .filter((p) => p && !p.startsWith('#'))
 
   if (paragraphs.length === 0) return 0
-  const first = paragraphs[0].replace(/\*\*/g, '').replace(/^_|_$/g, '')
+
+  // THE FIRST BLOCK IS NOT ALWAYS THE FIRST PARAGRAPH. Real pages open with
+  // fragments that are not prose — a loading label, a breadcrumb, an eyebrow,
+  // a nav item. Grading "initializing" as a page's bottom line says nothing
+  // about the page. The first block with enough words to BE a sentence is the
+  // one a reader would call the opening paragraph.
+  //
+  // This cannot lower an honest score: anything under 15 words already scored
+  // 0.3, so skipping it either finds the real opener or falls back to what
+  // would have been graded anyway.
+  const firstProse = paragraphs.find((p) => p.split(/\s+/).filter(Boolean).length >= 8) ?? paragraphs[0]
+  const first = firstProse.replace(/\*\*/g, '').replace(/^_|_$/g, '')
 
   const wordCount = first.split(/\s+/).length
   if (wordCount < 15 || wordCount > 100) return 0.3
@@ -303,7 +314,11 @@ export function htmlToScorableText(input: string): string {
     return (
       '\n\n' +
       items
-        .map((li, i) => `${i + 1}. ${li.replace(/<[^>]+>/g, ' ').replace(/\*\*/g, '').replace(/\s+/g, ' ').trim()}`)
+        // Trim BEFORE dropping the marker: list markup frequently renders its
+        // own numeral in a badge span, and a leading space would hide it —
+        // leaving "1. 1 Connect …", where the imperative test sees the stray
+        // digit instead of the verb and a perfect procedure scores as prose.
+        .map((li, i) => `${i + 1}. ${li.replace(/<[^>]+>/g, ' ').replace(/\*\*/g, '').replace(/\s+/g, ' ').trim().replace(/^\d+[.)]?\s*/, '')}`)
         .join('\n') +
       '\n\n'
     )
@@ -346,7 +361,7 @@ export function scoreAEOFactors(input: ScoreInputs): AEOFactors {
     definition: detectDefinition(prose),
     procedure: detectProcedure(prose),
     comparison: detectComparison(prose),
-    faq: detectFAQ(prose),
+    faq: Math.max(detectFAQ(prose), detectFAQ(input.text)),
     authorEEAT: detectAuthorEEAT(input.text, { author: input.author, authorTitle: input.authorTitle }),
     freshness: detectFreshness(input.text, { updatedAt: input.updatedAt }),
     schema: detectSchema({
