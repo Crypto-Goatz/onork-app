@@ -83,7 +83,16 @@ export const CAPABILITIES: Capability[] = [
   // ── messaging ──
   { id: 'sms.send', intent: 'send an SMS', mechanism: 'native', requires: 'crm' },
   { id: 'email.send', intent: 'send an email', mechanism: 'native', requires: 'crm' },
-  { id: 'conversation.read', intent: 'read or summarise conversation history', mechanism: 'native', requires: 'crm' },
+  { id: 'conversation.read', intent: 'read recent conversations for a client', mechanism: 'native', requires: 'crm' },
+  {
+    // Separate from conversation.read on purpose: this one WRITES. A capability
+    // that reads and one that leaves a permanent note on someone's record
+    // deserve different names, different approval copy, and different blast
+    // radius — collapsing them is how a "read" quietly edits a customer record.
+    id: 'conversation.summarize',
+    intent: "summarise a contact's conversation history and save it as a note",
+    mechanism: 'native', requires: 'crm',
+  },
 
   // ── calendar & pipeline ──
   { id: 'appointment.book', intent: 'book, reschedule or cancel an appointment', mechanism: 'native', requires: 'crm' },

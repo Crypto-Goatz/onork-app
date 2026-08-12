@@ -672,6 +672,85 @@ const HANDLERS: Record<string, Handler> = {
     return ok(`Note added to ${contacts[0].contactName || query}.`, 1, price)
   },
 
+  /**
+   * Summarise a contact's conversation history, then leave it as a note.
+   *
+   * WHY IT WRITES A NOTE RATHER THAN RETURNING TEXT. A summary that lives only
+   * in 0nCORE's history is useless to the agency's client — their team works in
+   * the CRM. Putting it on the contact record means the next person to open
+   * that contact sees it, whether or not they have ever heard of 0nCORE.
+   *
+   * ONE CONTACT ONLY, and it refuses on ambiguity. A summary of the wrong
+   * person's conversations, written permanently onto their record, is worse
+   * than no summary — so this borrows contact.note's refusal rather than
+   * guessing between matches.
+   */
+  'conversation.summarize': async (leg, price) => {
+    const loc = needsLocation(leg)
+    if (!loc) return refuse('Tell me which client to look in.')
+    const query = searchTerm(leg.params?.contactQuery)
+    if (!query) return refuse('Tell me whose conversations to summarise.')
+
+    const { contacts, total, error } = await findContacts(loc, query, 5)
+    if (error) return fail('Could not find that contact.', error)
+    if (total === 0) return fail(`No contact matching "${query}".`)
+    if (total > 1) return refuse(`"${query}" matches ${total} contacts. Tell me which one.`, total)
+    const contact = contacts[0]
+
+    // The messages themselves, for THIS contact — not the location's recent list.
+    const convRes = await crmGet(`/conversations/search?contactId=${encodeURIComponent(contact.id)}&limit=20`, loc)
+    if (!convRes.ok) return fail('Could not read their conversations.', `HTTP ${convRes.status}`)
+    const cj = (await convRes.json().catch(() => ({}))) as {
+      conversations?: { id?: string; lastMessageBody?: string; lastMessageType?: string; lastMessageDate?: number }[]
+    }
+    const convos = cj.conversations ?? []
+    if (convos.length === 0) {
+      return ok(`No conversation history for ${contact.contactName || query} yet.`, 0, price)
+    }
+
+    const transcript = convos
+      .map((c) => `[${c.lastMessageType ?? 'message'}] ${(c.lastMessageBody ?? '').slice(0, 500)}`)
+      .join('\n')
+      .slice(0, 8000)
+
+    let summary: string
+    try {
+      const { groqChat } = await import('@/lib/groq')
+      const r = await groqChat({
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+        temperature: 0.2,
+        max_tokens: 400,
+        system: [
+          'You summarise a customer conversation history for the business that owns it.',
+          'Write 3-6 short bullet points, plain sentences, no preamble and no heading.',
+          'Lead with what they WANT or asked for, then anything outstanding.',
+          'State only what the messages support. If something is unclear, say it is unclear',
+          'rather than inferring — this is written permanently onto a customer record.',
+        ].join(' '),
+        user: `Conversation history with ${contact.contactName || query}:\n\n${transcript}`,
+      })
+      summary = (r.text || '').trim()
+    } catch (err) {
+      return fail('Could not summarise the conversation.', err instanceof Error ? err.message : String(err))
+    }
+    if (!summary) return fail('The summary came back empty.')
+
+    const stamp = new Date().toISOString().slice(0, 10)
+    const body = `0nCORE summary — ${stamp}\n\n${summary}`
+
+    // crmPostRaw: sub-resources reject an injected locationId.
+    const noteRes = await crmPostRaw(`/contacts/${contact.id}/notes`, loc, { body })
+    if (!noteRes.ok) {
+      const d = await noteRes.text().catch(() => '')
+      return fail('Summarised it, but could not save the note.', `HTTP ${noteRes.status} ${d.slice(0, 160)}`)
+    }
+
+    return ok(
+      `Summarised ${convos.length} conversation${convos.length === 1 ? '' : 's'} with ${contact.contactName || query} and saved it as a note.`,
+      1, price, { summary },
+    )
+  },
+
   'contact.tag': async (leg, price) => {
     const loc = needsLocation(leg)
     if (!loc) return refuse('Tell me which client to tag contacts in.')

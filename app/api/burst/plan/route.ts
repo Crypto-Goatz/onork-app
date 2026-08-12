@@ -43,6 +43,7 @@ const PARAM_HINTS: Record<string, string> = {
   'sms.send': 'contactQuery (who), message',
   'email.send': 'contactQuery (who), subject, body',
   'conversation.read': 'limit',
+  'conversation.summarize': 'contactQuery (whose history to summarise)',
   'customfield.create': 'name, dataType (TEXT/NUMERICAL/DATE)',
   'task.create': 'contactQuery (who), title, body, dueDate',
   'workflow.trigger': 'contactQuery (who), workflow (its name)',

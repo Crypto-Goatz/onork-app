@@ -87,9 +87,15 @@ export const ACTIONS: Record<string, ActionDoc> = {
     group: 'Messaging',
   },
   'conversation.read': {
-    name: 'Read a conversation',
-    what: 'Reads and summarises the message history with a person, across email, SMS and chat. Reads only.',
-    example: 'For Harbor Dental: summarise everything Dana Reed has said to us this month.',
+    name: 'Read recent conversations',
+    what: 'Lists the client’s most recent conversations and who they are with. Reads only, and it is the whole account — not one person.',
+    example: 'For Harbor Dental: what conversations have come in recently?',
+    group: 'Messaging',
+  },
+  'conversation.summarize': {
+    name: 'Summarise a conversation into a note',
+    what: 'Reads one contact’s full message history, writes a short summary of what they want and what is outstanding, and saves it as a note on their record — where the client’s own team will see it.',
+    example: 'For Harbor Dental: summarise Dana Reed’s conversation history and save it to her notes.',
     group: 'Messaging',
   },
 
