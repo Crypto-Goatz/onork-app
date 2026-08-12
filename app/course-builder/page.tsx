@@ -28,9 +28,9 @@ export const metadata: Metadata = {
   // 42 characters — the scorer wants 30-60, and a truncated title in a result
   // is a click lost regardless of what any scorer thinks.
   title: 'AI Course Builder for GoHighLevel | 0nCORE',
-  // 152 characters, inside the 120-160 band.
+  // 147 characters, inside the 120-160 band.
   description:
-    'Generate a full GoHighLevel course from one sentence — lessons, quizzes and resources — then publish it into a sub-account. See what is live today and what is still landing.',
+    'Generate a full GoHighLevel course from one sentence — lessons, quizzes and resources — then publish it into a sub-account. See what is live today.',
   alternates: { canonical: CANONICAL },
   keywords: [
     'AI generated course GoHighLevel',
