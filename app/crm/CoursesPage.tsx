@@ -42,6 +42,7 @@ export default function CoursesPage() {
   const [err, setErr] = useState<string | null>(null)
   const [published, setPublished] = useState<{ method: string; lessons: number } | null>(null)
 
+  const [tab, setTab] = useState<'Courses' | 'Pages' | 'Blog' | 'Social' | 'Store'>('Courses')
   const [clients, setClients] = useState<Client[]>([])
   const [target, setTarget] = useState('')
 
@@ -102,11 +103,44 @@ export default function CoursesPage() {
       <AppSidebar current="content" activeCount={0} totalCount={0} usageLabel="$0" />
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[1080px] px-10 py-12">
-          <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--oc-ink)]">Courses</h1>
-          <p className="mt-1 text-[13.5px] text-[color:var(--oc-muted)]">
-            Describe it, review the shape, then publish it into a client&apos;s CRM.
-          </p>
+          <div className="flex items-start justify-between gap-6">
+            <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--oc-ink)]">Content</h1>
+            {/* Scope names the client every tab on this page will write to. */}
+            <div className="shrink-0 text-[13px] text-[color:var(--oc-muted)]">
+              Scope:{' '}
+              <span className="font-medium text-[color:var(--oc-green-d)]">
+                {targetName ?? (clients.length ? 'Choose a client' : 'No client connected')}
+              </span>
+            </div>
+          </div>
 
+          {/* Five tabs. Only Courses is built; the rest say so rather than
+              vanishing, so the page does not pretend to be finished. */}
+          <div className="mt-5 inline-flex rounded-full border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-1">
+            {(['Courses', 'Pages', 'Blog', 'Social', 'Store'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`rounded-full px-4 py-1.5 text-[13px] font-medium transition ${
+                  tab === t
+                    ? 'bg-[color:var(--oc-green-d)] text-white'
+                    : 'text-[color:var(--oc-muted)] hover:text-[color:var(--oc-ink)]'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          {tab !== 'Courses' && (
+            <div className="mt-8 grid min-h-[240px] place-items-center rounded-2xl border border-dashed border-[color:var(--oc-border)] p-10 text-center">
+              <p className="text-[13.5px] text-[color:var(--oc-muted)]">
+                {tab} is not built yet. Courses is.
+              </p>
+            </div>
+          )}
+
+          {tab === 'Courses' && (
           <div className="mt-8 grid gap-6 lg:grid-cols-[380px_1fr]">
             {/* ── the brief ── */}
             <div className="space-y-4 rounded-2xl border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-5">
@@ -123,7 +157,7 @@ export default function CoursesPage() {
                   placeholder="Keep the result for 12 months" className={INPUT} />
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Lessons">
+                <Field label="Modules">
                   <input type="number" min={1} max={20} value={lessonCount}
                     onChange={(e) => setLessonCount(e.target.value)} className={INPUT} />
                 </Field>
@@ -139,15 +173,17 @@ export default function CoursesPage() {
               <label className="flex items-center gap-2.5 text-[13px] text-[color:var(--oc-text)]">
                 <input type="checkbox" checked={quizzes} onChange={(e) => setQuizzes(e.target.checked)}
                   className="h-4 w-4 accent-[color:var(--oc-green-d)]" />
-                Include a quiz per lesson
+                Include a quiz per module
               </label>
 
               {/* Said BEFORE the work, not after. */}
               <p className="flex items-start gap-2 rounded-xl bg-[color:var(--oc-amber)]/10 px-3 py-2.5 text-[12px] leading-relaxed text-[color:var(--oc-amber)]">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 {clients.length === 0
-                  ? 'No connected clients yet. You can generate a course, but publishing needs a client with its key added.'
-                  : 'Publishing writes into the client’s CRM using their key.'}
+                  ? 'Publishing needs a client’s key — none connected yet.'
+                  : targetName
+                    ? <>Publishing needs this client’s key — <span className="font-medium">connected ✓</span></>
+                    : 'Publishing needs the client’s key — choose one below.'}
               </p>
 
               <button onClick={doOutline} disabled={busy || !topic.trim() || !audience.trim()}
@@ -250,6 +286,7 @@ export default function CoursesPage() {
               )}
             </div>
           </div>
+          )}
         </div>
       </main>
     </div>
