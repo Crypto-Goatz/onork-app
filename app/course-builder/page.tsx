@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   title: 'AI Course Builder for GoHighLevel | 0nCORE',
   // 152 characters, inside the 120-160 band.
   description:
-    'Generate a full GoHighLevel course from one sentence — lessons, quizzes and resources — then publish it straight into a sub-account. Live now from $0.',
+    'Generate a full GoHighLevel course from one sentence — lessons, quizzes and resources — then publish it into a sub-account. See what is live today and what is still landing.',
   alternates: { canonical: CANONICAL },
   keywords: [
     'AI generated course GoHighLevel',
@@ -150,7 +150,7 @@ export default function Page() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_LD) }} />
 
       <article className="mx-auto max-w-4xl">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#6EE05A]">Course building · Live now</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#6EE05A]">Course building · Partly available</p>
         <h1 className="mt-3 text-4xl font-black leading-tight tracking-tight sm:text-5xl">
           AI Course Builder for GoHighLevel
         </h1>
@@ -174,7 +174,46 @@ export default function Page() {
           <Link href="/connect" className={BTN2}>Connect a sub-account</Link>
         </div>
 
-        {/* ── Table trap, first viewport. detectComparison scores 1.0 only when a
+        {/* ── PER-FEATURE STATUS, ABOVE THE SALES COPY.
+            The listing sells the whole product; this page has to be true about
+            which parts of it answer today. Flipping everything to "live" to
+            match the listing would remove the only thing that makes the rest of
+            the page credible — and the first agency to place a workflow action
+            that returns 503 would discover it anyway, at their client's
+            expense. Same vocabulary as every other product page: Available now
+            / Partly available / On the roadmap. ── */}
+        <h2 className={H2}>What works today</h2>
+        <p className={P}>
+          Honest status, feature by feature. Updated {UPDATED}.
+        </p>
+        <div className="mt-5 space-y-2">
+          {[
+            ['Course outline generation', 'live', 'Verified in production. Returns modules and lessons in seconds.'],
+            ['Lesson, quiz and resource writing', 'live', 'Generates lessons in parallel with a five-question quiz each. Failures are reported per lesson, not hidden.'],
+            ['Publishing into a sub-account', 'partial', 'Bulk import with a per-lesson fallback. Shipped, and not yet verified end to end against a live sub-account.'],
+            ['Workflow actions — enrol, mark complete', 'partial', 'Deployed and registered. Not accepting live calls yet: the request-signing contract with the platform is still being captured.'],
+            ['Workflow triggers — completed, module, stalled', 'partial', 'Subscription endpoints are live and accept real subscriptions. The delivery path has not been exercised by a real workflow yet.'],
+            ['Daily stalled-student sweep', 'partial', 'Runs daily and fires once per stall. Deployed, awaiting its first real enrolment to act on.'],
+            ['Course analytics — enrolments, completion, revenue', 'roadmap', 'Not built. Enrolment and completion are recorded now, so the data exists before the reporting does.'],
+          ].map(([name, status, detail]) => {
+            const tone =
+              status === 'live' ? 'border-[#6EE05A]/40 bg-[#6EE05A]/10 text-[#6EE05A]'
+              : status === 'partial' ? 'border-amber-400/40 bg-amber-400/10 text-amber-300'
+              : 'border-white/15 bg-white/5 text-[#9fb0cc]'
+            const label = status === 'live' ? 'Available now' : status === 'partial' ? 'In progress' : 'Planned'
+            return (
+              <div key={name} className={`${CARD} flex flex-wrap items-start justify-between gap-4 !py-4`}>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14.5px] font-semibold text-white">{name}</p>
+                  <p className="mt-1 text-[13px] leading-relaxed text-[#9fb0cc]">{detail}</p>
+                </div>
+                <span className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold ${tone}`}>{label}</span>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* ── Table trap. detectComparison scores 1.0 only when a
             "Best for" / "when to choose" style column is present, and a reader
             deciding between three options wants exactly that column. ── */}
         <h2 className={H2}>How it compares to building a course by hand</h2>
@@ -263,9 +302,9 @@ Publishing endpoints according to [the GoHighLevel courses API]
           Because the client already sells from GoHighLevel. A course hosted somewhere else needs its own checkout, its own
           login and its own support burden, and it does not appear in the automation the agency already built. Publishing into
           the sub-account means the course is an ordinary GoHighLevel course: order forms, memberships, workflows and
-          reporting all work without anything extra. The two workflow actions above let an automation enrol a contact when they
-          buy and mark them complete when they finish, and the stalled trigger starts a win-back automation when a student
-          goes quiet for seven days.
+          reporting all work without anything extra. The two workflow actions are built and deployed but are not accepting live calls yet — their request-signing contract with
+          the platform is still being captured, so they are listed below as in progress rather than as something you can
+          switch on today.
         </p>
 
         <h2 className={H2}>Who is this for?</h2>
