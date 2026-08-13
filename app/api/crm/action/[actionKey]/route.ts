@@ -58,23 +58,65 @@ function admin() {
  * function should. Constant-time compared, because a fast string compare on a
  * signature is a timing oracle.
  */
+/**
+ * Verify the CRM's signature — PUBLIC KEY, NOT A SHARED SECRET.
+ *
+ * The previous version here computed an HMAC-SHA256 over the body using a
+ * `CRM_ACTION_SECRET` that does not exist and never did. Because the variable
+ * was unset, every genuine workflow action was refused with a 503 that read as
+ * "not finished being set up" — and the plan was to capture the contract from a
+ * live request. The contract was published the whole time: the platform signs
+ * the body with ITS private key and publishes the public key.
+ *
+ *   X-GHL-Signature  → Ed25519   (current; note crypto.verify takes null here)
+ *   X-WH-Signature   → RSA-SHA256 (legacy, retired 2026-09-01)
+ *
+ * Both are base64 over the RAW body. A literal 'N/A' means the request was not
+ * signed at all and is refused.
+ *
+ * Keys are inlined rather than env-configured on purpose: they are public, they
+ * are the platform's, and an env var is one more thing that can be
+ * double-wrapped on Vercel and silently break every verification.
+ */
+const GHL_ED25519_PEM = `-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAi2HR1srL4o18O8BRa7gVJY7G7bupbN3H9AwJrHCDiOg=
+-----END PUBLIC KEY-----`
+
 function verifySignature(req: NextRequest, rawBody: string): { ok: boolean; why?: string } {
-  const secret = process.env.CRM_ACTION_SECRET
-  if (!secret) return { ok: false, why: 'unconfigured' }
+  const ed = req.headers.get('x-ghl-signature')
+  const legacy = req.headers.get('x-wh-signature')
 
-  const presented =
-    req.headers.get('x-signature') ||
-    req.headers.get('x-hub-signature-256') ||
-    req.headers.get('x-wh-signature') ||
-    ''
-  if (!presented) return { ok: false, why: 'unsigned' }
+  if ((!ed || ed === 'N/A') && (!legacy || legacy === 'N/A')) {
+    return { ok: false, why: 'unsigned' }
+  }
 
-  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex')
-  const a = Buffer.from(presented.replace(/^sha256=/, ''))
-  const b = Buffer.from(expected)
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return { ok: false, why: 'bad-signature' }
-  return { ok: true }
+  if (ed && ed !== 'N/A') {
+    try {
+      const ok = crypto.verify(
+        null,
+        Buffer.from(rawBody, 'utf8'),
+        GHL_ED25519_PEM,
+        Buffer.from(ed, 'base64'),
+      )
+      if (ok) return { ok: true }
+    } catch {
+      // Fall through to the legacy header rather than refusing outright —
+      // during the transition a request may carry both.
+    }
+  }
+
+  const rsaPem = process.env.CRM_WEBHOOK_RSA_PUBLIC_KEY || ''
+  if (legacy && legacy !== 'N/A' && rsaPem) {
+    try {
+      const v = crypto.createVerify('SHA256')
+      v.update(rawBody)
+      if (v.verify(rsaPem, legacy, 'base64')) return { ok: true }
+    } catch { /* fall through to a clean refusal */ }
+  }
+
+  return { ok: false, why: 'bad-signature' }
 }
+
 
 interface ActionPayload {
   locationId?: string
