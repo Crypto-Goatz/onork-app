@@ -1,4 +1,5 @@
 import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 import LegacyCrmChrome from './LegacyCrmChrome'
 import SetupAlert from './SetupAlert'
 
@@ -19,8 +20,25 @@ import SetupAlert from './SetupAlert'
  * Server component on purpose — the decision is made before anything renders,
  * so the wrong chrome never flashes.
  */
+/**
+ * The /crm tree IS the agency app, wherever it is reached from.
+ *
+ * Signing in at 0ncore.com landed on www.0ncore.com/crm, which failed the
+ * app-host check and wrapped the new white product in the legacy dark sidebar —
+ * app content, wrong chrome, and no app. in the address bar to explain it.
+ *
+ * Rather than teach two hosts to render the same product differently, the
+ * public hosts now send /crm to the app host and stop. One canonical home, one
+ * chrome, and a URL that matches what is on screen. localhost and previews are
+ * left alone so development is unaffected.
+ */
+const PUBLIC_HOSTS = new Set(['www.0ncore.com', '0ncore.com'])
+
 export default async function CRMLayout({ children }: { children: React.ReactNode }) {
-  const isAppHost = (await headers()).get('host') === 'app.0ncore.com'
+  const host = (await headers()).get('host') || ''
+  if (PUBLIC_HOSTS.has(host)) redirect('https://app.0ncore.com/crm')
+
+  const isAppHost = host === 'app.0ncore.com'
   // The setup alert rides above whichever chrome is used. Unfinished setup is
   // the difference between "broken product" and "one step left", so it must be
   // visible on every CRM surface, not only on /connect.

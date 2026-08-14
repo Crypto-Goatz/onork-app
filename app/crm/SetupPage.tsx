@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Check, KeyRound, Loader2, Search, TriangleAlert } from 'lucide-react'
 import AppSidebar from './AppSidebar'
+import ProofOfLife from './ProofOfLife'
 import { CONNECT_HOWTO, REQUIRED_SCOPES } from '@/lib/connect/instructions'
 
 type Step = 'agency' | 'pick_free' | 'need_pit' | 'done'
@@ -97,6 +98,13 @@ export default function SetupPage() {
           <p className="mt-1 text-[13.5px] text-[color:var(--oc-muted)]">
             Shown as state, not a wizard — this is also the repair surface.
           </p>
+
+          {/* Salvaged from the legacy chrome before it was retired. This is the
+              repair surface, so the thing that proves a key works belongs at the
+              top of it — not buried behind a sidebar nobody was meant to reach. */}
+          <div className="mt-6">
+            <ProofOfLife />
+          </div>
 
           {!status && (
             <div className="mt-8 flex items-center gap-2 text-sm text-[color:var(--oc-muted)]">
