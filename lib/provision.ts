@@ -190,6 +190,37 @@ export async function provisionSubLocation(userId: string): Promise<ProvisionRes
       errors.push(`Snapshot deploy: ${snapErr instanceof Error ? snapErr.message : 'unknown'}`)
     }
 
+    /**
+     * Stamp the managed Custom Value contract.
+     *
+     * THIS IS THE ONLY MOMENT IT CAN BE DONE PROGRAMMATICALLY. A snapshot push
+     * never edits or deletes Custom Values — which is what makes per-location
+     * config survive every release, and equally means the snapshot cannot stamp
+     * these itself. Provisioning writes them or nothing does.
+     *
+     * Create-if-missing, so re-running provisioning on an existing location is
+     * safe and never overwrites a value somebody set deliberately.
+     */
+    try {
+      const { backfillLocation } = await import('./snapshot/backfill')
+      const stamped = await backfillLocation(newLocationId, {
+        '0ncore_location_id': newLocationId,
+      })
+      if (stamped.ok) {
+        console.log(`[provision] managed values: ${stamped.result.created.length} created, ${stamped.result.skipped.length} already present`)
+        if (stamped.result.failed.length) {
+          errors.push(...stamped.result.failed.map((f) => `Managed value ${f.name}: ${f.error}`))
+        }
+      } else {
+        errors.push(`Managed values: ${stamped.error}`)
+      }
+    } catch (cvErr) {
+      // Best-effort: a location without the stamp still works, it simply is not
+      // yet on the managed contract and the backfill endpoint will catch it.
+      console.error('[provision] managed-value stamp failed:', cvErr)
+      errors.push(`Managed values: ${cvErr instanceof Error ? cvErr.message : 'unknown'}`)
+    }
+
     // Bidirectional link: push Stripe IDs to the master-location CRM contact
     // so CRM-side workflows can react to billing state. Best-effort — webhook
     // handler will catch up later if the user hasn't checked out yet.
