@@ -729,3 +729,26 @@ code, pre, .font-mono {
    `order` works because every rail sits in a flex row beside its content. */
 :root[data-sidebar-side="right"] .oc-rail { order: 2;  }
 :root[data-sidebar-side="left"]  .oc-rail { order: -1; }
+
+/* ── Launcher tiles ─────────────────────────────────────────────────────────
+   64px at radius 19 with the cascade shadow, per the handoff. The jiggle runs
+   ONLY in edit mode — it is the signal that things can move, not decoration,
+   and a permanently animating grid is exhausting to look at. */
+.oncore-app .oc-tile {
+  height: 64px; width: 64px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 19px; cursor: pointer;
+  box-shadow: var(--oc-shadow-sm, 0 1px 2px rgba(10,10,10,.04), 0 4px 10px rgba(10,10,10,.05));
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.oncore-app .oc-tile:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(10,10,10,.05), 0 12px 28px rgba(10,10,10,.10); }
+.oncore-app .oc-tile:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(110,224,90,.5); }
+.oncore-app .oc-tile-edit { animation: oc-jiggle 420ms ease-in-out infinite; cursor: grab; }
+.oncore-app .oc-tile-edit:active { cursor: grabbing; }
+@keyframes oc-jiggle {
+  0%, 100% { transform: rotate(-1.1deg); }
+  50%      { transform: rotate(1.1deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oncore-app .oc-tile-edit { animation: none; outline: 2px dashed rgba(23,23,23,.35); outline-offset: 3px; }
+}
