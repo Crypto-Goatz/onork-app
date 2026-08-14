@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Mic, Send, Sparkles, X } from 'lucide-react'
+import ConnectionHealth from './ConnectionHealth'
 
 export default function AskOn({ scopeLabel = 'All clients' }: { scopeLabel?: string }) {
   const router = useRouter()
@@ -62,6 +63,15 @@ export default function AskOn({ scopeLabel = 'All clients' }: { scopeLabel?: str
 
   return (
     <>
+      {/* The health chip sits beside the pill: both are always-present, and a
+          broken connection is the single most useful thing to see before you
+          type a command that depends on it. */}
+      {!open && (
+        <div className="oncore-app fixed bottom-[74px] right-[76px] z-40">
+          <ConnectionHealth />
+        </div>
+      )}
+
       {!open && (
         <button
           onClick={() => setOpen(true)}
