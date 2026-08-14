@@ -82,7 +82,20 @@ export async function POST(req: NextRequest) {
   // So: skip anything that is obviously an envelope rather than a key, and try
   // the others. Which one worked is logged BY NAME — never by value — so the
   // config can be corrected instead of quietly depending on the fallback.
-  const CANDIDATES = ['CRM_SSO_KEY', 'CRM_MARKETPLACE_SHARED_SECRET', 'CRM_AGENCY_SSO_KEY'] as const
+  // ONE KEY PER APP, ALL TRIED — never one key overwritten per app.
+  //
+  // Each marketplace app has its OWN shared secret, and the custom page of each
+  // decrypts only under its own. Replacing CRM_SSO_KEY with a newer app's secret
+  // would silently break every existing custom page: the handshake would fail,
+  // SSO would fall through to a sign-in screen, and that screen cannot work in
+  // an iframe. Adding a candidate costs one failed decrypt attempt; overwriting
+  // costs the surface that was already working.
+  const CANDIDATES = [
+    'CRM_SSO_KEY',
+    'CRM_LEADSCOUT_SSO_KEY',
+    'CRM_MARKETPLACE_SHARED_SECRET',
+    'CRM_AGENCY_SSO_KEY',
+  ] as const
 
   /** A Vercel encryption envelope stored as a value. Never a usable key. */
   const isEnvelope = (v: string) => {
