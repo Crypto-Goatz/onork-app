@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import SetupAlert from './SetupAlert'
+import AskOn from './AskOn'
 
 /**
  * Everything under /crm — the agency app, with one home and one chrome.
@@ -32,10 +33,15 @@ export default async function CRMLayout({ children }: { children: React.ReactNod
   // The setup alert rides above every CRM surface. Unfinished setup is the
   // difference between "broken product" and "one step left", so it must be
   // visible everywhere rather than only on /connect.
+  // AskOn rides the layout so the command box is one keystroke away on EVERY
+  // CRM surface — which is the entire point. Mounting it per-page would mean
+  // remembering to add it, and the pages where someone gets stuck are exactly
+  // the ones nobody remembers.
   return (
     <>
       <SetupAlert />
       {children}
+      <AskOn />
     </>
   )
 }
