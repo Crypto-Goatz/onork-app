@@ -6,6 +6,13 @@
  * ingests and it runs and it produces nothing. Everything upstream and
  * downstream of this file already exists; this is the step nobody wrote.
  *
+ * IT IS A VERIFIER, NOT A COUNCIL. The distinction matters because the name is a
+ * claim. `ai_council_debate` exists on the bridge and means several models in
+ * adversarial review; THIS is a rules engine with a confidence threshold and no
+ * model in the loop at all. Calling it a council would be writing a cheque the
+ * implementation cannot cash. If adversarial review is built later, it earns the
+ * name then.
+ *
  * IT PROPOSES, IT DOES NOT PROMOTE. Every fact lands as a `candidate`. Nothing
  * is written to a client's knowledge base here and nothing is treated as true.
  * An AI that silently teaches itself things about someone's business, from one
@@ -25,10 +32,22 @@ import { createServiceClient } from '@/lib/connect/service-client'
 
 export type FactKind = 'qa' | 'business' | 'preference' | 'outcome' | 'contact_pattern'
 
+/**
+ * How fast a fact goes stale.
+ *
+ * Pricing, hours and staffing change without anyone telling us; brand voice and
+ * founding story do not. A confidently-repeated March price in August is worse
+ * than having no fact at all, so volatility is decided when the fact is born.
+ */
+export type Volatility = 'high' | 'medium' | 'low'
+
+const TTL_DAYS: Record<Volatility, number> = { high: 30, medium: 120, low: 365 }
+
 export interface Candidate {
   kind: FactKind
   subject: string
   fact: string
+  volatility?: Volatility
   sourceType: 'receipt' | 'conversation' | 'crawl' | 'workflow' | 'course'
   sourceId: string
   excerpt: string
@@ -180,16 +199,26 @@ export async function distilLocation(
 
     let factId = existing?.id as string | undefined
 
+    const volatility: Volatility = c.volatility ?? (c.kind === 'outcome' ? 'high' : 'medium')
+    const expiresAt = new Date(Date.now() + TTL_DAYS[volatility] * 86_400_000).toISOString()
+
     if (existing) {
       const n = (existing.evidence_count ?? 1) + 1
+      // Re-observation refreshes the clock: a fact seen again today is current
+      // again, which is the entire reason to track evidence over time.
       await db.from('learning_facts').update({
-        evidence_count: n, confidence: confidenceFor(n), last_seen: new Date().toISOString(),
+        evidence_count: n, confidence: confidenceFor(n),
+        last_seen: new Date().toISOString(), expires_at: expiresAt,
       }).eq('id', existing.id)
     } else {
       const { data: ins } = await db.from('learning_facts').insert({
         company_id: companyId, location_id: locationId, kind: c.kind,
         subject: scrub(c.subject).slice(0, 200), fact,
         confidence: confidenceFor(1), evidence_count: 1, status: 'candidate',
+        volatility, expires_at: expiresAt,
+        // Nothing distilled is ever authoritative. A structured field in the CRM
+        // outranks an inference, always.
+        source_authority: 'inferred',
       }).select('id').single()
       factId = ins?.id
       if (factId) stored++
