@@ -14,6 +14,7 @@ import { LockGate } from '@/components/auth/LockGate'
 import { createClient } from '@/lib/supabase/client'
 import ControlCenter from './ControlCenter'
 import ClientsPage from './ClientsPage'
+import CommandLauncher from './CommandLauncher'
 import AppSidebar, { NAV } from './AppSidebar'
 
 /**
@@ -453,7 +454,15 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
 
           {view === 'dashboard' && (
           <>
+          {/* The launcher sits ABOVE the command box on purpose: it is the
+              answer to "what can this thing do", and a person who does not yet
+              know what to type needs the menu before the input. Tiles either
+              navigate or pre-fill the box below. */}
           <section className="oc-card oc-rise p-4 sm:p-5">
+            <CommandLauncher onPrompt={(text) => setCommand((c) => (c ? `${c} ${text}` : text))} />
+          </section>
+
+          <section className="oc-card oc-rise mt-4 p-4 sm:p-5">
             <div className="oc-mono mb-2.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.14em] text-[color:var(--oc-green-d)]">
               <span>EQ&gt;</span>
               <span className="text-[color:var(--oc-text)]/55">
