@@ -467,10 +467,16 @@ code, pre, .font-mono {
    of "close enough" hexes is how two surfaces stop matching.
    ═══════════════════════════════════════════════════════════════════════ */
 :root {
-  /* Brand green family — never a fourth green. */
-  --0n-neon:#6EE05A; --0n-green:#22c55e; --0n-deep:#16a34a;
-  --0n-gradient:linear-gradient(120deg,#6EE05A 0%,#22c55e 100%);
-  --0n-soft:rgba(110,224,90,0.14);
+  /* Brand green family — never a fourth green.
+     CORRECTED: these previously carried #6EE05A/#22c55e/#16a34a, which appear
+     ZERO times in any of the three design handoffs. The shipped files use
+     #7ED957 (×47) and #4d9f2f (×151). A token nobody imports documents an
+     intention; usage documents the design. */
+  --0n-neon:#7ED957; --0n-green:#22c55e; --0n-deep:#4d9f2f;
+  --0n-rail-hover:#059669;
+  --0n-on-accent:#0d1117;
+  --0n-gradient:linear-gradient(120deg,#7ED957 0%,#4d9f2f 100%);
+  --0n-soft:rgba(126,217,87,0.14);
   --0n-teal:#0891b2;
 
   /* Surface C — Console dark (Agency CRM + extension panel) */
@@ -504,6 +510,17 @@ code, pre, .font-mono {
    nudged by a change made for the marketing site or the authenticated app.
    ═══════════════════════════════════════════════════════════════════════ */
 .oncore-app {
+  /* ── 0n brand greens — CORRECTED to what the design files actually use ──
+     tokens/colors.css declares #6EE05A / #22c55e / #16a34a and every one of
+     them appears ZERO times in the three handoffs. The shipped files use
+     #7ED957 (×47) and #4d9f2f (×151). Usage is the ground truth; a token file
+     nobody imports is documentation of an intention, not of a design.
+     Verified by counting occurrences across all three .dc.html files. */
+  /* Brand greens are declared once at :root and inherited here — see the note
+     there. The on-accent ink (#0n-on-accent) reads like Surface C at a glance
+     and is not: it is the foreground that sits ON lime, which is why it appears
+     inside a Surface B layout. */
+
   /* Surface B light — design_handoff_0ncore 3, v2 mapping. Values COPIED.
      The neon survives ONLY as glow, live dots and the focused command border;
      anything a person must READ uses the deep green, because #6EE05A on white
@@ -518,8 +535,8 @@ code, pre, .font-mono {
   --oc-text:     #404040;
   --oc-muted:    #737373;
   --oc-faint:    #a3a3a3;
-  --oc-green:    #6EE05A;   /* glow / live dots / focus ring ONLY */
-  --oc-green-d:  #16a34a;   /* every readable green */
+  --oc-green:    var(--0n-neon);   /* glow / live dots / focus ring ONLY */
+  --oc-green-d:  var(--0n-deep);   /* every readable green */
   --oc-amber:    #d97706;
   --oc-red:      #dc2626;
   --oc-blue:     #0891b2;
