@@ -338,10 +338,96 @@ You generate content that drives engagement and leads. Every piece should provid
   },
 }
 
+// ─── SXO — scheduled site health ───────────────────────────────────────────
+/**
+ * The crawl already exists in lib/sxo/crawler.ts. This wraps it as a scheduled
+ * add-on rather than reimplementing it — the whole reason the add-on contract
+ * exists is so a capability gains config, a cadence and a price without
+ * growing a second copy of its engine.
+ */
+const sxoAddon: AddonDefinition = {
+  slug: 'sxo',
+  name: 'SXO — Site Health Canvas',
+  schedule: 'weekly',
+  configSchema: [
+    { key: 'domain', label: 'Website to watch', type: 'text', placeholder: 'harbordental.com', required: true },
+    { key: 'maxPages', label: 'Maximum pages per crawl', type: 'number', default: 150,
+      description: 'Higher finds more, takes longer, and asks more of their server.' },
+    { key: 'alertOnDrop', label: 'Tell me when the score drops', type: 'toggle', default: true },
+  ],
+  async execute(ctx) {
+    const domain = String(ctx.config.domain ?? '').trim()
+    if (!domain) return { success: false, summary: 'No website configured.', outputs: {} }
+
+    const { crawlSite } = await import('@/lib/sxo/crawler')
+    const r = await crawlSite(
+      String(ctx.config.__companyId ?? ctx.locationId),
+      domain,
+      ctx.locationId,
+      { maxPages: Number(ctx.config.maxPages) || 150 },
+    )
+    if (!r.ok) return { success: false, summary: r.error, outputs: {} }
+
+    return {
+      success: true,
+      summary: `${domain}: ${r.result.pages} pages, score ${r.result.score}` +
+               (r.result.orphans ? `, ${r.result.orphans} orphan(s)` : ''),
+      outputs: { ...r.result },
+      items: [{ type: 'scan', title: `${domain} — ${r.result.score}/100`,
+                url: `/crm/sxo`, status: 'complete' }],
+    }
+  },
+}
+
+// ─── 0nCouncil — standing verification of the claims a business relies on ──
+const councilAddon: AddonDefinition = {
+  slug: '0ncouncil',
+  name: '0nCouncil — Answer Verification',
+  schedule: 'manual',
+  configSchema: [
+    { key: 'questions', label: 'Claims to keep checking', type: 'tags',
+      description: 'Reviewed on every run. Anything the business states publicly and would be embarrassed to have wrong.' },
+    { key: 'domain', label: 'Subject area', type: 'text', placeholder: 'dentistry', default: 'general' },
+  ],
+  async execute(ctx) {
+    const raw = ctx.config.questions
+    const questions = (Array.isArray(raw) ? raw : String(raw ?? '').split('\n'))
+      .map((q) => String(q).trim()).filter(Boolean).slice(0, 10)
+    if (!questions.length) return { success: false, summary: 'No claims configured to review.', outputs: {} }
+
+    const { runCouncil, recordCouncil } = await import('@/lib/council')
+    const domain = String(ctx.config.domain ?? 'general')
+
+    // Sequential on purpose: a panel per claim is several model calls, and
+    // firing them all at once is how a scheduled job trips a rate limit.
+    const results = []
+    for (const q of questions) {
+      const r = await runCouncil(q, { domain })
+      void recordCouncil(r, domain)
+      results.push(r)
+    }
+
+    const shaky = results.filter((r) => r.verdict !== 'supported')
+    return {
+      success: true,
+      summary: shaky.length
+        ? `${shaky.length} of ${results.length} claims did not survive review.`
+        : `All ${results.length} claims held up.`,
+      outputs: { results },
+      items: results.map((r) => ({
+        type: 'review', title: `${r.verdict} (${r.confidence}) — ${r.question.slice(0, 60)}`,
+        status: r.verdict === 'supported' ? 'ok' : 'attention',
+      })),
+    }
+  },
+}
+
 // ─── REGISTRY ──────────────────────────────────────────────────
 
 const ADDON_REGISTRY: Record<string, AddonDefinition> = {
   'content-engine': contentEngine,
+  sxo: sxoAddon,
+  '0ncouncil': councilAddon,
 }
 
 export function getAddonDefinition(slug: string): AddonDefinition | null {

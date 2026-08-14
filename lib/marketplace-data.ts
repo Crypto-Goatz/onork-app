@@ -37,6 +37,50 @@ export const CATEGORIES: MarketplaceCategory[] = [
 export const ADDONS: MarketplaceAddon[] = [
   // === FEATURED ===
   {
+    slug: 'sxo',
+    name: 'SXO — Site Health Canvas',
+    shortDesc: 'Crawl a client\u2019s whole site and see it as a living health map.',
+    longDesc:
+      'Walks every page from robots.txt and the sitemap, follows internal links, and renders the result as a map where colour is health. Finds the pages nothing links to \u2014 orphans a per-page scan structurally cannot see \u2014 and names every issue by the rule that fired.',
+    price: 4900,
+    priceLabel: '$49/mo',
+    categories: ['analytics', 'content'],
+    capabilities: ['sxo.crawl_site', 'sxo.get_site_health', 'sxo.list_issues'],
+    requiredPlan: 'starter',
+    badge: 'New',
+    features: [
+      'Full-site crawl \u2014 robots and sitemap seeded, internal links discovered',
+      'Orphan detection: reachable in the sitemap, linked from nowhere',
+      'Health canvas laid out by click-depth from the homepage',
+      'Every issue named by rule, never a bare score',
+      'Honours robots.txt, crawl-delay and a page budget',
+    ],
+    integrations: ['0nMCP', 'IndexNow'],
+    relatedAddons: ['content-engine', '0ncouncil'],
+  },
+  {
+    slug: '0ncouncil',
+    name: '0nCouncil — Answer Verification',
+    shortDesc: 'Put an AI answer in front of an adversarial panel before you rely on it.',
+    longDesc:
+      'Several model families answer independently, then each tries to refute a rival\u2019s answer. The verdict comes from survival and convergence, never from how confident a model sounded. Built for anyone who has to sign off on what an AI said.',
+    price: 4900,
+    priceLabel: '$49/mo',
+    categories: ['ai-automation', 'analytics'],
+    capabilities: ['council.review', 'council.history'],
+    requiredPlan: 'starter',
+    badge: 'New',
+    features: [
+      'Independent answers \u2014 members never see each other first',
+      'Cross-refutation: each reviews a peer, never itself',
+      'Returns the dissent, not just a verdict',
+      'Says what would settle it when the panel disagrees',
+      'Unanimous abstention is a result \u2014 and a useful one',
+    ],
+    integrations: ['0nMCP'],
+    relatedAddons: ['sxo', 'agent-studio'],
+  },
+  {
     slug: 'content-engine',
     name: 'Content Engine',
     shortDesc: 'AI writes blogs, posts to social, sends email campaigns — all from one conversation.',
