@@ -18,6 +18,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { createServiceClient } from '@/lib/connect/service-client'
 import type { CourseConfig, CourseOutline, GeneratedCourse } from '@/lib/course-builder/types'
 
@@ -39,9 +40,23 @@ function cfg(raw: unknown): CourseConfig | null {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient()
-  const user = (await supabase.auth.getSession()).data.session?.user ?? null
-  if (!user) return NextResponse.json({ error: 'Please sign in first.' }, { status: 401 })
+  /**
+   * TWO WAYS IN, because there are two kinds of user.
+   *
+   * An agency signed into app.0ncore.com carries a Supabase session. Someone who
+   * installed this from the marketplace has no account here at all — their
+   * identity arrives through the SSO handshake as a short-lived app JWT. This
+   * route previously accepted only the first, so every marketplace install would
+   * have met a 401 on its first click and looked broken on the day it was
+   * reviewed.
+   */
+  const session = verifyAppJwt(bearer(req))
+  let signedIn = session.ok
+  if (!signedIn) {
+    const supabase = await createClient()
+    signedIn = Boolean((await supabase.auth.getSession()).data.session?.user)
+  }
+  if (!signedIn) return NextResponse.json({ error: 'Please sign in first.' }, { status: 401 })
 
   const step = req.nextUrl.searchParams.get('step') || 'outline'
   const body = await req.json().catch(() => ({}))
