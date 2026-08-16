@@ -1,11 +1,16 @@
 'use client'
 
 /**
- * The agency rail — 236px, left, Console dark.
+ * The agency rail — 236px, RIGHT, Console dark (#0d1117).
  *
- * Rebuilt to design_handoff_0ncore. It moved from the right to the left because
- * the handoff's layout puts navigation first and the content column at
- * max-width 840px beside it; a right rail leaves the content column floating.
+ * Rebuilt to design_handoff_0ncore 3. This docstring used to claim the rail had
+ * moved to the LEFT and gave a reason; it never did — AgencyDashboard renders it
+ * after <main> and always has, and crm-01-command.png shows it on the right.
+ * A comment that contradicts the file it sits in is worse than none.
+ *
+ * Right on both surfaces is the point: the content column stays where the eye
+ * lands, and the two products differ by rail COLOUR (#0d1117 here, pure black on
+ * the Client Console) rather than by layout.
  *
  * TEN ITEMS IN THREE GROUPS, and the grouping carries meaning: what you DO
  * (Command, Clients, Actions), what you BUILD (Automations, Content, Pipeline),
@@ -19,7 +24,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   UserCircle,
-  BookOpen, CreditCard, Download, FileText, GitBranch, Plug, ScrollText,
+  BookOpen, CreditCard, Download, FileText, GitBranch, LogOut, Plug, ScrollText,
   Settings, Sparkles, Terminal, Users, Wrench, type LucideIcon,
 } from 'lucide-react'
 
@@ -88,15 +93,31 @@ export interface AppSidebarProps {
   /** The free account's name — it is the default target, so it is named here. */
   freeAccountName?: string | null
   onHide?: () => void
+  /** Sign out lives here now that the surface has no header bar. */
+  onSignOut?: () => void
+  /**
+   * The live connection state, in four flavours rather than two.
+   *
+   * "Not connected" used to cover being mid-handshake, being signed in with
+   * nothing installed, and having the sign-in refused — three problems with
+   * three different fixes, all wearing the same amber dot. It rides here
+   * because the status block is where someone looks to answer "why did that
+   * fail", and a dot that is always green answers nothing.
+   */
+  connection?: { dot: string; label: string }
 }
 
 export default function AppSidebar({
-  current, activeCount, totalCount, usageLabel, freeAccountName,
+  current, activeCount, totalCount, usageLabel, freeAccountName, onSignOut, connection,
 }: AppSidebarProps) {
   const active = ALIAS[current] ?? current
 
   return (
-    <aside className="oc-rail hidden w-[236px] shrink-0 bg-[color:var(--oc-rail)] lg:block">
+    /* #0d1117, not the pure black of the Client Console. The two rails are
+       deliberately different: the console-dark family (#0d1117 page, #21262d
+       hover) is what the Agency CRM is built from, and an operator who has both
+       surfaces open should never have to read a label to know which is which. */
+    <aside className="oc-rail hidden w-[236px] shrink-0 bg-[color:var(--console-page)] lg:block">
       <div className="sticky top-0 flex max-h-screen min-h-screen flex-col gap-5 overflow-y-auto p-4">
         <Link href="/crm" className="block px-2 pt-2" aria-label="0nCORE home">
           {/* NOT the file the handoff README names. The assets are named for
@@ -147,14 +168,23 @@ export default function AppSidebar({
         <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--oc-green-d)] opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[color:var(--oc-green-d)]" />
+              {/* Only a genuinely live connection pulses. A pulsing dot is a
+                  claim that something is running. */}
+              {!connection || connection.label === 'live' ? (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--0n-neon)] opacity-60" />
+              ) : null}
+              <span className={`relative inline-flex h-2 w-2 rounded-full ${connection?.dot ?? 'bg-[color:var(--0n-neon)]'}`} />
             </span>
             <span className="text-[12px] text-white/80">
               {activeCount} of {totalCount} clients switched on
             </span>
           </div>
-          <div className="mt-1.5 text-[12px] text-white/50">{usageLabel} this month</div>
+          <div className="mt-1.5 text-[12px] text-white/50">
+            {usageLabel} this month
+            {connection && connection.label !== 'live' && (
+              <> · <span className="text-white/70">{connection.label}</span></>
+            )}
+          </div>
           {freeAccountName && (
             <div className="mt-1.5 flex items-baseline gap-1.5 text-[11px]">
               <span className="shrink-0 text-white/50">Free account</span>
@@ -162,6 +192,18 @@ export default function AppSidebar({
             </div>
           )}
         </div>
+
+        {/* The comp has no header bar, so the one control that used to live
+            there and has nowhere else to go comes down here. */}
+        {onSignOut && (
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-[13px] font-medium text-[#8b949e] transition-colors hover:bg-[#21262d] hover:text-[#e6edf3]"
+          >
+            <LogOut className="h-4 w-4 shrink-0" strokeWidth={2} /> Sign out
+          </button>
+        )}
       </div>
     </aside>
   )

@@ -5,8 +5,8 @@ import Link from 'next/link'
 import {
   Terminal,
   Send, Mic, ShieldCheck, Loader2, X, AlertCircle, CheckCircle2,
-  PanelRightClose, PanelRightOpen, Building2, Sparkles, Home,
-  Crosshair, ArrowLeft, LogOut, CreditCard,
+  Building2, Sparkles, Home,
+  Crosshair, ArrowLeft, ArrowUp, CornerDownLeft, CreditCard,
 } from 'lucide-react'
 import { METERS, formatPrice } from '@/lib/meters'
 import { useSso, authHeaders, STORAGE_KEY } from './useSso'
@@ -128,7 +128,6 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
     } catch { alert('Could not start checkout.') }
     finally { setSubscribing(false) }
   }
-  const [taskbarOpen, setTaskbarOpen] = useState(true)
   /**
    * Top-level view. The tiles remain the dashboard's own navigation; this is the
    * layer above them, so Clients and Automations are places you go rather than
@@ -303,75 +302,18 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
 
   return (
     <div className="oncore-app min-h-screen">
-      {/* ── HEADER ── */}
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[color:var(--oc-border)] bg-[color:var(--oc-card)]/90 px-4 py-3 backdrop-blur-md sm:px-6">
-        {/* The full wordmark, which already carries the name — so the "0nCORE"
-            text label that used to sit here is gone rather than saying it twice.
-            This is the light-background artwork (dark lettering); the neon icon
-            variant is for dark surfaces and would disappear on #F6F6F7. */}
-        <img
-          src="/brand/0ncore-logo-light.png"
-          alt="0nCORE"
-          className="h-[26px] w-auto shrink-0 object-contain"
-        />
-        <div className="min-w-0">
-          <div className="truncate text-[12px] font-medium text-[color:var(--oc-text)]/75">
-            {boot?.agency.name ?? sso.user?.name ?? 'Agency Command'}
-          </div>
-        </div>
-
-        <div className="ml-auto flex items-center gap-2">
-          <span className="oc-chip hidden border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-2.5 py-1.5 text-[color:var(--oc-text)] sm:inline-block">
-            {boot?.usage.mtdLabel ?? '$0'} MTD
-          </span>
-          <span className="oc-chip inline-flex items-center gap-1.5 border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-2.5 py-1.5">
-            <span className={`h-1.5 w-1.5 rounded-full ${conn.dot}`} />
-            <span className="text-[color:var(--oc-text)]">{conn.label}</span>
-          </span>
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
-            {NAV.map((n) => {
-              const Icon = n.icon
-              const on = n.view !== undefined && view === n.view
-              return (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  aria-current={on ? 'page' : undefined}
-                  className={`oc-chip inline-flex items-center gap-1.5 border px-2.5 py-1.5 transition-colors ${
-                    on
-                      ? 'border-[color:var(--oc-green-d)] bg-[color:var(--oc-green)]/12 text-[color:var(--oc-green-d)]'
-                      : 'border-transparent bg-transparent text-[color:var(--oc-text)] hover:border-[color:var(--oc-border)] hover:bg-[color:var(--oc-card)]'
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5" /> {n.label}
-                </Link>
-              )
-            })}
-          </nav>
-          <button
-            type="button"
-            onClick={() => setTaskbarOpen((v) => !v)}
-            aria-label={taskbarOpen ? 'Hide tasks' : 'Show tasks'}
-            className="grid h-8 w-8 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)] lg:hidden"
-          >
-            {taskbarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-          </button>
-          <button
-            type="button"
-            onClick={signOut}
-            aria-label="Sign out"
-            title="Sign out"
-            className="grid h-8 w-8 place-items-center rounded-[11px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-red)] hover:text-[color:var(--oc-red)]"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </div>
-      </header>
+      {/* THE HEADER IS GONE. The comp has no top bar: the wordmark, the agency
+          name, the connection dot, the nav and the MTD figure all live in the
+          rail, and repeating them across the top both stole the first 57px of
+          every page and gave two places to click for the same section. Sign out
+          moved into the rail; the taskbar toggle went with the bar that held it
+          (the rail is always present on desktop, and below lg the mobile nav
+          strip below already carries the sections). */}
 
       {/* ── FOCUS BAR ── the "zoomed into one client" state, persistent and
           reversible. Hidden in the global (all-clients) view. */}
       {activeLocation !== 'all' && (
-        <div className="sticky top-[57px] z-20 flex items-center gap-3 border-b border-[color:var(--oc-green-d)]/25 bg-[color:var(--oc-green)]/[0.10] px-4 py-2.5 backdrop-blur-md sm:px-6">
+        <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-[color:var(--oc-green-d)]/25 bg-[color:var(--oc-green)]/[0.10] px-4 py-2.5 backdrop-blur-md sm:px-6">
           <Crosshair className="h-4 w-4 shrink-0 text-[color:var(--oc-green-d)]" />
           <div className="min-w-0 flex-1">
             <span className="text-[13px] font-semibold text-[color:var(--oc-ink)]">
@@ -456,64 +398,114 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
 
           {view === 'dashboard' && (
           <>
-          {/* The launcher sits ABOVE the command box on purpose: it is the
-              answer to "what can this thing do", and a person who does not yet
-              know what to type needs the menu before the input. Tiles either
-              navigate or pre-fill the box below. */}
-          <section className="oc-card oc-rise p-4 sm:p-5">
-            <CommandLauncher onPrompt={(text) => setCommand((c) => (c ? `${c} ${text}` : text))} />
+          {/* ── PAGE HEAD ── the comp opens with the title and the scope, not
+              with chrome. Landing on a command box rather than a dashboard is
+              deliberate: a dashboard tells you what happened, and this is a
+              tool for making things happen. */}
+          <div className="on-fade-up mb-6 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="m-0 text-[34px] font-semibold leading-[1.1] tracking-[-0.03em] text-[color:var(--oc-ink)]">
+                Command
+              </h1>
+              <p className="mt-2 max-w-[430px] text-[14px] leading-[1.5] text-[color:var(--oc-muted)]">
+                Tell 0n what to do across your clients. Nothing runs before you approve.
+              </p>
+            </div>
+            {/* The scope selector, where the comp puts it. It sets the default
+                target for anything the sentence does not name — which is why it
+                sits beside the title rather than inside the box. */}
+            <div className="shrink-0">
+              <label htmlFor="scope" className="sr-only">Client scope</label>
+              <select
+                id="scope"
+                value={activeLocation}
+                onChange={(e) => (e.target.value === 'all' ? clearFocus() : focusOn(e.target.value, boot?.locations.find((l) => l.id === e.target.value)?.name ?? ''))}
+                className="cursor-pointer rounded-full border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-4 py-2.5 text-[13px] font-medium text-[color:var(--oc-ink)] shadow-[var(--oc-shadow-sm)] transition-colors hover:border-[color:var(--oc-border-h)]"
+              >
+                <option value="all">All clients</option>
+                {(boot?.locations ?? []).map((l) => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* ── THE BOX ── dark on a light page, exactly as the comp draws it.
+              That is a design-system rule rather than a flourish: a command box
+              must contrast its container instead of dissolving into the page,
+              and --oc-input has said #141414 all along while the .oc-input class
+              was painting it card-white. */}
+          <section className="on-fade-up rounded-[18px] bg-[color:var(--oc-input)] p-4 shadow-[var(--oc-shadow)]">
+            <textarea
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); plan() } }}
+              rows={3}
+              placeholder="Move every Peak Fitness deal older than 30 days to Follow-up…"
+              aria-label="Command"
+              className="w-full resize-none border-none bg-transparent text-[15px] leading-relaxed text-white outline-none placeholder:text-white/35"
+            />
+            <div className="mt-2 flex items-center gap-3">
+              <span className="flex min-w-0 items-center gap-1.5 text-[12px] text-white/45">
+                <CornerDownLeft className="h-3.5 w-3.5 shrink-0" />
+                Scope:
+                <span className="truncate text-white/70">
+                  {activeLocation === 'all' ? 'All clients' : (focusName || boot?.locations.find((l) => l.id === activeLocation)?.name || 'client')}
+                </span>
+              </span>
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  title="Voice — ships with the executor"
+                  className="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/30"
+                >
+                  <Mic className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => plan()}
+                  disabled={planning || !command.trim()}
+                  className="grid h-9 w-9 place-items-center rounded-full bg-[color:var(--0n-neon)] text-[color:var(--0n-on-accent)] transition-transform hover:scale-105 disabled:bg-white/15 disabled:text-white/30 disabled:hover:scale-100"
+                  aria-label="Plan this"
+                >
+                  {planning ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" strokeWidth={2.5} />}
+                </button>
+              </div>
+            </div>
           </section>
 
-          <section className="oc-card oc-rise mt-4 p-4 sm:p-5">
-            <div className="oc-mono mb-2.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.14em] text-[color:var(--oc-green-d)]">
-              <span>EQ&gt;</span>
-              <span className="text-[color:var(--oc-text)]/55">
-                {activeLocation === 'all' ? 'all clients' : (focusName || boot?.locations.find((l) => l.id === activeLocation)?.name || 'client')}
-              </span>
-            </div>
-
-            <div className="flex items-end gap-2">
-              <textarea
-                value={command}
-                onChange={(e) => setCommand(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); plan() } }}
-                rows={2}
-                placeholder="Say what you want done — name the clients and the outcome."
-                aria-label="Command"
-                className="oc-input min-h-[52px] flex-1 resize-y px-3.5 py-3 text-[15px] leading-relaxed placeholder:text-[color:var(--oc-text)]/45"
-              />
-              <button
-                type="button"
-                disabled
-                title="Voice — ships with the executor"
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] text-[color:var(--oc-text)]/35"
-              >
-                <Mic className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => plan()}
-                disabled={planning || !command.trim()}
-                className="oc-btn grid h-11 w-11 shrink-0 place-items-center"
-                aria-label="Plan this"
-              >
-                {planning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              </button>
-            </div>
+          <section className="mt-4">
 
             {!legs && !err && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {EXAMPLES.map((x) => (
-                  <button
-                    key={x}
-                    type="button"
-                    onClick={() => setCommand(x)}
-                    className="oc-chip border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] px-3 py-2 text-left font-normal text-[color:var(--oc-text)] transition-colors hover:border-[color:var(--oc-green-d)]"
-                  >
-                    {x}
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="mb-2.5 mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[color:var(--oc-faint)]">
+                  Try one
+                </div>
+                {/* Full-width rows, not chips. These are whole sentences —
+                    wrapped into pills they became unreadable, and the point of
+                    an empty state is that someone can read what the product
+                    does without typing anything first. */}
+                <div className="flex flex-col gap-2">
+                  {EXAMPLES.map((x) => (
+                    <button
+                      key={x}
+                      type="button"
+                      onClick={() => setCommand(x)}
+                      className="on-card on-card-lift flex w-full items-start gap-2.5 px-4 py-3.5 text-left text-[13.5px] leading-[1.45] text-[color:var(--oc-ink)]"
+                    >
+                      <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--oc-green-d)]" />
+                      {x}
+                    </button>
+                  ))}
+                </div>
+                {/* The launcher lives below the examples now: the comp opens on
+                    the box, and a grid of thirty tiles above the input answered
+                    "what can this do" before anyone had asked. */}
+                <div className="oc-card mt-4 p-4 sm:p-5">
+                  <CommandLauncher onPrompt={(text) => setCommand((c) => (c ? `${c} ${text}` : text))} />
+                </div>
+              </>
             )}
 
             {err && (
@@ -707,15 +699,17 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
           )}
         </main>
 
-        {taskbarOpen && (
-          <AppSidebar
-            current={view}
-            activeCount={activeCount}
-            totalCount={boot?.locations.length ?? 0}
-            usageLabel={boot?.usage.mtdLabel ?? '$0'}
-            onHide={() => setTaskbarOpen(false)}
-          />
-        )}
+        {/* Always mounted. It was collapsible only because the header carried a
+            toggle; with the header gone the rail IS the navigation, and a
+            product whose nav can be hidden with no way back is not a feature. */}
+        <AppSidebar
+          current={view}
+          activeCount={activeCount}
+          totalCount={boot?.locations.length ?? 0}
+          usageLabel={boot?.usage.mtdLabel ?? '$0'}
+          connection={conn}
+          onSignOut={signOut}
+        />
       </div>
 
       {/* ── tile detail ── */}
