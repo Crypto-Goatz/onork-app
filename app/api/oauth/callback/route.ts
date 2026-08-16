@@ -152,32 +152,73 @@ export async function GET(req: NextRequest) {
     const failures: string[] = []
     const skipped: string[] = []
 
+    /**
+     * REDIRECT_URI MUST MATCH THE AUTHORISE STEP EXACTLY, and we were guessing.
+     *
+     * Each app carried one hardcoded value. But the apex 308s to www
+     * (0ncore.com/api/oauth/callback → www.0ncore.com/...), so depending on
+     * which host is registered in the portal, the code may have been issued
+     * against a URL that is not the one we send back. A mismatch is reported by
+     * the platform as **"Invalid client credentials"** — a message that sends
+     * you to check secrets that are perfectly fine. Five apps all reporting it
+     * at once is the tell: five wrong secrets is not a thing, one wrong
+     * redirect_uri is.
+     *
+     * So every plausible URI is tried. A mismatch fails BEFORE the code is
+     * redeemed — same class as a rejected credential — so the code survives to
+     * the next attempt. The one that works is logged by name, and the failures
+     * name which URI they used, so this is diagnosed once and then pinned.
+     */
+    const REDIRECT_CANDIDATES = [
+      ...new Set([
+        // The URL this request actually arrived on, first: if the portal is
+        // configured correctly, this is the answer by construction.
+        `${req.nextUrl.origin}/api/oauth/callback`,
+        'https://app.0ncore.com/api/oauth/callback',
+        'https://www.0ncore.com/api/oauth/callback',
+        'https://0ncore.com/api/oauth/callback',
+      ]),
+    ]
+
     for (const app of candidates) {
       if (!app.clientSecret) { skipped.push(`${app.name}(no secret in env)`); continue }
 
-      const tokenRes = await fetch(CRM_TOKEN_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Accept: 'application/json',
-        },
-        body: new URLSearchParams({
-          client_id: app.clientId,
-          client_secret: app.clientSecret,
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: app.redirectUri,
-          user_type: app.userType,
-        }),
-      })
+      // The app's own configured URI is tried first, then the rest.
+      const uris = [...new Set([app.redirectUri, ...REDIRECT_CANDIDATES])]
+      let data: Record<string, unknown> = {}
+      let tokenRes: Response | null = null
+      let usedUri = app.redirectUri
 
-      const data = await tokenRes.json()
+      for (const uri of uris) {
+        tokenRes = await fetch(CRM_TOKEN_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Accept: 'application/json',
+          },
+          body: new URLSearchParams({
+            client_id: app.clientId,
+            client_secret: app.clientSecret,
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: uri,
+            user_type: app.userType,
+          }),
+        })
+        data = await tokenRes.json()
+        usedUri = uri
+        if (tokenRes.ok && data.access_token) break
+        // A spent or rejected CODE is terminal — no other redirect_uri will
+        // help, and continuing only buries the real message.
+        if (/code (?:not found|is invalid|expired)|invalid_grant|authorization code/i.test(JSON.stringify(data))) break
+      }
+      if (!tokenRes) { skipped.push(`${app.name}(no attempt made)`); continue }
 
       if (tokenRes.ok && data.access_token) {
         tokenData = data
         usedApp = app
         console.log(
-          `[oauth/callback] Token exchanged via ${app.name} app (user_type=${app.userType}). ` +
+          `[oauth/callback] Token exchanged via ${app.name} app (user_type=${app.userType}, redirect_uri=${usedUri}). ` +
           `Response keys: ${Object.keys(data).join(',')} | ` +
           `refresh_token: ${data.refresh_token ? 'PRESENT' : 'MISSING'} | ` +
           `locationId: ${data.locationId || 'none'} | companyId: ${data.companyId || 'none'}`
@@ -188,8 +229,10 @@ export async function GET(req: NextRequest) {
       // The RAW response, not a summary. "token exchange failed" told us
       // nothing; the platform's own error_description is what identifies
       // whether it is the client, the secret, the redirect_uri or the code.
-      const raw = JSON.stringify(data).slice(0, 300)
-      failures.push(`${app.name}(${tokenRes.status}): ${raw}`)
+      const raw = JSON.stringify(data).slice(0, 240)
+      // The URI is named in the failure. "Invalid client credentials" with no
+      // redirect_uri attached is what sent us hunting through secrets.
+      failures.push(`${app.name}(${tokenRes.status}) via ${usedUri}: ${raw}`)
       console.warn(`[oauth/callback] ${app.name} exchange failed ${tokenRes.status}: ${raw}`)
 
       /**
