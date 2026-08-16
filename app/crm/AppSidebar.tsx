@@ -18,12 +18,13 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import {
+  UserCircle,
   BookOpen, CreditCard, Download, FileText, GitBranch, Plug, ScrollText,
   Settings, Sparkles, Terminal, Users, Wrench, type LucideIcon,
 } from 'lucide-react'
 
 export type NavKey =
-  | 'command' | 'clients' | 'actions'
+  | 'command' | 'clients' | 'actions' | 'account'
   | 'automations' | 'content' | 'pipeline'
   | 'history' | 'usage' | 'setup' | 'downloads' | 'settings'
   | 'tools'
@@ -60,6 +61,7 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'usage', href: '/crm/billing', label: 'Plan & Usage', icon: CreditCard },
     { key: 'setup', href: '/crm/setup', label: 'Setup & Keys', icon: Plug },
     { key: 'downloads', href: '/crm/downloads', label: 'Downloads', icon: Download },
+    { key: 'account', href: '/crm/account', label: 'Your account', icon: UserCircle },
     { key: 'settings', href: '/crm/settings', label: 'Settings', icon: Settings },
   ],
 ]

@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
+  UserCircle,
   MessageSquare, Mail, GitBranch, CalendarDays, ListChecks, Sparkles, Bot,
   FileText, GraduationCap, Users, Building2, KeyRound, BarChart3, ScrollText,
   Radar, Wrench, Plus, Check, X, Pencil,
@@ -68,9 +69,10 @@ const CATALOG: Tool[] = [
   // point of a registry-driven launcher.
   { id: 'sxo',        label: 'SXO',         category: 'reporting', icon: Radar,         href: '/crm/sxo' },
   { id: 'tools',      label: 'All tools',   category: 'work',      icon: Wrench,        href: '/crm/tools' },
+  { id: 'account',    label: 'Your account',category: 'clients',   icon: UserCircle,    href: '/crm/account' },
 ]
 
-const DEFAULT_ORDER = ['sxo', 'clients', 'tasks', 'pipeline', 'sms', 'email', 'courses', 'contacts', 'usage', 'history']
+const DEFAULT_ORDER = ['sxo', 'clients', 'tasks', 'pipeline', 'sms', 'email', 'courses', 'contacts', 'account', 'usage', 'history']
 
 export default function CommandLauncher({ onPrompt }: { onPrompt?: (text: string) => void }) {
   const router = useRouter()
