@@ -20,6 +20,7 @@
  * are filled in. A returning user's display name, brand and settings are theirs,
  * and a login is not an invitation to reset them.
  */
+import crypto from 'node:crypto'
 import { createServiceClient } from '@/lib/connect/service-client'
 
 export type AccountSource = 'signup' | 'google' | 'crm_sso' | 'marketplace_install' | 'device'
@@ -64,14 +65,18 @@ export async function ensureOnAccount(
   // 1 — by email, the identity that spans every surface.
   const { data: byEmail } = await db
     .from('profiles')
-    .select('id, email, display_name, crm_agency_id, crm_location_id')
+    .select('id, email, display_name, crm_location_id')
     .eq('email', lookupEmail)
     .maybeSingle()
 
   if (byEmail) {
     // Fill only what is genuinely missing. A returning user's fields are theirs.
     const patch: Record<string, unknown> = {}
-    if (companyId && !byEmail.crm_agency_id) patch.crm_agency_id = companyId
+    // NOT crm_agency_id — that column is a uuid foreign key into crm_agencies,
+    // not somewhere a CRM company string can live. Writing one there fails the
+    // constraint and 500s the whole sign-in. The company already travels in the
+    // app JWT and is mapped by agency_connections; profiles does not need a
+    // second copy of it.
     if (input.locationId && !byEmail.crm_location_id) patch.crm_location_id = input.locationId
     if (input.displayName && !byEmail.display_name) patch.display_name = input.displayName
     if (Object.keys(patch).length) {
@@ -119,10 +124,12 @@ export async function ensureOnAccount(
   const { data: made, error } = await db
     .from('profiles')
     .insert({
+      // profiles.id is a uuid with NO database default — an insert that omits
+      // it violates not-null and takes the sign-in down with it.
+      id: crypto.randomUUID(),
       email: lookupEmail,
       display_name: input.displayName ?? null,
       full_name: input.displayName ?? null,
-      crm_agency_id: companyId,
       crm_location_id: input.locationId ?? null,
       auth_provider: input.source,
       onboarding_completed: false,
