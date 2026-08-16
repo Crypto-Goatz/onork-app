@@ -53,7 +53,8 @@ export async function verifyIdentity(req: NextRequest): Promise<IdentityResult> 
     try {
       const { createClient: createServerClient } = await import('@/lib/supabase/server')
       const serverSupa = await createServerClient()
-      const { data: { user } } = await serverSupa.auth.getUser()
+      const { data: { session } } = await serverSupa.auth.getSession()
+  const user = session?.user ?? null
       if (user) {
         return await resolveProfile(user.id, user.email || '')
       }

@@ -11,7 +11,8 @@ export const dynamic = 'force-dynamic'
 
 async function getUser() {
   const server = await createServerClient()
-  const { data: { user } } = await server.auth.getUser()
+  const { data: { session } } = await server.auth.getSession()
+  const user = session?.user ?? null
   return user
 }
 

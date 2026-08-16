@@ -16,7 +16,8 @@ function getAdmin() {
 
 async function verifyAdmin(): Promise<{ ok: boolean; error?: string }> {
   const serverClient = await createClient()
-  const { data: { user } } = await serverClient.auth.getUser()
+  const { data: { session } } = await serverClient.auth.getSession()
+  const user = session?.user ?? null
   if (!user) return { ok: false, error: 'Not authenticated' }
 
   const admin = getAdmin()

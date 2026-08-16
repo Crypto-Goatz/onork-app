@@ -373,7 +373,8 @@ export async function POST(req: NextRequest) {
         if (!user_id) {
           // Try to get from session
           const serverSupabase = await createServerClient()
-          const { data: { user } } = await serverSupabase.auth.getUser()
+          const { data: { session } } = await serverSupabase.auth.getSession()
+  const user = session?.user ?? null
           if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
           const status = await isLinkedInReady(user.id)
           return NextResponse.json(status)

@@ -21,7 +21,8 @@ const ADDON_CATALOG = [
 
 export async function GET() {
   const serverSupabase = await createServerClient()
-  const { data: { user } } = await serverSupabase.auth.getUser()
+  const { data: { session } } = await serverSupabase.auth.getSession()
+  const user = session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Get user's add-ons
@@ -60,7 +61,8 @@ export async function POST(req: NextRequest) {
   if (!addon_slug) return NextResponse.json({ error: 'addon_slug required' }, { status: 400 })
 
   const serverSupabase = await createServerClient()
-  const { data: { user } } = await serverSupabase.auth.getUser()
+  const { data: { session } } = await serverSupabase.auth.getSession()
+  const user = session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const addon = ADDON_CATALOG.find(a => a.slug === addon_slug)

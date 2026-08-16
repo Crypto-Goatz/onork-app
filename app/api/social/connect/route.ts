@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
   if (!userId) {
     const { createClient: createServerClient } = await import('@/lib/supabase/server')
     const serverSupa = await createServerClient()
-    const { data: { user: sessionUser } } = await serverSupa.auth.getUser()
+    const { data: { session } } = await serverSupa.auth.getSession()
+  const sessionUser = session?.user ?? null
     userId = sessionUser?.id || null
   }
 

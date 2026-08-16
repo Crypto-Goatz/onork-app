@@ -40,7 +40,8 @@ async function requireAdmin(req: NextRequest) {
 
   try {
     const server = await createServerClient()
-    const { data: { user } } = await server.auth.getUser()
+    const { data: { session } } = await server.auth.getSession()
+  const user = session?.user ?? null
     if (!user) return { ok: false, error: 'Not authenticated' }
     const admin = getAdmin()
     const { data: profile } = await admin

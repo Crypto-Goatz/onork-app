@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
   }
 
   const serverSupabase = await createServerClient()
-  const { data: { user } } = await serverSupabase.auth.getUser()
+  const { data: { session: authSession } } = await serverSupabase.auth.getSession()
+  const user = authSession?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const tierConfig = TIER_PRICES[tier]

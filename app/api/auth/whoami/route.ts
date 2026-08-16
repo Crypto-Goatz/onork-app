@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
   // Try server-side cookie session first
   try {
     const server = await createServerClient()
-    const { data: { user } } = await server.auth.getUser()
+    const { data: { session } } = await server.auth.getSession()
+  const user = session?.user ?? null
     if (user) {
       userId = user.id
       email = user.email || null

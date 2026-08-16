@@ -12,7 +12,8 @@ export const maxDuration = 30
 
 export async function POST(req: NextRequest) {
   const server = await createServerClient()
-  const { data: { user } } = await server.auth.getUser()
+  const { data: { session } } = await server.auth.getSession()
+  const user = session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
   const { domain_id } = await req.json().catch(() => ({}))

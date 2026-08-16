@@ -22,7 +22,8 @@ export async function GET(req: NextRequest) {
   if (!addon) return NextResponse.json({ error: 'Unknown add-on' }, { status: 404 })
 
   const serverSupabase = await createServerClient()
-  const { data: { user } } = await serverSupabase.auth.getUser()
+  const { data: { session: authSession } } = await serverSupabase.auth.getSession()
+  const user = authSession?.user ?? null
   if (!user) return NextResponse.redirect(new URL('/login', req.url))
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://0ncore.com'

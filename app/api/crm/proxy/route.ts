@@ -46,7 +46,8 @@ async function getTokenForLocation(locationId: string): Promise<string | null> {
 export async function POST(req: NextRequest) {
   // Auth — get user from session
   const serverSupabase = await createServerClient()
-  const { data: { user } } = await serverSupabase.auth.getUser()
+  const { data: { session } } = await serverSupabase.auth.getSession()
+  const user = session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { method = 'GET', path, body: reqBody, locationId: overrideLocationId } = await req.json()

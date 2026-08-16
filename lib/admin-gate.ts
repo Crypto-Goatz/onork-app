@@ -14,9 +14,8 @@ interface AdminCheck {
 
 export async function verifyAdmin(): Promise<AdminCheck> {
   const serverClient = await createServerClient()
-  const {
-    data: { user },
-  } = await serverClient.auth.getUser()
+  const { data: { session } } = await serverClient.auth.getSession()
+  const user = session?.user ?? null
   if (!user) return { ok: false, error: 'Not authenticated' }
 
   const admin = createClient(

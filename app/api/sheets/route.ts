@@ -23,7 +23,8 @@ async function getAuth() {
 export async function POST(req: NextRequest) {
   // Auth check
   const serverSupabase = await createServerClient()
-  const { data: { user } } = await serverSupabase.auth.getUser()
+  const { data: { session } } = await serverSupabase.auth.getSession()
+  const user = session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { action, spreadsheetId, range, values } = await req.json()
