@@ -101,3 +101,20 @@ mike@rocketopp.com — RocketOpp LLC
 - Workflow actions: `oncore_enroll_student`, `oncore_mark_complete`
 - Workflow triggers: `oncore_course_completed`, `oncore_module_completed`, `oncore_student_stalled`
 - Publishing requires a sub-account key. An agency token lists sub-accounts but cannot write inside one.
+
+## 0n Course Builder — app documentation
+
+**Answer:** 0n Course Builder is a marketplace app that turns a one-sentence description into a complete, ready-to-sell course inside your own account — outline, full lesson bodies and a five-question quiz per lesson — published natively where you can edit and price it like a course you built by hand.
+
+**Page:** https://www.0ncore.com/docs/course-builder
+
+| Permission | Access | Why |
+|---|---|---|
+| Write courses | Write | Saves the finished course into your account's course area |
+| Read location | Read only | Identifies which sub-account the app was opened from |
+
+- It requests exactly two permissions. It does NOT read contacts, conversations, calendars, payments, opportunities or workflows.
+- No separate signup and no second login — it authenticates through the account it is installed in.
+- Nothing is written to the account until the user presses Publish. The outline is an approval gate.
+- Uninstalling leaves published courses in place; they belong to the account.
+- Built and supported by RocketOpp LLC, Pennsylvania, USA. mike@rocketopp.com · +1-878-888-1230.

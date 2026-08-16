@@ -23,6 +23,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/ai-task-lists', priority: 0.9, changeFrequency: 'weekly' as const },
     { path: '/website-management', priority: 0.9, changeFrequency: 'weekly' as const },
     { path: '/course-builder', priority: 0.7, changeFrequency: 'monthly' as const },
+    // The docs page carries the app's permissions, data handling and FAQ — the
+    // things both a marketplace reviewer and an answer engine come looking for,
+    // so it is ranked above the marketing page rather than below it.
+    { path: '/docs/course-builder', priority: 0.8, changeFrequency: 'monthly' as const },
     { path: '/verticals', priority: 0.6, changeFrequency: 'monthly' as const },
 
     { path: '/pricing', priority: 0.9, changeFrequency: 'weekly' as const },
