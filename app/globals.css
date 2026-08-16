@@ -799,16 +799,24 @@ code, pre, .font-mono {
 /* ── Launcher tiles ─────────────────────────────────────────────────────────
    64px at radius 19 with the cascade shadow, per the handoff. The jiggle runs
    ONLY in edit mode — it is the signal that things can move, not decoration,
-   and a permanently animating grid is exhausting to look at. */
-.oncore-app .oc-tile {
+   and a permanently animating grid is exhausting to look at.
+
+   RENAMED FROM .oc-tile, WHICH BROKE TWO PAGES. That selector already meant
+   "card" (.oc-tile at the top of this file: a bordered, auto-height panel), and
+   this rule redefined it inside .oncore-app as a fixed 64x64 grid box. Every
+   content card on /crm/tools and /crm was therefore clamped to 64px square with
+   its flex-column layout overridden, and the text of each card spilled over the
+   one below it. One class name cannot mean both "small square button" and
+   "card that grows with its content". */
+.oncore-app .oc-launch-tile {
   height: 64px; width: 64px;
   display: grid; place-items: center;
   border: 0; border-radius: 19px; cursor: pointer;
   box-shadow: var(--oc-shadow-sm, 0 1px 2px rgba(10,10,10,.04), 0 4px 10px rgba(10,10,10,.05));
   transition: transform .15s ease, box-shadow .15s ease;
 }
-.oncore-app .oc-tile:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(10,10,10,.05), 0 12px 28px rgba(10,10,10,.10); }
-.oncore-app .oc-tile:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(110,224,90,.5); }
+.oncore-app .oc-launch-tile:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(10,10,10,.05), 0 12px 28px rgba(10,10,10,.10); }
+.oncore-app .oc-launch-tile:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(110,224,90,.5); }
 .oncore-app .oc-tile-edit { animation: oc-jiggle 420ms ease-in-out infinite; cursor: grab; }
 .oncore-app .oc-tile-edit:active { cursor: grabbing; }
 @keyframes oc-jiggle {

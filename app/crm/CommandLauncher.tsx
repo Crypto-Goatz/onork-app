@@ -161,7 +161,7 @@ export default function CommandLauncher({ onPrompt }: { onPrompt?: (text: string
               <button
                 onClick={() => open(t)}
                 title={`${t.label} — ${c.label}`}
-                className={`oc-tile ${editing ? 'oc-tile-edit' : ''}`}
+                className={`oc-launch-tile ${editing ? 'oc-tile-edit' : ''}`}
                 style={{ background: c.color }}
               >
                 <Icon className="h-7 w-7 text-white" strokeWidth={1.8} />
