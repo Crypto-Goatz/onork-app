@@ -92,9 +92,16 @@ export default function InstallResult() {
           {shown.title}
         </p>
         {shown.detail && (
-          <p className="oc-mono mt-1 break-words text-[11.5px] leading-relaxed text-[color:var(--oc-text)]/70">
-            {shown.detail}
-          </p>
+          // One line per app tried. The callback joins them with " · " because
+          // a single run can reject for several different reasons and reading
+          // them as one paragraph is how the one that matters gets skimmed past.
+          <ul className="mt-1.5 space-y-0.5">
+            {shown.detail.split(' · ').map((line, i) => (
+              <li key={i} className="oc-mono break-words text-[11.5px] leading-relaxed text-[color:var(--oc-text)]/70">
+                {line}
+              </li>
+            ))}
+          </ul>
         )}
       </div>
       <button

@@ -134,9 +134,16 @@ export async function GET(req: NextRequest) {
     // `marketplace(401): Invalid client credentials` on a fresh agency install:
     // the flow never reached the agency app at all, and the error named the one
     // app the user had not installed.
+    //
+    // COURSE-BUILDER LEADS. Installs from its marketplace listing arrive with no
+    // state at all, so this list is the only thing deciding which app gets the
+    // code — and every app tried before it is a chance for the code to be spent
+    // or code-shape-rejected, which breaks the loop before the right app is ever
+    // reached. It is also the app currently in review, so it is the one a
+    // stateless install is most likely to be.
     const candidates = only
       ? apps.filter((a) => a.name === only)
-      : ['agency-v2', 'subaccount-v2', 'course-builder', 'marketplace', 'marketplace-alt']
+      : ['course-builder', 'agency-v2', 'subaccount-v2', 'marketplace', 'marketplace-alt']
           .map((n) => apps.find((a) => a.name === n))
           .filter((a): a is (typeof apps)[number] => Boolean(a))
 
@@ -208,7 +215,22 @@ export async function GET(req: NextRequest) {
       // The reason travels back in the URL. A bare `token_failed` sent us
       // hunting through logs that only stream live; the platform's own message
       // says immediately whether this is a secret, a redirect_uri or the code.
-      const why = (failures[0] || skipped[0] || 'no apps had credentials').slice(0, 220)
+      /**
+       * EVERY failure, not just the first.
+       *
+       * Reporting failures[0] named whichever app happened to be first in the
+       * list and buried the rest — a real install reported
+       * `agency-v2(401): Invalid client credentials` while the app actually
+       * being installed had been tried afterwards and its verdict thrown away.
+       * That is the same "the message names the wrong app" bug this block was
+       * written to fix, one level up.
+       *
+       * Each entry is trimmed so a long chain still fits in a URL, and skipped
+       * apps are listed too — "no secret in env" is a different fix from a
+       * rejection and must not look like one.
+       */
+      const attempts = [...failures, ...skipped]
+      const why = (attempts.length ? attempts.map((f) => f.slice(0, 150)).join(' · ') : 'no apps had credentials').slice(0, 900)
       const url = new URL('/crm', req.url)
       url.searchParams.set('error', 'token_failed')
       url.searchParams.set('why', why)
