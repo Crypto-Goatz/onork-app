@@ -5,5 +5,12 @@ node_modules
 .vercel/cache
 test-results
 playwright-report
-docs
+# /docs — the repo's spec folder at the ROOT, anchored.
+#
+# This was a bare `docs`, which in an ignore file matches a directory of that
+# name at ANY depth. It therefore excluded app/docs/ as well, and the docs page
+# built perfectly on this machine while 404ing in production: the route was
+# never uploaded. Nothing in the build output said so, because from Vercel's
+# side the file simply did not exist.
+/docs
 rocket-extension
