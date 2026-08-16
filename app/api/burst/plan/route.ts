@@ -50,6 +50,78 @@ const PARAM_HINTS: Record<string, string> = {
   'agent.run': 'agent (name, optional), message',
   'agent.create': 'name, prompt (what it should do)',
   'agent.list': '',
+
+  // ── Added 2026-08-16 ──────────────────────────────────────────────────────
+  // 27 of 42 capabilities had NO entry here. A capability with no hint gets no
+  // guidance, so the planner emits a leg with empty params, the plan looks
+  // sound, the user approves it, and the executor refuses every step. That is
+  // exactly what "0 of 2 steps ran" was — and it was never a planner failure,
+  // it was a missing line in this table.
+  //
+  // Every hint below is taken from what the handler actually reads and from its
+  // own refusal message, not from what a capability sounds like it should need.
+  'product.create': 'name (REQUIRED — what the product is called), price (in dollars), description, productType (PHYSICAL/DIGITAL/SERVICE), recurring (true for subscriptions)',
+  'product.collection': 'name (REQUIRED)',
+  'store.provision': 'products (REQUIRED — an array of {name, price, description}; every product MUST have a name), currency, createCollections',
+  'store.page': 'title, products',
+  'blog.publish': 'title (REQUIRED), html or spec (the body), slug, description, status (draft/published), imageUrl, imageAlt',
+  'site.build': 'template (REQUIRED), brand (notes on look and voice)',
+  'page.render': 'spec (what the page should contain), slug',
+  'invoice.create': 'contactQuery (who to bill), items (array of {name, amount}), dueDate',
+  'appointment.book': 'contactQuery (who), when (REQUIRED — a date and time in plain words), calendar, title',
+  'opportunity.move': 'contactQuery (whose deal), stage (REQUIRED — the stage name to move it to)',
+  'social.schedule': 'channel, about (what the post is about), when',
+  'external.call': 'tool (REQUIRED — the exact tool id), args (an object of that tool arguments)',
+  'workflow.author': 'name, spec (what the automation should do)',
+  'workflow.deploy': 'name',
+  'workflow.list': 'no params — just the client',
+  'agents.author': 'name, prompt (what the agent should do)',
+  'agents.deploy': 'agent (its name)',
+  'funnel.clone': 'source (the funnel to copy), name',
+  'funnel.edit': 'funnel (which one), changes',
+  'location.create': 'name (REQUIRED — the business name), address, city, state, timezone',
+  'location.features': 'no params — just the client',
+  'user.create': 'firstName, lastName, email (REQUIRED), role',
+  'menu.link': 'title, url',
+  'report.rollup': 'no params — just the client',
+  'snapshot.list': 'no params',
+  'snapshot.apply_at_create': 'snapshot (its name or id)',
+  'snapshot.repush': 'snapshot (its name or id)',
+}
+
+/**
+ * Params a capability CANNOT run without.
+ *
+ * Checked at plan time so an unrunnable leg is visible BEFORE approval rather
+ * than after. Approving a plan and watching every step refuse is the single
+ * worst experience this product can produce: it looks like the product is
+ * broken when the truth is that one detail was never supplied.
+ */
+const REQUIRED_PARAMS: Record<string, string[]> = {
+  'product.create': ['name'],
+  'product.collection': ['name'],
+  'store.provision': ['products'],
+  'blog.publish': ['title'],
+  'site.build': ['template'],
+  'appointment.book': ['when'],
+  'opportunity.move': ['stage'],
+  'external.call': ['tool'],
+  'location.create': ['name'],
+  'user.create': ['email'],
+  'agents.author': ['prompt'],
+}
+
+/** What the leg is still missing, in the user's words. */
+export function missingParams(capability: string, params: Record<string, unknown> | undefined): string[] {
+  const need = REQUIRED_PARAMS[capability]
+  if (!need) return []
+  return need.filter((k) => {
+    const v = params?.[k]
+    if (v == null) return true
+    if (typeof v === 'string') return v.trim() === ''
+    if (Array.isArray(v)) return v.length === 0
+    return false
+  })
 }
 
 export async function POST(req: NextRequest) {
@@ -284,7 +356,21 @@ export async function POST(req: NextRequest) {
         // confident the model sounded. Marking it runnable would put it behind
         // an Approve button that can only refuse it.
         const hasTarget = tokenAudienceFor(id) === 'agency' || !!match.location
-        const runnable = !blocked && IMPLEMENTED.has(id) && price === 0 && hasTarget
+
+        /**
+         * A step missing a required detail is NOT runnable.
+         *
+         * Verified on 2026-08-16: "Build a store for In2sight. Add the websites
+         * for $497 as the product." produced two legs with empty params, both
+         * signed, both approved, and both refused — "0 of 2 steps ran". The
+         * plan looked sound because nothing checked whether the steps could
+         * actually run.
+         *
+         * Now the gap is visible BEFORE approval, and the person is asked for
+         * the one detail rather than watching every step fail after committing.
+         */
+        const missing = missingParams(id, params as Record<string, unknown>)
+        const runnable = !blocked && IMPLEMENTED.has(id) && price === 0 && hasTarget && missing.length === 0
 
         if (runnable) {
           signable.push({ capability: id, locationId: match.location?.id, params })
@@ -305,6 +391,11 @@ export async function POST(req: NextRequest) {
           ambiguous: match.ambiguous?.map((a) => ({ id: a.id, name: a.name })),
           /** Echoed so the UI can key its pin to exactly what the model said. */
           spoken: spoken ?? undefined,
+          /** What this step still needs before it can run. Empty when ready. */
+          needs: missing.length ? missing : undefined,
+          needsLabel: missing.length
+            ? `Tell me the ${missing.join(' and the ')} and I will run this.`
+            : undefined,
           params,
           priceCents: price,
           blocked,

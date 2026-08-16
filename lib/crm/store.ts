@@ -84,8 +84,26 @@ export async function createProduct(
   p: SourceProduct,
   currency = 'USD'
 ): Promise<ProductResult> {
+  /**
+   * A nameless product is a REFUSAL, not a crash.
+   *
+   * This threw `Cannot read properties of undefined (reading 'slice')` in
+   * production on 2026-08-16, which surfaced to the user as "That step did not
+   * complete." — a message that says nothing and points nowhere. A planner can
+   * always emit an incomplete product; the executor's job is to say which field
+   * is missing, not to fall over.
+   */
+  const name = typeof p.name === 'string' ? p.name.trim() : ''
+  if (!name) {
+    return {
+      ok: false,
+      name: '(unnamed)',
+      error: 'This product has no name, so it was skipped. Say what the product is called.',
+    } as ProductResult
+  }
+
   const productRes = await crmPost('/products/', locationId, {
-    name: p.name.slice(0, 120),
+    name: name.slice(0, 120),
     productType: p.productType || 'PHYSICAL',
     ...(p.description ? { description: p.description.slice(0, 500) } : {}),
     ...(p.image ? { image: p.image } : {}),
@@ -115,7 +133,7 @@ export async function createProduct(
   // locationId is a REQUIRED body field on the price endpoint, and this is a
   // sub-resource, so crmPostRaw with an explicit locationId is the correct call.
   const priceRes = await crmPostRaw(`/products/${productId}/price`, locationId, {
-    name: p.name.slice(0, 120),
+    name: name.slice(0, 120),
     type: p.recurring ? 'recurring' : 'one_time',
     currency,
     amount,

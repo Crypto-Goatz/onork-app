@@ -68,6 +68,8 @@ interface PlanLeg {
   priceCents: number
   blocked?: boolean
   insteadOffer?: string
+  needs?: string[]
+  needsLabel?: string
   /** Will actually execute if approved. Everything else is explained up front. */
   runnable?: boolean
   notYetWired?: boolean
@@ -552,6 +554,14 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
                           <div className="text-[14px] font-semibold text-[color:var(--oc-ink)]">{l.intent}</div>
                           {l.blocked && l.insteadOffer && (
                             <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--oc-amber)]">{l.insteadOffer}</p>
+                          )}
+                          {/* Asked BEFORE approval. A step that cannot run because
+                              one detail is missing should say which detail, not
+                              refuse after the person has committed to the plan. */}
+                          {l.needsLabel && (
+                            <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--oc-amber)]">
+                              {l.needsLabel}
+                            </p>
                           )}
                           {/* Said BEFORE approval, never in the receipt. Finding
                               out a step was never wired up after approving it is
