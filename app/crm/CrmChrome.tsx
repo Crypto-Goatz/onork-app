@@ -15,7 +15,8 @@
  * cosmetic mismatch; it is a different product appearing in their product.
  */
 import { usePathname } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
+import InstallResult from './InstallResult'
 
 /** Marketplace Custom Pages — framed, non-agency, no chrome. */
 const BARE = ['/crm/leadscout']
@@ -29,6 +30,12 @@ export default function CrmChrome({
   if (bare) return <>{children}</>
   return (
     <>
+      {/* The install's own result, above everything. Suspense because it reads
+          searchParams, and an unwrapped useSearchParams forces the whole tree
+          client-side — the bailout that ships an empty body to a crawler. */}
+      <Suspense fallback={null}>
+        <InstallResult />
+      </Suspense>
       {before}
       {children}
       {after}

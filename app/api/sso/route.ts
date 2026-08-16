@@ -93,8 +93,22 @@ export async function POST(req: NextRequest) {
   // costs the surface that was already working.
   const CANDIDATES = [
     'CRM_SSO_KEY',
+    // THE COURSE BUILDER'S OWN SECRET, and it was missing. The app posts a
+    // context encrypted with the secret registered for app
+    // 69801f7a533633818a22921c — the value ending 31ca, which lives in
+    // CRM_COURSE_APP_CLIENT_SECRET. None of the four keys tried before was it,
+    // so a real in-CRM open would fail every decrypt and fall through to a
+    // sign-in screen: the exact symptom that reads as "the login is broken"
+    // and cannot work in an iframe anyway.
+    //
+    // It was invisible because the SSO round trip can be tested with the SAME
+    // key on both ends, which proves the cipher works and proves nothing about
+    // whether the platform holds that key.
+    'CRM_COURSE_APP_CLIENT_SECRET',
     'CRM_LEADSCOUT_SSO_KEY',
+    'CRM_LEADSCOUT_CLIENT_SECRET',
     'CRM_MARKETPLACE_SHARED_SECRET',
+    'CRM_MARKETPLACE_CLIENT_SECRET',
     'CRM_AGENCY_SSO_KEY',
   ] as const
 
