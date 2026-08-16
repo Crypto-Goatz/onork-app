@@ -1,195 +1,190 @@
 'use client'
 
 /**
- * The customer portal — clean, dark, client-facing. One sub-account's own world:
- * their numbers, what's been done for them, how to get help, and their tasks.
+ * Surface B — the Client Console. The agency's customer, not the agency.
  *
- * Deliberately NOT the agency chrome. An agency's client should never see the
- * cross-client machinery — just their company, presented well. Data is the same
- * ownership-checked source the agency dashboard uses (/api/clients/:id); auth is
- * the shared app JWT via useSso, so the login gate matches the rest of the site.
+ * THE CONSTRAINT THAT DRIVES EVERY DECISION HERE: this person has one account
+ * and is not technical. No client switcher, no keys, no agency billing, no
+ * capability glossary. If a control would ever make them ask "which account is
+ * this?", it does not belong on this surface. That is why there is no scope
+ * selector even though the same engine underneath is built around one.
+ *
+ * RECENT ACTIVITY IS THE POINT, not a footnote. An agency acting inside
+ * someone's business is invisible by default, and invisible work is work that
+ * gets cancelled. Plain sentences — "0n tagged 12 contacts" — are the whole
+ * argument for the retainer.
+ *
+ * Surface B styling: white canvas, black rail on the RIGHT, logo lime for
+ * accents, deep green for anything clickable.
  */
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
-  Users, Workflow, Receipt, Mail, Phone, MapPin, Globe, Loader2,
-  LifeBuoy, MessageSquareText, ArrowUpRight, CheckSquare, Sparkles, LogOut,
+  Activity, CalendarDays, GitBranch, Inbox, LayoutGrid, Loader2,
+  MessageSquare, Sparkles, Users,
 } from 'lucide-react'
-import { useSso, authHeaders, STORAGE_KEY } from '@/app/crm/useSso'
-import { LockGate } from '@/components/auth/LockGate'
-import { createClient } from '@/lib/supabase/client'
+import { useSso, authHeaders } from '@/app/crm/useSso'
 
-interface Detail {
-  client: { id: string; name: string; email?: string | null; phone?: string | null; city?: string | null; state?: string | null; website?: string | null }
-  contacts: number | null
-  workflows: { name?: string; status?: string }[] | null
-  receipts: { capability: string; status: string; detail: string | null; created_at: string }[]
+type Section = 'overview' | 'conversations' | 'contacts' | 'calendar' | 'pipeline' | 'content' | 'ask'
+
+const NAV: { key: Section; label: string; icon: typeof Users; ready: boolean }[] = [
+  { key: 'overview',      label: 'Overview',      icon: LayoutGrid,    ready: true },
+  { key: 'conversations', label: 'Conversations', icon: MessageSquare, ready: false },
+  { key: 'contacts',      label: 'Contacts',      icon: Users,         ready: false },
+  { key: 'calendar',      label: 'Calendar',      icon: CalendarDays,  ready: false },
+  { key: 'pipeline',      label: 'Pipeline',      icon: GitBranch,     ready: false },
+  { key: 'content',       label: 'Content',       icon: Inbox,         ready: false },
+  { key: 'ask',           label: 'Ask 0n',        icon: Sparkles,      ready: false },
+]
+
+interface Summary {
+  account: { locationId: string; name: string }
+  stats: { contacts: number | null; deals: number | null; workThisWeek: number }
+  activity: { text: string; at: string }[]
 }
 
 export default function CustomerPortal({ locationId }: { locationId: string }) {
   const sso = useSso()
-  const [d, setD] = useState<Detail | null>(null)
+  const [section, setSection] = useState<Section>('overview')
+  const [data, setData] = useState<Summary | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (sso.state === 'pending' || !sso.token) return
-    let live = true
-    fetch(`/api/clients/${encodeURIComponent(locationId)}`, { headers: authHeaders(sso.token) })
-      .then((r) => r.json())
-      .then((j) => { if (live) (j?.error ? setErr(j.error) : setD(j)) })
-      .catch(() => { if (live) setErr('Could not load your portal.') })
-    return () => { live = false }
-  }, [sso.state, sso.token, locationId])
+    try {
+      const r = await fetch(`/api/portal/${encodeURIComponent(locationId)}/summary`, {
+        headers: authHeaders(sso.token), cache: 'no-store',
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) { setErr(j.error || 'Could not load your account.'); return }
+      setData(j)
+    } catch {
+      setErr('Could not reach the server.')
+    }
+  }, [locationId, sso.state, sso.token])
 
-  const signOut = async () => {
-    try { sessionStorage.removeItem(STORAGE_KEY) } catch {}
-    try { await createClient().auth.signOut() } catch {}
-    window.location.href = `/login?next=/portal/${locationId}`
+  useEffect(() => { void load() }, [load])
+
+  if (sso.state === 'pending') {
+    return <Center><Loader2 className="h-5 w-5 animate-spin text-[color:var(--oc-muted)]" /></Center>
   }
-
-  if (sso.state === 'standalone' || sso.state === 'rejected') {
-    return <LockGate next={`/portal/${locationId}`} title="Your portal" subtitle="Sign in to view your company dashboard." />
+  if (sso.state !== 'authed') {
+    // No OAuth button: this renders framed inside the client's CRM, and OAuth
+    // is refused in an iframe.
+    return (
+      <Center>
+        <p className="text-[15px] font-semibold text-[color:var(--oc-ink)]">Open this from your account</p>
+        <p className="mt-1.5 max-w-xs text-[13.5px] text-[color:var(--oc-muted)]">
+          This page signs you in automatically when opened from the menu inside your CRM.
+        </p>
+      </Center>
+    )
   }
-
-  const name = d?.client.name ?? 'Your company'
-  const runs = d?.receipts.length ?? 0
 
   return (
-    <div className="min-h-screen bg-[#080b10] bg-[radial-gradient(120%_80%_at_50%_-10%,rgba(110,224,90,0.08),transparent_55%)] text-[#f0f4f8]">
-      <div className="mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 sm:py-12">
+    <div className="oncore-app flex min-h-screen bg-[color:var(--oc-bg)]">
+      <main className="min-w-0 flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-[900px] px-8 py-10">
+          <header>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--oc-green-d)]">
+              Your business
+            </p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[color:var(--oc-ink)]">
+              {data?.account.name ?? 'Loading…'}
+            </h1>
+          </header>
 
-        {/* Header — company + sign out. The agency's own branding drops in here later. */}
-        <header className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#6EE05A]/15 text-sm font-black text-[#6EE05A]">
-              {(name || 'C').charAt(0).toUpperCase()}
-            </span>
-            <div className="min-w-0">
-              <div className="truncate text-[15px] font-bold">{name}</div>
-              <div className="text-xs text-white/45">Client portal</div>
-            </div>
-          </div>
-          <button onClick={signOut} aria-label="Sign out"
-            className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 text-white/50 transition-colors hover:border-white/25 hover:text-white">
-            <LogOut className="h-4 w-4" />
-          </button>
-        </header>
+          {err && (
+            <p className="mt-5 rounded-xl bg-[color:var(--oc-amber)]/10 px-4 py-3 text-[13px] text-[color:var(--oc-amber)]">{err}</p>
+          )}
 
-        {/* Hero */}
-        <div className="mt-9">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#6EE05A]">Welcome</p>
-          <h1 className="mt-2 text-balance text-3xl font-black tracking-tight sm:text-4xl">
-            {name}.
-          </h1>
-          <p className="mt-2 max-w-md text-[15px] text-white/55">Everything happening in your account, in one place.</p>
-        </div>
+          {section === 'overview' && data && (
+            <>
+              <div className="mt-7 grid gap-3 sm:grid-cols-3">
+                <Stat label="Contacts" value={data.stats.contacts} />
+                <Stat label="Deals in play" value={data.stats.deals} />
+                <Stat label="Things done this week" value={data.stats.workThisWeek} />
+              </div>
 
-        {err && (
-          <p className="mt-6 rounded-xl border border-[#ff6b6b]/30 bg-[#ff6b6b]/[0.06] px-4 py-3 text-sm text-[#ff8f8f]">{err}</p>
-        )}
-        {!d && !err && (
-          <div className="mt-8 flex items-center gap-2 text-sm text-white/50"><Loader2 className="h-4 w-4 animate-spin" /> Loading your portal…</div>
-        )}
-
-        {d && (
-          <>
-            {/* KPI cards */}
-            <div className="mt-7 grid gap-3 sm:grid-cols-3">
-              <Kpi icon={Users} label="Contacts" value={d.contacts === null ? '—' : d.contacts.toLocaleString()} />
-              <Kpi icon={Workflow} label="Automations" value={d.workflows === null ? '—' : String(d.workflows.length)} />
-              <Kpi icon={Receipt} label="Actions done" value={String(runs)} />
-            </div>
-
-            {/* Company details */}
-            {(d.client.email || d.client.phone || d.client.city || d.client.website) && (
-              <Card className="mt-4">
-                <CardTitle>Your details</CardTitle>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {d.client.email && <Line icon={Mail} text={d.client.email} />}
-                  {d.client.phone && <Line icon={Phone} text={d.client.phone} />}
-                  {(d.client.city || d.client.state) && <Line icon={MapPin} text={[d.client.city, d.client.state].filter(Boolean).join(', ')} />}
-                  {d.client.website && <Line icon={Globe} text={d.client.website} />}
-                </div>
-              </Card>
-            )}
-
-            {/* Recent activity */}
-            <Card className="mt-4">
-              <CardTitle>Recent activity</CardTitle>
-              {d.receipts.length === 0 ? (
-                <p className="mt-3 text-sm text-white/45">Nothing yet — your team's work will show up here.</p>
-              ) : (
-                <div className="mt-3 space-y-1.5">
-                  {d.receipts.slice(0, 8).map((r, i) => (
-                    <div key={i} className="flex items-start gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-2.5">
-                      <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${r.status === 'ok' ? 'bg-[#6EE05A]' : r.status === 'failed' ? 'bg-[#ff6b6b]' : 'bg-[#f59e0b]'}`} />
-                      <div className="min-w-0">
-                        <div className="text-[13px] text-white/85">{r.detail || r.capability}</div>
-                        <div className="mt-0.5 font-mono text-[10.5px] text-white/35">{r.capability}</div>
-                      </div>
+              <section className="mt-8">
+                <h2 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-[color:var(--oc-muted)]">
+                  <Activity className="h-3.5 w-3.5" /> Recent activity
+                </h2>
+                <div className="mt-3 rounded-2xl border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-2">
+                  {data.activity.length === 0 && (
+                    <p className="px-3 py-4 text-[13px] text-[color:var(--oc-muted)]">
+                      Nothing yet. Work your agency does in this account will appear here.
+                    </p>
+                  )}
+                  {data.activity.map((a, i) => (
+                    <div key={i} className="flex items-baseline justify-between gap-4 px-3 py-2.5">
+                      <span className="text-[13.5px] text-[color:var(--oc-ink)]">{a.text}</span>
+                      <span className="shrink-0 text-[11.5px] text-[color:var(--oc-faint)]">
+                        {new Date(a.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </span>
                     </div>
                   ))}
                 </div>
-              )}
-            </Card>
+                <p className="mt-2 text-[11.5px] text-[color:var(--oc-faint)]">
+                  Every line is something done in your account, in plain words.
+                </p>
+              </section>
+            </>
+          )}
 
-            {/* Support block — agency-configurable later; a real, working slot now. */}
-            <Card className="mt-4">
-              <CardTitle>Need a hand?</CardTitle>
-              <p className="mt-1.5 text-sm text-white/55">Your team is one message away.</p>
-              <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
-                <a href={d.client.email ? `mailto:${d.client.email}` : '#'}
-                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 transition-colors hover:border-[#6EE05A]/40">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#6EE05A]/15 text-[#6EE05A]"><MessageSquareText className="h-4 w-4" /></span>
-                  <span className="min-w-0"><span className="block text-[13px] font-semibold">Send a message</span><span className="block truncate text-xs text-white/45">Get help from your team</span></span>
-                </a>
-                <a href="#"
-                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 transition-colors hover:border-[#6EE05A]/40">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#6EE05A]/15 text-[#6EE05A]"><LifeBuoy className="h-4 w-4" /></span>
-                  <span className="min-w-0"><span className="block text-[13px] font-semibold">Open a support ticket</span><span className="block truncate text-xs text-white/45">Track it to resolution</span></span>
-                </a>
-              </div>
-            </Card>
+          {section !== 'overview' && (
+            <section className="mt-8 rounded-2xl border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-8 text-center">
+              <p className="text-[15px] font-semibold text-[color:var(--oc-ink)]">
+                {NAV.find((n) => n.key === section)?.label} is not switched on yet
+              </p>
+              <p className="mx-auto mt-1.5 max-w-sm text-[13px] leading-relaxed text-[color:var(--oc-muted)]">
+                Overview is live and reads from your real account. This section is designed and
+                not yet wired — it will say so here until it genuinely works.
+              </p>
+            </section>
+          )}
+        </div>
+      </main>
 
-            {/* 0nTask cross-promo */}
-            <a href="https://app.0ntask.com" target="_blank" rel="noreferrer"
-              className="mt-4 flex items-center gap-4 rounded-2xl border border-[#16a34a]/25 bg-[#16a34a]/[0.07] p-4 transition-transform hover:scale-[1.005]">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#16a34a]/20 text-[#4ade80]"><CheckSquare className="h-5 w-5" /></span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-[15px] font-bold">Manage your tasks with 0nTask <Sparkles className="h-3.5 w-3.5 text-[#4ade80]" /></div>
-                <p className="text-xs text-white/55">One screen for tasks — you, your team, and AI, side by side.</p>
-              </div>
-              <ArrowUpRight className="h-4 w-4 shrink-0 text-white/40" />
-            </a>
-
-            <p className="mt-8 text-center text-[11px] text-white/30">Powered by 0nCORE</p>
-          </>
-        )}
-      </div>
+      {/* The rail is BLACK and on the RIGHT — Surface B. No client switcher,
+          by design: this person has exactly one account. */}
+      <nav className="sticky top-0 flex h-screen w-[236px] shrink-0 flex-col bg-[color:var(--oc-rail)] px-3 py-5">
+        <div className="px-3 pb-4 text-[13px] font-bold tracking-tight text-white">0nCORE</div>
+        {NAV.map(({ key, label, icon: Icon, ready }) => (
+          <button
+            key={key}
+            onClick={() => setSection(key)}
+            aria-current={section === key ? 'page' : undefined}
+            className={`mb-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13.5px] transition ${
+              section === key ? 'bg-white/10 font-semibold text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+            {label}
+            {/* Honest in the nav, not only after the click. */}
+            {!ready && <span className="ml-auto text-[10px] text-white/30">soon</span>}
+          </button>
+        ))}
+        <div className="mt-auto px-3 text-[11px] text-white/30">Managed by your agency</div>
+      </nav>
     </div>
   )
 }
 
-function Kpi({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: string }) {
+function Stat({ label, value }: { label: string; value: number | null }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white/45"><Icon className="h-3 w-3" /> {label}</div>
-      <div className="mt-1 text-2xl font-black">{value}</div>
+    <div className="rounded-2xl border border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-5">
+      <p className="text-[11px] uppercase tracking-wide text-[color:var(--oc-muted)]">{label}</p>
+      <p className="mt-1 text-[26px] font-semibold text-[color:var(--oc-ink)]">
+        {value ?? <span className="text-[color:var(--oc-faint)]">—</span>}
+      </p>
     </div>
   )
 }
 
-function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5 ${className}`}>{children}</div>
-}
-
-function CardTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-[13px] font-bold uppercase tracking-wider text-white/70">{children}</h2>
-}
-
-function Line({ icon: Icon, text }: { icon: typeof Mail; text: string }) {
+function Center({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 text-[13px] text-white/75">
-      <Icon className="h-3.5 w-3.5 shrink-0 text-white/35" /> <span className="truncate">{text}</span>
+    <div className="oncore-app grid min-h-screen place-items-center bg-[color:var(--oc-bg)] px-6 text-center">
+      <div className="flex flex-col items-center">{children}</div>
     </div>
   )
 }
