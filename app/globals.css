@@ -467,16 +467,19 @@ code, pre, .font-mono {
    of "close enough" hexes is how two surfaces stop matching.
    ═══════════════════════════════════════════════════════════════════════ */
 :root {
-  /* Brand green family — never a fourth green.
-     CORRECTED: these previously carried #6EE05A/#22c55e/#16a34a, which appear
-     ZERO times in any of the three design handoffs. The shipped files use
-     #7ED957 (×47) and #4d9f2f (×151). A token nobody imports documents an
-     intention; usage documents the design. */
-  --0n-neon:#7ED957; --0n-green:#22c55e; --0n-deep:#4d9f2f;
+  /* Brand green family — never a fourth green. Copied from
+     _ds/tokens/colors.css in design_handoff_0ncore 3 (11 Aug), verified against
+     what the three .dc.html comps actually paint: #6EE05A ×33, #16a34a ×128.
+     An earlier edit here swapped in #7ED957/#4d9f2f on the claim that they were
+     what the handoffs used. They are not — those two hexes appear ZERO times in
+     any of the three folders. Counted before writing this. */
+  --0n-neon:#6EE05A;   /* glows, dots, focus rings, gradient origin */
+  --0n-green:#22c55e;  /* mid green: fills, badges */
+  --0n-deep:#16a34a;   /* action green: buttons, links, anything READ */
   --0n-rail-hover:#059669;
   --0n-on-accent:#0d1117;
-  --0n-gradient:linear-gradient(120deg,#7ED957 0%,#4d9f2f 100%);
-  --0n-soft:rgba(126,217,87,0.14);
+  --0n-gradient:linear-gradient(120deg,#6EE05A 0%,#22c55e 100%);
+  --0n-soft:rgba(110,224,90,0.14);
   --0n-teal:#0891b2;
 
   /* Surface C — Console dark (Agency CRM + extension panel) */
@@ -510,12 +513,6 @@ code, pre, .font-mono {
    nudged by a change made for the marketing site or the authenticated app.
    ═══════════════════════════════════════════════════════════════════════ */
 .oncore-app {
-  /* ── 0n brand greens — CORRECTED to what the design files actually use ──
-     tokens/colors.css declares #6EE05A / #22c55e / #16a34a and every one of
-     them appears ZERO times in the three handoffs. The shipped files use
-     #7ED957 (×47) and #4d9f2f (×151). Usage is the ground truth; a token file
-     nobody imports is documentation of an intention, not of a design.
-     Verified by counting occurrences across all three .dc.html files. */
   /* Brand greens are declared once at :root and inherited here — see the note
      there. The on-accent ink (#0n-on-accent) reads like Surface C at a glance
      and is not: it is the foreground that sits ON lime, which is why it appears
@@ -676,6 +673,58 @@ code, pre, .font-mono {
 @media (prefers-reduced-motion: reduce) {
   .oc-tile:hover { transform: none; }
   .oc-rise { animation: none; }
+}
+
+/* ── Surface B primitives, copied from the handoff ──────────────────────────
+   _ds/components/components.css and the inline styles in Client Console.dc.html.
+   The four-shadow cascade is not decoration: a single box-shadow on a white
+   card on a near-white canvas is invisible, which is why the design stacks four
+   at increasing blur. Reproducing it as "one soft shadow" is what makes a build
+   read as an approximation of the comp rather than the comp.
+
+   The rail hover is EMERALD, not the brand green. That surprised me enough to
+   check twice — it is in components.css, and it keeps a hovered rail item from
+   reading as selected, since selected is a white wash.
+   ───────────────────────────────────────────────────────────────────────── */
+.on-card {
+  background: var(--dash-card);
+  border: 1px solid var(--dash-border);
+  border-radius: 18px;
+  box-shadow: 0 2px 4px rgba(10,10,10,.04), 0 8px 16px rgba(10,10,10,.05),
+              0 24px 48px rgba(10,10,10,.07), 0 48px 96px rgba(10,10,10,.09);
+}
+.on-card-lift { transition: transform .2s ease, box-shadow .2s ease; }
+.on-card-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 2px 4px rgba(10,10,10,.04), 0 8px 16px rgba(10,10,10,.05),
+              0 24px 48px rgba(10,10,10,.07), 0 48px 96px rgba(10,10,10,.09),
+              0 0 0 1px rgba(110,224,90,.25);
+}
+.on-rail-item {
+  display: flex; width: 100%; align-items: center; gap: .75rem;
+  border-radius: .75rem; padding: .5rem .75rem;
+  font-size: .875rem; font-weight: 500; color: rgba(255,255,255,.7);
+  transition: all .15s ease; cursor: pointer; text-align: left;
+  background: transparent; border: none; appearance: none; box-sizing: border-box;
+}
+.on-rail-item:hover { background: var(--0n-rail-hover); color: #fff; }
+.on-rail-item.active { color: #fff; background: rgba(255,255,255,.08); }
+
+@keyframes on-fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes on-pop-in  { from { opacity: 0; transform: scale(.97) translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes on-slide-l { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+@keyframes on-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(110,224,90,.45); }
+  70%  { box-shadow: 0 0 0 7px rgba(110,224,90,0); }
+  100% { box-shadow: 0 0 0 0 rgba(110,224,90,0); }
+}
+.on-fade-up { animation: on-fade-up .5s both; }
+.on-pop-in  { animation: on-pop-in .45s both; }
+.on-slide-l { animation: on-slide-l .4s both; }
+.on-live-dot { animation: on-pulse-ring 2.4s infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .on-card-lift:hover { transform: none; }
+  .on-fade-up, .on-pop-in, .on-slide-l, .on-live-dot { animation: none; }
 }
 
 /* ── 0nCORE app sidebar ───────────────────────────────────────────────
