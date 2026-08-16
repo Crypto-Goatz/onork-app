@@ -149,7 +149,25 @@ async function findContacts(
 async function oneContact(
   locationId: string,
   query: string,
+  /**
+   * An id the person already picked at plan time, from the "which Mike?"
+   * buttons. It wins outright — the whole point of asking was to stop guessing,
+   * and re-searching a name that was already disambiguated would throw the
+   * answer away.
+   */
+  pin?: string,
 ): Promise<{ contact: CrmContact } | { problem: LegResult }> {
+  if (pin) {
+    const res = await crmGet(`/contacts/${encodeURIComponent(pin)}`, locationId)
+    if (res.ok) {
+      const j = (await res.json().catch(() => ({}))) as { contact?: CrmContact }
+      if (j.contact?.id) return { contact: j.contact }
+    }
+    // A pin that no longer resolves is a deleted or moved contact. Say that,
+    // rather than silently falling back to searching the name again and acting
+    // on whoever turns up.
+    return { problem: fail('The person you picked is no longer in this account.') }
+  }
   if (!query) return { problem: refuse('Tell me which contact you mean.') }
   const { contacts, total, error } = await findContacts(locationId, query, 5)
   if (error) return { problem: fail('Could not find that contact.', error) }
@@ -500,7 +518,7 @@ const HANDLERS: Record<string, Handler> = {
     if (!loc) return refuse('Tell me which client this task belongs to.')
     const title = str(leg.params?.title ?? leg.params?.task, 200)
     if (!title) return refuse('The task needs a title.')
-    const target = await oneContact(loc, searchTerm(leg.params?.contactQuery))
+    const target = await oneContact(loc, searchTerm(leg.params?.contactQuery), str(leg.params?.contactPin, 64) || undefined)
     if ('problem' in target) return target.problem
     // dueDate and completed are required — a task with no due date is rejected.
     const due = str(leg.params?.dueDate, 40) || new Date(Date.now() + 86400_000).toISOString()
@@ -515,7 +533,7 @@ const HANDLERS: Record<string, Handler> = {
     const loc = needsLocation(leg)
     if (!loc) return refuse('Tell me which client to run the automation in.')
     const wanted = searchTerm(leg.params?.workflow ?? leg.params?.name)
-    const target = await oneContact(loc, searchTerm(leg.params?.contactQuery))
+    const target = await oneContact(loc, searchTerm(leg.params?.contactQuery), str(leg.params?.contactPin, 64) || undefined)
     if ('problem' in target) return target.problem
 
     const wf = await crmGet('/workflows/', loc)
@@ -535,7 +553,7 @@ const HANDLERS: Record<string, Handler> = {
   'opportunity.move': async (leg, price) => {
     const loc = needsLocation(leg)
     if (!loc) return refuse('Tell me which client the deal is in.')
-    const target = await oneContact(loc, searchTerm(leg.params?.contactQuery))
+    const target = await oneContact(loc, searchTerm(leg.params?.contactQuery), str(leg.params?.contactPin, 64) || undefined)
     if ('problem' in target) return target.problem
     const stageWanted = searchTerm(leg.params?.stage)
     if (!stageWanted) return refuse('Tell me which stage to move it to.')
@@ -567,7 +585,7 @@ const HANDLERS: Record<string, Handler> = {
   'appointment.book': async (leg, price) => {
     const loc = needsLocation(leg)
     if (!loc) return refuse('Tell me which client the booking is for.')
-    const target = await oneContact(loc, searchTerm(leg.params?.contactQuery))
+    const target = await oneContact(loc, searchTerm(leg.params?.contactQuery), str(leg.params?.contactPin, 64) || undefined)
     if ('problem' in target) return target.problem
     const startTime = str(leg.params?.startTime ?? leg.params?.when, 60)
     if (!startTime) return refuse('Tell me when the appointment should be.')

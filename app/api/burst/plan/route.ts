@@ -478,7 +478,11 @@ export async function POST(req: NextRequest) {
      * three legs costs one lookup, and capped so a wide plan cannot fan out
      * into a burst of contact searches.
      */
-    const WHO_KEYS = ['contact', 'to', 'who', 'person', 'assignee', 'recipient']
+    // contactQuery FIRST because it is what the planner actually emits — checked
+    // against three live commands rather than assumed. `to` is the documented
+    // alias the executor also accepts; the rest are cheap insurance for
+    // capabilities that name their person differently.
+    const WHO_KEYS = ['contactQuery', 'to', 'contact', 'who', 'person', 'assignee', 'recipient']
     const needWho = new Map<string, { locationId: string; spoken: string }>()
     for (const leg of legs as PlannedLeg[]) {
       if (!leg?.locationId) continue
@@ -507,8 +511,10 @@ export async function POST(req: NextRequest) {
 
         const pinnedId = whoPins.get(said.toLowerCase())
         if (pinnedId) {
-          // Pinned: swap the name for the id the person chose, and let it run.
-          leg.params[k] = pinnedId
+          // The id goes in its OWN param. Overwriting contactQuery would look
+          // right and break: the executor resolves that field by SEARCHING for
+          // it, and a contact id is not a search term — it would match nobody.
+          leg.params.contactPin = pinnedId
           leg.whoResolved = said
           continue
         }
@@ -517,7 +523,7 @@ export async function POST(req: NextRequest) {
         if (!r) continue
 
         if (r.contact) {
-          leg.params[k] = r.contact.id
+          leg.params.contactPin = r.contact.id
           leg.whoResolved = r.contact.name
           continue
         }
