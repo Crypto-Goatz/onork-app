@@ -24,13 +24,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   UserCircle,
-  BookOpen, CreditCard, Download, FileText, GitBranch, LogOut, Plug, ScrollText,
+  BookOpen, CreditCard, Download, FileText, GitBranch, LayoutTemplate, LogOut, Plug, ScrollText,
   Settings, Sparkles, Terminal, Users, Wrench, type LucideIcon,
 } from 'lucide-react'
 
 export type NavKey =
   | 'command' | 'clients' | 'actions' | 'account'
-  | 'automations' | 'content' | 'pipeline'
+  | 'automations' | 'content' | 'pipeline' | 'build'
   | 'history' | 'usage' | 'setup' | 'downloads' | 'settings'
   | 'tools'
   // Legacy keys still passed by older pages — kept so nothing 404s mid-port.
@@ -58,6 +58,9 @@ export const NAV_GROUPS: NavItem[][] = [
   [
     { key: 'automations', href: '/crm/automations', label: 'Automations & AI', icon: Sparkles, view: 'automations' },
     { key: 'content', href: '/crm/courses', label: 'Content', icon: FileText },
+    // Registered in the nav rather than reachable only by URL. SXO shipped
+    // fully working and invisible for exactly that reason.
+    { key: 'build', href: '/crm/build', label: 'Build a site', icon: LayoutTemplate },
     { key: 'pipeline', href: '/crm/pipeline', label: 'Pipeline', icon: GitBranch },
     { key: 'tools', href: '/crm/tools', label: 'Tools', icon: Wrench },
   ],
