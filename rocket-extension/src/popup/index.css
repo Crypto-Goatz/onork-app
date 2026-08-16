@@ -3,26 +3,30 @@
 @tailwind utilities;
 
 @layer base {
+  /* Surface C is LIGHT. The panel sits beside a page someone is reading, and a
+     black slab next to LinkedIn or a client's site reads as a separate
+     application rather than a tool for that page. These were the console-dark
+     values, which is what the whole extension was built on. */
   :root {
-    --background: 220 13% 7%;
-    --foreground: 213 31% 91%;
-    --card: 215 21% 11%;
-    --card-foreground: 213 31% 91%;
-    --popover: 213 19% 14%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 113 67% 62%;
-    --primary-foreground: 220 13% 7%;
-    --secondary: 215 14% 16%;
-    --secondary-foreground: 210 17% 82%;
-    --muted: 215 21% 11%;
-    --muted-foreground: 215 8% 58%;
-    --accent: 215 14% 16%;
-    --accent-foreground: 213 31% 91%;
-    --destructive: 0 91% 71%;
-    --destructive-foreground: 220 13% 7%;
-    --border: 215 14% 21%;
-    --input: 215 14% 21%;
-    --ring: 113 67% 62%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 142 71% 36%;       /* #16a34a — anything READ */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 25%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 142 71% 36%;
     --radius: 0.75rem;
   }
 
@@ -30,8 +34,8 @@
   body {
     margin: 0;
     padding: 0;
-    background: #0d1117;
-    color: #c9d1d9;
+    background: #ffffff;
+    color: #404040;
     font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -63,16 +67,17 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #30363d;
+    background: #d4d4d4;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #484f58;
+    background: #a3a3a3;
   }
 
-  /* Iframe (template preview) keeps its own theme */
+  /* Iframe (template preview) keeps its own theme — it renders someone else's
+     page and must not inherit ours. */
   iframe {
-    background: #0d1117;
+    background: #ffffff;
   }
 
   @media (prefers-reduced-motion: reduce) {
