@@ -2,6 +2,7 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import SetupAlert from './SetupAlert'
 import AskOn from './AskOn'
+import CrmChrome from './CrmChrome'
 
 /**
  * Everything under /crm — the agency app, with one home and one chrome.
@@ -37,11 +38,16 @@ export default async function CRMLayout({ children }: { children: React.ReactNod
   // CRM surface — which is the entire point. Mounting it per-page would mean
   // remembering to add it, and the pages where someone gets stuck are exactly
   // the ones nobody remembers.
+  // The agency chrome is skipped on marketplace Custom Pages. Those render
+  // framed inside someone else's CRM for a person with no account here, and a
+  // setup banner about connecting THEIR clients — plus a command bar scoped to
+  // an agency they are not part of — is the wrong product entirely.
   return (
-    <>
-      <SetupAlert />
+    <CrmChrome
+      before={<SetupAlert />}
+      after={<AskOn />}
+    >
       {children}
-      <AskOn />
-    </>
+    </CrmChrome>
   )
 }
