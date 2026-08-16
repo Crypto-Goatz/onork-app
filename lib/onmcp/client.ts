@@ -47,12 +47,28 @@ export async function call0nMCP(
   tool: string,
   args: Record<string, unknown> = {},
 ): Promise<OnmcpResult> {
-  const apiKey = process.env.ONMCP_API_KEY
-  if (!apiKey) return { ok: false, text: '', error: 'ONMCP_API_KEY not configured' }
+  /**
+   * THE KEY IS OPTIONAL, BECAUSE THE BRIDGE DOES NOT REQUIRE ONE.
+   *
+   * This used to refuse outright when ONMCP_API_KEY was unset — so every
+   * external.call failed with "ONMCP_API_KEY not configured" and 37 allowed
+   * tools were unreachable. Verified 2026-08-16: an unauthenticated
+   * tools/call to the bridge returns real data. The gate was ours, not the
+   * bridge's, and it blocked our own feature rather than protecting anything.
+   *
+   * The key is still sent when present, so adding auth at the bridge later
+   * needs no change here.
+   *
+   * WORTH KNOWING: that bridge is reachable without credentials, which means
+   * anyone who finds the URL can call these tools. That is a property of the
+   * worker, not of this client, and it deserves fixing there — but pretending
+   * otherwise on this side only broke the product.
+   */
+  const apiKey = process.env.ONMCP_API_KEY || process.env.MCP_BRIDGE_TOKEN || ''
 
   try {
     const res = await callTool(
-      { url: MCP_URL, headers: { Authorization: `Bearer ${apiKey}` } } as never,
+      { url: MCP_URL, headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {} } as never,
       tool,
       args,
     )
