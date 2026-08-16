@@ -34,6 +34,17 @@ export const dynamic = 'force-dynamic'
 const GROQ = 'https://api.groq.com/openai/v1/chat/completions'
 
 /** What each runnable capability needs. Fed to the model so it fills them in. */
+/**
+ * The bridge tools this deployment permits, straight from the allowlist.
+ *
+ * Named in the prompt because a model cannot guess an id it has never seen, and
+ * a guessed id fails at execution after the user has approved it. Reading the
+ * same variable the executor gates on means the prompt can never drift from
+ * what is actually runnable.
+ */
+const ALLOWED_BRIDGE_TOOLS = (process.env.MCP_ALLOWED_TOOLS || '')
+  .split(',').map((t) => t.trim()).filter(Boolean).slice(0, 60)
+
 const PARAM_HINTS: Record<string, string> = {
   'contact.create': 'firstName, lastName, email, phone',
   'contact.note': 'contactQuery (a plain name/email/phone — NOT a query expression), note (the text)',
@@ -71,7 +82,11 @@ const PARAM_HINTS: Record<string, string> = {
   'appointment.book': 'contactQuery (who), when (REQUIRED — a date and time in plain words), calendar, title',
   'opportunity.move': 'contactQuery (whose deal), stage (REQUIRED — the stage name to move it to)',
   'social.schedule': 'channel, about (what the post is about), when',
-  'external.call': 'tool (REQUIRED — the exact tool id), args (an object of that tool arguments)',
+  // The tool id is the FULL bridge name — service_action, never the service
+  // alone. Verified 2026-08-16: the planner emitted tool:"stripe" with
+  // args:{action:"list_customers"}, which the bridge cannot route. The hint has
+  // to show the shape, because "the exact tool id" reads as the service name.
+  'external.call': 'tool (REQUIRED — the FULL tool id like stripe_list_customers, slack_send_message, notion_search — service_action, never just the service), args (that tool own arguments, NOT an action field)',
   'workflow.author': 'name, spec (what the automation should do)',
   'workflow.deploy': 'name',
   'workflow.list': 'no params — just the client',
@@ -250,6 +265,10 @@ export async function POST(req: NextRequest) {
   const system = [
     "You turn an agency owner's instruction into a plan of steps.",
     '',
+    ...(ALLOWED_BRIDGE_TOOLS.length
+      ? ['BRIDGE TOOLS available to external.call — use one of these EXACT ids as `tool`:',
+         '  ' + ALLOWED_BRIDGE_TOOLS.join(', '), '']
+      : []),
     'CAPABILITIES — choose only from these ids:',
     ...cat.map((c) => {
       const flags = [
