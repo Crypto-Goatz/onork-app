@@ -21,7 +21,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { createServiceClient } from '@/lib/connect/service-client'
-import { crmGet, crmPostRaw } from '@/lib/crm'
+import { crmGet, crmGetRaw, crmPostRaw } from '@/lib/crm'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -90,7 +90,8 @@ async function contactsSince(locationId: string, gte: string, lt: string | undef
 async function needsReply(locationId: string, notes: Notes): Promise<number | null> {
   try {
     const body = await json(await crmGet(
-      `/conversations/search?locationId=${encodeURIComponent(locationId)}&status=unread&limit=1`, locationId),
+      // No locationId here — crmGet appends it, and TWO of them is a 400.
+      `/conversations/search?status=unread&limit=1`, locationId),
       notes, 'needsReply')
     if (body && typeof body.total !== 'number') notes.push('needsReply: no total in body')
     return typeof body?.total === 'number' ? body.total : null
@@ -100,8 +101,12 @@ async function needsReply(locationId: string, notes: Notes): Promise<number | nu
 /** Today's appointments across every calendar the account has. */
 async function appointmentsToday(locationId: string, notes: Notes): Promise<{ count: number; nextAt: string | null } | null> {
   try {
-    const cals = await json(await crmGet(`/calendars/?locationId=${encodeURIComponent(locationId)}`, locationId), notes, 'calendars')
-    const list = (cals?.calendars as { id?: string }[] | undefined) ?? []
+    const cals = await json(await crmGet('/calendars/', locationId), notes, 'calendars')
+    // Could not read the calendars at all — that is not "no appointments".
+    // Returning 0 here told someone their day was clear on the strength of a
+    // 401, which is worse than showing them a dash.
+    if (!cals) return null
+    const list = (cals.calendars as { id?: string }[] | undefined) ?? []
     if (!list.length) return { count: 0, nextAt: null }
 
     const start = new Date(); start.setHours(0, 0, 0, 0)
@@ -112,7 +117,7 @@ async function appointmentsToday(locationId: string, notes: Notes): Promise<{ co
     const pages = await Promise.all(list.slice(0, 12).map(async (c) => {
       if (!c.id) return null
       const res = await crmGet(
-        `/calendars/events?locationId=${encodeURIComponent(locationId)}&calendarId=${c.id}&startTime=${from}&endTime=${to}`,
+        `/calendars/events?calendarId=${c.id}&startTime=${from}&endTime=${to}`,
         locationId).catch(() => null)
       return json(res, notes, `events:${c.id}`)
     }))
@@ -137,7 +142,9 @@ async function appointmentsToday(locationId: string, notes: Notes): Promise<{ co
  */
 async function dealsInPlay(locationId: string, notes: Notes): Promise<{ count: number | null; value: number | null; partial: boolean }> {
   try {
-    const body = await json(await crmGet(
+    // Raw: this endpoint takes location_id, and crmGet's injected camelCase
+    // locationId is an unknown property here — 422, not an auth failure.
+    const body = await json(await crmGetRaw(
       `/opportunities/search?location_id=${encodeURIComponent(locationId)}&status=open&limit=100`, locationId),
       notes, 'deals')
     if (!body) return { count: null, value: null, partial: false }

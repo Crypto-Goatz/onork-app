@@ -410,6 +410,28 @@ export async function crmGet(path: string, locationId: string): Promise<Response
   return authedFetch(url, { method: 'GET' }, auth)
 }
 
+/**
+ * GET with the query string EXACTLY as given — no locationId appended.
+ *
+ * crmGet appends `locationId=` to every URL, which is right for most reads and
+ * wrong for two shapes, both of which fail in ways that look like an auth
+ * problem rather than a URL problem:
+ *
+ *   · a path that ALREADY carries locationId gets it twice, and
+ *     /conversations/search answers 400 "Invalid locationId format" — the
+ *     value is fine, there are simply two of them.
+ *   · /opportunities/search takes `location_id`, so the appended camelCase one
+ *     is an unknown property and it answers 422 "property locationId should
+ *     not exist".
+ *
+ * Same reasoning as crmPostRaw, and kept as a separate function for the same
+ * reason: no existing caller changes behaviour.
+ */
+export async function crmGetRaw(path: string, locationId: string): Promise<Response> {
+  const auth = await getAuthForLocation(locationId)
+  return authedFetch(`${CRM_API}${path}`, { method: 'GET' }, auth)
+}
+
 export async function crmPost(path: string, locationId: string, body: Record<string, unknown>): Promise<Response> {
   const auth = await getAuthForLocation(locationId)
   return authedFetch(`${CRM_API}${path}`, {
