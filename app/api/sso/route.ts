@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { decryptSsoPayload } from '@/lib/crm/sso'
 import { issueAppJwt } from '@/lib/auth/app-jwt'
+import { ensureOnAccount } from '@/lib/account/ensure'
 
 /**
  * POST /api/sso — turn the platform's encrypted user context into an app session.
@@ -148,6 +149,24 @@ export async function POST(req: NextRequest) {
     // then have to remember to check.
     return NextResponse.json({ ok: false, error: 'This session has no agency attached.' }, { status: 403 })
   }
+
+  /**
+   * EVERY ENTRY PATH CREATES A 0n ACCOUNT. Until now this one did not: the
+   * handshake produced a session and a company and no identity, so a person
+   * using the app daily inside their CRM had nothing to attach an add-on to and
+   * nothing to carry them into the rest of the ecosystem.
+   *
+   * Fire-and-forget on purpose. Account creation must never be the reason a
+   * sign-in fails — if it errors, the person is still signed in and the next
+   * handshake tries again.
+   */
+  void ensureOnAccount({
+    email: typeof ctx.email === 'string' ? ctx.email : null,
+    companyId,
+    locationId: typeof ctx.activeLocation === 'string' ? ctx.activeLocation : null,
+    displayName: typeof ctx.userName === 'string' ? ctx.userName : null,
+    source: 'crm_sso',
+  }).catch((err) => console.error('[sso] account provisioning failed:', err))
 
   const token = issueAppJwt({
     sub: userId || companyId,

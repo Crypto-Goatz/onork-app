@@ -215,6 +215,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(url)
     }
 
+    /**
+     * A marketplace install is a person arriving, so it creates a 0n account
+     * like every other entry path. Without this an installer has an install and
+     * no identity — nothing to own the add-on they just bought.
+     *
+     * Fire-and-forget: a failure here must never break the install itself.
+     */
+    void (async () => {
+      try {
+        const { ensureOnAccount } = await import('@/lib/account/ensure')
+        await ensureOnAccount({
+          email: (tokenData.userEmail as string) || null,
+          companyId: (tokenData.companyId as string) || null,
+          locationId: (tokenData.locationId as string) || null,
+          source: 'marketplace_install',
+        })
+      } catch (err) {
+        console.error('[oauth/callback] account provisioning failed:', err)
+      }
+    })()
+
     const access_token = tokenData.access_token as string
     const refresh_token = (tokenData.refresh_token || '') as string
     const token_type = (tokenData.token_type || 'Bearer') as string
