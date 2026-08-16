@@ -65,6 +65,12 @@ interface PlanLeg {
   ambiguous?: { id: string; name: string }[]
   /** Exactly what the planner called this client — the key a pin is stored under. */
   spoken?: string
+  /** A person's name that matched more than one contact in this account. */
+  whoSpoken?: string
+  whoCandidates?: { id: string; name: string; detail?: string; lastTouched?: string }[]
+  whoQuestion?: string
+  /** Set once a name landed on exactly one person — shown so the choice is visible. */
+  whoResolved?: string
   priceCents: number
   blocked?: boolean
   insteadOffer?: string
@@ -143,6 +149,10 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
    * once does not have to be answered again for the next command.
    */
   const [pins, setPins] = useState<Record<string, string>>({})
+  /** Which CONTACT the user picked for an ambiguous person name. Same contract
+   *  as `pins` above — keyed by what was said, valued by id, because names
+   *  repeat and that is the whole reason the question exists. */
+  const [whoPins, setWhoPins] = useState<Record<string, string>>({})
   const [legs, setLegs] = useState<PlanLeg[] | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
@@ -221,7 +231,22 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
     void plan(next)
   }
 
-  async function plan(pinOverrides?: Record<string, string>) {
+  /**
+   * "Did you mean this Mike?" — answered.
+   *
+   * Re-plans immediately rather than storing the answer for later. The plan is
+   * signed server-side, so a leg cannot be edited in the browser and stay
+   * valid; the answer has to go back through the planner to be honoured.
+   */
+  function pickPerson(spoken: string, contactId: string) {
+    const key = spoken.trim().toLowerCase()
+    if (!key) return
+    const next = { ...whoPins, [key]: contactId }
+    setWhoPins(next)
+    void plan(undefined, next)
+  }
+
+  async function plan(pinOverrides?: Record<string, string>, whoOverrides?: Record<string, string>) {
     const q = command.trim()
     if (!q || planning) return
     // A new plan invalidates the last one completely — token, legs and the
@@ -237,6 +262,7 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
           command: q,
           activeLocationId: activeLocation === 'all' ? null : activeLocation,
           pins: pinOverrides ?? pins,
+          whoPins: whoOverrides ?? whoPins,
         }),
       })
       const j = await r.json().catch(() => ({}))
@@ -583,6 +609,52 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
                               </div>
                             </div>
                           ) : null}
+
+                          {/* WHICH PERSON. The old behaviour discovered this at
+                              RUN time and said `"Mike" matches 172172 contacts.
+                              Tell me which one.` — a refusal with no way to
+                              answer it, since retyping "Mike" produces the same
+                              172172. The question now arrives before approval,
+                              carrying the people you dealt with most recently. */}
+                          {l.whoQuestion && (
+                            <div className="mt-1.5">
+                              <p className="text-[12.5px] leading-relaxed text-[color:var(--oc-amber)]">
+                                {l.whoQuestion}
+                              </p>
+                              {l.whoCandidates?.length ? (
+                                <div className="mt-2 flex flex-col gap-1.5">
+                                  {l.whoCandidates.map((c) => (
+                                    <button
+                                      key={c.id}
+                                      type="button"
+                                      onClick={() => pickPerson(l.whoSpoken || '', c.id)}
+                                      disabled={planning}
+                                      className="flex items-baseline gap-2 rounded-lg border border-[color:var(--oc-line)] bg-[color:var(--oc-card)] px-3 py-2 text-left text-[12.5px] transition hover:border-[color:var(--oc-green)] hover:bg-[color:var(--oc-green)]/5 disabled:opacity-50"
+                                    >
+                                      <span className="font-medium text-[color:var(--oc-ink)]">{c.name}</span>
+                                      {c.detail && (
+                                        <span className="truncate text-[11.5px] text-[color:var(--oc-text)]/60">{c.detail}</span>
+                                      )}
+                                      {/* The ranking key, shown. "Most recent"
+                                          is a claim, and a date is the evidence. */}
+                                      {c.lastTouched && (
+                                        <span className="ml-auto shrink-0 font-mono text-[10.5px] text-[color:var(--oc-text)]/40">
+                                          {new Date(c.lastTouched).toLocaleDateString()}
+                                        </span>
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
+
+                          {l.whoResolved && (
+                            <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--oc-green-d)]">
+                              Using {l.whoResolved}.
+                            </p>
+                          )}
+
                           {l.notYetWired && (
                             <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--oc-text)]/60">
                               Planned, not wired up yet — this one will be skipped.

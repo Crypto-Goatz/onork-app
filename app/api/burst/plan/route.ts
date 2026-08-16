@@ -6,6 +6,7 @@ import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { listConnectedClients, resolveLocation, type AgencyLocation } from '@/lib/crm/locations'
 import { IMPLEMENTED } from '@/lib/burst/executor'
 import { signPlan, type SignedLeg } from '@/lib/burst/plan-token'
+import { whoIs, whoQuestion, type Candidate } from '@/lib/burst/who'
 
 /**
  * POST /api/burst/plan — turn a sentence into a costed, signed plan.
@@ -112,6 +113,20 @@ const PARAM_HINTS: Record<string, string> = {
  * worst experience this product can produce: it looks like the product is
  * broken when the truth is that one detail was never supplied.
  */
+/** The shape the second pass mutates. Only the fields it touches. */
+interface PlannedLeg {
+  capability: string
+  locationId?: string
+  params: Record<string, unknown>
+  runnable: boolean
+  /** Set once a name resolved to exactly one person, or was pinned. */
+  whoResolved?: string
+  /** The name that could not be resolved on its own. */
+  whoSpoken?: string
+  whoCandidates?: Candidate[]
+  whoQuestion?: string
+}
+
 const REQUIRED_PARAMS: Record<string, string[]> = {
   'product.create': ['name'],
   'product.collection': ['name'],
@@ -231,6 +246,22 @@ export async function POST(req: NextRequest) {
       if (typeof id === 'string' && locations.some((l) => l.id === id)) {
         pins.set(spoken.trim().toLowerCase(), id)
       }
+    }
+  }
+
+  /**
+   * Answers to "which person did you mean?", keyed by the name that was said.
+   *
+   * Same contract as the client pins above and for the same reason: names
+   * repeat, so the answer has to be an id. These are NOT validated against a
+   * list here the way location pins are — the agency has hundreds of thousands
+   * of contacts and there is no list to check against. The id is scoped by the
+   * location the leg runs in, which is what actually bounds it.
+   */
+  const whoPins = new Map<string, string>()
+  if (body?.whoPins && typeof body.whoPins === 'object') {
+    for (const [spoken, id] of Object.entries(body.whoPins as Record<string, unknown>)) {
+      if (typeof id === 'string' && id.trim()) whoPins.set(spoken.trim().toLowerCase(), id.trim())
     }
   }
 
@@ -429,11 +460,95 @@ export async function POST(req: NextRequest) {
       .filter(Boolean)
       .slice(0, 20)
 
+    /**
+     * Second pass: who did they mean?
+     *
+     * Runs AFTER the legs are shaped because it needs the resolved location —
+     * "Mike" only means anything inside one account. It has to be a separate
+     * pass at all because the map above is synchronous and this is a network
+     * call per named person.
+     *
+     * THE POINT IS THAT THE QUESTION ARRIVES BEFORE APPROVAL. This used to be
+     * discovered at run time and returned as `"Mike" matches 172172 contacts.
+     * Tell me which one.` — a refusal with no way to answer it. Now the plan
+     * comes back holding the candidates, ranked by who was touched most
+     * recently, and one click pins the id.
+     *
+     * Deduplicated by (location, name) so a command naming the same person in
+     * three legs costs one lookup, and capped so a wide plan cannot fan out
+     * into a burst of contact searches.
+     */
+    const WHO_KEYS = ['contact', 'to', 'who', 'person', 'assignee', 'recipient']
+    const needWho = new Map<string, { locationId: string; spoken: string }>()
+    for (const leg of legs as PlannedLeg[]) {
+      if (!leg?.locationId) continue
+      for (const k of WHO_KEYS) {
+        const v = leg.params?.[k]
+        if (typeof v !== 'string' || !v.trim()) continue
+        // An id was already pinned — nothing to ask.
+        if (whoPins.has(v.trim().toLowerCase())) continue
+        needWho.set(`${leg.locationId}::${v.trim().toLowerCase()}`, { locationId: leg.locationId, spoken: v.trim() })
+      }
+    }
+
+    const resolved = new Map<string, { contact?: Candidate; candidates?: Candidate[]; total?: number; error?: string }>()
+    await Promise.all(
+      [...needWho.entries()].slice(0, 8).map(async ([key, { locationId, spoken }]) => {
+        resolved.set(key, await whoIs(locationId, spoken))
+      }),
+    )
+
+    for (const leg of legs as PlannedLeg[]) {
+      if (!leg?.locationId) continue
+      for (const k of WHO_KEYS) {
+        const v = leg.params?.[k]
+        if (typeof v !== 'string' || !v.trim()) continue
+        const said = v.trim()
+
+        const pinnedId = whoPins.get(said.toLowerCase())
+        if (pinnedId) {
+          // Pinned: swap the name for the id the person chose, and let it run.
+          leg.params[k] = pinnedId
+          leg.whoResolved = said
+          continue
+        }
+
+        const r = resolved.get(`${leg.locationId}::${said.toLowerCase()}`)
+        if (!r) continue
+
+        if (r.contact) {
+          leg.params[k] = r.contact.id
+          leg.whoResolved = r.contact.name
+          continue
+        }
+        if (r.candidates?.length) {
+          leg.whoSpoken = said
+          leg.whoCandidates = r.candidates
+          leg.whoQuestion = whoQuestion(said, r.total ?? r.candidates.length, r.candidates.length)
+          // An unanswered question is not something to hand an Approve button.
+          leg.runnable = false
+        } else if (r.error) {
+          leg.whoSpoken = said
+          leg.whoQuestion = r.error
+          leg.runnable = false
+        }
+      }
+    }
+
+    // Anything that just became unrunnable must not stay in the signed set —
+    // a signature over a leg the plan is still asking about would let Approve
+    // run it with the unresolved name.
+    const stillSignable = signable.filter((sg) =>
+      (legs as PlannedLeg[]).some(
+        (l) => l?.capability === sg.capability && l.locationId === sg.locationId && l.runnable,
+      ),
+    )
+
     const dropped = raw.length - legs.length
 
     // Only a session-backed plan can be signed, and only signed plans can run.
-    const signed = companyId && signable.length
-      ? signPlan({ companyId, command, legs: signable })
+    const signed = companyId && stillSignable.length
+      ? signPlan({ companyId, command, legs: stillSignable })
       : null
 
     return NextResponse.json({
@@ -441,7 +556,7 @@ export async function POST(req: NextRequest) {
       command,
       legs,
       planToken: signed?.token,
-      runnableCount: signable.length,
+      runnableCount: stillSignable.length,
       ...(companyId ? {} : { needsSession: 'Open 0nCORE from inside your CRM to run a plan.' }),
       droppedUnknown: dropped > 0 ? dropped : undefined,
     })
