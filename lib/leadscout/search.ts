@@ -91,8 +91,16 @@ export async function findLocalLeads(
     const res = await fetch(`${SERP_BASE}?${params}`, { headers: { accept: 'application/json' }, cache: 'no-store' })
     if (!res.ok) {
       const body = await res.text().catch(() => '')
-      // The upstream message survives — a quota message and a bad-key message
-      // need completely different fixes and both arrive as a non-200.
+      // A quota message and a bad-key message need completely different fixes
+      // and both arrive as a non-200, so the two are separated by hand. Out of
+      // credit is an account state, not a fault — saying "search failed" here
+      // sends someone into the code to look for a bug that is not there.
+      if (res.status === 429 || /run out of searches/i.test(body)) {
+        return { ok: false, error: 'The search plan is out of credit for this month, so no new leads can be pulled right now. Everything already found still saves normally.' }
+      }
+      if (res.status === 401 || res.status === 403) {
+        return { ok: false, error: 'The search provider rejected our key. This is a configuration problem on our side, not yours.' }
+      }
       return { ok: false, error: `Search provider ${res.status}: ${body.slice(0, 180)}` }
     }
     data = (await res.json()) as Record<string, unknown>
