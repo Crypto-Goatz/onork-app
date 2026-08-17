@@ -19,6 +19,7 @@
  * crawlers, and an AEO page that renders nothing for a bot is worse than none.
  */
 import type { Metadata } from 'next'
+import VideoEmbed from '@/components/VideoEmbed'
 import Link from 'next/link'
 
 const UPDATED = 'August 2026'
@@ -168,6 +169,16 @@ export default function Page() {
         <p className="mt-3 text-[13px] text-[#6b7c9c]">
           Updated {UPDATED} · Written by Mike Mento, Founder of RocketOpp LLC · 1,640+ tools across 109 services
         </p>
+
+        {/* The demo sits directly under the BLUF, before the sales copy.
+            Someone who has read one paragraph and wants to know whether this is
+            real should not have to scroll past three sections to find out — and
+            watching it is a faster answer than any of them. */}
+        <VideoEmbed
+          id="yQ7BSCMxS2g"
+          title="Watch a full course get built and published"
+          className="mt-8"
+        />
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/crm/courses" className={BTN}>Build a course now</Link>

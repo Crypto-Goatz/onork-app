@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import VideoEmbed from '@/components/VideoEmbed'
 import {
   BookOpen, CheckCircle2, ChevronRight, CircleHelp, Eye, KeyRound, LifeBuoy,
   Mail, PenLine, Phone, Rocket, ShieldCheck, Sparkles, Trash2, Upload,
@@ -38,6 +39,7 @@ import {
  */
 
 const UPDATED = '2026-08-16'
+const VIDEO_ID = 'yQ7BSCMxS2g'
 const SUPPORT_EMAIL = 'mike@rocketopp.com'
 // The number published on rocketopp.com — not a placeholder. The source doc
 // says explicitly not to deploy with one, so this is the real company line.
@@ -184,6 +186,18 @@ const JSON_LD = {
       permissions: PERMISSIONS.map((p) => `${p.name} (${p.access})`).join(', '),
     },
     {
+      '@type': 'VideoObject',
+      '@id': `${URL}#video`,
+      name: 'Building and publishing a course with 0n Course Builder',
+      description:
+        'A full walkthrough: describe the course, approve the outline, generate the lessons, and publish it into your own account.',
+      thumbnailUrl: [`https://i.ytimg.com/vi/${VIDEO_ID}/maxresdefault.jpg`],
+      embedUrl: `https://www.youtube-nocookie.com/embed/${VIDEO_ID}`,
+      contentUrl: `https://youtu.be/${VIDEO_ID}`,
+      uploadDate: UPDATED,
+      publisher: { '@id': `${URL}#org` },
+    },
+    {
       '@type': 'HowTo',
       '@id': `${URL}#howto`,
       name: 'How to build and publish a course with 0n Course Builder',
@@ -269,6 +283,15 @@ export default function CourseBuilderDocs() {
             <span>Published by RocketOpp LLC, Pennsylvania, USA</span>
           </p>
         </header>
+
+        {/* Straight after the BLUF. Documentation answers "how"; the video
+            answers "what does this actually look like", and that is the
+            question someone has before they will read any of the how. */}
+        <VideoEmbed
+          id={VIDEO_ID}
+          title="Watch a course get built and published"
+          className="mt-10"
+        />
 
         {/* ── DEFINITION ── its own block, because "what is this" is the query
              most often asked of a docs page. */}
