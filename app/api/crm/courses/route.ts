@@ -89,19 +89,36 @@ export async function POST(req: NextRequest) {
       if (!course?.lessons?.length) return NextResponse.json({ error: 'Generate the course first.' }, { status: 400 })
       if (!locationId) return NextResponse.json({ error: 'Choose which client to publish to.' }, { status: 400 })
 
-      // Only a CONNECTED client. Publishing needs that client's key, and
-      // failing here is clearer than failing at the last step after the work.
+      /**
+       * TWO WAYS TO BE CONNECTED, and this used to accept only one.
+       *
+       * The gate checked `location_connections` — the table an AGENCY writes
+       * when it pastes a client key. That is correct for an operator using
+       * 0nCORE, and completely wrong for the audience this app is being
+       * submitted to: someone who installed 0n Course Builder from the
+       * marketplace has an OAuth token in `crm_installations` and no agency
+       * behind them at all. They would generate a whole course and then be told
+       * "add its key in Clients first" — an instruction referring to a screen
+       * they have never seen and cannot reach.
+       *
+       * A marketplace install IS a connection. getAuthForLocation already knows
+       * that and reads both stores; the gate simply had not caught up.
+       */
       const db = createServiceClient()
       if (db) {
-        const { data: conn } = await db
-          .from('location_connections')
-          .select('location_id')
-          .eq('location_id', locationId)
-          .eq('status', 'active')
-          .maybeSingle()
-        if (!conn) {
+        const [agencyKey, install] = await Promise.all([
+          db.from('location_connections')
+            .select('location_id').eq('location_id', locationId).eq('status', 'active').maybeSingle(),
+          db.from('crm_installations')
+            .select('location_id').eq('location_id', locationId).eq('status', 'active').maybeSingle(),
+        ])
+        if (!agencyKey.data && !install.data) {
           return NextResponse.json(
-            { error: 'That client is not connected yet — add its key in Clients first.' },
+            {
+              error:
+                'This account is not connected yet. Install 0n Course Builder into it from the app marketplace, ' +
+                'or if you are an agency, add the client key under Clients.',
+            },
             { status: 400 },
           )
         }
