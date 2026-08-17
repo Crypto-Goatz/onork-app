@@ -183,13 +183,25 @@ export async function GET(req: NextRequest) {
     for (const app of candidates) {
       if (!app.clientSecret) { skipped.push(`${app.name}(no secret in env)`); continue }
 
-      // The app's own configured URI is tried first, then the rest.
+      /**
+       * user_type is the last free variable, so it gets swept too.
+       *
+       * Location vs Company decides whether a refresh_token comes back at all,
+       * and sending the wrong one for how the app is actually distributed is
+       * another thing the platform can report as a credentials problem. The
+       * app's configured value goes first; the other is a single extra attempt
+       * on a failure that has already cost us the round trip.
+       */
       const uris = [...new Set([app.redirectUri, ...REDIRECT_CANDIDATES])]
+      const userTypes = [...new Set([app.userType, app.userType === 'Location' ? 'Company' : 'Location'])]
+      const attempts = uris.flatMap((uri) => userTypes.map((ut) => ({ uri, ut })))
+
       let data: Record<string, unknown> = {}
       let tokenRes: Response | null = null
       let usedUri = app.redirectUri
+      let usedType: string = app.userType
 
-      for (const uri of uris) {
+      for (const { uri, ut } of attempts) {
         tokenRes = await fetch(CRM_TOKEN_URL, {
           method: 'POST',
           headers: {
@@ -202,11 +214,12 @@ export async function GET(req: NextRequest) {
             grant_type: 'authorization_code',
             code,
             redirect_uri: uri,
-            user_type: app.userType,
+            user_type: ut,
           }),
         })
         data = await tokenRes.json()
         usedUri = uri
+        usedType = ut
         if (tokenRes.ok && data.access_token) break
         // A spent or rejected CODE is terminal — no other redirect_uri will
         // help, and continuing only buries the real message.
@@ -218,7 +231,7 @@ export async function GET(req: NextRequest) {
         tokenData = data
         usedApp = app
         console.log(
-          `[oauth/callback] Token exchanged via ${app.name} app (user_type=${app.userType}, redirect_uri=${usedUri}). ` +
+          `[oauth/callback] Token exchanged via ${app.name} app (user_type=${usedType}, redirect_uri=${usedUri}). ` +
           `Response keys: ${Object.keys(data).join(',')} | ` +
           `refresh_token: ${data.refresh_token ? 'PRESENT' : 'MISSING'} | ` +
           `locationId: ${data.locationId || 'none'} | companyId: ${data.companyId || 'none'}`
@@ -232,7 +245,9 @@ export async function GET(req: NextRequest) {
       const raw = JSON.stringify(data).slice(0, 240)
       // The URI is named in the failure. "Invalid client credentials" with no
       // redirect_uri attached is what sent us hunting through secrets.
-      failures.push(`${app.name}(${tokenRes.status}) via ${usedUri}: ${raw}`)
+      // Both variables named. An error that does not say which combination
+      // produced it is an error you have to reproduce before you can read it.
+      failures.push(`${app.name}(${tokenRes.status}) uri=${usedUri.replace('https://', '')} type=${usedType}: ${raw}`)
       console.warn(`[oauth/callback] ${app.name} exchange failed ${tokenRes.status}: ${raw}`)
 
       /**
