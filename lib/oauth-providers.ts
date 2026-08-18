@@ -46,10 +46,25 @@ export const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
     clientIdEnv: 'GOOGLE_CLIENT_ID',
     clientSecretEnv: 'GOOGLE_CLIENT_SECRET',
     // offline + consent → guarantees a refresh_token so server-side reads keep working
+    //
+    // NO include_granted_scopes HERE, deliberately. It looks harmless — "also
+    // carry forward what the user already approved" — and it is what produced
+    // `Error 400: invalid_request` on connect. Incremental authorization merges
+    // every scope this account has EVER granted this client into one request,
+    // so an unrelated older grant (a Drive/YouTube consent, in our case) gets
+    // folded in beside Analytics and Ads and Google rejects the combination.
+    //
+    // The failure is invisible in the code, because the offending scopes are
+    // not in this file — they are in the user's grant history. It also fails
+    // per-account: a fresh Google account connects fine while the owner's does
+    // not, which reads as "works for everyone but me".
+    //
+    // Requesting exactly the scopes listed above, and no more, is both the fix
+    // and the correct behaviour: a re-consent shows the user precisely what
+    // this app is asking for.
     extraAuthParams: {
       access_type: 'offline',
       prompt: 'consent',
-      include_granted_scopes: 'true',
     },
     extractProfile: (data) => ({
       provider_account_id: String(data.id || data.sub || ''),
