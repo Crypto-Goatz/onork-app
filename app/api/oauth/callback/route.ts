@@ -149,6 +149,11 @@ export async function GET(req: NextRequest) {
 
     let tokenData: Record<string, unknown> | null = null
     let usedApp = candidates[0] || apps[0]
+    // WHICH combination actually worked. Scoped to the loop before, which meant
+    // the install row could not record it — and refresh has to send the same
+    // user_type the exchange used or it fails for a reason nobody can see.
+    let usedUri = ''
+    let usedType = ''
     const failures: string[] = []
     const skipped: string[] = []
 
@@ -198,8 +203,8 @@ export async function GET(req: NextRequest) {
 
       let data: Record<string, unknown> = {}
       let tokenRes: Response | null = null
-      let usedUri = app.redirectUri
-      let usedType: string = app.userType
+      usedUri = app.redirectUri
+      usedType = app.userType
 
       for (const { uri, ut } of attempts) {
         tokenRes = await fetch(CRM_TOKEN_URL, {
@@ -348,6 +353,25 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    /**
+     * AN INSTALL WITH NO REFRESH TOKEN IS ALREADY DYING, and until now it was
+     * written as active/healthy anyway. That is how 26 rows became silent
+     * orphans: the access token works for a day, everything looks installed,
+     * and by the time anyone notices there is nothing left to refresh with —
+     * only a reinstall recovers it.
+     *
+     * The console.error above was the only trace, and console errors are not a
+     * surface anyone checks.
+     *
+     * STATUS STAYS 'active' DELIBERATELY. The token genuinely works right now,
+     * and getAuthForLocation filters on status — flipping it would break a
+     * working install for the 24 hours it has left, which trades a silent
+     * future failure for a loud immediate one. The health field is what
+     * carries the warning, so this is findable BEFORE expiry rather than
+     * diagnosed after it.
+     */
+    const canRefresh = Boolean(preservedRefresh)
+
     // Store installation linked to user
     const installPayload = {
       location_id: locationId,
@@ -360,7 +384,9 @@ export async function GET(req: NextRequest) {
       expires_at: new Date(Date.now() + (expires_in || 86400) * 1000).toISOString(),
       scopes: scope || '',
       status: 'active',
-      health_status: 'healthy',
+      // Honest at write time. 'degraded' means "works now, cannot survive
+      // expiry" — a state the registry can find today instead of tomorrow.
+      health_status: canRefresh ? 'healthy' : 'degraded',
       last_health_check: new Date().toISOString(),
       consecutive_failures: 0,
       user_id: user?.id || null,
@@ -369,7 +395,17 @@ export async function GET(req: NextRequest) {
         installed_at: new Date().toISOString(),
         company_id: companyId,
         crm_user_id: crmUserId,
-        user_type: usedApp.userType,
+        // The user_type that actually produced this token. Refresh has to send
+        // the same one, and guessing it again later is how a refresh fails for
+        // a reason nobody can see.
+        user_type: usedType,
+        redirect_uri: usedUri,
+        can_refresh: canRefresh,
+        ...(canRefresh ? {} : {
+          refresh_gap_reason:
+            'The token exchange returned no refresh_token and none was on file. This install stops working at expiry and needs a reinstall.',
+          refresh_gap_at: new Date().toISOString(),
+        }),
       },
     }
 

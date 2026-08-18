@@ -35,6 +35,7 @@ type Verdict =
   | 'expired-refreshable'
   | 'expired-dead'    // expired AND no refresh token: only a reinstall fixes it
   | 'no-token'        // the row exists and the exchange never produced a token
+  | 'dying'           // works today, cannot survive expiry — no refresh token
   | 'unknown-expiry'
 
 interface Row {
@@ -58,6 +59,17 @@ function verdictFor(r: Row): { verdict: Verdict; why: string } {
   if (!r.expires_at) return { verdict: 'unknown-expiry', why: 'No expiry recorded, so this token cannot be trusted or refreshed on schedule.' }
 
   const ms = new Date(r.expires_at).getTime() - Date.now()
+
+  // Caught BEFORE it dies. An install with no refresh token works perfectly
+  // today and is unrecoverable tomorrow — waiting for expiry to report it is
+  // how 26 of these went unnoticed until a customer complained.
+  if (ms > 0 && !r.refresh_token) {
+    return {
+      verdict: 'dying',
+      why: 'Works now, but no refresh token was ever stored — this stops at expiry and needs a reinstall. Catch it before then.',
+    }
+  }
+
   if (ms > 60 * 60 * 1000) return { verdict: 'live', why: 'Token present and in date.' }
   if (ms > 0) return { verdict: 'expiring', why: 'Token expires within the hour.' }
 
@@ -102,7 +114,9 @@ export async function GET(req: NextRequest) {
       updatedAt: r.updated_at,
       // The field the smoke test asserts on. "A row exists" was never the
       // question; "can this row do anything" is.
-      hasToken: verdict === 'live' || verdict === 'expiring',
+      // 'dying' still works, so it counts as usable — but it is reported
+      // separately below, because "usable" and "safe" are different questions.
+      hasToken: verdict === 'live' || verdict === 'expiring' || verdict === 'dying',
       verdict,
       why,
     }
@@ -111,12 +125,13 @@ export async function GET(req: NextRequest) {
   // Per app, because one app being broken must be visible as ONE app being
   // broken. A single blended number is how four listings share a failure and
   // nobody can tell which one is at fault.
-  const byApp: Record<string, { total: number; live: number; dead: number; noToken: number }> = {}
+  const byApp: Record<string, { total: number; live: number; dying: number; dead: number; noToken: number }> = {}
   for (const i of installs) {
     const key = i.appId || 'unknown'
-    byApp[key] ||= { total: 0, live: 0, dead: 0, noToken: 0 }
+    byApp[key] ||= { total: 0, live: 0, dying: 0, dead: 0, noToken: 0 }
     byApp[key].total++
     if (i.hasToken) byApp[key].live++
+    if (i.verdict === 'dying') byApp[key].dying++
     if (i.verdict === 'expired-dead') byApp[key].dead++
     if (i.verdict === 'no-token') byApp[key].noToken++
   }
