@@ -60,7 +60,15 @@ async function pickCanaryLocation(): Promise<string | null> {
     .select('location_id')
     .eq('app_id', AGENCY_APP_ID)
     .eq('status', 'active')
+    // EMPTY STRING, NOT NULL — and the difference cost this canary its first
+    // run. The agency-level install stores location_id as '' (it is company
+    // scoped, it has no location), and it is also the most recently updated row
+    // in the table, so `.not(is null)` happily returned it, `if (!locationId)`
+    // saw a falsy value, and the probe reported "no canary location" while 27
+    // usable locations sat in the same table. A monitor that skips itself is
+    // worse than no monitor: it reports green.
     .not('location_id', 'is', null)
+    .neq('location_id', '')
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle<{ location_id: string }>()
