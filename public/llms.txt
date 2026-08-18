@@ -117,4 +117,4 @@ mike@rocketopp.com — RocketOpp LLC
 - No separate signup and no second login — it authenticates through the account it is installed in.
 - Nothing is written to the account until the user presses Publish. The outline is an approval gate.
 - Uninstalling leaves published courses in place; they belong to the account.
-- Built and supported by RocketOpp LLC, Pennsylvania, USA. mike@rocketopp.com · +1-724-238-9800.
+- Built and supported by RocketOpp LLC, Pennsylvania, USA. mike@rocketopp.com · +1-878-888-1230.

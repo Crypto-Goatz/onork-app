@@ -43,11 +43,11 @@ const VIDEO_ID = 'yQ7BSCMxS2g'
 const SUPPORT_EMAIL = 'mike@rocketopp.com'
 // The number published on rocketopp.com — not a placeholder. The source doc
 // says explicitly not to deploy with one, so this is the real company line.
-// (724) 238-9800 is THE number. It was 878-888-1230 here because I took it
-// from rocketopp-live's schema and contact page — a real RocketOpp number, and
-// the wrong one. Corrected on instruction: this is the line, everywhere.
-const SUPPORT_PHONE_DISPLAY = '(724) 238-9800'
-const SUPPORT_PHONE_E164 = '+1-724-238-9800'
+// RocketOpp's line, as published on rocketopp.com. This page belongs to a
+// RocketOpp product and carries a RocketOpp number — nothing from any client
+// business goes on a Rocket property, whatever the reason.
+const SUPPORT_PHONE_DISPLAY = '(878) 888-1230'
+const SUPPORT_PHONE_E164 = '+1-878-888-1230'
 const URL = 'https://www.0ncore.com/docs/course-builder'
 
 export const metadata: Metadata = {
