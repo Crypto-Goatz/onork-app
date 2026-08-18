@@ -20,14 +20,29 @@ interface Row {
   sub: string
   icon: LucideIcon
   danger?: boolean
+  /** No destination yet. Rendered as text, never as a link to a 404. */
+  soon?: boolean
 }
 
+/**
+ * EVERY ONE OF THESE USED TO 404.
+ *
+ * All five pointed at /crm/settings/* pages that were never built, so the
+ * Settings screen was five links to nothing — and clicking Profile inside the
+ * CRM iframe dropped someone on a 404 page with a "Go to Dashboard" button,
+ * which reads as the whole product being broken rather than one screen being
+ * unfinished.
+ *
+ * Profile now goes where the real one lives. The rest say they are not built
+ * yet and are not clickable. A row that admits it is coming is a smaller
+ * failure than a row that pretends and then 404s.
+ */
 const ROWS: Row[] = [
-  { href: '/crm/settings/profile', label: 'Profile', sub: 'Name, email, password', icon: User },
-  { href: '/crm/settings/team', label: 'Team & roles', sub: 'Who can approve plans, who can only draft', icon: Users },
-  { href: '/crm/settings/notifications', label: 'Notifications', sub: 'Failed runs, revoked keys, monthly summary', icon: Bell },
-  { href: '/crm/settings/services', label: 'Connected services', sub: '0nMCP and the accounts 0nCORE can reach', icon: Link2 },
-  { href: '/crm/settings/danger', label: 'Danger zone', sub: 'Disconnect all clients, delete workspace', icon: TriangleAlert, danger: true },
+  { href: '/crm/account', label: 'Profile', sub: 'Your name, email and connected identity', icon: User },
+  { href: '/crm/setup', label: 'Connected services', sub: '0nMCP and the accounts 0nCORE can reach', icon: Link2 },
+  { href: '/crm/clients', label: 'Clients & keys', sub: 'Which accounts are switched on, and their keys', icon: Users },
+  { href: '', label: 'Notifications', sub: 'Failed runs, revoked keys, monthly summary', icon: Bell, soon: true },
+  { href: '', label: 'Danger zone', sub: 'Disconnect all clients, delete workspace', icon: TriangleAlert, danger: true, soon: true },
 ]
 
 export default function SettingsRows() {
@@ -35,36 +50,39 @@ export default function SettingsRows() {
     <div className="space-y-3">
       {ROWS.map((r) => {
         const Icon = r.icon
-        return (
-          <Link
-            key={r.href}
-            href={r.href}
-            className={[
-              'flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-150',
-              r.danger
-                ? 'border-[color:var(--oc-red)]/30 bg-[color:var(--oc-card)] hover:border-[color:var(--oc-red)]/60'
-                : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)] hover:border-[color:var(--oc-border)]',
-            ].join(' ')}
-          >
-            <Icon
-              className={`h-[18px] w-[18px] shrink-0 ${
-                r.danger ? 'text-[color:var(--oc-red)]' : 'text-[color:var(--oc-muted)]'
-              }`}
-              strokeWidth={2}
-            />
+        const shell = [
+          'flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-150',
+          r.danger
+            ? 'border-[color:var(--oc-red)]/30 bg-[color:var(--oc-card)]'
+            : 'border-[color:var(--oc-border)] bg-[color:var(--oc-card)]',
+          // Only the ones that go somewhere get a hover state. A row that
+          // lights up under the cursor is a row promising a destination.
+          r.soon ? 'opacity-60' : r.danger ? 'hover:border-[color:var(--oc-red)]/60' : 'hover:border-[color:var(--oc-border-h)]',
+        ].join(' ')
+
+        const inner = (
+          <>
+            <Icon className={`h-4.5 w-4.5 shrink-0 ${r.danger ? 'text-[color:var(--oc-red)]' : 'text-[color:var(--oc-green-d)]'}`} />
             <span className="min-w-0 flex-1">
-              <span
-                className={`block text-[14.5px] font-semibold ${
-                  r.danger ? 'text-[color:var(--oc-red)]' : 'text-[color:var(--oc-ink)]'
-                }`}
-              >
-                {r.label}
+              <span className="flex items-center gap-2">
+                <span className={`text-[14px] font-semibold ${r.danger ? 'text-[color:var(--oc-red)]' : 'text-[color:var(--oc-ink)]'}`}>
+                  {r.label}
+                </span>
+                {r.soon && (
+                  <span className="rounded-full bg-[color:var(--oc-hover)] px-2 py-0.5 text-[10.5px] font-semibold text-[color:var(--oc-muted)]">
+                    not built yet
+                  </span>
+                )}
               </span>
-              <span className="mt-0.5 block text-[12.5px] text-[color:var(--oc-muted)]">{r.sub}</span>
+              <span className="mt-0.5 block text-[12.5px] leading-relaxed text-[color:var(--oc-muted)]">{r.sub}</span>
             </span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-[color:var(--oc-muted)]" />
-          </Link>
+            {!r.soon && <ChevronRight className="h-4 w-4 shrink-0 text-[color:var(--oc-faint)]" />}
+          </>
         )
+
+        return r.soon
+          ? <div key={r.label} className={shell}>{inner}</div>
+          : <Link key={r.label} href={r.href} className={shell}>{inner}</Link>
       })}
     </div>
   )

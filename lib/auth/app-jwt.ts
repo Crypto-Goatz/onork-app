@@ -33,7 +33,21 @@ if (typeof window !== 'undefined') {
  */
 
 const ALG = { alg: 'HS256', typ: 'JWT' }
-const TTL_SECONDS = 15 * 60
+/**
+ * EIGHT HOURS, not fifteen minutes.
+ *
+ * Fifteen minutes is a sensible lifetime for a token that is refreshed. This
+ * one is not: useSso settles ONCE per mount, so when it expired the page simply
+ * began failing, and the next render fell through to the sign-in gate. Someone
+ * with the Custom Page open in a tab — which is exactly how a Custom Page is
+ * used — got thrown out mid-sentence and read it as "the login is broken".
+ *
+ * Eight hours matches the boot cookie the OAuth callback already issues, so the
+ * two front doors now agree on how long a session lasts instead of disagreeing
+ * by a factor of thirty-two. It is scoped to one company, verified server-side
+ * on every call, and re-minted by a handshake the parent can repeat at will.
+ */
+const TTL_SECONDS = 8 * 60 * 60
 
 export interface AppClaims {
   /** CRM user id from the SSO payload. */

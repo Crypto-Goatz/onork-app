@@ -183,11 +183,33 @@ export function useSso(): Sso {
     // and carries nothing.
     window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*')
 
-    timer = setTimeout(() => {
-      // The parent never answered. Same fallback as the no-iframe case — a
-      // direct session may still get us in.
-      void standaloneOrMint()
-    }, HANDSHAKE_TIMEOUT_MS)
+    /**
+     * ASK AGAIN BEFORE GIVING UP.
+     *
+     * The parent answers this on its own schedule, and a single unanswered
+     * request used to mean an immediate fall-through to standalone — which,
+     * framed, renders the sign-in gate. That is the "it acts like it is
+     * working, then sends me back to the login screen" report: nothing was
+     * wrong with the session, the parent was simply slow or had not attached
+     * its listener yet.
+     *
+     * Three asks, spaced, before conceding. A repeated REQUEST_USER_DATA is
+     * free — it carries nothing and the parent is built to answer it.
+     */
+    let asks = 1
+    const ask = () => {
+      if (settled.current) return
+      if (asks >= 3) {
+        // Still nothing. A direct session may get us in; if not, the caller
+        // decides what to show.
+        void standaloneOrMint()
+        return
+      }
+      asks += 1
+      window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*')
+      timer = setTimeout(ask, HANDSHAKE_TIMEOUT_MS)
+    }
+    timer = setTimeout(ask, HANDSHAKE_TIMEOUT_MS)
 
     return () => {
       window.removeEventListener('message', onMessage)
