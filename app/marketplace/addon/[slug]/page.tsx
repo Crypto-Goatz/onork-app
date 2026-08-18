@@ -13,7 +13,10 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const addon = getAddonBySlug(slug)
+  const a = getAddonBySlug(slug)
+  // Same rule in the metadata path: a private listing must not leak its name
+  // through a <title> or an OG tag either.
+  const addon = a && (a.visibility ?? 'public') === 'public' ? a : undefined
   if (!addon) return { title: '0nCore Marketplace' }
   return {
     title: `${addon.name} — 0nCore Marketplace Add-on`,
@@ -35,7 +38,18 @@ const PLAN_COLORS: Record<string, string> = {
 
 export default async function AddonDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const addon = getAddonBySlug(slug)
+  const found = getAddonBySlug(slug)
+
+  /**
+   * A non-public listing is treated as NOT EXISTING here, not as forbidden.
+   *
+   * Gating generateStaticParams kept the slug out of the sitemap and the grid,
+   * but this route is dynamic — the URL still resolved for anyone who typed
+   * it, which is unlisted rather than hidden. Returning the same "not found"
+   * screen a bad slug gets also means the response cannot be used to confirm
+   * that a private add-on exists.
+   */
+  const addon = found && (found.visibility ?? 'public') === 'public' ? found : undefined
 
   if (!addon) {
     return (
