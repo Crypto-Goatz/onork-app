@@ -37,6 +37,17 @@ export async function middleware(request: NextRequest) {
   // login page nested in someone's CRM.
   const host = request.headers.get('host') || ''
 
+  // The path this request must be rewritten to on the app host, decided below
+  // and APPLIED AT THE END. It used to be applied with an immediate
+  // `return NextResponse.rewrite(...)`, which returned before the auth block
+  // further down had run — so every protected route was gated on www and
+  // ungated on app.0ncore.com. `/dashboard` answered 200 with the agency shell
+  // to a logged-out visitor while www correctly 307'd to /login, and the
+  // difference was invisible in the code because both hosts read the same
+  // protected list. A rewrite is a destination, not a decision: decide first,
+  // rewrite last.
+  let appRewritePath: string | null = null
+
   // ── OAuth rescue ──────────────────────────────────────────────────
   // Supabase redirects an OAuth ?code to the requested redirect_to ONLY if it is
   // in the project's allow-list; otherwise it falls back to the Site URL and
@@ -65,12 +76,30 @@ export async function middleware(request: NextRequest) {
     // Auth pages must serve as-is on the app host too, or the standalone login
     // (app.0ncore.com/login?next=/crm) rewrites to /crm/login and 404s — the
     // exact break that made "log in outside GHL" impossible.
+    // /hub is the CUSTOMER home and a standalone page (app/hub), not a /crm
+    // surface — and it is where the owner gate below sends every non-owner. It
+    // is excluded here for the day someone adds it to the matcher: rewritten,
+    // it would resolve to /crm/hub, which does not exist, and the gate would
+    // redirect people to a 404.
     const isAuthPage = p === '/login' || p === '/signup' || p.startsWith('/auth') || p.startsWith('/forgot-password') || p.startsWith('/reset-password')
-    if (!isAuthPage && !p.startsWith('/api') && !p.startsWith('/_next') && !p.startsWith('/crm') && !p.startsWith('/portal') && !p.startsWith('/widgets') && !p.startsWith('/p/') && !p.startsWith('/scan') && !p.startsWith('/decisions')) {
-      const url = request.nextUrl.clone()
-      url.pathname = p === '/' ? '/crm' : `/crm${p}`
-      return NextResponse.rewrite(url)
+    if (!isAuthPage && !p.startsWith('/api') && !p.startsWith('/_next') && !p.startsWith('/crm') && !p.startsWith('/portal') && !p.startsWith('/widgets') && !p.startsWith('/p/') && !p.startsWith('/scan') && !p.startsWith('/decisions') && !p.startsWith('/hub')) {
+      appRewritePath = p === '/' ? '/crm' : `/crm${p}`
     }
+  }
+
+  /**
+   * A pass-through response that still carries the app-host rewrite.
+   *
+   * Every `NextResponse.next()` in this file has to go through here. A bare
+   * next() on the app host means "serve /dashboard itself" — which is a 404,
+   * because the page lives at /crm/dashboard. That is the trap the old
+   * early-return hid: nothing else could return without also losing the rewrite.
+   */
+  function passThrough(): NextResponse {
+    if (!appRewritePath) return NextResponse.next({ request })
+    const url = request.nextUrl.clone()
+    url.pathname = appRewritePath
+    return NextResponse.rewrite(url, { request })
   }
 
   // ── Bare app paths on www ─────────────────────────────────────────
@@ -100,7 +129,7 @@ export async function middleware(request: NextRequest) {
   const staleCookies = sbCookies.filter((c) => !c.name.includes(CURRENT_PROJECT_REF))
 
   if (staleCookies.length > 0 && !hasRightProject) {
-    const cleanup = NextResponse.next({ request })
+    const cleanup = passThrough()
     for (const c of staleCookies) {
       cleanup.cookies.set(c.name, '', { maxAge: 0, path: '/' })
     }
@@ -118,7 +147,7 @@ export async function middleware(request: NextRequest) {
     return cleanup
   }
 
-  let supabaseResponse = NextResponse.next({ request })
+  let supabaseResponse = passThrough()
 
   // Cross-subdomain cookie share — when set to `.0ncore.com`, the auth cookie
   // is visible to www.0ncore.com AND dispatch.0ncore.com so signing in once
@@ -138,7 +167,7 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
+          supabaseResponse = passThrough()
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, {
               ...options,
@@ -190,6 +219,36 @@ export async function middleware(request: NextRequest) {
     url.pathname = '/login'
     url.searchParams.set('next', request.nextUrl.pathname)
     return withCookies(NextResponse.redirect(url))
+  }
+
+  // ── H1: /dashboard/* is OWNER-ONLY ────────────────────────────────
+  //
+  // /dashboard is the operator surface — every client's live CRM data, the
+  // install registry, the AI console. It was never a customer surface, but it
+  // was the only surface, so it stayed reachable while the customer home was
+  // being built. The customer home is /hub; this closes the door behind it.
+  //
+  // Logged out is already handled above (redirect to /login). Here we handle
+  // the case the old code had no answer for at all: a real, signed-in customer
+  // typing /dashboard. They land on /hub, not on someone else's data.
+  //
+  // An env allowlist rather than a profiles.is_admin read on purpose —
+  // middleware runs on every matched request, and a database round trip in the
+  // gate means the gate is the slowest thing on the site. Falls back to Mike so
+  // a missing env var locks the door rather than opening it.
+  const OWNER_EMAILS = (process.env.OWNER_EMAILS || 'mike@rocketopp.com')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+
+  if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    const email = (user.email || '').toLowerCase()
+    if (!OWNER_EMAILS.includes(email)) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/hub'
+      url.search = ''
+      return withCookies(NextResponse.redirect(url))
+    }
   }
 
   // REMOVED 2026-08-11 — the daily briefing gate.

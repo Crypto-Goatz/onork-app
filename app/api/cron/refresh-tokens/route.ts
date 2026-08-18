@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { logHealth } from '@/lib/connection-health'
 import { credsForApp } from '@/lib/crm'
+import { runLocationTokenCanary } from '@/lib/crm/location-token-canary'
 
 const CRM_TOKEN_URL = 'https://services.leadconnectorhq.com/oauth/token'
 
@@ -52,8 +53,17 @@ export async function GET(req: NextRequest) {
     .eq('auto_reconnect', true)
     .lt('expires_at', renewBefore)
 
+  // The canary rides this cron because it needs exactly what this cron already
+  // has: a six-hourly heartbeat that someone reads. It probes an endpoint the
+  // platform removed from its docs with no notice period and which still
+  // answers — see lib/crm/location-token-canary.ts. It runs on EVERY invocation,
+  // including the one below where nothing needs refreshing, because "no tokens
+  // expiring soon" is the most common outcome and hanging the probe off the
+  // rare path would mean it almost never ran.
+  const canary = await runLocationTokenCanary()
+
   if (!expiring || expiring.length === 0) {
-    return NextResponse.json({ refreshed: 0, message: 'No tokens expiring soon' })
+    return NextResponse.json({ refreshed: 0, message: 'No tokens expiring soon', canary })
   }
 
   const results: { id: string; status: string; error?: string }[] = []
@@ -205,6 +215,10 @@ export async function GET(req: NextRequest) {
   const needsReinstall = revoked + noRefreshToken
 
   return NextResponse.json({
+    // Reported next to the refresh counts on purpose. Both answer the same
+    // question — "can we still get a token for a location tomorrow" — and one
+    // of them is the failure mode nobody is watching for.
+    canary,
     refreshed,
     failed,
     revoked,
