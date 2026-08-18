@@ -2,7 +2,17 @@
  * GET /api/cron/refresh-tokens — Proactively refresh CRM OAuth tokens
  *
  * Runs on a Vercel cron schedule (every 6 hours).
- * Refreshes any CRM installation token expiring within the next 2 hours.
+ * Refreshes any CRM installation token expiring within the next 12 hours.
+ *
+ * THE WINDOW MUST EXCEED THE CADENCE, and it did not. This ran every 6 hours
+ * and renewed only what expired within 2 — so a token expiring 5 hours after a
+ * run was skipped, and by the next run it had been dead for an hour. Any expiry
+ * landing in that 4-hour blind spot died, every cycle, and the row looked like
+ * a customer problem rather than a scheduling one.
+ *
+ * 12 hours gives two full runs of margin before anything can expire. With a
+ * 24-hour token life that is generous on purpose: a refresh that runs early
+ * costs one API call, and one that runs late costs a reinstall.
  * Logs health status for every refresh attempt.
  *
  * Auth: Vercel cron secret header
@@ -31,14 +41,16 @@ export async function GET(req: NextRequest) {
   }
 
   const admin = getAdmin()
-  const twoHoursFromNow = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+  // Two full cron cycles of margin. See the note at the top of this file for
+  // why anything shorter than the cadence guarantees misses.
+  const renewBefore = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString()
 
   const { data: expiring } = await admin
     .from('crm_installations')
-    .select('id, location_id, access_token, refresh_token, expires_at, app_id')
+    .select('id, location_id, access_token, refresh_token, expires_at, app_id, metadata')
     .eq('status', 'active')
     .eq('auto_reconnect', true)
-    .lt('expires_at', twoHoursFromNow)
+    .lt('expires_at', renewBefore)
 
   if (!expiring || expiring.length === 0) {
     return NextResponse.json({ refreshed: 0, message: 'No tokens expiring soon' })
@@ -56,7 +68,13 @@ export async function GET(req: NextRequest) {
     // hardcoded marketplace client_id refreshes only legacy 69c762 tokens; App A
     // (6a7178a4) and the agency app each need their own client, and the CRM
     // requires the matching user_type to return a rotated token.
-    const { clientId, clientSecret, userType } = credsForApp(install.app_id)
+    const { clientId, clientSecret, userType: configuredType } = credsForApp(install.app_id)
+    // The user_type the ORIGINAL exchange actually used, recorded on the install
+    // by the callback. It wins over the app's configured value: Location and
+    // Company are not interchangeable, and refreshing with the wrong one is
+    // rejected in a way that reads as a bad credential rather than a mismatch.
+    const meta = (install as { metadata?: Record<string, unknown> }).metadata
+    const userType = (typeof meta?.user_type === 'string' && meta.user_type) || configuredType
     if (!clientId || !clientSecret) {
       results.push({ id: install.id, status: 'skipped', error: `No creds for app ${install.app_id}` })
       continue

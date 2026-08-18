@@ -148,8 +148,24 @@ export function credsForApp(appId: string): { clientId: string; clientSecret: st
  * then write the new tokens back to crm_installations. Credentials are chosen
  * from the install's own `appId` — see credsForApp above for why that matters.
  */
-async function refreshInstall(installId: string, refreshToken: string, appId: string): Promise<string | null> {
-  const { clientId, clientSecret, userType } = credsForApp(appId)
+/**
+ * Exported so the scheduled worker can reuse it instead of writing a second
+ * refresh. Two implementations of "renew a token" is how one of them quietly
+ * stops rotating the refresh credential.
+ *
+ * `storedUserType` is the user_type that ACTUALLY produced the token, recorded
+ * on the install by the callback. It wins over the app's configured value:
+ * Location and Company are not interchangeable here, and refreshing with the
+ * wrong one fails in a way that looks like a bad credential.
+ */
+export async function refreshInstall(
+  installId: string,
+  refreshToken: string,
+  appId: string,
+  storedUserType?: string,
+): Promise<string | null> {
+  const { clientId, clientSecret, userType: configuredType } = credsForApp(appId)
+  const userType = storedUserType || configuredType
   if (!clientId || !clientSecret || !refreshToken) return null
 
   const res = await fetch(CRM_TOKEN_URL, {
