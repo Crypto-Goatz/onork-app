@@ -140,12 +140,82 @@ export interface ProfileValidateResult {
 export async function generateProfileToken(userId: string): Promise<string> {
   if (!userId) throw new Error('userId required')
   const raw = buildToken(userId)
-  const { error } = await admin()
+  const { data: profile, error } = await admin()
     .from('profiles')
     .update({ access_token: raw, access_token_rotated_at: new Date().toISOString() })
     .eq('id', userId)
+    .select('crm_location_id')
+    .maybeSingle()
   if (error) throw new Error(`generateProfileToken failed: ${error.message}`)
+
+  // ONE TOKEN, BOTH VALIDATORS. See registerForExchange for why this is not
+  // optional — without it the key we just handed the user works on some routes
+  // and not others, which is indistinguishable from a broken product.
+  await registerForExchange(userId, raw, profile?.crm_location_id ?? '')
   return raw
+}
+
+/**
+ * Also record this token in `api_tokens`, hashed, so the device-exchange path
+ * accepts it.
+ *
+ * THE BUG THIS EXISTS TO KILL. There are two validators in this file and they
+ * read two different stores:
+ *
+ *   validateProfileToken  → profiles.access_token   (the raw string, Model A)
+ *   validateToken         → api_tokens.token_hash   (sha256, Model B)
+ *
+ * Both take the same `0n_live_…` string, so the two are impossible to tell
+ * apart by looking at the credential. But this function used to write only the
+ * profile column, so the key shown on the hub would:
+ *
+ *   · PASS  /api/auth/extension-login   (reads profiles.access_token)
+ *   · FAIL  /api/auth/device/exchange   (reads api_tokens.token_hash)
+ *
+ * The extension therefore connected happily and then 401'd on every feature
+ * that needed a real app JWT — the CRM panel, contact lookup, the LinkedIn
+ * draft exchange. Measured 2026-08-18: 2 of 2 profiles holding a 0n_live_ key
+ * had ZERO matching api_tokens row. "Connected" and "working" were two
+ * different states for exactly this reason, and the client-side fix of writing
+ * one value into two storage slots could never have reached it, because the
+ * split was here on the server.
+ *
+ * ROTATION REVOKES THE OLD ROW. A rotated key that still exchanged would mean
+ * "rotate" quietly left the previous credential live, which is worse than not
+ * offering rotation at all.
+ */
+async function registerForExchange(userId: string, raw: string, locationId: string): Promise<void> {
+  const db = admin()
+
+  // Retire any previous profile-channel token for this user first.
+  await db
+    .from('api_tokens')
+    .update({ revoked: true, revoked_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('channel', 'profile')
+    .eq('revoked', false)
+
+  const { error } = await db.from('api_tokens').insert({
+    user_id: userId,
+    // NOT NULL on this table. An empty string is the honest value when the
+    // profile has no CRM location yet — inventing one would bind the token to
+    // an account that is not theirs.
+    location_id: locationId || '',
+    name: 'Universal 0n key',
+    token_prefix: raw.slice(0, 16),
+    token_hash: hashToken(raw),
+    channel: 'profile',
+  })
+
+  // Deliberately not fatal. The profile column is already written, so the user
+  // has a working key for everything in Model A; throwing here would turn a
+  // partial success into a failed signup. It is logged loudly instead.
+  if (error) {
+    console.error(
+      `[0n-token] Token minted for ${userId} but NOT registered for device exchange: ${error.message}. ` +
+      `This key will authenticate against profiles.access_token and 401 on /api/auth/device/exchange.`
+    )
+  }
 }
 
 /**
