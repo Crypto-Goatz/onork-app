@@ -47,6 +47,9 @@ interface Row {
   expires_at: string | null
   status: string | null
   updated_at: string | null
+  // What the refresh worker LEARNED by attempting, as opposed to what this row
+  // looks like at rest. 'revoked' is a fact no other column can express.
+  health_status: string | null
 }
 
 function verdictFor(r: Row): { verdict: Verdict; why: string } {
@@ -76,8 +79,23 @@ function verdictFor(r: Row): { verdict: Verdict; why: string } {
   // The distinction that matters most. One of these is a background job's
   // problem; the other needs the customer to reinstall, and telling them apart
   // is the difference between a fix and a support queue.
+  //
+  // A REFRESH TOKEN BEING PRESENT IS NOT THE SAME AS IT WORKING, and reading
+  // this row alone cannot tell you which. Two installs here held long, entirely
+  // well-formed refresh tokens whose issuing client matched the one we present,
+  // against credentials proven valid — and the CRM rejected both, because it had
+  // revoked the authorization. Nothing about the stored row shows that. Only an
+  // attempt does, so the worker records its verdict and this trusts it over the
+  // optimistic guess.
+  if (r.health_status === 'revoked') {
+    return {
+      verdict: 'expired-dead',
+      why: 'The CRM has revoked this authorization — the refresh was attempted and rejected. Credentials are valid; only a reinstall restores it.',
+    }
+  }
+
   return r.refresh_token
-    ? { verdict: 'expired-refreshable', why: 'Expired, but a refresh token is on file — the refresh worker can recover this.' }
+    ? { verdict: 'expired-refreshable', why: 'Expired, but a refresh token is on file and has not been rejected — the refresh worker can recover this.' }
     : { verdict: 'expired-dead', why: 'Expired with NO refresh token on file. Nothing can recover this; the account must reinstall.' }
 }
 
@@ -93,7 +111,7 @@ export async function GET(req: NextRequest) {
 
   let q = db
     .from('crm_installations')
-    .select('location_id, company_id, app_id, access_token, refresh_token, expires_at, status, updated_at')
+    .select('location_id, company_id, app_id, access_token, refresh_token, expires_at, status, updated_at, health_status')
     .order('updated_at', { ascending: false })
     .limit(500)
   if (locationId) q = q.eq('location_id', locationId)

@@ -60,6 +60,26 @@ export async function GET(req: NextRequest) {
 
   for (const install of expiring) {
     if (!install.refresh_token) {
+      // SKIPPING IS NOT SILENCE. 27 rows sat here holding health_status
+      // 'healthy' — written once by an older callback that assumed a successful
+      // exchange meant a healthy install — and were never touched again,
+      // because the only code that writes health is the code that ATTEMPTS a
+      // refresh, and these are skipped before that. So the rows that could
+      // never recover were the ones advertising themselves as fine, while the
+      // three that were merely revoked read as 'degraded'. Anyone triaging by
+      // this column would have started at exactly the wrong end.
+      //
+      // An install with no refresh token cannot be recovered by any amount of
+      // retrying. Say so, on the row, every time we pass it.
+      await admin.from('crm_installations').update({
+        health_status: 'unrecoverable',
+        last_health_check: new Date().toISOString(),
+        metadata: {
+          ...((install as { metadata?: Record<string, unknown> }).metadata || {}),
+          last_refresh_error: 'No refresh token on file — only a reinstall can restore this install.',
+        },
+      }).eq('id', install.id)
+
       results.push({ id: install.id, status: 'skipped', error: 'No refresh token' })
       continue
     }
@@ -95,11 +115,41 @@ export async function GET(req: NextRequest) {
 
       if (!res.ok) {
         const text = await res.text()
+
+        // THE STATUS CODE ALONE COST DAYS. This recorded `error: '401'` and
+        // dropped the body, so one number stood in for four different causes —
+        // wrong secret, wrong client for the token, wrong user_type, and a
+        // token the CRM has revoked. They need four different responses, and
+        // three of them are code changes while the fourth needs a human to
+        // reinstall. Reading the body separates them in one call:
+        //
+        //   "Invalid client credentials!"  with a VALID secret ⇒ REVOKED.
+        //     Proven by sending a deliberately fake refresh_token: a valid
+        //     secret answers "Invalid refresh token", so anything still
+        //     complaining about CREDENTIALS has cleared that check and is
+        //     objecting to the token's binding, not to us.
+        //   "Invalid refresh token"        ⇒ the stored token is malformed.
+        //
+        // Revoked is terminal. Retrying it every six hours forever is how a
+        // dead install stays invisible inside a growing failure count.
+        let description = ''
+        try { description = String(JSON.parse(text)?.error_description || '') } catch { /* keep the raw text */ }
+        const revoked = /invalid client credentials/i.test(description)
+
         await admin.from('crm_installations').update({
-          health_status: 'degraded',
+          health_status: revoked ? 'revoked' : 'degraded',
           consecutive_failures: (install as Record<string, unknown>).consecutive_failures
             ? ((install as Record<string, unknown>).consecutive_failures as number) + 1
             : 1,
+          last_health_check: new Date().toISOString(),
+          metadata: {
+            ...(meta || {}),
+            last_refresh_error: description || text.slice(0, 200),
+            last_refresh_status: res.status,
+            ...(revoked
+              ? { unrecoverable_reason: 'The CRM has revoked this authorization. The credentials are valid and the client matches the token — only a reinstall restores it.' }
+              : {}),
+          },
         }).eq('id', install.id)
 
         await logHealth({
@@ -110,7 +160,11 @@ export async function GET(req: NextRequest) {
           error: `Refresh failed: ${res.status} ${text.slice(0, 200)}`,
         })
 
-        results.push({ id: install.id, status: 'failed', error: `${res.status}` })
+        results.push({
+          id: install.id,
+          status: revoked ? 'revoked' : 'failed',
+          error: `${res.status} ${description}`.trim(),
+        })
         continue
       }
 
@@ -142,6 +196,25 @@ export async function GET(req: NextRequest) {
 
   const refreshed = results.filter(r => r.status === 'refreshed').length
   const failed = results.filter(r => r.status === 'failed' || r.status === 'error').length
+  // Counted apart from `failed` because they are a different kind of problem.
+  // A failure might clear on the next run; a revoked or token-less install
+  // never will, and burying both in one number is how 27 accounts that needed
+  // a human stayed indistinguishable from transient noise.
+  const revoked = results.filter(r => r.status === 'revoked').length
+  const noRefreshToken = results.filter(r => r.error === 'No refresh token').length
+  const needsReinstall = revoked + noRefreshToken
 
-  return NextResponse.json({ refreshed, failed, total: expiring.length, results })
+  return NextResponse.json({
+    refreshed,
+    failed,
+    revoked,
+    noRefreshToken,
+    // The number a person should act on. Retrying cannot move it.
+    needsReinstall,
+    total: expiring.length,
+    ...(needsReinstall
+      ? { action: `${needsReinstall} install(s) cannot be recovered by retrying and need the account to reinstall the app.` }
+      : {}),
+    results,
+  })
 }
