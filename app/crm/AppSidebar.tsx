@@ -24,13 +24,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   UserCircle,
-  BookOpen, CreditCard, Download, FileText, GitBranch, LayoutTemplate, LogOut, Plug, ScrollText,
-  Settings, Sparkles, Terminal, Users, Wrench, type LucideIcon,
+  BookOpen, Blocks, CreditCard, Download, FileText, GitBranch, LayoutTemplate, LogOut, Plug,
+  ScrollText, Settings, Sparkles, Terminal, Users, Wrench, type LucideIcon,
 } from 'lucide-react'
 
 export type NavKey =
   | 'command' | 'clients' | 'actions' | 'account'
-  | 'automations' | 'content' | 'pipeline' | 'build'
+  | 'automations' | 'content' | 'pipeline' | 'build' | 'addons'
   | 'history' | 'usage' | 'setup' | 'downloads' | 'settings'
   | 'tools'
   // Legacy keys still passed by older pages — kept so nothing 404s mid-port.
@@ -63,6 +63,11 @@ export const NAV_GROUPS: NavItem[][] = [
     { key: 'build', href: '/crm/build', label: 'Build a site', icon: LayoutTemplate },
     { key: 'pipeline', href: '/crm/pipeline', label: 'Pipeline', icon: GitBranch },
     { key: 'tools', href: '/crm/tools', label: 'Tools', icon: Wrench },
+    // Add-ons belong in the BUILD group, next to Tools. A capability appears in
+    // this product because it is registered, never because someone remembered a
+    // nav link — and the marketplace was reachable only by typing the URL,
+    // which is the same invisibility SXO shipped with.
+    { key: 'addons', href: '/marketplace', label: 'Add-ons', icon: Blocks },
   ],
   [
     { key: 'history', href: '/crm/log', label: 'History', icon: ScrollText },

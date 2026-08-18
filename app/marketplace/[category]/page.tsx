@@ -2,6 +2,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { CATEGORIES, ADDONS, PUBLIC_ADDON_COUNT, getAddonsByCategory, getCategoryBySlug } from '@/lib/marketplace-data'
+import { isOwner } from '@/lib/owner'
+
+// Per-request, because what is on this page now depends on who is asking. A
+// cached copy would serve one viewer's grid to the other.
+export const dynamic = 'force-dynamic'
 
 export function generateStaticParams() {
   return [...CATEGORIES.map(c => ({ category: c.slug })), { category: 'all' }]
@@ -37,7 +42,11 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   const { category } = await params
   const isAll = category === 'all'
   const cat = isAll ? null : getCategoryBySlug(category)
-  const addons = getAddonsByCategory(category)
+  // The owner sees internal tooling in the grid; nobody else does. Resolved
+  // per request, so this page can no longer be statically shared between a
+  // visitor and the owner.
+  const owner = await isOwner()
+  const addons = getAddonsByCategory(category, { isOwner: owner })
 
   const title = isAll ? 'All Add-ons' : cat?.name || 'Category'
   const description = isAll

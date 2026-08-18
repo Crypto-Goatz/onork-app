@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { ADDONS, CATEGORIES, getAddonBySlug, getRelatedAddons } from '@/lib/marketplace-data'
+import { isOwner } from '@/lib/owner'
 import { AddToCartButton } from './add-to-cart'
 
 export function generateStaticParams() {
@@ -39,6 +40,7 @@ const PLAN_COLORS: Record<string, string> = {
 export default async function AddonDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const found = getAddonBySlug(slug)
+  const owner = await isOwner()
 
   /**
    * A non-public listing is treated as NOT EXISTING here, not as forbidden.
@@ -49,7 +51,7 @@ export default async function AddonDetailPage({ params }: { params: Promise<{ sl
    * screen a bad slug gets also means the response cannot be used to confirm
    * that a private add-on exists.
    */
-  const addon = found && (found.visibility ?? 'public') === 'public' ? found : undefined
+  const addon = found && ((found.visibility ?? 'public') === 'public' || owner) ? found : undefined
 
   if (!addon) {
     return (
