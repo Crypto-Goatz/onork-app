@@ -59,7 +59,14 @@ async function pickCanaryLocation(): Promise<string | null> {
     .from('crm_installations')
     .select('location_id')
     .eq('app_id', AGENCY_APP_ID)
-    .eq('status', 'active')
+    // NO STATUS FILTER, AND THAT IS DELIBERATE. What this probe needs is a
+    // location id the agency owns — not a working install. Minting is precisely
+    // the path that still works when the install is dead, which is the fact the
+    // canary exists to measure. Scoping this to status='active' tied the
+    // monitor's survival to the health of the rows it monitors: the day the 29
+    // retired installs were archived, the pool would have gone empty and the
+    // canary would have reported "no canary location" forever — green by
+    // silence, the same failure mode as its first run, from the other end.
     // EMPTY STRING, NOT NULL — and the difference cost this canary its first
     // run. The agency-level install stores location_id as '' (it is company
     // scoped, it has no location), and it is also the most recently updated row

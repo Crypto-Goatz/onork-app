@@ -74,8 +74,24 @@ async function upsertLocationInstall(args: {
     ? new Date(Date.now() + args.expiresIn * 1000).toISOString()
     : null
 
-  // Look for an existing row — upsert by (app_id, location_id)
-  const existing = await readLocationInstall(args.locationId)
+  // Look for an existing row — upsert by (app_id, location_id), WHICH IS THE
+  // UNIQUE KEY, so this lookup must not filter on status. readLocationInstall()
+  // is status-scoped on purpose (a cache read should only ever return a live
+  // install), and reusing it here quietly made the write path narrower than the
+  // constraint it has to satisfy: an archived or expired row is invisible to
+  // the read, so this fell through to INSERT and hit
+  // `crm_installations_location_id_app_id_key`. The throw below then landed in
+  // ensureLocationInstall's catch, which reports `source: 'failed'` — a
+  // SUCCESSFUL mint discarded because the bookkeeping row already existed.
+  // Match the constraint, and a mint revives whatever row is already there.
+  const { data: existing } = await sb
+    .from('crm_installations')
+    .select('id, scopes, status, metadata')
+    .eq('app_id', AGENCY_APP_ID)
+    .eq('location_id', args.locationId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle<{ id: string; scopes: string | null; status: string | null; metadata: Record<string, unknown> | null }>()
   if (existing) {
     await sb
       .from('crm_installations')
@@ -89,7 +105,18 @@ async function upsertLocationInstall(args: {
         last_health_check: new Date().toISOString(),
         last_error: null,
         updated_at: new Date().toISOString(),
-        metadata: args.metadata || {},
+        // MERGED, never replaced. The archived rows carry their verdicts on the
+        // row — `last_refresh_error`, `unrecoverable_reason`, the status that
+        // retired them — and that history is the whole reason they were archived
+        // rather than deleted. A successful mint should add to that record, not
+        // erase the evidence of why the row was ever in doubt.
+        metadata: {
+          ...(existing.metadata || {}),
+          ...(args.metadata || {}),
+          ...(existing.status && existing.status !== 'active'
+            ? { revived_from_status: existing.status, revived_at: new Date().toISOString() }
+            : {}),
+        },
       })
       .eq('id', existing.id)
     return existing.id
@@ -182,6 +209,12 @@ export async function ensureLocationInstall(locationId: string): Promise<Locatio
     if (!tokens.access_token) {
       return { token: null, source: 'failed', error: 'mint returned no access_token' }
     }
+    // THE TOKEN IS THE RESULT; THE ROW IS BOOKKEEPING. These are caught
+    // separately because they fail for unrelated reasons and deserve unrelated
+    // answers: the CRM minting a valid token and our own table refusing the
+    // write is not a credential failure, and returning `source: 'failed'` for it
+    // sends every caller down the reinstall path while a working token sits in
+    // this variable. Record the write failure loudly, hand back the token.
     await upsertLocationInstall({
       locationId,
       companyId: agency.companyId,
@@ -192,6 +225,11 @@ export async function ensureLocationInstall(locationId: string): Promise<Locatio
         minted_at: new Date().toISOString(),
         installed_via: 'agency-token-mint',
       },
+    }).catch((err: unknown) => {
+      console.error(
+        `[location-token] mint SUCCEEDED for ${locationId} but the crm_installations write failed:`,
+        err instanceof Error ? err.message : err
+      )
     })
     return {
       token: tokens.access_token,
