@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Check } from 'lucide-react'
-import { CATEGORIES, ADDONS, getAddonsByCategory, getCategoryBySlug } from '@/lib/marketplace-data'
+import { CATEGORIES, ADDONS, PUBLIC_ADDON_COUNT, getAddonsByCategory, getCategoryBySlug } from '@/lib/marketplace-data'
 
 export function generateStaticParams() {
   return [...CATEGORIES.map(c => ({ category: c.slug })), { category: 'all' }]
@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   if (category === 'all') {
     return {
       title: 'All Add-ons — 0nCore Marketplace',
-      description: `Browse all ${ADDONS.length} AI-powered add-ons for your CRM. Social automation, voice AI, payments, analytics, and more.`,
+      description: `Browse all ${PUBLIC_ADDON_COUNT} AI-powered add-ons for your CRM. Social automation, voice AI, payments, analytics, and more.`,
     }
   }
   const cat = getCategoryBySlug(category)
@@ -41,7 +41,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
 
   const title = isAll ? 'All Add-ons' : cat?.name || 'Category'
   const description = isAll
-    ? `All ${ADDONS.length} AI-powered add-ons for your CRM.`
+    ? `All ${PUBLIC_ADDON_COUNT} AI-powered add-ons for your CRM.`
     : cat?.description || ''
 
   return (
@@ -136,7 +136,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
                   <Link
                     href="/marketplace/all"
                     className={`rounded-md px-2.5 py-1.5 text-[13px] no-underline transition-colors ${isAll ? 'bg-[#7ed957]/[0.08] text-[#7ed957]' : 'text-white/50 hover:text-white/80'}`}
-                  >All Add-ons ({ADDONS.length})</Link>
+                  >All Add-ons ({PUBLIC_ADDON_COUNT})</Link>
                   {CATEGORIES.map(c => (
                     <Link
                       key={c.slug}

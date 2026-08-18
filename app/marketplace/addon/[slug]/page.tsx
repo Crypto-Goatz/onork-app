@@ -5,7 +5,10 @@ import { ADDONS, CATEGORIES, getAddonBySlug, getRelatedAddons } from '@/lib/mark
 import { AddToCartButton } from './add-to-cart'
 
 export function generateStaticParams() {
-  return ADDONS.map(a => ({ slug: a.slug }))
+  // Public routes only. Pre-rendering an owner-only listing would publish it
+  // at a guessable URL and in the sitemap, which is the whole thing the
+  // visibility flag exists to prevent.
+  return ADDONS.filter((a) => (a.visibility ?? 'public') === 'public').map(a => ({ slug: a.slug }))
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {

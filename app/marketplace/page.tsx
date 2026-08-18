@@ -16,7 +16,7 @@ import {
   Wand2,
   Zap,
 } from 'lucide-react'
-import { CATEGORIES, ADDONS, getAddonBySlug } from '@/lib/marketplace-data'
+import { CATEGORIES, ADDONS, PUBLIC_ADDON_COUNT, getAddonBySlug } from '@/lib/marketplace-data'
 import AnimatedGrid from '@/components/animated-grid'
 import AnimatedConnectors from '@/components/animated-connectors'
 import { Button } from '@/components/ui/button'
@@ -114,7 +114,7 @@ export default function MarketplacePage() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#7ed957] opacity-70" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-[#7ed957]" />
             </span>
-            {ADDONS.length} Add-ons · {CATEGORIES.length} Categories · Powered by 0nMCP
+            {PUBLIC_ADDON_COUNT} Add-ons · {CATEGORIES.length} Categories · Powered by 0nMCP
           </div>
 
           <h1 className="text-balance text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
@@ -143,14 +143,14 @@ export default function MarketplacePage() {
               href="/marketplace/all"
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.03] px-7 py-3 text-base font-semibold text-white backdrop-blur transition-colors hover:border-[#7ed957]/40 hover:text-[#7ed957]"
             >
-              See the full {ADDONS.length}
+              See the full {PUBLIC_ADDON_COUNT}
             </Link>
           </div>
 
           {/* Stats strip */}
           <div className="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
             {[
-              { v: ADDONS.length.toString(), l: 'Add-ons live' },
+              { v: PUBLIC_ADDON_COUNT.toString(), l: 'Add-ons live' },
               { v: CATEGORIES.length.toString(), l: 'Categories' },
               { v: '1-click', l: 'Install' },
               { v: '$0', l: 'Setup cost' },
@@ -305,7 +305,7 @@ export default function MarketplacePage() {
             </Badge>
             <h2 className="text-balance text-4xl font-black tracking-tight sm:text-5xl">
               <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">
-                {CATEGORIES.length} categories. {ADDONS.length} add-ons. One dashboard.
+                {CATEGORIES.length} categories. {PUBLIC_ADDON_COUNT} add-ons. One dashboard.
               </span>
             </h2>
             <p className="mt-4 text-base text-white/65">
@@ -379,7 +379,7 @@ export default function MarketplacePage() {
               href="/marketplace/all"
               className="inline-flex items-center gap-2 rounded-xl border border-[#7ed957]/30 bg-[#7ed957]/8 px-6 py-3 text-sm font-semibold text-[#7ed957] transition-colors hover:bg-[#7ed957]/15"
             >
-              View all {ADDONS.length} add-ons
+              View all {PUBLIC_ADDON_COUNT} add-ons
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

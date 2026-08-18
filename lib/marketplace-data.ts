@@ -12,6 +12,20 @@ export interface MarketplaceAddon {
   features: string[]
   integrations: string[]
   relatedAddons: string[]
+  /**
+   * Who can see this listing at all.
+   *
+   * 'public'  — everyone (the default; omitting the field means this)
+   * 'enterprise' — visible only on the enterprise plan
+   * 'owner'   — visible only to the account owner. Not "hidden behind a
+   *             paywall": absent from every list, every category count and
+   *             every search for anyone else.
+   *
+   * Added because some bolt-ons are internal tooling that happens to live in
+   * the same registry. A listing nobody may buy still has to be somewhere, and
+   * a comment saying "don't show this" is not a mechanism.
+   */
+  visibility?: 'public' | 'enterprise' | 'owner'
 }
 
 export interface MarketplaceCategory {
@@ -34,7 +48,66 @@ export const CATEGORIES: MarketplaceCategory[] = [
   { slug: 'admin', name: 'Admin', description: 'Snapshots, SaaS management, user roles, custom objects, and location settings.', count: 5, icon: 'settings', color: '#6b7280' },
 ]
 
+/**
+ * The listings a given viewer may see.
+ *
+ * ADDONS is the full registry, including internal tooling. Every public
+ * surface must read through here instead — an owner-only entry has to be
+ * ABSENT from the grid, the category counts and the totals, not merely
+ * labelled. A flag that nothing enforces is a comment, and comments do not
+ * keep things off a page.
+ *
+ * Default caller sees public only, so a surface that forgets to pass a viewer
+ * leaks nothing. The failure mode of forgetting is "too little", never "too
+ * much".
+ */
+export function visibleAddons(
+  viewer: { isOwner?: boolean; plan?: MarketplaceAddon['requiredPlan'] } = {},
+): MarketplaceAddon[] {
+  return ADDONS.filter((a) => {
+    const v = a.visibility ?? 'public'
+    if (v === 'public') return true
+    if (v === 'owner') return Boolean(viewer.isOwner)
+    if (v === 'enterprise') return Boolean(viewer.isOwner) || viewer.plan === 'unlimited'
+    return false
+  })
+}
+
+
 export const ADDONS: MarketplaceAddon[] = [
+  {
+    slug: 'verifiedsxo',
+    name: 'VerifiedSXO — Claim-Check Engine',
+    shortDesc: 'Finds claims made in trending videos, checks them against primary sources, and drafts a reply for you to post.',
+    longDesc:
+      'Watches a fixed set of topics for videos gaining velocity, pulls the transcript, extracts only the claims that can actually be checked, and verifies each one against vendor documentation and official announcements — never blogs, never other videos. Anything below the confidence gate or lacking a primary-source URL is dropped rather than softened. What survives becomes a drafted reply in an approval queue and a permanent claim page. IT NEVER POSTS. Automated commenting is against the platform policy, gets held for review when it is not removed, and turns one wrong verdict into a repeated one — so the last step is a person, permanently, by design.',
+    price: 0,
+    priceLabel: 'Internal',
+    categories: ['analytics', 'content'],
+    capabilities: [
+      'yt.discover_trending',
+      'yt.watchlist_poll',
+      'yt.get_transcript',
+      'claim.extract',
+      'claim.verify',
+      'comment.draft',
+    ],
+    requiredPlan: 'unlimited',
+    badge: 'Spec',
+    // Owner-only. It reads other people's content and forms judgements about
+    // it, which is not something to hand to an account list.
+    visibility: 'owner',
+    features: [
+      'Velocity discovery — views per hour since publish, not raw view count, so it finds what is climbing rather than what already won',
+      'Poll-heavy, search-light: search costs 100 quota units and polling costs 1, which is what keeps a day inside the 10,000 cap',
+      'Claims only — anything unfalsifiable is discarded before verification, because a claim that cannot be checked is not a claim',
+      'Confidence gate: below 0.85 or missing a primary-source URL, the claim is dropped, not hedged',
+      'Every verified claim becomes a page carrying ClaimReview, Article and VideoObject schema',
+      'Drafts land in an approval queue. Posting is manual, always — there is no setting that changes this',
+    ],
+    integrations: ['0nMCP', 'YouTube Data API', 'Supabase', 'CRO9'],
+    relatedAddons: ['sxo', 'content-engine'],
+  },
   // === FEATURED ===
   {
     slug: 'sxo',
@@ -867,9 +940,21 @@ export const ADDONS: MarketplaceAddon[] = [
   },
 ]
 
-export function getAddonsByCategory(categorySlug: string): MarketplaceAddon[] {
-  if (categorySlug === 'all') return ADDONS
-  return ADDONS.filter(a => a.categories.includes(categorySlug))
+/**
+ * PUBLIC BY DEFAULT — this is the function the category grid actually renders,
+ * so it is the one place that decides what a visitor sees. Fixing the counts
+ * without fixing this would have shown an owner-only listing in the grid while
+ * the header insisted there were fewer add-ons than were on screen.
+ *
+ * Pass a viewer to widen it; pass nothing and only public listings come back.
+ */
+export function getAddonsByCategory(
+  categorySlug: string,
+  viewer: { isOwner?: boolean; plan?: MarketplaceAddon['requiredPlan'] } = {},
+): MarketplaceAddon[] {
+  const pool = visibleAddons(viewer)
+  if (categorySlug === 'all') return pool
+  return pool.filter(a => a.categories.includes(categorySlug))
 }
 
 export function getAddonBySlug(slug: string): MarketplaceAddon | undefined {
@@ -885,3 +970,6 @@ export function getRelatedAddons(addon: MarketplaceAddon): MarketplaceAddon[] {
     .map(slug => ADDONS.find(a => a.slug === slug))
     .filter((a): a is MarketplaceAddon => !!a)
 }
+
+/** Public count — what a visitor is told exists. */
+export const PUBLIC_ADDON_COUNT = ADDONS.filter((a) => (a.visibility ?? 'public') === 'public').length
