@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient as createServer } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
-import { hubTrustToken, buildChallenge } from '@/lib/hub-gate'
+import { hubTrustToken, buildChallenge, preferredFirstName } from '@/lib/hub-gate'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -28,8 +28,7 @@ export async function GET() {
     .eq('id', user.id)
     .single()
 
-  const full = p?.full_name || p?.display_name || p?.username || (user.email || '').split('@')[0] || 'there'
-  const firstName = String(full).trim().split(/\s+/)[0]
+  const firstName = preferredFirstName(p || {}, user.email || '')
 
   const bypass = !!(p?.is_vip || p?.is_admin)
   const cookieStore = await cookies()

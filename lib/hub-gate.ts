@@ -7,6 +7,7 @@ import { createHash } from 'crypto'
 type Profile = {
   full_name?: string | null
   display_name?: string | null
+  username?: string | null
   company?: string | null
   business_name?: string | null
   business_type?: string | null
@@ -21,6 +22,28 @@ export function hubTrustToken(userId: string): string {
 }
 
 export interface Challenge { id: string; question: string }
+
+/**
+ * The name to call this person by. ONE definition, used by both the greeting and
+ * the IKY judge, so the two can never disagree about who the user is.
+ *
+ * Precedence is deliberate: `display_name` is the only one of these a HUMAN ever
+ * typed (the "Your name" field in account settings). `full_name` is written once
+ * by the signup trigger from the OAuth provider's profile and never confirmed by
+ * anyone — so it carries whatever the provider had, typo, nickname or handle.
+ * The person's own answer outranks the machine's copy.
+ */
+export function preferredName(p: Profile, email = ''): string {
+  const pick = [p.display_name, p.full_name, p.username]
+    .map((v) => String(v ?? '').trim())
+    .find(Boolean)
+  return pick || String(email).split('@')[0] || ''
+}
+
+/** First name only — what the door greets you with. */
+export function preferredFirstName(p: Profile, email = ''): string {
+  return preferredName(p, email).split(/\s+/)[0] || 'there'
+}
 
 /** Choose the most answerable logical question given what we know about the user. */
 export function buildChallenge(p: Profile, services: string[], email: string): Challenge {
@@ -40,7 +63,7 @@ export function expectedFor(id: string, p: Profile, services: string[], email: s
     case 'business_type': return String(p.business_type || '')
     case 'connected': return (services || []).join(', ')
     case 'email': return email || ''
-    case 'name': return String(p.full_name || p.display_name || '').split(/\s+/)[0] || ''
+    case 'name': return preferredName(p, email).split(/\s+/)[0] || ''
     default: return ''
   }
 }

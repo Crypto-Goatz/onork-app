@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const sb = admin()
   const { data: p } = await sb
     .from('profiles')
-    .select('full_name, display_name, company, business_name, business_type, website')
+    .select('full_name, display_name, username, company, business_name, business_type, website')
     .eq('id', user.id)
     .single()
   const { data: rows } = await sb.from('user_vaults').select('service').eq('user_id', user.id)
