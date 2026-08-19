@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       title: `${addon.name} — 0nCore Marketplace`,
       description: addon.shortDesc,
-      url: `https://0ncore.com/marketplace/addon/${addon.slug}`,
+      url: `https://www.0ncore.com/marketplace/addon/${addon.slug}`,
     },
   }
 }
@@ -82,14 +82,14 @@ export default async function AddonDetailPage({ params }: { params: Promise<{ sl
             '@type': 'Product',
             name: addon.name,
             description: addon.shortDesc,
-            url: `https://0ncore.com/marketplace/addon/${addon.slug}`,
-            brand: { '@type': 'Organization', name: '0nCore', url: 'https://0ncore.com' },
+            url: `https://www.0ncore.com/marketplace/addon/${addon.slug}`,
+            brand: { '@type': 'Organization', name: '0nCore', url: 'https://www.0ncore.com' },
             offers: {
               '@type': 'Offer',
               price: (addon.price / 100).toFixed(2),
               priceCurrency: 'USD',
               availability: 'https://schema.org/InStock',
-              url: `https://0ncore.com/marketplace/addon/${addon.slug}`,
+              url: `https://www.0ncore.com/marketplace/addon/${addon.slug}`,
             },
           })
         }}
@@ -102,9 +102,9 @@ export default async function AddonDetailPage({ params }: { params: Promise<{ sl
             '@context': 'https://schema.org',
             '@type': 'BreadcrumbList',
             itemListElement: [
-              { '@type': 'ListItem', position: 1, name: 'Marketplace', item: 'https://0ncore.com/marketplace' },
-              { '@type': 'ListItem', position: 2, name: primaryCat?.name || addon.categories[0], item: `https://0ncore.com/marketplace/${addon.categories[0]}` },
-              { '@type': 'ListItem', position: 3, name: addon.name, item: `https://0ncore.com/marketplace/addon/${addon.slug}` },
+              { '@type': 'ListItem', position: 1, name: 'Marketplace', item: 'https://www.0ncore.com/marketplace' },
+              { '@type': 'ListItem', position: 2, name: primaryCat?.name || addon.categories[0], item: `https://www.0ncore.com/marketplace/${addon.categories[0]}` },
+              { '@type': 'ListItem', position: 3, name: addon.name, item: `https://www.0ncore.com/marketplace/addon/${addon.slug}` },
             ],
           })
         }}

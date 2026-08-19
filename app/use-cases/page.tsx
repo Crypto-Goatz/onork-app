@@ -6,8 +6,8 @@ import AnimatedGrid from '@/components/animated-grid'
 export const metadata: Metadata = {
   title: 'Use Cases — 0nCore AI Platform',
   description: 'Discover how businesses use 0nCore to build SaaS products, automate workflows, embed AI tools, and scale operations. Real use cases, real results.',
-  openGraph: { title: '0nCore Use Cases', description: 'See what you can build with 1,554 AI tools and full CRM automation.', url: 'https://0ncore.com/use-cases' },
-  alternates: { canonical: 'https://0ncore.com/use-cases' },
+  openGraph: { title: '0nCore Use Cases', description: 'See what you can build with 1,554 AI tools and full CRM automation.', url: 'https://www.0ncore.com/use-cases' },
+  alternates: { canonical: 'https://www.0ncore.com/use-cases' },
 }
 
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
@@ -36,12 +36,12 @@ export default async function UseCasesPage() {
     '@type': 'CollectionPage',
     name: '0nCore Use Cases',
     description: 'How businesses use 0nCore to build and scale.',
-    url: 'https://0ncore.com/use-cases',
+    url: 'https://www.0ncore.com/use-cases',
     mainEntity: cases.map(c => ({
       '@type': 'Article',
       name: c.title,
       description: c.description,
-      url: `https://0ncore.com/use-cases/${c.slug}`,
+      url: `https://www.0ncore.com/use-cases/${c.slug}`,
     })),
   }
 

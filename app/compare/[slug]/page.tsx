@@ -29,7 +29,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${data.headline} | 0nCore`,
       description: data.subheadline,
-      url: `https://0ncore.com/compare/${slug}`,
+      url: `https://www.0ncore.com/compare/${slug}`,
       siteName: "0nCore",
       type: "website",
     },

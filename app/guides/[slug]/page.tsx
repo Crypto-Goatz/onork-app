@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       title: `${guide.title} — Build With 0n`,
       description: guide.subtitle,
-      url: `https://0ncore.com/guides/${guide.slug}`,
+      url: `https://www.0ncore.com/guides/${guide.slug}`,
     },
   }
 }

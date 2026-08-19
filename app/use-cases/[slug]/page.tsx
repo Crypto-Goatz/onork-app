@@ -15,8 +15,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: data.meta_title || `${data.title} — 0nCore`,
     description: data.meta_description || data.description,
-    openGraph: { title: data.meta_title || data.title, description: data.meta_description || data.description, url: `https://0ncore.com/use-cases/${data.slug}` },
-    alternates: { canonical: `https://0ncore.com/use-cases/${data.slug}` },
+    openGraph: { title: data.meta_title || data.title, description: data.meta_description || data.description, url: `https://www.0ncore.com/use-cases/${data.slug}` },
+    alternates: { canonical: `https://www.0ncore.com/use-cases/${data.slug}` },
   }
 }
 
@@ -35,9 +35,9 @@ export default async function UseCasePage({ params }: { params: Promise<{ slug: 
     '@type': 'Article',
     headline: uc.title,
     description: uc.description,
-    url: `https://0ncore.com/use-cases/${uc.slug}`,
+    url: `https://www.0ncore.com/use-cases/${uc.slug}`,
     author: { '@type': 'Organization', name: 'RocketOpp LLC', url: 'https://rocketopp.com' },
-    publisher: { '@type': 'Organization', name: '0nCore', url: 'https://0ncore.com' },
+    publisher: { '@type': 'Organization', name: '0nCore', url: 'https://www.0ncore.com' },
     datePublished: uc.created_at,
     dateModified: uc.updated_at,
   }

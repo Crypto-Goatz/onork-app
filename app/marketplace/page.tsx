@@ -31,9 +31,9 @@ export const metadata: Metadata = {
     title: '0nCore Marketplace — AI-Powered Business Add-ons',
     description:
       'Browse 31 add-ons that plug into your CRM. Install in one click. Pay for what you use.',
-    url: 'https://0ncore.com/marketplace',
+    url: 'https://www.0ncore.com/marketplace',
   },
-  alternates: { canonical: 'https://0ncore.com/marketplace' },
+  alternates: { canonical: 'https://www.0ncore.com/marketplace' },
 }
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -84,13 +84,13 @@ export default function MarketplacePage() {
             '@type': 'ItemList',
             name: '0nCore Marketplace Categories',
             description: 'AI-powered add-ons for CRM automation',
-            url: 'https://0ncore.com/marketplace',
+            url: 'https://www.0ncore.com/marketplace',
             numberOfItems: CATEGORIES.length,
             itemListElement: CATEGORIES.map((cat, i) => ({
               '@type': 'ListItem',
               position: i + 1,
               name: cat.name,
-              url: `https://0ncore.com/marketplace/${cat.slug}`,
+              url: `https://www.0ncore.com/marketplace/${cat.slug}`,
             })),
           }),
         }}

@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
     openGraph: {
       title: `${cat.name} Add-ons — 0nCore Marketplace`,
       description: cat.description,
-      url: `https://0ncore.com/marketplace/${cat.slug}`,
+      url: `https://www.0ncore.com/marketplace/${cat.slug}`,
     },
   }
 }
@@ -63,8 +63,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
             '@context': 'https://schema.org',
             '@type': 'BreadcrumbList',
             itemListElement: [
-              { '@type': 'ListItem', position: 1, name: 'Marketplace', item: 'https://0ncore.com/marketplace' },
-              { '@type': 'ListItem', position: 2, name: title, item: `https://0ncore.com/marketplace/${category}` },
+              { '@type': 'ListItem', position: 1, name: 'Marketplace', item: 'https://www.0ncore.com/marketplace' },
+              { '@type': 'ListItem', position: 2, name: title, item: `https://www.0ncore.com/marketplace/${category}` },
             ],
           })
         }}

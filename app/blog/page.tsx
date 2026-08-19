@@ -1,36 +1,25 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
+import { getPublishedPosts, getCategories } from '@/lib/blog/data'
 
 export const metadata: Metadata = {
   title: 'Blog — 0nCore AI Platform',
   description: 'Insights on AI automation, CRM strategy, SEO, HIPAA compliance, SaaS building, and the MCP ecosystem. New articles daily.',
-  openGraph: { title: '0nCore Blog', description: 'AI automation insights, CRM strategy, and SaaS building guides.', url: 'https://0ncore.com/blog' },
-  alternates: { canonical: 'https://0ncore.com/blog' },
+  openGraph: { title: '0nCore Blog', description: 'AI automation insights, CRM strategy, and SaaS building guides.', url: 'https://www.0ncore.com/blog' },
+  alternates: { canonical: 'https://www.0ncore.com/blog' },
 }
 
-const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 export const revalidate = 3600
 
 export default async function BlogPage() {
-  const [{ data: categories }, { data: recentPosts }] = await Promise.all([
-    admin.from('blog_categories').select('*').order('sort_order'),
-    admin.from('blog_posts').select('id, slug, title, subtitle, category_slug, excerpt, published_at, reading_time, author_name').eq('status', 'published').order('published_at', { ascending: false }).limit(6),
-  ])
-
-  const cats = categories || []
-  const recent = recentPosts || []
-
-  // Count posts per category
-  const { data: counts } = await admin.from('blog_posts').select('category_slug').eq('status', 'published')
-  const countMap: Record<string, number> = {}
-  for (const c of counts || []) { countMap[c.category_slug] = (countMap[c.category_slug] || 0) + 1 }
+  const [cats, posts] = await Promise.all([getCategories(), getPublishedPosts()])
+  const recent = posts.slice(0, 6)
 
   return (
     <div style={{ background: '#020810', color: '#fff', minHeight: '100vh' }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-        '@context': 'https://schema.org', '@type': 'Blog', name: '0nCore Blog', url: 'https://0ncore.com/blog',
-        publisher: { '@type': 'Organization', name: '0nCore', url: 'https://0ncore.com' },
+        '@context': 'https://schema.org', '@type': 'Blog', name: '0nCore Blog', url: 'https://www.0ncore.com/blog',
+        publisher: { '@type': 'Organization', name: '0nCore', url: 'https://www.0ncore.com' },
       }) }} />
 
       {/* Nav */}
@@ -74,7 +63,7 @@ export default async function BlogPage() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <h3 style={{ fontSize: 15, fontWeight: 700 }}>{cat.name}</h3>
                   <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, background: `${cat.color}15`, padding: '2px 8px', borderRadius: 8 }}>
-                    {countMap[cat.slug] || 0}
+                    {cat.count}
                   </span>
                 </div>
                 <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, margin: 0 }}>{cat.description}</p>
@@ -90,7 +79,7 @@ export default async function BlogPage() {
           <h2 style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 20 }}>Latest Articles</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
             {recent.map(post => (
-              <Link key={post.id} href={`/blog/${post.category_slug}/${post.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Link key={post.id} href={`/blog/${post.categorySlug}/${post.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                 <article style={{
                   padding: 24, borderRadius: 16, height: '100%',
                   background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)',
@@ -98,14 +87,14 @@ export default async function BlogPage() {
                   display: 'flex', flexDirection: 'column',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#7ed957', textTransform: 'uppercase' }}>{post.category_slug.replace(/-/g, ' ')}</span>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{post.reading_time} min read</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#7ed957', textTransform: 'uppercase' }}>{post.categoryName}</span>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{post.readingTime} min read</span>
                   </div>
                   <h3 style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>{post.title}</h3>
-                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, flex: 1 }}>{post.excerpt?.slice(0, 140)}...</p>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, flex: 1 }}>{post.excerpt ? `${post.excerpt.slice(0, 140)}…` : post.metaDescription}</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{post.author_name}</span>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>{new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{post.authorName}</span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>{new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                   </div>
                 </article>
               </Link>

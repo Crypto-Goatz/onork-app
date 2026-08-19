@@ -1,24 +1,31 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
+import { getPost, getPostContent, getPublishedPosts, getCategory } from '@/lib/blog/data'
 
-const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 export const revalidate = 3600
 
+export async function generateStaticParams() {
+  const posts = await getPublishedPosts()
+  return posts.map(p => ({ category: p.categorySlug, slug: p.slug }))
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ category: string; slug: string }> }): Promise<Metadata> {
-  const { slug } = await params
-  const { data } = await admin.from('blog_posts').select('title, meta_title, meta_description, category_slug, slug').eq('slug', slug).eq('status', 'published').single()
-  if (!data) return { title: 'Post Not Found' }
+  const { category, slug } = await params
+  const post = await getPost(category, slug)
+  if (!post) return { title: 'Post Not Found' }
+  const description = post.metaDescription || post.excerpt || undefined
+  const url = `https://www.0ncore.com/blog/${post.categorySlug}/${post.slug}`
   return {
-    title: data.meta_title || `${data.title} — 0nCore Blog`,
-    description: data.meta_description,
+    title: `${post.title} — 0nCore Blog`,
+    description,
     openGraph: {
-      title: data.meta_title || data.title, description: data.meta_description || '',
-      url: `https://0ncore.com/blog/${data.category_slug}/${data.slug}`, type: 'article',
-      images: [{ url: `https://0ncore.com/api/og/blog/${data.slug}`, width: 1200, height: 310, alt: data.title }],
+      title: post.title, description: description || '',
+      url, type: 'article',
+      publishedTime: post.publishedAt, modifiedTime: post.lastModified,
+      images: [{ url: `https://www.0ncore.com/api/og/blog/${post.slug}`, width: 1200, height: 310, alt: post.title }],
     },
-    alternates: { canonical: `https://0ncore.com/blog/${data.category_slug}/${data.slug}` },
+    alternates: { canonical: url },
   }
 }
 
@@ -73,21 +80,24 @@ function inline(text: string): string {
 
 export default async function BlogPostPage({ params }: { params: Promise<{ category: string; slug: string }> }) {
   const { category, slug } = await params
-  const { data: post } = await admin.from('blog_posts').select('*').eq('slug', slug).eq('status', 'published').single()
+  const post = await getPost(category, slug)
   if (!post) notFound()
 
-  const { data: cat } = await admin.from('blog_categories').select('name, color').eq('slug', category).single()
+  const cat = await getCategory(category)
+  const content = await getPostContent(slug)
 
   const jsonLd = {
     '@context': 'https://schema.org', '@type': 'BlogPosting',
-    headline: post.title, description: post.meta_description || post.excerpt,
-    url: `https://0ncore.com/blog/${category}/${slug}`,
-    datePublished: post.published_at, dateModified: post.updated_at,
-    author: { '@type': 'Person', name: post.author_name },
-    publisher: { '@type': 'Organization', name: '0nCore', url: 'https://0ncore.com', logo: { '@type': 'ImageObject', url: 'https://0ncore.com/brand/0ncore-logo-light.png' } },
-    image: `https://0ncore.com/api/og/blog/${slug}`,
-    wordCount: post.content?.split(/\s+/).length || 0,
-    timeRequired: `PT${post.reading_time}M`,
+    headline: post.title, description: post.metaDescription || post.excerpt,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `https://www.0ncore.com/blog/${category}/${slug}` },
+    url: `https://www.0ncore.com/blog/${category}/${slug}`,
+    datePublished: post.publishedAt, dateModified: post.lastModified,
+    author: { '@type': 'Person', name: post.authorName },
+    publisher: { '@type': 'Organization', name: '0nCore', url: 'https://www.0ncore.com', logo: { '@type': 'ImageObject', url: 'https://www.0ncore.com/brand/0ncore-logo-light.png' } },
+    image: `https://www.0ncore.com/api/og/blog/${slug}`,
+    articleSection: post.categoryName,
+    wordCount: post.wordCount,
+    timeRequired: `PT${post.readingTime}M`,
   }
 
   return (
@@ -125,29 +135,29 @@ export default async function BlogPostPage({ params }: { params: Promise<{ categ
           <span style={{ fontSize: 10, fontWeight: 700, color: cat?.color || '#7ed957', background: `${cat?.color || '#7ed957'}15`, padding: '3px 10px', borderRadius: 10, border: `1px solid ${cat?.color || '#7ed957'}30`, textTransform: 'uppercase' }}>
             {cat?.name || category}
           </span>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{post.reading_time} min read</span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{post.readingTime} min read</span>
         </div>
 
         {/* Title */}
         <h1 style={{ fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.15, margin: '0 0 12px' }}>
           {post.title}
         </h1>
-        {post.subtitle && <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: '0 0 32px' }}>{post.subtitle}</p>}
+        {post.excerpt && <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, margin: '0 0 32px' }}>{post.excerpt}</p>}
 
         {/* Author */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(126,217,87,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#7ed957' }}>
-            {post.author_name?.charAt(0) || '0'}
+            {post.authorName.charAt(0)}
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>{post.author_name}</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>0nCore</div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>{post.authorName}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{post.authorTitle || '0nCore'}</div>
           </div>
         </div>
 
         {/* Content */}
-        <div dangerouslySetInnerHTML={{ __html: renderContent(post.content || '') }} />
+        <div dangerouslySetInnerHTML={{ __html: renderContent(content) }} />
 
         {/* CTA */}
         <div style={{ marginTop: 48, padding: 32, borderRadius: 20, background: 'linear-gradient(135deg, rgba(126,217,87,0.06), rgba(0,212,255,0.03), rgba(167,139,250,0.06))', border: '1px solid rgba(126,217,87,0.25)', backdropFilter: 'blur(12px)', textAlign: 'center' }}>

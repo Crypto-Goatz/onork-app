@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Build With 0n — Build Guides',
     description: 'Real products. Built live. Documented step by step. Your turn.',
-    url: 'https://0ncore.com/guides',
+    url: 'https://www.0ncore.com/guides',
   },
 }
 
