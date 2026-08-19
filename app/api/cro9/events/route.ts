@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
   const ad_platform = adPlatformFor(body.referrer || null, body.utm_source || null)
 
   // Insert + heartbeat the embed-sites row
-  await admin.from('cro9_events').insert({
+  const { error: insertError } = await admin.from('cro9_events').insert({
     site_slug,
     session_id: String(body.session_id || ''),
     event_type,
@@ -122,12 +122,26 @@ export async function POST(req: NextRequest) {
     metadata: body.metadata ?? {},
   })
 
-  // Heartbeat (non-blocking — fire and forget)
-  admin
+  if (insertError) {
+    // Postgres' own words, not a generic string. A dropped event that logs
+    // nothing is indistinguishable from a site nobody visited.
+    console.error('[cro9/events] insert failed', site_slug, event_type, insertError.message)
+  }
+
+  // Heartbeat — AWAITED, not fire-and-forget. This ran unawaited and the
+  // update never landed: the serverless invocation is frozen the moment the
+  // response is returned, so a promise with no one waiting on it is killed
+  // mid-flight. last_event_at stayed null on a site receiving events, which
+  // reads on every dashboard as "installed, never fired" — the exact opposite
+  // of the truth. Costs ~30ms against a 5s budget.
+  const { error: beatError } = await admin
     .from('cro9_embed_sites')
     .update({ last_event_at: new Date().toISOString() })
     .eq('site_slug', site_slug)
-    .then(() => {})
+
+  if (beatError) {
+    console.error('[cro9/events] heartbeat failed', site_slug, beatError.message)
+  }
 
   return Response.json({ ok: true, accepted: event_type }, { headers: CORS })
 }
