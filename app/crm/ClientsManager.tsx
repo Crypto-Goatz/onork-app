@@ -15,7 +15,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  Check, Circle, Copy, Loader2, Pencil, Search, ShieldCheck, Trash2, TriangleAlert, X,
+  Check, Circle, Copy, Loader2, Pencil, Search, ShieldCheck, Store, Trash2, TriangleAlert, X,
 } from 'lucide-react'
 import { AGENCY_BILLING } from '@/lib/agency-billing'
 import AppSidebar from './AppSidebar'
@@ -276,6 +276,16 @@ export default function ClientsManager() {
                              visual noise on a list of 12. Focus-within keeps them
                              reachable by keyboard. */
                           <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                            {/* The way into the client's own storefront page —
+                                services, the AI layer, wallet and receipts. It
+                                is a link and not a button because it is a
+                                destination, and it goes to /clients/<id>, which
+                                the app host rewrites to /crm/clients/<id>. */}
+                            <a href={`/clients/${a.locationId}`} title="Manage this client"
+                              aria-label={`Manage ${a.name}`}
+                              className="rounded-lg p-2 text-[color:var(--oc-muted)] transition hover:bg-[color:var(--oc-hover)] hover:text-[color:var(--oc-ink)]">
+                              <Store className="h-4 w-4" />
+                            </a>
                             <button onClick={() => copyKey(a.locationId)} title="Copy key"
                               aria-label={`Copy key for ${a.name}`}
                               className="rounded-lg p-2 text-[color:var(--oc-muted)] transition hover:bg-[color:var(--oc-hover)] hover:text-[color:var(--oc-ink)]">
