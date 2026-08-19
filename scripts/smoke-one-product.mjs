@@ -15,26 +15,68 @@
  *
  *   · A step passes only on EVIDENCE — an id, a status code, a row, a string
  *     found in fetched markup. Never on "the call did not throw".
+ *   · EVIDENCE MUST BE TRACEABLE TO THIS RUN. A row that was already there
+ *     proves the account is old, not that we just did something. Step 5 learned
+ *     this the hard way; see the note there.
  *   · A step that cannot run says BLOCKED and names what it needs. Blocked is
  *     not passed and never counts toward the total.
  *   · It runs read-only by default. Writing into a live account is opt-in via
- *     --write, because the other side has no rollback.
- *   · The first failure stops the run and prints what the remaining steps
- *     WOULD have checked, so one run tells you the whole shape of the gap.
+ *     --write, because the other side has no rollback. A dry run is not a pass.
+ *   · Every step reports, even after a failure — one run tells you the whole
+ *     shape of the gap, and the first failure is named as THE gap at the end.
  *
  *   node scripts/smoke-one-product.mjs            # read-only
  *   node scripts/smoke-one-product.mjs --write    # allows the write steps
  *
- * Env: CRM_SSO_KEY (to mint a session), LOCATION_ID, COMPANY_ID.
+ * CREDENTIALS, because a smoke test nobody can run is a smoke test nobody runs:
+ *   CRM_SSO_KEY   mints the app session (steps 3–5). Lives in Vercel prod:
+ *                 `vercel env pull /tmp/onork.env --environment=production`
+ *                 then `set -a; . /tmp/onork.env; set +a`.
+ *   ONTASK_API_KEY  step 6. Falls back to ~/.0n/ontask-key if that file exists.
+ *   LOCATION_ID / COMPANY_ID  which sub-account counts as "the customer".
+ *
+ * ── CURRENT AS OF 2026-08-18, every line below re-verified against live ──────
+ *   1 generate  POST /api/bundle/generate → 404. A8 unbuilt. Genuinely red.
+ *   2 render    web0n.com serves JSON-LD + a CRO9 script today, but there is no
+ *               bundle to render, so this reports BLOCKED with that readiness
+ *               signal attached rather than passing on the homepage's markup.
+ *   3 install   registry is LIVE and truthful (A0-BUG closed 2026-08-18). It is
+ *               no longer "zero installs with tokens": 30 rows, 1 usable — and
+ *               that one is COMPANY-scoped with an empty locationId, so a
+ *               location-scoped query cannot see it. This step now reads the
+ *               ladder in lib/crm/install-verdict.ts instead of status='active',
+ *               which the 29-row archive ruling made meaningless.
+ *   4 import    /api/bundle/import is live (405 on GET). Dry run no longer
+ *               counts as a pass — see the rule above.
+ *   5 publish   /api/portal/[id]/summary returns activity going back months.
+ *               Asserting "activity.length > 0" passed on contacts added in
+ *               2026-08-11 by something else entirely. Now scoped to after the
+ *               import started.
+ *   6 task      was a hardcoded FAIL string. Now a real call to the 0nTask API.
+ *   7 export    GET web0n /api/bundle/export → 404. A6/A3 outbound unbuilt.
  */
 import crypto from 'node:crypto'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 
 const BASE = process.env.BASE || 'https://app.0ncore.com'
 const WEB0N = process.env.WEB0N || 'https://web0n.com'
+const ONTASK = process.env.ONTASK || 'https://app.0ntask.com'
 const SSO_KEY = process.env.CRM_SSO_KEY || process.env.SSO_KEY || ''
 const LOCATION = process.env.LOCATION_ID || 'nphConTwfHcVE1oA0uep'
 const COMPANY = process.env.COMPANY_ID || 'bknfhTkdDLapbwfZqQNi'
 const ALLOW_WRITE = process.argv.includes('--write')
+
+/** The operator's key already exists on disk; make them not have to export it. */
+function ontaskKey() {
+  if (process.env.ONTASK_API_KEY) return process.env.ONTASK_API_KEY.trim()
+  try {
+    return fs.readFileSync(path.join(os.homedir(), '.0n', 'ontask-key'), 'utf8').trim()
+  } catch {
+    return ''
+  }
+}
 
 /* ── The seven steps, declared before any of them runs ────────────────────
    Declared up front so a failure can print what it was going to check next.
@@ -99,9 +141,14 @@ async function main() {
 
   const token = await mintSession()
   const auth = token ? { Authorization: `Bearer ${token}` } : {}
-  if (!token) console.log('  (no session — CRM_SSO_KEY unset; steps needing auth will report BLOCKED)\n')
+  if (!token) {
+    console.log('  (no session — CRM_SSO_KEY unset or rejected; steps 3–5 will report BLOCKED)')
+    console.log('   vercel env pull /tmp/onork.env --environment=production && set -a && . /tmp/onork.env\n')
+  }
 
   let bundle = null
+  let importedAt = null   // step 5 will not accept evidence older than this
+  let created = 0
 
   // ── 1 · GENERATE ────────────────────────────────────────────────────────
   {
@@ -127,82 +174,182 @@ async function main() {
   }
 
   // ── 2 · RENDER ──────────────────────────────────────────────────────────
+  //
+  // THE PROBE RUNS EVEN WITH NOTHING TO RENDER, and that is the change. This
+  // step used to skip itself the moment step 1 failed, which is every run there
+  // has ever been — so the check had never executed once and nobody knew
+  // whether the render half was ready or also broken. A blocked step that
+  // reports nothing teaches nothing. It still does not PASS on the homepage's
+  // markup: the claim is that OUR GENERATED SITE carries SXO and CRO9, and a
+  // hand-built homepage is not that site.
   {
     const step = STEPS[1]
-    if (stopped) record(step, BLOCKED, 'nothing to render — step 1 produced no bundle')
-    else {
-      const r = await fetch(`${WEB0N}/`).catch(() => null)
-      const html = r?.ok ? await r.text() : ''
-      const hasSxo = /application\/ld\+json/.test(html)
-      const hasCro9 = /cro9/i.test(html)
-      if (hasSxo && hasCro9) record(step, PASS, 'SXO JSON-LD and CRO9 script both present')
-      else record(step, FAIL, `SXO:${hasSxo ? 'yes' : 'no'} CRO9:${hasCro9 ? 'yes' : 'no'} — a rendered site must carry both`)
-    }
+    const r = await fetch(`${WEB0N}/`).catch(() => null)
+    const html = r?.ok ? await r.text() : ''
+    const hasSxo = /application\/ld\+json/.test(html)
+    const hasCro9 = /cro9/i.test(html)
+    const shell = `render shell: SXO ${hasSxo ? 'yes' : 'no'}, CRO9 ${hasCro9 ? 'yes' : 'no'}`
+
+    if (!bundle) record(step, BLOCKED, `no bundle from step 1 to render — ${shell}`)
+    else if (hasSxo && hasCro9) record(step, PASS, 'SXO JSON-LD and CRO9 script both present')
+    else record(step, FAIL, `${shell} — a rendered site must carry both`)
   }
 
   // ── 3 · INSTALL ─────────────────────────────────────────────────────────
+  //
+  // READS THE VERDICT LADDER, NOT status='active'. The 29 dead rows were flipped
+  // to 'archived' under the archive-with-receipts ruling, so status now answers
+  // "is this row still counted" and says nothing about whether it can write.
+  // lib/crm/install-verdict.ts owns that question and /api/mkt/installs exposes
+  // it as `verdict` + `hasToken`.
+  //
+  // AND IT ASKS THE REGISTRY-WIDE QUESTION FIRST. The one usable install on file
+  // is company-scoped with an EMPTY locationId — a location-scoped query returns
+  // nothing and would report the whole registry dead. That distinction is the
+  // finding, not noise: the agency can mint, the customer's sub-account cannot.
   {
     const step = STEPS[2]
-    if (!token) record(step, BLOCKED, 'no session')
+    if (!token) record(step, BLOCKED, 'no session — CRM_SSO_KEY unset')
     else {
-      const r = await fetch(`${BASE}/api/mkt/installs?locationId=${LOCATION}`, { headers: auth }).catch(() => null)
+      const r = await fetch(`${BASE}/api/mkt/installs`, { headers: auth }).catch(() => null)
       if (!r || r.status === 404) {
-        record(step, FAIL, 'no install registry endpoint yet (A1 not built) — A0-BUG blocks this')
+        record(step, FAIL, 'no install registry endpoint — /api/mkt/installs is gone (it was live 2026-08-18)')
+      } else if (r.status === 401) {
+        record(step, BLOCKED, 'session rejected by the registry')
       } else {
         const j = await r.json().catch(() => ({}))
-        const live = (j?.installs ?? []).filter((i) => i.status === 'active' && i.hasToken)
-        if (live.length) record(step, PASS, `${live.length} install(s) with a live token`)
-        else record(step, FAIL, 'registry reachable but holds zero installs with tokens — the A0-BUG symptom')
+        const all = j?.installs ?? []
+        const here = all.filter((i) => i.locationId === LOCATION)
+        const usableHere = here.filter((i) => i.hasToken)
+        const usableAnywhere = all.filter((i) => i.hasToken)
+
+        if (usableHere.length) {
+          record(step, PASS, `${usableHere.length} usable install on ${LOCATION} (${usableHere.map((i) => i.verdict).join(', ')})`)
+        } else if (!all.length) {
+          record(step, FAIL, 'registry reachable and empty — no install has ever been recorded')
+        } else {
+          // Say what is actually wrong with THIS account, in the registry's own
+          // words, rather than a summary number that fits every failure mode.
+          const why = here.length
+            ? here.map((i) => `${i.appId?.slice(-6) ?? 'no-app'}:${i.verdict}`).join(', ')
+            : 'no row at all'
+          const elsewhere = usableAnywhere.length
+            ? ` — ${usableAnywhere.length} usable elsewhere (${usableAnywhere.map((i) => i.locationId || 'company-level').join(', ')}), so the exchange works and this account is not connected`
+            : ' — and nothing in the registry is usable, which is a token exchange that has never succeeded'
+          record(step, FAIL, `${LOCATION}: ${why}${elsewhere}. ${j.total} rows, ${j.live} usable.`)
+        }
       }
     }
   }
 
   // ── 4 · IMPORT ──────────────────────────────────────────────────────────
+  //
+  // A DRY RUN IS NOT A PASS. It used to be: any 200 with receipts counted, so a
+  // default read-only run could report step 4 green having written nothing into
+  // any account. The step claims "bundle → sub-account", and a dry run is
+  // precisely the thing that does not reach the sub-account.
   {
     const step = STEPS[3]
     if (!token) record(step, BLOCKED, 'no session')
     else if (!bundle) record(step, BLOCKED, 'no bundle from step 1')
     else {
+      importedAt = Date.now()
       const r = await fetch(`${BASE}/api/bundle/import`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({ bundle, locationId: LOCATION, mode: ALLOW_WRITE ? 'execute' : 'dry_run' }),
       }).catch(() => null)
       const j = r ? await r.json().catch(() => ({})) : {}
       const receipts = j?.receipts?.length ?? 0
-      if (r?.ok && receipts > 0) {
-        record(step, PASS, `${receipts} receipts, mode=${j.mode}`)
-      } else {
-        record(step, FAIL, `${r?.status} — ${JSON.stringify(j).slice(0, 120)}`)
-      }
+      created = j?.created ?? 0
+
+      if (!r?.ok) record(step, FAIL, `${r?.status} — ${JSON.stringify(j).slice(0, 120)}`)
+      else if (!ALLOW_WRITE) record(step, BLOCKED, `dry run only: would create ${j.willCreate ?? receipts}, refuse ${j.willRefuse ?? 0}. Pass --write to prove the write.`)
+      else if (created > 0) record(step, PASS, `${created} created, ${j.failed ?? 0} failed, ${j.refused ?? 0} refused`)
+      else record(step, FAIL, `execute wrote nothing: ${receipts} receipts, ${j.failed ?? 0} failed, ${j.refused ?? 0} refused`)
     }
   }
 
   // ── 5 · PUBLISH ─────────────────────────────────────────────────────────
+  //
+  // READ IT BACK, AND ONLY COUNT WHAT THIS RUN PUT THERE. "The publish call
+  // returned 200" was never evidence; neither is "the account has activity".
+  // The old assertion — activity.length > 0 — passed against contacts added on
+  // 2026-08-11 by something else entirely, on an account whose install holds no
+  // token and cannot be written to at all. An account that has been alive for
+  // months will satisfy that check forever, including on the day the import
+  // silently stops working. So: nothing older than the import counts.
   {
     const step = STEPS[4]
     if (!ALLOW_WRITE) record(step, BLOCKED, 'read-only run — pass --write to check a real publish')
     else if (!token) record(step, BLOCKED, 'no session')
+    else if (!importedAt || created === 0) record(step, BLOCKED, 'step 4 wrote nothing, so there is nothing to read back')
     else {
-      // Read it BACK. "The publish call returned 200" is not evidence that
-      // anything exists; fetching the thing is.
       const r = await fetch(`${BASE}/api/portal/${LOCATION}/summary`, { headers: auth }).catch(() => null)
       const j = r ? await r.json().catch(() => ({})) : {}
-      if (r?.ok && (j?.activity?.length ?? 0) > 0) record(step, PASS, `${j.activity.length} receipts visible in the account`)
-      else record(step, FAIL, 'nothing readable back from the account after import')
+      if (!r?.ok) {
+        record(step, FAIL, `account not readable: ${r?.status} ${JSON.stringify(j).slice(0, 100)}`)
+      } else {
+        const activity = j?.activity ?? []
+        const fresh = activity.filter((a) => a.at && Date.parse(a.at) >= importedAt - 60_000)
+        if (fresh.length) record(step, PASS, `${fresh.length} of ${activity.length} activity entries postdate the import`)
+        else record(step, FAIL, `${activity.length} activity entries, none since the import began — older activity is not evidence of this publish`)
+      }
     }
   }
 
   // ── 6 · TASK ────────────────────────────────────────────────────────────
+  //
+  // THIS WAS A HARDCODED FAIL STRING — "A5 not built" — which is an opinion in a
+  // file that claims to only report evidence. It also could not notice the day
+  // it stopped being true. It now makes a real call and asserts on both halves
+  // of the round trip, because they fail independently:
+  //
+  //   RETURN  a task assigned to 0n reaches completed carrying a receipt.
+  //           This half works today and is done by hand.
+  //   DISPATCH the assignment reaches 0n without a human carrying it —
+  //           task.updated webhook → receiver → wake (ops-wake-loop).
+  //
+  // CONVENTION, so the dispatch half is machine-checkable rather than argued:
+  // the receipt written back by a woken worker contains the literal token
+  // WAKE-RECEIPT. Whoever lands ops-wake-loop writes that token and this step
+  // turns green by itself. A receipt a human typed after being told in chat is
+  // the return half only, and this step keeps saying so.
   {
     const step = STEPS[5]
-    record(step, FAIL, 'no task→0n→receipt round trip yet (A5 not built)')
+    const key = ontaskKey()
+    if (!key) record(step, BLOCKED, 'no ONTASK_API_KEY and no ~/.0n/ontask-key')
+    else {
+      const r = await fetch(`${ONTASK}/api/v1/tasks?limit=100`, {
+        headers: { Authorization: `Bearer ${key}` },
+      }).catch(() => null)
+      const j = r ? await r.json().catch(() => ({})) : {}
+      const tasks = j?.tasks ?? []
+
+      if (!r?.ok) {
+        record(step, FAIL, `0nTask API ${r?.status ?? 'unreachable'} — ${JSON.stringify(j).slice(0, 100)}`)
+      } else if (!tasks.length) {
+        record(step, FAIL, 'the queue is empty — nothing has ever been assigned to 0n')
+      } else {
+        const mine = tasks.filter((t) => t.assignee === 'ai')
+        const returned = mine.filter((t) => t.status === 'completed' && /receipt/i.test(t.notes || ''))
+        const dispatched = returned.filter((t) => /WAKE-RECEIPT/.test(t.notes || ''))
+
+        if (returned.length && dispatched.length) {
+          record(step, PASS, `${dispatched.length} task(s) woken and completed with receipts`)
+        } else if (returned.length) {
+          record(step, FAIL, `return half proven — ${returned.length}/${mine.length} assigned tasks completed with receipts — but zero carry WAKE-RECEIPT: a human still carries every assignment to 0n (ops-wake-loop unbuilt)`)
+        } else {
+          record(step, FAIL, `${mine.length} task(s) assigned to 0n, none completed with a receipt trail (A5 not built)`)
+        }
+      }
+    }
   }
 
   // ── 7 · EXPORT ──────────────────────────────────────────────────────────
   {
     const step = STEPS[6]
     const r = await fetch(`${WEB0N}/api/bundle/export?site=smoke`).catch(() => null)
-    if (!r || r.status === 404) record(step, FAIL, 'GET /api/bundle/export not built — the studio exports client-side only')
+    if (!r || r.status === 404) record(step, FAIL, 'GET /api/bundle/export not built — the studio exports client-side only (A6/A3)')
     else {
       const j = await r.json().catch(() => ({}))
       // A manifest that does not say what it cannot do is not honest.
@@ -221,6 +368,7 @@ async function main() {
 
   if (passed === 7) {
     console.log('\nOne product. A customer can do the whole thing in one session.\n')
+    console.log('SMOKE 7/7 first-gap=none')
     process.exit(0)
   }
 
@@ -233,7 +381,9 @@ async function main() {
   for (const r of results.filter((x) => x.status !== PASS)) {
     console.log(`  ${r.step.n}. ${r.step.what}`)
   }
-  console.log()
+  // One line the bridge can paste after each phase without reading the rest.
+  const gap = first ? `step${first.step.n}:${first.step.id}` : `blocked:${results.find((r) => r.status === BLOCKED)?.step.id ?? 'none'}`
+  console.log(`\nSMOKE ${passed}/7 first-gap=${gap}\n`)
   process.exit(1)
 }
 
