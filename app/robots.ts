@@ -26,6 +26,6 @@ export default function robots(): MetadataRoute.Robots {
       rules('Anthropic-AI'),
       rules('PerplexityBot'),
     ],
-    sitemap: 'https://0ncore.com/sitemap.xml',
+    sitemap: 'https://www.0ncore.com/sitemap.xml',
   }
 }
