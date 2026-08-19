@@ -277,8 +277,20 @@ export async function GET(
       })
 
       if (linkErr || !linkData?.properties?.hashed_token) {
+        // Never back to /login. This is a LOGIN-mode callback, so bouncing to
+        // the login form put the user one click from re-entering the exact
+        // flow that just failed — the silent loop /auth/error exists to end.
+        // Slack said yes; Supabase would not mint the session, and that is the
+        // sentence the user gets to read.
         console.error('[oauth/slack] Magic link generation failed:', linkErr)
-        return NextResponse.redirect(`${baseUrl}/login?error=auth_failed`)
+        const errUrl = new URL('/auth/error', baseUrl)
+        errUrl.searchParams.set('reason', 'magiclink_failed')
+        errUrl.searchParams.set(
+          'detail',
+          (linkErr?.message ||
+            'The auth server returned no usable magic link token.').slice(0, 300),
+        )
+        return NextResponse.redirect(errUrl)
       }
 
       const actionLink = linkData.properties.action_link

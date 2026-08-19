@@ -17,7 +17,15 @@
 import Link from 'next/link'
 import { AlertTriangle } from 'lucide-react'
 
-/** Stable slugs from app/auth/callback/route.ts → what a human should do. */
+/**
+ * Stable slugs → what a human should do.
+ *
+ * Written by app/auth/callback/route.ts, app/api/auth/callback/route.ts (which
+ * reuses the same four slugs on purpose) and app/api/auth/connect/[provider]/
+ * callback/route.ts. Those last two used to bounce to /login?error=; they land
+ * here now, so every slug they can emit needs a sentence below or the page
+ * falls back to the generic title and the reason goes unexplained again.
+ */
 const EXPLANATIONS: Record<string, { title: string; what: string }> = {
   provider_rejected: {
     title: 'The sign-in provider refused',
@@ -38,6 +46,11 @@ const EXPLANATIONS: Record<string, { title: string; what: string }> = {
     title: 'Signed in, but no account came back',
     what:
       'The exchange succeeded and returned no user. The session did not stick. Report this — it should not be reachable.',
+  },
+  magiclink_failed: {
+    title: 'Slack approved you, but the session could not be minted',
+    what:
+      'Slack returned a valid identity and the auth server then refused to issue the sign-in link that turns it into a session. Nothing you did causes this and retrying the same button usually repeats it — send it to us with the reference below.',
   },
 }
 

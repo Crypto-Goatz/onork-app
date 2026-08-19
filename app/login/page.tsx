@@ -23,12 +23,13 @@ export default function LoginPage() {
   /**
    * Show what sent you here.
    *
-   * Two other routes still bounce failures to `/login?error=...`
-   * (api/auth/callback and api/auth/connect/[provider]/callback). This page
+   * Three routes used to bounce failures to `/login?error=...` and this page
    * read none of them, so a failed sign-in rendered as a pristine login form —
-   * the user pressed the same button again and looped, invisibly. /auth/callback
-   * now goes to /auth/error instead; this is the net under everything else, so
-   * no future bounce-to-login can hide the same way.
+   * the user pressed the same button again and looped, invisibly. All three
+   * (auth/callback, api/auth/callback, api/auth/connect/[provider]/callback)
+   * now answer with /auth/error, so nothing in the tree writes these params any
+   * more. The reader stays: it is the net under anything added later, and a net
+   * is only useful before you need it.
    *
    * Deliberately `window.location.search` and not `useSearchParams`: that hook
    * opts the tree into a client bailout, and a bailout in a page that wraps
