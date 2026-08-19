@@ -3,13 +3,17 @@
  *
  * Retry-publish endpoint for sessions that already have generated_content.
  * Body: { priceCents?: number }
+ *
+ * ENTITLEMENT-GATED. This one writes a course, a price and an enrolment page
+ * into a live CRM, so it is the last route in Course Builder that should have
+ * accepted "signed in" as the whole check — and it was.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { publishCourse } from '@/lib/course-builder/publisher'
 import type { GeneratedCourse } from '@/lib/course-builder/types'
+import { requireAddonAccess } from '@/lib/addons/guard'
 
 function admin() {
   return createClient(
@@ -23,9 +27,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const supabase = await createServerClient()
-  const user = (await supabase.auth.getSession()).data.session?.user ?? null
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const access = await requireAddonAccess('ai-course-builder')
+  if (!access.ok) return access.response
+  const user = { id: access.userId }
 
   const body = await req.json().catch(() => ({}))
 

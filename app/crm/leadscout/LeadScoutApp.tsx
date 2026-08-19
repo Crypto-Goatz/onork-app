@@ -17,6 +17,17 @@
  * that searched and imported would be faster and would eventually import forty
  * wrong businesses into a client's account.
  *
+ * IT SERVES TWO AUDIENCES AND KNOWS WHICH ONE IT HAS. `auth='sso'` is the
+ * iframe above. `auth='session'` is the same product opened from the 0nCORE Hub
+ * by someone who does have an account here, where there is no parent to hand
+ * over a token and the signed-in session is the proof instead. The difference
+ * is one prop rather than a second copy of the screen, because a lead tool
+ * forked into two files is two places for the dedupe rule to drift.
+ *
+ * IN SESSION MODE THE CLIENT NAMES NO LOCATION. The server reads it from the
+ * profile behind the session, which is both simpler and stricter than trusting
+ * a location id posted from a browser.
+ *
  * THE BATCH WARNING IS THE HOUSE RULE. Any time a lot of writes are about to
  * fire at once, say so and offer a smaller first batch to audit. The cap is
  * enforced server-side too — a limit that only exists in the UI is a suggestion
@@ -45,7 +56,12 @@ interface Lead {
 
 const BATCH = 25
 
-export default function LeadScoutApp() {
+export type LeadScoutAuth = 'sso' | 'session'
+
+export default function LeadScoutApp({ auth = 'sso' }: { auth?: LeadScoutAuth } = {}) {
+  // Called unconditionally: hooks may not be skipped, and outside an iframe the
+  // handshake simply times out into 'standalone' without asking anyone for
+  // anything. In session mode its result is ignored.
   const sso = useSso()
   const [trade, setTrade] = useState('')
   const [where, setWhere] = useState('')
@@ -56,7 +72,9 @@ export default function LeadScoutApp() {
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<{ saved: number; failed: { name: string; error: string }[] } | null>(null)
 
-  const locationId = (sso as { activeLocationId?: string }).activeLocationId ?? ''
+  // Session mode sends nothing: the server resolves the location from the
+  // profile behind the cookie and ignores whatever a client might claim.
+  const locationId = auth === 'session' ? '' : (sso as { activeLocationId?: string }).activeLocationId ?? ''
 
   useEffect(() => { document.title = 'LeadScout by RocketOpp' }, [])
 
@@ -66,7 +84,11 @@ export default function LeadScoutApp() {
   async function call(step: 'find' | 'save', body: Record<string, unknown>) {
     const res = await fetch('/api/leadscout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders(sso.token ?? '') },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(auth === 'session' ? {} : authHeaders(sso.token ?? '')),
+      },
+      credentials: 'same-origin',
       body: JSON.stringify({ step, locationId, ...body }),
     })
     const json = await res.json().catch(() => ({}))
@@ -103,10 +125,10 @@ export default function LeadScoutApp() {
     } finally { setBusy(null) }
   }
 
-  if (sso.state === 'pending') {
+  if (auth === 'sso' && sso.state === 'pending') {
     return <Shell><Loader2 className="h-5 w-5 animate-spin text-[color:var(--oc-muted)]" /></Shell>
   }
-  if (sso.state !== 'authed') {
+  if (auth === 'sso' && sso.state !== 'authed') {
     return (
       <Shell>
         <p className="text-[15px] font-semibold text-[color:var(--oc-ink)]">Open LeadScout from your account</p>

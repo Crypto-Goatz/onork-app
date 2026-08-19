@@ -71,8 +71,32 @@ const APP_ID_BY_SLUG: Record<string, string> = {
   'ai-course-builder': process.env.CRM_COURSE_APP_ID || '69801f7a533633818a22921c',
 }
 
-/** Explicit entry routes for add-ons that do not live at /x/<slug>. */
-const ENTRY_ROUTE_BY_SLUG: Record<string, string> = {}
+/**
+ * Explicit entry routes for add-ons that do not live at /x/<slug>.
+ *
+ * THIS IS THE MIGRATION PATH, and the reason entryRoute is stated rather than
+ * computed. Both entries below are add-ons that shipped before the frame did.
+ * Their URLs are load-bearing in ways a tidier path would break:
+ *
+ *   ai-course-builder — /dashboard/course-builder is the surface for a signed-in
+ *       0nCORE user, which is exactly who the Hub sends here. Course Builder's
+ *       other doors are for other audiences and are NOT the entry route:
+ *       /app/course is the marketplace Custom Page (SSO in an iframe, no 0nCORE
+ *       account) and /crm/courses is the agency console.
+ *
+ *   lead0n — /dashboard/lead0n, NOT /crm/leadscout. The latter is the URL on
+ *       the marketplace build sheet and must keep matching it exactly, but it
+ *       is the iframe Custom Page: it authenticates by SSO handshake and, opened
+ *       from the Hub, correctly refuses because there is no parent to hand over
+ *       a token. Pointing the Hub at it would unlock a tile onto a dead end.
+ *       Both routes render the same component with a different `auth` prop.
+ *       (The slug is the current name and /crm/leadscout is the registered
+ *       route; the LeadScout->lead0n sweep is Stage C cleanup.)
+ */
+const ENTRY_ROUTE_BY_SLUG: Record<string, string> = {
+  'ai-course-builder': '/dashboard/course-builder',
+  lead0n: '/dashboard/lead0n',
+}
 
 export function entryRouteFor(slug: string): string {
   return ENTRY_ROUTE_BY_SLUG[slug] ?? `/x/${slug}`

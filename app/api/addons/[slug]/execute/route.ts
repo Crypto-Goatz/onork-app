@@ -14,8 +14,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
-import { getAddonDefinition } from '@/lib/addon-registry'
+import { getAddonDefinition, isRunnableAddon } from '@/lib/addon-registry'
 import { requireAddonAccess } from '@/lib/addons/guard'
+import { entryRouteFor } from '@/lib/addons/skeleton'
 
 const admin = createAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,6 +32,22 @@ export async function POST(
   const definition = getAddonDefinition(slug)
   if (!definition) {
     return NextResponse.json({ error: `Unknown add-on: ${slug}` }, { status: 404 })
+  }
+
+  /**
+   * A hosted add-on has no generic run, and says so instead of 500ing on an
+   * undefined execute(). Course Builder and lead0n do their work through their
+   * own APIs under their own UI; this endpoint is the generic frame's Run
+   * button and there is no such button on their surfaces.
+   */
+  if (!isRunnableAddon(definition)) {
+    return NextResponse.json(
+      {
+        error: `${definition.name} runs from its own screen, not from the generic add-on runner.`,
+        entryRoute: entryRouteFor(slug),
+      },
+      { status: 409 },
+    )
   }
 
   // Per-location entitlement. 'grace' is allowed to run — that is what grace is.

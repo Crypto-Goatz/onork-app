@@ -9,6 +9,14 @@
  * re-adds forty contacts the agency already has is the fastest way to lose
  * trust in a lead tool, and the second-fastest is finding out afterwards.
  *
+ * TWO WAYS TO PROVE WHO YOU ARE, ONE OF THEM STRICTER. Inside the CRM iframe
+ * there is no 0nCORE account, so a short-lived SSO JWT is the only credential
+ * available and the location is named by the caller. Opened from the 0nCORE Hub
+ * there IS an account, so the entitlement gate runs instead and the location
+ * comes from the profile — the caller does not get to name it. The JWT path is
+ * kept because the Custom Page has no alternative, not because it is the better
+ * of the two.
+ *
  * SAVING IS CAPPED AND IT SAYS SO. Writing into a live CRM is exactly the class
  * of action that should never happen in bulk without a look first — the batch
  * limit is enforced here, not just suggested in the UI, because a UI limit is a
@@ -18,6 +26,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { crmGet, crmPost, crmPostRaw } from '@/lib/crm'
 import { findLocalLeads, type Lead } from '@/lib/leadscout/search'
+import { requireAddonAccess } from '@/lib/addons/guard'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -48,9 +57,6 @@ async function existing(locationId: string): Promise<{ domains: Set<string>; nam
 }
 
 export async function POST(req: NextRequest) {
-  const session = verifyAppJwt(bearer(req))
-  if (!session.ok) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 })
-
   const body = (await req.json().catch(() => ({}))) as {
     step?: 'find' | 'save'
     locationId?: string
@@ -59,8 +65,33 @@ export async function POST(req: NextRequest) {
     limit?: number
     leads?: Lead[]
   }
-  const locationId = String(body.locationId || '').trim()
-  if (!locationId) return NextResponse.json({ error: 'No account selected.' }, { status: 400 })
+
+  /**
+   * The iframe presents a JWT; the Hub presents a session. Try the JWT first
+   * so the Custom Page never pays for an entitlement lookup it cannot satisfy,
+   * and fall through rather than 401 — a request with no bearer at all is the
+   * Hub's normal shape, not an attack.
+   */
+  let locationId = ''
+  const jwt = verifyAppJwt(bearer(req))
+  if (jwt.ok) {
+    locationId = String(body.locationId || '').trim()
+    if (!locationId) return NextResponse.json({ error: 'No account selected.' }, { status: 400 })
+  } else {
+    // 401 signed out · 402 not entitled · 503 the check itself failed.
+    const access = await requireAddonAccess('lead0n')
+    if (!access.ok) return access.response
+    // Deliberately NOT body.locationId. The profile behind the session is the
+    // only location this caller may write to, and letting a browser name a
+    // different one is how a lead tool writes into somebody else's CRM.
+    locationId = access.locationId
+    if (!locationId) {
+      return NextResponse.json(
+        { error: 'No CRM location is connected to this account. Connect one in Settings.' },
+        { status: 400 },
+      )
+    }
+  }
 
   // ── FIND ────────────────────────────────────────────────────────────────
   if (body.step === 'find') {

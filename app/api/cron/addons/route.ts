@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getAddonDefinition } from '@/lib/addon-registry'
+import { getAddonDefinition, isRunnableAddon } from '@/lib/addon-registry'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,6 +34,13 @@ export async function GET(req: NextRequest) {
   for (const cfg of configs) {
     const definition = getAddonDefinition(cfg.addon_slug)
     if (!definition) continue
+    // A hosted add-on is not schedulable here — it has no execute(). Skipping
+    // is correct, but it must be visible: a cron that silently drops rows is
+    // how work stops happening without anything reporting that it stopped.
+    if (!isRunnableAddon(definition)) {
+      results.push({ slug: cfg.addon_slug, skipped: 'hosted add-on — runs from its own surface, not this cron' })
+      continue
+    }
 
     // Check if user still has active purchase
     const { data: key } = await supabase

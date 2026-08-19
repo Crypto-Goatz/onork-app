@@ -30,13 +30,48 @@ export interface ConfigField {
   required?: boolean
 }
 
+/**
+ * How an add-on is served once the gate has said yes.
+ *
+ * 'workflow' — the generic frame IS the product. /x/<slug> renders
+ *              configSchema, the customer presses Run, execute() does the work.
+ *              content-engine, sxo and 0ncouncil are all this shape.
+ *
+ * 'hosted'   — the add-on ships its own UI and lives at its own route. The
+ *              frame would be a downgrade: rendering a two-field form where
+ *              Course Builder's course list should be is not a migration, it is
+ *              a replacement with something worse. /x/<slug> runs the identical
+ *              gate and then hands off to skeleton.entryRoute.
+ *
+ * The default is 'workflow' so every existing definition keeps its meaning
+ * without being touched.
+ */
+export type AddonSurface = 'workflow' | 'hosted'
+
 export interface AddonDefinition {
   slug: string
   name: string
   schedule: 'daily' | 'weekly' | 'hourly' | 'manual'
+  /** Defaults to 'workflow'. See AddonSurface. */
+  surface?: AddonSurface
   configSchema: ConfigField[]
-  /** Execute the add-on workflow with user's config and context */
-  execute: (ctx: ExecutionContext) => Promise<ExecutionResult>
+  /**
+   * Execute the add-on workflow with user's config and context.
+   *
+   * OPTIONAL, AND ONLY BECAUSE 'hosted' EXISTS. A hosted add-on has no generic
+   * run — its work happens through its own API under its own UI. Callers must
+   * refuse rather than assume: an undefined execute() that gets called is a
+   * crash, and one that gets silently skipped is a cron job reporting success
+   * for work it never did.
+   */
+  execute?: (ctx: ExecutionContext) => Promise<ExecutionResult>
+}
+
+/** True when the generic frame can configure and run this add-on itself. */
+export function isRunnableAddon(
+  def: AddonDefinition | null | undefined,
+): def is AddonDefinition & { execute: (ctx: ExecutionContext) => Promise<ExecutionResult> } {
+  return !!def && typeof def.execute === 'function' && (def.surface ?? 'workflow') === 'workflow'
 }
 
 export interface ExecutionContext {
@@ -422,12 +457,48 @@ const councilAddon: AddonDefinition = {
   },
 }
 
+// ─── HOSTED ADD-ONS ────────────────────────────────────────────
+//
+// The first two real tenants of the /x/[slug] frame. They were built before the
+// frame existed, each with its own front door and its own idea of who may open
+// it — Course Builder's API checked that you were signed in and nothing else,
+// so any 0nCore account on any plan could generate and publish courses. Being
+// registered here is what puts them behind the one gate.
+//
+// THEY KEEP THEIR OWN UI. Registration is not absorption: a hosted add-on
+// declares itself, gets gated, and is then handed control at its own route.
+// What changes is the door, not the room.
+
+const courseBuilder: AddonDefinition = {
+  slug: 'ai-course-builder',
+  name: 'AI Course Builder',
+  surface: 'hosted',
+  // 'manual' is the truth: a course is generated when someone describes one.
+  // There is no cron that writes courses at 3am, and saying 'daily' here would
+  // put "Runs daily" under a product that does not.
+  schedule: 'manual',
+  // Deliberately empty. Course Builder asks its questions per course — topic,
+  // audience, outcome, tone — not once in a settings panel, and a duplicate
+  // config form would be a second place to answer the same questions.
+  configSchema: [],
+}
+
+const lead0n: AddonDefinition = {
+  slug: 'lead0n',
+  name: 'lead0n',
+  surface: 'hosted',
+  schedule: 'manual',
+  configSchema: [],
+}
+
 // ─── REGISTRY ──────────────────────────────────────────────────
 
 const ADDON_REGISTRY: Record<string, AddonDefinition> = {
   'content-engine': contentEngine,
   sxo: sxoAddon,
   '0ncouncil': councilAddon,
+  'ai-course-builder': courseBuilder,
+  lead0n: lead0n,
 }
 
 export function getAddonDefinition(slug: string): AddonDefinition | null {

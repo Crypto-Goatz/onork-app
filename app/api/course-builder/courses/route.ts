@@ -3,13 +3,20 @@
  * POST /api/course-builder/courses        — create a course directly from the dashboard (skips chat)
  *                                            body: { topic, audience, lessonCount, includeQuizzes,
  *                                                    learningOutcome, tone? }
+ *
+ * ENTITLEMENT-GATED PER LOCATION, like every other add-on surface. Until Course
+ * Builder was registered as a hosted add-on these routes checked only that you
+ * were signed in — so any 0nCORE account on any plan, entitled or not, could
+ * generate a course and publish it into a CRM. Being on the frame is what fixed
+ * that: /x/ai-course-builder refuses at the door and this refuses again here,
+ * because a door is a courtesy and the endpoint is the control.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateOutline, generateFullCourse } from '@/lib/course-builder/generator'
 import type { CourseConfig } from '@/lib/course-builder/types'
+import { requireAddonAccess } from '@/lib/addons/guard'
 
 function admin() {
   return createClient(
@@ -19,9 +26,11 @@ function admin() {
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = await createServerClient()
-  const user = (await supabase.auth.getSession()).data.session?.user ?? null
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // 401 with no session, 402 when this location is not entitled, 503 when the
+  // check itself could not run. Grace is allowed through — that is what it is.
+  const access = await requireAddonAccess('ai-course-builder')
+  if (!access.ok) return access.response
+  const user = { id: access.userId }
 
   const limit = Math.min(parseInt(req.nextUrl.searchParams.get('limit') || '50'), 200)
   const status = req.nextUrl.searchParams.get('status')
@@ -42,17 +51,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createServerClient()
-  const user = (await supabase.auth.getSession()).data.session?.user ?? null
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const access = await requireAddonAccess('ai-course-builder')
+  if (!access.ok) return access.response
+  const user = { id: access.userId }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('crm_location_id')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  const locationId = profile?.crm_location_id
+  // The guard already resolved and trimmed this against the same profile row.
+  const locationId = access.locationId
   if (!locationId) {
     return NextResponse.json(
       { error: 'No CRM location on file. Connect your CRM first.' },

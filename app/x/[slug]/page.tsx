@@ -29,12 +29,11 @@
  * install renders the re-consent prompt instead of the frame, and a dying one
  * renders a banner above a frame that still works. See lib/crm/reconsent.ts.
  */
-import { notFound } from 'next/navigation'
-import { getAddonDefinition } from '@/lib/addon-registry'
+import { notFound, redirect } from 'next/navigation'
+import { getAddonDefinition, isRunnableAddon } from '@/lib/addon-registry'
 import { ADDONS, type MarketplaceAddon } from '@/lib/marketplace-data'
-import { createClient } from '@/lib/supabase/server'
 import { isOwnerEmail } from '@/lib/owner'
-import { createServiceClient } from '@/lib/connect/service-client'
+import { addonViewer } from '@/lib/addons/viewer'
 import { resolveEntitlement } from '@/lib/addons/entitlements'
 import { resolveReconsent } from '@/lib/crm/reconsent'
 import { skeletonFor } from '@/lib/addons/skeleton'
@@ -48,32 +47,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const def = getAddonDefinition(slug)
   return { title: def ? `${def.name} — 0n` : 'Not found', robots: { index: false } }
-}
-
-/**
- * Session → { email, locationId }.
- *
- * getSession, never getUser — getUser races the middleware cookie refresh and
- * signs people out, which is the long-running "click anything and you're logged
- * out" bug this project already paid for twice.
- */
-async function viewer(): Promise<{ email: string | null; locationId: string; authed: boolean }> {
-  try {
-    const supabase = await createClient()
-    const session = (await supabase.auth.getSession()).data.session
-    const user = session?.user
-    if (!user) return { email: null, locationId: '', authed: false }
-
-    let locationId = ''
-    const db = createServiceClient()
-    if (db) {
-      const { data } = await db.from('profiles').select('crm_location_id').eq('id', user.id).maybeSingle()
-      locationId = data?.crm_location_id ?? ''
-    }
-    return { email: user.email ?? null, locationId, authed: true }
-  } catch {
-    return { email: null, locationId: '', authed: false }
-  }
 }
 
 export default async function AddonPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -90,7 +63,7 @@ export default async function AddonPage({ params }: { params: Promise<{ slug: st
   const listing = (ADDONS as MarketplaceAddon[]).find((a) => a.slug === slug) ?? null
   const blurb = listing?.shortDesc ?? ''
 
-  const { email, locationId, authed } = await viewer()
+  const { email, locationId, authed } = await addonViewer()
 
   if (!authed) {
     return (
@@ -152,6 +125,24 @@ export default async function AddonPage({ params }: { params: Promise<{ slug: st
         }}
       />
     )
+  }
+
+  /**
+   * A HOSTED ADD-ON IS HANDED OFF, NOT RE-RENDERED.
+   *
+   * Course Builder and lead0n shipped before this frame did and each has a real
+   * UI. Rendering the generic configure-and-Run panel for them would replace a
+   * course list and a lead search with an empty form — a migration that made
+   * the product worse. What they migrate onto is the GATE: everything above
+   * this line ran identically for them, and only now, having been let through,
+   * do they get control of their own route.
+   *
+   * The redirect is deliberate rather than an inline render. Their routes carry
+   * their own layouts and their own auth, and resolving the same page at two
+   * URLs is how this codebase ended up with add-ons in three catalogues.
+   */
+  if (!isRunnableAddon(def)) {
+    redirect(skeleton.entryRoute)
   }
 
   return (

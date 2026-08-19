@@ -37,7 +37,11 @@ async function main() {
   check('skeleton shape', Object.keys(s).sort(), ['appId', 'entryRoute', 'name', 'requiredEntitlement', 'slug'])
   check('entryRoute', s.entryRoute, '/x/sxo')
   check('requiredEntitlement', s.requiredEntitlement, { key: 'sxo', minTier: 'starter' })
-  check('course-builder names its own app', skeletonFor('ai-course-builder'), null) // no definition yet
+  // Was `null` until the migration registered it. Now it must both EXIST and
+  // still name its own CRM app — an install of some other app must not open it.
+  const cb = skeletonFor('ai-course-builder')!
+  check('course-builder has a skeleton', !!cb, true)
+  check('course-builder names its own app', cb.appId, process.env.CRM_COURSE_APP_ID || '69801f7a533633818a22921c')
   console.log(`  skeletons with a working door: ${allSkeletons().map(x => x.slug).join(', ')}`)
 
   await clean()
@@ -129,7 +133,14 @@ async function main() {
   console.log('\n=== 8. OWNER OVERRIDE IS LABELLED, NOT AN ENTITLEMENT ===')
   v = await resolveEntitlement({ slug: SLUG, locationId: '', isOwner: true })
   check('owner opens with no location', [v.state, v.source], ['active', 'owner'])
-  const { count } = await db.from('addon_entitlements').select('*', { count: 'exact', head: true })
+  // Scoped to the locations THIS script touches. It used to count the whole
+  // table, which meant any unrelated row anywhere — a leftover from another
+  // team's drill, say — failed a check about what resolveEntitlement wrote.
+  // A check that can go red for a reason other than the thing it names is not
+  // a check.
+  const { count } = await db.from('addon_entitlements')
+    .select('*', { count: 'exact', head: true })
+    .in('location_id', [LOC, LOC_INSTALL, LOC_ARCHIVED])
   check('owner override wrote no row', count, 0)
 
   console.log('\n=== 9. UNKNOWN SLUG ===')
@@ -140,8 +151,12 @@ async function main() {
   console.log(`         reason: ${v.reason}`)
 
   await clean()
-  const { count: left } = await db.from('addon_entitlements').select('*', { count: 'exact', head: true })
-  const { count: leftP } = await db.from('location_plans').select('*', { count: 'exact', head: true })
+  const { count: left } = await db.from('addon_entitlements')
+    .select('*', { count: 'exact', head: true })
+    .in('location_id', [LOC, LOC_INSTALL, LOC_ARCHIVED])
+  const { count: leftP } = await db.from('location_plans')
+    .select('*', { count: 'exact', head: true })
+    .in('location_id', [LOC, LOC_INSTALL, LOC_ARCHIVED])
   console.log(`\nCleanup: addon_entitlements=${left} location_plans=${leftP}`)
   console.log(fails === 0 ? '\nALL CHECKS PASSED\n' : `\n${fails} CHECK(S) FAILED\n`)
   process.exit(fails === 0 ? 0 : 1)

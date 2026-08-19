@@ -65,7 +65,7 @@ const STATE_COLOR: Record<string, string> = {
   failed: 'bg-red-500/15 text-red-300',
 }
 
-export default function CourseBuilderPage() {
+export default function CourseBuilderApp() {
   const [courses, setCourses] = useState<CourseSession[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)

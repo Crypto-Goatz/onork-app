@@ -938,6 +938,29 @@ export const ADDONS: MarketplaceAddon[] = [
     integrations: ['Stripe', 'PayPal', 'Google Ads', 'Meta Ads', 'LinkedIn Ads', 'CRM Workflows', 'CRO9', 'Detect & Refine', 'Groq AI', '0nMCP'],
     relatedAddons: ['rocketpost', 'cro9', 'detect-and-refine', 'funnel-builder', 'campaign-manager'],
   },
+  {
+    // Was LeadScout. The route is still /crm/leadscout because that is the URL
+    // on the marketplace build sheet and a Custom Page URL must match it
+    // exactly; the rename sweep is Stage C cleanup. See lib/addons/skeleton.ts.
+    slug: 'lead0n',
+    name: 'lead0n',
+    shortDesc: 'Find local businesses that match who you already sell to, and import the good ones.',
+    longDesc: 'lead0n searches for businesses by trade and area, checks each one against the contacts already in your CRM, and shows you what is genuinely new before anything is written. Saving is a separate, capped step on purpose — these writes land in a live CRM your business runs on, and a single button that searched and imported would eventually put forty wrong businesses into a client account.',
+    price: 4900,
+    priceLabel: '$49/mo',
+    categories: ['sales', '0n-crm'],
+    capabilities: ['lead_search', 'lead_dedupe', 'contact_import'],
+    requiredPlan: 'professional',
+    features: [
+      'Search local businesses by trade and area',
+      'Every result checked against your existing contacts first',
+      'Review the list before a single contact is written',
+      'Imports capped per batch, enforced server-side',
+      'Runs inside your CRM as a Custom Page',
+    ],
+    integrations: ['CRM Contacts', '0nMCP'],
+    relatedAddons: ['contact-manager', 'opportunity-pipeline', 'detect-and-refine'],
+  },
 ]
 
 /**
@@ -973,3 +996,22 @@ export function getRelatedAddons(addon: MarketplaceAddon): MarketplaceAddon[] {
 
 /** Public count — what a visitor is told exists. */
 export const PUBLIC_ADDON_COUNT = ADDONS.filter((a) => (a.visibility ?? 'public') === 'public').length
+
+/**
+ * Category counts are DERIVED, and were typed by hand until this ran.
+ *
+ * Six of the eight were wrong: the public marketplace rendered eleven
+ * AI & Automation listings under a heading that said six, and told search
+ * engines the same thing in the category description. Nobody edited a number
+ * incorrectly — the numbers were correct once and then listings were added,
+ * which is the whole failure mode. A count that cannot be recomputed from what
+ * it counts is a claim with no way to tell when it stopped being true.
+ *
+ * Public-only, matching visibleAddons: an owner-only listing must not inflate a
+ * number shown to a visitor who cannot see the listing behind it.
+ */
+for (const c of CATEGORIES) {
+  c.count = ADDONS.filter(
+    (a) => (a.visibility ?? 'public') === 'public' && a.categories.includes(c.slug),
+  ).length
+}
