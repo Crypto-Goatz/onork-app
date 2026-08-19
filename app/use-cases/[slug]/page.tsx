@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   // '… Compliance Automation for Clinics | 0nCore · 0nCore' and eats characters
   // a 60-char title cannot spare. Strip the brand the model added and let the
   // template be the one place it comes from.
-  const bareTitle = (uc.metaTitle || uc.title).replace(/\s*[|·—–-]\s*0n[Cc]ore\s*$/, '')
+  const bareTitle = (uc.metaTitle || uc.title).replace(/\s*[|·—–-]\s*0n[Cc]ore(\s+CRM)?\s*$/, '')
 
   return {
     title: bareTitle,

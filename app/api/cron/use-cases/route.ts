@@ -130,6 +130,12 @@ Be specific about 0nCore features: K-layers, CRM sub-locations, 0nMCP, form buil
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         max_tokens: 2000,
+        // Without this the model returns prose-with-JSON often enough to matter:
+        // the first run after the dedup fix died on `Expected ',' or ']' after
+        // array element`, because the only guard was a greedy /\{[\s\S]*\}/ and
+        // then a bare JSON.parse. /api/cron/blog has asked for json_object since
+        // it was written; this is the same ask, and the regex stays as the belt.
+        response_format: { type: 'json_object' },
       }),
     })
 
