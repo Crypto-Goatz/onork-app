@@ -45,7 +45,7 @@ current — it is a one-env-var change, no deploy.
 | App | App ID | State |
 |---|---|---|
 | Course Builder — canonical | `69801f7a533633818a22921c` | The one the callback, `/api/oauth/install/course` and the marketplace submission all use. In review. **Zero installs ever.** |
-| Course Builder — second registration | `6a7ea3e8…` (prefix only) | **RETIRED 2026-08-19 — recorded, not deleted.** Do not install it, do not delete the listing, do not point an env var at it. |
+| Course Builder — second registration | `6a7ea3e803672cba97505c5c` | **RETIRED 2026-08-19 — recorded, not deleted.** Do not install it, do not delete the listing. Its listing is still installable, which is how a code can still be issued against it. |
 
 **Why the record exists at all.** A duplicate app ID that is simply deleted comes back: someone
 re-creates it, or quotes it as canonical, because nothing anywhere says it was killed on purpose.
@@ -56,10 +56,21 @@ with `isRetiredCrmApp()` matching on the prefix.
 **The receipt, and its limit.** `crm_installations` read with the service role, 2026-08-19: **30
 rows, three app IDs only** — `69c762…`×28, `6a7178a4…`×1, `6a71919b…`×1. **Zero rows for either
 Course Builder app**, so there was nothing in the database to archive; the retirement is a
-record-of-truth fact, not a row edit. **The full second app ID is not known to this repo** — only
-the `6a7ea3e8` prefix was ever captured, and the marketplace app-read endpoints answer 404/401 to
-our PIT (no marketplace scope), so the full value is portal-only. Fill it in from the developer
-portal next time someone is in there; the prefix is what matching keys off until then.
+record-of-truth fact, not a row edit.
+
+**The full second app ID is now known: `6a7ea3e803672cba97505c5c`** (recovered 2026-08-19 — it is
+the appId half of `CRM_LEADSCOUT_CLIENT_ID`, whose value is `6a7ea3e803672cba97505c5c-mssi3q6k`).
+It never needed the portal; it was sitting in this deployment's own environment under a name that
+does not mention Course Builder. **`CRM_LEADSCOUT_CLIENT_ID` / `_SECRET` / `_SSO_KEY` are that
+retired app's credentials.** They stay — the OAuth callback uses them to DIAGNOSE (never to
+complete) an install that originated from the retired listing, so a code issued by the wrong
+listing reports itself instead of looking like a stale secret.
+
+⚠️ **A CLIENT_ID IS NOT AN APP.** The legacy app `69c762…` has FOUR registered client keys —
+`-mnu5pazi` (main), `-mn9wyk9o` (external auth), `-mnsa16jo` (install), `-mpa19g2x`. Only the one
+that issued a code can redeem it; the others are rejected as **"Invalid client credentials"**,
+which reads as a wrong secret and is not one. All four are in the callback ladder as of
+2026-08-19.
 
 ---
 
