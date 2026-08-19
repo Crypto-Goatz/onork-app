@@ -164,6 +164,14 @@ export default function ClientsManager() {
               {connected.length} connected · additional accounts {PRICE}/mo each ·{' '}
               {runningTotal}/month running total
             </p>
+            {/* This page answers "can we reach it". The storefront answers
+                "what can we sell into it" — plan state, wallet, upgrades. Two
+                questions, one list, so the way across is a link and not a
+                second copy of the list. */}
+            <a href="/clients/storefront"
+              className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-[color:var(--oc-green-d)] transition hover:opacity-80">
+              <Store className="h-3.5 w-3.5" /> Open the client storefront
+            </a>
           </header>
 
           <div className="relative w-[280px] shrink-0">
