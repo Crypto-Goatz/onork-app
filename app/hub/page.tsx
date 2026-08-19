@@ -29,7 +29,7 @@ type Home = {
   authed: boolean
   firstName?: string
   isOwner?: boolean
-  apps?: { slug: string; name: string; href: string; state: string }[]
+  apps?: { slug: string; name: string; href: string; state: string; note?: string }[]
   appsNote?: string
   appCount?: number
   billing?: { plan: string | null; status: string; note: string; manageHref: string }
@@ -109,6 +109,11 @@ export default function HubPage() {
                   <p className="mt-1 flex items-center gap-1 text-xs text-[#6EE05A]">
                     Open <ArrowRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
                   </p>
+                  {/* Grace is a working tile with a deadline on it. Saying
+                      nothing means the customer finds out on day eight. */}
+                  {a.state === 'grace' && a.note && (
+                    <p className="mt-2 text-xs leading-relaxed text-[#f59e0b]">{a.note}</p>
+                  )}
                 </Link>
               ))}
             </div>

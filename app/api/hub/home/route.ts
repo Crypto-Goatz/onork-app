@@ -22,34 +22,58 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/connect/service-client'
 import { isOwnerEmail } from '@/lib/owner'
-import { getAllAddonDefinitions } from '@/lib/addon-registry'
 import { ADDONS, type MarketplaceAddon } from '@/lib/marketplace-data'
+import { allSkeletons } from '@/lib/addons/skeleton'
+import { resolveEntitlement } from '@/lib/addons/entitlements'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 /**
- * Tiles come from the REGISTRY, not from a list written here.
+ * Tiles come from the REGISTRY, and their state comes from the GATE.
  *
  * A hardcoded tile array is how a Hub ends up advertising something that does
- * not exist, or missing something that does — it is a fourth catalogue in a
- * codebase that already had three that disagreed. Reading the registry means a
- * new add-on appears here by being registered, and a tile can never promise a
- * product with no code behind it.
+ * not exist — it is a fourth catalogue in a codebase that already had three
+ * that disagreed. Reading the registry means a new add-on appears here by being
+ * registered, and a tile can never promise a product with no code behind it.
+ *
+ * AND IT ASKS THE SAME GATE THE DOOR ASKS. This used to open every registered
+ * tile the moment ANY location in the table had a live install — not the
+ * viewer's location, any location. So a visitor with nothing connected saw
+ * three "Open" tiles that led to a Run button which then 403'd. That is exactly
+ * the maze the exit test forbids: a tile is open here only if
+ * /x/<slug> would actually open for THIS location.
  */
-function tiles(owner: boolean) {
-  const runnable = new Map(getAllAddonDefinitions().map((d) => [d.slug, d]))
+async function tiles(opts: { owner: boolean; locationId: string }) {
+  const runnable = allSkeletons()
   const listed = (ADDONS as MarketplaceAddon[]).filter(
-    (a) => owner || (a as { visibility?: string }).visibility !== 'owner',
+    (a) => opts.owner || (a as { visibility?: string }).visibility !== 'owner',
   )
-  const open: { slug: string; name: string; href: string; state: 'live' }[] = []
+  const open: { slug: string; name: string; href: string; state: 'live' | 'grace'; note?: string }[] = []
   const locked: { slug: string; name: string; blurb: string }[] = []
 
+  const verdicts = new Map(
+    await Promise.all(
+      runnable.map(async (s) =>
+        [s.slug, await resolveEntitlement({ slug: s.slug, locationId: opts.locationId, isOwner: opts.owner })] as const,
+      ),
+    ),
+  )
+
   for (const a of listed) {
-    if (runnable.has(a.slug)) {
-      open.push({ slug: a.slug, name: a.name, href: `/x/${a.slug}`, state: 'live' })
+    const v = verdicts.get(a.slug)
+    if (v && v.state !== 'locked') {
+      open.push({
+        slug: a.slug,
+        name: a.name,
+        href: v.entryRoute,
+        state: v.state === 'grace' ? 'grace' : 'live',
+        note: v.state === 'grace' ? v.reason : undefined,
+      })
     } else {
-      locked.push({ slug: a.slug, name: a.name, blurb: a.shortDesc || '' })
+      // Locked says WHY when the gate had a sentence, and falls back to what the
+      // product does. Either way it is a promise, never a bare padlock.
+      locked.push({ slug: a.slug, name: a.name, blurb: v?.reason || a.shortDesc || '' })
     }
   }
   // A locked wall of 40 is noise, not a promise. Show the strongest handful.
@@ -84,28 +108,30 @@ export async function GET() {
   const db = createServiceClient()
 
   // ── Apps this account can actually use ───────────────────────────────
-  let apps: { slug: string; name: string; href: string; state: 'live' }[] =
-    isOwnerEmail(email) ? tiles(true).open : []
+  //
+  // "Can actually use" means the gate at /x/<slug> would let this LOCATION in.
+  // Not "someone somewhere has an install", which is what this asked before.
+  let apps: { slug: string; name: string; href: string; state: 'live' | 'grace'; note?: string }[] = []
+  let locked: { slug: string; name: string; blurb: string }[] = []
   let appsNote: string | undefined
+
+  let locationId = ''
   if (!db) {
     appsNote = 'Storage unavailable — your app list could not be loaded. This is not the same as owning none.'
   } else {
     try {
-      // A location with a usable install is the honest definition of "you have
-      // a working app", because that is what every downstream call needs.
-      const { data } = await db
-        .from('crm_installations')
-        .select('app_id, location_id, expires_at, refresh_token, health_status')
-        .eq('status', 'active')
-        .limit(200)
-      const usable = (data ?? []).filter(
-        (r) => r.expires_at && new Date(r.expires_at).getTime() > Date.now(),
-      )
-      if (usable.length) {
-        // Whatever is genuinely registered AND has a live install behind it.
-        apps = tiles(isOwnerEmail(email)).open
-      } else {
-        appsNote = 'No connected app yet. Installing one from the marketplace is what turns these on.'
+      if (userId) {
+        const { data: profile } = await db
+          .from('profiles').select('crm_location_id').eq('id', userId).maybeSingle()
+        locationId = profile?.crm_location_id ?? ''
+      }
+      const t = await tiles({ owner: isOwnerEmail(email), locationId })
+      apps = t.open
+      locked = t.locked
+      if (!apps.length) {
+        appsNote = locationId
+          ? 'Nothing is switched on for this location yet. Installing an add-on from the marketplace is what turns these on.'
+          : 'No CRM location is connected yet. Add-ons are enabled per location, so connecting one is the first step.'
       }
     } catch (e) {
       appsNote = `App list unavailable: ${(e as Error).message}`
@@ -144,7 +170,7 @@ export async function GET() {
     appCount: apps.length,
     billing,
     learning,
-    locked: tiles(isOwnerEmail(email)).locked,
+    locked,
     whatsNew: [
       { at: '2026-08-19', text: 'The Hub is now where you land. The vault moved to Account → Security, challenge and all.' },
       { at: '2026-08-18', text: 'One 0n key now works across the API, the extension and Claude — no second key to manage.' },

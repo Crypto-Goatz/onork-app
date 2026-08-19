@@ -1,12 +1,21 @@
 /**
  * POST /api/addons/[slug]/execute — Manually trigger an add-on execution.
  * Generic for ALL add-ons. Execution logic defined in lib/addon-registry.ts.
+ *
+ * THE GATE MOVED OFF user_id. This route used to require a `product_keys` row
+ * matching the CALLER — a table that has zero rows in production, so the answer
+ * was "not purchased" for every human who ever pressed Run, including people
+ * with a live install. Worse, when it did have rows it entitled one person
+ * rather than the sub-account: the colleague sharing the location got a 403 on
+ * a product their business pays for. Entitlement is now resolved per LOCATION
+ * by lib/addons/entitlements.ts, which also honours grace.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 import { getAddonDefinition } from '@/lib/addon-registry'
+import { requireAddonAccess } from '@/lib/addons/guard'
 
 const admin = createAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,27 +27,16 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params
-  const supabase = await createClient()
-  const user = (await supabase.auth.getSession()).data.session?.user ?? null
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const definition = getAddonDefinition(slug)
   if (!definition) {
     return NextResponse.json({ error: `Unknown add-on: ${slug}` }, { status: 404 })
   }
 
-  // Check user has purchased this add-on
-  const { data: key } = await admin
-    .from('product_keys')
-    .select('status')
-    .eq('user_id', user.id)
-    .eq('product_slug', slug)
-    .eq('status', 'active')
-    .single()
-
-  if (!key) {
-    return NextResponse.json({ error: 'Add-on not purchased' }, { status: 403 })
-  }
+  // Per-location entitlement. 'grace' is allowed to run — that is what grace is.
+  const access = await requireAddonAccess(slug)
+  if (!access.ok) return access.response
+  const user = { id: access.userId }
 
   // Get user's config
   const { data: configRow } = await admin
@@ -89,7 +87,9 @@ export async function POST(
     // Run the add-on
     const result = await definition.execute({
       userId: user.id,
-      locationId: profile?.crm_location_id || '',
+      // The gate already resolved and trimmed this. Reading it twice is how the
+      // two copies end up disagreeing about which location is being acted on.
+      locationId: access.locationId || profile?.crm_location_id || '',
       config: configRow.config,
       connections: connMap,
       crmPit: process.env.CRM_PIT || '',

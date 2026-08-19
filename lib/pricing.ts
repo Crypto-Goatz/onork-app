@@ -176,3 +176,32 @@ export function getStripePriceId(slug: TierSlug): string | null {
   if (!envKey) return null
   return process.env[envKey] ?? null
 }
+
+/**
+ * The ladder, in order. Index IS the rank — TIERS is already written
+ * cheapest-first and the pricing page renders it in that order, so a second
+ * hand-maintained ordering would be one more thing to keep in step.
+ *
+ * ENTERPRISE SITS ON TOP, WHICH IS THE RULE "enterprise includes every add-on".
+ * It is not a special case in the gate; it falls out of being the highest rung,
+ * so a new tier added above it would inherit the same behaviour without anyone
+ * remembering to update a list of exceptions.
+ */
+export function tierRank(slug: TierSlug | null | undefined): number {
+  if (!slug) return -1
+  const i = TIERS.findIndex((t) => t.slug === slug)
+  return i // -1 for an unrecognised slug, which never satisfies anything
+}
+
+/** Does `have` reach `need`? An unknown or absent tier never does. */
+export function tierAtLeast(have: TierSlug | null | undefined, need: TierSlug): boolean {
+  const h = tierRank(have)
+  const n = tierRank(need)
+  if (h < 0 || n < 0) return false
+  return h >= n
+}
+
+/** Runtime guard for a tier slug read out of the database. */
+export function isTierSlug(v: unknown): v is TierSlug {
+  return typeof v === 'string' && TIERS.some((t) => t.slug === v)
+}

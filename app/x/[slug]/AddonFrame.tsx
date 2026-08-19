@@ -20,7 +20,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
-  ArrowLeft, CheckCircle2, Clock, Loader2, Play, AlertTriangle, ExternalLink,
+  ArrowLeft, CheckCircle2, Clock, Loader2, Play, AlertTriangle, ExternalLink, ShieldAlert,
 } from 'lucide-react'
 import type { ConfigField } from '@/lib/addon-registry'
 
@@ -28,13 +28,17 @@ type Item = { type: string; title: string; url?: string; status: string }
 type Result = { success: boolean; summary: string; items?: Item[]; outputs?: Record<string, unknown> }
 
 export default function AddonFrame({
-  slug, name, schedule, fields, blurb,
+  slug, name, schedule, fields, blurb, grace = null, access,
 }: {
   slug: string
   name: string
   schedule: string
   fields: ConfigField[]
   blurb: string
+  /** Set when the entitlement has lapsed but has not run out. */
+  grace?: { reason: string; daysLeft: number; endsAt: string } | null
+  /** What opened this door, so the frame never claims more than the gate found. */
+  access?: { source: string | null; reason: string }
 }) {
   const [config, setConfig] = useState<Record<string, unknown>>({})
   const [saving, setSaving] = useState(false)
@@ -106,10 +110,34 @@ export default function AddonFrame({
             <Clock className="h-3 w-3" />
             {schedule === 'manual' ? 'Runs when you press the button' : `Runs ${schedule}`}
           </p>
+          {/* Why this is open, in the frame's own words. An operator override
+              must never read as a purchase. */}
+          {access?.source && (
+            <p className="mt-2 text-xs text-white/35">{access.reason}</p>
+          )}
         </div>
       </header>
 
       <main className="mx-auto max-w-[900px] space-y-6 px-6 py-8 md:px-10">
+        {/*
+          GRACE IS SHOWN, NEVER SILENT. A subscription that lapsed keeps the
+          add-on working for seven days; a customer who is not told simply
+          discovers it is off on day eight, which is the worst possible moment
+          to learn there was a window.
+        */}
+        {grace && (
+          <div className="rounded-xl border border-[#f59e0b]/30 bg-[#f59e0b]/[0.07] p-5">
+            <p className="flex items-center gap-2 text-sm font-medium text-[#f59e0b]">
+              <ShieldAlert className="h-4 w-4" />
+              {grace.daysLeft === 1 ? '1 day left' : `${grace.daysLeft} days left`}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-white/60">{grace.reason}</p>
+            <a href="/pricing" className="mt-3 inline-block text-xs text-[#6EE05A] hover:underline">
+              Sort out billing
+            </a>
+          </div>
+        )}
+
         {fields.length > 0 && (
           <section className="rounded-xl border border-white/10 bg-white/[0.02] p-6">
             <h2 className="text-sm uppercase tracking-widest text-white/40">Settings</h2>
