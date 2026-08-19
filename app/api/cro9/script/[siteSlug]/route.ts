@@ -72,10 +72,16 @@ const SCRIPT_TEMPLATE = (cfg: {
       payload.utm_medium = p.get('utm_medium') || undefined;
       payload.utm_campaign = p.get('utm_campaign') || undefined;
       var blob = JSON.stringify(payload);
+      // text/plain, NOT application/json — a CORS-simple content type, so the
+      // browser sends the POST straight out with no preflight. An OPTIONS
+      // preflight is the one request a redirect kills silently (browsers do
+      // not follow redirects on preflight), and this script runs on customer
+      // domains we do not control the redirect chain of. The receiver parses
+      // with req.json(), which ignores the content-type header anyway.
       if (navigator.sendBeacon) {
-        navigator.sendBeacon(ENDPOINT, new Blob([blob], { type: 'application/json' }));
+        navigator.sendBeacon(ENDPOINT, new Blob([blob], { type: 'text/plain' }));
       } else {
-        fetch(ENDPOINT, { method: 'POST', body: blob, headers: { 'Content-Type': 'application/json' }, keepalive: true }).catch(function(){});
+        fetch(ENDPOINT, { method: 'POST', body: blob, headers: { 'Content-Type': 'text/plain' }, keepalive: true }).catch(function(){});
       }
     } catch(e) {}
   }
@@ -202,7 +208,14 @@ export async function GET(
   ]
   const sampleRate = (config.sample_rate as number) ?? 1.0
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.0ncore.com'
+  // NEXT_PUBLIC_APP_URL is the apex (https://0ncore.com) in production, and the
+  // apex 308s to www. A 308 on the collect POST is survivable; a 308 on a CORS
+  // preflight is not — the browser refuses to follow it and the event dies
+  // before it leaves the page, with no server log to show for it. Force www so
+  // the script never points at a redirecting host.
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.0ncore.com')
+    .replace(/^https:\/\/0ncore\.com/, 'https://www.0ncore.com')
+    .replace(/\/+$/, '')
   const script = SCRIPT_TEMPLATE({
     siteSlug: slug,
     domain: site.domain,

@@ -119,6 +119,27 @@ export default async function RootLayout({
           src="https://www.0ncore.com/api/dr/script/dr_0ncore_com_4wdui5.js"
           async
         />
+        {/*
+          CRO9 embed analytics — the flagship's own install (AUDIT C1).
+
+          Detect & Refine above grades TRAFFIC QUALITY (is this click real).
+          CRO9 measures ON-PAGE BEHAVIOUR — pageview, scroll depth, click
+          targets, time on page, exit intent — and feeds lib/cro9/engine.ts.
+          Different question, different table; not a second copy of D&R.
+
+          Slug is `0ncore`, which is the slug the server-side conversion events
+          already write to cro9_events. One site key for one site: pick a second
+          and the browser funnel and the conversions it produced stop being the
+          same site in every report that joins them.
+
+          Served from this domain, so the config (slug, domain-lock, endpoint)
+          is baked in server-side rather than passed as data-attributes that can
+          drift from the site they are installed on.
+        */}
+        <script
+          src={`https://www.0ncore.com/api/cro9/script/${process.env.NEXT_PUBLIC_CRO9_SITE_ID || '0ncore'}.js`}
+          async
+        />
       </head>
       <body className="antialiased min-h-screen">
         <Providers>
