@@ -24,6 +24,37 @@
 
 export const SCHEMA_VERSION = '0nblueprint-bundle-v2'
 
+/* ── M4: one content truth per site ────────────────────────────────────────
+   A site whose content is written by two renderers is two sites that disagree
+   by Friday, and the disagreement surfaces as a customer reading a stale price.
+   The rule is not "don't do that" in a document — it is this field, refused by
+   the validator when it is missing and by the importer when it names someone
+   else.
+
+   `canonicalRenderer` is a declaration about the SITE, not about where the
+   bundle was built. A site designed in the web0n studio but destined to live in
+   a CRM sub-account declares `crm`; a site that stays on web0n declares `web0n`
+   and every CRM importer refuses it by name. Each renderer is described here so
+   the refusal can say who owns the site and where the write does belong, rather
+   than "not allowed". */
+export const CANONICAL_RENDERERS = {
+  web0n: {
+    label: 'web0n',
+    owns: 'web0n renders every collection natively and holds this site’s content.',
+    instead: 'Import it into web0n, or re-export the bundle with 0nCore named as this site’s home if you are moving it.',
+  },
+  crm: {
+    label: '0nCore',
+    owns: '0nCore holds this site’s content in the CRM sub-account.',
+    instead: 'Import it into the 0nCore account that owns the site, or re-export the bundle with web0n named as this site’s home if you are moving it.',
+  },
+} as const
+
+export type CanonicalRenderer = keyof typeof CANONICAL_RENDERERS
+
+/** Every renderer name a bundle may legally declare. */
+export const CANONICAL_RENDERER_NAMES = Object.keys(CANONICAL_RENDERERS) as CanonicalRenderer[]
+
 export interface CustomValue {
   key: string
   label: string
@@ -53,6 +84,11 @@ export interface Bundle {
   name: string
   version: string
   schemaVersion: typeof SCHEMA_VERSION
+  /**
+   * Which renderer owns this site's content. Required — see M4 above. An
+   * importer that is not this renderer refuses the whole bundle by name.
+   */
+  canonicalRenderer: CanonicalRenderer
   meta: {
     vertical?: string
     pattern?: string
@@ -108,6 +144,22 @@ export function validateBundle(input: unknown): { ok: boolean; problems: Problem
       message: `Expected "${SCHEMA_VERSION}", found ${b.schemaVersion ? `"${b.schemaVersion}"` : 'nothing'}. A reader that guesses at an unknown version is how a silent half-import happens.`,
     })
   }
+  // M4. Checked before anything else about the content, because a bundle aimed
+  // at the wrong renderer is not a bundle with a problem in it — it is a bundle
+  // that belongs somewhere else, and listing its section typos first would bury
+  // that.
+  if (!b.canonicalRenderer) {
+    problems.push({
+      path: 'canonicalRenderer',
+      message: `Nothing says which renderer owns this site. One of ${CANONICAL_RENDERER_NAMES.map((n) => `"${n}"`).join(' or ')} is required — a site written by two renderers is two sites that disagree.`,
+      supportedPath: 'Re-export naming the site’s home. web0n’s studio sets it from where you send the bundle: the 0nCore handoff declares "crm", the download declares "web0n".',
+    })
+  } else if (!CANONICAL_RENDERER_NAMES.includes(b.canonicalRenderer)) {
+    problems.push({
+      path: 'canonicalRenderer',
+      message: `"${b.canonicalRenderer}" is not a renderer this ecosystem has. Known: ${CANONICAL_RENDERER_NAMES.join(', ')}. Guessing at an unknown owner is how a site ends up written from two places.`,
+    })
+  }
   if (!b.name?.trim()) problems.push({ path: 'name', message: 'Every bundle needs a name — it is what the import receipt is filed under.' })
 
   for (const key of Object.keys(b as object)) {
@@ -151,6 +203,39 @@ export function validateBundle(input: unknown): { ok: boolean; problems: Problem
   }
 
   return { ok: problems.length === 0, problems }
+}
+
+/**
+ * M4, the half the importer runs. `null` means this renderer owns the site and
+ * may write; a Problem means it must refuse the WHOLE bundle — not skip a
+ * record, not import "the safe parts". A partial import under the wrong owner
+ * is exactly the divergence this rule exists to prevent, and it is harder to
+ * spot than a clean refusal.
+ *
+ * Lives here, next to the field and the validator, so the rule has one
+ * implementation. Two would drift, and the one that drifted would be the one
+ * saying yes.
+ */
+export function rendererRefusal(
+  bundle: Pick<Bundle, 'canonicalRenderer' | 'name'>,
+  thisRenderer: CanonicalRenderer,
+): Problem | null {
+  const declared = bundle.canonicalRenderer
+  if (declared === thisRenderer) return null
+
+  const owner = CANONICAL_RENDERERS[declared as CanonicalRenderer]
+  const me = CANONICAL_RENDERERS[thisRenderer]
+  if (!owner) {
+    return {
+      path: 'canonicalRenderer',
+      message: `This bundle names "${declared}" as the owner of "${bundle.name}", which is not a renderer this ecosystem has. ${me.label} will not write content for an owner it cannot identify.`,
+    }
+  }
+  return {
+    path: 'canonicalRenderer',
+    message: `"${bundle.name}" is owned by ${owner.label}. ${owner.owns} ${me.label} refuses to write it: the site would then have two sources of truth, and the copy nobody edits is the one your customer reads.`,
+    supportedPath: owner.instead,
+  }
 }
 
 /** Every {{custom_values.x}} a bundle expects the target to hold. */

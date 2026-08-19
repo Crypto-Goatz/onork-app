@@ -17,17 +17,36 @@
  * EVERY RECORD LEAVES A RECEIPT a human can read without asking anyone. And
  * anything the platform genuinely cannot accept is REFUSED BY NAME with the
  * supported path attached — never dropped, never silently skipped.
+ *
+ * ONE CONTENT TRUTH PER SITE (M4). This route is the `crm` renderer. A bundle
+ * that names the other renderer as its site's owner is refused whole, before a
+ * dry run is even planned — because a dry run that says "would create 40 pages"
+ * for a site web0n owns is an invitation to make the second copy.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { crmGet, crmPostRaw } from '@/lib/crm'
-import { validateBundle, referencedValueKeys, ILLEGAL_KEYS, type Bundle } from '@/lib/blueprint/bundle'
+import {
+  validateBundle,
+  referencedValueKeys,
+  rendererRefusal,
+  ILLEGAL_KEYS,
+  type Bundle,
+  type CanonicalRenderer,
+} from '@/lib/blueprint/bundle'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 /** Never write more than this in one call, whatever the caller asks for. */
 const CAP = 50
+
+/**
+ * Which renderer this route is. Declared once, as a constant, so the M4 check
+ * cannot be made to pass by changing a call site — the rule reads the same
+ * value on every path through this file.
+ */
+const THIS_RENDERER: CanonicalRenderer = 'crm'
 
 interface Receipt {
   externalId: string
@@ -87,6 +106,24 @@ export async function POST(req: NextRequest) {
     )
   }
   const bundle = body.bundle as Bundle
+
+  // ── M4: one content truth per site ──────────────────────────────────────
+  // After validation (so a malformed bundle is told it is malformed) and before
+  // anything is read from the target or planned. 409, not 422: the bundle is
+  // not wrong, it is somewhere it does not belong, and the refusal names who
+  // does own it and where the write does go.
+  const wrongRenderer = rendererRefusal(bundle, THIS_RENDERER)
+  if (wrongRenderer) {
+    return NextResponse.json(
+      {
+        error: 'This site is not rendered here.',
+        canonicalRenderer: bundle.canonicalRenderer,
+        thisRenderer: THIS_RENDERER,
+        problems: [wrongRenderer],
+      },
+      { status: 409 },
+    )
+  }
 
   // ── What the target already has ─────────────────────────────────────────
   // Read BEFORE anything is written, so the dry run and the execute see the
@@ -151,7 +188,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       mode: 'dry_run',
       locationId,
-      bundle: { name: bundle.name, schemaVersion: bundle.schemaVersion, generatedBy: bundle.meta?.generatedBy },
+      bundle: {
+        name: bundle.name,
+        schemaVersion: bundle.schemaVersion,
+        canonicalRenderer: bundle.canonicalRenderer,
+        generatedBy: bundle.meta?.generatedBy,
+      },
       willCreate: creatable.length,
       willRefuse: receipts.filter((r) => r.action === 'refused').length,
       customValues: {
@@ -195,6 +237,9 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     mode: 'execute',
     locationId,
+    // On the receipt, not only in the check — a record of who was entitled to
+    // write this is what makes a later "why are there two copies" answerable.
+    canonicalRenderer: bundle.canonicalRenderer,
     created: done.filter((r) => r.action === 'created').length,
     failed: done.filter((r) => r.action === 'failed').length,
     refused: done.filter((r) => r.action === 'refused').length,
