@@ -361,7 +361,13 @@ export interface RetiredCrmApp {
 
 export const RETIRED_CRM_APPS: RetiredCrmApp[] = [
   {
-    appId: null,
+    // RECOVERED 2026-08-19 from the deployment's own environment: the value of
+    // `CRM_LEADSCOUT_CLIENT_ID` is `6a7ea3e803672cba97505c5c-mssi3q6k`, and a
+    // CRM client_id is `<appId>-<suffix>`. The env pair was written 2026-08-14
+    // 02:22, and 0x6a7ea3e8 decodes to 2026-08-14 05:13 UTC — the app was
+    // registered about an hour before the variables that hold its keys. So the
+    // "portal-only" note below is now historical; the ID is here.
+    appId: '6a7ea3e803672cba97505c5c',
     appIdPrefix: '6a7ea3e8',
     name: 'Course Builder (second/duplicate registration)',
     retiredOn: '2026-08-19',
@@ -373,11 +379,15 @@ export const RETIRED_CRM_APPS: RetiredCrmApp[] = [
     installsAtRetirement: 0,
     notes:
       'RETIRED, NOT DELETED — do not delete the listing, do not install it, do ' +
-      'not point env vars at it. The full app ID is NOT known to this repo: only ' +
-      'the 6a7ea3e8 prefix was ever captured, and the marketplace app-read ' +
-      'endpoints answer 404/401 to our PIT (no marketplace scope), so the full ' +
-      'value is portal-only. Fill appId in from the developer portal when someone ' +
-      'is next in there; the prefix is what matching keys off until then.',
+      'not point env vars at it. Full app ID recovered 2026-08-19 from ' +
+      '`CRM_LEADSCOUT_CLIENT_ID` (= 6a7ea3e803672cba97505c5c-mssi3q6k), so the ' +
+      'earlier "portal-only" note no longer holds. NOTE THE CONTRADICTION THIS ' +
+      'EXPOSES: env vars named CRM_LEADSCOUT_CLIENT_ID / _SECRET / _SSO_KEY DO ' +
+      'point at this retired app, under a name that does not say so. They are ' +
+      'left in place deliberately — deleting them would destroy the only copy of ' +
+      'this app\'s credentials, and those credentials are what the OAuth callback ' +
+      'uses to DIAGNOSE (never to complete) an install that originated from the ' +
+      'retired listing. Rename or remove only together with that rung.',
   },
 ]
 

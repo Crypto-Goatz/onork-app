@@ -11,6 +11,7 @@
  * 7. Redirect to dashboard
  */
 
+import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
@@ -130,6 +131,37 @@ export async function GET(req: NextRequest) {
     })
 
     /**
+     * ONE APP CAN HAVE SEVERAL CLIENT IDs, AND ONLY THE ONE THAT ISSUED THE CODE
+     * CAN REDEEM IT.
+     *
+     * The legacy app 69c762… has four registered client keys —
+     *   -mnu5pazi (main)  -mn9wyk9o (external auth)  -mnsa16jo (install)  -mpa19g2x
+     * — and this ladder was only ever presenting two of them. A code issued
+     * against one of the other two is rejected as **"Invalid client
+     * credentials"**, which reads exactly like a wrong secret and is not one:
+     * the secret is fine, the client_id is simply not the one that owns the code.
+     * That distinction cost a whole install cycle on 2026-08-19.
+     */
+    apps.push({
+      name: 'marketplace-main',
+      clientId: process.env.CRM_MARKETPLACE_CLIENT_ID || '69c762225a31e1cd2f28dd4c-mnu5pazi',
+      clientSecret: marketplaceSecret,
+      redirectUri: MARKETPLACE_APP.redirectUri,
+      appId: MARKETPLACE_APP.appId,
+      userType: 'Location' as const,
+    })
+    apps.push({
+      name: 'marketplace-extauth',
+      clientId: process.env.CRM_EXTERNAL_AUTH_CLIENT_ID || '69c762225a31e1cd2f28dd4c-mn9wyk9o',
+      // Its OWN secret. Borrowing the main app's is the mistake this whole
+      // ladder exists to stop reproducing.
+      clientSecret: process.env.CRM_EXTERNAL_AUTH_CLIENT_SECRET || '',
+      redirectUri: MARKETPLACE_APP.redirectUri,
+      appId: MARKETPLACE_APP.appId,
+      userType: 'Location' as const,
+    })
+
+    /**
      * ONE APP, chosen by state — never a sequence.
      *
      * An authorisation code is SINGLE-USE, and `redirect_uri` must match the
@@ -229,6 +261,25 @@ export async function GET(req: NextRequest) {
       usedUri = app.redirectUri
       usedType = app.userType
 
+      /**
+       * REPORT THE FIRST ATTEMPT THAT PRODUCED EACH MESSAGE, NEVER THE LAST.
+       *
+       * `usedUri`/`usedType` are overwritten on every attempt, so the failure
+       * line described attempt 8 of 8 — the least likely combination, tried last
+       * on purpose. A real install on 2026-08-19 therefore reported
+       * `uri=0ncore.com type=Company` when the app's own configured pair
+       * (`app.0ncore.com` / `Location`) had been tried first and had failed
+       * identically. Half a diagnosis was spent on a redirect_uri that was never
+       * the problem.
+       *
+       * So: key by the platform's message, value = the FIRST combination that
+       * produced it. Identical messages across all 8 attempts then collapse to
+       * one line naming the combination that actually matters, and a message
+       * that appears for only one combination stands out as genuinely
+       * uri/user_type-specific.
+       */
+      const byMessage = new Map<string, { at: string; n: number }>()
+
       for (const { uri, ut } of attempts) {
         tokenRes = await fetch(CRM_TOKEN_URL, {
           method: 'POST',
@@ -249,6 +300,16 @@ export async function GET(req: NextRequest) {
         usedUri = uri
         usedType = ut
         if (tokenRes.ok && data.access_token) break
+        {
+          const m = String(
+            (data as { error_description?: string; message?: string }).error_description ||
+            (data as { message?: string }).message ||
+            JSON.stringify(data)
+          ).slice(0, 110)
+          const seen = byMessage.get(m)
+          if (seen) seen.n += 1
+          else byMessage.set(m, { at: `${uri.replace('https://', '')}|${ut}`, n: 1 })
+        }
         // A spent or rejected CODE is terminal — no other redirect_uri will
         // help, and continuing only buries the real message.
         if (/code (?:not found|is invalid|expired)|invalid_grant|authorization code/i.test(JSON.stringify(data))) break
@@ -271,12 +332,31 @@ export async function GET(req: NextRequest) {
       // nothing; the platform's own error_description is what identifies
       // whether it is the client, the secret, the redirect_uri or the code.
       const raw = JSON.stringify(data).slice(0, 240)
-      // The URI is named in the failure. "Invalid client credentials" with no
-      // redirect_uri attached is what sent us hunting through secrets.
-      // Both variables named. An error that does not say which combination
-      // produced it is an error you have to reproduce before you can read it.
-      failures.push(`${app.name}(${tokenRes.status}) uri=${usedUri.replace('https://', '')} type=${usedType}: ${raw}`)
-      console.warn(`[oauth/callback] ${app.name} exchange failed ${tokenRes.status}: ${raw}`)
+      /**
+       * NAME THE CLIENT_ID, AND FINGERPRINT THE SECRET.
+       *
+       * "Invalid client credentials" has two causes that look identical and have
+       * opposite fixes: a wrong SECRET (rotate it) or a client_id that is simply
+       * not the one the code was issued to (present the right app). Without the
+       * client_id in the message you cannot tell them apart, and on 2026-08-19
+       * six rungs all reported it at once — which was read as "every secret is
+       * stale" when a probe with a deliberately invalid code proved all five
+       * pairs valid (the platform answered "Authorization code not found", the
+       * code-stage error, which it only reaches once the credentials pass).
+       *
+       * client_id is public — it rides in every authorise URL — so printing it is
+       * free. The secret is not, so it travels as a short sha256 prefix: enough
+       * to say "this deployment is holding the same bytes you are looking at in
+       * the portal", never enough to be the secret.
+       */
+      const secretFp = createHash('sha256').update(app.clientSecret).digest('hex').slice(0, 8)
+      const detail = [...byMessage.entries()]
+        .map(([m, v]) => `${v.at}${v.n > 1 ? `(+${v.n - 1} more)` : ''}→${m}`)
+        .join(' ; ')
+      failures.push(
+        `${app.name}(${tokenRes.status}) cid=${app.clientId} sec#${secretFp} ${detail || raw}`
+      )
+      console.warn(`[oauth/callback] ${app.name} exchange failed ${tokenRes.status} cid=${app.clientId} sec#${secretFp}: ${detail || raw}`)
 
       /**
        * TRYING THE NEXT APP IS ONLY SAFE WHILE THE CODE IS STILL UNSPENT.
@@ -297,6 +377,62 @@ export async function GET(req: NextRequest) {
     }
 
     if (!tokenData || !tokenData.access_token) {
+      /**
+       * LAST RESORT: ASK WHETHER THE RETIRED REGISTRATION ISSUED THIS CODE.
+       *
+       * `6a7ea3e803672cba97505c5c` is the duplicate Course Builder registration,
+       * RETIRED (not deleted) on 2026-08-19 — see RETIRED_CRM_APPS. Its listing
+       * is still installable, so a code CAN still be issued against it, and when
+       * it is, every rung above rejects it as "Invalid client credentials" and
+       * nothing anywhere says why.
+       *
+       * This probe answers that question and nothing else. It is DIAGNOSTIC, not
+       * a rung: the result is never assigned to `tokenData`, so a success here
+       * cannot quietly complete an install on a retired app and make it canonical
+       * again — which is the precise failure the retirement exists to prevent.
+       * It only changes the message the human reads, from "credentials" to "you
+       * installed the wrong listing".
+       *
+       * Runs only after everything else has failed, so it costs one request on a
+       * path that is already broken, and a credential rejection never spends the
+       * code.
+       */
+      const retiredId = process.env.CRM_LEADSCOUT_CLIENT_ID || ''
+      const retiredSecret = process.env.CRM_LEADSCOUT_CLIENT_SECRET || ''
+      if (retiredId.startsWith('6a7ea3e8') && retiredSecret) {
+        try {
+          const probe = await fetch(CRM_TOKEN_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+            body: new URLSearchParams({
+              client_id: retiredId,
+              client_secret: retiredSecret,
+              grant_type: 'authorization_code',
+              code,
+              redirect_uri: 'https://app.0ncore.com/api/oauth/callback',
+              user_type: 'Location',
+            }),
+          })
+          const pd = await probe.json()
+          if (probe.ok && (pd as { access_token?: string }).access_token) {
+            const msg =
+              'DIAGNOSED: this code was issued by the RETIRED duplicate Course Builder ' +
+              'registration 6a7ea3e803672cba97505c5c. The install came from the wrong ' +
+              'marketplace listing — credentials are fine. Install from the canonical ' +
+              'listing (69801f7a533633818a22921c) instead. Token deliberately discarded.'
+            console.error(`[oauth/callback] ${msg}`)
+            failures.push(`retired-6a7ea3e8(200) OWNS THIS CODE — ${msg}`)
+          } else {
+            failures.push(
+              `retired-6a7ea3e8(${probe.status}) does NOT own this code: ` +
+              String((pd as { error_description?: string }).error_description || '').slice(0, 80)
+            )
+          }
+        } catch (e) {
+          failures.push(`retired-6a7ea3e8(probe threw) ${String(e).slice(0, 80)}`)
+        }
+      }
+
       console.error('[oauth/callback] all exchanges failed |', JSON.stringify({ state, skipped, failures }))
       // The reason travels back in the URL. A bare `token_failed` sent us
       // hunting through logs that only stream live; the platform's own message
@@ -315,8 +451,19 @@ export async function GET(req: NextRequest) {
        * apps are listed too — "no secret in env" is a different fix from a
        * rejection and must not look like one.
        */
-      const attempts = [...failures, ...skipped]
-      const why = (attempts.length ? attempts.map((f) => f.slice(0, 150)).join(' · ') : 'no apps had credentials').slice(0, 900)
+      /**
+       * THE ANSWER GOES FIRST, because the tail is what gets truncated.
+       *
+       * The ladder is eight rungs now and each line carries a client_id and a
+       * secret fingerprint, so the old 150/900-character budget cut the list off
+       * mid-way — and the entry that actually identifies the app is the one added
+       * last. Sorting the diagnosis to the front means truncation can only ever
+       * cost the rungs that merely said "not me".
+       */
+      const attempts = [...failures, ...skipped].sort(
+        (a, b) => Number(b.includes('OWNS THIS CODE')) - Number(a.includes('OWNS THIS CODE'))
+      )
+      const why = (attempts.length ? attempts.map((f) => f.slice(0, 190)).join(' · ') : 'no apps had credentials').slice(0, 1800)
       // /install/failed, NOT /crm. /crm needs a session to render, and the
       // audience for this redirect is precisely the people who do not have
       // one — so the reason was being reported to a page incapable of showing
