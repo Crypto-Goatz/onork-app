@@ -128,11 +128,14 @@ export const PLATFORM_FACTS: PlatformFact[] = [
   },
   {
     area: 'Sub-account menu',
-    status: 'open',
+    status: 'partial',
     headline:
-      'A custom sidebar link can be added programmatically — this is how the builder reaches an agent without leaving the CRM.',
-    evidence: 'POST /custom-menus/ · PUT /custom-menus/{id}',
-    verified: '2026-08-05',
+      'The endpoints exist in the spec, but NO credential we can obtain carries the scope — every custom-menu call answers 401. A sidebar link is a by-hand action in the CRM UI, not something we can add or remove for a client.',
+    evidence:
+      'GET /custom-menus/ and GET /custom-menus/{id} both answer 401 "The token is not authorized for this scope" on all three token classes we hold: the location PIT, the agency PIT, and the legacy app\'s live agency OAuth token (whose grant lists 100+ scopes and contains no custom-menu scope at all). Checked live 2026-08-19, not read off the spec.',
+    workaround:
+      'Add, edit and remove sidebar links by hand in the CRM: Settings > Custom Menu Links. lib/crm/menu.ts and the burst executor\'s menu.link leg cannot succeed until a marketplace app is granted a custom-menu scope — they fail loudly, which is correct, but do not plan around them.',
+    verified: '2026-08-19',
   },
 ]
 

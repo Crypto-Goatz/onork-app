@@ -130,13 +130,29 @@ export async function createMenuLink(
   }
 }
 
-/** The surfaces worth putting in a client's sidebar, and where they point. */
+/**
+ * The surfaces worth putting in a client's sidebar, and where they point.
+ *
+ * EVERY URL HERE IS FETCHED BEFORE IT SHIPS. Two of the three used to point at
+ * routes that do not exist — `/builder` and `/store` both answered 404 on
+ * app.0ncore.com, and a 404 loaded into the CRM's iframe is indistinguishable
+ * from "0nCore is broken" to the agency's client. A tile that opens onto
+ * nothing is worse than no tile, so a preset only earns its place once the URL
+ * has been opened in a real cross-origin iframe and shown to render something.
+ *
+ * Checked 2026-08-19, framed cross-origin in headless Chrome:
+ *   app.0ncore.com        200 — "Command · Tell 0n what to do across your clients"
+ *   app.0ncore.com/crm/build 200 — "Build a site · Design it here, then send it into a client account"
+ *   app.0ncore.com/builder   404 — REMOVED (the real path is /crm/build)
+ *   app.0ncore.com/store     404 — REMOVED (no store surface exists on this host;
+ *                                 do not re-add one until a route answers 200)
+ */
 export function builderMenuPresets(appHost = 'https://app.0ncore.com') {
   return [
     {
       key: 'site-builder',
       title: 'Website Builder',
-      url: `${appHost}/builder`,
+      url: `${appHost}/crm/build`,
       icon: 'layout-template',
       blurb: 'Drag-and-drop page builder, opened inside the CRM.',
     },
@@ -146,13 +162,6 @@ export function builderMenuPresets(appHost = 'https://app.0ncore.com') {
       url: appHost,
       icon: 'bolt',
       blurb: 'The command centre — describe the work, approve the plan.',
-    },
-    {
-      key: 'store-builder',
-      title: 'Store Builder',
-      url: `${appHost}/store`,
-      icon: 'store',
-      blurb: 'Stock products, prices and collections from a description.',
     },
   ]
 }
