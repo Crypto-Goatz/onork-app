@@ -23,12 +23,13 @@ import {
   ArrowLeft, CheckCircle2, Clock, Loader2, Play, AlertTriangle, ExternalLink, ShieldAlert,
 } from 'lucide-react'
 import type { ConfigField } from '@/lib/addon-registry'
+import ReconsentPrompt, { type ReconsentPromptData } from '@/components/addons/ReconsentPrompt'
 
 type Item = { type: string; title: string; url?: string; status: string }
 type Result = { success: boolean; summary: string; items?: Item[]; outputs?: Record<string, unknown> }
 
 export default function AddonFrame({
-  slug, name, schedule, fields, blurb, grace = null, access,
+  slug, name, schedule, fields, blurb, grace = null, access, reconsent = null,
 }: {
   slug: string
   name: string
@@ -39,6 +40,12 @@ export default function AddonFrame({
   grace?: { reason: string; daysLeft: number; endsAt: string } | null
   /** What opened this door, so the frame never claims more than the gate found. */
   access?: { source: string | null; reason: string }
+  /**
+   * Set when the CRM connection behind this add-on is dying or absent — it
+   * still works, so this is a banner and never a wall. A DEAD connection never
+   * reaches here: /x/[slug] renders the blocking prompt instead of this frame.
+   */
+  reconsent?: ReconsentPromptData | null
 }) {
   const [config, setConfig] = useState<Record<string, unknown>>({})
   const [saving, setSaving] = useState(false)
@@ -119,6 +126,13 @@ export default function AddonFrame({
       </header>
 
       <main className="mx-auto max-w-[900px] space-y-6 px-6 py-8 md:px-10">
+        {/*
+          FIRST THING IN THE COLUMN, ABOVE THE SETTINGS AND THE RUN BUTTON.
+          A warning that the connection dies on Thursday is worth nothing
+          underneath the form someone is about to fill in.
+        */}
+        {reconsent && <ReconsentPrompt data={reconsent} appName={name} />}
+
         {/*
           GRACE IS SHOWN, NEVER SILENT. A subscription that lapsed keeps the
           add-on working for seven days; a customer who is not told simply

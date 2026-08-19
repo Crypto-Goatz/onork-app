@@ -20,6 +20,14 @@
  * with a countdown the customer can see, locked does not render it at all. The
  * same verdict is enforced again in /api/addons/[slug]/{config,execute}, because
  * a page that hides a button is a courtesy and not a control.
+ *
+ * PERMISSION IS CHECKED BEFORE CAPABILITY, AND BOTH ARE CHECKED. The gate says
+ * whether this location MAY open the add-on; resolveReconsent says whether the
+ * CRM connection behind it can still answer. Those come apart, and the case
+ * where they come apart — entitled, but the install is dead — is the only one
+ * of the four that LOOKS fine. It rendered a Run button that 401'd. Now a dead
+ * install renders the re-consent prompt instead of the frame, and a dying one
+ * renders a banner above a frame that still works. See lib/crm/reconsent.ts.
  */
 import { notFound } from 'next/navigation'
 import { getAddonDefinition } from '@/lib/addon-registry'
@@ -28,9 +36,11 @@ import { createClient } from '@/lib/supabase/server'
 import { isOwnerEmail } from '@/lib/owner'
 import { createServiceClient } from '@/lib/connect/service-client'
 import { resolveEntitlement } from '@/lib/addons/entitlements'
+import { resolveReconsent } from '@/lib/crm/reconsent'
 import { skeletonFor } from '@/lib/addons/skeleton'
 import AddonFrame from './AddonFrame'
 import AddonLocked from './AddonLocked'
+import ReconsentPrompt from '@/components/addons/ReconsentPrompt'
 
 export const dynamic = 'force-dynamic'
 
@@ -113,6 +123,37 @@ export default async function AddonPage({ params }: { params: Promise<{ slug: st
     )
   }
 
+  /**
+   * The connection behind the door. Owner override is exempt from BLOCKING:
+   * the operator has to be able to look at a frame on an account with no live
+   * CRM in order to look at it at all — but they still get the banner, because
+   * an operator who cannot see the connection is dead is how it stays dead.
+   */
+  const reconsent = await resolveReconsent({
+    locationId: verdict.locationId,
+    appId: skeleton.appId,
+    next: skeleton.entryRoute,
+    appName: def.name,
+  })
+
+  if (reconsent.needed && reconsent.blocking && verdict.source !== 'owner') {
+    return (
+      <ReconsentPrompt
+        appName={def.name}
+        data={{
+          severity: reconsent.severity as 'dying' | 'dead' | 'absent',
+          blocking: true,
+          headline: reconsent.headline,
+          detail: reconsent.detail,
+          actionLabel: reconsent.actionLabel,
+          actionHref: reconsent.actionHref,
+          locationId: reconsent.locationId,
+          daysLeft: reconsent.daysLeft,
+        }}
+      />
+    )
+  }
+
   return (
     <AddonFrame
       slug={slug}
@@ -126,6 +167,20 @@ export default async function AddonPage({ params }: { params: Promise<{ slug: st
           : null
       }
       access={{ source: verdict.source, reason: verdict.reason }}
+      reconsent={
+        reconsent.needed
+          ? {
+              severity: reconsent.severity as 'dying' | 'dead' | 'absent',
+              blocking: false,
+              headline: reconsent.headline,
+              detail: reconsent.detail,
+              actionLabel: reconsent.actionLabel,
+              actionHref: reconsent.actionHref,
+              locationId: reconsent.locationId,
+              daysLeft: reconsent.daysLeft,
+            }
+          : null
+      }
     />
   )
 }

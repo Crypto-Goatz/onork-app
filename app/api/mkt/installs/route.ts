@@ -25,78 +25,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { createServiceClient } from '@/lib/connect/service-client'
+import { verdictFor, isUsable, type InstallVerdictRow } from '@/lib/crm/install-verdict'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-type Verdict =
-  | 'live'            // token present and in date — this one works
-  | 'expiring'        // in date, but inside the hour
-  | 'expired-refreshable'
-  | 'expired-dead'    // expired AND no refresh token: only a reinstall fixes it
-  | 'no-token'        // the row exists and the exchange never produced a token
-  | 'dying'           // works today, cannot survive expiry — no refresh token
-  | 'unknown-expiry'
-
-interface Row {
+/**
+ * THE VERDICT LADDER LIVES IN lib/crm/install-verdict.ts, not here.
+ *
+ * It moved because the re-consent-on-open prompt asks the same seven-state
+ * question this endpoint asks — "can this install still do anything" — and a
+ * second copy of the ladder is how one surface starts calling a row dying while
+ * another still calls it live. This endpoint is the operator's view of that
+ * shared verdict; /x/[slug] is the customer's.
+ */
+interface Row extends InstallVerdictRow {
   location_id: string
   company_id: string | null
   app_id: string | null
-  access_token: string | null
-  refresh_token: string | null
-  expires_at: string | null
   status: string | null
   updated_at: string | null
-  // What the refresh worker LEARNED by attempting, as opposed to what this row
-  // looks like at rest. 'revoked' is a fact no other column can express.
-  health_status: string | null
-}
-
-function verdictFor(r: Row): { verdict: Verdict; why: string } {
-  if (!r.access_token) {
-    return {
-      verdict: 'no-token',
-      why: 'The install completed but the code was never exchanged for a token. This account cannot be written to.',
-    }
-  }
-  if (!r.expires_at) return { verdict: 'unknown-expiry', why: 'No expiry recorded, so this token cannot be trusted or refreshed on schedule.' }
-
-  const ms = new Date(r.expires_at).getTime() - Date.now()
-
-  // Caught BEFORE it dies. An install with no refresh token works perfectly
-  // today and is unrecoverable tomorrow — waiting for expiry to report it is
-  // how 26 of these went unnoticed until a customer complained.
-  if (ms > 0 && !r.refresh_token) {
-    return {
-      verdict: 'dying',
-      why: 'Works now, but no refresh token was ever stored — this stops at expiry and needs a reinstall. Catch it before then.',
-    }
-  }
-
-  if (ms > 60 * 60 * 1000) return { verdict: 'live', why: 'Token present and in date.' }
-  if (ms > 0) return { verdict: 'expiring', why: 'Token expires within the hour.' }
-
-  // The distinction that matters most. One of these is a background job's
-  // problem; the other needs the customer to reinstall, and telling them apart
-  // is the difference between a fix and a support queue.
-  //
-  // A REFRESH TOKEN BEING PRESENT IS NOT THE SAME AS IT WORKING, and reading
-  // this row alone cannot tell you which. Two installs here held long, entirely
-  // well-formed refresh tokens whose issuing client matched the one we present,
-  // against credentials proven valid — and the CRM rejected both, because it had
-  // revoked the authorization. Nothing about the stored row shows that. Only an
-  // attempt does, so the worker records its verdict and this trusts it over the
-  // optimistic guess.
-  if (r.health_status === 'revoked') {
-    return {
-      verdict: 'expired-dead',
-      why: 'The CRM has revoked this authorization — the refresh was attempted and rejected. Credentials are valid; only a reinstall restores it.',
-    }
-  }
-
-  return r.refresh_token
-    ? { verdict: 'expired-refreshable', why: 'Expired, but a refresh token is on file and has not been rejected — the refresh worker can recover this.' }
-    : { verdict: 'expired-dead', why: 'Expired with NO refresh token on file. Nothing can recover this; the account must reinstall.' }
 }
 
 export async function GET(req: NextRequest) {
@@ -134,7 +82,7 @@ export async function GET(req: NextRequest) {
       // question; "can this row do anything" is.
       // 'dying' still works, so it counts as usable — but it is reported
       // separately below, because "usable" and "safe" are different questions.
-      hasToken: verdict === 'live' || verdict === 'expiring' || verdict === 'dying',
+      hasToken: isUsable(verdict),
       verdict,
       why,
     }

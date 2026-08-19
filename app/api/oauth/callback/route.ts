@@ -491,10 +491,30 @@ export async function GET(req: NextRequest) {
     // hand it over in a short-lived, NON-httpOnly boot cookie that useSso moves
     // into sessionStorage on first load — same shape as the iframe/standalone
     // token, so the whole dashboard just works.
-    const dashUrl = new URL('/crm', req.url)
+    /**
+     * LAND THEM WHERE THEY WERE, when we know where that was.
+     *
+     * A re-consent prompt is shown ON the page someone was trying to use, so
+     * finishing the flow on /crm means they have to navigate back and — worse —
+     * cannot tell whether the reconnect actually worked. /api/oauth/reauth
+     * writes the origin path into a ten-minute cookie; this spends it.
+     *
+     * Re-validated here rather than trusted: the cookie is ours, but a path
+     * that is not same-site is dropped, because an open redirect on the end of
+     * an OAuth flow is a credential-harvesting hole. Absent or invalid falls
+     * back to the existing /crm landing, which is the behaviour every
+     * marketplace install still gets.
+     */
+    const rawNext = req.cookies.get('oncore.reauth.next')?.value ?? ''
+    const nextPath = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : ''
+
+    const dashUrl = new URL(nextPath || '/crm', req.url)
     dashUrl.searchParams.set('connected', 'true')
     if (locationId) dashUrl.searchParams.set('locationId', locationId)
     const response = NextResponse.redirect(dashUrl)
+    // Spent, whether or not it was used. A stale return path is how an
+    // unrelated install later lands somewhere surprising.
+    if (rawNext) response.cookies.set('oncore.reauth.next', '', { maxAge: 0, path: '/' })
     if (companyId) {
       const bootJwt = issueAppJwt({ sub: crmUserId || companyId, companyId }, 60 * 60 * 8)
       response.cookies.set('oncore.boot.jwt', bootJwt, { httpOnly: false, secure: true, sameSite: 'lax', maxAge: 300, path: '/' })
