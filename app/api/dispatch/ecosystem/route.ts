@@ -4,7 +4,7 @@
  * Query: ?kind=repo|vercel_project|supabase_project|...
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getEcosystem, DISPATCH_CACHE_HEADERS } from '@/lib/dispatch'
+import { getEcosystem, DISPATCH_CACHE_HEADERS, withDispatchMeta } from '@/lib/dispatch'
 
 export const runtime = 'nodejs'
 export const revalidate = 60
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const kind = req.nextUrl.searchParams.get('kind') || undefined
   try {
     const entries = await getEcosystem(kind)
-    return NextResponse.json({ entries, count: entries.length }, {
+    return NextResponse.json(withDispatchMeta({ entries, count: entries.length }), {
       headers: DISPATCH_CACHE_HEADERS,
     })
   } catch (e) {

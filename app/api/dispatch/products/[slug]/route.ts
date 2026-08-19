@@ -2,7 +2,7 @@
  * GET /api/dispatch/products/[slug] — single product status
  */
 import { NextResponse } from 'next/server'
-import { getProducts, DISPATCH_CACHE_HEADERS } from '@/lib/dispatch'
+import { getProducts, DISPATCH_CACHE_HEADERS, withDispatchMeta } from '@/lib/dispatch'
 
 export const runtime = 'nodejs'
 export const revalidate = 60
@@ -17,7 +17,7 @@ export async function GET(
     if (!row) {
       return NextResponse.json({ error: 'not found' }, { status: 404 })
     }
-    return NextResponse.json(row, { headers: DISPATCH_CACHE_HEADERS })
+    return NextResponse.json(withDispatchMeta(row), { headers: DISPATCH_CACHE_HEADERS })
   } catch (e) {
     return NextResponse.json(
       { error: (e as Error).message },

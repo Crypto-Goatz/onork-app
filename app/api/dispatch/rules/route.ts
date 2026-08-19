@@ -4,7 +4,7 @@
  * Query: ?category=code|database|product|productization|communication
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getRules, DISPATCH_CACHE_HEADERS } from '@/lib/dispatch'
+import { getRules, DISPATCH_CACHE_HEADERS, withDispatchMeta } from '@/lib/dispatch'
 
 export const runtime = 'nodejs'
 export const revalidate = 60
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get('category') || undefined
   try {
     const rules = await getRules(category)
-    return NextResponse.json({ rules, count: rules.length }, {
+    return NextResponse.json(withDispatchMeta({ rules, count: rules.length }), {
       headers: DISPATCH_CACHE_HEADERS,
     })
   } catch (e) {

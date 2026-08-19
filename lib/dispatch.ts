@@ -27,10 +27,54 @@ const GITHUB_RAW =
  *   s-maxage=60               — edge caches for 60s
  *   stale-while-revalidate    — serve stale up to 10min while refreshing
  */
+/**
+ * DISPATCH IS DEMOTED — historical, not canonical. Ruled 2026-08-19.
+ *
+ * The writeback that fed these tables last ran on 2026-06-17. Every endpoint
+ * below kept answering HTTP 200 with confident, current-looking JSON for the
+ * two months after that, which is precisely why it was dangerous: a stale
+ * source that errors gets noticed, a stale source that succeeds gets believed.
+ * rocketopp.com published "Last shipped 62d ago" under a pulsing "Ecosystem
+ * Live" badge on ten public pages before anyone caught it.
+ *
+ * These routes stay up so existing readers do not hard-fail, but they now
+ * declare themselves. Every response carries Deprecation/Sunset/Warning
+ * headers and an `_meta` block naming the freeze date and the live source.
+ *
+ * Do NOT add new readers, and do NOT resume the writeback to "fix" this:
+ * that would maintain a third operating record beside BRIDGE.md and 0nTask.
+ * The live source of truth is 0nTask. If dispatch is ever revived, it revives
+ * WITH its writeback or not at all.
+ */
+export const DISPATCH_FROZEN_AT = '2026-06-17'
+export const DISPATCH_SUCCESSOR = 'https://app.0ntask.com'
+
 export const DISPATCH_CACHE_HEADERS = {
   'cache-control': 's-maxage=60, stale-while-revalidate=600',
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, OPTIONS',
+  // Machine-readable staleness. RFC 8594 / RFC 9745.
+  deprecation: 'true',
+  sunset: 'Wed, 17 Jun 2026 08:10:35 GMT',
+  link: `<${DISPATCH_SUCCESSOR}>; rel="successor-version"`,
+  warning: `299 - "Dispatch is historical. Data frozen at ${DISPATCH_FROZEN_AT}; do not treat as current. Live source: ${DISPATCH_SUCCESSOR}"`,
+}
+
+/**
+ * Stamp a payload with its own staleness, so a reader that only ever looks at
+ * the JSON body (never the headers) still cannot mistake this for live data.
+ */
+export function withDispatchMeta<T>(payload: T): T & { _meta: Record<string, string> } {
+  return {
+    ...(payload as object),
+    _meta: {
+      status: 'historical',
+      deprecated: 'true',
+      frozen_at: DISPATCH_FROZEN_AT,
+      note: 'Dispatch was demoted 2026-08-19. This data stopped being written on 2026-06-17 and is NOT current.',
+      live_source: DISPATCH_SUCCESSOR,
+    },
+  } as T & { _meta: Record<string, string> }
 }
 
 let _readClient: SupabaseClient | null = null
