@@ -40,6 +40,27 @@ overridable via `CRM_MASTER_SNAPSHOT_ID`.
 ⚠️ **TWO snapshots share that exact name.** The other is `EMpZfNjnGJStlBpYAHq6`. Confirm which is
 current — it is a one-env-var change, no deploy.
 
+### 2a. Course Builder — and the duplicate that is RETIRED, NOT DELETED
+
+| App | App ID | State |
+|---|---|---|
+| Course Builder — canonical | `69801f7a533633818a22921c` | The one the callback, `/api/oauth/install/course` and the marketplace submission all use. In review. **Zero installs ever.** |
+| Course Builder — second registration | `6a7ea3e8…` (prefix only) | **RETIRED 2026-08-19 — recorded, not deleted.** Do not install it, do not delete the listing, do not point an env var at it. |
+
+**Why the record exists at all.** A duplicate app ID that is simply deleted comes back: someone
+re-creates it, or quotes it as canonical, because nothing anywhere says it was killed on purpose.
+So it is written down in two places that survive a restart — this table, and `RETIRED_CRM_APPS`
+in `lib/crm-apps.ts` (the file `lib/crm.ts` and `lib/crm-router.ts` already read to resolve an app),
+with `isRetiredCrmApp()` matching on the prefix.
+
+**The receipt, and its limit.** `crm_installations` read with the service role, 2026-08-19: **30
+rows, three app IDs only** — `69c762…`×28, `6a7178a4…`×1, `6a71919b…`×1. **Zero rows for either
+Course Builder app**, so there was nothing in the database to archive; the retirement is a
+record-of-truth fact, not a row edit. **The full second app ID is not known to this repo** — only
+the `6a7ea3e8` prefix was ever captured, and the marketplace app-read endpoints answer 404/401 to
+our PIT (no marketplace scope), so the full value is portal-only. Fill it in from the developer
+portal next time someone is in there; the prefix is what matching keys off until then.
+
 ---
 
 ## 3. Where we stand, by the numbers

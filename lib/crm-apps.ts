@@ -268,3 +268,66 @@ export const AGENCY_V2_APP: CrmApp = {
     'marketplace-installer-details.readonly',
   ],
 }
+
+// ── RETIRED APPS — recorded, never deleted ───────────────────────────────────
+//
+// A retired app ID is not a deleted one. Deleting the record is how the same
+// duplicate gets re-created, re-wired, or quoted back as canonical six weeks
+// later by someone reading a table that no longer mentions it. It stays here,
+// in the file lib/crm.ts and lib/crm-router.ts already read, so anything that
+// resolves an app ID can see that this one is dead on purpose.
+//
+// Registry state at the time of recording (crm_installations, service role,
+// 2026-08-19): 30 rows, three app IDs only — 69c762…×28, 6a7178a4…×1,
+// 6a71919b…×1. ZERO rows for either Course Builder app. So there was nothing
+// to archive in the database; the retirement is a record-of-truth fact, and
+// this file plus STATE.md §2 is where it lives.
+
+export interface RetiredCrmApp {
+  /** Full app ID, or null when only the portal-visible prefix is confirmed. */
+  appId: string | null
+  /** Always populated — matching is prefix-safe for exactly this reason. */
+  appIdPrefix: string
+  name: string
+  /** ISO date the retirement was recorded. */
+  retiredOn: string
+  recordedBy: string
+  reason: string
+  /** Rows this app held in crm_installations when retired. */
+  installsAtRetirement: number
+  notes: string
+}
+
+export const RETIRED_CRM_APPS: RetiredCrmApp[] = [
+  {
+    appId: null,
+    appIdPrefix: '6a7ea3e8',
+    name: 'Course Builder (second/duplicate registration)',
+    retiredOn: '2026-08-19',
+    recordedBy: 'cece',
+    reason:
+      'Duplicate registration of the Course Builder app. The canonical Course ' +
+      'Builder app is 69801f7a533633818a22921c — the one the callback, the ' +
+      '/api/oauth/install/course route and the marketplace submission all use.',
+    installsAtRetirement: 0,
+    notes:
+      'RETIRED, NOT DELETED — do not delete the listing, do not install it, do ' +
+      'not point env vars at it. The full app ID is NOT known to this repo: only ' +
+      'the 6a7ea3e8 prefix was ever captured, and the marketplace app-read ' +
+      'endpoints answer 404/401 to our PIT (no marketplace scope), so the full ' +
+      'value is portal-only. Fill appId in from the developer portal when someone ' +
+      'is next in there; the prefix is what matching keys off until then.',
+  },
+]
+
+/**
+ * True when an app ID is retired. Matches on the full ID when we know it and
+ * on the recorded prefix when we do not — an unknown-but-retired app must not
+ * pass a check just because we never captured its last 16 characters.
+ */
+export function isRetiredCrmApp(appId: string | null | undefined): boolean {
+  if (!appId) return false
+  return RETIRED_CRM_APPS.some(
+    (app) => app.appId === appId || appId.startsWith(app.appIdPrefix)
+  )
+}
