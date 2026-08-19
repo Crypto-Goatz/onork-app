@@ -9,6 +9,7 @@ import { METERS, formatPrice, resale } from '@/lib/meters'
 import SiteFooter from '@/components/SiteFooter'
 import RequestAccessButton from '@/components/RequestAccessButton'
 import CapabilityMatrix from '@/components/agencies/CapabilityMatrix'
+import { SITE, orgRef, faqPage, graph, jsonLdScript } from '@/lib/seo/jsonld'
 
 /**
  * /agencies — the money page.
@@ -374,34 +375,33 @@ export default function AgenciesPage() {
 
       <SiteFooter />
 
+      {/* BreadcrumbList comes from the root layout (SiteBreadcrumbJsonLd). */}
       <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@graph': [{
-            '@type': 'Product',
-            name: '0nCORE for agencies',
-            description:
-              'Command every client account from one chat inside your CRM. Free to install, usage-based pricing, resellable by agencies.',
-            brand: { '@type': 'Brand', name: '0nCORE' },
-            offers: METERS.filter((m) => m.priceCents > 0).map((m) => ({
-              '@type': 'Offer',
-              name: m.label,
-              price: (m.priceCents / 100).toFixed(2),
-              priceCurrency: 'USD',
-              description: m.when,
-            })),
-            }, {
-              '@type': 'FAQPage',
-              mainEntity: AGENCY_FAQ.map((f) => ({
-                '@type': 'Question',
-                name: f.q,
-                acceptedAnswer: { '@type': 'Answer', text: f.a },
+        {...jsonLdScript(
+          graph(
+            {
+              '@type': 'Product',
+              name: '0nCORE for agencies',
+              description:
+                'Command every client account from one chat inside your CRM. Free to install, usage-based pricing, resellable by agencies.',
+              brand: { '@type': 'Brand', name: '0nCORE' },
+              url: `${SITE}/agencies`,
+              // Same publisher node as every other page, by @id — two spellings
+              // of one company read as two companies.
+              manufacturer: orgRef,
+              offers: METERS.filter((m) => m.priceCents > 0).map((m) => ({
+                '@type': 'Offer',
+                name: m.label,
+                price: (m.priceCents / 100).toFixed(2),
+                priceCurrency: 'USD',
+                availability: 'https://schema.org/InStock',
+                url: `${SITE}/agencies`,
+                description: m.when,
               })),
-            }],
-          }),
-        }}
+            },
+            faqPage(AGENCY_FAQ),
+          ),
+        )}
       />
     </main>
   )

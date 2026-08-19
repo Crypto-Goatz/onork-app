@@ -12,6 +12,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { TIERS } from '@/lib/pricing'
+import { SITE, faqPage, graph, jsonLdScript } from '@/lib/seo/jsonld'
 import AnimatedGrid from '@/components/animated-grid'
 import AnimatedConnectors from '@/components/animated-connectors'
 import PricingComparison from '@/components/pricing/PricingComparison'
@@ -25,9 +26,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: '0nCore Pricing — Every capability, one platform',
     description: 'From $0 to enterprise. The full 0nMCP v4.10 stack — UCP, Marketplace, Course Builder, App Builder, Website Builder, SaaS Factory, and the Agentic Automation Generator.',
-    url: 'https://0ncore.com/pricing',
+    url: `${SITE}/pricing`,
   },
-  alternates: { canonical: 'https://0ncore.com/pricing' },
+  alternates: { canonical: `${SITE}/pricing` },
 }
 
 export const dynamic = 'force-static'
@@ -70,28 +71,64 @@ const PILLARS = [
   },
 ]
 
+const PRICING_FAQ = [
+  {
+    q: 'Is the Free tier actually free forever?',
+    a: 'Yes. 0nMCP itself is open source — npm i 0nmcp. The Free tier on 0nCore stays free as long as you stay under 100 monthly tool executions.',
+  },
+  {
+    q: 'Can I cancel anytime?',
+    a: 'Yes — no annual lock-in. Stripe-hosted billing portal handles cancel/upgrade/downgrade in two clicks.',
+  },
+  {
+    q: 'Can I bring my own MCP servers?',
+    a: 'Yes. The admin-side custom-connector ships in v4.10. Drop in your own MCP server and 0nCore registers it alongside the catalog.',
+  },
+  {
+    q: 'Is 0nCore live?',
+    a: 'Yes — 0nCore launched May 1, 2026. Sign up free and start building today.',
+  },
+  {
+    q: 'Refund policy?',
+    a: '30-day money-back, no questions asked. Email mike@rocketopp.com.',
+  },
+  {
+    q: 'How does the metered overage work?',
+    a: 'Each tier has a soft monthly cap on tool executions. Going over auto-bills $0.10/execution — or you can upgrade in one click.',
+  },
+]
+
 export default function PricingPage() {
   return (
     <main className="min-h-screen bg-[#020810] text-white">
       <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Product',
-            name: '0nCore',
-            description:
-              '1,598 tools across 106 services. Visual automation builder. AI agent crews. From $0 to enterprise.',
-            brand: { '@type': 'Brand', name: '0nORK' },
-            offers: TIERS.filter((t) => t.priceCents !== null && t.priceCents > 0).map((t) => ({
-              '@type': 'Offer',
-              name: `0nCore ${t.name}`,
-              price: ((t.priceCents ?? 0) / 100).toFixed(2),
-              priceCurrency: 'USD',
-              url: `https://0ncore.com/pricing#${t.slug}`,
-            })),
-          }),
-        }}
+        {...jsonLdScript(
+          graph(
+            {
+              '@type': 'Product',
+              name: '0nCore',
+              description:
+                '1,598 tools across 106 services. Visual automation builder. AI agent crews. From $0 to enterprise.',
+              brand: { '@type': 'Brand', name: '0nORK' },
+              url: `${SITE}/pricing`,
+              // EVERY tier, free included. The free tier was filtered out, which
+              // made the cheapest advertised price $47 — the one number the whole
+              // site is built to contradict. An Offer at 0 is valid and is what a
+              // price-range rich result reads.
+              offers: TIERS.filter((t) => t.priceCents !== null).map((t) => ({
+                '@type': 'Offer',
+                name: `0nCore ${t.name}`,
+                price: ((t.priceCents ?? 0) / 100).toFixed(2),
+                priceCurrency: 'USD',
+                availability: 'https://schema.org/InStock',
+                url: `${SITE}/pricing#${t.slug}`,
+              })),
+            },
+            // BreadcrumbList comes from the root layout (SiteBreadcrumbJsonLd),
+            // sitewide — not restated here.
+            faqPage(PRICING_FAQ),
+          ),
+        )}
       />
 
       {/* ═══ HERO ═══════════════════════════════════════════════════ */}
@@ -416,32 +453,7 @@ export default function PricingPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {[
-            {
-              q: 'Is the Free tier actually free forever?',
-              a: 'Yes. 0nMCP itself is open source — npm i 0nmcp. The Free tier on 0nCore stays free as long as you stay under 100 monthly tool executions.',
-            },
-            {
-              q: 'Can I cancel anytime?',
-              a: 'Yes — no annual lock-in. Stripe-hosted billing portal handles cancel/upgrade/downgrade in two clicks.',
-            },
-            {
-              q: 'Can I bring my own MCP servers?',
-              a: 'Yes. The admin-side custom-connector ships in v4.10. Drop in your own MCP server and 0nCore registers it alongside the catalog.',
-            },
-            {
-              q: 'Is 0nCore live?',
-              a: 'Yes — 0nCore launched May 1, 2026. Sign up free and start building today.',
-            },
-            {
-              q: 'Refund policy?',
-              a: '30-day money-back, no questions asked. Email mike@rocketopp.com.',
-            },
-            {
-              q: 'How does the metered overage work?',
-              a: 'Each tier has a soft monthly cap on tool executions. Going over auto-bills $0.10/execution — or you can upgrade in one click.',
-            },
-          ].map((f) => (
+          {PRICING_FAQ.map((f) => (
             <div
               key={f.q}
               className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 backdrop-blur transition-colors hover:border-white/20"

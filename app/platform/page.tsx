@@ -22,6 +22,7 @@ import SiteFooter from '@/components/SiteFooter'
 import TriggerBurst from '@/components/home/TriggerBurst'
 import AnimatedGrid from '@/components/animated-grid'
 import AnimatedConnectors from '@/components/animated-connectors'
+import { SITE, orgRef, graph, jsonLdScript } from '@/lib/seo/jsonld'
 
 export const metadata: Metadata = {
   title: '0nCore Platform — One Place. Everywhere.',
@@ -120,9 +121,55 @@ const CAPABILITIES = [
   },
 ]
 
+/**
+ * /platform shipped with no structured data at all — the only one of the four
+ * money pages with none (audit W2). It gets a WebPage anchored to the shared
+ * Organization and a SoftwareApplication whose featureList IS the capability
+ * grid below, so the schema cannot drift from what renders.
+ *
+ * NO FAQPage HERE. The page renders no FAQ section, and FAQPage over content a
+ * visitor cannot see is a manual-action risk, not a free rich result.
+ * BreadcrumbList comes from the root layout, sitewide.
+ */
+const JSON_LD = graph(
+  {
+    '@type': 'WebPage',
+    '@id': `${SITE}/platform#webpage`,
+    url: `${SITE}/platform`,
+    name: '0nCore Platform — One Place. Everywhere.',
+    description:
+      'Add it one place. Have it everywhere. 0nCore syncs your tasks, contacts, emails, calendar, and AI across every tool you use — in real time.',
+    isPartOf: { '@id': `${SITE}/#website` },
+    about: { '@id': `${SITE}/#software` },
+    publisher: orgRef,
+  },
+  {
+    '@type': 'SoftwareApplication',
+    '@id': `${SITE}/#software`,
+    name: '0nCore',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    url: SITE,
+    description:
+      'The AI business operating system. One command surface across your CRM, calendar, inbox, social channels, phone, payments and website.',
+    publisher: orgRef,
+    featureList: CAPABILITIES.map((c) => c.title),
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      url: `${SITE}/pricing`,
+      description: 'Free to install — pay only for what runs.',
+    },
+  },
+)
+
 export default function PlatformPage() {
   return (
     <main className="min-h-screen bg-[#020810] font-sans text-white antialiased">
+      <script {...jsonLdScript(JSON_LD)} />
+
       {/* ═══ HERO ═══════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden border-b border-white/5">
         <AnimatedGrid />

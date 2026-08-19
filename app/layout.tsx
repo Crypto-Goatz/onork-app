@@ -9,6 +9,7 @@ import { PublicNavWrapper } from "@/components/public-nav-wrapper";
 import { VoiceAIFloatingButton } from "@/components/voice-ai-floating";
 import { LaunchBanner } from "@/components/launch-banner";
 import { GroqBanner } from "@/components/GroqBanner";
+import SiteBreadcrumbJsonLd from "@/components/seo/SiteBreadcrumbJsonLd";
 
 // Per docs/0n-design-system.md §2 — Inter as font-sans, JetBrains Mono as font-mono.
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
@@ -157,6 +158,9 @@ export default async function RootLayout({
         */}
         {!isAppHost && (
           <>
+            {/* BreadcrumbList for every marketing page — site only, since the
+                app host has no public URLs worth a breadcrumb. */}
+            <SiteBreadcrumbJsonLd />
             <LaunchBanner />
             <GroqBanner />
             <PublicNavWrapper />

@@ -14,6 +14,7 @@ import SiteFooter from '@/components/SiteFooter'
 import Hero from '@/components/home/Hero'
 import CommandCenterVideo from '@/components/CommandCenterVideo'
 import AgencyDashboardSection, { AGENCY_DASHBOARD_FAQ } from '@/components/home/AgencyDashboardSection'
+import { SITE, organization, website, orgRef, faqPage, graph, jsonLdScript } from '@/lib/seo/jsonld'
 
 /**
  * 0nCore homepage — repositioned to what this product actually is.
@@ -42,7 +43,6 @@ import AgencyDashboardSection, { AGENCY_DASHBOARD_FAQ } from '@/components/home/
  * cluster. CRO9 embed is already in app/layout.tsx.
  */
 
-const SITE = 'https://www.0ncore.com'
 const title = '0nCore — the AI agency CRM: run every client from one chat'
 const description =
   'Run every client account from one chat. 0nCore plans the work, prices it, and runs it once you approve — free to install, pay only for what runs.'
@@ -82,36 +82,53 @@ const FAQS = [
   { q: 'What is the one login worth?', a: 'The same account carries you into 0nTask, web0n, social0n and CRO9 — sign in once and every tool already knows who you are, which brand is yours and which clients you manage.' },
 ]
 
-const JSON_LD = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    { '@type': 'Organization', '@id': `${SITE}/#organization`, name: '0nCore', legalName: 'RocketOpp LLC', url: SITE },
-    { '@type': 'WebSite', '@id': `${SITE}/#website`, url: SITE, name: '0nCore', publisher: { '@id': `${SITE}/#organization` } },
-    {
-      '@type': 'SoftwareApplication',
-      name: '0nCore',
-      applicationCategory: 'BusinessApplication',
-      operatingSystem: 'Web',
-      url: SITE,
-      description,
-      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free' },
+/**
+ * ONE FAQPage for the page, not one per section.
+ *
+ * The page renders two FAQ blocks — the product questions below and the agency
+ * dashboard questions inside AgencyDashboardSection — and used to ship a
+ * separate FAQPage script for each. Two FAQPage entities on one URL is a
+ * contradiction about what the page is; Google honours one and the other is
+ * dead weight. Concatenated, both sets of questions are eligible.
+ */
+const ALL_FAQS = [...FAQS, ...AGENCY_DASHBOARD_FAQ]
+
+const JSON_LD = graph(
+  organization,
+  website,
+  {
+    '@type': 'SoftwareApplication',
+    '@id': `${SITE}/#software`,
+    name: '0nCore',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    url: SITE,
+    description,
+    publisher: orgRef,
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      url: `${SITE}/pricing`,
+      description: 'Free to install — pay only for what runs.',
     },
-    {
-      '@type': 'HowTo',
-      name: 'How to run every client account from one chat with 0nCore',
-      description: 'Install it into your CRM, switch on the clients you manage, then say what you want done.',
-      totalTime: 'PT5M',
-      estimatedCost: { '@type': 'MonetaryAmount', currency: 'USD', value: '0' },
-      step: [
-        { '@type': 'HowToStep', position: 1, name: 'Install it', text: 'Add 0nCore to your agency. Installing is free and it opens inside the CRM you already use.' },
-        { '@type': 'HowToStep', position: 2, name: 'Switch on your clients', text: 'Choose which sub-accounts 0nCore may act on. Nothing touches an account you have not switched on.' },
-        { '@type': 'HowToStep', position: 3, name: 'Say what you want', text: 'Name the clients and the outcome in one sentence. It splits the work per account and prices it.' },
-        { '@type': 'HowToStep', position: 4, name: 'Approve it', text: 'Read the plan and the cost, then approve. Every step leaves a receipt against the right client.' },
-      ],
-    },
-    { '@type': 'FAQPage', mainEntity: FAQS.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
-  ],
-}
+  },
+  {
+    '@type': 'HowTo',
+    name: 'How to run every client account from one chat with 0nCore',
+    description: 'Install it into your CRM, switch on the clients you manage, then say what you want done.',
+    totalTime: 'PT5M',
+    estimatedCost: { '@type': 'MonetaryAmount', currency: 'USD', value: '0' },
+    step: [
+      { '@type': 'HowToStep', position: 1, name: 'Install it', text: 'Add 0nCore to your agency. Installing is free and it opens inside the CRM you already use.' },
+      { '@type': 'HowToStep', position: 2, name: 'Switch on your clients', text: 'Choose which sub-accounts 0nCore may act on. Nothing touches an account you have not switched on.' },
+      { '@type': 'HowToStep', position: 3, name: 'Say what you want', text: 'Name the clients and the outcome in one sentence. It splits the work per account and prices it.' },
+      { '@type': 'HowToStep', position: 4, name: 'Approve it', text: 'Read the plan and the cost, then approve. Every step leaves a receipt against the right client.' },
+    ],
+  },
+  faqPage(ALL_FAQS),
+)
 
 const LADDER = [
   { step: '01', icon: Lock, title: 'Install it', body: 'Add 0nCore to your agency and it opens inside the CRM you already use. Free to install — no seat fee, no minimum.' },
@@ -123,7 +140,7 @@ const LADDER = [
 export default function HomePage() {
   return (
     <main className="grid-bg grid-anim min-h-screen text-neutral-800">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }} />
+      <script {...jsonLdScript(JSON_LD)} />
 
       <div className="mx-auto max-w-7xl px-6 py-8 space-y-8">
         <Hero />
@@ -261,21 +278,6 @@ export default function HomePage() {
           </div>
         </section>
       </div>
-
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'FAQPage',
-            mainEntity: AGENCY_DASHBOARD_FAQ.map((f) => ({
-              '@type': 'Question',
-              name: f.q,
-              acceptedAnswer: { '@type': 'Answer', text: f.a },
-            })),
-          }),
-        }}
-      />
 
       <SiteFooter />
     </main>
