@@ -491,6 +491,28 @@ const lead0n: AddonDefinition = {
   configSchema: [],
 }
 
+/**
+ * 0nBlueprint — describe a site, get a bundle, import it into a real account.
+ *
+ * Hosted, because the product IS the studio and the dry-run plan beside it. A
+ * generic configure-and-Run panel over an import that has no undo would be the
+ * worst possible frame for this: the whole design of /api/bundle/import is that
+ * a human reads the plan before a button that writes exists.
+ *
+ * 'manual' is the truth. Nothing imports on a schedule, and "Runs daily" under
+ * a product that writes into a client's live CRM would be a lie with
+ * consequences.
+ */
+const blueprint: AddonDefinition = {
+  slug: '0nblueprint',
+  name: '0nBlueprint',
+  surface: 'hosted',
+  schedule: 'manual',
+  // No settings panel: every question this add-on asks is per import — which
+  // bundle, which account — and belongs next to the plan it produces.
+  configSchema: [],
+}
+
 // ─── REGISTRY ──────────────────────────────────────────────────
 
 const ADDON_REGISTRY: Record<string, AddonDefinition> = {
@@ -499,6 +521,7 @@ const ADDON_REGISTRY: Record<string, AddonDefinition> = {
   '0ncouncil': councilAddon,
   'ai-course-builder': courseBuilder,
   lead0n: lead0n,
+  '0nblueprint': blueprint,
 }
 
 export function getAddonDefinition(slug: string): AddonDefinition | null {

@@ -961,6 +961,30 @@ export const ADDONS: MarketplaceAddon[] = [
     integrations: ['CRM Contacts', '0nMCP'],
     relatedAddons: ['contact-manager', 'opportunity-pipeline', 'detect-and-refine'],
   },
+  {
+    slug: '0nblueprint',
+    name: '0nBlueprint',
+    shortDesc: 'Describe the site you want, get a bundle, and import it into a sub-account.',
+    longDesc:
+      'Design a site in the studio or describe it in a sentence. Either way what comes out is one 0nBlueprint bundle — pages, sections and the values that fill them — and that bundle imports into a sub-account. Nothing is written until you have read the plan: the import runs as a dry run first and reports, record by record, what it would create, what already exists and what this platform genuinely cannot accept, naming the supported path for each refusal. There is no undo on the other side, so the button that writes does not appear until the plan does.',
+    price: 9900,
+    priceLabel: '$99/mo',
+    categories: ['content', 'ai-automation'],
+    capabilities: ['bundle_generate', 'bundle_validate', 'bundle_import'],
+    // The agency rung. A bundle import writes into client accounts, and a rung
+    // lower would put that in the hands of a plan sold for a single business.
+    requiredPlan: 'unlimited',
+    features: [
+      'Describe a site, or build it visually — one bundle either way',
+      'Dry run first, always: the plan is shown before anything is written',
+      'Create-if-missing, keyed on external id — an existing value is never overwritten',
+      'Anything the platform cannot accept is refused by name, with the supported path attached',
+      'Every record leaves a receipt a human can read',
+      'Runs inside your CRM as a Custom Page',
+    ],
+    integrations: ['web0n', 'CRM Custom Values', '0nMCP'],
+    relatedAddons: ['funnel-builder', 'blog-engine', 'snapshot-manager', 'ai-course-builder'],
+  },
 ]
 
 /**

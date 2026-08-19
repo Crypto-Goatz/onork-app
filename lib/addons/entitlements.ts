@@ -213,6 +213,14 @@ export async function resolveEntitlement(args: {
 
   // ── 3. Install-as-entitlement. ─────────────────────────────────────────
   try {
+    // AN ADD-ON WITH ITS OWN APP AND NO APP ID YET CONTRIBUTES NOTHING.
+    // Without this the query drops its app_id filter and every live install at
+    // the location — including the sub-account app everyone already has —
+    // satisfies the install source, handing out a product still being listed.
+    // Skipping the source is the fail-closed reading; the tier ladder and an
+    // explicit row can still open it, and the owner override always can.
+    const installSourceUnavailable = skeleton.ownApp && !skeleton.appId
+
     let q = db
       .from('crm_installations')
       .select('app_id, status, updated_at')
@@ -220,7 +228,9 @@ export async function resolveEntitlement(args: {
       .in('status', ['active', 'expired'])
     if (skeleton.appId) q = q.eq('app_id', skeleton.appId)
 
-    const { data: installs, error } = await q.limit(50)
+    const { data: installs, error } = installSourceUnavailable
+      ? { data: [] as { app_id: string | null; status: string; updated_at: string | null }[], error: null }
+      : await q.limit(50)
     if (error) throw new Error(error.message)
 
     // A retired app's rows are history, not permission. isRetiredCrmApp matches

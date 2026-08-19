@@ -22,6 +22,7 @@
 import type { ComponentType } from 'react'
 import CourseBuilderApp from '@/app/dashboard/course-builder/CourseBuilderApp'
 import LeadScoutApp from '@/app/crm/leadscout/LeadScoutApp'
+import BuildStudio from '@/app/crm/build/BuildStudio'
 
 /** lead0n proves identity by session here; the Custom Page uses SSO. */
 function Lead0nSession() {
@@ -31,6 +32,11 @@ function Lead0nSession() {
 const HOSTED_APPS: Record<string, ComponentType> = {
   'ai-course-builder': CourseBuilderApp,
   lead0n: Lead0nSession,
+  // 0nBlueprint's product is the studio and the dry-run plan beside it. The
+  // same component serves the Custom Page at /crm/build: useSso answers the
+  // iframe handshake there and mints from the 0nCORE session here, so one
+  // screen covers both audiences without a second copy to keep in step.
+  '0nblueprint': BuildStudio,
 }
 
 /**

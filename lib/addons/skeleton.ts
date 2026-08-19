@@ -37,8 +37,26 @@ export interface RequiredEntitlement {
 export interface AddonSkeleton {
   slug: string
   name: string
-  /** CRM marketplace app whose install grants this. null = any live install. */
+  /**
+   * CRM marketplace app whose install grants this.
+   *
+   * null means EITHER "any live install counts" (ownApp false — the add-on is
+   * delivered by the sub-account app the customer already has) OR "this add-on
+   * has its own app and we do not know its ID yet" (ownApp true). Those two are
+   * opposite instructions to the gate, which is why ownApp exists: reading null
+   * alone made an unregistered product openable by anyone with any install.
+   */
   appId: string | null
+  /**
+   * True when the add-on ships as its OWN marketplace app.
+   *
+   * The install source then requires an install of THAT app specifically — and
+   * when the app ID is not known yet, contributes nothing at all rather than
+   * falling back to "any install will do". Fail closed: an add-on somebody is
+   * meant to buy should not be handed out on the strength of an unrelated
+   * install while its own listing is still being created.
+   */
+  ownApp: boolean
   entryRoute: string
   requiredEntitlement: RequiredEntitlement
 }
@@ -69,7 +87,23 @@ const APP_ID_BY_SLUG: Record<string, string> = {
   // Course Builder — canonical registration. The second one (6a7ea3e8…) is
   // retired, recorded in lib/crm-apps.ts, and must never be named here.
   'ai-course-builder': process.env.CRM_COURSE_APP_ID || '69801f7a533633818a22921c',
+  // 0nBlueprint — no default, and that is the point. The app is not registered
+  // in the developer portal yet, so there is no ID to name; an invented one
+  // would be matched against crm_installations as though it were real. Until
+  // the env var is set this resolves to null WITH ownApp true, which the gate
+  // reads as "not installable yet", not as "any install opens it".
+  '0nblueprint': process.env.CRM_BLUEPRINT_APP_ID || '',
 }
+
+/**
+ * Add-ons that ship as their OWN marketplace app.
+ *
+ * Separate from APP_ID_BY_SLUG because the two facts come apart exactly once —
+ * in the window between deciding an add-on gets its own listing and that listing
+ * existing. During that window the ID is unknown and the answer must still be
+ * "no install opens this", which a missing map entry cannot express.
+ */
+const OWN_APP_SLUGS = new Set<string>(['ai-course-builder', '0nblueprint'])
 
 /**
  * Explicit entry routes for add-ons that do not live at /x/<slug>.
@@ -112,7 +146,10 @@ export function skeletonFor(slug: string): AddonSkeleton | null {
   return {
     slug,
     name: def.name,
-    appId: APP_ID_BY_SLUG[slug] ?? null,
+    // `|| null`, not `?? null`: an env var that is set-but-empty is the same
+    // as absent, and '' as an app id matches nothing while reading as truthy.
+    appId: APP_ID_BY_SLUG[slug] || null,
+    ownApp: OWN_APP_SLUGS.has(slug),
     entryRoute: entryRouteFor(slug),
     requiredEntitlement: { key: slug, minTier },
   }

@@ -269,6 +269,67 @@ export const AGENCY_V2_APP: CrmApp = {
   ],
 }
 
+/**
+ * The scopes the 0nBlueprint install asks for.
+ *
+ * Overridable because the developer portal — not this file — is the source of
+ * truth for what the app is configured to OFFER, and asking for one it does not
+ * offer fails the entire install rather than that one permission.
+ */
+export const BLUEPRINT_SCOPES: string[] = (
+  process.env.CRM_BLUEPRINT_APP_SCOPES ||
+  'locations.readonly locations/customValues.readonly locations/customValues.write'
+)
+  .split(/[\s,]+/)
+  .filter(Boolean)
+
+/**
+ * 0nBlueprint — the describe→bundle→import app. Public, sub-account distribution.
+ *
+ * ITS OWN LISTING, THEREFORE ITS OWN APP. A bundle import writes into a client's
+ * live account, and the runbook sells that as a product somebody buys — so an
+ * install of the sub-account app must not open it, and a 0nBlueprint install
+ * must not silently widen what the sub-account app may touch. Separate app,
+ * separate credentials, separate consent screen.
+ *
+ * EVERY FIELD IS ENV, AND appId HAS NO DEFAULT. The app does not exist in the
+ * developer portal yet — that step is a browser step, driven with Mike. A
+ * plausible-looking placeholder ID here is worse than an empty string: it would
+ * make the install route look configured, the callback match rows against an ID
+ * nobody registered, and the entitlement gate hand out access on the strength of
+ * a number someone typed. Empty means "not created yet", and every consumer of
+ * this record is written to say so out loud rather than guess.
+ *
+ * SCOPES ARE WHAT THE IMPORT ENGINE ACTUALLY CALLS, and nothing else. Requesting
+ * a scope the app was never configured to offer makes the platform reject the
+ * WHOLE install with "Invalid scope(s)" — the lesson already paid for on the
+ * sub-account app above. app/api/bundle/import today reads and writes exactly
+ * one family, /locations/customValues, and names the location it is importing
+ * into. The wider Tier A set (blogs, products, pipelines, calendars, emails) is
+ * the v1.1 expansion and must be ENABLED ON THE APP in the portal before it can
+ * be added here — which is why this is overridable without a deploy.
+ */
+export const BLUEPRINT_APP: CrmApp = {
+  key: 'sub_location',
+  name: '0nBlueprint',
+  appId: process.env.CRM_BLUEPRINT_APP_ID || '',
+  clientIdEnv: 'CRM_BLUEPRINT_APP_CLIENT_ID',
+  clientSecretEnv: 'CRM_BLUEPRINT_APP_CLIENT_SECRET',
+  pitEnv: 'CRM_BLUEPRINT_PIT',
+  authClass: 'Location',
+  // Byte-matches the shared callback's own origin. The apex 308s to www, and a
+  // redirect_uri that does not match the authorise step is reported by the
+  // platform as "Invalid client credentials" — the failure that sends you
+  // hunting through secrets that are perfectly fine.
+  redirectUri: 'https://app.0ncore.com/api/oauth/callback',
+  scopes: BLUEPRINT_SCOPES,
+}
+
+/** True once the portal step has happened and the credentials are in env. */
+export function blueprintAppConfigured(): boolean {
+  return Boolean(process.env[BLUEPRINT_APP.clientIdEnv] && BLUEPRINT_APP.appId)
+}
+
 // ── RETIRED APPS — recorded, never deleted ───────────────────────────────────
 //
 // A retired app ID is not a deleted one. Deleting the record is how the same

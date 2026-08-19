@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { MARKETPLACE_APP, AGENCY_APP } from '@/lib/crm'
-import { AGENCY_V2_APP } from '@/lib/crm-apps'
+import { AGENCY_V2_APP, BLUEPRINT_APP } from '@/lib/crm-apps'
 import { generateToken } from '@/lib/0n-token'
 import { issueAppJwt } from '@/lib/auth/app-jwt'
 import { logHealth } from '@/lib/connection-health'
@@ -108,6 +108,28 @@ export async function GET(req: NextRequest) {
     })
 
     /**
+     * 0nBlueprint — the describe→bundle→import app, installed per sub-account.
+     *
+     * Registered here BEFORE the app exists in the developer portal, on purpose:
+     * the credentials arrive as environment variables from a browser step, and
+     * the loop below already skips any app with no secret in env by name. So
+     * this entry is inert until the portal step lands and correct the moment it
+     * does — no deploy sits between the two.
+     *
+     * appId has no fallback. Every other app here can name a real registered ID;
+     * this one cannot yet, and a placeholder would be written into
+     * crm_installations as though it were real. See BLUEPRINT_APP.
+     */
+    apps.push({
+      name: 'blueprint',
+      clientId: process.env[BLUEPRINT_APP.clientIdEnv] || '',
+      clientSecret: process.env[BLUEPRINT_APP.clientSecretEnv] || '',
+      redirectUri: BLUEPRINT_APP.redirectUri,
+      appId: BLUEPRINT_APP.appId,
+      userType: 'Location' as const,
+    })
+
+    /**
      * ONE APP, chosen by state — never a sequence.
      *
      * An authorisation code is SINGLE-USE, and `redirect_uri` must match the
@@ -125,6 +147,7 @@ export async function GET(req: NextRequest) {
     const state = req.nextUrl.searchParams.get('state') || ''
     const only = state.startsWith('agency') ? 'agency-v2'
       : state.startsWith('course') ? 'course-builder'
+      : state.startsWith('blueprint') ? 'blueprint'
       : state.startsWith('sub') ? 'subaccount-v2'
       : null
 
@@ -143,7 +166,7 @@ export async function GET(req: NextRequest) {
     // stateless install is most likely to be.
     const candidates = only
       ? apps.filter((a) => a.name === only)
-      : ['course-builder', 'agency-v2', 'subaccount-v2', 'marketplace', 'marketplace-alt']
+      : ['course-builder', 'blueprint', 'agency-v2', 'subaccount-v2', 'marketplace', 'marketplace-alt']
           .map((n) => apps.find((a) => a.name === n))
           .filter((a): a is (typeof apps)[number] => Boolean(a))
 
