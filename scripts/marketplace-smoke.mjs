@@ -104,9 +104,55 @@ async function main() {
        meRes.ok ? `${me.account?.email ?? 'no email'}${me.account?.accountCreatedNow ? ' (created now)' : ''}` : `${meRes.status}`)
 
   // ── 3. The surfaces a reviewer clicks ───────────────────────────────────
-  for (const path of ['/app/course', '/crm/account', '/crm/courses']) {
-    const r = await fetch(`${BASE}${path}`)
-    step(`page ${path}`, r.ok, `HTTP ${r.status}`)
+  /**
+   * `redirect: 'manual'`, because the default is why this section was green
+   * while the product was not.
+   *
+   * fetch() FOLLOWS REDIRECTS SILENTLY and reports the status of wherever it
+   * landed. A page that 307s an unauthenticated reviewer to /login therefore
+   * reported `HTTP 200` and passed — the check could pass for a reason other
+   * than the thing being checked, which is the definition of not a check. A
+   * reviewer sees the redirect; this script did not.
+   *
+   * The two FRAMED surfaces are separated out because their requirement is
+   * different and stronger. /crm (the My Account Dashboard custom page and the
+   * agency menu link) and /crm/leadscout (the LeadScout custom page) are loaded
+   * inside the CRM's iframe, where a redirect renders as a BLANK TILE with no
+   * error anywhere. They must answer 200 directly — a 3xx is a failure here even
+   * though it is acceptable elsewhere.
+   */
+  const FRAMED = ['/crm', '/crm/leadscout']
+  const MAY_GATE = ['/app/course', '/crm/account', '/crm/courses']
+
+  for (const path of FRAMED) {
+    const r = await fetch(`${BASE}${path}`, { redirect: 'manual' })
+    step(`framed page ${path} answers 200 directly`, r.status === 200,
+         r.status === 200 ? 'HTTP 200' : `HTTP ${r.status}${r.headers.get('location') ? ` -> ${r.headers.get('location')}` : ''} (a redirect is a blank tile in the frame)`)
+
+    /**
+     * AND SAYS NOTHING IT SHOULD NOT SAY WHILE LOGGED OUT.
+     *
+     * Answering 200 was never the whole requirement. Measured 2026-08-19, /crm
+     * served its entire agency shell and price list to an unauthenticated curl:
+     * "Site build $10 per site", "Client provisioned $5 per client". It looked
+     * gated only because a loading splash covered it, on a 2.8s timer that knew
+     * nothing about auth. So assert the absence too, or the 200 check above
+     * silently blesses the leak it was written to catch.
+     */
+    if (r.status === 200) {
+      const html = await r.text()
+      const leaks = ['per site', 'per client', 'per post', 'Setup &amp; Keys', 'Plan &amp; Usage']
+        .filter((m) => html.includes(m))
+      step(`framed page ${path} leaks nothing pre-auth`, leaks.length === 0,
+           leaks.length ? `logged-out body contains: ${leaks.join(', ')}` : 'no pricing or agency nav in the logged-out body')
+    }
+  }
+
+  for (const path of MAY_GATE) {
+    const r = await fetch(`${BASE}${path}`, { redirect: 'manual' })
+    const ok = r.status === 200 || (r.status >= 300 && r.status < 400)
+    step(`page ${path}`, ok,
+         r.status === 200 ? 'HTTP 200' : `HTTP ${r.status} -> ${r.headers.get('location') ?? '?'} (gated, allowed)`)
   }
 
   // ── 4. The course API, authenticated as a marketplace user ──────────────

@@ -319,10 +319,49 @@ export default function AgencyDashboard({ initialView = 'dashboard' }: { initial
     : boot?.session ? { dot: 'bg-[color:var(--oc-amber)]', label: 'not installed' }
     : { dot: 'bg-[color:var(--oc-amber)]', label: 'not connected' }
 
-  // Logged out (opened outside the CRM with no 0nCORE session, or sign-in failed):
-  // show the one branded lock gate instead of a dashboard that would only 401.
-  // 'pending' still shows the dashboard chrome while the handshake/mint runs.
-  if (sso.state === 'standalone' || sso.state === 'rejected') {
+  /**
+   * NOTHING SENSITIVE RENDERS BEFORE SSO ANSWERS.
+   *
+   * This is a CONTENT gate, deliberately not a route gate: /crm must keep
+   * answering 200 to the frame, because both the My Account Dashboard custom
+   * page and the agency menu link point here, and a redirect inside an iframe
+   * is a blank tile. What changes is WHAT 200 contains.
+   *
+   * What it contained until now, measured with curl and no credentials at all:
+   * the entire agency shell — every nav section, the sample client copy, and
+   * the PRICE LIST ("Site build $10 per site", "Client provisioned $5 per
+   * client", "Social post 15c per post"). 62KB of product, unauthenticated.
+   *
+   * It looked gated to a human because <LoadingScreen/> covers the viewport on
+   * arrival. That splash is a COSMETIC OVERLAY on a 2.8s timer that knows
+   * nothing about auth, while the SSO handshake times out at 4s — so it faded
+   * off roughly a second BEFORE the lock gate replaced anything, and every
+   * visitor got a look at the shell underneath. A crawler, a reviewer reading
+   * view-source, and curl never saw the splash at all.
+   *
+   * 'pending' is not a logged-in state and must not render like one. Three
+   * states now, not two: waiting (branded, empty), refused (lock gate), and
+   * authenticated (the product).
+   */
+  if (sso.state === 'pending') {
+    return (
+      <div className="oncore-app grid min-h-screen place-items-center px-6">
+        <div className="text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/0ncore-logo-dark.png" alt="0nCORE" width={160} height={40}
+               className="mx-auto h-10 w-auto object-contain opacity-80" />
+          <div className="mt-6 flex items-center justify-center gap-2 text-[13px] text-[color:var(--oc-text)]/60">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Connecting to your CRM…
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Refused, or opened outside the CRM with no 0nCORE session: the one branded
+  // lock gate, rather than a dashboard that would only 401 anyway.
+  if (sso.state !== 'authed') {
     return <LockGate next="/crm" title="Your agency command centre" subtitle="Sign in to your 0nCORE account to open every client at once." />
   }
 
