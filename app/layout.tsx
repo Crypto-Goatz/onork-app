@@ -116,8 +116,20 @@ export default async function RootLayout({
           the app shell — which is the point, since the value is in seeing the
           whole journey rather than one surface.
         */}
+        {/*
+          ORIGIN-RELATIVE, and the paragraph above is why. It claimed
+          "first-party: no cross-origin request, nothing for a tracking blocker
+          to recognise by hostname" while hardcoding https://www.0ncore.com —
+          true on the marketing host, false on app.0ncore.com, which shares this
+          root layout. Every app page was making the exact cross-origin request
+          the design set out to avoid, to a host that serves byte-identical
+          bytes (verified: /api/dr/script/… answers 200 on both). Two hosts for
+          one origin is the disease that already cost us every extension sign-in
+          in a CORS preflight; this is the same shape, caught before it earned
+          an incident name.
+        */}
         <script
-          src="https://www.0ncore.com/api/dr/script/dr_0ncore_com_4wdui5.js"
+          src="/api/dr/script/dr_0ncore_com_4wdui5.js"
           async
         />
         {/*
@@ -137,8 +149,10 @@ export default async function RootLayout({
           is baked in server-side rather than passed as data-attributes that can
           drift from the site they are installed on.
         */}
+        {/* Origin-relative for the same reason as D&R above — "served from this
+            domain" was only true on one of the two hosts this layout serves. */}
         <script
-          src={`https://www.0ncore.com/api/cro9/script/${process.env.NEXT_PUBLIC_CRO9_SITE_ID || '0ncore'}.js`}
+          src={`/api/cro9/script/${process.env.NEXT_PUBLIC_CRO9_SITE_ID || '0ncore'}.js`}
           async
         />
       </head>
