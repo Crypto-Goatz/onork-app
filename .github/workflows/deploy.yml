@@ -44,7 +44,7 @@ jobs:
         run: |
           corepack enable
           if [ "${{ steps.pm.outputs.name }}" = "pnpm" ]; then
-            corepack prepare pnpm@latest --activate
+            corepack prepare pnpm@10.15.0 --activate
             pnpm --version
           elif [ "${{ steps.pm.outputs.name }}" = "yarn" ]; then
             corepack prepare yarn@stable --activate
@@ -52,7 +52,7 @@ jobs:
           fi
 
       - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+        run: npm install --global vercel@59
 
       - name: Pull Vercel project config + env
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
