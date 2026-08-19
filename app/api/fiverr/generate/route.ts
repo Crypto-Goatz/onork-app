@@ -109,6 +109,13 @@ async function callGroq(messages: Array<{ role: string; content: string }>): Pro
     body: JSON.stringify({
       model: GROQ_MODEL,
       response_format: { type: 'json_object' },
+      // Measured at 1665 of these 2400 tokens on a representative gig, before
+      // GPT-OSS's reasoning phase takes its share of the same budget. Running
+      // a JSON call at ~70% utilisation is not a margin — when the document
+      // does not close, Groq rejects the whole response with a 400 rather than
+      // returning what it managed, so a slightly wordier gig is a hard failure
+      // rather than a short one. /api/cron/blog was already over that line.
+      reasoning_effort: 'low',
       messages,
       temperature: 0.6,
       max_tokens: 2400,

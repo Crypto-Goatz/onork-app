@@ -113,7 +113,23 @@ SXO rules: BLUF (bottom line up front), Table Trap (include a comparison table),
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
-      body: JSON.stringify({ model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b', messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 4000, response_format: { type: 'json_object' } }),
+      // Re-pinning the model was not enough to revive this cron. The prompt
+      // asks for 1200+ words of markdown inside a JSON string, and GPT-OSS
+      // spends reasoning tokens out of the same max_tokens before it writes a
+      // character. At 4000 it ran out mid-document and Groq rejected the whole
+      // response with `400 json_validate_failed: max completion tokens reached
+      // before generating a valid document` — so this would have gone on
+      // failing daily, just with a new error code.
+      //
+      // `reasoning_effort: 'low'` is what makes it fit. The budget stays at
+      // 4000 because `x-ratelimit-limit-tokens` on this key is 8000 per minute,
+      // not the 12000 quoted in lib/course-builder/generator.ts — and Groq
+      // counts max_tokens toward that ceiling when it admits the request. An
+      // 8000-token ask plus the prompt is therefore over the line before it
+      // starts, and 413s on an empty bucket; 4000 leaves room for whatever else
+      // is calling Groq in the same minute, which on a shared key is the case
+      // that actually matters for an unattended 6am cron.
+      body: JSON.stringify({ model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b', messages: [{ role: 'user', content: prompt }], temperature: 0.7, reasoning_effort: 'low', max_tokens: 4000, response_format: { type: 'json_object' } }),
     })
 
     if (!res.ok) {
