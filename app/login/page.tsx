@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Mail, Lock } from 'lucide-react'
@@ -19,6 +19,38 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
+
+  /**
+   * Show what sent you here.
+   *
+   * Two other routes still bounce failures to `/login?error=...`
+   * (api/auth/callback and api/auth/connect/[provider]/callback). This page
+   * read none of them, so a failed sign-in rendered as a pristine login form —
+   * the user pressed the same button again and looped, invisibly. /auth/callback
+   * now goes to /auth/error instead; this is the net under everything else, so
+   * no future bounce-to-login can hide the same way.
+   *
+   * Deliberately `window.location.search` and not `useSearchParams`: that hook
+   * opts the tree into a client bailout, and a bailout in a page that wraps
+   * content ships an empty body to crawlers. The handlers below already read
+   * the query string this way — same idiom, no new failure mode.
+   */
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    const code = p.get('error')
+    if (!code) return
+    const KNOWN: Record<string, string> = {
+      auth_failed: 'Sign-in failed before a session could be created. Please try again.',
+      auth_callback_failed: 'The sign-in callback could not complete. Please try again.',
+      no_code: 'The sign-in provider returned no authorization code.',
+      no_session_user: 'Sign-in returned no account. Please try again.',
+    }
+    setError(
+      KNOWN[code] ||
+        p.get('error_description') ||
+        `Sign-in failed (${code}). Please try again.`,
+    )
+  }, [])
 
   async function handleSlackLogin() {
     try {

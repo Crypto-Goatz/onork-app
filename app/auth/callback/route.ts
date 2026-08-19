@@ -18,7 +18,24 @@
  *   6. Redirect:
  *        - explicit ?next=... wins
  *        - !onboarding_complete → /onboarding
- *        - else → /dashboard
+ *        - else → /crm
+ *
+ * FAILURE POLICY (2026-08-19, AUTH OVERHAUL) — this handler used to answer
+ * every failure with `redirect('/login?error=...')` and a console.error. The
+ * login page never read that param, so the user saw a clean login form with no
+ * explanation, clicked the same provider button again, and came straight back
+ * here: an invisible infinite loop whose only trace was a console line nobody
+ * reads (law #5 — silent failure is the default, so make failure loud).
+ *
+ * Every exit from here is now:
+ *   - logged as one structured JSON line, `[auth/callback]`, carrying the
+ *     PLATFORM'S OWN WORDS (error.code / error.status / error.name / message)
+ *     plus the host, the flow-state cookie presence, and the destination, so
+ *     the failure can be told apart from the other four candidates without
+ *     re-deriving it from Supabase logs; and
+ *   - answered with /auth/error, a page that STATES the reason and requires a
+ *     deliberate click to retry. Never a silent bounce to /login. A loop that
+ *     needs a human click is a loop that ends.
  */
 
 import { NextResponse, after } from 'next/server'
@@ -41,13 +58,98 @@ function landOn(next: string, origin: string): string {
   return `${onApp ? APP_ORIGIN : origin}${next}`
 }
 
+/**
+ * One structured log line per callback, success or failure.
+ *
+ * Deliberately JSON on a single line: these are read out of Vercel's runtime
+ * log search, where a multi-line dump loses everything after line one.
+ */
+function logEvent(fields: Record<string, unknown>) {
+  try {
+    console.log('[auth/callback] ' + JSON.stringify(fields))
+  } catch {
+    console.log('[auth/callback] (unserialisable event)', fields)
+  }
+}
+
+/** Whatever the platform actually said — never a generic string of ours. */
+function platformWords(err: unknown): Record<string, unknown> {
+  if (!err || typeof err !== 'object') return { raw: String(err) }
+  const e = err as Record<string, unknown>
+  return {
+    name: e.name ?? null,
+    code: e.code ?? null,
+    status: e.status ?? null,
+    message: e.message ?? null,
+  }
+}
+
+/**
+ * Fail LOUD.
+ *
+ * `reason` is a stable slug for grepping; `detail` is the platform's own text
+ * shown to the user. The user lands on /auth/error — which does not re-trigger
+ * anything — instead of /login, which is what closed the loop.
+ */
+function fail(
+  origin: string,
+  reason: string,
+  ctx: Record<string, unknown>,
+  detail?: string,
+) {
+  logEvent({ outcome: 'fail', reason, ...ctx })
+  const url = new URL('/auth/error', origin)
+  url.searchParams.set('reason', reason)
+  if (detail) url.searchParams.set('detail', detail.slice(0, 300))
+  return NextResponse.redirect(url)
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next')
 
+  // The four facts that distinguish the candidate causes of the login loop
+  // from each other. Host tells us whether the exchange happened on www or
+  // app; the flow-state cookie tells us whether the PKCE verifier survived the
+  // round trip (it does not survive a host change, which is the whole reason
+  // host canonicalisation matters); provider error params tell us when the
+  // provider itself refused before we ever saw a code.
+  const cookieHeader = request.headers.get('cookie') || ''
+  const ctx = {
+    host: request.headers.get('host') || null,
+    origin,
+    next: next || null,
+    referer: request.headers.get('referer') || null,
+    has_code: Boolean(code),
+    // supabase-js writes `sb-<ref>-auth-token-code-verifier` before leaving for
+    // the provider. Absent here = the browser that came back is not the browser
+    // (or not the host) that left, and no exchange can possibly succeed.
+    has_code_verifier: /sb-[a-z0-9]+-auth-token-code-verifier/.test(cookieHeader),
+    provider_error: searchParams.get('error') || null,
+    provider_error_description:
+      searchParams.get('error_description') || null,
+  }
+
+  // The provider bounced us before any code existed (consent denied, bad
+  // redirect_uri, app misconfigured). Previously this arrived as "no_code" and
+  // was indistinguishable from a stray visit.
+  if (ctx.provider_error) {
+    return fail(
+      origin,
+      'provider_rejected',
+      ctx,
+      ctx.provider_error_description || ctx.provider_error,
+    )
+  }
+
   if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=no_code`)
+    return fail(
+      origin,
+      'no_code',
+      ctx,
+      'The sign-in provider returned no authorization code to exchange.',
+    )
   }
 
   const supabase = await createClient()
@@ -55,14 +157,23 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
-    console.error('[auth/callback] code exchange failed:', error.message)
-    return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+    // THE loop's most likely seat. Report Supabase's own words verbatim —
+    // "invalid request: both auth code and code verifier should be non-empty"
+    // and "invalid flow state, flow state has expired" are different bugs with
+    // different owners, and the old generic `auth_failed` erased the difference.
+    return fail(origin, 'exchange_failed', {
+      ...ctx,
+      supabase_error: platformWords(error),
+    }, error.message)
   }
 
   const session = sessionData?.session
   const user = session?.user
   if (!user) {
-    return NextResponse.redirect(`${origin}/login?error=no_session_user`)
+    return fail(origin, 'no_session_user', {
+      ...ctx,
+      has_session: Boolean(session),
+    }, 'The code exchanged cleanly but carried no user. The session did not stick.')
   }
 
   const admin = createAdmin(
@@ -235,7 +346,9 @@ export async function GET(request: Request) {
   // Same-origin only (guard against an open redirect), and app paths go to the
   // app host regardless of which host exchanged the code.
   if (next && next.startsWith('/') && !next.startsWith('//')) {
-    return NextResponse.redirect(landOn(next, origin))
+    const to = landOn(next, origin)
+    logEvent({ outcome: 'ok', route: 'explicit_next', to, ...ctx, user_id: user.id })
+    return NextResponse.redirect(to)
   }
 
   const { data: profile } = await admin
@@ -246,5 +359,26 @@ export async function GET(request: Request) {
 
   // Land in the CRM, not the legacy /dashboard sprawl.
   const dest = profile?.onboarding_complete ? '/crm' : '/onboarding'
-  return NextResponse.redirect(`${origin}${dest}`)
+
+  // THROUGH landOn, not `${origin}${dest}`.
+  //
+  // This was the host split, in code. `/crm` is the first entry in APP_PATHS,
+  // and the ?next branch three lines up already routed it to app.0ncore.com —
+  // but the DEFAULT branch, which is the one every ordinary sign-in takes
+  // (nobody arrives at /login carrying ?next=), concatenated the raw origin.
+  // So a login begun on www exchanged its code on www and then landed the user
+  // on www.0ncore.com/crm: a host with no app rewrite, where the sidebar links
+  // and the app shell do not resolve. Cookies were never the problem here — the
+  // auth cookie is set on .0ncore.com and reads fine on both — the DESTINATION
+  // was. One code path honoured the app host and its twin did not, which is
+  // law #4 wearing a redirect for a hat.
+  const to = landOn(dest, origin)
+  logEvent({
+    outcome: 'ok',
+    route: profile?.onboarding_complete ? 'default_crm' : 'default_onboarding',
+    to,
+    ...ctx,
+    user_id: user.id,
+  })
+  return NextResponse.redirect(to)
 }
