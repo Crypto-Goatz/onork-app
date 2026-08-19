@@ -12,7 +12,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { TIERS } from '@/lib/pricing'
-import { SITE, faqPage, graph, jsonLdScript } from '@/lib/seo/jsonld'
+import { SITE, siteNodes, orgRef, faqPage, graph, jsonLdScript } from '@/lib/seo/jsonld'
 import AnimatedGrid from '@/components/animated-grid'
 import AnimatedConnectors from '@/components/animated-connectors'
 import PricingComparison from '@/components/pricing/PricingComparison'
@@ -104,12 +104,14 @@ export default function PricingPage() {
       <script
         {...jsonLdScript(
           graph(
+            ...siteNodes,
             {
               '@type': 'Product',
               name: '0nCore',
               description:
                 '1,598 tools across 106 services. Visual automation builder. AI agent crews. From $0 to enterprise.',
               brand: { '@type': 'Brand', name: '0nORK' },
+              manufacturer: orgRef,
               url: `${SITE}/pricing`,
               // EVERY tier, free included. The free tier was filtered out, which
               // made the cheapest advertised price $47 — the one number the whole

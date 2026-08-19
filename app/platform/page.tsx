@@ -22,7 +22,7 @@ import SiteFooter from '@/components/SiteFooter'
 import TriggerBurst from '@/components/home/TriggerBurst'
 import AnimatedGrid from '@/components/animated-grid'
 import AnimatedConnectors from '@/components/animated-connectors'
-import { SITE, orgRef, graph, jsonLdScript } from '@/lib/seo/jsonld'
+import { SITE, orgRef, siteNodes, graph, jsonLdScript } from '@/lib/seo/jsonld'
 
 export const metadata: Metadata = {
   title: '0nCore Platform — One Place. Everywhere.',
@@ -132,6 +132,7 @@ const CAPABILITIES = [
  * BreadcrumbList comes from the root layout, sitewide.
  */
 const JSON_LD = graph(
+  ...siteNodes,
   {
     '@type': 'WebPage',
     '@id': `${SITE}/platform#webpage`,

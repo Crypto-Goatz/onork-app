@@ -14,7 +14,7 @@ import SiteFooter from '@/components/SiteFooter'
 import Hero from '@/components/home/Hero'
 import CommandCenterVideo from '@/components/CommandCenterVideo'
 import AgencyDashboardSection, { AGENCY_DASHBOARD_FAQ } from '@/components/home/AgencyDashboardSection'
-import { SITE, organization, website, orgRef, faqPage, graph, jsonLdScript } from '@/lib/seo/jsonld'
+import { SITE, siteNodes, orgRef, faqPage, graph, jsonLdScript } from '@/lib/seo/jsonld'
 
 /**
  * 0nCore homepage — repositioned to what this product actually is.
@@ -94,8 +94,7 @@ const FAQS = [
 const ALL_FAQS = [...FAQS, ...AGENCY_DASHBOARD_FAQ]
 
 const JSON_LD = graph(
-  organization,
-  website,
+  ...siteNodes,
   {
     '@type': 'SoftwareApplication',
     '@id': `${SITE}/#software`,

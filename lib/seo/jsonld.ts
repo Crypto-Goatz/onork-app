@@ -45,6 +45,22 @@ export const website = {
 /** Reference the publisher without restating it. */
 export const orgRef = { '@id': ORG_ID } as const
 
+/**
+ * The two nodes EVERY page repeats.
+ *
+ * An @id reference only resolves against a node the parser has actually seen,
+ * and a parser sees one page at a time. Declaring Organization and WebSite on
+ * the homepage alone left `publisher` and `isPartOf` on every other page
+ * pointing at nothing — the schema.org validator types those dangling refs as
+ * a bare CreativeWork, which is exactly what it looks like: an edge to a node
+ * that is not there.
+ *
+ * So both nodes ship on every page, identical and @id-keyed. That is the same
+ * thing Yoast and RankMath do, and it is not duplication: two nodes with one
+ * @id are one entity, which is the entire reason @id exists.
+ */
+export const siteNodes = [organization, website]
+
 export interface FaqItem {
   q: string
   a: string

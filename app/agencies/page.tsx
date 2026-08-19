@@ -9,7 +9,7 @@ import { METERS, formatPrice, resale } from '@/lib/meters'
 import SiteFooter from '@/components/SiteFooter'
 import RequestAccessButton from '@/components/RequestAccessButton'
 import CapabilityMatrix from '@/components/agencies/CapabilityMatrix'
-import { SITE, orgRef, faqPage, graph, jsonLdScript } from '@/lib/seo/jsonld'
+import { SITE, orgRef, siteNodes, faqPage, graph, jsonLdScript } from '@/lib/seo/jsonld'
 
 /**
  * /agencies — the money page.
@@ -379,6 +379,7 @@ export default function AgenciesPage() {
       <script
         {...jsonLdScript(
           graph(
+            ...siteNodes,
             {
               '@type': 'Product',
               name: '0nCORE for agencies',
