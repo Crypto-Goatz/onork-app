@@ -10,7 +10,7 @@
  *        "scan <url>"                   → /api/scanner/analyze
  *        "score <text|url>"             → SXO/EQ
  *        otherwise                       → free-form Groq chat
- *   3. Call Groq (llama-3.3-70b) with the assembled system prompt.
+ *   3. Call Groq (openai/gpt-oss-120b) with the assembled system prompt.
  *   4. Return { text, traceId } for the responder to render.
  *
  * Groq-only per Hard Rule #1. No Anthropic. No OpenAI.

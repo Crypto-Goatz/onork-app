@@ -85,7 +85,7 @@ export function jaxxReply(text: string, traceId?: string): Block[] {
   return [
     section(text),
     context([
-      `Powered by 0nMCP · brain pattern · Groq llama-3.3-70b${traceId ? ` · trace ${traceId.slice(0, 8)}` : ''}`,
+      `Powered by 0nMCP · brain pattern · Groq openai/gpt-oss-120b${traceId ? ` · trace ${traceId.slice(0, 8)}` : ''}`,
     ]),
   ]
 }

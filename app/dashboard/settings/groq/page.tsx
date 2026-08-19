@@ -66,7 +66,7 @@ export default function GroqConnectPage() {
         <div>
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#7ed957]/25 bg-[#7ed957]/[0.08] px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[#7ed957]">
             <Sparkles className="h-3 w-3" />
-            Groq · llama-3.3-70b
+            Groq · openai/gpt-oss-120b
           </div>
           <h1 className="text-balance text-4xl font-black tracking-tight sm:text-5xl">
             <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">

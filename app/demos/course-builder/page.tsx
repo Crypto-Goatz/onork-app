@@ -49,7 +49,7 @@ const HOW_STEPS = [
     icon: ListChecks,
     title: '2 — Outline preview',
     body:
-      'A Groq-powered architect (llama-3.3-70b) returns a structured outline: course title, 2–3 paragraph description, every lesson title with a summary, key topics, quiz topics, and an estimated word count. Approve it in chat, or ask for changes in plain language.',
+      'A Groq-powered architect (openai/gpt-oss-120b) returns a structured outline: course title, 2–3 paragraph description, every lesson title with a summary, key topics, quiz topics, and an estimated word count. Approve it in chat, or ask for changes in plain language.',
   },
   {
     icon: Zap,

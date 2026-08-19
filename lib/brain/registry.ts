@@ -151,7 +151,7 @@ export const BRAIN_REGISTRY: RegistryEntry[] = [
     handler_paths: ['app/api/fiverr/generate/route.ts'],
     surface_route: '/extension/compose',
     description:
-      'Generates a complete Fiverr gig (10 sections) via Groq llama-3.3-70b. Server-side char-limit retry up to 2x. Surfaced in the extension Compose tab under Fiverr mode.',
+      'Generates a complete Fiverr gig (10 sections) via Groq openai/gpt-oss-120b. Server-side char-limit retry up to 2x. Surfaced in the extension Compose tab under Fiverr mode.',
   },
   {
     slug: 'fiverr_section_regenerate',

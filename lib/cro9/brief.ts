@@ -1,5 +1,5 @@
 /**
- * Content-brief generator. Uses Groq (llama-3.3-70b) for fast JSON output.
+ * Content-brief generator. Uses Groq (openai/gpt-oss-120b) for fast JSON output.
  *
  * Inputs: scored task, crawl report, SERP snapshot.
  * Output: ContentBrief — everything the writer or auto-apply layer needs

@@ -1,7 +1,7 @@
 /**
  * AI personalization engine for tiered HIPAA reports.
  *
- * GROQ-ONLY. Every AI call in this file goes through Groq llama-3.3-70b.
+ * GROQ-ONLY. Every AI call in this file goes through Groq openai/gpt-oss-120b.
  * No Anthropic, no OpenAI, no anything else — per owner directive.
  *
  * Public entry point: generateReport(order, assessment) — returns FullReport.

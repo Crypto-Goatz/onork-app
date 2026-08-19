@@ -103,7 +103,7 @@ export async function completion(args: CompletionArgs): Promise<CompletionResult
     body.tool_choice = args.toolChoice ?? 'auto'
   }
 
-  // Groq's free/on-demand tiers cap llama-3.3-70b at 12k TPM. When a course
+  // Groq's on-demand tier caps this key at 8k TPM (x-ratelimit-limit-tokens). When a course
   // generation issues several lessons in a row, the bucket throttles and
   // returns 429 with a `retry-after` header (seconds). Honor it. Without
   // this loop, every paced lesson call still loses the race on the second
