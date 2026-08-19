@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
 
   if (!code) {
-    return NextResponse.redirect(new URL('/crm?error=no_code', req.url))
+    return NextResponse.redirect(new URL('/install/failed?error=no_code', req.url))
   }
 
   try {
@@ -294,7 +294,11 @@ export async function GET(req: NextRequest) {
        */
       const attempts = [...failures, ...skipped]
       const why = (attempts.length ? attempts.map((f) => f.slice(0, 150)).join(' · ') : 'no apps had credentials').slice(0, 900)
-      const url = new URL('/crm', req.url)
+      // /install/failed, NOT /crm. /crm needs a session to render, and the
+      // audience for this redirect is precisely the people who do not have
+      // one — so the reason was being reported to a page incapable of showing
+      // it. That is what a reviewer saw as "an unauthorized error".
+      const url = new URL('/install/failed', req.url)
       url.searchParams.set('error', 'token_failed')
       url.searchParams.set('why', why)
       return NextResponse.redirect(url)
@@ -522,6 +526,6 @@ export async function GET(req: NextRequest) {
     return response
   } catch (error) {
     console.error('[oauth/callback] Error:', error)
-    return NextResponse.redirect(new URL('/crm?error=oauth_failed', req.url))
+    return NextResponse.redirect(new URL('/install/failed?error=oauth_failed', req.url))
   }
 }
