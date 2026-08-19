@@ -10,10 +10,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const uc = await getUseCase(slug)
   if (!uc) return { title: 'Use Case Not Found' }
+
+  // The root layout's title template appends ' · 0nCore', and the generator is
+  // asked for an "SEO title with primary keyword" — which it reliably ends with
+  // '| 0nCore'. Shipped as-is that reads
+  // '… Compliance Automation for Clinics | 0nCore · 0nCore' and eats characters
+  // a 60-char title cannot spare. Strip the brand the model added and let the
+  // template be the one place it comes from.
+  const bareTitle = (uc.metaTitle || uc.title).replace(/\s*[|·—–-]\s*0n[Cc]ore\s*$/, '')
+
   return {
-    title: uc.metaTitle || `${uc.title} — 0nCore`,
+    title: bareTitle,
     description: uc.metaDescription || uc.description,
-    openGraph: { title: uc.metaTitle || uc.title, description: uc.metaDescription || uc.description, url: `https://www.0ncore.com/use-cases/${uc.slug}` },
+    openGraph: { title: bareTitle, description: uc.metaDescription || uc.description, url: `https://www.0ncore.com/use-cases/${uc.slug}` },
     alternates: { canonical: `https://www.0ncore.com/use-cases/${uc.slug}` },
   }
 }

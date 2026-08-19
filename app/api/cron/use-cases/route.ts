@@ -56,16 +56,20 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 1. Get existing slugs to avoid duplicates
-    const { data: existing } = await admin.from('use_cases').select('slug, category')
-    const existingSlugs = new Set((existing || []).map(e => e.slug))
+    // 1. What has already been generated
+    const { data: existing } = await admin.from('use_cases').select('category, generation_prompt')
     const existingCategories = (existing || []).map(e => e.category)
 
-    // 2. Pick a topic that hasn't been generated yet
-    const unused = TOPICS.filter(t => {
-      const slug = t.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60)
-      return !existingSlugs.has(slug)
-    })
+    // 2. Pick a topic that hasn't been generated yet.
+    //
+    // This used to slugify the TOPIC and look for that slug in the table — but
+    // the row's slug is derived from the model's generated TITLE, which is never
+    // the topic string. So nothing ever matched, `remainingTopics` sat at 19
+    // forever, and the same topics would have been rewritten under new titles
+    // until /use-cases was a wall of near-duplicates. `generation_prompt` stores
+    // the topic verbatim on insert; that is the thing to compare.
+    const usedTopics = new Set((existing || []).map(e => e.generation_prompt).filter(Boolean))
+    const unused = TOPICS.filter(t => !usedTopics.has(t.topic))
 
     // Prefer categories that are underrepresented
     const catCounts = existingCategories.reduce((acc, c) => { acc[c] = (acc[c] || 0) + 1; return acc }, {} as Record<string, number>)
