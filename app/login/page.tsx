@@ -45,20 +45,24 @@ export default function LoginPage() {
       redirectTo: cb,
     }
     if (provider === 'google') {
+      // IDENTITY ONLY at the front door. Sign-in needs to know who you are and
+      // nothing else. Analytics / Search Console / Gmail / Drive / Sheets /
+      // Calendar are requested at CONNECT time, per service, by
+      // /api/auth/connect/google — where the user has already asked for the
+      // feature that needs them and the consent screen reads as an answer to a
+      // question they asked.
+      //
+      // Asking for all seven here made a cold customer's very first impression
+      // a Google screen wanting to read their Gmail and their Drive. It also
+      // fed the account's grant history, which is the same pit that produced
+      // `Error 400: invalid_request` on connect (see lib/oauth-providers.ts).
+      //
+      // No access_type/prompt either: an identity grant needs no refresh token,
+      // and forcing prompt=consent re-showed the wall to returning users.
+      // /hub, /install/slack and LockGate already sign in this way — the login
+      // page was the odd one out.
       options.queryParams = {
-        access_type: 'offline',
-        prompt: 'consent',
-        scope: [
-          'openid',
-          'email',
-          'profile',
-          'https://www.googleapis.com/auth/analytics.readonly',
-          'https://www.googleapis.com/auth/webmasters.readonly',
-          'https://www.googleapis.com/auth/gmail.readonly',
-          'https://www.googleapis.com/auth/drive.readonly',
-          'https://www.googleapis.com/auth/spreadsheets',
-          'https://www.googleapis.com/auth/calendar',
-        ].join(' '),
+        scope: 'openid email profile',
       }
     }
     if (provider === 'linkedin_oidc') {
