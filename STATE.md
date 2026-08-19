@@ -63,6 +63,58 @@ portal next time someone is in there; the prefix is what matching keys off until
 
 ---
 
+## 2b. The add-on frame and its gate — `/x/[slug]`
+
+**One skeleton, three facts:** `{ appId, entryRoute, requiredEntitlement }` (`lib/addons/skeleton.ts`).
+It is DERIVED from `lib/addon-registry.ts` (is there code behind it) and `lib/marketplace-data.ts`
+(what plan is it sold on), never hand-written — this repo has already paid for three catalogues that
+disagreed. `appId` is null for add-ons delivered by the sub-account app; only an add-on with its own
+CRM registration names one (`ai-course-builder` → `69801f7a533633818a22921c`).
+
+**Entitlement is keyed on `location_id`, never `user_id.`** The gate this replaced read `product_keys`
+by user — a table with **zero rows in production**, so every Run press 403'd. Even populated it is the
+wrong key: 16 `profiles` rows point at `nphConTwfHcVE1oA0uep`, so a user-keyed grant lets the buyer run
+an add-on and locks out their colleagues on the same subscription.
+
+**Tri-state, derived from the clock, never stored:** `active` / `grace (≤7d)` / `locked`. A stored
+lifecycle needs a cron to stay true and goes stale the first time the cron misses.
+
+**Three sources, one veto** (`lib/addons/entitlements.ts` · `resolveEntitlement`):
+
+| Source | Grants when | Grace |
+|---|---|---|
+| `explicit` | `addon_entitlements` row, `status='active'` | `expires_at + grace_days` |
+| `tier` | `location_plans.tier` reaches the rung on the `pricing.ts` ladder. **Enterprise is the top rung, which is how "enterprise = all add-ons" is enforced** — no list of exceptions | — |
+| `install` | live `crm_installations` row at this location (**install IS an entitlement**) | 7d from `status='expired'`; `archived` gets none — they removed it on purpose |
+
+`status='revoked'` outranks all three. `source:'owner'` is an operator override that writes no row.
+A failed read is `locked` + `verified:false` and says "we could not check", never "you don't own this".
+
+**Two traps this database already contains, both closed here.** `location_id <> ''` is a CHECK
+constraint, not a convention — `crm_installations` carries a row with `location_id = ''` that read as
+the newest install in the table (d013372). And ids are trimmed, because `profiles` carries
+`'nphConTwfHcVE1oA0uep\n'`.
+
+**Nothing was backfilled into `location_plans`, deliberately.** `profiles.plan` is per user, and several
+rows carrying `'enterprise'` were written by security tests (`fake_admin@evil.com` among them). An absent
+row means *not measured* and the resolver prints that rather than inventing `'free'`. **So on production
+today every `/x/` tile is locked for everyone except a live install or the owner** — that is the true
+state, not a regression. Grant with `setAddonEntitlement()` or a `location_plans` row.
+
+**Enforced twice:** the page refuses to render the frame, and `/api/addons/[slug]/{config,execute}` refuse
+again via `lib/addons/guard.ts` (`402` for an honest lock, `503` when the check itself failed). The Hub
+asks the same resolver — it used to open every tile the moment *any* location had a live install.
+
+**Receipts.** `scripts/verify-addon-gate.mts` — 27 checks against the live DB, cleans up.
+`scripts/verify-addon-gate-live.mts` — 27 checks over real HTTP against www.0ncore.com with a real
+signed-in session (throwaway account, deleted at the end). Both green 2026-08-18.
+
+**Known gap, named not hidden:** `addon_configs` is still keyed on `user_id` (unique index on
+`user_id, addon_slug`). Access is decided per location; the answers are still stored per user. Moving it
+is its own migration with a backfill.
+
+---
+
 ## 3. Where we stand, by the numbers
 
 | | |
