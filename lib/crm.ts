@@ -95,7 +95,21 @@ export function getPitForLocation(locationId: string): string {
 }
 
 
-export type Auth = { token: string; source: 'oauth' | 'pit'; installId?: string; locationId: string }
+/**
+ * `unresolved` is set when NOTHING produced a credential — every position in the
+ * chain missed. It exists because the honest value of `token` in that case is
+ * '', and an empty string is indistinguishable at every call site from a token
+ * that simply has the wrong scope: we send `Bearer ` to the CRM, it answers 401,
+ * and nothing anywhere says which account has no key. Carrying the reason on the
+ * Auth means the failure can name the location and the fix all the way out.
+ */
+export type Auth = {
+  token: string
+  source: 'oauth' | 'pit'
+  installId?: string
+  locationId: string
+  unresolved?: string
+}
 
 /**
  * The client credentials that can refresh a token depend on WHICH app issued
@@ -279,7 +293,21 @@ export async function getAuthForLocation(locationId: string): Promise<Auth> {
     console.warn('[crm.getAuthForLocation] mint threw:', err)
   }
 
-  return { token: getPitForLocation(locationId), source: 'pit', locationId }
+  // 4 — the legacy env key, for the three 0n-owned locations that still have one.
+  const env = getPitForLocation(locationId)
+  if (env) return { token: env, source: 'pit', locationId }
+
+  // NOTHING. Every position missed. Say which account and what to do about it,
+  // here, where we still know — rather than emitting `Bearer ` and letting the
+  // CRM's 401 be the only record that this location has no credential at all.
+  let unresolved = `No credential for location ${locationId}. Paste that account's key at /connect.`
+  try {
+    const { requirePastedKey } = await import('./crm/pasted-key-fallback')
+    const need = await requirePastedKey(locationId)
+    if (need.instruction) unresolved = need.instruction
+  } catch { /* the message above is already actionable */ }
+  console.error(`[crm.getAuthForLocation] UNRESOLVED — ${unresolved}`)
+  return { token: '', source: 'pit', locationId, unresolved }
 }
 
 /**
@@ -338,6 +366,23 @@ export async function fallbackCredentials(failed: Auth): Promise<{ label: string
 }
 
 async function authedFetch(url: string, init: RequestInit, auth: Auth): Promise<Response> {
+  /**
+   * DO NOT SEND `Bearer `. A resolution that produced nothing can only ever get
+   * a 401 back, so the round trip buys no information — it just launders "this
+   * account has no key" into the same opaque rejection a revoked token gives,
+   * one layer further from the code that knows the difference. Same status the
+   * CRM would have returned, so every caller behaves exactly as before; the body
+   * now names the account and the fix.
+   */
+  if (!auth.token) {
+    const detail = auth.unresolved || `No credential resolved for location ${auth.locationId}.`
+    console.error(`[CRM] REFUSING ${init.method || 'GET'} ${url.replace(CRM_API, '')} — ${detail}`)
+    return new Response(
+      JSON.stringify({ message: detail, locationId: auth.locationId, unresolved: true }),
+      { status: 401, headers: { 'content-type': 'application/json' } },
+    )
+  }
+
   const headers = {
     ...(init.headers as Record<string, string> | undefined),
     Authorization: `Bearer ${auth.token}`,

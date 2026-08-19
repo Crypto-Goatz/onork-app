@@ -17,6 +17,8 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { getValidAgencyToken } from './agency-token'
+import { warnMintUsed } from './deprecations'
+import { mintDisposition, recordMintOutcome, requirePastedKey } from './pasted-key-fallback'
 
 const CRM_BASE = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
@@ -166,7 +168,23 @@ export async function ensureLocationInstall(locationId: string): Promise<Locatio
     }
   }
 
-  // 2. Need to mint — and minting REQUIRES oauth.write.
+  // 2. MAY WE STILL MINT? POST /oauth/locationToken has been undocumented since
+  // 2026-06-11 (lib/crm/deprecations.ts). When the fallback is armed — by the
+  // canary seeing a 404/410, or by a person — this returns before the network
+  // call, with the instruction that names this location and the fix. The
+  // alternative is a round trip to a dead endpoint followed by an error nobody
+  // can act on.
+  const disposition = await mintDisposition()
+  if (!disposition.allowed) {
+    const need = await requirePastedKey(locationId)
+    return {
+      token: null,
+      source: 'failed',
+      error: need.instruction || disposition.detail,
+    }
+  }
+
+  // 3. Need to mint — and minting REQUIRES oauth.write.
   //
   // Naming the scope matters: the newer agency app carries snapshots and SaaS
   // but not oauth.write (that scope is sub-account-only), so asking for "an
@@ -181,7 +199,14 @@ export async function ensureLocationInstall(locationId: string): Promise<Locatio
     }
   }
 
-  // 3. Mint location-scoped token
+  // 4. Mint location-scoped token.
+  //
+  // SAY SO EVERY TIME. This is the removed endpoint carrying a real credential
+  // for a real location — the fact that matters is not "a mint happened" but
+  // "this account has nothing else", and the only moment we reliably know that
+  // is here. warnMintUsed has existed since the deprecation was recorded and was
+  // never called, so the mint path has been load-bearing and silent.
+  warnMintUsed(locationId, cached ? 'cached token expired, no usable install' : 'no pasted key and no live install')
   try {
     const res = await fetch(`${CRM_BASE}/oauth/locationToken`, {
       method: 'POST',
@@ -195,10 +220,21 @@ export async function ensureLocationInstall(locationId: string): Promise<Locatio
     })
     if (!res.ok) {
       const text = await res.text()
+      // Recorded, never armed on: at this call site a 404 is as likely to mean
+      // "no such location" as "no such endpoint", and one stale id must not
+      // disable minting for every account. See mayArm on recordMintOutcome.
+      await recordMintOutcome({
+        status: res.status,
+        alive: false,
+        error: text.slice(0, 200),
+        observedBy: `ensureLocationInstall(${locationId})`,
+        mayArm: false,
+      })
+      const need = await requirePastedKey(locationId)
       return {
         token: null,
         source: 'failed',
-        error: `mint ${res.status}: ${text.slice(0, 200)}`,
+        error: need.ready ? `mint ${res.status}: ${text.slice(0, 200)}` : need.instruction,
       }
     }
     const tokens = (await res.json()) as {
@@ -207,8 +243,22 @@ export async function ensureLocationInstall(locationId: string): Promise<Locatio
       scope?: string
     }
     if (!tokens.access_token) {
+      // A 2xx with no token is the shape of a soft removal, and it is NOT alive.
+      await recordMintOutcome({
+        status: res.status,
+        alive: false,
+        error: 'mint returned no access_token',
+        observedBy: `ensureLocationInstall(${locationId})`,
+        mayArm: false,
+      })
       return { token: null, source: 'failed', error: 'mint returned no access_token' }
     }
+    await recordMintOutcome({
+      status: res.status,
+      alive: true,
+      observedBy: `ensureLocationInstall(${locationId})`,
+      mayArm: false,
+    })
     // THE TOKEN IS THE RESULT; THE ROW IS BOOKKEEPING. These are caught
     // separately because they fail for unrelated reasons and deserve unrelated
     // answers: the CRM minting a valid token and our own table refusing the

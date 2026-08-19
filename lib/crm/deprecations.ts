@@ -45,7 +45,7 @@ export const DEPRECATED_ENDPOINTS: DeprecatedEndpoint[] = [
     announced: '2026-06-11',
     usedBy: ['lib/crm.ts (resolution step 3)', 'lib/crm/agency-token.ts', 'app/api/bridge/crm-location'],
     replacement:
-      'A pasted per-location PIT (resolution step 1). Every active location already has one, so this path is latent, not load-bearing. Keep it that way — see requirePastedKey below.',
+      'A pasted per-location PIT (resolution step 1). Every active location already has one, so this path is latent, not load-bearing. Keep it that way — see requirePastedKey() and pastedKeyExposure() in lib/crm/pasted-key-fallback.ts, which also hold the switch that stops us calling this endpoint without a deploy.',
     liveCheck:
       'Probed every 6 hours by runLocationTokenCanary() (lib/crm/location-token-canary.ts), ' +
       'called from /api/cron/refresh-tokens. Anything other than a 2xx carrying an access_token ' +

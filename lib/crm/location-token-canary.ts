@@ -23,6 +23,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { getValidAgencyToken } from './agency-token'
+import { recordMintOutcome } from './pasted-key-fallback'
 
 const CRM_BASE = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
@@ -126,6 +127,19 @@ export async function runLocationTokenCanary(): Promise<CanaryResult> {
     try { hasToken = Boolean(JSON.parse(text)?.access_token) } catch { hasToken = false }
     const alive = res.ok && hasToken
 
+    // The probe's verdict, written where resolution can read it. A console
+    // alert is only useful to whoever is reading the console; the row is what
+    // lets credential resolution stop calling a dead endpoint on its own.
+    await recordMintOutcome({
+      status: res.status,
+      alive,
+      error: alive ? undefined : text.slice(0, 200),
+      observedBy: 'runLocationTokenCanary',
+      // The one caller allowed to arm. The location id came from our own table,
+      // so a 404 here is about the endpoint and cannot be about the location.
+      mayArm: true,
+    })
+
     if (alive) {
       return { ran: true, alive: true, status: res.status, locationId, latencyMs }
     }
@@ -154,6 +168,10 @@ export async function runLocationTokenCanary(): Promise<CanaryResult> {
     const message = err instanceof Error ? err.message : 'canary threw'
     const alert = `[canary] POST /oauth/locationToken did not answer at all for location ${locationId}: ${message}`
     console.error(alert)
+    // Recorded, never armed on. A timeout is what a live endpoint having a bad
+    // day looks like, and disarming a working credential path over one would be
+    // us causing the outage.
+    await recordMintOutcome({ status: null, alive: false, error: message, observedBy: 'runLocationTokenCanary', mayArm: true })
     return { ran: true, alive: false, status: null, locationId, latencyMs: Date.now() - started, error: message, alert }
   }
 }
