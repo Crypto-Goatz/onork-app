@@ -19,7 +19,16 @@ import { SUB_LOCATION_APP } from '@/lib/crm-apps'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-const CRM_INSTALL_BASE = 'https://services.leadconnectorhq.com/oauth/chooselocation'
+/**
+ * THE HOST WAS DEAD. `services.leadconnectorhq.com/oauth/chooselocation`
+ * answers 404 for every client_id and every redirect_uri — measured directly,
+ * both hosts side by side. That is the API host, not the authorise host, and
+ * this route was 302ing installers straight into it. Every other install path
+ * in this repo already used the marketplace host; this one did not, and nothing
+ * caught it because no one had followed the redirect to the end.
+ */
+const CRM_INSTALL_BASE =
+  (process.env.CRM_OAUTH_BASE || 'https://marketplace.gohighlevel.com') + '/oauth/chooselocation'
 
 function buildInstallUrl(): { url: string; clientId: string; scopes: string[] } {
   const clientId = MARKETPLACE_APP.clientId
