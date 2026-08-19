@@ -159,7 +159,16 @@ export async function generate(o: GenerateOptions): Promise<GenerateResult> {
           // caller was written to expect it. `low` keeps reasoning to a few
           // dozen tokens; only the `reasoning` job pays for more.
           ...(job === 'reasoning' ? {} : { reasoning_effort: 'low' }),
-          ...(o.json ? { response_format: { type: 'json_object' } } : {}),
+          // The two transports spell JSON mode differently. Groq takes the
+          // OpenAI-standard `json_object`; the Gateway rejects that string with
+          // a bare `400 Invalid input` and wants `json`. Sending `json_object`
+          // to both — which this did — meant every generateJson() call 400'd on
+          // the Gateway and quietly landed on direct Groq. It worked, so nobody
+          // noticed the Gateway was never actually serving a JSON call, and the
+          // failover that exists for a Groq outage was already spent.
+          ...(o.json
+            ? { response_format: { type: t.name === 'gateway' ? 'json' : 'json_object' } }
+            : {}),
           messages: [
             ...(o.system ? [{ role: 'system', content: o.system }] : []),
             { role: 'user', content: o.prompt },

@@ -187,8 +187,8 @@
   "app/dashboard/workflows/page.tsx": "2026-04-18T01:11:10.000Z",
   "app/debug/auth/page.tsx": "2026-05-07T06:37:44.000Z",
   "app/decisions/[token]/page.tsx": "2026-08-12T05:40:44.000Z",
-  "app/demos/course-builder-scopes/page.tsx": "2026-06-28T20:11:15.000Z",
-  "app/demos/course-builder/page.tsx": "2026-06-28T20:11:15.000Z",
+  "app/demos/course-builder-scopes/page.tsx": "2026-08-19T20:23:14.000Z",
+  "app/demos/course-builder/page.tsx": "2026-08-19T20:23:14.000Z",
   "app/dispatch/page.tsx": "2026-06-28T20:11:15.000Z",
   "app/docs/course-builder/page.tsx": "2026-08-18T14:39:59.000Z",
   "app/downloads/page.tsx": "2026-06-28T20:11:15.000Z",
@@ -256,5 +256,5 @@
   "content/guides/05-sxo-indexer.md": "2026-04-28T21:53:07.000Z",
   "lib/compare-data.ts": "2026-04-11T16:20:14.000Z",
   "lib/guides/registry.ts": "2026-04-28T21:53:07.000Z",
-  "lib/marketplace-data.ts": "2026-08-19T08:59:03.000Z"
+  "lib/marketplace-data.ts": "2026-08-19T20:23:14.000Z"
 }
