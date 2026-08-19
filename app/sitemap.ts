@@ -4,6 +4,7 @@ import { CATEGORIES, visibleAddons } from '@/lib/marketplace-data'
 import { GUIDES } from '@/lib/guides/registry'
 import { VALID_SLUGS as COMPARE_SLUGS } from '@/lib/compare-data'
 import { getPublishedPosts, getCategories } from '@/lib/blog/data'
+import { getPublishedUseCases } from '@/lib/use-cases/data'
 
 /**
  * The sitemap.
@@ -178,10 +179,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // ── Use cases ──────────────────────────────────────────────────────────────
-  // The index only. /use-cases/[slug] reads a `use_cases` table that does not
-  // exist in this Supabase project, so every one of those URLs 404s today.
-  // They go in when the table does.
-  urls.push(entry('/use-cases', 0.8, 'weekly', fileDate('app/use-cases/page.tsx')))
+  // The children used to be held out by hand: `use_cases` did not exist in this
+  // Supabase project, so every /use-cases/<slug> 404d and a sitemap of 404s is
+  // worse than a short one. The table exists now (20260819_use_cases.sql), so the
+  // list is derived from the rows that will actually render — never hand-kept,
+  // and empty rather than wrong if the query fails.
+  const useCases = await getPublishedUseCases()
+
+  const useCasesIndexFile = fileDate('app/use-cases/page.tsx')
+  urls.push(entry('/use-cases', 0.8, 'weekly', newest(useCasesIndexFile, useCases[0]?.lastModified)))
+
+  const useCasePageFile = fileDate('app/use-cases/[slug]/page.tsx')
+  for (const uc of useCases) {
+    urls.push(entry(`/use-cases/${uc.slug}`, 0.7, 'monthly', newest(useCasePageFile, uc.lastModified)))
+  }
 
   return urls
 }

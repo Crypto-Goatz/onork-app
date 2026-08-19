@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
+import { getPublishedUseCases } from '@/lib/use-cases/data'
 import AnimatedGrid from '@/components/animated-grid'
 
 export const metadata: Metadata = {
@@ -9,8 +9,6 @@ export const metadata: Metadata = {
   openGraph: { title: '0nCore Use Cases', description: 'See what you can build with 1,554 AI tools and full CRM automation.', url: 'https://www.0ncore.com/use-cases' },
   alternates: { canonical: 'https://www.0ncore.com/use-cases' },
 }
-
-const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
 const CATEGORY_COLORS: Record<string, string> = {
   Platform: '#7ed957', Marketing: '#00B4FF', Healthcare: '#ef4444', Agency: '#8b5cf6',
@@ -21,14 +19,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 export const revalidate = 3600
 
 export default async function UseCasesPage() {
-  const { data: useCases } = await admin
-    .from('use_cases')
-    .select('id, slug, title, subtitle, category, description, metrics, featured, created_at')
-    .eq('status', 'published')
-    .order('featured', { ascending: false })
-    .order('sort_order', { ascending: true })
-
-  const cases = useCases || []
+  const cases = await getPublishedUseCases()
   const categories = [...new Set(cases.map(c => c.category))]
 
   const jsonLd = {
@@ -104,7 +95,7 @@ export default async function UseCasesPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
           {cases.map(c => {
             const color = CATEGORY_COLORS[c.category] || '#6b7280'
-            const metrics = (c.metrics as { value: string; label: string }[]) || []
+            const metrics = c.metrics
             return (
               <Link key={c.id} href={`/use-cases/${c.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                 <div style={{

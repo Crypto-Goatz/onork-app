@@ -117,7 +117,12 @@ Be specific about 0nCore features: K-layers, CRM sub-locations, 0nMCP, form buil
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        // llama-3.3-70b-versatile was decommissioned by Groq; GET
+        // /openai/v1/models on our key no longer lists it and chat/completions
+        // answers 404, which is what this cron had been failing on. Re-pinned to
+        // a model the key can actually reach, via GROQ_MODEL so the fleet-wide
+        // re-pin can move it again without touching this file.
+        model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         max_tokens: 2000,

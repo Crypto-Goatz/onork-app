@@ -1,34 +1,29 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import AnimatedGrid from '@/components/animated-grid'
-
-const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+import { getUseCase } from '@/lib/use-cases/data'
 
 export const revalidate = 3600
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const { data } = await admin.from('use_cases').select('title, meta_title, meta_description, description, slug').eq('slug', slug).eq('status', 'published').single()
-  if (!data) return { title: 'Use Case Not Found' }
+  const uc = await getUseCase(slug)
+  if (!uc) return { title: 'Use Case Not Found' }
   return {
-    title: data.meta_title || `${data.title} — 0nCore`,
-    description: data.meta_description || data.description,
-    openGraph: { title: data.meta_title || data.title, description: data.meta_description || data.description, url: `https://www.0ncore.com/use-cases/${data.slug}` },
-    alternates: { canonical: `https://www.0ncore.com/use-cases/${data.slug}` },
+    title: uc.metaTitle || `${uc.title} — 0nCore`,
+    description: uc.metaDescription || uc.description,
+    openGraph: { title: uc.metaTitle || uc.title, description: uc.metaDescription || uc.description, url: `https://www.0ncore.com/use-cases/${uc.slug}` },
+    alternates: { canonical: `https://www.0ncore.com/use-cases/${uc.slug}` },
   }
 }
 
 export default async function UseCasePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const { data: uc } = await admin.from('use_cases').select('*').eq('slug', slug).eq('status', 'published').single()
+  const uc = await getUseCase(slug)
   if (!uc) notFound()
 
-  const howItWorks = (uc.how_it_works || []) as { step: number; title: string; description: string }[]
-  const features = (uc.features || []) as { title: string; description: string }[]
-  const metrics = (uc.metrics || []) as { value: string; label: string; detail?: string }[]
-  const testimonial = uc.testimonial as { quote: string; author: string; role: string } | null
+  const { howItWorks, features, metrics, testimonial } = uc
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -38,8 +33,8 @@ export default async function UseCasePage({ params }: { params: Promise<{ slug: 
     url: `https://www.0ncore.com/use-cases/${uc.slug}`,
     author: { '@type': 'Organization', name: 'RocketOpp LLC', url: 'https://rocketopp.com' },
     publisher: { '@type': 'Organization', name: '0nCore', url: 'https://www.0ncore.com' },
-    datePublished: uc.created_at,
-    dateModified: uc.updated_at,
+    datePublished: uc.createdAt,
+    dateModified: uc.lastModified,
   }
 
   const faqJsonLd = {
@@ -178,11 +173,11 @@ export default async function UseCasePage({ params }: { params: Promise<{ slug: 
         <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 24, maxWidth: 500, margin: '0 auto 24px' }}>
           {uc.description.slice(0, 120)}...
         </p>
-        <Link href={uc.cta_url || '/login'} style={{
+        <Link href={uc.ctaUrl} style={{
           display: 'inline-block', padding: '14px 32px', background: '#7ed957', color: '#020810',
           fontWeight: 700, borderRadius: 10, textDecoration: 'none', fontSize: 15,
           boxShadow: '0 0 30px rgba(126,217,87,0.3)',
-        }}>{uc.cta_text || 'Get Started'}</Link>
+        }}>{uc.ctaText}</Link>
       </section>
 
       <footer style={{ padding: 'clamp(16px, 3vw, 24px) clamp(16px, 4vw, 32px)', borderTop: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
