@@ -151,6 +151,11 @@ async function tryGroq(
       },
       body: JSON.stringify({
         model: opts.model,
+        // gpt-oss draws reasoning tokens from max_tokens. Without capping the
+        // effort, tight-budget JSON calls spend the budget on reasoning and
+        // Groq rejects the truncated object outright (verified 2026-08-19:
+        // 5/5 fail bare at max_tokens 150, 5/5 pass with 'low').
+        ...(/gpt-oss/.test(opts.model) ? { reasoning_effort: 'low' } : {}),
         temperature: opts.temperature,
         max_tokens: opts.maxTokens,
         response_format: opts.json ? { type: 'json_object' } : undefined,
