@@ -9,11 +9,26 @@
  *   3. generateSalesPage()       — final pass; takes the full course context.
  *
  * Model: configurable via COURSE_BUILDER_GROQ_MODEL env (default
- * `llama-3.1-8b-instant`). The 70b model has the lowest daily-token cap
- * on the free/on-demand tier (100k/day shared with everything else in
- * the codebase using Jaxx) — for sustained course generation throughput
- * the 8b instant model is the right pick. Quality is plenty for course
- * outlines, lessons, quizzes, and sales-page copy.
+ * `openai/gpt-oss-120b`, served BY Groq — still a Groq call, so the
+ * Groq-only rule holds).
+ *
+ * IT USED TO DEFAULT TO `llama-3.1-8b-instant`, AND THAT MODEL NO LONGER
+ * EXISTS. Groq retired the Llama chat models on this account; the endpoint
+ * answers `404 model_not_found`. The generator has no model fallback, so
+ * every call in this file threw — which means the FIRST button in the app
+ * under marketplace review returned a 500. Nothing looked broken until it
+ * was clicked: the page loads, SSO succeeds, and Describe fails on submit.
+ *
+ * Verified against the live model list on the production key
+ * (2026-08-18): the only chat models available are `openai/gpt-oss-*`,
+ * `qwen/qwen3.6-27b` and `groq/compound*`. 120b was chosen because it
+ * returns the bare JSON this file parses — `qwen3.6-27b` prefixes a
+ * <think> block that JSON.parse chokes on, and there is no reasoning
+ * toggle in the completion wrapper to suppress it.
+ *
+ * PIN THIS, DO NOT LEAVE IT FLOATING. A hardcoded model id is a dependency
+ * on someone else's deprecation schedule, and this is the second time that
+ * bill has come due.
  *
  * Responses are JSON; we parse defensively. On parse failure we retry
  * once with a stricter prompt before bubbling the error.
@@ -30,7 +45,7 @@ import type {
 } from './types'
 
 const COURSE_GROQ_MODEL =
-  process.env.COURSE_BUILDER_GROQ_MODEL || 'llama-3.1-8b-instant'
+  process.env.COURSE_BUILDER_GROQ_MODEL || 'openai/gpt-oss-120b'
 
 // ──────────────────────────────────────────────────────────────────────────
 // Outline
