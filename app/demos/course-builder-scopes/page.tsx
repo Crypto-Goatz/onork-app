@@ -313,7 +313,7 @@ export default function ScopesPage() {
                 icon: Webhook,
                 title: 'AI provider',
                 body:
-                  'All generation runs against Groq (llama-3.3-70b-versatile). Course inputs travel to Groq for outline + lesson + sales-page generation. Groq does not retain prompts for training (per their API ToS). No CRM PII is sent to Groq — only the five intake fields.',
+                  'All generation runs against Groq (openai/gpt-oss-120b). Course inputs travel to Groq for outline + lesson + sales-page generation. Groq does not retain prompts for training (per their API ToS). No CRM PII is sent to Groq — only the five intake fields.',
               },
               {
                 icon: AlertTriangle,

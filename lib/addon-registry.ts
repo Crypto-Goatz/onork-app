@@ -252,7 +252,7 @@ You generate content that drives engagement and leads. Every piece should provid
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: `Write a ${lengthGuide} word blog post about "${todayTopic}". Return JSON: { "title": "...", "slug": "...", "content": "...(HTML)...", "meta_description": "...", "tags": ["..."] }` },
@@ -309,7 +309,7 @@ You generate content that drives engagement and leads. Every piece should provid
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: `Write ${count} social media posts about "${todayTopic}" for ${platforms.join(', ')}. Each post should be platform-appropriate length. Return JSON array: [{ "platform": "...", "text": "...", "hashtags": ["..."] }]` },

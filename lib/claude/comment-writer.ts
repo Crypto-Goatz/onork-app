@@ -1,6 +1,6 @@
 const GROQ_KEY = process.env.GROQ_API_KEY!
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const MODEL = 'llama-3.3-70b-versatile'
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 const COMMENT_RULES = `
 COMMENT WRITING RULES:
@@ -19,6 +19,7 @@ async function callGroq(prompt: string): Promise<string> {
     headers: { 'Authorization': `Bearer ${GROQ_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: MODEL,
+      reasoning_effort: 'low',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.75,
       max_tokens: 200,

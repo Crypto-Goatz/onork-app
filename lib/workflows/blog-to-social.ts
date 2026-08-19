@@ -4,7 +4,7 @@
  * Orchestrates: AI writes blog -> generates social snippets -> posts to platforms
  * -> generates email -> sends via CRM -> replies to conversation
  *
- * All AI generation uses Groq (llama-3.3-70b-versatile).
+ * All AI generation uses Groq (openai/gpt-oss-120b).
  * Social posting and email go through CRM APIs.
  */
 
@@ -12,7 +12,7 @@ import { createClient } from '@supabase/supabase-js'
 import { crmGet, crmPost, getAuthForLocation } from '@/lib/crm'
 
 const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_MODEL = 'llama-3.3-70b-versatile'
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
 

@@ -3,7 +3,7 @@
  *
  * SOP (codified 2026-05-06):
  *   1. CRM Agent Studio  → free (uses agency prepaid token allowance)
- *   2. Groq llama-3.3-70b-versatile → ~$0.001/call fallback
+ *   2. Groq openai/gpt-oss-120b → ~$0.001/call fallback
  *   3. Heuristic / template fallback → never throws
  *
  * Universal env vars (every Vercel project, all type:plain):
@@ -20,7 +20,7 @@
 
 const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
-const DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile'
+const DEFAULT_GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 const DEFAULT_TIMEOUT_MS = 25_000
 
 export type AISource = 'crm_agent' | 'groq' | 'fallback'
@@ -32,7 +32,7 @@ export interface AICallOptions {
   maxTokens?: number
   /** Sampling temperature (default 0.3). */
   temperature?: number
-  /** Per-call Groq model override. Default llama-3.3-70b-versatile. */
+  /** Per-call Groq model override. Default openai/gpt-oss-120b. */
   groqModel?: string
   /** Skip CRM tier (e.g. for streaming-adjacent calls where speed beats free). */
   skipCRM?: boolean

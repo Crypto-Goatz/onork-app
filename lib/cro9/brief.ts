@@ -70,7 +70,7 @@ Rules:
     method: 'POST',
     headers: { 'authorization': `Bearer ${GROQ_KEY}`, 'content-type': 'application/json' },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
       temperature: 0.2,
       max_tokens: 900,
       response_format: { type: 'json_object' },

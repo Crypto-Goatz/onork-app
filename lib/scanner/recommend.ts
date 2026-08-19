@@ -92,7 +92,7 @@ export async function recommendForGaps(input: ScannerInput): Promise<Recommendat
         authorization: `Bearer ${groqKey}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: sys },

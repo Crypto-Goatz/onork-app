@@ -39,9 +39,30 @@ export const ALLOWED_MODEL_PREFIXES = ['groq/', 'xai/'] as const
 export type Job = 'fast' | 'reasoning' | 'json'
 
 const MODEL_FOR: Record<Job, string> = {
-  fast: process.env.AI_MODEL_FAST || 'groq/llama-3.3-70b-versatile',
-  reasoning: process.env.AI_MODEL_REASONING || 'groq/llama-3.3-70b-versatile',
-  json: process.env.AI_MODEL_JSON || 'groq/llama-3.3-70b-versatile',
+  fast: process.env.AI_MODEL_FAST || 'groq/gpt-oss-120b',
+  reasoning: process.env.AI_MODEL_REASONING || 'groq/gpt-oss-120b',
+  json: process.env.AI_MODEL_JSON || 'groq/gpt-oss-120b',
+}
+
+/**
+ * The same model has a different id on each transport, and the difference is
+ * not a prefix you can strip.
+ *
+ * The Gateway namespaces by the provider serving the model (`groq/…`). Groq's
+ * own API namespaces by the lab that produced it (`openai/…` for GPT-OSS,
+ * `qwen/…` for Qwen). This file used to derive one from the other by dropping
+ * the first path segment, which was correct only for the Llama ids — they were
+ * bare on Groq, so `groq/llama-3.3-70b-versatile` → `llama-3.3-70b-versatile`
+ * worked. Groq retired those, and on every replacement the same strip yields
+ * `gpt-oss-120b`, which 404s on both transports.
+ *
+ * So both forms are written down rather than computed. Unknown ids still fall
+ * through to the old strip, and a wrong guess there fails over to the next
+ * transport instead of taking the call down.
+ */
+const MODEL_IDS: Record<string, { gateway: string; direct: string }> = {
+  'groq/gpt-oss-120b': { gateway: 'groq/gpt-oss-120b', direct: 'openai/gpt-oss-120b' },
+  'groq/gpt-oss-20b': { gateway: 'groq/gpt-oss-20b', direct: 'openai/gpt-oss-20b' },
 }
 
 export class DisallowedModelError extends Error {
@@ -106,7 +127,8 @@ export function aiConfigured(): boolean {
 }
 
 export async function generate(o: GenerateOptions): Promise<GenerateResult> {
-  const model = o.model || MODEL_FOR[o.job || 'fast']
+  const job: Job = o.job || 'fast'
+  const model = o.model || MODEL_FOR[job]
   assertAllowed(model)
 
   const available = transports()
@@ -117,7 +139,9 @@ export async function generate(o: GenerateOptions): Promise<GenerateResult> {
   const failures: string[] = []
   for (const t of available) {
     // Direct Groq does not understand the provider prefix the Gateway requires.
-    const modelId = t.strip ? model.replace(/^[^/]+\//, '') : model
+    const modelId =
+      MODEL_IDS[model]?.[t.name === 'gateway' ? 'gateway' : 'direct'] ??
+      (t.strip ? model.replace(/^[^/]+\//, '') : model)
     try {
       const res = await fetch(`${t.url}/chat/completions`, {
         method: 'POST',
@@ -126,6 +150,15 @@ export async function generate(o: GenerateOptions): Promise<GenerateResult> {
           model: modelId,
           temperature: o.temperature ?? 0.7,
           ...(o.maxTokens ? { max_tokens: o.maxTokens } : {}),
+          // GPT-OSS is a reasoning model and its reasoning tokens are billed
+          // against max_tokens before a single content token is emitted. At the
+          // budgets callers actually pass (200-500) the whole allowance can go
+          // to reasoning and `content` comes back an empty string — which the
+          // check below reports as "empty response", i.e. a silent failure that
+          // reads like the model is broken. Llama had no such phase, so no
+          // caller was written to expect it. `low` keeps reasoning to a few
+          // dozen tokens; only the `reasoning` job pays for more.
+          ...(job === 'reasoning' ? {} : { reasoning_effort: 'low' }),
           ...(o.json ? { response_format: { type: 'json_object' } } : {}),
           messages: [
             ...(o.system ? [{ role: 'system', content: o.system }] : []),

@@ -63,7 +63,7 @@ Return ONLY the post text. No intro, no explanation, no quotation marks.`
         method: 'POST',
         headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
           messages: [
             { role: 'system', content: 'You are a LinkedIn content writer. Follow the rules exactly.' },
             { role: 'user', content: i === 0 ? prompt : `${prompt}\n\nPrevious version scored ${bestScores?.composite}/100. Rewrite to score higher. Strengthen the hook and make the closing question more specific.` },

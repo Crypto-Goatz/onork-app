@@ -103,7 +103,8 @@ export async function scoreVpis(
     const raw = await groqJson<RawScore>({
       system: SYSTEM_PROMPT,
       user: USER_PROMPT(trimmed, tone),
-      model: 'llama-3.3-70b-versatile',
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+      reasoning_effort: 'low',
       temperature: 0.2,
       max_tokens: 600,
       apiKey: key.apiKey,

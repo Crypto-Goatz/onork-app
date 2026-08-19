@@ -263,7 +263,7 @@ export interface RadialBurstResult {
  * Lesson-generation pacing.
  *
  * Each lesson call uses ~3-4k tokens (prompt + 4096 max output). Groq's
- * `llama-3.3-70b-versatile` on-demand tier caps at 12,000 tokens / minute,
+ * `openai/gpt-oss-120b` on-demand tier caps at 12,000 tokens / minute,
  * so true parallel `Promise.all` blows the cap on any course with 3+ lessons
  * (verified — every parallel run after lesson 1 returned 429).
  *

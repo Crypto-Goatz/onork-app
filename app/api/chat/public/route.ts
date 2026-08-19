@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
     const res = await fetch(GROQ_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages, temperature: 0.6, max_tokens: 500 }),
+      body: JSON.stringify({ model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b', reasoning_effort: 'low', messages, temperature: 0.6, max_tokens: 500 }),
     })
     if (!res.ok) return NextResponse.json({ reply: "I'm having trouble right now. Email mike@rocketopp.com or try again." })
     const data = await res.json()

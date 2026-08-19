@@ -234,7 +234,7 @@ When the user asks you to DO something (not just answer), describe the exact ste
       'Authorization': `Bearer ${groqKey}`,
     },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
       max_tokens: 2048,
       messages: groqMessages,
     }),
@@ -248,7 +248,7 @@ When the user asks you to DO something (not just answer), describe the exact ste
   return Response.json({
     reply: groqData.choices?.[0]?.message?.content || '',
     kLayers: activeKLayers,
-    model: 'llama-3.3-70b-versatile',
+    model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
     provider: 'groq',
   })
 }

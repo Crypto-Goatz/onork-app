@@ -15,7 +15,7 @@
  * Returns: { ok, section, value, warnings }
  *
  * Behavior:
- *   - Calls Groq llama-3.3-70b-versatile, response_format json_object.
+ *   - Calls Groq openai/gpt-oss-120b, response_format json_object.
  *   - Re-validates the single field against FIVERR_LIMITS; one cold attempt
  *     plus one tightened retry. If still over, returns the value with a
  *     warning rather than blocking — caller decides whether to surface.
@@ -39,7 +39,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_MODEL = 'llama-3.3-70b-versatile'
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 const SECTIONS = [
   'title',

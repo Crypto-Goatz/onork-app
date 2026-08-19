@@ -323,7 +323,7 @@ async function groq(prompt: string, opts: { max_tokens?: number; json?: boolean 
         method: 'POST',
         headers: { authorization: `Bearer ${GROQ_KEY}`, 'content-type': 'application/json' },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
           temperature: 0.2,
           max_tokens: opts.max_tokens || 600,
           response_format: opts.json ? { type: 'json_object' } : undefined,

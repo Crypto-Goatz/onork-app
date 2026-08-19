@@ -22,7 +22,7 @@ import type { OnCoreCaller } from './auth'
 import { runGhlJaxx, isGhlIntent } from '../jaxx/ghl-brain'
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_MODEL = 'llama-3.3-70b-versatile'
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 const DISPATCH_API =
   process.env.NEXT_PUBLIC_DISPATCH_API || 'https://www.0ncore.com/api/dispatch'
 

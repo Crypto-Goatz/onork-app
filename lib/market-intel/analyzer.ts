@@ -1,5 +1,5 @@
 /**
- * Analyzer — uses Groq (llama-3.3-70b-versatile) to generate a weekly market
+ * Analyzer — uses Groq (openai/gpt-oss-120b) to generate a weekly market
  * summary from the aggregated skill data, then writes a row into
  * market_snapshots keyed by week_start (Monday).
  */
@@ -8,7 +8,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const GROQ_KEY = process.env.GROQ_API_KEY!
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const MODEL = 'llama-3.3-70b-versatile'
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 interface SkillRow {
   skill: string

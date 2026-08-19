@@ -5,7 +5,7 @@
  *   1. Resolve agent + active packs for the locationId.
  *   2. Build the system prompt (Layer 1 + Layer 2 + Layer 3).
  *   3. Append conversation history + new user message.
- *   4. Call Groq (llama-3.3-70b-versatile by default; configurable via bot_settings).
+ *   4. Call Groq (openai/gpt-oss-120b by default; configurable via bot_settings).
  *   5. Parse [ACTION:...] declarations off the front of the reply.
  *   6. Execute / record actions.
  *   7. Persist conversation + return { response, actions, conversationId }.

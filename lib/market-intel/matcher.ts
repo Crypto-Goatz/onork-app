@@ -10,7 +10,7 @@
  * Scoring (each 0-100):
  *   overall = relevance * 0.30 + demand * 0.25 + (100 - competition) * 0.25 + profit * 0.20
  *
- * Final ranking + descriptions come from Groq llama-3.3-70b-versatile.
+ * Final ranking + descriptions come from Groq openai/gpt-oss-120b.
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
@@ -18,7 +18,7 @@ import type { MarketProfile } from './profile-scraper'
 
 const GROQ_KEY = process.env.GROQ_API_KEY!
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const MODEL = 'llama-3.3-70b-versatile'
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 interface SkillRow {
   skill: string

@@ -832,7 +832,7 @@ export const ADDONS: MarketplaceAddon[] = [
       '4 KB tracking script — non-blocking, async, sendBeacon',
       'Auto-captures gclid, fbclid, li_fat_id, ttclid, twclid',
       '30+ behavioral signals: scroll, dwell, rage/dead clicks, form focus, tab visibility',
-      'Rule-based scoring refined by Groq llama-3.1-8b',
+      'Rule-based scoring refined by Groq openai/gpt-oss-20b',
       'Grades A+ → F (sale, nurture, dead, exclude)',
       'Offline conversion fanout: Google Ads OCI, Meta CAPI, LinkedIn, TikTok, X',
       'Per-tenant accounts with origin allowlist + monthly quota',

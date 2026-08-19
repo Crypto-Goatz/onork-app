@@ -2,7 +2,7 @@
  * POST /api/automations/suggest
  *
  * Generates contextual AI-powered automation suggestions for the visual builder's
- * left panel. Uses Groq (llama-3.3-70b-versatile) with the user's K1 layer for
+ * left panel. Uses Groq (openai/gpt-oss-120b) with the user's K1 layer for
  * industry/business context. Returns 3–5 capability suggestions with reasons and
  * priority scores based on what's missing from the current workflow.
  */
@@ -136,7 +136,7 @@ What 3-5 capabilities should they add next?`
         'Authorization': `Bearer ${groqKey}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
         max_tokens: 1024,
         temperature: 0.4,
         messages: [

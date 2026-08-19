@@ -2,7 +2,7 @@ import { scoreContent, type VPISScores } from '@/lib/vpis/formula'
 
 const GROQ_KEY = process.env.GROQ_API_KEY!
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const MODEL = 'llama-3.3-70b-versatile'
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 export type HookArchetype = 'absolute_declaration' | 'bait_flip' | 'contrarian' | 'specificity' | 'confession'
 
@@ -34,6 +34,7 @@ async function callGroq(prompt: string): Promise<string> {
     headers: { 'Authorization': `Bearer ${GROQ_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: MODEL,
+      reasoning_effort: 'low',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.85,
       max_tokens: 600,

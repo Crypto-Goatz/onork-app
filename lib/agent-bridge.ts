@@ -2,7 +2,7 @@
  * Agent Bridge — Unified endpoint that decomposes natural language intents
  * into CRM API calls for agents, workflows, voice AI, forms, funnels, etc.
  *
- * Uses Groq (llama-3.3-70b-versatile) for intent classification and decomposition.
+ * Uses Groq (openai/gpt-oss-120b) for intent classification and decomposition.
  * Uses CRM API (https://services.leadconnectorhq.com) for execution.
  */
 
@@ -59,7 +59,7 @@ export interface BridgeResult {
 // ---------------------------------------------------------------------------
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_MODEL = 'llama-3.3-70b-versatile'
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 async function groqChat(
   systemPrompt: string,

@@ -78,7 +78,8 @@ Generate ONLY the comment text. Nothing else.`
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+          reasoning_effort: 'low',
           max_tokens: 400,
           temperature: temp,
           messages: [

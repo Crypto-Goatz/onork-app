@@ -14,10 +14,18 @@
 
 const GROQ_BASE = 'https://api.groq.com/openai/v1'
 
+/**
+ * Every id this union used to list was a Llama model, and Groq has retired all
+ * three on this account — `/openai/v1/models` no longer returns them and
+ * chat/completions answers `404 model_not_found`. The union was therefore
+ * documenting models that could not be called, and because callers may pass a
+ * bare `string` too, TypeScript never flagged it. These are the ids the key can
+ * actually reach; check `/openai/v1/models` before adding another.
+ */
 export type GroqModel =
-  | 'llama-3.3-70b-versatile' // synthesis, default
-  | 'llama-3.1-8b-instant'    // entity extraction, classifications
-  | 'llama-3.1-70b-versatile' // legacy alias
+  | 'openai/gpt-oss-120b'  // synthesis, default
+  | 'openai/gpt-oss-20b'   // entity extraction, classifications
+  | 'qwen/qwen3.6-27b'     // non-reasoning alternative, different family
 
 export interface GroqChatRequest {
   model: GroqModel | string
@@ -26,6 +34,15 @@ export interface GroqChatRequest {
   temperature?: number
   max_tokens?: number
   json?: boolean
+  /**
+   * How much of the token budget the model may spend thinking before it writes.
+   *
+   * Only meaningful on reasoning models, which is now all of them here: GPT-OSS
+   * counts reasoning tokens against `max_tokens`, so a call with a small budget
+   * can burn the whole allowance and return empty content. Pass `'low'` on any
+   * call under ~600 tokens. Ignored by models without a reasoning phase.
+   */
+  reasoning_effort?: 'low' | 'medium' | 'high'
   /**
    * Optional explicit API key. When present, this key is used INSTEAD of
    * env vars and no env-var fallback is attempted. Use this for the
@@ -65,6 +82,9 @@ export async function groqChat(req: GroqChatRequest): Promise<GroqChatResult> {
   }
   if (req.json) {
     body.response_format = { type: 'json_object' }
+  }
+  if (req.reasoning_effort) {
+    body.reasoning_effort = req.reasoning_effort
   }
 
   // ── Per-call key override (BYO via lib/groq/router.ts) ──

@@ -735,7 +735,8 @@ const HANDLERS: Record<string, Handler> = {
     try {
       const { groqChat } = await import('@/lib/groq')
       const r = await groqChat({
-        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+        model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+        reasoning_effort: 'low',
         temperature: 0.2,
         max_tokens: 400,
         system: [

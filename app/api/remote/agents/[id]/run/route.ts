@@ -46,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
           messages: [
             { role: 'system', content: `You are 0nRemote, an AI agent execution engine for 0nCore. Execute the following task and return a JSON result with: { "status": "success" or "failure", "summary": "what you did", "details": "detailed output", "actions_taken": ["list of actions"] }` },
             { role: 'user', content: agent.prompt },

@@ -162,7 +162,8 @@ async function executeStep(
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
             body: JSON.stringify({
-              model: 'llama-3.3-70b-versatile',
+              model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+              reasoning_effort: 'low',
               max_tokens: 200,
               messages: [
                 { role: 'system', content: 'Score this lead 1-100 based on the data provided. Return JSON: {"score": N, "reason": "..."}' },
@@ -186,7 +187,8 @@ async function executeStep(
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
             body: JSON.stringify({
-              model: 'llama-3.3-70b-versatile',
+              model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+              reasoning_effort: 'low',
               max_tokens: 500,
               messages: [
                 { role: 'system', content: 'Generate the requested content. Be concise and professional.' },
@@ -232,7 +234,7 @@ async function executeStep(
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
             body: JSON.stringify({
-              model: 'llama-3.3-70b-versatile',
+              model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
               max_tokens: 1000,
               messages: [
                 {
@@ -283,7 +285,8 @@ ${prevOutputs || 'No previous steps executed yet.'}`
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
             body: JSON.stringify({
-              model: 'llama-3.3-70b-versatile',
+              model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+              reasoning_effort: 'low',
               max_tokens: 500,
               messages: [
                 { role: 'system', content: 'You explain automation results in plain language. Be specific about what happened and why. Use **bold**, bullet points, and short paragraphs.' },
@@ -428,7 +431,8 @@ ${prevOutputs || 'No previous steps executed yet.'}`
               method: 'POST',
               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${groqKey}` },
               body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile', max_tokens: 500,
+                model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+                reasoning_effort: 'low', max_tokens: 500,
                 messages: [
                   { role: 'system', content: 'Write a professional email body. Return only the email text, no subject line.' },
                   { role: 'user', content: `Subject: ${inputs.subject}. Context: ${inputs.body || 'Follow-up email'}` },

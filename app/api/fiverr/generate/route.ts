@@ -14,7 +14,7 @@
  * Returns: { sections, vpis, warnings }
  *
  * Behavior:
- *   - Calls Groq llama-3.3-70b-versatile with a JSON-mode contract
+ *   - Calls Groq openai/gpt-oss-120b with a JSON-mode contract
  *     describing all 10 sections + the Fiverr char limits per field.
  *   - Validates char limits server-side; retries up to 2x with a
  *     tightened "respect limits" reminder if any section overshoots.
@@ -38,7 +38,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_MODEL = 'llama-3.3-70b-versatile'
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 interface GenerateBody {
   description: string

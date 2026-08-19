@@ -16,7 +16,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const GROQ_KEY = process.env.GROQ_API_KEY!
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const MODEL = 'llama-3.3-70b-versatile'
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 export interface MarketProfile {
   id?: string

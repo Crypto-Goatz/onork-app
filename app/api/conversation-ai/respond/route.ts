@@ -14,7 +14,7 @@
  *   6. Compute baseline trust + check active IKY challenge
  *   7. If user has pending IKY → score answer, gate accordingly
  *   8. Build system prompt + emit only the tools the config opted into
- *   9. Groq tool-call (llama-3.3-70b-versatile)
+ *   9. Groq tool-call (openai/gpt-oss-120b)
  *  10. If mutating tool requested + no prior confirmation → render plan instead
  *  11. Run reply through disclosure scrubber (fail-closed)
  *  12. Post reply back via CRM /conversations/messages

@@ -2,7 +2,7 @@
  * Groq tool-calls wrapper.
  *
  * Uses OpenAI-compatible chat completions on Groq's endpoint with
- * llama-3.3-70b-versatile. Tools are registered via the OpenAI tool-call
+ * openai/gpt-oss-120b. Tools are registered via the OpenAI tool-call
  * schema, NOT via free-text [ACTION:] parsing.
  *
  * The caller passes:
@@ -14,7 +14,7 @@
  */
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile'
+const DEFAULT_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 export interface GroqMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'

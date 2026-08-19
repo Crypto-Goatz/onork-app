@@ -18,7 +18,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 /** Long enough to describe an agency, short enough that abuse is pointless. */
 const MAX_DESCRIPTION = 1500

@@ -99,7 +99,7 @@ const FEATURES = [
 ]
 
 const SPECS = [
-  { label: 'AI engine', value: 'Groq · llama-3.3-70b-versatile' },
+  { label: 'AI engine', value: 'Groq · openai/gpt-oss-120b' },
   { label: 'Architecture', value: 'Radial Burst (parallel lesson generation)' },
   { label: 'Inputs', value: '5 fields collected via Conversation AI' },
   { label: 'Outputs', value: 'Outline + lessons + quizzes + resources + sales page' },

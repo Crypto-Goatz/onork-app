@@ -6,7 +6,7 @@
  * with 0nCore APIs embedded as Custom Code actions wherever they add
  * intelligence.
  *
- * Same Groq llama-3.3-70b-versatile call pattern as the existing Slack Jaxx.
+ * Same Groq openai/gpt-oss-120b call pattern as the existing Slack Jaxx.
  * Returns { text, traceId }.
  *
  * Hard rules enforced in the system prompt:
@@ -22,7 +22,7 @@ import { PATTERNS_KNOWLEDGE } from './knowledge/patterns'
 import { CHROME_PATTERNS_KNOWLEDGE } from './knowledge/chrome-patterns'
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_MODEL = 'llama-3.3-70b-versatile'
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 export interface GhlBrainContext {
   caller?: {

@@ -117,7 +117,7 @@ export async function personalize(page: PageSpec, visitor: VisitorSignal): Promi
 
   const attempts: [PersonalizeResult['provider'], () => Promise<Record<string, unknown>>][] = []
   if (gk) attempts.push(['gemini', () => viaGemini(gk, prompt, process.env.GEMINI_MODEL || 'gemini-2.5-flash')])
-  if (qk) attempts.push(['groq', () => viaGroq(qk, prompt, process.env.GROQ_MODEL || 'llama-3.3-70b-versatile')])
+  if (qk) attempts.push(['groq', () => viaGroq(qk, prompt, process.env.GROQ_MODEL || 'openai/gpt-oss-120b')])
 
   for (const [provider, run] of attempts) {
     try {

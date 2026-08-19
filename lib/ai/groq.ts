@@ -3,13 +3,13 @@
  *
  * Critical Rule #6 — Groq for ALL production AI calls. Model selection
  * lives in bot_settings; we read it lazily and fall back to
- * llama-3.3-70b-versatile (the spec default).
+ * openai/gpt-oss-120b (the spec default).
  */
 
 import { createClient } from '@supabase/supabase-js'
 
 const GROQ_BASE = 'https://api.groq.com/openai/v1'
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile'
+const DEFAULT_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'

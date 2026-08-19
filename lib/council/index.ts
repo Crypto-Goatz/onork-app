@@ -50,7 +50,10 @@ import { createServiceClient } from '@/lib/connect/service-client'
  * cross-temperature disagreement within one family.
  */
 const PANEL = [
-  { id: 'llama-3.3-70b-versatile', label: 'Llama-3.3-70B' },
+  // Was Llama-3.3-70B until Groq retired it. Qwen replaces it rather than a
+  // third GPT-OSS size, because the point of the seat is a second *family* —
+  // two sizes of one model agree for reasons that are not evidence.
+  { id: 'qwen/qwen3.6-27b', label: 'Qwen3.6-27B' },
   { id: 'openai/gpt-oss-120b', label: 'GPT-OSS-120B' },
   { id: 'openai/gpt-oss-20b', label: 'GPT-OSS-20B' },
 ] as const

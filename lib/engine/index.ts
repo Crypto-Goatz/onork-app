@@ -5,7 +5,7 @@
  * - context.ts  — Builds EngineContext from all K-layers
  * - prompt.ts   — Dynamic system prompt builder
  * - conversation.ts — Multi-turn conversation persistence
- * - groq.ts     — Groq LLM client (llama-3.3-70b-versatile)
+ * - groq.ts     — Groq LLM client (openai/gpt-oss-120b)
  * - intent.ts   — Bridge intent detection
  */
 

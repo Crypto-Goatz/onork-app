@@ -1,11 +1,11 @@
 /**
  * Tiny Groq JSON helper. All Service Packager generators use this to call
- * llama-3.3-70b-versatile and get a structured JSON response with one
+ * openai/gpt-oss-120b and get a structured JSON response with one
  * stricter retry on parse failure.
  */
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const MODEL = 'llama-3.3-70b-versatile'
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 
 interface GroqMessage {
   role: 'system' | 'user' | 'assistant'

@@ -365,7 +365,7 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: args.model || 'llama-3.3-70b-versatile',
+          model: args.model || process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
           messages: [{ role: 'user', content: args.prompt }],
           max_tokens: 2048,
         }),
@@ -516,36 +516,46 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
     }
 
     // ── AI Extended ──
+    //
+    // The six tools below hardcoded `llama-3.3-70b-versatile`, which Groq has
+    // retired — every one of them had been answering 404 and, because each
+    // `JSON.parse` is wrapped in a bare `catch`, returning a shrug instead of an
+    // error. They now read GROQ_MODEL so the next re-pin is an env change.
+    //
+    // `reasoning_effort: 'low'` is not optional here. GPT-OSS spends max_tokens
+    // on reasoning before emitting content, and these calls budget 200-500 —
+    // enough for the reasoning phase to consume the entire allowance and return
+    // an empty string, which the same bare catch would report as success.
     case 'ai_council_debate': {
       return { message: 'Council debate requires the 0nAI server. Use command.0nmcp.com/api/ai/council', tool: name }
     }
     case 'ai_score_lead': {
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: 'You are a lead scoring AI. Score this lead 1-100 based on the data provided. Return ONLY a JSON object: {"score": N, "label": "Hot/Warm/Cold", "reasoning": "brief reason", "nextAction": "recommended action"}' }, { role: 'user', content: `Score this lead: ${JSON.stringify(args)}` }], max_tokens: 200 }) })
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b', reasoning_effort: 'low', messages: [{ role: 'system', content: 'You are a lead scoring AI. Score this lead 1-100 based on the data provided. Return ONLY a JSON object: {"score": N, "label": "Hot/Warm/Cold", "reasoning": "brief reason", "nextAction": "recommended action"}' }, { role: 'user', content: `Score this lead: ${JSON.stringify(args)}` }], max_tokens: 200 }) })
       const data = await groqRes.json()
       try { return JSON.parse(data.choices?.[0]?.message?.content || '{}') } catch { return { response: data.choices?.[0]?.message?.content } }
     }
     case 'ai_generate_email': {
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: `Write a ${args.tone || 'professional'} email. Return ONLY the email text, no meta-commentary.` }, { role: 'user', content: `To: ${args.to}. Context: ${args.context}` }], max_tokens: 500 }) })
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b', reasoning_effort: 'low', messages: [{ role: 'system', content: `Write a ${args.tone || 'professional'} email. Return ONLY the email text, no meta-commentary.` }, { role: 'user', content: `To: ${args.to}. Context: ${args.context}` }], max_tokens: 500 }) })
       const data = await groqRes.json()
       return { email: data.choices?.[0]?.message?.content }
     }
     case 'ai_generate_blog': {
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: 'Write a complete blog post in markdown format. Include H2 headings, bullet points, and a conclusion.' }, { role: 'user', content: `Topic: ${args.topic}. Keywords: ${(args.keywords || []).join(', ')}. Target length: ${args.wordCount || 1000} words.` }], max_tokens: 2048 }) })
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b', reasoning_effort: 'low', messages: [{ role: 'system', content: 'Write a complete blog post in markdown format. Include H2 headings, bullet points, and a conclusion.' }, { role: 'user', content: `Topic: ${args.topic}. Keywords: ${(args.keywords || []).join(', ')}. Target length: ${args.wordCount || 1000} words.` }], max_tokens: 2048 }) })
       const data = await groqRes.json()
       return { blog: data.choices?.[0]?.message?.content }
     }
     case 'ai_generate_social': {
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: `Write a ${args.platform} post. Match the platform style and character limits. Include relevant hashtags.` }, { role: 'user', content: `Topic: ${args.topic}. Tone: ${args.tone || 'engaging'}.` }], max_tokens: 300 }) })
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b', reasoning_effort: 'low', messages: [{ role: 'system', content: `Write a ${args.platform} post. Match the platform style and character limits. Include relevant hashtags.` }, { role: 'user', content: `Topic: ${args.topic}. Tone: ${args.tone || 'engaging'}.` }], max_tokens: 300 }) })
       const data = await groqRes.json()
       return { post: data.choices?.[0]?.message?.content }
     }
     case 'ai_summarize': {
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: 'Summarize the following concisely in 3-5 sentences.' }, { role: 'user', content: args.text || args.url || '' }], max_tokens: 300 }) })
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b', reasoning_effort: 'low', messages: [{ role: 'system', content: 'Summarize the following concisely in 3-5 sentences.' }, { role: 'user', content: args.text || args.url || '' }], max_tokens: 300 }) })
       const data = await groqRes.json()
       return { summary: data.choices?.[0]?.message?.content }
     }
     case 'ai_translate': {
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: `Translate the following to ${args.targetLanguage}. Return ONLY the translation.` }, { role: 'user', content: args.text }], max_tokens: 1000 }) })
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b', reasoning_effort: 'low', messages: [{ role: 'system', content: `Translate the following to ${args.targetLanguage}. Return ONLY the translation.` }, { role: 'user', content: args.text }], max_tokens: 1000 }) })
       const data = await groqRes.json()
       return { translation: data.choices?.[0]?.message?.content }
     }

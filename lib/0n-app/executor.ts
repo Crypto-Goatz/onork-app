@@ -113,7 +113,7 @@ async function executeAiStep(step: OnAppStep, context: ExecutionContext): Promis
   const inputs = resolveTemplate(step.inputs, context) as Record<string, unknown>
   const prompt = String(inputs.prompt || '')
   const systemPrompt = String(inputs.system || 'You are a helpful AI assistant.')
-  const model = String(inputs.model || 'llama-3.3-70b-versatile')
+  const model = String(inputs.model || process.env.GROQ_MODEL || 'openai/gpt-oss-120b')
 
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) throw new Error('GROQ_API_KEY not configured')

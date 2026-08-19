@@ -99,7 +99,7 @@ Use the platform keys exactly as given: ${platforms.join(', ')}`
           'Authorization': `Bearer ${groqKey}`,
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
           messages: [
             { role: 'system', content: 'You are a social media content expert. Always respond with valid JSON only.' },
             { role: 'user', content: prompt },

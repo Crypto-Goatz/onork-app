@@ -68,7 +68,7 @@ Make the course practical, actionable, and immediately useful. Each lesson title
         method: 'POST',
         headers: { Authorization: `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
           messages: [
             { role: 'system', content: 'You are a course curriculum designer. Return ONLY valid JSON. No markdown, no explanation.' },
             { role: 'user', content: prompt },

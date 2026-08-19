@@ -340,9 +340,25 @@ export async function GET(req: NextRequest) {
        * not the one the code was issued to (present the right app). Without the
        * client_id in the message you cannot tell them apart, and on 2026-08-19
        * six rungs all reported it at once — which was read as "every secret is
-       * stale" when a probe with a deliberately invalid code proved all five
-       * pairs valid (the platform answered "Authorization code not found", the
-       * code-stage error, which it only reaches once the credentials pass).
+       * stale".
+       *
+       * THE PROBE THAT "PROVED THE SECRETS VALID" DOES NOT PROVE IT. Measured
+       * 2026-08-19 with controls: a client_id that does not exist at all, sent
+       * with the secret `whatever`, gets the SAME "Authorization code not found"
+       * — and on grant_type=refresh_token it gets the same "Invalid refresh
+       * token" a real pair gets. The platform resolves the code (or the refresh
+       * token) FIRST and never reaches credential validation when that lookup
+       * fails. So a bogus-code probe says nothing whatsoever about a secret, and
+       * neither does a bogus-refresh-token probe. Both were treated as proof.
+       *
+       * What the two messages DO mean, and this is the useful part:
+       *   "Authorization code not found"  → the code does not exist. Credentials
+       *                                     were never evaluated.
+       *   "Invalid client credentials"    → the code EXISTS and the presented
+       *                                     client is not the one that owns it.
+       * So six rungs reporting `Invalid client credentials` is not six stale
+       * secrets — it is one real code issued by an app that is not in the
+       * ladder. Rotating a key on that evidence is wasted work. Find the owner.
        *
        * client_id is public — it rides in every authorise URL — so printing it is
        * free. The secret is not, so it travels as a short sha256 prefix: enough
@@ -397,16 +413,55 @@ export async function GET(req: NextRequest) {
        * path that is already broken, and a credential rejection never spends the
        * code.
        */
-      const retiredId = process.env.CRM_LEADSCOUT_CLIENT_ID || ''
-      const retiredSecret = process.env.CRM_LEADSCOUT_CLIENT_SECRET || ''
-      if (retiredId.startsWith('6a7ea3e8') && retiredSecret) {
+      /**
+       * WHICH APP DOES OWN THIS CODE? Ask every pair this deployment holds.
+       *
+       * Was one hardcoded probe against the retired duplicate 6a7ea3e8. That
+       * answered exactly one question, and 2026-08-19 showed there are more:
+       * `CRM_MASTER_CLIENT_ID` (69943904d9c16d0ada26cecc) is a real registered
+       * app whose credentials sit in this deployment's environment and which the
+       * ladder above presents NOWHERE — not as a rung, not as a probe. A code
+       * issued against it makes every rung report `Invalid client credentials`
+       * and nothing anywhere names it. That is indistinguishable, from the
+       * outside, from "all our secrets went stale" — which is how one real
+       * install cost a full diagnosis cycle and nearly cost a key rotation.
+       *
+       * So the probe pool is now derived from the environment rather than
+       * written out: every CLIENT_ID/CLIENT_SECRET pair we hold, minus the ones
+       * already tried as rungs. Adding an app's credentials to the environment
+       * now extends this automatically — there is no second list to forget.
+       *
+       * STILL DIAGNOSTIC, NEVER A RUNG. No result is assigned to `tokenData`, so
+       * a success here cannot quietly complete an install on a retired or
+       * non-canonical app. It only changes the sentence a human reads, from
+       * "credentials" to "you installed the wrong listing".
+       *
+       * Runs only once everything else has already failed, and a credential
+       * rejection never spends the code.
+       */
+      const alreadyTried = new Set(candidates.map((a) => a.clientId).filter(Boolean))
+      const ownerCandidates = [
+        ['retired-6a7ea3e8', 'CRM_LEADSCOUT_CLIENT_ID', 'CRM_LEADSCOUT_CLIENT_SECRET'],
+        ['master-69943904', 'CRM_MASTER_CLIENT_ID', 'CRM_MASTER_CLIENT_SECRET'],
+        ['marketplace-mpa', 'CRM_MARKETPLACE_CLIENT_ID', 'CRM_MARKETPLACE_CLIENT_SECRET'],
+        ['marketplace-extauth', 'CRM_EXTERNAL_AUTH_CLIENT_ID', 'CRM_EXTERNAL_AUTH_CLIENT_SECRET'],
+        ['course-69801f7a', 'CRM_COURSE_APP_CLIENT_ID', 'CRM_COURSE_APP_CLIENT_SECRET'],
+        ['subacct-6a7178a4', 'CRM_SUBACCT_CLIENT_ID', 'CRM_SUBACCT_CLIENT_SECRET'],
+        ['agency-6a71919b', 'CRM_AGENCY_APP_CLIENT_ID', 'CRM_AGENCY_APP_CLIENT_SECRET'],
+      ] as const
+
+      for (const [label, idEnv, secretEnv] of ownerCandidates) {
+        const pid = process.env[idEnv] || ''
+        const psec = process.env[secretEnv] || ''
+        if (!pid || !psec || alreadyTried.has(pid)) continue
+        alreadyTried.add(pid)
         try {
           const probe = await fetch(CRM_TOKEN_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
             body: new URLSearchParams({
-              client_id: retiredId,
-              client_secret: retiredSecret,
+              client_id: pid,
+              client_secret: psec,
               grant_type: 'authorization_code',
               code,
               redirect_uri: 'https://app.0ncore.com/api/oauth/callback',
@@ -416,20 +471,19 @@ export async function GET(req: NextRequest) {
           const pd = await probe.json()
           if (probe.ok && (pd as { access_token?: string }).access_token) {
             const msg =
-              'DIAGNOSED: this code was issued by the RETIRED duplicate Course Builder ' +
-              'registration 6a7ea3e803672cba97505c5c. The install came from the wrong ' +
-              'marketplace listing — credentials are fine. Install from the canonical ' +
-              'listing (69801f7a533633818a22921c) instead. Token deliberately discarded.'
+              `DIAGNOSED: this code was issued by ${label} (${pid}). The install came ` +
+              'from that app\'s listing, not the one this flow expects — the credentials ' +
+              'are fine. Install from the canonical listing instead. Token discarded.'
             console.error(`[oauth/callback] ${msg}`)
-            failures.push(`retired-6a7ea3e8(200) OWNS THIS CODE — ${msg}`)
-          } else {
-            failures.push(
-              `retired-6a7ea3e8(${probe.status}) does NOT own this code: ` +
-              String((pd as { error_description?: string }).error_description || '').slice(0, 80)
-            )
+            failures.push(`${label}(200) OWNS THIS CODE — ${msg}`)
+            break
           }
+          failures.push(
+            `${label}(${probe.status}) not owner: ` +
+            String((pd as { error_description?: string }).error_description || '').slice(0, 60)
+          )
         } catch (e) {
-          failures.push(`retired-6a7ea3e8(probe threw) ${String(e).slice(0, 80)}`)
+          failures.push(`${label}(probe threw) ${String(e).slice(0, 60)}`)
         }
       }
 

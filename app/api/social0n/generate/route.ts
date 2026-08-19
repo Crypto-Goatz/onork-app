@@ -48,7 +48,8 @@ Generate ONLY the post text. No explanation. No meta-commentary. Just the Linked
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+        reasoning_effort: 'low',
         max_tokens: 600,
         temperature: 0.8 + (attempt * 0.05), // slightly more creative each retry
         messages: [

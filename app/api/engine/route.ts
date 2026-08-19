@@ -2,7 +2,7 @@
  * 0nAI Engine — Main conversational API endpoint.
  *
  * Accepts dashboard requests (Supabase session) and external token requests.
- * Uses Groq (llama-3.3-70b-versatile) for ALL generation.
+ * Uses Groq (openai/gpt-oss-120b) for ALL generation.
  * Multi-turn, K-layer aware, bridge-capable.
  */
 
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
     await addMessage(conversationId, 'assistant', reply, {
       persona,
       intent: intent.isBridge ? intent.action : 'conversation',
-      model: 'llama-3.3-70b-versatile',
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
     })
 
     // -------------------------------------------------------------------
