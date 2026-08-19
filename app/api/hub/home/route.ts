@@ -149,12 +149,30 @@ export async function GET() {
   }
 
   // ── Learning ─────────────────────────────────────────────────────────
-  // Spec calls for link-out in v1 with an honest label; native cards wait for
-  // named endpoints.
+  //
+  // LOCKED, NOT LINKED — a correction, not a downgrade.
+  //
+  // This tile shipped pointing at https://www.0ncore.com/learn, which 404s.
+  // "Open courses" rendered in Hub green and landing on a not-found page is
+  // exactly the failure the cold-visitor exit test exists to catch: something
+  // that looks live and then dead-ends. Every candidate was checked before
+  // this was changed, and there is no customer-facing course shelf today:
+  //   · /portal is live, but it is the member PROFILE widget — name, email,
+  //     phone, address. No courses in it. Sending "Open courses" there would
+  //     be a quieter version of the same lie.
+  //   · /crm/courses is the agency operator screen, not a member's shelf.
+  //   · /dashboard/courses is owner-only behind the H1 gate, so a customer
+  //     following it is bounced straight back to /hub.
+  //
+  // A capability that is real but not yet reachable is precisely what the
+  // locked state is for. It renders behind glass with a sentence saying what
+  // it will do, and becomes a link again the day a members' course URL exists
+  // — set `href` here and the tile turns itself back into one.
   const learning = {
     verified: false,
-    note: 'Courses live in the hosted membership portal. Native cards arrive when its endpoints are named — until then this links out rather than pretending to embed.',
-    href: 'https://www.0ncore.com/learn',
+    state: 'locked' as const,
+    blurb: 'Free and paid courses on one shelf, opened straight from your account — no second login.',
+    note: 'The course shelf has no customer-facing address yet, so this is shown locked rather than linked to a page that would 404.',
   }
 
   return NextResponse.json({

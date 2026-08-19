@@ -33,7 +33,7 @@ type Home = {
   appsNote?: string
   appCount?: number
   billing?: { plan: string | null; status: string; note: string; manageHref: string }
-  learning?: { verified: boolean; note: string; href: string }
+  learning?: { verified: boolean; state?: 'locked'; blurb?: string; note: string; href?: string }
   locked?: { slug: string; name: string; blurb: string }[]
   whatsNew?: { at: string; text: string }[]
   notes?: string[]
@@ -42,6 +42,40 @@ type Home = {
 export default function HubPage() {
   const [d, setD] = useState<Home | null>(null)
   const [loading, setLoading] = useState(true)
+  const [billingBusy, setBillingBusy] = useState(false)
+  const [billingErr, setBillingErr] = useState<string | null>(null)
+
+  /**
+   * The billing portal is POST-only and answers with { url } — it never
+   * redirects. Rendered as an anchor it returned 405 and a blank page, which
+   * is the dead end the exit test forbids. So: post, follow the URL it hands
+   * back, and when it cannot be opened SAY SO on the tile rather than
+   * navigating somewhere that explains nothing.
+   */
+  async function manageBilling() {
+    setBillingBusy(true)
+    setBillingErr(null)
+    try {
+      const r = await fetch('/api/billing/portal', {
+        method: 'POST',
+        credentials: 'same-origin',
+      })
+      const j = await r.json().catch(() => null)
+      if (r.ok && j?.url) {
+        window.location.href = j.url as string
+        return
+      }
+      setBillingErr(
+        j?.error
+          ? `Billing portal could not open: ${j.error}`
+          : `Billing portal could not open (${r.status}). Nothing was charged or changed.`,
+      )
+    } catch {
+      setBillingErr('Could not reach the billing portal. Nothing was charged or changed.')
+    } finally {
+      setBillingBusy(false)
+    }
+  }
 
   useEffect(() => {
     fetch('/api/hub/home', { credentials: 'same-origin' })
@@ -143,51 +177,93 @@ export default function HubPage() {
               /* No invented plan name. See the route for why. */
               <p className="mt-2 text-xs leading-relaxed text-white/45">{d.billing?.note}</p>
             )}
-            <a
-              href={d.billing?.manageHref || '#'}
-              className="mt-4 inline-flex items-center gap-1 text-xs text-[#6EE05A] hover:underline"
+            {/* A button, not an anchor — the route is POST-only. See manageBilling. */}
+            <button
+              type="button"
+              onClick={manageBilling}
+              disabled={billingBusy}
+              className="mt-4 inline-flex items-center gap-1 text-xs text-[#6EE05A] transition hover:underline disabled:opacity-50"
             >
-              Manage billing <ArrowRight className="h-3 w-3" />
-            </a>
+              {billingBusy ? 'Opening' : 'Manage billing'}
+              {billingBusy ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <ArrowRight className="h-3 w-3" />
+              )}
+            </button>
+            {/* The failure is printed, not swallowed. */}
+            {billingErr && (
+              <p className="mt-2 text-xs leading-relaxed text-[#f59e0b]">{billingErr}</p>
+            )}
           </div>
 
+          {/* Learning wears the same locked treatment as the tiles below: a
+              padlock, a sentence, nothing to click. It links out only when the
+              server hands over a real address — see the route for why it does
+              not have one yet. */}
           <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
-            <h3 className="flex items-center gap-2 text-sm font-medium">
-              <BookOpen className="h-4 w-4 text-white/40" /> Learning
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-sm font-medium text-white/80">
+                <BookOpen className="h-4 w-4 text-white/40" /> Learning
+              </h3>
+              {!d.learning?.href && <Lock className="h-3.5 w-3.5 text-white/25" />}
+            </div>
+            {d.learning?.blurb && (
+              <p className="mt-2 text-xs leading-relaxed text-white/60">{d.learning.blurb}</p>
+            )}
             <p className="mt-2 text-xs leading-relaxed text-white/45">{d.learning?.note}</p>
-            <a
-              href={d.learning?.href}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 inline-flex items-center gap-1 text-xs text-[#6EE05A] hover:underline"
-            >
-              Open courses <ArrowRight className="h-3 w-3" />
-            </a>
+            {d.learning?.href && (
+              <a
+                href={d.learning.href}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-4 inline-flex items-center gap-1 text-xs text-[#6EE05A] hover:underline"
+              >
+                Open courses <ArrowRight className="h-3 w-3" />
+              </a>
+            )}
           </div>
         </section>
 
         {/* ── Locked: the promise, never a dead end ─────────────────── */}
-        <section>
-          <h2 className="flex items-center gap-2 text-sm uppercase tracking-widest text-white/40">
-            <Lock className="h-4 w-4" /> Not yours yet
-          </h2>
-          <p className="mt-2 text-xs text-white/40">
-            Each of these turns on the moment it&apos;s added to your account.
-          </p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {(d.locked ?? []).map((t) => (
-              <div key={t.slug} className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-white/80">{t.name}</p>
-                  <Lock className="h-3.5 w-3.5 text-white/25" />
+        {/* Rendered only when there is something to promise. An owner with
+            everything switched on used to get the heading, the sentence
+            "each of these turns on…", and then an empty grid under it. */}
+        {(d.locked?.length ?? 0) > 0 && (
+          <section>
+            <h2 className="flex items-center gap-2 text-sm uppercase tracking-widest text-white/40">
+              <Lock className="h-4 w-4" /> Not yours yet
+            </h2>
+            <p className="mt-2 text-xs text-white/40">
+              Each of these turns on the moment it&apos;s added to your account.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {(d.locked ?? []).map((t) => (
+                /* A DIV, DELIBERATELY. A locked tile is inert — the whole point
+                   is that clicking it cannot take anyone anywhere. The one way
+                   out of this section is the CTA below it. */
+                <div key={t.slug} className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-white/80">{t.name}</p>
+                    <Lock className="h-3.5 w-3.5 text-white/25" />
+                  </div>
+                  {/* The sentence is the point. A padlock alone teaches nobody anything. */}
+                  <p className="mt-2 text-xs leading-relaxed text-white/45">{t.blurb}</p>
                 </div>
-                {/* The sentence is the point. A padlock alone teaches nobody anything. */}
-                <p className="mt-2 text-xs leading-relaxed text-white/45">{t.blurb}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+            {/* The doctrine's unlock CTA, once per section rather than once per
+                tile — the tiles stay unclickable, and the visitor still has a
+                real door. The grid is capped at a handful; this is where the
+                rest of the catalogue actually lives. */}
+            <Link
+              href="/marketplace"
+              className="mt-4 inline-flex items-center gap-1 text-xs text-[#6EE05A] hover:underline"
+            >
+              See everything you can add <ArrowRight className="h-3 w-3" />
+            </Link>
+          </section>
+        )}
 
         {/* ── What's new ────────────────────────────────────────────── */}
         <section>

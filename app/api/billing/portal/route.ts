@@ -56,7 +56,11 @@ export async function POST() {
     }
 
     const stripe = getStripe()
-    const returnUrl = `${process.env.NEXT_PUBLIC_URL || 'https://0ncore.com'}/dashboard/billing`
+    // Back to the Hub, not /dashboard/billing. /dashboard/* is owner-only
+    // behind the H1 gate, so a customer finishing in Stripe was redirected
+    // into a wall and bounced to /hub anyway. The Hub is this route's only
+    // caller, so sending them straight home is both correct and safe.
+    const returnUrl = `${process.env.NEXT_PUBLIC_URL || 'https://app.0ncore.com'}/hub`
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
