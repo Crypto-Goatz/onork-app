@@ -29,7 +29,7 @@
  * install renders the re-consent prompt instead of the frame, and a dying one
  * renders a banner above a frame that still works. See lib/crm/reconsent.ts.
  */
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { getAddonDefinition, isRunnableAddon } from '@/lib/addon-registry'
 import { ADDONS, type MarketplaceAddon } from '@/lib/marketplace-data'
 import { isOwnerEmail } from '@/lib/owner'
@@ -40,6 +40,7 @@ import { skeletonFor } from '@/lib/addons/skeleton'
 import AddonFrame from './AddonFrame'
 import AddonLocked from './AddonLocked'
 import ReconsentPrompt from '@/components/addons/ReconsentPrompt'
+import { hostedAppFor } from './HostedApp'
 
 export const dynamic = 'force-dynamic'
 
@@ -128,21 +129,23 @@ export default async function AddonPage({ params }: { params: Promise<{ slug: st
   }
 
   /**
-   * A HOSTED ADD-ON IS HANDED OFF, NOT RE-RENDERED.
+   * A HOSTED ADD-ON BRINGS ITS OWN SCREEN.
    *
    * Course Builder and lead0n shipped before this frame did and each has a real
    * UI. Rendering the generic configure-and-Run panel for them would replace a
    * course list and a lead search with an empty form — a migration that made
-   * the product worse. What they migrate onto is the GATE: everything above
-   * this line ran identically for them, and only now, having been let through,
-   * do they get control of their own route.
-   *
-   * The redirect is deliberate rather than an inline render. Their routes carry
-   * their own layouts and their own auth, and resolving the same page at two
-   * URLs is how this codebase ended up with add-ons in three catalogues.
+   * the product worse. What they migrate onto is the GATE: every line above
+   * this one ran identically for them, and only having been let through do they
+   * get to draw themselves.
    */
   if (!isRunnableAddon(def)) {
-    redirect(skeleton.entryRoute)
+    const Hosted = hostedAppFor(slug)
+    // A definition that claims to be hosted and ships no screen is a dead end,
+    // and a dead end is a 404 here — the same answer a listing with no code
+    // behind it gets. An empty frame is the one outcome this route exists to
+    // make impossible.
+    if (!Hosted) notFound()
+    return <Hosted />
   }
 
   return (

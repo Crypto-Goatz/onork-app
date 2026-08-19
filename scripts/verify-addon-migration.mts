@@ -45,8 +45,12 @@ async function main() {
     check(`${slug}: entryRoute is its own app`, s!.entryRoute, entryRouteFor(slug))
     check(`${slug}: appears in allSkeletons()`, allSkeletons().some(x => x.slug === slug), true)
   }
-  check('course-builder entryRoute', skeletonFor('ai-course-builder')!.entryRoute, '/dashboard/course-builder')
-  check('lead0n entryRoute', skeletonFor('lead0n')!.entryRoute, '/dashboard/lead0n')
+  // Both serve AT /x/. Pointing them at the routes they already had sent
+  // customers into the owner-only H1 gate and bounced them to /hub.
+  check('course-builder entryRoute', skeletonFor('ai-course-builder')!.entryRoute, '/x/ai-course-builder')
+  check('lead0n entryRoute', skeletonFor('lead0n')!.entryRoute, '/x/lead0n')
+  check('no add-on claims an owner-only entry route',
+    allSkeletons().filter(x => x.entryRoute.startsWith('/dashboard')).map(x => x.slug), [])
   // Course Builder names its own CRM app, so an install of some OTHER app
   // must not open it. lead0n is unsubmitted, so any live install counts.
   check('course-builder names its app', skeletonFor('ai-course-builder')!.appId,
@@ -120,7 +124,7 @@ async function main() {
   const open = ADDONS.filter(a => verdicts.get(a.slug)?.state && verdicts.get(a.slug)!.state !== 'locked')
   const locked = ADDONS.filter(a => verdicts.has(a.slug) && verdicts.get(a.slug)!.state === 'locked')
   check('exactly one tile open', open.map(a => a.slug), ['ai-course-builder'])
-  check('its href is the real app', verdicts.get('ai-course-builder')!.entryRoute, '/dashboard/course-builder')
+  check('its href is the frame', verdicts.get('ai-course-builder')!.entryRoute, '/x/ai-course-builder')
   check('lead0n is a locked tile, not a missing one', locked.some(a => a.slug === 'lead0n'), true)
 
   await clean()

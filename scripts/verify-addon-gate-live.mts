@@ -136,7 +136,18 @@ async function main() {
     r = await get('/api/hub/home', cookie)
     const hub = JSON.parse(r.body)
     check('hub authed', hub.authed, true)
-    check('enterprise opens every registered tile', hub.apps.map((a: {slug: string}) => a.slug).sort(), ['0ncouncil', 'content-engine', 'sxo'])
+    // Was the three workflow add-ons. Course Builder and lead0n joined the
+    // registry when they migrated onto the frame, so enterprise now reaches
+    // five rungs — which is the tier ladder working, not a regression.
+    check('enterprise opens every registered tile', hub.apps.map((a: {slug: string}) => a.slug).sort(),
+      ['0ncouncil', 'ai-course-builder', 'content-engine', 'lead0n', 'sxo'])
+    // Every tile opens through the frame. A tile pointing at /dashboard/* would
+    // bounce the customer to /hub via the owner-only H1 gate.
+    const hrefs = Object.fromEntries(hub.apps.map((a: {slug: string; href: string}) => [a.slug, a.href]))
+    check('course-builder tile opens the frame', hrefs['ai-course-builder'], '/x/ai-course-builder')
+    check('lead0n tile opens the frame', hrefs['lead0n'], '/x/lead0n')
+    check('no tile points into the owner-only dashboard',
+      Object.values(hrefs).filter((h) => String(h).startsWith('/dashboard')), [])
     await admin.from('location_plans').delete().eq('location_id', LOC)
     r = await get('/api/hub/home', cookie)
     const hub2 = JSON.parse(r.body)
@@ -150,8 +161,12 @@ async function main() {
     check('listed but no code → 404, not an empty shell', r.status, 404)
   } finally {
     await cleanup()
-    const { count } = await admin.from('addon_entitlements').select('*', { count: 'exact', head: true })
-    const { count: c2 } = await admin.from('location_plans').select('*', { count: 'exact', head: true })
+    // Scoped to LOC: a table-wide count goes red on any unrelated row and says
+    // nothing about whether THIS script cleaned up after itself.
+    const { count } = await admin.from('addon_entitlements')
+      .select('*', { count: 'exact', head: true }).eq('location_id', LOC)
+    const { count: c2 } = await admin.from('location_plans')
+      .select('*', { count: 'exact', head: true }).eq('location_id', LOC)
     console.log(`\nCleanup: addon_entitlements=${count} location_plans=${c2} (account deleted)`)
   }
 
