@@ -4,7 +4,7 @@
  * Creates pipeline, custom fields, tags, workflows, knowledge bases, voice agent, chat bot.
  */
 
-import { crmPost, crmGet } from './crm'
+import { crmPost, crmPostRaw, crmGet } from './crm'
 
 export interface SnapshotStage {
   name: string
@@ -12,7 +12,14 @@ export interface SnapshotStage {
 
 export interface SnapshotCustomField {
   name: string
+  /**
+   * One of the platform's 15 accepted values, verbatim — TEXT, LARGE_TEXT,
+   * NUMERICAL, PHONE, MONETORY, CHECKBOX, SINGLE_OPTIONS, MULTIPLE_OPTIONS,
+   * FLOAT, TIME, DATE, TEXTBOX_LIST, FILE_UPLOAD, SIGNATURE, RADIO.
+   * Not "NUMBER" — the obvious guess, and a 422 (measured 2026-08-20).
+   */
   type: string
+  /** Intended field folder. Not sent on create — see the POST below. */
   group: string
 }
 
@@ -79,6 +86,15 @@ export interface DeployResult {
   success: boolean
   deployed: { type: string; name: string; id?: string }[]
   errors: string[]
+  /**
+   * Parts of the snapshot this route CANNOT deploy, and why — separated from
+   * `errors` on purpose. An error is something that might have gone otherwise;
+   * these never can, at any scope, and reporting them as failures taught every
+   * reader to expect a red deploy and ignore it. A caller that sees `success:
+   * true` with a populated `unsupported` knows exactly what it got and exactly
+   * what the platform snapshot still has to carry.
+   */
+  unsupported: { type: string; name: string; reason: string }[]
 }
 
 /** One agency-configurable variable, referenced by workflows as {{custom_values.<key>}}. */
@@ -161,8 +177,8 @@ export const MASTER_SNAPSHOT: Snapshot = {
     customFields: [
       { name: '0nCore User ID', type: 'TEXT', group: 'general' },
       { name: '0nCore Tier', type: 'TEXT', group: 'general' },
-      { name: 'Trust Score', type: 'NUMBER', group: 'security' },
-      { name: 'K-Layers Active', type: 'NUMBER', group: 'ai' },
+      { name: 'Trust Score', type: 'NUMERICAL', group: 'security' },
+      { name: 'K-Layers Active', type: 'NUMERICAL', group: 'ai' },
       { name: 'Last AI Interaction', type: 'DATE', group: 'ai' },
     ],
     tags: ['0ncore-managed', 'ai-enabled', 'vip', 'active', 'trial', 'churned'],
@@ -181,6 +197,22 @@ export const MASTER_SNAPSHOT: Snapshot = {
 }
 
 /**
+ * Is this rejection just "it is already there"?
+ *
+ * A snapshot has to be safe to re-run — an agency that adds a client, then
+ * re-deploys, must not get a red result for the twenty things that were already
+ * correct. The platform does not phrase this one way:
+ *   custom value  400 "...already exists..."
+ *   tag           400 "The tag name is already exist."     <- not a typo on our side
+ * The first version matched /already exists|duplicate/, which silently missed
+ * the tag wording and turned every re-run into two hard errors (measured
+ * 2026-08-20 on a live re-deploy). Match the platform's words, not ours.
+ */
+function isAlreadyExists(text: string): boolean {
+  return /already\s*exist|duplicate/i.test(text)
+}
+
+/**
  * Deploy a snapshot to a CRM sub-location.
  * Calls CRM API to create pipeline, custom fields, tags, workflows, KBs, etc.
  */
@@ -191,26 +223,30 @@ export async function deploySnapshot(
 ): Promise<DeployResult> {
   const deployed: DeployResult['deployed'] = []
   const errors: string[] = []
+  const unsupported: DeployResult['unsupported'] = []
 
-  // 1. Create pipeline with stages
-  try {
-    const pipelineRes = await crmPost('/opportunities/pipelines', locationId, {
-      name: snapshot.config.pipeline.name,
-      stages: snapshot.config.pipeline.stages.map((s, i) => ({
-        name: s.name,
-        position: i,
-      })),
-    })
-    if (pipelineRes.ok) {
-      const data = await pipelineRes.json()
-      deployed.push({ type: 'pipeline', name: snapshot.config.pipeline.name, id: data.pipeline?.id || data.id })
-    } else {
-      const text = await pipelineRes.text()
-      errors.push(`Pipeline: ${pipelineRes.status} — ${text}`)
-    }
-  } catch (e) {
-    errors.push(`Pipeline: ${e instanceof Error ? e.message : 'unknown error'}`)
-  }
+  /**
+   * 1. PIPELINE — NOT DEPLOYABLE BY API, and saying so is the fix.
+   *
+   * Measured 2026-08-20 against a 142-scope location token that holds
+   * `opportunities.write` and reads GET /opportunities/pipelines with a 200:
+   * POST /opportunities/pipelines answers 401 "The token is not authorized for
+   * this scope" — with or without the trailing slash. Pipeline CREATE is not an
+   * OAuth capability at any scope we can be granted; the same is true of
+   * workflows (see below).
+   *
+   * So this ran on every deploy, failed on every deploy, and pushed one line
+   * into errors[] that read like a permissions hiccup. It was a category error:
+   * the platform's own SNAPSHOT is the mechanism for pipelines and workflows
+   * (CRM_MASTER_SNAPSHOT_ID, applied at provision time in lib/provision.ts).
+   * This function is the API-deployable REMAINDER, and it now says which half
+   * it is rather than pretending to be the whole.
+   */
+  unsupported.push({
+    type: 'pipeline',
+    name: snapshot.config.pipeline.name,
+    reason: 'POST /opportunities/pipelines returns 401 at every scope (measured 2026-08-20). Pipelines ship via the platform snapshot CRM_MASTER_SNAPSHOT_ID, not this route.',
+  })
 
   /**
    * 1b. Custom VALUES — before workflows, deliberately.
@@ -226,7 +262,12 @@ export async function deploySnapshot(
    */
   for (const cv of snapshot.config.customValues ?? []) {
     try {
-      const res = await crmPost(`/locations/${locationId}/customValues`, locationId, {
+      // crmPostRaw, NOT crmPost. crmPost merges `locationId` into every body,
+      // and this sub-resource rejects it outright:
+      //   422 ["property locationId should not exist"]  (measured 2026-08-20)
+      // The location is already in the path. Same body without the injection
+      // validates cleanly, so the shape below is the one the platform accepts.
+      const res = await crmPostRaw(`/locations/${locationId}/customValues`, locationId, {
         name: cv.name,
         value: cv.value,
       })
@@ -237,7 +278,7 @@ export async function deploySnapshot(
         const text = await res.text()
         // 400 on an existing key is idempotency, not failure — re-running a
         // snapshot on a configured account must be safe.
-        if (!/already exists|duplicate/i.test(text)) {
+        if (!isAlreadyExists(text)) {
           errors.push(`Custom value ${cv.key}: ${res.status} — ${text.slice(0, 120)}`)
         }
       }
@@ -249,17 +290,23 @@ export async function deploySnapshot(
   // 2. Create custom fields
   for (const field of snapshot.config.customFields) {
     try {
-      const res = await crmPost('/locations/customFields', locationId, {
+      // POST /locations/customFields is 404 "Cannot POST /locations/customFields".
+      // The field collection is a SUB-RESOURCE of the location, and carrying
+      // locationId in the body of one is a 422. Measured 2026-08-20.
+      const res = await crmPostRaw(`/locations/${locationId}/customFields`, locationId, {
         name: field.name,
         dataType: field.type,
-        group: field.group,
+        // `group` is NOT sent: 422 "property group should not exist". It stays
+        // on SnapshotCustomField because it is how we intend to organise these
+        // in the UI, but field folders are their own endpoint — putting it in
+        // the create body rejected the whole field. Measured 2026-08-20.
       })
       if (res.ok) {
         const data = await res.json()
         deployed.push({ type: 'customField', name: field.name, id: data.customField?.id || data.id })
       } else {
         const text = await res.text()
-        errors.push(`Custom field "${field.name}": ${res.status} — ${text}`)
+        if (!isAlreadyExists(text)) errors.push(`Custom field "${field.name}": ${res.status} — ${text}`)
       }
     } catch (e) {
       errors.push(`Custom field "${field.name}": ${e instanceof Error ? e.message : 'unknown error'}`)
@@ -269,52 +316,102 @@ export async function deploySnapshot(
   // 3. Create tags
   for (const tag of snapshot.config.tags) {
     try {
-      const res = await crmPost('/locations/tags', locationId, { name: tag })
+      // POST /locations/tags is 404 "Cannot POST /locations/tags" — same
+      // sub-resource shape as customFields. Measured 2026-08-20.
+      const res = await crmPostRaw(`/locations/${locationId}/tags`, locationId, { name: tag })
       if (res.ok) {
         deployed.push({ type: 'tag', name: tag })
       } else {
         const text = await res.text()
-        errors.push(`Tag "${tag}": ${res.status} — ${text}`)
+        if (!isAlreadyExists(text)) errors.push(`Tag "${tag}": ${res.status} — ${text}`)
       }
     } catch (e) {
       errors.push(`Tag "${tag}": ${e instanceof Error ? e.message : 'unknown error'}`)
     }
   }
 
-  // 4. Register webhook-based workflows
+  /**
+   * 4. WORKFLOWS — also not an API, and for a second reason.
+   *
+   * The old code posted to POST /webhooks. That path is a bare 404 with no
+   * response body, as is /hooks — neither endpoint exists. And the thing it was
+   * standing in for does not exist either: POST /workflows/ answers
+   *   404 "Cannot POST /workflows/"
+   * while GET /workflows/ returns the account's real workflows with a 200.
+   * workflows-v3 is read-only. (Measured 2026-08-20; matches the deprecation
+   * note already in lib/crm.ts on enrollInWorkflow.)
+   *
+   * Three fabricated errors per deploy, every deploy, worded as if a retry
+   * might help. Workflows arrive with the platform snapshot; what THIS codebase
+   * can do afterwards is enroll a contact into one — enrollInWorkflow() in
+   * lib/crm.ts, which needs only contacts.write.
+   */
   for (const wf of snapshot.config.workflows) {
-    try {
-      // Register webhook that triggers the workflow
-      const res = await crmPost('/webhooks', locationId, {
-        url: wf.webhookUrl,
-        events: [wf.trigger],
-        name: wf.name,
-      })
-      if (res.ok) {
-        const data = await res.json()
-        deployed.push({ type: 'workflow', name: wf.name, id: data.webhook?.id || data.id })
-      } else {
-        const text = await res.text()
-        errors.push(`Workflow "${wf.name}": ${res.status} — ${text}`)
-      }
-    } catch (e) {
-      errors.push(`Workflow "${wf.name}": ${e instanceof Error ? e.message : 'unknown error'}`)
-    }
+    unsupported.push({
+      type: 'workflow',
+      name: wf.name,
+      reason: 'POST /workflows/ is 404 (workflows-v3 is read-only) and POST /webhooks does not exist. Workflows ship via the platform snapshot; use enrollInWorkflow() to put a contact into one.',
+    })
   }
 
-  // 5. Create knowledge bases (K1-K4)
+  /**
+   * 5. KNOWLEDGE BASES (K1-K4) — read first, because create is not idempotent
+   * and does not tell you so.
+   *
+   * POST /knowledge-bases/ with a name that already exists does NOT 400. It
+   * answers 201 and quietly stores `[K4] 0nAI Security 1787197908356` — the
+   * name with a timestamp appended. Measured on a live re-deploy 2026-08-20:
+   * a second run produced four more knowledge bases, all suffixed, and reported
+   * four successes.
+   *
+   * That is worse than an error. The slot prefix is how everything downstream
+   * finds these ("the K2 brand board"), so a re-run doesn't just litter — it
+   * makes the lookup ambiguous, while the deploy result says it went perfectly.
+   * So: list the location's knowledge bases and skip any slot already present.
+   */
+  let existingKbNames: string[] = []
+  try {
+    // crmGet appends `?locationId=` itself. Passing it in the path too sends
+    // the param TWICE, which this platform answers with a bogus 403 — the
+    // failure mode already recorded for /conversation-ai. Let the helper do it.
+    const listRes = await crmGet('/knowledge-bases/', locationId)
+    if (listRes.ok) {
+      const listed = await listRes.json().catch(() => null)
+      existingKbNames = (listed?.data?.knowledgeBases ?? listed?.knowledgeBases ?? [])
+        .map((k: { name?: string }) => k?.name || '')
+    } else {
+      // Cannot read them ⇒ cannot create them safely. Creating blind is what
+      // produced the suffixed duplicates in the first place.
+      errors.push(`Knowledge bases: could not list existing (${listRes.status}); skipped to avoid creating duplicates.`)
+      existingKbNames = []
+    }
+  } catch (e) {
+    errors.push(`Knowledge bases: could not list existing (${e instanceof Error ? e.message : 'unknown'}); skipped to avoid creating duplicates.`)
+  }
+
   for (const kb of snapshot.config.knowledgeBases) {
+    const kbName = `[${kb.slot}] ${kb.name}`
+    // Prefix match, not equality — an earlier bad run left `[K1] Platform
+    // 1787197908356` behind, and that slot IS taken even though the name differs.
+    if (existingKbNames.some((n) => n.startsWith(`[${kb.slot}]`))) {
+      deployed.push({ type: 'knowledgeBase', name: `${kbName} (already present)` })
+      continue
+    }
     try {
-      const res = await crmPost('/knowledge-base', locationId, {
-        name: `[${kb.slot}] ${kb.name}`,
+      // PLURAL, with the trailing slash. `/knowledge-base` is a bare 404 with
+      // no body at all — the shape of a path that does not exist, not of a
+      // request that was refused. Measured 2026-08-20.
+      const res = await crmPost('/knowledge-bases/', locationId, {
+        name: kbName,
         description: kb.description,
       })
       if (res.ok) {
         const data = await res.json()
-        deployed.push({ type: 'knowledgeBase', name: `[${kb.slot}] ${kb.name}`, id: data.id || data.knowledgeBase?.id })
+        deployed.push({ type: 'knowledgeBase', name: kbName, id: data.id || data.knowledgeBase?.id })
+        existingKbNames.push(kbName)
       } else {
         const text = await res.text()
-        errors.push(`KB "${kb.slot}": ${res.status} — ${text}`)
+        if (!isAlreadyExists(text)) errors.push(`KB "${kb.slot}": ${res.status} — ${text}`)
       }
     } catch (e) {
       errors.push(`KB "${kb.slot}": ${e instanceof Error ? e.message : 'unknown error'}`)
@@ -346,5 +443,6 @@ export async function deploySnapshot(
     success: errors.length === 0,
     deployed,
     errors,
+    unsupported,
   }
 }

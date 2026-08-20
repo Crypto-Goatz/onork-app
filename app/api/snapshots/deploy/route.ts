@@ -71,6 +71,11 @@ export async function POST(request: NextRequest) {
       snapshot: { id: snapshot.id, name: snapshot.name, version: snapshot.version },
       deployed: result.deployed,
       errors: result.errors,
+      // What this route structurally cannot do, named. Pipelines and workflows
+      // have no create API at any scope (measured 2026-08-20), so they arrive
+      // with the platform snapshot instead. Returning this beside `deployed`
+      // stops a green response from being read as "the account is fully set up".
+      unsupported: result.unsupported,
       locationId,
     })
   } catch (error) {
