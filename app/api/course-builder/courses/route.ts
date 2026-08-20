@@ -13,6 +13,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { resolveWorkspaces } from '@/lib/workspaces/resolve'
 import { createClient } from '@supabase/supabase-js'
 import { generateOutline, generateFullCourse } from '@/lib/course-builder/generator'
 import type { CourseConfig } from '@/lib/course-builder/types'
@@ -55,11 +56,59 @@ export async function POST(req: NextRequest) {
   if (!access.ok) return access.response
   const user = { id: access.userId }
 
-  // The guard already resolved and trimmed this against the same profile row.
-  const locationId = access.locationId
+  /**
+   * WHICH WORKSPACE — resolved, not read from one stored column.
+   *
+   * `access.locationId` comes from `profiles.crm_location_id`, a single value
+   * that is empty for 341 of 378 accounts. Worse, a marketplace install can
+   * return COMPANY-level with a blank location: the 2026-08-20 Course Builder
+   * install wrote one row with `location_id = ''` while the app was live in 100
+   * sub-accounts. So this told a user with a perfectly good install and a live
+   * token to "connect your CRM first" — a dead end pointing at a step they had
+   * already completed.
+   *
+   * The resolver asks the platform where the app is actually installed, then
+   * keeps only workspaces that are connected AND entitled. An explicit
+   * `locationId` in the body still wins — that is the picker's choice — but it
+   * is validated against the resolved set, because a client id arriving in a
+   * request body is not proof of permission.
+   */
+  const resolution = await resolveWorkspaces(user.id, 'ai-course-builder')
+  const requested = (await req.clone().json().catch(() => ({})))?.locationId as string | undefined
+
+  let locationId = ''
+  if (requested) {
+    const ok = resolution.publishable.find((w) => w.locationId === requested)
+    if (!ok) {
+      return NextResponse.json(
+        { error: 'You cannot publish to that workspace.', detail: resolution.workspaces.find((w) => w.locationId === requested)?.reason ?? 'Not among your workspaces.' },
+        { status: 403 },
+      )
+    }
+    locationId = requested
+  } else if (resolution.publishable.length === 1) {
+    locationId = resolution.publishable[0].locationId
+  } else if (resolution.publishable.length > 1) {
+    return NextResponse.json(
+      { error: 'Choose which client to publish to.', workspaces: resolution.publishable },
+      { status: 409 },
+    )
+  } else {
+    // Fall back to the stored column before refusing — a single-tenant
+    // sub-location install is legitimate and predates the resolver.
+    locationId = access.locationId || ''
+  }
+
   if (!locationId) {
     return NextResponse.json(
-      { error: 'No CRM location on file. Connect your CRM first.' },
+      {
+        error: resolution.emptyReason || 'No workspace available to publish into.',
+        // Say what we DID find, so "connect your CRM" is never shown to someone
+        // who already has.
+        detail: resolution.workspaces.length
+          ? `${resolution.workspaces.length} workspace(s) found, none publishable yet.`
+          : 'No connected workspace found for this account.',
+      },
       { status: 403 }
     )
   }

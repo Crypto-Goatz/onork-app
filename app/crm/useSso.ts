@@ -74,10 +74,34 @@ export function useSso(): Sso {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined
 
+    /**
+     * THE ABSOLUTE DEADLINE — pending must not be a terminal state.
+     *
+     * The handshake already gives up after three asks, and the standalone mint
+     * answers in under 200ms. Yet the app has been observed sitting on
+     * "Connecting to your CRM…" indefinitely inside a custom menu link on
+     * app.rocketclients.com — so some path through this reaches neither
+     * `finish()` nor the retry chain, on a host we cannot reproduce locally.
+     *
+     * Rather than guess which branch, this makes the failure impossible: after
+     * DEADLINE_MS the hook settles to `standalone` no matter what. A user who
+     * sees a sign-in prompt can act; a user watching a spinner cannot. Every
+     * other path calls `finish()` first, so this only ever fires when something
+     * has genuinely gone wrong — and `settled` guarantees it cannot override a
+     * real answer that arrived late.
+     */
+    const DEADLINE_MS = 15000
+    const deadline = setTimeout(() => {
+      if (settled.current) return
+      console.warn('[useSso] no answer within 15s — settling to standalone so the UI can render')
+      finish({ state: 'standalone', token: null, user: null, error: null })
+    }, DEADLINE_MS)
+
     const finish = (next: Sso) => {
       if (settled.current) return
       settled.current = true
       if (timer) clearTimeout(timer)
+      clearTimeout(deadline)
       window.removeEventListener('message', onMessage)
       setSso(next)
     }
@@ -214,6 +238,7 @@ export function useSso(): Sso {
     return () => {
       window.removeEventListener('message', onMessage)
       if (timer) clearTimeout(timer)
+      clearTimeout(deadline)
     }
   }, [])
 
