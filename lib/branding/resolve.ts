@@ -115,13 +115,15 @@ export async function resolveBranding(
   const pickHex = (cvKey: string, dbKey: string, fallback: string): string =>
     hex(cv[cvKey]) ?? hex(row?.[dbKey]) ?? fallback
 
-  const socials = ([
+  const socials: { label: string; url: string }[] = []
+  for (const [label, key] of [
     ['Facebook', 'facebook_url'], ['Instagram', 'instagram_url'],
     ['LinkedIn', 'linkedin_url'], ['X', 'twitter_url'],
     ['YouTube', 'youtube_url'], ['TikTok', 'tiktok_url'],
-  ] as const)
-    .map(([label, key]) => ({ label, url: clean(row?.[key]) }))
-    .filter((s): s is { label: string; url: string } => !!s.url)
+  ] as [string, string][]) {
+    const url = clean(row?.[key])
+    if (url) socials.push({ label, url })
+  }
 
   return {
     businessName: pick('business_name', 'business_name'),
