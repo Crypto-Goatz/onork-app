@@ -267,23 +267,47 @@ export async function GET(req: NextRequest) {
      * other's slot. That happened to the course builder and cost days: the
      * custom page worked perfectly — right key, right flow — while every token
      * exchange died on "Invalid client credentials", which reads as a revoked
-     * or mistyped app, not as a correct value in the wrong variable.
+     * or mistyped app rather than a correct value in the wrong variable.
      *
-     * The shapes differ, so the mix-up is detectable without the portal and
-     * without ever logging a value: CRM shared secrets are UUIDs, client
-     * secrets are not. Say so BY NAME and loudly, because the alternative is
-     * another silent week — a `catch` returning a generic string is how an
-     * outage hides.
+     * SHAPE CANNOT TELL THEM APART, and betting that it could was wrong.
+     * Both kinds are UUIDs on this platform — verified across the whole fleet
+     * on 2026-08-19: every *_CLIENT_SECRET and every known shared secret is a
+     * 36-char UUID. A "is it a UUID" check therefore fires on correctly
+     * configured apps too, and a guard that cries wolf on healthy config is
+     * worse than no guard, because it teaches the next reader to skip it.
+     *
+     * What DOES discriminate, with no false positives: whether the value in the
+     * client-secret slot is byte-identical to a value we hold as a SHARED
+     * secret. That is the actual mix-up, stated directly instead of guessed at
+     * from formatting. LeadScout is the control that proves the method — its
+     * shared secret sits in CRM_LEADSCOUT_SSO_KEY and its client secret is a
+     * different value, so it stays silent, while the mis-slotted apps do not.
      */
-    const isUuid = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.trim())
+    const SHARED_SECRET_ENVS = [
+      'CRM_COURSE_APP_SHARED_SECRET',
+      'CRM_MARKETPLACE_SHARED_SECRET',
+      'CRM_LEADSCOUT_SSO_KEY',
+      'CRM_AGENCY_SSO_KEY',
+      'CRM_SSO_KEY',
+    ] as const
+
+    const sharedSecrets = new Map<string, string>()
+    for (const name of SHARED_SECRET_ENVS) {
+      const v = (process.env[name] || '').trim()
+      // An envelope is not a key and must never seed the comparison set, or a
+      // second mis-slotted app could match it and be reported as the wrong bug.
+      if (v && !v.startsWith('eyJ2Ijoidj')) sharedSecrets.set(v, name)
+    }
 
     for (const app of candidates) {
       if (!app.clientSecret) { skipped.push(`${app.name}(no secret in env)`); continue }
-      if (isUuid(app.clientSecret)) {
+      const mixedUpWith = sharedSecrets.get(app.clientSecret.trim())
+      if (mixedUpWith) {
         console.error(
-          `[oauth] ${app.name}: the configured client secret is a UUID, which is the shape of a SHARED secret, not a client secret. ` +
-          `Token exchange will fail with "Invalid client credentials" no matter how many user_type/redirect combinations are swept. ` +
-          `Fix the env slot (client secret vs shared secret), not the code.`,
+          `[oauth] ${app.name}: its client secret is byte-identical to ${mixedUpWith}, which is a SHARED secret. ` +
+          `This is a wrong-slot config error, not a bad credential: token exchange will fail with "Invalid client credentials" ` +
+          `no matter how many user_type/redirect_uri combinations are swept, while custom-page SSO keeps working perfectly. ` +
+          `Put the real client secret in the client-secret slot; leave the shared secret to ${mixedUpWith}.`,
         )
       }
 
