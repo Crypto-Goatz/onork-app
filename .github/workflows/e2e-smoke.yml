@@ -26,10 +26,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node 20
+      # Node 22, not 20. The cleanup step installs @supabase/supabase-js@latest,
+      # and current realtime-js throws at createClient() on Node 20:
+      # "Node.js detected but native WebSocket not found." Same shape as the
+      # pnpm@latest/node-20 outage — `@latest` moved underneath a pinned Node.
+      - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install Playwright (no other deps needed)
@@ -53,7 +57,10 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+      # NOT continue-on-error. It was, and that is how this step crashed on
+      # every run since realtime-js dropped Node 20 while the suite stayed
+      # green — 239 e2e-test profiles accumulated behind a passing check.
+      # A cleanup that can silently skip itself is a leak that reports healthy.
       - name: Cleanup test rows
         if: always()
         run: npx tsx tests/e2e/cleanup.ts
-        continue-on-error: true
