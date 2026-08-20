@@ -19,12 +19,22 @@
 import { useEffect, useState } from 'react'
 import { BookOpen, CheckCircle2, Loader2, Sparkles, TriangleAlert } from 'lucide-react'
 import { useSso, authHeaders } from '@/app/crm/useSso'
+import { WorkspacePicker } from '@/components/workspaces/WorkspacePicker'
 
 interface Lesson { title: string; summary?: string }
 interface Outline { title: string; description: string; lessons: Lesson[] }
 type Phase = 'describe' | 'outline' | 'generating' | 'ready' | 'published'
 /** One row from /api/hub/workspaces — a workspace this contact may publish into. */
-type Ws = { locationId: string; name: string | null; canPublish: boolean; reason: string | null }
+type Ws = {
+  locationId: string
+  name: string | null
+  canPublish: boolean
+  reason: string | null
+  /** Second line for the picker — address or install date. */
+  hint: string | null
+  /** Another workspace shares this display name; show the id to tell them apart. */
+  ambiguous: boolean
+}
 
 export default function CourseApp() {
   const sso = useSso()
@@ -50,6 +60,15 @@ export default function CourseApp() {
    */
   const [spaces, setSpaces] = useState<Ws[] | null>(null)
   const [spaceNote, setSpaceNote] = useState<string | null>(null)
+  /**
+   * The resolver's own notes, shown rather than swallowed.
+   *
+   * The list is a subset of the agency by design — 47 of 102 sub-accounts have
+   * the add-on — and a count that can be small for two different reasons
+   * (subset vs truncation) has to say which. Keeping this in the JSON only
+   * explains it to whoever curls the endpoint, not to the person publishing.
+   */
+  const [spaceNotes, setSpaceNotes] = useState<string[]>([])
   const [chosen, setChosen] = useState<string>('')
 
   useEffect(() => {
@@ -59,6 +78,7 @@ export default function CourseApp() {
         if (!d) { setSpaces([]); setSpaceNote('Could not load your workspaces.'); return }
         const list: Ws[] = d.publishable ?? []
         setSpaces(list)
+        setSpaceNotes(Array.isArray(d.notes) ? d.notes : [])
         // One workspace is not a choice — preselect it and say which it is.
         if (list.length === 1) setChosen(list[0].locationId)
         if (!list.length) {
@@ -221,26 +241,18 @@ export default function CourseApp() {
             </p>
 
             {/* More than one workspace is a real choice, so it is presented as
-                one. Publishing into the wrong company cannot be undone. */}
+                one. Publishing into the wrong company cannot be undone — and at
+                47 rows with six duplicated names, a bare dropdown is how that
+                happens. See components/workspaces/WorkspacePicker.tsx. */}
             {spaces && spaces.length > 1 && (
-              <div className="mt-4">
-                <label htmlFor="ws" className="block text-[12px] uppercase tracking-wider text-[#9fb0cc]">
-                  Publish to
-                </label>
-                <select
-                  id="ws"
-                  value={chosen}
-                  onChange={(e) => setChosen(e.target.value)}
-                  className="mt-2 w-full rounded-lg border border-white/15 bg-[#0b0f14] px-3 py-2 text-[14px] text-white focus:border-[#7ED957] focus:outline-none"
-                >
-                  <option value="">Choose a client…</option>
-                  {spaces.map((w) => (
-                    <option key={w.locationId} value={w.locationId}>
-                      {w.name || w.locationId}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <>
+                <WorkspacePicker spaces={spaces} chosen={chosen} onChoose={setChosen} />
+                {spaceNotes.map((n) => (
+                  <p key={n} className="mt-2 text-[12px] leading-relaxed text-[#6b7d99]">
+                    {n}
+                  </p>
+                ))}
+              </>
             )}
 
             {/* One workspace: say WHICH, rather than "this account". */}

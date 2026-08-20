@@ -14,8 +14,21 @@
  *
  * So the install writes ONE row with `location_id = ''` (the established
  * agency-row convention — see lib/crm/agency-token.ts) while the app is in fact
- * installed on 101 sub-accounts. Reading that row as "no workspaces" is how a
- * successful install still produced an empty publish picker.
+ * installed across many sub-accounts. Reading that row as "no workspaces" is how
+ * a successful install still produced an empty publish picker.
+ *
+ * WHAT `count` MEANS, because it has already been misread once. The endpoint
+ * returns EVERY sub-account under the company with a per-entry `isInstalled`
+ * flag — it is not a list of installs. Measured 2026-08-20 against
+ * companyId bknfhTkdDLapbwfZqQNi:
+ *
+ *   count: 102        ← all sub-accounts, the number quoted as "101"
+ *   isInstalled true  → 47   ← the app is actually here
+ *   isInstalled false → 55   ← it is not
+ *
+ * 47 is therefore the correct and complete answer, not a page cap: paging saw
+ * all 102 (100 + 2 then break). `notInstalled` is returned so the caller can
+ * say that out loud instead of leaving a reader to guess at truncation.
  *
  * The locations are not inferable from our own tables. `GET
  * /oauth/installedLocations` is the platform's own answer to "where is this app
@@ -54,6 +67,10 @@ export function appIdForAddon(slug: string): string | null {
 export interface AgencyLocation {
   locationId: string
   name: string | null
+  /** Street/city the platform has for this sub-account. Often ''. */
+  address: string | null
+  /** When this app was installed here. The only always-present distinguishing fact. */
+  installedAt: string | null
 }
 
 export interface AgencyLocationResult {
@@ -62,11 +79,24 @@ export interface AgencyLocationResult {
   error: string | null
   /** True when the platform reported more than we fetched. Never silent. */
   truncated: boolean
-  /** What the platform said the total was, when it said anything. */
+  /**
+   * What the platform said the total was. NOTE THE SEMANTICS: this is every
+   * sub-account under the company, NOT the installed ones — measured
+   * 2026-08-20, count=102 while only 47 carried isInstalled:true.
+   */
   total: number | null
+  /**
+   * How many entries were dropped for `isInstalled: false`.
+   *
+   * This exists because it was previously dropped silently, and 55 of 102
+   * vanishing with no note is exactly the "no silent caps" failure: a picker
+   * showing 47 next to an install log saying 101 reads as truncation, and the
+   * only way to tell it is not is to have this number.
+   */
+  notInstalled: number
 }
 
-const EMPTY: AgencyLocationResult = { locations: [], error: null, truncated: false, total: null }
+const EMPTY: AgencyLocationResult = { locations: [], error: null, truncated: false, total: null, notInstalled: 0 }
 
 /**
  * Every sub-account this app is installed in, for one agency.
@@ -124,6 +154,8 @@ export async function listAgencyInstalledLocations(
   const locations: AgencyLocation[] = []
   let total: number | null = null
   let truncated = false
+  // Counted, not discarded. See `notInstalled` on the result type.
+  let notInstalled = 0
 
   for (let page = 0; page < maxPages; page++) {
     const url =
@@ -144,6 +176,7 @@ export async function listAgencyInstalledLocations(
         error: `Could not reach the CRM to list installed sub-accounts: ${(err as Error).message}`,
         truncated: true,
         total,
+        notInstalled,
       }
     }
 
@@ -154,11 +187,18 @@ export async function listAgencyInstalledLocations(
         error: `CRM answered ${res.status} listing installed sub-accounts: ${body.slice(0, 200)}`,
         truncated: true,
         total,
+        notInstalled,
       }
     }
 
     const json = (await res.json()) as {
-      locations?: { _id?: string; name?: string; isInstalled?: boolean }[]
+      locations?: {
+        _id?: string
+        name?: string
+        address?: string
+        isInstalled?: boolean
+        installedAt?: string
+      }[]
       count?: number
     }
     if (typeof json.count === 'number') total = json.count
@@ -166,14 +206,23 @@ export async function listAgencyInstalledLocations(
     const batch = json.locations ?? []
     for (const l of batch) {
       // isInstalled is the whole point of asking. An entry that does not
-      // assert it is not a workspace we may publish into.
-      if (!l._id || l.isInstalled === false) continue
-      locations.push({ locationId: l._id, name: l.name ?? null })
+      // assert it is not a workspace we may publish into. It is also the
+      // majority of the payload — this endpoint answers with EVERY sub-account
+      // under the company and flags which ones have the app, so the tally below
+      // is what keeps "47 of 102" from reading as a truncated list.
+      if (l.isInstalled === false) { notInstalled++; continue }
+      if (!l._id) continue
+      locations.push({
+        locationId: l._id,
+        name: l.name ?? null,
+        address: l.address?.trim() || null,
+        installedAt: l.installedAt ?? null,
+      })
     }
 
     if (batch.length < PAGE) break
     if (page === maxPages - 1 && total !== null && locations.length < total) truncated = true
   }
 
-  return { locations, error: null, truncated, total }
+  return { locations, error: null, truncated, total, notInstalled }
 }

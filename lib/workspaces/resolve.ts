@@ -61,6 +61,22 @@ export interface Workspace {
   canPublish: boolean
   /** Why not, in words a person can read. Null when it can. */
   reason: string | null
+  /**
+   * A second line for the picker — address, or when the app was installed here.
+   * Null when the platform gave us nothing to distinguish this row by.
+   */
+  hint: string | null
+  /**
+   * True when another workspace in this same result shows the SAME name.
+   *
+   * Six duplicate-name groups exist today (Crypto Goatz ×2, RocketOpp LLC ×2,
+   * Mike Mento — 0n ×3, 0nMCP ×2, two Sean McIntyre pairs). A picker that
+   * renders name-only is then asking someone to choose between two identical
+   * options, and publishing into the wrong company cannot be undone — so the
+   * ambiguity is computed HERE, where the whole list is visible, rather than
+   * left for each of the three surfaces to notice separately.
+   */
+  ambiguous: boolean
 }
 
 export interface WorkspaceResolution {
@@ -139,6 +155,8 @@ export async function resolveWorkspaces(
   // Names the platform gave us for agency-installed sub-accounts. Preferred
   // over user_locations below, which only knows accounts that signed up here.
   const agencyNames = new Map<string, string>()
+  // Distinguishing facts for the picker, kept beside the name they disambiguate.
+  const agencyHints = new Map<string, string>()
   for (const r of installs ?? []) {
     if (!r.location_id) continue
     const live = !!r.expires_at && new Date(r.expires_at).getTime() > now
@@ -174,11 +192,42 @@ export async function resolveWorkspaces(
       // is real rather than inherited.
       byLocation.set(loc.locationId, { connected: (prev?.connected ?? false) || true })
       if (loc.name) agencyNames.set(loc.locationId, loc.name)
+      // Address first — it is what a human recognises. Install date second,
+      // because it is always present. Neither is invented when absent.
+      const bits: string[] = []
+      if (loc.address) bits.push(loc.address)
+      if (loc.installedAt) {
+        const d = new Date(loc.installedAt)
+        if (!Number.isNaN(d.getTime())) {
+          bits.push(`added ${d.toISOString().slice(0, 10)}`)
+        }
+      }
+      if (bits.length) agencyHints.set(loc.locationId, bits.join(' · '))
     }
     if (agency.truncated) {
       notes.push(
-        `Only the first ${agency.locations.length} of ${agency.total ?? 'an unknown number of'} ` +
-        `installed sub-accounts were listed. The rest are not shown — this is a paging limit, not an empty result.`,
+        `Only the first ${agency.locations.length} sub-accounts were read out of ` +
+        `${agency.total ?? 'an unknown number of'} under this agency. The rest are not shown — ` +
+        `this is a paging limit, not an empty result.`,
+      )
+    }
+    /**
+     * SAY WHY THE NUMBER IS SMALLER THAN THE AGENCY.
+     *
+     * `installedLocations` returns every sub-account with an `isInstalled`
+     * flag, so the count it reports (102) is the agency's size, not the
+     * install's. Dropping the 55 that answered false without a word left a
+     * picker showing 47 beside a platform figure of ~101, which reads exactly
+     * like truncation — and "a check that can pass for a reason other than the
+     * thing you are checking is not a check" cuts both ways: a NUMBER that can
+     * be small for two different reasons has to name which one.
+     */
+    if (agency.notInstalled > 0) {
+      notes.push(
+        `${agency.locations.length} of ${agency.total ?? agency.locations.length + agency.notInstalled} ` +
+        `sub-accounts under this agency have this add-on installed. The other ${agency.notInstalled} ` +
+        `are not shown because the platform reports the app is not installed in them — ` +
+        `this is the complete list, not a truncated one.`,
       )
     }
   }
@@ -243,18 +292,52 @@ export async function resolveWorkspaces(
 
     return {
       locationId,
-      // The platform's name wins. `user_locations` only knows accounts that
-      // signed up here, so for an agency-installed sub-account it is usually
-      // absent — and a picker showing an id instead of "Unhooked" is how
-      // someone publishes into the wrong company.
+      /**
+       * The platform's name wins. `user_locations` only knows accounts that
+       * signed up here, so for an agency-installed sub-account it is usually
+       * absent — and a picker showing a bare location id is how someone
+       * publishes into the wrong company.
+       *
+       * "Unhooked" IS A REAL BUSINESS NAME — DO NOT "FIX" IT. Location
+       * B0PbcWhs9By4H04dgsxP is genuinely named Unhooked (the la7oh /
+       * stayunhooked.com brand). Verified 2026-08-20 straight off
+       * /oauth/installedLocations: `{"_id":"B0PbcWhs9By4H04dgsxP",
+       * "name":"Unhooked","isInstalled":true,"installedAt":
+       * "2026-08-20T00:25:48.314Z"}`. It arrives on the agency-name path with
+       * every other real name and is not a placeholder falling through — the
+       * string being identical to an old fallback is a coincidence, and
+       * deleting it on sight would blank a live customer's row.
+       */
       name: agencyNames.get(locationId) ?? names.get(locationId) ?? null,
       role,
       connected,
       entitled: isEntitled,
       canPublish: connected && isEntitled,
       reason,
+      hint: agencyHints.get(locationId) ?? null,
+      // Filled in below — it cannot be known one row at a time.
+      ambiguous: false,
     }
   })
+
+  /**
+   * WHICH ROWS ARE INDISTINGUISHABLE BY NAME.
+   *
+   * Computed over the resolved list rather than the raw platform payload,
+   * because the name a row is ambiguous *under* is the one the picker will
+   * actually render — a duplicate that only exists upstream is not a hazard,
+   * and a collision introduced by our own fallback order is.
+   */
+  const nameTally = new Map<string, number>()
+  for (const w of workspaces) {
+    const key = (w.name ?? '').trim().toLowerCase()
+    if (key) nameTally.set(key, (nameTally.get(key) ?? 0) + 1)
+  }
+  for (const w of workspaces) {
+    const key = (w.name ?? '').trim().toLowerCase()
+    // A row with no name at all is worse than ambiguous, so it counts too.
+    w.ambiguous = !key || (nameTally.get(key) ?? 0) > 1
+  }
 
   const publishable = workspaces.filter((w) => w.canPublish)
 
