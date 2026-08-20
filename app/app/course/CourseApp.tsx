@@ -47,7 +47,7 @@ export default function CourseApp() {
   const [failures, setFailures] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<{ lessons: number; method: string } | null>(null)
+  const [result, setResult] = useState<{ lessons: number; method: string; pending: boolean; enrollmentUrl: string | null } | null>(null)
 
   /**
    * WHERE THIS COURSE GOES — chosen, never assumed.
@@ -136,7 +136,12 @@ export default function CourseApp() {
     setBusy(true); setError(null)
     try {
       const j = await call('publish', { course, locationId, priceCents: 0 })
-      setResult({ lessons: j.lessons ?? 0, method: j.method ?? 'import' })
+      setResult({
+        lessons: j.lessons ?? 0,
+        method: j.method ?? 'import',
+        pending: Boolean(j.pending),
+        enrollmentUrl: j.enrollmentUrl ?? null,
+      })
       setPhase('published')
     } catch (e) { setError(e instanceof Error ? e.message : 'Publishing failed.') }
     finally { setBusy(false) }
@@ -285,8 +290,18 @@ export default function CourseApp() {
             <CheckCircle2 className="mb-3 h-7 w-7 text-[#7ED957]" />
             <h2 className="text-[18px] font-black">Published</h2>
             <p className="mt-2 text-[14px] text-[#9fb0cc]">
-              {result?.lessons ?? 0} lessons are now in your course area. Open Memberships → Courses to price it.
+              {result?.lessons ?? 0} {result?.lessons === 1 ? 'lesson is' : 'lessons are'}{' '}
+              {result?.pending
+                ? 'on their way in — your CRM imports course content in the background, so give it a minute before they all show up.'
+                : 'now in your course area.'}{' '}
+              Open Memberships → Courses to price it.
             </p>
+            {result?.enrollmentUrl && (
+              <a href={result.enrollmentUrl} target="_blank" rel="noreferrer"
+                className="mt-3 inline-block text-[13.5px] text-[#7ED957] underline">
+                Open the course in your account
+              </a>
+            )}
             <button onClick={() => { setPhase('describe'); setOutline(null); setCourse(null); setResult(null) }}
               className={`${BTN_GHOST} mt-4`}>
               Build another

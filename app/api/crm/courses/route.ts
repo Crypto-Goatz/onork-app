@@ -138,7 +138,21 @@ export async function POST(req: NextRequest) {
       if (!r.ok) {
         return NextResponse.json({ error: r.error || 'Could not publish the course.' }, { status: 502 })
       }
-      return NextResponse.json({ ok: true, method: r.method, crmCourseId: r.crmCourseId, lessons: r.crmLessonIds?.length ?? 0 })
+      /**
+       * `lessons` is what we SENT, not the ids the CRM echoed — because on the
+       * bulk path it echoes none. Verified live 2026-08-20: the importer
+       * answers 201 `{ message, note, processingCourses:[{id,title,url}] }`
+       * with no per-post ids, so `crmLessonIds.length` was structurally 0 and
+       * a five-lesson publish reported "0 lessons are now in your course area."
+       */
+      return NextResponse.json({
+        ok: true,
+        method: r.method,
+        crmCourseId: r.crmCourseId,
+        lessons: r.lessonsPublished,
+        pending: r.pending,
+        enrollmentUrl: r.enrollmentUrl,
+      })
     }
 
     return NextResponse.json({ error: 'Unknown step.' }, { status: 400 })

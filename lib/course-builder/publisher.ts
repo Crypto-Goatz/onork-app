@@ -30,6 +30,26 @@ export interface PublishOk {
   method: 'bulk_import' | 'per_lesson_text' | 'per_lesson_video'
   crmCourseId: string
   crmLessonIds: string[]
+  /**
+   * How many lessons this publish put into the course — the number to SHOW.
+   *
+   * `crmLessonIds` is not that number and can never be it on the bulk path.
+   * Verified against the live endpoint 2026-08-20: POST
+   * /courses/courses-exporter/public/import answers 201 with
+   * `{ message, note, processingCourses:[{id,title,url}] }` and echoes no
+   * per-post ids at all, so the id-collecting loop below always yields [] and
+   * the UI rendered "0 lessons are now in your course area" after a publish
+   * that carried five. The count of what we SENT is the honest figure; the
+   * ids stay for the per-lesson paths, which really do return them.
+   */
+  lessonsPublished: number
+  /**
+   * True when the CRM accepted the course but is still importing it. The bulk
+   * endpoint says so in its own words: "The copying of courses may take some
+   * time and will run in the background." A UI that claims "done" the instant
+   * this returns is describing a queue receipt as a finished import.
+   */
+  pending: boolean
   enrollmentUrl: string | null
 }
 
@@ -270,6 +290,8 @@ async function publishViaBulkImport(
     method: 'bulk_import',
     crmCourseId,
     crmLessonIds,
+    lessonsPublished: course.lessons.length,
+    pending: true,
     enrollmentUrl,
   }
 }
@@ -361,6 +383,8 @@ async function publishWithContentType(
     method: mode === 'text' ? 'per_lesson_text' : 'per_lesson_video',
     crmCourseId,
     crmLessonIds: lessonIds,
+    lessonsPublished: lessonIds.length,
+    pending: false,
     enrollmentUrl,
   }
 }

@@ -55,7 +55,11 @@ interface VerifyReport {
   publish?: {
     method: string
     crmCourseId: string
+    /** Ids the CRM echoed. Structurally 0 on the bulk path — see lessonsPublished. */
     crmLessonIds: number
+    /** Lessons actually sent in the payload — the number worth reporting. */
+    lessonsPublished: number
+    pending: boolean
     enrollmentUrl: string | null
   }
   readback?: {
@@ -192,6 +196,8 @@ export async function GET(req: NextRequest) {
       method: publish.method,
       crmCourseId: publish.crmCourseId,
       crmLessonIds: publish.crmLessonIds.length,
+      lessonsPublished: publish.lessonsPublished,
+      pending: publish.pending,
       enrollmentUrl: publish.enrollmentUrl,
     }
   } catch (e) {
@@ -201,14 +207,33 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(report, { status: 500 })
   }
 
-  // 4 — read back from CRM
+  /**
+   * 4 — read back from CRM. THIS STEP CANNOT PASS TODAY, and that is the API's
+   * doing, not ours.
+   *
+   * Probed live 2026-08-20 with a valid location token carrying courses.readonly
+   * (and again with a location PIT): GET /courses/{id}, GET /courses,
+   * /courses/products, /courses/courses-exporter[/public][/export] and
+   * /memberships/* all answer 404 "Cannot GET …" — route-not-found, not a
+   * permission refusal. The official @gohighlevel/api-client Courses service
+   * ships exactly one method, importCourses. There is no public read surface
+   * for courses or memberships, so lesson counts can only be confirmed in the
+   * platform UI. The step stays because the day a read endpoint appears, this
+   * turns green on its own — but its error must name the cause, or the next
+   * reader burns an hour on auth for a route that does not exist.
+   */
   try {
     report.step = 'readback'
     const tr = Date.now()
     const res = await crmGet(`/courses/${publish.crmCourseId}`, targetLocationId)
     if (!res.ok) {
       const txt = await res.text().catch(() => '')
-      report.readback = { error: `${res.status}: ${txt.slice(0, 200)}` }
+      report.readback = {
+        error:
+          res.status === 404
+            ? `${res.status}: no public course read endpoint exists (verified 2026-08-20) — confirm lessons in Memberships → Courses. Body: ${txt.slice(0, 160)}`
+            : `${res.status}: ${txt.slice(0, 200)}`,
+      }
     } else {
       type CourseDetail = {
         title?: string
