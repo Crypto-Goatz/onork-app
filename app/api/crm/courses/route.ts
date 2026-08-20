@@ -19,7 +19,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
-import { createServiceClient } from '@/lib/connect/service-client'
 import type { CourseConfig, CourseOutline, GeneratedCourse } from '@/lib/course-builder/types'
 
 export const runtime = 'nodejs'
@@ -90,38 +89,48 @@ export async function POST(req: NextRequest) {
       if (!locationId) return NextResponse.json({ error: 'Choose which client to publish to.' }, { status: 400 })
 
       /**
-       * TWO WAYS TO BE CONNECTED, and this used to accept only one.
+       * CONNECTED MEANS "WE CAN GET A CREDENTIAL" — nothing else.
        *
-       * The gate checked `location_connections` — the table an AGENCY writes
-       * when it pastes a client key. That is correct for an operator using
-       * 0nCORE, and completely wrong for the audience this app is being
-       * submitted to: someone who installed 0n Course Builder from the
-       * marketplace has an OAuth token in `crm_installations` and no agency
-       * behind them at all. They would generate a whole course and then be told
-       * "add its key in Clients first" — an instruction referring to a screen
-       * they have never seen and cannot reach.
+       * This gate used to ask a DIFFERENT question than the thing it guards.
+       * It read two tables directly — `location_connections` (a pasted agency
+       * key) and a `crm_installations` row whose `location_id` equals this
+       * account — and rejected everything else. But a marketplace install of
+       * this app comes back COMPANY-scoped: ONE row, `location_id = ''`,
+       * covering every sub-account in the agency. None of those sub-accounts
+       * has a row of its own, so all 49 publishable workspaces the picker
+       * offers failed a gate that was looking for a row they will never have.
        *
-       * A marketplace install IS a connection. getAuthForLocation already knows
-       * that and reads both stores; the gate simply had not caught up.
+       * Measured 2026-08-20 (Dex, live session): both a bulk-installed account
+       * (OCq0PTnwBUJLyBZlEv2b) and one installed that same night
+       * (mike — 0nCore) hit "not connected yet", while /api/hub/workspaces
+       * marked both canPublish. Picker says yes, publish says no — the exact
+       * split the resolver exists to prevent, one layer down.
+       *
+       * getAuthForLocation is the ONE place that answers this correctly, and
+       * publishCourse already calls it: pasted key → location install →
+       * MINT a location token from the Company-level agency install
+       * (POST /oauth/locationToken, verified 201) → env PIT. So the gate now
+       * asks it rather than re-deriving a narrower answer from two tables.
+       * The mint result is cached into crm_installations by
+       * ensureLocationInstall, so publishCourse's own resolve is a cache hit —
+       * this costs no extra mint.
+       *
+       * And when it genuinely cannot resolve, the resolver's own instruction
+       * names THIS account and the fix, instead of a generic banner telling a
+       * marketplace user to visit a Clients screen they cannot reach.
        */
-      const db = createServiceClient()
-      if (db) {
-        const [agencyKey, install] = await Promise.all([
-          db.from('location_connections')
-            .select('location_id').eq('location_id', locationId).eq('status', 'active').maybeSingle(),
-          db.from('crm_installations')
-            .select('location_id').eq('location_id', locationId).eq('status', 'active').maybeSingle(),
-        ])
-        if (!agencyKey.data && !install.data) {
-          return NextResponse.json(
-            {
-              error:
-                'This account is not connected yet. Install 0n Course Builder into it from the app marketplace, ' +
-                'or if you are an agency, add the client key under Clients.',
-            },
-            { status: 400 },
-          )
-        }
+      const { getAuthForLocation } = await import('@/lib/crm')
+      const auth = await getAuthForLocation(locationId)
+      if (!auth.token) {
+        return NextResponse.json(
+          {
+            error:
+              auth.unresolved ||
+              'This account is not connected yet. Install 0n Course Builder into it from the app marketplace, ' +
+              'or if you are an agency, add the client key under Clients.',
+          },
+          { status: 400 },
+        )
       }
 
       const { publishCourse } = await import('@/lib/course-builder/publisher')

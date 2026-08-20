@@ -49,6 +49,30 @@ export async function POST(
   const priceCents =
     typeof body.priceCents === 'number' ? body.priceCents : (session.price_cents as number) ?? 0
 
+  /**
+   * Resolve the credential BEFORE flipping state to 'publishing'.
+   *
+   * Same lesson as the inline route (app/api/crm/courses ?step=publish): a
+   * location that cannot produce a token fails all three publish strategies and
+   * returns "CRM publish failed in bulk-import, per-lesson-text, and
+   * per-lesson-video modes" — three symptoms of one cause, none of them the
+   * cause. getAuthForLocation names the account and the fix, and its mint of a
+   * location token off the Company-level agency install is cached, so
+   * publishCourse below resolves from cache.
+   */
+  const { getAuthForLocation } = await import('@/lib/crm')
+  const auth = await getAuthForLocation(session.location_id)
+  if (!auth.token) {
+    await sb
+      .from('course_builder_sessions')
+      .update({ publish_error: auth.unresolved ?? 'no credential for this account' })
+      .eq('id', id)
+    return NextResponse.json(
+      { ok: false, error: auth.unresolved ?? `No credential for location ${session.location_id}.` },
+      { status: 400 },
+    )
+  }
+
   await sb
     .from('course_builder_sessions')
     .update({ conversation_state: 'publishing', price_cents: priceCents })

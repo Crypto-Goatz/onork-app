@@ -36,7 +36,20 @@ export async function GET(req: NextRequest) {
   }
 
   const locationId = url.searchParams.get('location') || 'nphConTwfHcVE1oA0uep'
-  if (!ALLOWED.has(locationId)) {
+
+  /**
+   * DRY MODE — resolve the credential and stop.
+   *
+   * The write probe is allow-listed to five 0n-owned locations because it
+   * creates a real course in a real account. That allow-list also made the
+   * probe useless for the question that actually blocked Course Builder on
+   * 2026-08-20: "can we get a token for THIS agency sub-account?" — a
+   * read-only question about accounts that are, by definition, not on the
+   * list. `?dry=1` answers exactly that and writes nothing, so it is safe for
+   * any location the CRON_SECRET holder already has agency rights over.
+   */
+  const dry = url.searchParams.get('dry') === '1'
+  if (!dry && !ALLOWED.has(locationId)) {
     return NextResponse.json({ ok: false, error: 'location_not_allowed' }, { status: 400 })
   }
 
@@ -45,6 +58,19 @@ export async function GET(req: NextRequest) {
   const tokenPreview = auth.token
     ? `${auth.token.slice(0, 12)}…${auth.token.slice(-6)}`
     : '(EMPTY)'
+
+  if (dry) {
+    return NextResponse.json({
+      ok: Boolean(auth.token),
+      dry: true,
+      locationId,
+      resolved: Boolean(auth.token),
+      source: auth.source,
+      installId: auth.installId ?? null,
+      tokenPreview,
+      unresolved: auth.unresolved ?? null,
+    })
+  }
 
   // Step 2: minimal bulk-import payload — same shape the publisher uses
   const payload = {
