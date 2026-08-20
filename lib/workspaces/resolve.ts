@@ -45,6 +45,7 @@
  */
 import { createServiceClient } from '@/lib/connect/service-client'
 import { isOwnerEmail } from '@/lib/owner'
+import { appIdForAddon, listAgencyInstalledLocations } from './agency-locations'
 
 export type WorkspaceRole = 'admin' | 'user' | 'unknown'
 
@@ -135,6 +136,9 @@ export async function resolveWorkspaces(
 
   const now = Date.now()
   const byLocation = new Map<string, { connected: boolean }>()
+  // Names the platform gave us for agency-installed sub-accounts. Preferred
+  // over user_locations below, which only knows accounts that signed up here.
+  const agencyNames = new Map<string, string>()
   for (const r of installs ?? []) {
     if (!r.location_id) continue
     const live = !!r.expires_at && new Date(r.expires_at).getTime() > now
@@ -142,6 +146,41 @@ export async function resolveWorkspaces(
     // Offering it would produce a publish that 401s after the user commits.
     const prev = byLocation.get(r.location_id)
     byLocation.set(r.location_id, { connected: (prev?.connected ?? false) || live })
+  }
+
+  /**
+   * AGENCY-LEVEL INSTALLS, folded in.
+   *
+   * A marketplace install of a per-sub-account app can still return a COMPANY
+   * token — measured, not assumed: the 2026-08-20 Course Builder install came
+   * back `userType: Company`, empty locationId, `isBulkInstallation: true`, and
+   * wrote a single row with `location_id = ''` while the app was installed in
+   * 101 sub-accounts. The loop above skips that row, so a successful install
+   * produced an empty picker. See lib/workspaces/agency-locations.ts.
+   *
+   * The platform is asked at request time, and a failure adds a note rather
+   * than a workspace — an unverified publish target is worse than none.
+   */
+  const agencyAppId = appIdForAddon(slug)
+  if (agencyAppId) {
+    const agency = await listAgencyInstalledLocations(agencyAppId)
+    if (agency.error) {
+      notes.push(`Agency-level install lookup: ${agency.error}`)
+    }
+    for (const loc of agency.locations) {
+      const prev = byLocation.get(loc.locationId)
+      // The agency token can mint a location token for any of these on demand
+      // (POST /oauth/locationToken, verified 201 on 2026-08-20), so reachability
+      // is real rather than inherited.
+      byLocation.set(loc.locationId, { connected: (prev?.connected ?? false) || true })
+      if (loc.name) agencyNames.set(loc.locationId, loc.name)
+    }
+    if (agency.truncated) {
+      notes.push(
+        `Only the first ${agency.locations.length} of ${agency.total ?? 'an unknown number of'} ` +
+        `installed sub-accounts were listed. The rest are not shown — this is a paging limit, not an empty result.`,
+      )
+    }
   }
 
   // The owner's own location always counts — the standing VIP rule — so the
@@ -204,7 +243,11 @@ export async function resolveWorkspaces(
 
     return {
       locationId,
-      name: names.get(locationId) ?? null,
+      // The platform's name wins. `user_locations` only knows accounts that
+      // signed up here, so for an agency-installed sub-account it is usually
+      // absent — and a picker showing an id instead of "Unhooked" is how
+      // someone publishes into the wrong company.
+      name: agencyNames.get(locationId) ?? names.get(locationId) ?? null,
       role,
       connected,
       entitled: isEntitled,

@@ -691,10 +691,22 @@ export async function GET(req: NextRequest) {
         installed_at: new Date().toISOString(),
         company_id: companyId,
         crm_user_id: crmUserId,
-        // The user_type that actually produced this token. Refresh has to send
-        // the same one, and guessing it again later is how a refresh fails for
-        // a reason nobody can see.
-        user_type: usedType,
+        // The user_type the token ACTUALLY HAS — the platform's answer, not our
+        // request. Refresh has to send the same one, and guessing it again
+        // later is how a refresh fails for a reason nobody can see.
+        //
+        // These two genuinely differ. The Course Builder install sends
+        // user_type=Location (it is a per-sub-account app) and the platform
+        // returns a COMPANY token: `userType: 'Company'`, empty locationId, and
+        // a JWT carrying authClass=Company. Recording what we asked for meant
+        // the renewal cron would send Location for a Company token forever.
+        // `usedType` stays as the fallback for the case where the response
+        // omits it.
+        user_type: (tokenData.userType as string) || usedType,
+        // What we ASKED for, kept alongside. When these disagree the install
+        // lane is not what the app config implies, and that is worth seeing
+        // rather than silently overwriting.
+        requested_user_type: usedType,
         redirect_uri: usedUri,
         can_refresh: canRefresh,
         ...(canRefresh ? {} : {

@@ -149,6 +149,28 @@ export function credsForApp(appId: string): { clientId: string; clientSecret: st
       userType: 'Company',
     }
   }
+  /**
+   * 0n Course Builder (69801f7a) — installs COMPANY-level, not per location.
+   *
+   * Missing here it fell through to the sub-account default below and would
+   * have been refreshed with the LEGACY MARKETPLACE app's client id against a
+   * refresh_token owned by 69801f7a…-mt0s9dyk. That fails as "Invalid client
+   * credentials" — the exact string that cost a full day on 2026-08-19 — and it
+   * fails in the cron, twelve hours before anyone would look.
+   *
+   * userType is 'Company' because that is what the platform ISSUED, not what we
+   * asked for. The install request sends user_type=Location; the returned JWT
+   * carries authClass=Company / authClassId=<companyId> and the token response
+   * comes back with an empty locationId. Refresh must send the type the token
+   * actually has, so a wrong guess here breaks renewal even with the right app.
+   */
+  if (appId === '69801f7a533633818a22921c' || appId === process.env.CRM_COURSE_APP_ID) {
+    return {
+      clientId: process.env.CRM_COURSE_APP_CLIENT_ID || '',
+      clientSecret: process.env.CRM_COURSE_APP_CLIENT_SECRET || '',
+      userType: 'Company',
+    }
+  }
   // Legacy marketplace (69c762) and any unknown app → sub-account default.
   return {
     clientId: MARKETPLACE_APP.clientId,
