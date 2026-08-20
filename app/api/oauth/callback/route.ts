@@ -240,8 +240,32 @@ export async function GET(req: NextRequest) {
       ]),
     ]
 
+    /**
+     * A CRM app carries TWO different secrets: a CLIENT secret (token exchange)
+     * and a SHARED secret (custom-page SSO). They live in different portal
+     * sections, and nothing at the env layer stops one being pasted into the
+     * other's slot. That happened to the course builder and cost days: the
+     * custom page worked perfectly — right key, right flow — while every token
+     * exchange died on "Invalid client credentials", which reads as a revoked
+     * or mistyped app, not as a correct value in the wrong variable.
+     *
+     * The shapes differ, so the mix-up is detectable without the portal and
+     * without ever logging a value: CRM shared secrets are UUIDs, client
+     * secrets are not. Say so BY NAME and loudly, because the alternative is
+     * another silent week — a `catch` returning a generic string is how an
+     * outage hides.
+     */
+    const isUuid = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.trim())
+
     for (const app of candidates) {
       if (!app.clientSecret) { skipped.push(`${app.name}(no secret in env)`); continue }
+      if (isUuid(app.clientSecret)) {
+        console.error(
+          `[oauth] ${app.name}: the configured client secret is a UUID, which is the shape of a SHARED secret, not a client secret. ` +
+          `Token exchange will fail with "Invalid client credentials" no matter how many user_type/redirect combinations are swept. ` +
+          `Fix the env slot (client secret vs shared secret), not the code.`,
+        )
+      }
 
       /**
        * user_type is the last free variable, so it gets swept too.

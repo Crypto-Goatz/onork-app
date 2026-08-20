@@ -93,17 +93,29 @@ export async function POST(req: NextRequest) {
   // costs the surface that was already working.
   const CANDIDATES = [
     'CRM_SSO_KEY',
-    // THE COURSE BUILDER'S OWN SECRET, and it was missing. The app posts a
-    // context encrypted with the secret registered for app
-    // 69801f7a533633818a22921c — the value ending 31ca, which lives in
-    // CRM_COURSE_APP_CLIENT_SECRET. None of the four keys tried before was it,
-    // so a real in-CRM open would fail every decrypt and fall through to a
-    // sign-in screen: the exact symptom that reads as "the login is broken"
-    // and cannot work in an iframe anyway.
+    // THE COURSE BUILDER'S OWN SHARED SECRET, and it was missing. The app posts
+    // a context encrypted with the shared secret registered for app
+    // 69801f7a533633818a22921c — the value ending 31ca. None of the four keys
+    // tried before was it, so a real in-CRM open would fail every decrypt and
+    // fall through to a sign-in screen: the exact symptom that reads as "the
+    // login is broken" and cannot work in an iframe anyway.
     //
     // It was invisible because the SSO round trip can be tested with the SAME
     // key on both ends, which proves the cipher works and proves nothing about
     // whether the platform holds that key.
+    //
+    // 2026-08-19: that value was living in CRM_COURSE_APP_CLIENT_SECRET, which
+    // is the wrong SLOT for it — one app has TWO distinct secrets and only the
+    // shared one belongs here. The portal confirms it (shared key ends 31ca)
+    // and so does the shape: the value is a UUID, and CRM client secrets are
+    // not UUIDs. That mis-slotting is why the custom page worked perfectly
+    // while every OAuth token exchange died on "Invalid client credentials".
+    //
+    // The value now also lives under its true name. Both are listed so the
+    // CLIENT_SECRET slot can be corrected to the real client secret without
+    // taking the working custom page down in the same deploy — the ordering
+    // matters: the correctly-named one is tried first.
+    'CRM_COURSE_APP_SHARED_SECRET',
     'CRM_COURSE_APP_CLIENT_SECRET',
     'CRM_LEADSCOUT_SSO_KEY',
     'CRM_LEADSCOUT_CLIENT_SECRET',
