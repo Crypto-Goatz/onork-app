@@ -323,6 +323,13 @@ export async function kickOffBackgroundProvision(userId: string): Promise<void> 
   const sb = admin()
   try {
     const result = await provisionSubLocation(userId)
+    // A deliberate skip is not a failure. Writing provisioning_error here would
+    // make the smoke suite's own synthetic account show up as a broken signup on
+    // the admin page — a red that means "working as designed".
+    if (result.skipped) {
+      console.log(`[post-signup] background provision SKIPPED for ${userId}: ${result.errors[0] || 'synthetic account'}`)
+      return
+    }
     if (result.success) {
       console.log(
         `[post-signup] background provision OK for ${userId}: ${result.locationId}`,

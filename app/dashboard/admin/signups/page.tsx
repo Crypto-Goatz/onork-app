@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { looksLikeTestAccount } from '@/lib/test-accounts'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -12,9 +13,10 @@ function admin() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 }
 
-function isTest(email: string) {
-  return /e2e-test|@cryptogoatz\.com|rls_|anth_test|schema_|conn_\d|anthropic_|ssr_|ai_dig|keycheck|maxdur|test_/i.test(email)
-}
+// Was an inline copy of this regex. It is the BROAD, display-only predicate —
+// see lib/test-accounts.ts for why the narrow one exists separately and why
+// this one must never gate a side effect.
+const isTest = looksLikeTestAccount
 
 export default async function SignupsPage() {
   const sb = admin()

@@ -2,6 +2,12 @@
  * Cleanup script — purges e2e-test-* profile + auth rows from Supabase.
  * Runs after the smoke suite in CI to keep the DB tidy.
  *
+ * THIS SCRIPT ONLY EVER CLEANED THE SUPABASE SIDE. The same signup also created
+ * a real CRM sub-account per run, which nothing here removed — 37 of 103
+ * sub-accounts by 2026-08-20. That is now fixed by PREVENTION, not deletion:
+ * provisionSubLocation() skips synthetic accounts outright (lib/provision.ts).
+ * Deleting live sub-accounts is not this script's job and never should be.
+ *
  * Requires:
  *   SUPABASE_URL              (or NEXT_PUBLIC_SUPABASE_URL)
  *   SUPABASE_SERVICE_ROLE_KEY
@@ -11,6 +17,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { SYNTHETIC_SIGNUP_EMAIL_LIKE } from '../../lib/test-accounts'
 
 const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -29,7 +36,7 @@ async function main() {
   const { data: rows, error } = await supabase
     .from('profiles')
     .select('id, email')
-    .like('email', 'e2e-test-%@cryptogoatz.com')
+    .like('email', SYNTHETIC_SIGNUP_EMAIL_LIKE)
 
   if (error) {
     console.error('[cleanup] profile lookup failed:', error.message)
@@ -56,7 +63,7 @@ async function main() {
   await supabase
     .from('profiles')
     .delete()
-    .like('email', 'e2e-test-%@cryptogoatz.com')
+    .like('email', SYNTHETIC_SIGNUP_EMAIL_LIKE)
 
   console.log('[cleanup] done.')
 }

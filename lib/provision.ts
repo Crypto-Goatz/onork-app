@@ -13,6 +13,7 @@ import { createClient } from '@supabase/supabase-js'
 import { deploySnapshot, MASTER_SNAPSHOT } from './snapshot'
 import { ensureLocationInstall } from './crm/location-token'
 import { writeStripeIdsToCrmContact } from './crm-billing-link'
+import { isSyntheticSignupEmail } from './test-accounts'
 
 const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
@@ -28,6 +29,13 @@ export interface ProvisionResult {
   locationName: string
   snapshotDeployed: boolean
   errors: string[]
+  /**
+   * True when nothing was attempted because the account is synthetic.
+   * Distinct from `success: false`, which means we tried and could not — a
+   * skip must not be written to profiles.provisioning_error or the smoke
+   * suite starts reporting a failure it deliberately caused.
+   */
+  skipped?: boolean
 }
 
 /**
@@ -46,6 +54,30 @@ export async function provisionSubLocation(userId: string): Promise<ProvisionRes
 
   if (!profile) {
     return { success: false, locationId: null, locationName: '', snapshotDeployed: false, errors: ['Profile not found'] }
+  }
+
+  // THE SMOKE SUITE MUST NOT BILL US. See lib/test-accounts.ts for the receipt.
+  //
+  // Every push runs tests/e2e/signup-chain.spec.ts, which POSTs a real signup to
+  // production. That ran this function, which creates a real snapshot-deployed
+  // sub-account under the agency — and the suite's cleanup only ever deleted the
+  // Supabase side. 37 of 103 sub-accounts were test artifacts by 2026-08-20, and
+  // six of them had reached the customer-facing publish picker.
+  //
+  // Guarding HERE and not at the signup call site is deliberate: this is the one
+  // funnel all four callers pass through (signup, /api/provision/location,
+  // /api/workspace/claim, and the provision-repair cron — which would otherwise
+  // have re-provisioned every account the signup path skipped).
+  if (isSyntheticSignupEmail(profile.email)) {
+    console.log(`[provision] SKIPPED synthetic e2e account ${profile.email} — no sub-account created`)
+    return {
+      success: false,
+      skipped: true,
+      locationId: null,
+      locationName: '',
+      snapshotDeployed: false,
+      errors: ['Synthetic e2e account — sub-location provisioning skipped by design'],
+    }
   }
 
   // Already has a location — don't create another, but make sure the completion
