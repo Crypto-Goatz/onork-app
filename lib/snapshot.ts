@@ -155,6 +155,34 @@ export const AGENCY_CUSTOM_VALUES: SnapshotCustomValue[] = [
   { name: 'Privacy Policy URL',   key: 'privacy_url',      value: '', purpose: 'Linked from forms and footers.' },
 ]
 
+/**
+ * THE AI PLAN IS NOT EVERYWHERE — Mike, 2026-08-20.
+ *
+ * **`nphConTwfHcVE1oA0uep` is the ONLY location with the AI workflow ($97) plan.**
+ *
+ * This app is installed in 100 sub-accounts. Anything below that depends on
+ * Conversation AI — knowledge bases, the voice agent, the chat bot, and any
+ * workflow whose value comes from an AI action — will deploy into the other 99
+ * and then simply never work. Not error. Not warn. Sit there looking configured.
+ *
+ * That is the worst failure shape this codebase keeps producing: a green tick
+ * over something that cannot run. So AI-dependent pieces are declared HERE,
+ * separately, and `deploySnapshot` skips them unless the target location is
+ * known to carry the plan — and says out loud that it skipped them.
+ *
+ * When more accounts get the plan, add them to this list. Do not infer it from
+ * anything else; there is no API that reports plan entitlement, so a guess here
+ * becomes a silent outage in a client's account.
+ */
+export const AI_PLAN_LOCATIONS = new Set<string>([
+  'nphConTwfHcVE1oA0uep',
+])
+
+/** Does this location carry the AI workflow plan? */
+export function hasAiPlan(locationId: string): boolean {
+  return AI_PLAN_LOCATIONS.has(locationId)
+}
+
 export const MASTER_SNAPSHOT: Snapshot = {
   id: 'master-v1',
   name: '0nCore Master Snapshot',
@@ -183,9 +211,9 @@ export const MASTER_SNAPSHOT: Snapshot = {
     ],
     tags: ['0ncore-managed', 'ai-enabled', 'vip', 'active', 'trial', 'churned'],
     workflows: [
-      { name: 'Lead Follow-up', trigger: 'contact.created', webhookUrl: 'https://0ncore.com/api/agent-bridge' },
-      { name: 'Content Engine', trigger: 'manual', webhookUrl: 'https://0ncore.com/api/workflows/blog-to-social' },
-      { name: 'HIPAA Assessment', trigger: 'manual', webhookUrl: 'https://0ncore.com/api/hipaa/scan' },
+      { name: 'Lead Follow-up', trigger: 'contact.created', webhookUrl: 'https://app.0ncore.com/api/agent-bridge' },
+      { name: 'Content Engine', trigger: 'manual', webhookUrl: 'https://app.0ncore.com/api/workflows/blog-to-social' },
+      { name: 'HIPAA Assessment', trigger: 'manual', webhookUrl: 'https://app.0ncore.com/api/hipaa/scan' },
     ],
     knowledgeBases: [
       { slot: 'K1', name: 'Platform', description: '0nCore platform knowledge' },
@@ -247,6 +275,22 @@ export async function deploySnapshot(
     name: snapshot.config.pipeline.name,
     reason: 'POST /opportunities/pipelines returns 401 at every scope (measured 2026-08-20). Pipelines ship via the platform snapshot CRM_MASTER_SNAPSHOT_ID, not this route.',
   })
+
+  /**
+   * PLAN GATE — checked once, before anything AI-dependent is attempted.
+   *
+   * A knowledge base or voice agent deployed into an account without the AI
+   * workflow plan does not fail; it lands and never runs. Skipping is reported
+   * in `deployed` as an explicit skip so a caller can tell "not deployed" from
+   * "deployed and dead", which are different problems with different fixes.
+   */
+  const aiEnabled = hasAiPlan(locationId)
+  if (!aiEnabled) {
+    deployed.push({
+      type: 'skipped',
+      name: 'AI features (knowledge bases, voice agent, chat bot) — this location has no AI workflow plan',
+    })
+  }
 
   /**
    * 1b. Custom VALUES — before workflows, deliberately.
