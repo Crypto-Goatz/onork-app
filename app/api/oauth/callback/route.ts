@@ -237,6 +237,26 @@ export async function GET(req: NextRequest) {
         'https://app.0ncore.com/api/oauth/callback',
         'https://www.0ncore.com/api/oauth/callback',
         'https://0ncore.com/api/oauth/callback',
+        /**
+         * TRAILING-SLASH VARIANTS. redirect_uri matching is BYTE-EXACT, and a
+         * portal field that was pasted with a trailing slash produces a URI we
+         * would never otherwise generate. The platform reports that mismatch as
+         * "Invalid client credentials" — which is why five apps with provably
+         * valid secrets all failed identically.
+         *
+         * The proof those secrets are fine: the SAME client_id + secret pairs
+         * are accepted on the refresh_token grant (they answer "Invalid refresh
+         * token", which only happens AFTER credentials pass). redirect_uri is
+         * the only parameter the authorization_code grant adds. So the mismatch
+         * is the URI, not the credential.
+         */
+        'https://app.0ncore.com/api/oauth/callback/',
+        'https://www.0ncore.com/api/oauth/callback/',
+        'https://0ncore.com/api/oauth/callback/',
+        // Env override — the moment the portal's exact string is read, set
+        // CRM_OAUTH_REDIRECT_URI and it is tried FIRST on the next attempt,
+        // with no deploy needed.
+        ...(process.env.CRM_OAUTH_REDIRECT_URI ? [process.env.CRM_OAUTH_REDIRECT_URI] : []),
       ]),
     ]
 
