@@ -23,6 +23,8 @@ import { useSso, authHeaders } from '@/app/crm/useSso'
 interface Lesson { title: string; summary?: string }
 interface Outline { title: string; description: string; lessons: Lesson[] }
 type Phase = 'describe' | 'outline' | 'generating' | 'ready' | 'published'
+/** One row from /api/hub/workspaces — a workspace this contact may publish into. */
+type Ws = { locationId: string; name: string | null; canPublish: boolean; reason: string | null }
 
 export default function CourseApp() {
   const sso = useSso()
@@ -37,7 +39,40 @@ export default function CourseApp() {
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<{ lessons: number; method: string } | null>(null)
 
-  const locationId = (sso as { activeLocationId?: string }).activeLocationId ?? ''
+  /**
+   * WHERE THIS COURSE GOES — chosen, never assumed.
+   *
+   * This was `sso.activeLocationId` — whatever workspace the iframe happened to
+   * hand us. That is fine when a person has exactly one, and silently wrong the
+   * moment they have two: a course written for client A published into client
+   * B, with no undo. The resolver returns only workspaces where this contact
+   * has access, holds the add-on, AND the connection is live.
+   */
+  const [spaces, setSpaces] = useState<Ws[] | null>(null)
+  const [spaceNote, setSpaceNote] = useState<string | null>(null)
+  const [chosen, setChosen] = useState<string>('')
+
+  useEffect(() => {
+    fetch('/api/hub/workspaces?addon=ai-course-builder', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) { setSpaces([]); setSpaceNote('Could not load your workspaces.'); return }
+        const list: Ws[] = d.publishable ?? []
+        setSpaces(list)
+        // One workspace is not a choice — preselect it and say which it is.
+        if (list.length === 1) setChosen(list[0].locationId)
+        if (!list.length) {
+          const blocked = (d.workspaces ?? []).find((w: Ws) => w.reason)
+          setSpaceNote(d.emptyReason || blocked?.reason || 'No workspace can publish this yet.')
+        }
+      })
+      .catch(() => { setSpaces([]); setSpaceNote('Could not load your workspaces.') })
+  }, [])
+
+  // Fall back to the SSO location only when the resolver found nothing at all,
+  // so an in-CRM single-tenant install keeps working exactly as before.
+  const ssoLocation = (sso as { activeLocationId?: string }).activeLocationId ?? ''
+  const locationId = chosen || (spaces && spaces.length === 0 ? ssoLocation : '')
 
   useEffect(() => { document.title = '0n Course Builder' }, [])
 
@@ -182,11 +217,53 @@ export default function CourseApp() {
               </p>
             )}
             <p className="mt-2 text-[13.5px] text-[#9fb0cc]">
-              Publishing puts it into this account&apos;s course area, ready to price and sell.
+              Publishing puts it into that account&apos;s course area, ready to price and sell.
             </p>
-            <button onClick={doPublish} disabled={busy} className={`${BTN} mt-4`}>
+
+            {/* More than one workspace is a real choice, so it is presented as
+                one. Publishing into the wrong company cannot be undone. */}
+            {spaces && spaces.length > 1 && (
+              <div className="mt-4">
+                <label htmlFor="ws" className="block text-[12px] uppercase tracking-wider text-[#9fb0cc]">
+                  Publish to
+                </label>
+                <select
+                  id="ws"
+                  value={chosen}
+                  onChange={(e) => setChosen(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-white/15 bg-[#0b0f14] px-3 py-2 text-[14px] text-white focus:border-[#7ED957] focus:outline-none"
+                >
+                  <option value="">Choose a client…</option>
+                  {spaces.map((w) => (
+                    <option key={w.locationId} value={w.locationId}>
+                      {w.name || w.locationId}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* One workspace: say WHICH, rather than "this account". */}
+            {spaces && spaces.length === 1 && (
+              <p className="mt-3 text-[13px] text-[#9fb0cc]">
+                Publishing to <span className="text-white">{spaces[0].name || spaces[0].locationId}</span>
+              </p>
+            )}
+
+            {/* Zero: explain, never an empty dropdown. */}
+            {spaces && spaces.length === 0 && spaceNote && (
+              <p className="mt-3 rounded-lg border border-[#fbbf24]/30 bg-[#fbbf24]/[0.07] p-3 text-[13px] text-[#fbbf24]">
+                {spaceNote}
+              </p>
+            )}
+
+            <button
+              onClick={doPublish}
+              disabled={busy || (spaces !== null && spaces.length > 1 && !chosen)}
+              className={`${BTN} mt-4`}
+            >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookOpen className="h-4 w-4" />}
-              Publish to this account
+              {spaces && spaces.length > 1 ? 'Publish to selected client' : 'Publish'}
             </button>
           </Card>
         )}
