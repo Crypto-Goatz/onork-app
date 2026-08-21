@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { recordAiUsage, tokensFrom } from '@/lib/billing/ai-meter'
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -194,6 +195,8 @@ export async function POST(req: NextRequest) {
   }
   messages.push({ role: 'user', content: message })
 
+  const startedAt = Date.now()
+
   try {
     const res = await fetch(GROQ_URL, {
       method: 'POST',
@@ -203,6 +206,21 @@ export async function POST(req: NextRequest) {
     if (!res.ok) return NextResponse.json({ reply: "I'm having trouble right now. Email mike@rocketopp.com or try again." })
     const data = await res.json()
     const reply = data.choices?.[0]?.message?.content?.trim() || "What would you like to know about 0nCore?"
+
+    // The busiest AI surface here answers anonymous visitors, so it has no
+    // agency and no signed-in user to attribute to. Left out of the meter for
+    // that reason, the volume number would have missed the largest single
+    // source of AI traffic on the platform — which is the exact blindness this
+    // meter exists to end. It records as `unattributed`, and how large that
+    // slice turns out to be is itself an input to whether per-agency AI pricing
+    // is buildable at all.
+    await recordAiUsage({
+      surface: 'chat.public',
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+      provider: 'groq',
+      latencyMs: Date.now() - startedAt,
+      ...tokensFrom(data),
+    })
 
     return NextResponse.json({
       reply,
