@@ -149,7 +149,7 @@ export async function resolveWorkspaces(
   // ── who is this, in CRM terms ────────────────────────────────────────
   const { data: profile } = await db
     .from('profiles')
-    .select('id, email, crm_contact_id, crm_location_id, crm_agency_id')
+    .select('id, email, crm_contact_id, crm_location_id')
     .eq('id', userId)
     .maybeSingle()
 
@@ -161,9 +161,43 @@ export async function resolveWorkspaces(
     email: profile.email ?? null,
     crmContactId: profile.crm_contact_id ?? null,
     crmLocationId: profile.crm_location_id ?? null,
-    companyId: profile.crm_agency_id ?? null,
+    /**
+     * THE CRM COMPANY, FROM THE INSTALL — not from `profiles.crm_agency_id`.
+     *
+     * That column is a uuid pointing at our own agency record; a CRM company id
+     * is a 20-character platform string like `bknfhTkdDLapbwfZqQNi`. Passing the
+     * uuid would have matched no install and told every signed-in user their
+     * agency has no install of the app — the correct-looking wrong answer.
+     * crm_installations.company_id is the same source /api/auth/standalone-token
+     * already derives an agency from, so the two doors agree.
+     */
+    companyId: await companyForUser(db, userId),
     fromSession: true,
   }, slug)
+}
+
+/** The CRM company this Supabase user belongs to, or null when nothing records one. */
+async function companyForUser(
+  db: ReturnType<typeof createServiceClient>,
+  userId: string,
+): Promise<string | null> {
+  if (!db) return null
+  try {
+    const { data } = await db
+      .from('crm_installations')
+      .select('company_id')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .not('company_id', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    return (data?.company_id as string | null) || null
+  } catch {
+    // Null is the honest answer and the safe one: the agency lookup then refuses
+    // only if more than one agency could be meant.
+    return null
+  }
 }
 
 /** The resolver proper. See WorkspaceIdentity for why it does not take a user. */
