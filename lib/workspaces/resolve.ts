@@ -115,6 +115,11 @@ export interface WorkspaceIdentity {
    *  the location the iframe is currently open in. */
   crmLocationId: string | null
   /**
+   * The agency asking. Every workspace read is scoped to it — see
+   * listAgencyInstalledLocations for what happens without it.
+   */
+  companyId: string | null
+  /**
    * True only when this identity came from an authenticated Supabase session.
    *
    * The owner override (VIP) is gated on it deliberately. Owner is decided by
@@ -144,7 +149,7 @@ export async function resolveWorkspaces(
   // ── who is this, in CRM terms ────────────────────────────────────────
   const { data: profile } = await db
     .from('profiles')
-    .select('id, email, crm_contact_id, crm_location_id')
+    .select('id, email, crm_contact_id, crm_location_id, crm_agency_id')
     .eq('id', userId)
     .maybeSingle()
 
@@ -156,6 +161,7 @@ export async function resolveWorkspaces(
     email: profile.email ?? null,
     crmContactId: profile.crm_contact_id ?? null,
     crmLocationId: profile.crm_location_id ?? null,
+    companyId: profile.crm_agency_id ?? null,
     fromSession: true,
   }, slug)
 }
@@ -235,7 +241,7 @@ export async function resolveWorkspacesForIdentity(
 
   const agencyAppId = appIdForAddon(slug)
   if (agencyAppId) {
-    const agency = await listAgencyInstalledLocations(agencyAppId)
+    const agency = await listAgencyInstalledLocations(agencyAppId, { companyId: identity.companyId })
     if (agency.error) {
       notes.push(`Agency-level install lookup: ${agency.error}`)
     }

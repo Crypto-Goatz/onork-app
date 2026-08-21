@@ -99,33 +99,70 @@ export interface AgencyLocationResult {
 const EMPTY: AgencyLocationResult = { locations: [], error: null, truncated: false, total: null, notInstalled: 0 }
 
 /**
- * Every sub-account this app is installed in, for one agency.
+ * Every sub-account this app is installed in, for ONE agency.
+ *
+ * SCOPED TO THE CALLER'S AGENCY, and that qualifier is load-bearing. This used
+ * to take the newest active agency row for the app, full stop — no company
+ * filter — which is correct only while exactly one agency has ever installed
+ * it. That is true today (one row: bknfhTkdDLapbwfZqQNi) and stops being true
+ * the day the second customer installs, at which point BOTH agencies would be
+ * handed whichever list sorted newest: one tenant's sub-accounts rendered in
+ * another tenant's publish picker. An outage with a delay fuse, and the fuse is
+ * literally "we made a sale".
+ *
+ * So the company is an argument. When the caller cannot name one, this refuses
+ * rather than guessing — unless there is exactly one agency install in
+ * existence, in which case there is nothing to confuse it with and the old
+ * behaviour is still unambiguous.
  *
  * @param appId      the marketplace app whose install we are reading
- * @param maxPages   hard bound on paging. 101 locations today; an agency with
- *                   thousands must not turn one picker render into 40 requests.
+ * @param opts.companyId  the agency asking. Null only where it genuinely
+ *                        cannot be known; see the ambiguity check below.
+ * @param opts.maxPages   hard bound on paging. 101 locations today; an agency
+ *                        with thousands must not turn one picker render into 40
+ *                        requests.
  */
 export async function listAgencyInstalledLocations(
   appId: string,
-  maxPages = 5,
+  opts: { companyId?: string | null; maxPages?: number } = {},
 ): Promise<AgencyLocationResult> {
+  const maxPages = opts.maxPages ?? 5
+  const asked = (opts.companyId ?? '').trim() || null
   const db = createServiceClient()
   if (!db) return { ...EMPTY, error: 'Storage unavailable — cannot read the agency install.' }
 
   // The agency row for THIS app. `location_id = ''` is the convention; null is
   // tolerated because older rows predate it.
-  const { data: row } = await db
+  let q = db
     .from('crm_installations')
     .select('id, access_token, refresh_token, expires_at, company_id, status, metadata')
     .eq('app_id', appId)
     .eq('status', 'active')
     .or('location_id.is.null,location_id.eq.')
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  if (asked) q = q.eq('company_id', asked)
 
+  const { data: rows } = await q.order('updated_at', { ascending: false }).limit(5)
+  const candidates = rows ?? []
+
+  if (!asked && candidates.length > 1) {
+    // Fail closed. Returning one agency's locations to a caller who could not
+    // say which agency they are is the leak this guard exists to prevent.
+    return {
+      ...EMPTY,
+      error:
+        `${candidates.length} agencies have this app installed and the caller did not say which one is asking, ` +
+        `so no sub-account list was returned. This is a scoping refusal, not an empty agency.`,
+    }
+  }
+
+  const row = candidates[0]
   if (!row?.access_token) {
-    return { ...EMPTY, error: 'This app has no agency-level install on file.' }
+    return {
+      ...EMPTY,
+      error: asked
+        ? 'This agency has no agency-level install of this app on file.'
+        : 'This app has no agency-level install on file.',
+    }
   }
   const companyId = row.company_id
   if (!companyId) {

@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
     }
 
     const ssoResult = await resolveWorkspacesForIdentity(
-      { email, crmContactId, crmLocationId, fromSession: false },
+      { email, crmContactId, crmLocationId, companyId: session.claims.companyId ?? null, fromSession: false },
       addon,
     )
     return NextResponse.json(payload(addon, ssoResult))
