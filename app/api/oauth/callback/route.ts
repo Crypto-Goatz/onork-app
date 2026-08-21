@@ -13,6 +13,7 @@
 
 import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
+import { ensureIdentity } from '@/lib/identity/ensure'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { MARKETPLACE_APP, AGENCY_APP } from '@/lib/crm'
@@ -749,10 +750,33 @@ export async function GET(req: NextRequest) {
     }
 
     if (user) {
-      // Update profile with CRM location
-      await admin.from('profiles').update({
-        crm_location_id: locationId,
-      }).eq('id', user.id)
+      /**
+       * THE MARKETPLACE DOOR — now writes the CONTACT too.
+       *
+       * This wrote only crm_location_id, which is why 37 of 378 profiles carry
+       * a contact id: the direct-signup door created a contact and this one
+       * never did. Two doors, two shapes, one measurable gap.
+       *
+       * ensureIdentity is the single path both doors share. An agency gets a
+       * contact in 0nCore (Mike's ruling: 0nCore's location IS the customer
+       * list) and is NOT provisioned a sub-location, because they arrived with
+       * their own CRM. If this same human signed up directly first, the upsert
+       * finds their existing contact and the workspace list grows rather than
+       * a second identity appearing.
+       */
+      const identity = await ensureIdentity({
+        userId: user.id,
+        email: user.email ?? '',
+        fullName: (user.user_metadata?.full_name as string) ?? null,
+        company: (user.user_metadata?.company as string) ?? null,
+        door: 'marketplace',
+        locationId,
+      })
+      if (identity.error) {
+        // Loud, not swallowed. A silent identity failure is what produced the
+        // 341 unlinked profiles in the first place.
+        console.error('[oauth/callback] identity:', identity.error)
+      }
 
       // Generate persistent 0n token bound to (user, location). This is the
       // public credential used across every 0n surface — locationId = ID,
