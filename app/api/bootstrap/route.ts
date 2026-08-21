@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { METERS, formatPrice } from '@/lib/meters'
+import { usageSummary } from '@/lib/billing/ai-meter'
 import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { getValidAgencyToken } from '@/lib/crm/agency-token'
 import { readAgencyProfile } from '@/lib/crm/agency-profile'
@@ -95,11 +96,18 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const [{ list, error }, profile] = await Promise.all([
+  const [{ list, error }, profile, usage] = await Promise.all([
     fetchLocations(agency.token, companyId),
     // Best-effort: a missing profile costs a header label, not the dashboard.
     readAgencyProfile(companyId).catch(() => null),
+    // This block used to be a literal zero on every field, which read to an
+    // agency as "you have used nothing" rather than "we never looked". Now that
+    // usage_events actually receives rows it has to report them, or the meter
+    // would be recording into a dashboard that keeps insisting nothing happened.
+    usageSummary(companyId),
   ])
+
+  const counted = new Map(usage.byMeter.map((m) => [m.key, m]))
 
   return NextResponse.json({
     ok: true,
@@ -114,9 +122,18 @@ export async function GET(req: NextRequest) {
     // billing side has never agreed to.
     entitlements: Object.fromEntries(METERS.map((m) => [m.key, false])),
     usage: {
-      mtdCents: 0,
-      mtdLabel: formatPrice(0),
-      byMeter: METERS.map((m) => ({ key: m.key, label: m.label, count: 0, costCents: 0 })),
+      mtdCents: usage.totalCents,
+      mtdLabel: formatPrice(usage.totalCents),
+      byMeter: METERS.map((m) => ({
+        key: m.key,
+        label: m.label,
+        count: counted.get(m.key)?.count ?? 0,
+        costCents: counted.get(m.key)?.costCents ?? 0,
+      })),
+      // Free while we learn the volume, and shown separately so nobody reads a
+      // count of zero-cost calls as a bill. This IS the number the AI price will
+      // be derived from, so it is visible rather than only in the database.
+      ai: usage.ai,
     },
     stats: { burstsToday: 0, provisionedThisWeek: 0, openTasks: 0, flowsActive: 0, growSignals: 0 },
     ...(error ? { warning: error } : {}),

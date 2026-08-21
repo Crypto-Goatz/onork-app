@@ -17,7 +17,7 @@
  * Prices in CENTS. 0.1 + 0.2 is not 0.3.
  */
 
-export type MeterKey = 'SITE_BUILD' | 'SITE_BUILD_NATIVE' | 'CLIENT_PROVISION' | 'SOCIAL_POST' | 'BURST_LEG'
+export type MeterKey = 'SITE_BUILD' | 'SITE_BUILD_NATIVE' | 'CLIENT_PROVISION' | 'SOCIAL_POST' | 'BURST_LEG' | 'AI_CALL'
 
 export interface Meter {
   key: MeterKey
@@ -81,6 +81,34 @@ export const METERS: Meter[] = [
     unit: 'per action',
     priceCents: 0,
     when: 'Any standard action from the command bar — contacts, messages, pipeline, calendar.',
+    launchFree: true,
+  },
+  {
+    /**
+     * RECORDED AT ZERO ON PURPOSE, AND THE ZERO IS THE POINT.
+     *
+     * Every other meter here was priced from a guess. This one is not going to
+     * be, because `usage_events` had never held a single row when this was
+     * written — there was no AI volume number anywhere in the system, only
+     * opinions about it. A price set from that is a public figure you then have
+     * to walk back, and walking a price back costs more trust than launching
+     * without one.
+     *
+     * So the meter ships FIRST and free: it counts, it records the model and the
+     * tokens each call actually burned, and after a week of real traffic the
+     * price is arithmetic instead of a guess. `launchFree` rather than a bare
+     * priceCents of 0 so the UI says "free while we launch" honestly and the
+     * decision stays visible in a diff when it changes.
+     *
+     * ALSO THE KB MARKETPLACE'S BILLING RAIL. Per-question metering is not
+     * plumbing under that product, it IS that product, so this row is the thing
+     * being sold and not an afterthought attached to it.
+     */
+    key: 'AI_CALL',
+    label: 'AI request',
+    unit: 'per request',
+    priceCents: 0,
+    when: 'Anything that asks a model a question — chat, drafting, planning, a knowledge-base answer.',
     launchFree: true,
   },
 ]

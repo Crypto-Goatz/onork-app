@@ -22,6 +22,8 @@
  * enforced here, at the only door.
  */
 
+import { recordAiUsage, tokensFrom } from '@/lib/billing/ai-meter'
+
 const GATEWAY_URL = 'https://ai-gateway.vercel.sh/v1'
 const GROQ_URL = 'https://api.groq.com/openai/v1'
 
@@ -89,6 +91,15 @@ export interface GenerateOptions {
   json?: boolean
   maxTokens?: number
   signal?: AbortSignal
+  /**
+   * Metering context. Optional because most callers here are platform jobs with
+   * no agency behind them, and refusing to record those would bias the volume
+   * number toward the paths that already have billing. Pass what you know.
+   */
+  surface?: string
+  companyId?: string | null
+  locationId?: string | null
+  userId?: string | null
 }
 
 export interface GenerateResult {
@@ -137,6 +148,7 @@ export async function generate(o: GenerateOptions): Promise<GenerateResult> {
   }
 
   const failures: string[] = []
+  const startedAt = Date.now()
   for (const t of available) {
     // Direct Groq does not understand the provider prefix the Gateway requires.
     const modelId =
@@ -187,6 +199,19 @@ export async function generate(o: GenerateOptions): Promise<GenerateResult> {
         failures.push(`${t.name}: empty response`)
         continue
       }
+      // Only a call that produced an answer is metered. An empty response that
+      // falls through to the next transport would otherwise be counted twice
+      // for one question, which is the first way a usage number goes wrong.
+      await recordAiUsage({
+        surface: o.surface || 'ai-client',
+        model: modelId,
+        provider: t.name,
+        companyId: o.companyId,
+        locationId: o.locationId,
+        userId: o.userId,
+        latencyMs: Date.now() - startedAt,
+        ...tokensFrom(data),
+      })
       return { text, model: modelId, via: t.name }
     } catch (err) {
       failures.push(`${t.name}: ${err instanceof Error ? err.message : String(err)}`)

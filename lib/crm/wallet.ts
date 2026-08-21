@@ -42,6 +42,11 @@ export function meterIdFor(key: MeterKey): string | null {
     CLIENT_PROVISION: process.env.CRM_METER_CLIENT_PROVISION,
     SOCIAL_POST: process.env.CRM_METER_SOCIAL_POST,
     BURST_LEG: process.env.CRM_METER_BURST_LEG,
+    // No CRM meter id, and not an oversight: AI_CALL is recorded at zero while
+    // we learn the volume, so it must never reach the charge path. Leaving this
+    // undefined is what makes canRun() refuse to bill it even if somebody wires
+    // a price in before the pricing decision is actually made.
+    AI_CALL: undefined,
   }
   return map[key] || null
 }

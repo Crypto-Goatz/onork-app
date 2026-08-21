@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { recordAiUsage, tokensFrom } from '@/lib/billing/ai-meter'
 
 // K-Layer definitions
 // K1: Brand Voice — business_name, what_we_do, brand_tone, tagline, values
@@ -182,6 +183,12 @@ When the user asks you to DO something (not just answer), describe the exact ste
   const activeKLayers = Object.keys(layers)
   const hasKLayers = activeKLayers.length > 0
 
+  // Per-question metering is what the KB marketplace sells, so it is recorded
+  // here rather than bolted on later. Keyed to the user, not to an agency: this
+  // surface has no company behind it, and the meter records that honestly (as
+  // `unattributed`) instead of inventing one.
+  const startedAt = Date.now()
+
   // Route: K-layers exist → Anthropic (full context). No K-layers → Groq (fast fallback).
   if (hasKLayers && process.env.ANTHROPIC_API_KEY) {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -203,6 +210,15 @@ When the user asks you to DO something (not just answer), describe the exact ste
     if (data.error) {
       return Response.json({ error: data.error.message || 'AI error' }, { status: 500 })
     }
+
+    await recordAiUsage({
+      surface: crewId ? 'console.chat.crew' : 'console.chat',
+      model: 'claude-sonnet-4-20250514',
+      provider: 'anthropic',
+      userId: user.id,
+      latencyMs: Date.now() - startedAt,
+      ...tokensFrom(data),
+    })
 
     return Response.json({
       reply: data.content?.[0]?.text || '',
@@ -244,6 +260,15 @@ When the user asks you to DO something (not just answer), describe the exact ste
   if (groqData.error) {
     return Response.json({ error: groqData.error.message || 'Groq error' }, { status: 500 })
   }
+
+  await recordAiUsage({
+    surface: crewId ? 'console.chat.crew' : 'console.chat',
+    model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+    provider: 'groq',
+    userId: user.id,
+    latencyMs: Date.now() - startedAt,
+    ...tokensFrom(groqData),
+  })
 
   return Response.json({
     reply: groqData.choices?.[0]?.message?.content || '',

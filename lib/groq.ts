@@ -12,6 +12,8 @@
  *   - any future scanner that wants LLM reasoning
  */
 
+import { recordAiUsage, tokensFrom } from '@/lib/billing/ai-meter'
+
 const GROQ_BASE = 'https://api.groq.com/openai/v1'
 
 /**
@@ -49,6 +51,11 @@ export interface GroqChatRequest {
    * per-user bring-your-own-key path resolved via lib/groq/router.ts.
    */
   apiKey?: string
+  /** Metering context — see lib/billing/ai-meter.ts. */
+  surface?: string
+  companyId?: string | null
+  locationId?: string | null
+  userId?: string | null
 }
 
 export interface GroqChatResult {
@@ -69,7 +76,29 @@ function getKeys(): { primary: string; fallback: string } {
  *
  * @throws Error when both keys fail or when neither is configured.
  */
+/**
+ * Record one successful completion at zero cost.
+ *
+ * Called at each of the three success returns rather than once around the
+ * whole function, because the fallback path can burn a 401 on the primary key
+ * before the fallback answers — and a meter that counted the 401 would report
+ * traffic that never reached a model. Only the answer that came back is a call.
+ */
+async function meter(req: GroqChatRequest, raw: unknown, startedAt: number): Promise<void> {
+  await recordAiUsage({
+    surface: req.surface || 'groq',
+    model: req.model,
+    provider: 'groq',
+    companyId: req.companyId,
+    locationId: req.locationId,
+    userId: req.userId,
+    latencyMs: Date.now() - startedAt,
+    ...tokensFrom(raw),
+  })
+}
+
 export async function groqChat(req: GroqChatRequest): Promise<GroqChatResult> {
+  const startedAt = Date.now()
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = []
   if (req.system) messages.push({ role: 'system', content: req.system })
   messages.push({ role: 'user', content: req.user })
@@ -91,6 +120,7 @@ export async function groqChat(req: GroqChatRequest): Promise<GroqChatResult> {
   if (req.apiKey) {
     const out = await callGroq(req.apiKey, body)
     if (out.ok) {
+      await meter(req, out.raw, startedAt)
       return { text: out.text, raw: out.raw, keyUsed: 'primary' }
     }
     throw new Error(`Groq ${out.status}: ${out.errorMessage}`)
@@ -105,6 +135,7 @@ export async function groqChat(req: GroqChatRequest): Promise<GroqChatResult> {
   if (primary) {
     const out = await callGroq(primary, body)
     if (out.ok) {
+      await meter(req, out.raw, startedAt)
       return { text: out.text, raw: out.raw, keyUsed: 'primary' }
     }
     if (out.status !== 401) {
@@ -116,6 +147,7 @@ export async function groqChat(req: GroqChatRequest): Promise<GroqChatResult> {
   if (fallback) {
     const out = await callGroq(fallback, body)
     if (out.ok) {
+      await meter(req, out.raw, startedAt)
       return { text: out.text, raw: out.raw, keyUsed: 'fallback' }
     }
     throw new Error(`Groq fallback ${out.status}: ${out.errorMessage}`)

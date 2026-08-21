@@ -109,6 +109,11 @@ export async function collectLog(companyId: string, limit = 120): Promise<LogEnt
 
   for (const u of usage.data ?? []) {
     if (u.status === 'posted') continue // charged and fine; not worth log noise
+    // `metered` rows are the zero-cost AI meter (lib/billing/ai-meter.ts). They
+    // are observations, not charges — there is nothing to chase and nothing to
+    // retry. Left in, they would outnumber every real entry here by orders of
+    // magnitude and bury the one line this log exists to surface.
+    if (u.status === 'metered') continue
     out.push({
       at: u.created_at,
       source: 'billing',

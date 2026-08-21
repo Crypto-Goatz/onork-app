@@ -16,6 +16,14 @@
  *
  * This file is intentionally portable. Drop into any repo's lib/ folder
  * with no other dependencies (no Supabase, no project-specific imports).
+ *
+ * METERING KEEPS THAT PROMISE. The usage meter is reached through a dynamic
+ * import inside a try/catch rather than a top-level `import` of a path alias.
+ * A static import would resolve at build time and break this file the moment it
+ * is dropped into a repo that has no lib/billing/ai-meter.ts — which is the one
+ * property the file exists to have. Dynamic, it degrades to a no-op there and
+ * records here, and the portability claim above stays true instead of becoming
+ * the next comment nobody checked.
  */
 
 const CRM_API = 'https://services.leadconnectorhq.com'
@@ -24,6 +32,20 @@ const DEFAULT_GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
 const DEFAULT_TIMEOUT_MS = 25_000
 
 export type AISource = 'crm_agent' | 'groq' | 'fallback'
+
+/**
+ * Record a call at zero cost, if this repo has a meter. Never throws and never
+ * blocks the answer — see the portability note in the header.
+ */
+async function meter(u: { surface: string; model: string; [k: string]: unknown }): Promise<void> {
+  try {
+    const mod = await import('@/lib/billing/ai-meter')
+    await mod.recordAiUsage(u as unknown as Parameters<typeof mod.recordAiUsage>[0])
+  } catch {
+    // No meter in this repo, or the meter itself failed. Either way the AI
+    // answer is already in hand and is worth more than the observation of it.
+  }
+}
 
 export interface AICallOptions {
   /** When true, request structured JSON output. Both providers honor this. */
@@ -42,6 +64,11 @@ export interface AICallOptions {
   fallbackText?: string
   /** Per-call timeout (ms). Default 25s. */
   timeoutMs?: number
+  /** Metering context. Ignored in repos with no meter. */
+  surface?: string
+  companyId?: string | null
+  locationId?: string | null
+  userId?: string | null
 }
 
 export interface AICallResult {
@@ -70,19 +97,38 @@ export async function askAI(prompt: string, opts: AICallOptions = {}): Promise<A
     timeoutMs = DEFAULT_TIMEOUT_MS,
   } = opts
 
+  const startedAt = Date.now()
+  const context = { companyId: opts.companyId, locationId: opts.locationId, userId: opts.userId }
+  const surface = opts.surface || 'ai-call'
+
   // Tier 1 — CRM Agent Studio
   if (!skipCRM) {
     const text = await tryCRMAgent(prompt, timeoutMs)
-    if (text) return { text, source: 'crm_agent', degraded: false }
+    if (text) {
+      // Metered even though this tier is free to us: the SOP sends work here
+      // first, so leaving it out would make the tier that handles the most
+      // volume the one the usage number cannot see. Agent Studio reports no
+      // token counts, which is why those stay null rather than 0.
+      await meter({ ...context, surface, model: 'crm-agent-studio', provider: 'crm_agent', latencyMs: Date.now() - startedAt })
+      return { text, source: 'crm_agent', degraded: false }
+    }
   }
 
   // Tier 2 — Groq
   if (!skipGroq) {
-    const text = await tryGroq(prompt, { json, maxTokens, temperature, model: groqModel, timeoutMs })
-    if (text) return { text, source: 'groq', degraded: false }
+    const { text, usage } = await tryGroq(prompt, { json, maxTokens, temperature, model: groqModel, timeoutMs })
+    if (text) {
+      await meter({
+        ...context, surface, model: groqModel, provider: 'groq',
+        promptTokens: usage.promptTokens, completionTokens: usage.completionTokens,
+        latencyMs: Date.now() - startedAt,
+      })
+      return { text, source: 'groq', degraded: false }
+    }
   }
 
-  // Tier 3 — heuristic
+  // Tier 3 — heuristic. NOT metered: no model ran, so counting it would inflate
+  // the very number the price is going to be derived from.
   return { text: fallbackText, source: 'fallback', degraded: true }
 }
 
@@ -135,12 +181,17 @@ function extractAgentText(resp: unknown): string {
 // Groq
 // ──────────────────────────────────────────────────────────────────────────
 
+interface GroqTokens { promptTokens: number | null; completionTokens: number | null }
+interface GroqAttempt { text: string; usage: GroqTokens }
+
+const NO_TOKENS: GroqTokens = { promptTokens: null, completionTokens: null }
+
 async function tryGroq(
   prompt: string,
   opts: { json: boolean; maxTokens: number; temperature: number; model: string; timeoutMs: number },
-): Promise<string> {
+): Promise<GroqAttempt> {
   const KEY = process.env.GROQ_API_KEY
-  if (!KEY) return ''
+  if (!KEY) return { text: '', usage: NO_TOKENS }
 
   try {
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -163,11 +214,20 @@ async function tryGroq(
       }),
       signal: AbortSignal.timeout(opts.timeoutMs),
     })
-    if (!r.ok) return ''
-    const j = (await r.json()) as { choices?: Array<{ message?: { content?: string } }> }
-    return j?.choices?.[0]?.message?.content || ''
+    if (!r.ok) return { text: '', usage: NO_TOKENS }
+    const j = (await r.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+      usage?: { prompt_tokens?: number; completion_tokens?: number }
+    }
+    return {
+      text: j?.choices?.[0]?.message?.content || '',
+      usage: {
+        promptTokens: j?.usage?.prompt_tokens ?? null,
+        completionTokens: j?.usage?.completion_tokens ?? null,
+      },
+    }
   } catch {
-    return ''
+    return { text: '', usage: NO_TOKENS }
   }
 }
 

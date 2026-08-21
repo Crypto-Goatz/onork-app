@@ -7,6 +7,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { recordAiUsage } from '@/lib/billing/ai-meter'
 
 const GROQ_BASE = 'https://api.groq.com/openai/v1'
 const DEFAULT_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
@@ -60,7 +61,16 @@ function getApiKey(): string {
 
 export async function groqCall(
   messages: ChatMessage[],
-  opts: { model?: string; maxTokens?: number; temperature?: number } = {},
+  opts: {
+    model?: string
+    maxTokens?: number
+    temperature?: number
+    /** Metering context — see lib/billing/ai-meter.ts. */
+    surface?: string
+    companyId?: string | null
+    locationId?: string | null
+    userId?: string | null
+  } = {},
 ): Promise<GroqCallResult> {
   const key = getApiKey()
   if (!key) throw new Error('Groq not configured — set GROQ_API_KEY or GROQ_API_KEYS.')
@@ -90,11 +100,28 @@ export async function groqCall(
 
   const data = await res.json()
   const text = data?.choices?.[0]?.message?.content ?? ''
-  return {
+  const result: GroqCallResult = {
     text,
     model,
     prompt_tokens: data?.usage?.prompt_tokens,
     completion_tokens: data?.usage?.completion_tokens,
     latency_ms: Date.now() - started,
   }
+
+  // This function already had the token counts and the latency and threw them
+  // away on every call. Recording them costs nothing extra and is the whole
+  // reason a price can be worked out later instead of guessed.
+  await recordAiUsage({
+    surface: opts.surface || 'ai-agent-engine',
+    model,
+    provider: 'groq',
+    companyId: opts.companyId,
+    locationId: opts.locationId,
+    userId: opts.userId,
+    promptTokens: result.prompt_tokens ?? null,
+    completionTokens: result.completion_tokens ?? null,
+    latencyMs: result.latency_ms,
+  })
+
+  return result
 }
