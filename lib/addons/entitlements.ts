@@ -337,3 +337,235 @@ export async function setAddonEntitlement(args: {
   if (error) return { ok: false, error: error.message }
   return { ok: true }
 }
+
+/**
+ * THE SAME QUESTION, ASKED ABOUT A LIST.
+ *
+ * `resolveEntitlement` answers for one location and costs three queries. A
+ * picker asks about every workspace a person holds — 47 of them today — and a
+ * loop would be 141 round trips, so the list case needs its own shape.
+ *
+ * IT IS NOT A SECOND SOURCE OF TRUTH, and the distinction matters because this
+ * repo has already paid for exactly that mistake. `lib/workspaces/resolve.ts`
+ * used to read `addon_entitlements` directly and gate `canPublish` on a row
+ * being there. That table holds ZERO rows for ai-course-builder (measured
+ * 2026-08-21), so every non-owner's picker was empty by construction — while
+ * the canonical gate three files away already said an INSTALL is an
+ * entitlement and would have opened it. Picker says no, gate says yes: the
+ * split this module exists to prevent.
+ *
+ * So the precedence below is the same precedence as above — revoked vetoes,
+ * then explicit, then tier, then install — batched into three queries instead
+ * of three per location. When one changes the other must change with it; they
+ * are in the same file so that is visible rather than discovered.
+ *
+ * INSTALLS ARRIVE AS AN ARGUMENT. A marketplace install of a per-sub-account
+ * app can come back COMPANY-scoped: one row, `location_id = ''`, covering the
+ * whole agency, so the sub-accounts it entitles have no row of their own to
+ * find. The caller already asks the platform which locations carry the app
+ * (`listAgencyInstalledLocations`) — passing that in reuses the answer instead
+ * of re-deriving a narrower one from a table that cannot hold it.
+ */
+export interface BulkEntitlement {
+  state: EntitlementState
+  source: EntitlementSource | null
+  /** A sentence a picker can show. Always present, including when locked. */
+  reason: string
+  /** False when a read failed — "we could not check", not "you do not own it". */
+  verified: boolean
+  graceEndsAt?: string
+}
+
+export async function entitledLocations(args: {
+  slug: string
+  locationIds: string[]
+  /**
+   * Locations where the platform itself reports THIS add-on's app installed.
+   * Counts as the install source even with no per-location row.
+   */
+  installedLocationIds?: Iterable<string>
+  now?: Date
+}): Promise<{ verdicts: Map<string, BulkEntitlement>; notes: string[] }> {
+  const now = args.now ?? new Date()
+  const notes: string[] = []
+  const verdicts = new Map<string, BulkEntitlement>()
+
+  const ids = [...new Set(args.locationIds.map(normaliseLocationId).filter(Boolean))]
+  const skeleton = skeletonFor(args.slug)
+  if (!ids.length) return { verdicts, notes }
+
+  if (!skeleton) {
+    for (const id of ids) {
+      verdicts.set(id, {
+        state: 'locked', source: null, verified: true,
+        reason: 'This add-on is listed but has nothing running behind it yet.',
+      })
+    }
+    return { verdicts, notes }
+  }
+
+  const db = createServiceClient()
+  if (!db) {
+    for (const id of ids) {
+      verdicts.set(id, {
+        state: 'locked', source: null, verified: false,
+        reason: 'We could not reach the entitlement store, so this stayed shut. This is not the same as you not owning it.',
+      })
+    }
+    return { verdicts, notes: ['Entitlement store unavailable — no location is marked entitled rather than guessing.'] }
+  }
+
+  const key = skeleton.requiredEntitlement.key
+  const requiredTier = skeleton.requiredEntitlement.minTier
+  let verified = true
+
+  // ── 1. Explicit rows. 'revoked' is a veto that outranks everything. ─────
+  const revoked = new Map<string, string | null>()
+  const explicit = new Map<string, Candidate>()
+  try {
+    const { data: rows, error } = await db
+      .from('addon_entitlements')
+      .select('location_id, status, source, expires_at, grace_days, note')
+      .in('location_id', ids)
+      .eq('addon_slug', key)
+    if (error) throw new Error(error.message)
+
+    for (const r of rows ?? []) {
+      const id = normaliseLocationId(r.location_id)
+      if (!id) continue
+      if (r.status === 'revoked') { revoked.set(id, r.note ?? null); continue }
+      if (r.status !== 'active') continue
+      const expires = r.expires_at ? new Date(r.expires_at) : null
+      if (!expires || expires.getTime() > now.getTime()) {
+        explicit.set(id, {
+          state: 'active', source: 'explicit',
+          reason: r.source === 'purchase'
+            ? 'Included with this location’s subscription.'
+            : 'Enabled for this location.',
+        })
+      } else {
+        const graceEndsAt = new Date(expires.getTime() + ((r.grace_days as number | null) ?? 7) * DAY_MS)
+        if (graceEndsAt.getTime() > now.getTime()) {
+          explicit.set(id, {
+            state: 'grace', source: 'explicit', graceEndsAt,
+            reason: 'This add-on’s subscription lapsed. It keeps working during the grace period.',
+          })
+        }
+        // Past grace contributes nothing and falls through to tier/install.
+      }
+    }
+  } catch (e) {
+    verified = false
+    notes.push(`Entitlement rows could not be read: ${(e as Error).message}`)
+  }
+
+  // ── 2. Tier ladder. ────────────────────────────────────────────────────
+  const byTier = new Map<string, Candidate>()
+  try {
+    const { data: plans, error } = await db
+      .from('location_plans')
+      .select('location_id, tier')
+      .in('location_id', ids)
+    if (error) throw new Error(error.message)
+    for (const p of plans ?? []) {
+      const id = normaliseLocationId(p.location_id)
+      if (!id || !isTierSlug(p.tier)) continue
+      if (tierAtLeast(p.tier, requiredTier)) {
+        byTier.set(id, { state: 'active', source: 'tier', reason: `Included on the ${p.tier} plan.` })
+      }
+    }
+  } catch (e) {
+    verified = false
+    notes.push(`Plans could not be read: ${(e as Error).message}`)
+  }
+
+  // ── 3. Install-as-entitlement. ─────────────────────────────────────────
+  const byInstall = new Map<string, Candidate>()
+  for (const id of args.installedLocationIds ?? []) {
+    const n = normaliseLocationId(id)
+    if (!n) continue
+    byInstall.set(n, {
+      state: 'active', source: 'install',
+      reason: 'You installed this from the marketplace, which turns it on for this location.',
+    })
+  }
+  // Same fail-closed rule as the single-location path: an add-on with its own
+  // app and no known app id contributes nothing rather than matching any install.
+  if (!(skeleton.ownApp && !skeleton.appId)) {
+    try {
+      let q = db
+        .from('crm_installations')
+        .select('location_id, app_id, status, updated_at')
+        .in('location_id', ids)
+        .in('status', ['active', 'expired'])
+      if (skeleton.appId) q = q.eq('app_id', skeleton.appId)
+      const { data: installs, error } = await q.limit(1000)
+      if (error) throw new Error(error.message)
+
+      const lapsed = new Map<string, number>()
+      for (const r of installs ?? []) {
+        const id = normaliseLocationId(r.location_id)
+        if (!id) continue
+        if (isRetiredCrmApp(String(r.app_id ?? ''))) continue
+        if (r.status === 'active') {
+          byInstall.set(id, {
+            state: 'active', source: 'install',
+            reason: 'You installed this from the marketplace, which turns it on for this location.',
+          })
+        } else if (r.status === 'expired' && r.updated_at) {
+          const t = new Date(r.updated_at as string).getTime()
+          if (!Number.isNaN(t)) lapsed.set(id, Math.max(lapsed.get(id) ?? 0, t))
+        }
+      }
+      for (const [id, t] of lapsed) {
+        if (byInstall.get(id)?.state === 'active') continue
+        const graceEndsAt = new Date(t + 7 * DAY_MS)
+        if (graceEndsAt.getTime() > now.getTime()) {
+          byInstall.set(id, {
+            state: 'grace', source: 'install', graceEndsAt,
+            reason: 'The connection to your CRM stopped refreshing. Reconnecting it keeps this on.',
+          })
+        }
+      }
+    } catch (e) {
+      verified = false
+      notes.push(`Installs could not be read: ${(e as Error).message}`)
+    }
+  }
+
+  // ── Best of the three, per location ────────────────────────────────────
+  for (const id of ids) {
+    if (revoked.has(id)) {
+      const note = revoked.get(id)
+      verdicts.set(id, {
+        state: 'locked', source: 'explicit', verified,
+        reason: note
+          ? `Access to this add-on was removed for this location: ${note}`
+          : 'Access to this add-on was removed for this location. Billing can restore it.',
+      })
+      continue
+    }
+
+    const candidates = [explicit.get(id), byTier.get(id), byInstall.get(id)].filter(Boolean) as Candidate[]
+    const best =
+      candidates.find((c) => c.state === 'active') ??
+      candidates.filter((c) => c.state === 'grace')
+        .sort((a, b) => (b.graceEndsAt?.getTime() ?? 0) - (a.graceEndsAt?.getTime() ?? 0))[0]
+
+    if (best) {
+      const v: BulkEntitlement = { state: best.state, source: best.source, reason: best.reason, verified }
+      if (best.state === 'grace' && best.graceEndsAt) v.graceEndsAt = best.graceEndsAt.toISOString()
+      verdicts.set(id, v)
+      continue
+    }
+
+    verdicts.set(id, {
+      state: 'locked', source: null, verified,
+      reason: verified
+        ? 'You have access, but this add-on is not enabled for this workspace.'
+        : 'We could not finish checking your access here, so it stayed shut. This is not the same as you not owning it.',
+    })
+  }
+
+  return { verdicts, notes }
+}

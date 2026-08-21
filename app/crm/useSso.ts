@@ -45,6 +45,37 @@ export interface Sso {
   token: string | null
   user: SsoUser | null
   error: string | null
+  /**
+   * The workspace the CRM has this frame open in, read off our own token.
+   *
+   * IT WAS BEING CAST INTO EXISTENCE. CourseApp did
+   * `(sso as { activeLocationId?: string }).activeLocationId` to build a
+   * fallback publish target — against an interface that has never had the
+   * field. The cast compiled, the value was always `undefined`, and the
+   * fallback it fed always resolved to '': a recovery path that could not
+   * recover, sitting behind a failure it was written to catch.
+   *
+   * The claim itself was always there (see AppClaims.activeLocationId) — /api/sso
+   * puts it in the JWT and nothing surfaced it. Decoding it here rather than
+   * echoing it in the /api/sso response means every path that produces a token
+   * carries it: the handshake, the boot cookie, and a token cached from earlier
+   * in the tab. Null when the token says nothing, never a guess.
+   */
+  activeLocationId: string | null
+}
+
+/**
+ * Read one claim without verifying anything — the same convenience-not-security
+ * rule as isExpired. Every server route re-verifies the signature before it
+ * trusts a single field of this.
+ */
+function claimsOf(token: string | null): Record<string, unknown> | null {
+  if (!token) return null
+  try {
+    return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -66,7 +97,7 @@ function isExpired(token: string): boolean {
 }
 
 export function useSso(): Sso {
-  const [sso, setSso] = useState<Sso>({ state: 'pending', token: null, user: null, error: null })
+  const [sso, setSso] = useState<Sso>({ state: 'pending', token: null, user: null, error: null, activeLocationId: null })
   // Guards the whole handshake against a second message arriving late, a
   // remount in strict mode, or the timeout firing after a real answer.
   const settled = useRef(false)
@@ -94,7 +125,7 @@ export function useSso(): Sso {
     const deadline = setTimeout(() => {
       if (settled.current) return
       console.warn('[useSso] no answer within 15s — settling to standalone so the UI can render')
-      finish({ state: 'standalone', token: null, user: null, error: null })
+      finish({ state: 'standalone', token: null, user: null, error: null, activeLocationId: null })
     }, DEADLINE_MS)
 
     const finish = (next: Sso) => {
@@ -115,7 +146,7 @@ export function useSso(): Sso {
         })
         const json = await res.json()
         if (!res.ok || !json?.token) {
-          finish({ state: 'rejected', token: null, user: null, error: json?.error || 'Could not verify this session.' })
+          finish({ state: 'rejected', token: null, user: null, error: json?.error || 'Could not verify this session.', activeLocationId: null })
           return
         }
         try {
@@ -124,9 +155,9 @@ export function useSso(): Sso {
           // Private mode or a blocked storage partition. The token still works
           // for this render; only the reload survives it, so carry on.
         }
-        finish({ state: 'authed', token: json.token, user: json.user ?? null, error: null })
+        finish({ state: 'authed', token: json.token, user: json.user ?? null, error: null, activeLocationId: locationOf(json.token) })
       } catch {
-        finish({ state: 'rejected', token: null, user: null, error: 'Could not reach the sign-in service.' })
+        finish({ state: 'rejected', token: null, user: null, error: 'Could not reach the sign-in service.', activeLocationId: null })
       }
     }
 
@@ -140,13 +171,13 @@ export function useSso(): Sso {
         const json = await res.json().catch(() => null)
         if (res.ok && json?.token) {
           try { sessionStorage.setItem(STORAGE_KEY, json.token) } catch {}
-          finish({ state: 'authed', token: json.token, user: json.user ?? null, error: null })
+          finish({ state: 'authed', token: json.token, user: json.user ?? null, error: null, activeLocationId: locationOf(json.token) })
           return
         }
       } catch {
         // Network error — fall through to standalone rather than hang.
       }
-      finish({ state: 'standalone', token: null, user: null, error: null })
+      finish({ state: 'standalone', token: null, user: null, error: null, activeLocationId: null })
     }
 
     function onMessage(event: MessageEvent) {
@@ -169,7 +200,7 @@ export function useSso(): Sso {
         document.cookie = 'oncore.boot.jwt=; Max-Age=0; path=/'
         if (bootTok && !isExpired(bootTok)) {
           try { sessionStorage.setItem(STORAGE_KEY, bootTok) } catch {}
-          setSso({ state: 'authed', token: bootTok, user: null, error: null })
+          setSso({ state: 'authed', token: bootTok, user: null, error: null, activeLocationId: locationOf(bootTok) })
           settled.current = true
           return
         }
@@ -185,7 +216,7 @@ export function useSso(): Sso {
     try {
       const cached = sessionStorage.getItem(STORAGE_KEY)
       if (cached && !isExpired(cached)) {
-        setSso({ state: 'authed', token: cached, user: null, error: null })
+        setSso({ state: 'authed', token: cached, user: null, error: null, activeLocationId: locationOf(cached) })
         settled.current = true
         return
       }
@@ -243,6 +274,12 @@ export function useSso(): Sso {
   }, [])
 
   return sso
+}
+
+/** The location claim, or null. Never a guess and never a cast. */
+function locationOf(token: string | null): string | null {
+  const v = claimsOf(token)?.activeLocationId
+  return typeof v === 'string' && v.trim() ? v.trim() : null
 }
 
 /** The header for an authenticated call, or nothing at all. */

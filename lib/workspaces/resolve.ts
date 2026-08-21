@@ -46,6 +46,7 @@
 import { createServiceClient } from '@/lib/connect/service-client'
 import { isOwnerEmail } from '@/lib/owner'
 import { appIdForAddon, listAgencyInstalledLocations } from './agency-locations'
+import { entitledLocations } from '@/lib/addons/entitlements'
 
 export type WorkspaceRole = 'admin' | 'user' | 'unknown'
 
@@ -97,6 +98,35 @@ const EMPTY: WorkspaceResolution = {
 }
 
 /**
+ * WHO IS ASKING, separated from HOW THEY SIGNED IN.
+ *
+ * There are two front doors and only one of them produces a Supabase user. An
+ * agency signed in at 0ncore.com has a cookie session and a profile row. Someone
+ * inside the CRM iframe has neither — their identity arrives as the SSO app JWT,
+ * which carries an email, an agency and the location the frame is open in. Both
+ * are the same three facts by the time this resolver cares, so it takes the
+ * facts rather than the session.
+ */
+export interface WorkspaceIdentity {
+  email: string | null
+  /** CRM contact id, when the contact↔location write-back has happened. */
+  crmContactId: string | null
+  /** The workspace this identity is anchored to: a profile's home location, or
+   *  the location the iframe is currently open in. */
+  crmLocationId: string | null
+  /**
+   * True only when this identity came from an authenticated Supabase session.
+   *
+   * The owner override (VIP) is gated on it deliberately. Owner is decided by
+   * EMAIL, and the SSO email is whatever the CRM user typed into their own
+   * profile — so honouring it on the iframe path would let anyone in any agency
+   * that installed the app promote themselves by renaming their account. A
+   * password-backed session is not spoofable that way.
+   */
+  fromSession: boolean
+}
+
+/**
  * Resolve every workspace this user may act in, for a given add-on.
  *
  * @param userId  the Supabase user — we look up their contact id from it
@@ -106,7 +136,6 @@ export async function resolveWorkspaces(
   userId: string,
   slug: string,
 ): Promise<WorkspaceResolution> {
-  const notes: string[] = []
   const db = createServiceClient()
   if (!db) {
     return { ...EMPTY, notes: ['Storage unavailable — this is not the same as owning no workspaces.'] }
@@ -120,11 +149,30 @@ export async function resolveWorkspaces(
     .maybeSingle()
 
   if (!profile) {
-    return { ...EMPTY, emptyReason: 'No profile for this account.', notes }
+    return { ...EMPTY, emptyReason: 'No profile for this account.', notes: [] }
   }
 
-  const owner = isOwnerEmail(profile.email)
-  const contactId = profile.crm_contact_id ?? null
+  return resolveWorkspacesForIdentity({
+    email: profile.email ?? null,
+    crmContactId: profile.crm_contact_id ?? null,
+    crmLocationId: profile.crm_location_id ?? null,
+    fromSession: true,
+  }, slug)
+}
+
+/** The resolver proper. See WorkspaceIdentity for why it does not take a user. */
+export async function resolveWorkspacesForIdentity(
+  identity: WorkspaceIdentity,
+  slug: string,
+): Promise<WorkspaceResolution> {
+  const notes: string[] = []
+  const db = createServiceClient()
+  if (!db) {
+    return { ...EMPTY, notes: ['Storage unavailable — this is not the same as owning no workspaces.'] }
+  }
+
+  const owner = identity.fromSession && isOwnerEmail(identity.email)
+  const contactId = identity.crmContactId
 
   if (!contactId) {
     // Said precisely. 341 of 378 profiles are in this state today, and it is a
@@ -179,6 +227,12 @@ export async function resolveWorkspaces(
    * The platform is asked at request time, and a failure adds a note rather
    * than a workspace — an unverified publish target is worse than none.
    */
+  // Locations where the PLATFORM reports this add-on's app installed. A
+  // company-scoped install writes no per-location row, so this set is the only
+  // record that the add-on is switched on there — it feeds the install source
+  // of the entitlement gate below.
+  const agencyInstalled = new Set<string>()
+
   const agencyAppId = appIdForAddon(slug)
   if (agencyAppId) {
     const agency = await listAgencyInstalledLocations(agencyAppId)
@@ -186,6 +240,7 @@ export async function resolveWorkspaces(
       notes.push(`Agency-level install lookup: ${agency.error}`)
     }
     for (const loc of agency.locations) {
+      agencyInstalled.add(loc.locationId)
       const prev = byLocation.get(loc.locationId)
       // The agency token can mint a location token for any of these on demand
       // (POST /oauth/locationToken, verified 201 on 2026-08-20), so reachability
@@ -234,8 +289,8 @@ export async function resolveWorkspaces(
 
   // The owner's own location always counts — the standing VIP rule — so the
   // operator can drive the product on an account they have not "installed".
-  if (owner && profile.crm_location_id) {
-    if (!byLocation.has(profile.crm_location_id)) byLocation.set(profile.crm_location_id, { connected: true })
+  if (owner && identity.crmLocationId) {
+    if (!byLocation.has(identity.crmLocationId)) byLocation.set(identity.crmLocationId, { connected: true })
   }
 
   if (byLocation.size === 0) {
@@ -251,22 +306,27 @@ export async function resolveWorkspaces(
     }
   }
 
-  // ── entitlement, per location, for THIS add-on ───────────────────────
+  /**
+   * ── entitlement, per location, THROUGH THE ONE GATE ──────────────────
+   *
+   * This used to read `addon_entitlements` directly and treat a missing row as
+   * "not entitled". That table holds ZERO rows for ai-course-builder (measured
+   * 2026-08-21 against pwujhhmlrtxjmjzyttwn), so `canPublish` was false for
+   * every non-owner by construction and the picker was structurally empty for
+   * exactly the customer this product is sold to — while `resolveEntitlement`,
+   * the gate that decides whether the add-on opens at all, already counted a
+   * live install as an entitlement and would have said yes.
+   *
+   * Two answers to one question, and the narrower one was wired to the button.
+   * Both now come out of lib/addons/entitlements.ts.
+   */
   const locationIds = [...byLocation.keys()]
-  const entitled = new Set<string>()
-  try {
-    const { data: ents } = await db
-      .from('addon_entitlements')
-      .select('location_id, addon_slug, status')
-      .in('location_id', locationIds)
-      .eq('addon_slug', slug)
-    for (const e of ents ?? []) {
-      // active AND grace both permit use — that is what grace is for.
-      if (e.location_id && (e.status === 'active' || e.status === 'grace')) entitled.add(e.location_id)
-    }
-  } catch (e) {
-    notes.push(`Entitlement lookup failed: ${(e as Error).message}. Nothing is marked entitled rather than guessing.`)
-  }
+  const { verdicts, notes: entNotes } = await entitledLocations({
+    slug,
+    locationIds,
+    installedLocationIds: agencyInstalled,
+  })
+  notes.push(...entNotes)
 
   // ── names, best effort ───────────────────────────────────────────────
   const names = new Map<string, string>()
@@ -280,7 +340,8 @@ export async function resolveWorkspaces(
 
   const workspaces: Workspace[] = locationIds.map((locationId) => {
     const { connected } = byLocation.get(locationId)!
-    const isEntitled = owner || entitled.has(locationId)
+    const verdict = verdicts.get(locationId)
+    const isEntitled = owner || verdict?.state === 'active' || verdict?.state === 'grace'
     // Role is genuinely unknown until the CRM write-back records it. Saying
     // 'unknown' is correct; defaulting to 'admin' would hand publishing rights
     // to someone who may only be a viewer.
@@ -288,7 +349,10 @@ export async function resolveWorkspaces(
 
     let reason: string | null = null
     if (!connected) reason = 'This workspace is not connected — reconnect it to publish here.'
-    else if (!isEntitled) reason = 'You have access, but this add-on is not enabled for this workspace.'
+    // The gate's own sentence, not a generic one — it distinguishes "not
+    // enabled here" from "we could not check" and from "access was revoked",
+    // which need different screens.
+    else if (!isEntitled) reason = verdict?.reason ?? 'You have access, but this add-on is not enabled for this workspace.'
 
     return {
       locationId,

@@ -71,11 +71,39 @@ export default function CourseApp() {
   const [spaceNotes, setSpaceNotes] = useState<string[]>([])
   const [chosen, setChosen] = useState<string>('')
 
+  /**
+   * THIS FETCH HAD NO AUTH, and it is the only one in this file that didn't.
+   *
+   * Every other call goes through `call()`, which spreads `authHeaders(sso.token)`.
+   * This one sent a bare cookie request — and inside the CRM iframe there is
+   * usually no cookie, because `useSso` keeps the session as a JWT in
+   * sessionStorage for exactly that reason. So the workspaces list 401'd for a
+   * real embedded install and succeeded only when a stale 0nCore cookie
+   * happened to be lying around in the same browser. "Could not load your
+   * workspaces", intermittently, for no reason a user could see.
+   *
+   * AND IT RAN TOO EARLY. The dependency list was `[]`, so it fired on the
+   * first render — before the SSO handshake settles — meaning even with the
+   * header attached there would be no token to send. It now waits for the
+   * handshake and re-runs when the token arrives.
+   */
   useEffect(() => {
-    fetch('/api/hub/workspaces?addon=ai-course-builder', { credentials: 'same-origin' })
-      .then((r) => (r.ok ? r.json() : null))
+    if (sso.state === 'pending') return
+    let cancelled = false
+    fetch('/api/hub/workspaces?addon=ai-course-builder', {
+      credentials: 'same-origin',
+      headers: { ...authHeaders(sso.token) },
+    })
+      .then(async (r) => (r.ok ? r.json() : { __failed: r.status, ...(await r.json().catch(() => ({}))) }))
       .then((d) => {
-        if (!d) { setSpaces([]); setSpaceNote('Could not load your workspaces.'); return }
+        if (cancelled) return
+        if (!d || d.__failed) {
+          setSpaces([])
+          // The server's own words, not a generic line. A 401 here and a 500
+          // here need different actions from whoever is reading it.
+          setSpaceNote(d?.error || `Could not load your workspaces (${d?.__failed ?? 'no response'}).`)
+          return
+        }
         const list: Ws[] = d.publishable ?? []
         setSpaces(list)
         setSpaceNotes(Array.isArray(d.notes) ? d.notes : [])
@@ -86,13 +114,24 @@ export default function CourseApp() {
           setSpaceNote(d.emptyReason || blocked?.reason || 'No workspace can publish this yet.')
         }
       })
-      .catch(() => { setSpaces([]); setSpaceNote('Could not load your workspaces.') })
-  }, [])
+      .catch(() => {
+        if (cancelled) return
+        setSpaces([]); setSpaceNote('Could not reach the workspace service.')
+      })
+    return () => { cancelled = true }
+  }, [sso.state, sso.token])
 
-  // Fall back to the SSO location only when the resolver found nothing at all,
-  // so an in-CRM single-tenant install keeps working exactly as before.
-  const ssoLocation = (sso as { activeLocationId?: string }).activeLocationId ?? ''
-  const locationId = chosen || (spaces && spaces.length === 0 ? ssoLocation : '')
+  /**
+   * Fall back to the SSO location only when the resolver found nothing at all,
+   * so an in-CRM single-tenant install keeps working exactly as before.
+   *
+   * This read `(sso as { activeLocationId?: string }).activeLocationId` — a cast
+   * to a field the Sso interface did not have, so it was ALWAYS undefined and
+   * this fallback always produced ''. The recovery path for a failed workspace
+   * fetch could never recover. `useSso` now decodes the claim that was in the
+   * token all along, so the cast is gone and the value is real.
+   */
+  const locationId = chosen || (spaces && spaces.length === 0 ? (sso.activeLocationId ?? '') : '')
 
   useEffect(() => { document.title = '0n Course Builder' }, [])
 
