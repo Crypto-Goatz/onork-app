@@ -27,6 +27,13 @@
  * IT POLLS, AND SAYS SO. Every four seconds, from the last seq it saw, so a
  * re-read cannot double-count. Realtime is the obvious upgrade; a poll that
  * works today beats a socket that needs RLS policies written first.
+ *
+ * ONE ROOM AT A TIME, NAMED ON SCREEN. Rooms belong to agencies now, so the
+ * window has to say whose it is showing — and `seq` is per room, so switching
+ * without resetting the high-water mark would silently skip the new room's
+ * backlog up to the old room's number. The reset lives in the effect that
+ * follows `room`, which is why the poll loop is rebuilt on a switch rather than
+ * reading the room out of a ref.
  */
 import { useEffect, useRef, useState } from 'react'
 import { Radio, AlertCircle, Send, Loader2, Circle } from 'lucide-react'
@@ -36,6 +43,7 @@ type Msg = {
   subject: string; detail: string; wake: boolean; seq: number; created_at: string
 }
 type Peer = { name: string; present: boolean; lastSeen: string | null }
+type Room = { slug: string; name: string | null }
 
 /** Stable colour per agent, so you learn who is speaking by shape not by reading. */
 const HUES = ['#6EE05A', '#22d3ee', '#a78bfa', '#f59e0b', '#f472b6', '#38bdf8']
@@ -58,14 +66,22 @@ export default function RoomView() {
   const [subject, setSubject] = useState('')
   const [to, setTo] = useState('')
   const [sending, setSending] = useState(false)
+  const [rooms, setRooms] = useState<Room[]>([])
+  // null until the server says which room it defaulted to — asking for a room
+  // we invented would 404, and guessing '0n' is the hardcoding being removed.
+  const [room, setRoom] = useState<string | null>(null)
   const seqRef = useRef(0)
   const feedRef = useRef<HTMLDivElement>(null)
 
-  const poll = async () => {
+  const poll = async (slug: string | null) => {
     try {
-      const r = await fetch(`/api/hub/room?since=${seqRef.current}`, { credentials: 'same-origin' })
+      const q = new URLSearchParams({ since: String(seqRef.current) })
+      if (slug) q.set('room', slug)
+      const r = await fetch(`/api/hub/room?${q}`, { credentials: 'same-origin' })
       if (!r.ok) return
       const d = await r.json()
+      setRooms(d.rooms ?? [])
+      if (d.room) setRoom(d.room)
       setPeers(d.peers ?? [])
       if (d.messages?.length) {
         // Append only what is NEW. Replacing the list would fight the scroll
@@ -79,10 +95,14 @@ export default function RoomView() {
   }
 
   useEffect(() => {
-    poll()
-    const id = setInterval(poll, 4000)
+    // A switch starts from zero, in both the list and the high-water mark.
+    seqRef.current = 0
+    setMessages([])
+    setLoading(true)
+    poll(room)
+    const id = setInterval(() => poll(room), 4000)
     return () => clearInterval(id)
-  }, [])
+  }, [room])
 
   // Follow the conversation, the way a person watching a room would.
   useEffect(() => {
@@ -90,17 +110,19 @@ export default function RoomView() {
   }, [messages.length])
 
   const send = async () => {
-    if (!subject.trim()) return
+    if (!subject.trim() || !room) return
     setSending(true)
     try {
       await fetch('/api/hub/room/say', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ subject: subject.trim(), to: to || undefined }),
+        // The room is sent explicitly. The route has no default, so a reply
+        // typed while looking at one agency cannot land in another.
+        body: JSON.stringify({ subject: subject.trim(), to: to || undefined, room }),
       })
       setSubject('')
-      await poll()
+      await poll(room)
     } finally { setSending(false) }
   }
 
@@ -142,11 +164,31 @@ export default function RoomView() {
 
       <main className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-          <div>
-            <h1 className="text-lg font-semibold">The Room</h1>
-            <p className="text-xs text-white/45">
-              {peers.filter((p) => p.present).length} working now · {messages.length} messages
-            </p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-lg font-semibold">The Room</h1>
+              <p className="text-xs text-white/45">
+                {peers.filter((p) => p.present).length} working now · {messages.length} messages
+              </p>
+            </div>
+            {/* Only when there is a choice to make. A switcher with one entry
+                is furniture; the room name still shows below it either way. */}
+            {rooms.length > 1 && (
+              <select
+                value={room ?? ''}
+                onChange={(e) => setRoom(e.target.value)}
+                className="rounded-lg border border-white/15 bg-[#0b0f14] px-3 py-1.5 text-xs text-white focus:border-[#6EE05A] focus:outline-none"
+              >
+                {rooms.map((r) => (
+                  <option key={r.slug} value={r.slug}>{r.name || r.slug}</option>
+                ))}
+              </select>
+            )}
+            {rooms.length === 1 && room && (
+              <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-white/45">
+                {rooms[0].name || room}
+              </span>
+            )}
           </div>
           {blocked.length > 0 && (
             /* The count that costs money. A blocked agent is idle until you answer. */
@@ -225,7 +267,7 @@ export default function RoomView() {
             />
             <button
               onClick={send}
-              disabled={sending || !subject.trim()}
+              disabled={sending || !subject.trim() || !room}
               className="flex items-center gap-2 rounded-lg bg-[#6EE05A] px-5 py-2.5 text-sm font-semibold text-[#062312] transition hover:opacity-90 disabled:opacity-40"
             >
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
