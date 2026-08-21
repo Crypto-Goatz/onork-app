@@ -32,7 +32,7 @@ export type NavKey =
   | 'command' | 'clients' | 'actions' | 'account'
   | 'automations' | 'content' | 'pipeline' | 'build' | 'addons'
   | 'history' | 'usage' | 'setup' | 'downloads' | 'settings'
-  | 'tools'
+  | 'tools' | 'flows'
   // Legacy keys still passed by older pages — kept so nothing 404s mid-port.
   | 'home' | 'dashboard' | 'log'
 
@@ -57,6 +57,9 @@ export const NAV_GROUPS: NavItem[][] = [
   ],
   [
     { key: 'automations', href: '/crm/automations', label: 'Automations & AI', icon: Sparkles, view: 'automations' },
+    // 0nTask's flow builder, embedded. One builder, two surfaces — see
+    // app/crm/flows/FlowsEmbed.tsx for why this is not a port.
+    { key: 'flows', href: '/crm/flows', label: 'Flows', icon: GitBranch },
     { key: 'content', href: '/crm/courses', label: 'Content', icon: FileText },
     // Registered in the nav rather than reachable only by URL. SXO shipped
     // fully working and invisible for exactly that reason.
