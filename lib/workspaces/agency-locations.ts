@@ -131,14 +131,35 @@ export async function listAgencyInstalledLocations(
   const db = createServiceClient()
   if (!db) return { ...EMPTY, error: 'Storage unavailable — cannot read the agency install.' }
 
-  // The agency row for THIS app. `location_id = ''` is the convention; null is
-  // tolerated because older rows predate it.
+  /**
+   * THE AGENCY ROW FOR THIS APP — identified by the TOKEN'S SCOPE, not by a
+   * sentinel in a column anything can write.
+   *
+   * `location_id = ''` was the whole test, and it is a convention rather than a
+   * fact: whether a row is the agency install is decided by the platform having
+   * issued a COMPANY-scoped token for it, which is recorded in
+   * metadata.user_type by the OAuth callback (it stores what the token ACTUALLY
+   * is, not what we asked for).
+   *
+   * Measured 2026-08-21, and this is why the test changed: row 81e2bcb4 —
+   * `user_type: 'Company'`, `installed_via: 'marketplace'`, the only agency
+   * install of the Course Builder app — was read with `location_id = ''` at
+   * 06:47 and with `location_id = 'nphConTwfHcVE1oA0uep'` at 07:1x, its
+   * `updated_at` unchanged at 06:13:12. Something wrote the column without
+   * touching the timestamp; I could not identify the writer from the code, and
+   * that is exactly the point. The publish picker went from 50 workspaces to 2
+   * in between, with nothing deployed and no error anywhere — a silent total
+   * outage of the thing being sold, caused by one column drifting.
+   *
+   * So both are accepted. A Company token IS the agency install wherever its
+   * location column has drifted to.
+   */
   let q = db
     .from('crm_installations')
-    .select('id, access_token, refresh_token, expires_at, company_id, status, metadata')
+    .select('id, access_token, refresh_token, expires_at, company_id, status, metadata, location_id')
     .eq('app_id', appId)
     .eq('status', 'active')
-    .or('location_id.is.null,location_id.eq.')
+    .or('location_id.is.null,location_id.eq.,metadata->>user_type.eq.Company')
   if (asked) q = q.eq('company_id', asked)
 
   const { data: rows } = await q.order('updated_at', { ascending: false }).limit(5)
@@ -155,7 +176,15 @@ export async function listAgencyInstalledLocations(
     }
   }
 
-  const row = candidates[0]
+  // Prefer a row that is BOTH company-scoped and unstamped, so a drifted column
+  // is a fallback rather than the first answer.
+  const isCompany = (r: { metadata?: unknown }) =>
+    ((r.metadata ?? {}) as Record<string, unknown>).user_type === 'Company'
+  const unstamped = (r: { location_id?: string | null }) => !(r.location_id ?? '').trim()
+  const row =
+    candidates.find((c) => isCompany(c) && unstamped(c)) ??
+    candidates.find((c) => isCompany(c)) ??
+    candidates[0]
   if (!row?.access_token) {
     return {
       ...EMPTY,
