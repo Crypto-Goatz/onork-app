@@ -28,7 +28,15 @@ import { useEffect, useRef, useState } from 'react'
 import { ExternalLink, Loader2, AlertTriangle } from 'lucide-react'
 
 const FLOWS_ORIGIN = 'https://app.0ntask.com'
-const FLOWS_URL = `${FLOWS_ORIGIN}/flows?embed=0ncore`
+/**
+ * `?tab=flows`, NOT `/flows`.
+ *
+ * 0nTask has no router — every view is `activeTab` state, so `/flows` was a
+ * path that never existed and the frame silently loaded a 404. The app already
+ * reads `?tab=` and validates it against VALID_TABS; that handler was there
+ * before this embed and I did not check for it.
+ */
+const FLOWS_URL = `${FLOWS_ORIGIN}/?tab=flows&embed=0ncore`
 
 export default function FlowsEmbed({
   token,
@@ -125,10 +133,18 @@ export default function FlowsEmbed({
           <div className="max-w-md text-center">
             <AlertTriangle className="mx-auto h-6 w-6 text-[#f59e0b]" />
             <h2 className="mt-3 text-lg font-semibold">The flow builder didn&apos;t answer</h2>
-            {/* Honest about which half is at fault, and never a dead end. */}
+            {/*
+              SAY WHAT IS KNOWN, NOT WHAT IS ASSUMED.
+              This read "it loaded but never confirmed it was ready" — which was a
+              guess, and a wrong one: the frame had loaded a 404, because the URL
+              embedded here did not exist. A fallback that explains a failure it
+              has not verified sends the reader after the wrong bug, which is
+              worse than saying nothing.
+            */}
             <p className="mt-2 text-sm leading-relaxed text-white/55">
-              It loaded but never confirmed it was ready. Your flows are safe — they live in
-              0nTask, not here. You can open it directly while we look into the embed.
+              It did not respond within 12 seconds. That is usually the embed, not your
+              flows — those live in 0nTask and are unaffected. Opening it directly works
+              either way.
             </p>
             <a
               href={FLOWS_ORIGIN}
