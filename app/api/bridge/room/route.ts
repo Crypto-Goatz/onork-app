@@ -35,7 +35,7 @@ export const dynamic = 'force-dynamic'
 const ROOM = '0n'
 
 /** Resolve the caller, or the reason they are refused. */
-async function peer(req: NextRequest) {
+async function peer(req: NextRequest, asName?: string | null) {
   const token = extractToken(req)
   if (!token) return { ok: false as const, why: 'No 0n key. Send it as: Authorization: Bearer 0n_live_…' }
   const ctx = await validateToken(token)
@@ -44,14 +44,27 @@ async function peer(req: NextRequest) {
   const db = createServiceClient()
   if (!db) return { ok: false as const, why: 'Storage unavailable.' }
 
-  // The peer NAME is claimed at join and bound to the key. A caller cannot
-  // speak as someone else by changing a header.
-  const { data } = await db
-    .from('bridge_peers')
-    .select('name')
-    .eq('room', ROOM)
-    .eq('user_id', ctx.userId)
-    .maybeSingle()
+  /**
+   * ONE KEY, SEVERAL IDENTITIES — and the key still decides.
+   *
+   * This looked up a single name per key, which was right for a lone remote
+   * agent and wrong the moment the local bridge needed to relay: Cece and Dex
+   * run under one account, and neither could speak as itself. So a caller may
+   * NAME which of its peers it is speaking as — and the name is still verified
+   * against the key that owns it, so `as` cannot borrow someone else's
+   * identity. Omit it and, if the key holds exactly one peer, that is you.
+   */
+  let q = db.from('bridge_peers').select('name').eq('room', ROOM).eq('user_id', ctx.userId)
+  if (asName) q = q.eq('name', asName)
+  const { data: rows } = await q.limit(2)
+  const data = rows?.[0]
+
+  if (asName && !data) {
+    return { ok: false as const, why: `This key does not hold a peer called "${asName}".` }
+  }
+  if (!asName && (rows?.length ?? 0) > 1) {
+    return { ok: false as const, why: 'This key holds several peers — say which one with "as".' }
+  }
 
   if (!data?.name) {
     return {
@@ -71,7 +84,7 @@ async function peer(req: NextRequest) {
  * twice.
  */
 export async function GET(req: NextRequest) {
-  const me = await peer(req)
+  const me = await peer(req, req.nextUrl.searchParams.get('as'))
   if (!me.ok) return NextResponse.json({ error: me.why }, { status: 401 })
 
   const since = Number(req.nextUrl.searchParams.get('since') ?? 0)
@@ -125,6 +138,8 @@ export async function POST(req: NextRequest) {
 
     // A name already held by a DIFFERENT key is refused. Two agents answering
     // to one name is indistinguishable from one agent contradicting itself.
+    // Only another ACCOUNT holding the name is a conflict. The same key
+    // claiming a second name is the local bridge relaying two agents.
     const { data: taken } = await db
       .from('bridge_peers').select('user_id').eq('room', ROOM).eq('name', name).maybeSingle()
     if (taken && taken.user_id !== ctx.userId) {
@@ -146,7 +161,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ── post ──────────────────────────────────────────────────────────
-  const me = await peer(req)
+  const me = await peer(req, typeof body.as === 'string' ? body.as : null)
   if (!me.ok) return NextResponse.json({ error: me.why }, { status: 401 })
 
   const subject = String(body.subject ?? '').trim()
