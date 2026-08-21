@@ -18,8 +18,10 @@
  * that works today: `api_tokens.location_id` is the empty string on every row
  * in the live database (measured 2026-08-21, 15/15 rows), so a location-keyed
  * room would put every customer back in one room under a different name. The
- * agency comes from `crm_installations.company_id`, the same source
- * lib/workspaces/resolve.ts uses, so the two answers cannot drift.
+ * agency comes from `crm_installations.company_id` — the same column
+ * lib/workspaces/resolve.ts reads, so the two surfaces cannot disagree about
+ * who an account belongs to. See `companiesForUser` for the one place they
+ * deliberately differ, and why.
  *
  * MINTED ON DEMAND. An agency with no room gets one the first time it joins.
  * There is no provisioning step to forget, which matters because the failure
@@ -36,8 +38,17 @@ export interface BridgeRoom {
 
 type Db = NonNullable<ReturnType<typeof createServiceClient>>
 
-/** The CRM agency behind a 0n key, or null when nothing records one. */
-async function companyForUser(db: Db, userId: string): Promise<string | null> {
+/**
+ * Every CRM agency behind a 0n key.
+ *
+ * ALL OF THEM, not the most recent one. lib/workspaces/resolve.ts takes a
+ * single company because it is choosing which agency to ASK the platform
+ * about, and asking twice would double the API calls. This is a different
+ * question — which rooms may this key enter — and truncating it would show an
+ * operator who runs two agencies only one of their two rooms, in the feature
+ * whose entire purpose is that an agency's agents are its own.
+ */
+async function companiesForUser(db: Db, userId: string): Promise<string[]> {
   const { data } = await db
     .from('crm_installations')
     .select('company_id')
@@ -45,13 +56,22 @@ async function companyForUser(db: Db, userId: string): Promise<string | null> {
     .eq('status', 'active')
     .not('company_id', 'is', null)
     .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  const id = (data?.company_id as string | null) || null
-  // An empty string is what this column holds when the install never reported a
-  // company. Treated as absent, because '' would otherwise become a room slug
-  // that every unattributed install shares — the exact bug being fixed.
-  return id && id.trim() ? id : null
+
+  const seen = new Set<string>()
+  for (const r of data ?? []) {
+    const id = (r.company_id as string | null) ?? ''
+    // An empty string is what this column holds when the install never reported
+    // a company. Dropped, because '' would otherwise become one room slug that
+    // every unattributed install shares — the exact bug being fixed.
+    if (id.trim()) seen.add(id)
+  }
+  // Most-recently-updated first, so the primary agency leads any list we print.
+  return [...seen]
+}
+
+/** The agency a NEW room is minted under: the key's most recent install. */
+function primaryCompany(companies: string[]): string | null {
+  return companies[0] ?? null
 }
 
 /**
@@ -67,25 +87,26 @@ async function companyForUser(db: Db, userId: string): Promise<string | null> {
 export async function roomsForToken(
   db: Db,
   ctx: Pick<TokenContext, 'userId'>,
-): Promise<{ rooms: BridgeRoom[]; companyId: string | null }> {
-  const companyId = await companyForUser(db, ctx.userId)
+): Promise<{ rooms: BridgeRoom[]; companies: string[] }> {
+  const companies = await companiesForUser(db, ctx.userId)
 
   /**
    * TWO QUERIES, NOT ONE `.or()`.
    *
    * The one-query version interpolates the company id into a PostgREST filter
-   * string — `company_id.eq.${companyId}`. That id comes from the CRM, not from
-   * us, and a comma or a parenthesis in it would not error: it would be PARSED
-   * AS FILTER SYNTAX and change which rooms match. On the one function that
+   * string — `company_id.eq.${id}`. That id comes from the CRM, not from us,
+   * and a comma or a parenthesis in it would not error: it would be PARSED AS
+   * FILTER SYNTAX and change which rooms match. On the one function that
    * decides which tenant a caller can read, a silent widening is the worst
    * available failure, and two round trips on a low-traffic route is nothing.
+   * (`.in()` below quotes its values, so the list form is safe.)
    */
   const [byOwner, byCompany] = await Promise.all([
     db.from('bridge_rooms').select('slug, name, company_id, created_at')
       .eq('owner_user_id', ctx.userId),
-    companyId
+    companies.length
       ? db.from('bridge_rooms').select('slug, name, company_id, created_at')
-          .eq('company_id', companyId)
+          .in('company_id', companies)
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
   ])
 
@@ -108,7 +129,7 @@ export async function roomsForToken(
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .map(({ slug, name, companyId: c }) => ({ slug, name, companyId: c }))
 
-  return { rooms, companyId }
+  return { rooms, companies }
 }
 
 /**
@@ -166,10 +187,14 @@ export async function resolveRoom(
   asked: string | null | undefined,
   opts: { create?: boolean } = {},
 ): Promise<RoomResolution> {
-  let { rooms, companyId } = await roomsForToken(db, ctx)
+  let { rooms, companies } = await roomsForToken(db, ctx)
 
-  if (!rooms.length && opts.create && companyId) {
-    const made = await createRoomForCompany(db, companyId)
+  // Minted under the primary agency only. A key that holds two agencies and no
+  // room yet gets ONE room on join, not two empty ones — the second is created
+  // when an agent actually joins it.
+  const primary = primaryCompany(companies)
+  if (!rooms.length && opts.create && primary) {
+    const made = await createRoomForCompany(db, primary)
     if (made) rooms = [made]
   }
 
@@ -203,7 +228,7 @@ export async function resolveRoom(
   return {
     ok: false,
     status: 403,
-    why: companyId
+    why: primary
       ? 'This key has no room yet. POST /api/bridge/room with {"join":"<YourName>"} to open your agency\'s room.'
       : 'This key is not linked to an agency yet, so it has no room. Install the app in your CRM account first — the room is created from that install.',
   }
