@@ -3,7 +3,9 @@
 /**
  * Site-wide banner: prompts authenticated users without their own Groq key
  * to connect one. Click → opens console.groq.com in a new tab AND navigates
- * the parent page to /dashboard/settings/groq so the user can paste & verify.
+ * the parent page to the vault door (/vault) so the user can paste & verify.
+ * That used to point at /dashboard/settings/groq, which the owner gate makes
+ * unreachable for every customer this banner is aimed at.
  *
  * Auto-hides when the user has connected a key. Auto-shows when the platform
  * quota is exhausted regardless of free/paid plan.
@@ -32,7 +34,7 @@ export function GroqBanner() {
   const [dismissed, setDismissed] = useState(false)
 
   // Don't render on the connect page itself or on focused app surfaces
-  const isConnectPage = pathname?.startsWith('/dashboard/settings/groq')
+  const isConnectPage = pathname?.startsWith('/vault')
   const isExcluded =
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/welcome') ||
@@ -73,7 +75,7 @@ export function GroqBanner() {
     // Open Groq signup in a new tab so the user can grab the key…
     window.open('https://console.groq.com/keys', '_blank', 'noopener,noreferrer')
     // …and navigate the parent to the paste-and-verify page.
-    router.push('/dashboard/settings/groq')
+    router.push('/vault')
   }
 
   function handleDismiss() {
@@ -114,7 +116,7 @@ export function GroqBanner() {
 
         <div className="flex shrink-0 items-center gap-2">
           <Link
-            href="/dashboard/settings/groq"
+            href="/vault"
             onClick={handleConnect}
             className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${
               status.exhausted

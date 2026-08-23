@@ -184,7 +184,7 @@ export default function WelcomePanel({
               {user.plan === 'free' && (
                 <div className="mt-4 rounded-md bg-slate-50 p-2 text-xs text-slate-600">
                   Bring your own free Groq key for unlimited AI tasks —
-                  <Link href="/dashboard/settings/groq" className="ml-1 font-semibold text-slate-900 underline-offset-2 hover:underline">
+                  <Link href="/vault" className="ml-1 font-semibold text-slate-900 underline-offset-2 hover:underline">
                     connect Groq
                   </Link>
                 </div>

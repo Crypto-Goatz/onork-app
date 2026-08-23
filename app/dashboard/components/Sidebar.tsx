@@ -23,7 +23,11 @@ const TOUR_ANCHORS: Record<string, string> = {
   '/dashboard': 'nav-dashboard',
   '/dashboard/clients': 'nav-clients',
   '/dashboard/settings': 'nav-settings',
-  '/dashboard/settings/groq': 'connect-groq',
+  // '/dashboard/settings/groq': 'connect-groq' — REMOVED 2026-08-23. No nav
+  // item ever had that href, so the anchor matched nothing and the tour step
+  // it fed was already rendering as a centred card. Connecting an app moved to
+  // the vault door (vault.0ncore.com); it is deliberately not in this sidebar,
+  // because /dashboard is legacy and does not get extended.
 }
 
 const ADDON_NAV_MAP: Record<string, { name: string; href: string; addonSlug: string }> = {

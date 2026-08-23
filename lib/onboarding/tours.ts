@@ -23,11 +23,20 @@ export const WELCOME_TOUR: TourStep[] = [
     body: 'Everything you connect shows up here — your clients, your automations, and the AI that runs them. It fills in as you connect things.',
   },
   {
-    target: '[data-tour="connect-groq"]',
+    // No `target`, on purpose — this step is a centred card now.
+    //
+    // It used to spotlight `[data-tour="connect-groq"]`, anchored off a
+    // sidebar href of /dashboard/settings/groq. Two things were wrong with
+    // that. No nav item has ever carried that href, so the selector matched
+    // nothing and the step already degraded to a centred card — the spotlight
+    // was decorative. And the destination itself is behind the owner gate, so
+    // the one user this step exists for could not reach it. The vault door is
+    // the connect surface now (vault.0ncore.com), and it is not in this
+    // sidebar to point at.
     title: 'Connect your free AI key',
-    body: "Groq is free, needs no credit card, and takes about a minute. Connect it and every AI feature in 0nCore runs on your own account — unmetered by us, and your key is stored encrypted where nobody here can read it.",
+    body: "Groq is free, needs no credit card, and takes about a minute. Connect it in your vault and every AI feature runs on your own account — unmetered by us, and your key is stored encrypted where nobody here can read it.",
     critical: true,
-    cta: { label: 'Create your Groq account & get your key', href: 'https://console.groq.com/keys' },
+    cta: { label: 'Open your vault to connect Groq', href: 'https://vault.0ncore.com/' },
   },
   {
     target: '[data-tour="nav-clients"]',

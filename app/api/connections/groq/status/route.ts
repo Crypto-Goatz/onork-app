@@ -3,7 +3,7 @@
  *
  * Returns the user's Groq key state: whether they have their own key, or
  * are running on the platform key with a monthly quota. Shape feeds the
- * site-wide GroqBanner + the /dashboard/settings/groq page.
+ * site-wide GroqBanner + the Groq panel on the vault door (/vault).
  */
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'

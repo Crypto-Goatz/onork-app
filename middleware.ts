@@ -24,6 +24,28 @@ const CURRENT_PROJECT_REF = (() => {
 /** The app-surface host. Marketing lives on www; the CRM app lives here. */
 const APP_HOST = 'app.0ncore.com'
 
+/**
+ * The vault host — THE ONE DOOR FOR CONNECTING AN APP (Mike's ruling,
+ * 2026-08-23: www is the user front end, /dashboard is LEGACY and must not be
+ * extended, this is where you connect things).
+ *
+ * The domain has been verified on the Vercel project for a while and did
+ * nothing: `next.config.ts` carried a `rewrites()` entry for it, but a plain
+ * `rewrites()` array is afterFiles, and "/" already has a filesystem match
+ * (the marketing page), so the rewrite could never fire. vault.0ncore.com
+ * served marketing — 200, same <title> as www, no error anywhere to notice.
+ * Middleware runs before filesystem routing, which is why the routing has to
+ * live here.
+ *
+ * ROOT ONLY, deliberately. Every other path on this host serves as itself, so
+ * /login, /auth/callback, /api/* and /downloads/* keep working on the
+ * subdomain and the shared `.0ncore.com` auth cookie carries the session in.
+ * It also sidesteps the trap documented on the matcher below: a full-host
+ * rewrite means every vault path must be listed there or it 404s. One door,
+ * one path, nothing to forget.
+ */
+const VAULT_HOST = 'vault.0ncore.com'
+
 export async function middleware(request: NextRequest) {
   // ── Host routing ──────────────────────────────────────────────────
   // app.0ncore.com serves the CRM app surface; www.0ncore.com serves
@@ -47,6 +69,9 @@ export async function middleware(request: NextRequest) {
   // protected list. A rewrite is a destination, not a decision: decide first,
   // rewrite last.
   let appRewritePath: string | null = null
+
+  /** Same contract for the vault host: decided here, applied by passThrough(). */
+  let vaultRewritePath: string | null = null
 
   // ── OAuth rescue ──────────────────────────────────────────────────
   // Supabase redirects an OAuth ?code to the requested redirect_to ONLY if it is
@@ -87,6 +112,27 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // ── Vault host ────────────────────────────────────────────────────
+  // vault.0ncore.com/ → /vault. Decided here, applied at the end by
+  // passThrough(), for the same reason the app host is: an immediate
+  // `return NextResponse.rewrite()` here would return before the auth block
+  // below and serve the connect surface — a page whose whole job is holding
+  // credentials — to anyone who typed the address. That is precisely the
+  // outage /dashboard had.
+  if (host === VAULT_HOST && request.nextUrl.pathname === '/') {
+    vaultRewritePath = '/vault'
+  }
+
+  /**
+   * The vault door, as the auth block below must see it.
+   *
+   * The protected list is path-based and CANNOT see this case: on the vault
+   * host the door's path is literally "/", which no prefix check will ever
+   * match. Without this flag the gate reads "/" as a public marketing root and
+   * the door opens for a logged-out visitor.
+   */
+  const isVaultDoor = vaultRewritePath !== null
+
   /**
    * A pass-through response that still carries the app-host rewrite.
    *
@@ -96,9 +142,12 @@ export async function middleware(request: NextRequest) {
    * early-return hid: nothing else could return without also losing the rewrite.
    */
   function passThrough(): NextResponse {
-    if (!appRewritePath) return NextResponse.next({ request })
+    // Mutually exclusive — a request has one host, and each host decides at
+    // most one destination.
+    const rewritePath = appRewritePath ?? vaultRewritePath
+    if (!rewritePath) return NextResponse.next({ request })
     const url = request.nextUrl.clone()
-    url.pathname = appRewritePath
+    url.pathname = rewritePath
     return NextResponse.rewrite(url, { request })
   }
 
@@ -135,7 +184,7 @@ export async function middleware(request: NextRequest) {
     }
     // Bounce to /login if hitting a protected route, else just continue
     const path = request.nextUrl.pathname
-    if (path.startsWith('/dashboard') || path.startsWith('/console') || path.startsWith('/canvas') || path.startsWith('/welcome') || path.startsWith('/profile') || path.startsWith('/admin')) {
+    if (isVaultDoor || path.startsWith('/vault') || path.startsWith('/dashboard') || path.startsWith('/console') || path.startsWith('/canvas') || path.startsWith('/welcome') || path.startsWith('/profile') || path.startsWith('/admin')) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('next', path)
@@ -202,7 +251,11 @@ export async function middleware(request: NextRequest) {
   // (CRM contacts, appointment lists, revenue) — must NEVER fail open.
   if (
     !user &&
-    (request.nextUrl.pathname.startsWith('/dashboard')
+    (isVaultDoor
+      // /vault is the same page reached by path on www/app and in local dev.
+      // Gated by path AND by host so neither address can serve it open.
+      || request.nextUrl.pathname.startsWith('/vault')
+      || request.nextUrl.pathname.startsWith('/dashboard')
       || request.nextUrl.pathname.startsWith('/console')
       || request.nextUrl.pathname.startsWith('/canvas')
       || request.nextUrl.pathname.startsWith('/welcome')
@@ -218,6 +271,28 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('next', request.nextUrl.pathname)
+    return withCookies(NextResponse.redirect(url))
+  }
+
+  // ── The old connect page folds into the vault ─────────────────────
+  //
+  // /dashboard/settings/groq was the only place to paste an AI key, and since
+  // the owner gate below landed it has been unreachable by the people it was
+  // built for: a signed-in customer following the onboarding tour hit the gate
+  // and got bounced to /hub, never seeing the form. Two doors, one of them
+  // shut. Now there is one.
+  //
+  // Deliberately ABOVE the owner gate — below it, a non-owner is redirected to
+  // /hub before this ever runs and the bookmark stays broken. Deliberately
+  // BELOW the logged-out check, so this cannot become a second way to reach a
+  // credential surface without a session. Same-host path, not an absolute
+  // vault.0ncore.com URL, so previews and local dev do not jump to production.
+  // Temporary, not permanent: a 308 would be cached in browsers long after any
+  // future change of mind.
+  if (request.nextUrl.pathname.startsWith('/dashboard/settings/groq')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/vault'
+    url.search = ''
     return withCookies(NextResponse.redirect(url))
   }
 
@@ -318,6 +393,11 @@ export const config = {
     // exactly that; /dashboard only worked because it was already matched for
     // an unrelated reason.
     '/',
+    // The vault door. "/" above is what makes it work on vault.0ncore.com —
+    // these two are the same page reached by path on www/app and in local dev,
+    // and they must be matched or the auth gate never runs on them.
+    '/vault',
+    '/vault/:path*',
     '/crm/:path*',
     '/clients',
     '/clients/:path*',

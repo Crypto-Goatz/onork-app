@@ -18,14 +18,19 @@ const nextConfig: NextConfig = {
    */
   async rewrites() {
     return [
-      // vault.0ncore.com → the 0nVault door. Only the root is rewritten; every
-      // other path (/api/*, /login, /_next, /downloads…) serves normally on the
-      // subdomain, and the session rides the shared .0ncore.com cookie.
-      {
-        source: '/',
-        has: [{ type: 'host', value: 'vault.0ncore.com' }],
-        destination: '/hub',
-      },
+      // vault.0ncore.com is NOT routed here. It used to be — `source: '/'`,
+      // host vault.0ncore.com, destination /hub — and it never once fired.
+      // A plain `rewrites()` array is afterFiles, which runs only when nothing
+      // in the filesystem matched, and "/" always matches app/page.tsx. The
+      // subdomain quietly served the marketing homepage: 200, no error, no way
+      // to spot it except by reading the served <title>. It is routed in
+      // middleware.ts instead, which runs before filesystem routing and is
+      // also where the auth gate lives — a credential surface must not be
+      // reachable by a rewrite that skips the gate.
+      //
+      // The dispatch entries below are unaffected: /dispatch and
+      // /api/dispatch/* have no conflicting filesystem route at the source
+      // path, so afterFiles is the right stage for them.
       {
         source: '/',
         has: [{ type: 'host', value: 'dispatch.0ncore.com' }],

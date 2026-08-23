@@ -89,13 +89,13 @@ export async function scoreVpis(
 
   const key = await resolveGroqKey(userId ?? null)
   if (!key.apiKey) {
-    return fallback(trimmed, tone, 'no Groq key — connect one at /dashboard/settings/groq')
+    return fallback(trimmed, tone, 'no Groq key — connect one at vault.0ncore.com')
   }
   if (key.exhausted) {
     return fallback(
       trimmed,
       tone,
-      `monthly Groq quota reached (${key.quota?.used ?? 0}/${key.quota?.limit ?? 0}). Bring your own key at /dashboard/settings/groq for unlimited.`,
+      `monthly Groq quota reached (${key.quota?.used ?? 0}/${key.quota?.limit ?? 0}). Bring your own key at vault.0ncore.com for unlimited.`,
     )
   }
 

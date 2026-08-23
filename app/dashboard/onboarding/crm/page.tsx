@@ -328,7 +328,7 @@ export default function CrmOnboardingPage() {
           </p>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <Link
-              href="/dashboard/settings/groq"
+              href="/vault"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#7ed957] px-5 py-2.5 text-sm font-bold text-[#020810] shadow-[0_0_24px_rgba(126,217,87,0.3)] transition-transform hover:scale-[1.01]"
             >
               Connect Groq
