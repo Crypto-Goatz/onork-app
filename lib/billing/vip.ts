@@ -33,9 +33,25 @@ export const VIP_COUPON_ID = '0ncore-vip-100'
  */
 const VIP_EMAILS = new Set<string>(['mike@rocketopp.com', 'mike@in2sight.net'])
 
+/**
+ * Normalise a plus-address to its base mailbox: `mike+test3@x.com` -> `mike@x.com`.
+ *
+ * Sub-addressing is the same human and the same inbox, so a VIP stays a VIP
+ * however they tag the address. This exists so the signup flow can be tested
+ * from scratch as many times as needed WITHOUT deleting the real account — the
+ * only alternative was destroying a six-month-old profile that owns a live
+ * vault credential, to run a test.
+ */
+function baseMailbox(email: string): string {
+  const [local, domain] = email.trim().toLowerCase().split('@')
+  if (!domain) return email.trim().toLowerCase()
+  return `${local.split('+')[0]}@${domain}`
+}
+
 export function isVipEmail(email: string | null | undefined): boolean {
   if (!email) return false
-  return VIP_EMAILS.has(email.trim().toLowerCase())
+  const e = email.trim().toLowerCase()
+  return VIP_EMAILS.has(e) || VIP_EMAILS.has(baseMailbox(e))
 }
 
 /** True if this user should be comped, by profile flag OR pre-signup allowlist. */
