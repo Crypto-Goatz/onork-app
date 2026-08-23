@@ -115,7 +115,16 @@ export default function SettingsPage() {
   }
 
   return (
-    <div>
+    // WHITE ON WHITE. Every class in this component is dark-theme
+    // (text-white, bg-white/[0.02], text-white/40) but it renders inside a
+    // LIGHT settings page, so Location, Custom Fields, Custom Values and Team
+    // Members were invisible — present in the DOM, unreadable on screen.
+    //
+    // Repainting twenty-odd classes to light would fight the 0nCore design
+    // system, which is dark (#0d1117). Giving the section the surface its
+    // classes were written for fixes every one of them at once and matches the
+    // rest of the product.
+    <div className="rounded-2xl bg-[#0d1117] border border-white/[0.08] p-6 text-[#c9d1d9]">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

@@ -90,10 +90,24 @@ export async function POST(req: NextRequest) {
   }
 
   // Build the CRM request URL
-  let url = `${CRM_API}${path}`
+  // `/locations/` takes the id as a PATH segment, not a query param.
+  //
+  // The SDK cannot know the location id client-side, so it sends the bare
+  // path and this proxy appends `?locationId=…` to every GET. For most CRM
+  // routes that is right; for the single-location read it produced
+  // `/locations/?locationId=…`, which the CRM answers with a bare
+  // `Cannot GET` — the red banner on the CRM Settings page.
+  //
+  // Rewritten here rather than in the SDK because this is the only place that
+  // knows the id, and doing it in both is how the two would drift apart.
+  const isBareLocations = /^\/locations\/?$/.test(path)
+  let url = isBareLocations ? `${CRM_API}/locations/${locationId}` : `${CRM_API}${path}`
 
-  // Auto-append locationId to GET queries if not already present
-  if (method === 'GET' && !url.includes('locationId')) {
+  // Auto-append locationId to GET queries if not already present. Skipped for
+  // the path-param form above, where appending it would duplicate the id — and
+  // a duplicated locationId is what returns a bogus 403 rather than an error
+  // that names the problem.
+  if (method === 'GET' && !isBareLocations && !url.includes('locationId')) {
     const sep = url.includes('?') ? '&' : '?'
     url = `${url}${sep}locationId=${locationId}`
   }

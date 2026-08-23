@@ -21,6 +21,7 @@
  * section is added, only one copy gets it.
  */
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import {
   UserCircle,
@@ -206,10 +207,20 @@ export default function AppSidebar({
 
         {/* The comp has no header bar, so the one control that used to live
             there and has nowhere else to go comes down here. */}
-        {onSignOut && (
+        {/* Sign out is ALWAYS rendered.
+            It used to require the parent to pass onSignOut, and 13 of the 14
+            pages that render this sidebar never did — so there was no way to
+            log out of /crm/settings, /crm/setup or anywhere else except the
+            agency dashboard. A control that every screen needs cannot depend
+            on every screen remembering to wire it. The prop still wins when
+            given, so the one page that customises it keeps its behaviour. */}
+        {(
           <button
             type="button"
-            onClick={onSignOut}
+            onClick={onSignOut ?? (async () => {
+              try { await createClient().auth.signOut() } catch { /* already gone */ }
+              window.location.href = '/login?next=/crm'
+            })}
             className="flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-[13px] font-medium text-[#8b949e] transition-colors hover:bg-[#21262d] hover:text-[#e6edf3]"
           >
             <LogOut className="h-4 w-4 shrink-0" strokeWidth={2} /> Sign out
