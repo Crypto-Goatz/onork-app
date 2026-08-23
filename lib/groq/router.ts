@@ -18,7 +18,37 @@
  * billed by Groq directly.
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+
+import { HOUSE_AGENCY, getSecret, isVaultConfigured, type AgencyId } from '@/lib/vault/connections'
+
+/**
+ * Which tenant owns this user's credentials.
+ *
+ * Two doors, per the identity model:
+ *   · direct signup      -> we auto-provisioned them, 0nCore IS the agency
+ *   · marketplace install-> the installing agency owns the relationship
+ *
+ * `crm_agency_id` is set only in the second case, so its presence is the
+ * discriminator. There is deliberately no fallback guess: an unknown tenant
+ * resolves to the house, never to some other agency's vault.
+ */
+export async function agencyForUser(userId: string): Promise<AgencyId> {
+  return resolveAgencyId(userId, admin())
+}
+
+export async function resolveAgencyId(
+  userId: string,
+  sb: SupabaseClient,
+): Promise<AgencyId> {
+  const { data } = await sb
+    .from('profiles')
+    .select('crm_agency_id')
+    .eq('id', userId)
+    .maybeSingle()
+  const agency = (data?.crm_agency_id as string | null) ?? null
+  return agency && agency.trim() ? agency.trim() : HOUSE_AGENCY
+}
 
 export type GroqKeySource = 'user' | 'platform'
 
@@ -94,17 +124,29 @@ export async function resolveGroqKey(userId: string | null | undefined): Promise
 
   const sb = admin()
 
-  // 1. User's own Groq key
-  const { data: conn } = await sb
-    .from('user_connections')
-    .select('access_token, status')
-    .eq('user_id', userId)
-    .eq('provider', 'groq')
-    .eq('status', 'active')
-    .maybeSingle()
-  if (conn?.access_token) {
+  // 1. The tenant's own Groq key, from 0nVault.
+  //
+  // This used to read `user_connections.access_token`, which stored the key in
+  // PLAINTEXT and was per-user rather than per-agency. 0nVault is the single
+  // store (ruled 2026-08-22): encrypted at rest, agency-scoped, audited.
+  //
+  // A vault failure must NOT silently fall through to the platform key — that
+  // is how a customer who connected a key ends up spending ours while the UI
+  // still shows "connected". Fail loudly instead.
+  if (!isVaultConfigured()) {
+    // Our misconfiguration, not the customer's missing key. Say so in the
+    // platform's own words rather than quietly behaving as "no key connected".
+    console.error(
+      '[groq] 0nVault is NOT configured on this deployment ' +
+        '(VAULT_SUPABASE_URL / VAULT_SUPABASE_SERVICE_ROLE_KEY / ON_CONNECT_KEY). ' +
+        'Every bring-your-own-key customer is being served the PLATFORM key and billed to us.',
+    )
+  }
+  const agencyId = isVaultConfigured() ? await resolveAgencyId(userId, sb) : null
+  const own = agencyId ? await getSecret(agencyId, 'groq', 'groq-resolver') : null
+  if (own?.secret) {
     return {
-      apiKey: conn.access_token,
+      apiKey: own.secret,
       source: 'user',
       exhausted: false,
       shouldRecord: false,

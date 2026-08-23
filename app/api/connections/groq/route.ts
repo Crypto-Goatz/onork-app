@@ -11,8 +11,8 @@
  */
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
-import { upsertConnection, disconnectProvider } from '@/lib/oauth/connections'
-import { probeGroqKey, getGroqKeyStatus } from '@/lib/groq/router'
+import { putSecret, deleteSecret } from '@/lib/vault/connections'
+import { probeGroqKey, getGroqKeyStatus, agencyForUser } from '@/lib/groq/router'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -46,17 +46,22 @@ export async function POST(req: Request) {
     )
   }
 
-  // 2. Persist via the email-keyed identity unifier
+  // 2. Persist into 0nVault — encrypted at rest, agency-scoped, audited.
+  //
+  // This previously went through `upsertConnection` into the shared
+  // `user_connections` row, which stored the key in PLAINTEXT and is the same
+  // row the login flow writes — a login that narrows scopes has silently
+  // wiped connect grants there before. The vault has neither problem.
   try {
-    await upsertConnection({
-      provider: 'groq',
-      oncoreUserId: user.id,
-      providerAccountId: `groq:${user.email || user.id}`,
-      providerEmail: user.email || null,
-      accessToken: apiKey,
-      tokenType: 'Bearer',
-      scopes: 'inference',
-      metadata: { verified_at: new Date().toISOString() },
+    await putSecret({
+      agencyId: await agencyForUser(user.id),
+      service: 'groq',
+      secret: apiKey,
+      label: user.email || null,
+      kind: 'token',
+      meta: { connected_by: user.id, scopes: 'inference' },
+      verified: true,
+      usedBy: 'settings-ui',
     })
   } catch (err) {
     return NextResponse.json(
@@ -78,6 +83,6 @@ export async function DELETE() {
   const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  await disconnectProvider(user.id, 'groq')
+  await deleteSecret(await agencyForUser(user.id), 'groq', 'settings-ui')
   return NextResponse.json({ ok: true })
 }

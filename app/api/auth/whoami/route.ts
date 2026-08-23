@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { isVipEmail } from '@/lib/billing/vip'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,6 +56,21 @@ export async function GET(req: NextRequest) {
     .eq('id', userId)
     .single()
 
+  // Self-healing VIP flag.
+  //
+  // The pre-signup allowlist in lib/billing/vip.ts is the single source of
+  // truth, but it cannot write a `profiles` row that does not exist yet. The
+  // other surfaces in this app read `profiles.is_vip` directly, so the flag is
+  // reconciled here — the first authenticated call after signup — rather than
+  // duplicating the allowlist into the signup trigger, where the two copies
+  // would immediately start disagreeing.
+  let isVip = !!profile?.is_vip
+  if (!isVip && isVipEmail(profile?.email || email)) {
+    const { error } = await admin.from('profiles').update({ is_vip: true }).eq('id', userId)
+    if (error) console.error('[whoami] VIP backfill failed:', error.message)
+    else isVip = true
+  }
+
   return NextResponse.json({
     authenticated: true,
     user_id: userId,
@@ -62,7 +78,7 @@ export async function GET(req: NextRequest) {
     full_name: profile?.full_name || null,
     plan: profile?.plan || 'starter',
     is_admin: !!profile?.is_admin,
-    is_vip: !!profile?.is_vip,
+    is_vip: isVip,
     tier_level: profile?.tier_level || 0,
     crm_location_id: profile?.crm_location_id || null,
   })

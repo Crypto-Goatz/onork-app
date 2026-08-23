@@ -11,6 +11,21 @@ interface SidebarProps {
   isAdmin?: boolean
 }
 
+/**
+ * Anchors for the welcome tour (`components/onboarding/Tour.tsx`).
+ *
+ * Keyed by href rather than annotated onto each item, because the nav is
+ * data-driven — hand-marking items would silently lose the anchor the next
+ * time the menu is regenerated. A href with no entry simply gets no anchor,
+ * and the tour degrades to a centred card rather than breaking.
+ */
+const TOUR_ANCHORS: Record<string, string> = {
+  '/dashboard': 'nav-dashboard',
+  '/dashboard/clients': 'nav-clients',
+  '/dashboard/settings': 'nav-settings',
+  '/dashboard/settings/groq': 'connect-groq',
+}
+
 const ADDON_NAV_MAP: Record<string, { name: string; href: string; addonSlug: string }> = {
   'email-builder': { name: 'Email Campaigns', href: '/dashboard/email/campaigns', addonSlug: 'email-builder' },
   'social-planner': { name: 'Social Planner', href: '/dashboard/social', addonSlug: 'social-planner' },
@@ -610,6 +625,7 @@ export default function Sidebar({ isOpen, onClose, isAdmin: isAdminProp }: Sideb
                         <Link
                           href={item.href}
                           onClick={onClose}
+                          data-tour={TOUR_ANCHORS[item.href]}
                           className={`jp-nav-item ${isActive ? 'active' : ''}`}
                           style={isActive ? { background: '#000000', color: '#ffffff', borderRadius: 8 } : {}}
                           onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = catColor; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.borderRadius = '8px'; const icon = e.currentTarget.querySelector('.jp-nav-icon') as HTMLElement; if (icon) icon.style.color = '#ffffff' } }}

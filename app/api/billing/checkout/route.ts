@@ -1,6 +1,7 @@
 // @ts-nocheck
 import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
+import { isVipProfile, vipDiscounts } from '@/lib/billing/vip'
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-06-20' as any })
@@ -34,9 +35,14 @@ export async function POST(req: Request) {
   // Get profile
   const { data: profile } = await supabase
     .from('profiles')
-    .select('email, full_name, crm_contact_id')
+    .select('email, full_name, crm_contact_id, is_vip, is_admin')
     .eq('id', user.id)
     .single()
+
+  // VIP is a 100% DISCOUNT, not a skipped checkout: the session, subscription,
+  // webhook and entitlement grant all still happen, at $0. Bypassing here
+  // would leave the paid path untested by the people who demo it.
+  const vip = isVipProfile(profile, user.email)
 
   // Get or create Stripe customer
   const { data: balance } = await supabase
@@ -66,6 +72,10 @@ export async function POST(req: Request) {
     }, { onConflict: 'user_id' })
   }
 
+  // Resolved once, before the session: if the coupon cannot be ensured this
+  // THROWS rather than quietly charging a VIP full price.
+  const discounts = await vipDiscounts(getStripe(), vip)
+
   // SUBSCRIPTION (tier upgrade)
   if (tier_level && getTierPrices()[tier_level]) {
     const session = await getStripe().checkout.sessions.create({
@@ -73,6 +83,7 @@ export async function POST(req: Request) {
       customer: customerId,
       payment_method_types: ['card'],
       line_items: [{ price: getTierPrices()[tier_level], quantity: 1 }],
+      ...(discounts ? { discounts } : {}),
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/console?upgrade=success&tier=${tier_level}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/console?upgrade=cancelled`,
       subscription_data: {

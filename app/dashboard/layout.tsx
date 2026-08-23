@@ -10,6 +10,7 @@ import HorizontalNav from './components/HorizontalNav'
 import Header, { type LayoutMode } from './components/Header'
 import { RoleContext, useRoleLoader } from '@/lib/use-role'
 import { LocationProvider } from '@/lib/location-context'
+import TourHost from '@/components/onboarding/TourHost'
 
 const LAYOUT_KEY = '0ncore_layout'
 
@@ -22,6 +23,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }>
       <LocationProvider>
         <DashboardLayoutInner>{children}</DashboardLayoutInner>
+        {/* Mounted once here rather than inside each of the three layout modes,
+            so the tour cannot drift between classic/compact/horizontal. */}
+        <TourHost />
       </LocationProvider>
     </Suspense>
   )
