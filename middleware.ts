@@ -398,6 +398,12 @@ export const config = {
     // and they must be matched or the auth gate never runs on them.
     '/vault',
     '/vault/:path*',
+    // The Hub and everything under it. /hub alone was matched, so nested pages
+    // (/hub/room, /hub/apps) 404'd on every host while existing perfectly in
+    // the codebase — the exact trap this matcher's own comment warns about,
+    // which already cost /clients and /automations.
+    '/hub',
+    '/hub/:path*',
     '/crm/:path*',
     '/clients',
     '/clients/:path*',
