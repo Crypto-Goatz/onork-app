@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { validateToken } from '@/lib/0n-token'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,11 +59,44 @@ export async function POST(req: NextRequest) {
 
   // Method 1: 0n_ token authentication (paste token)
   if (token && token.startsWith('0n_')) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, business_name, tier_level, avatar_url, crm_location_id')
-      .eq('access_token', token)
-      .single()
+    // TWO STORES, ONE CONCEPT — this is why pasting a freshly generated device
+    // key always failed.
+    //
+    // The "New device key" button issues a `0n_live_…` via /api/auth/device and
+    // stores it HASHED in agency_connections. This route only ever compared it
+    // in PLAINTEXT against profiles.access_token — a different column, in a
+    // different table, holding a different token. So a key the UI had just
+    // shown, with a working Revoke button next to it, could never authenticate.
+    // "Issued" and "accepted" were two different states.
+    //
+    // validateToken() is the one validator that knows about hashed device keys
+    // (it is what /api/extension/auth/verify already uses). Try it FIRST, and
+    // keep the legacy profiles.access_token path as a fallback so tokens issued
+    // before device keys existed keep working.
+    let profile: {
+      id: string; email?: string | null; full_name?: string | null
+      business_name?: string | null; tier_level?: number | null
+      avatar_url?: string | null; crm_location_id?: string | null
+    } | null = null
+
+    const ctx = await validateToken(token).catch(() => null)
+    if (ctx?.userId) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, business_name, tier_level, avatar_url, crm_location_id')
+        .eq('id', ctx.userId)
+        .single()
+      profile = data
+    }
+
+    if (!profile) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, business_name, tier_level, avatar_url, crm_location_id')
+        .eq('access_token', token)
+        .single()
+      profile = data
+    }
 
     if (!profile) {
       return NextResponse.json({ error: 'Invalid token. Check 0ncore.com/dashboard/downloads for your token.' }, { status: 401 })
