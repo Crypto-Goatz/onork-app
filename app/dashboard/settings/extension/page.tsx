@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from 'react'
 import {
-  Chrome, Copy, Trash2, Key, Plus, ExternalLink, CheckCircle2, Loader2, ShieldAlert,
+  Chrome, Copy, Trash2, Key, Plus, Download, CheckCircle2, Loader2, ShieldAlert,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -111,13 +111,16 @@ export default function ExtensionTokenPage() {
             <div className="text-xs text-white/60">Free Chrome extension · LinkedIn VPIS, content engine, MCP tools</div>
           </div>
         </div>
-        <a
-          href="https://chromewebstore.google.com/search/0n%20AI%20command%20center"
-          target="_blank"
-          rel="noreferrer"
-        >
+        {/*
+          THIS EXTENSION IS NOT PUBLISHED IN THE CHROME WEB STORE. This button
+          used to link a Web Store *search* URL, and the steps below told people
+          to "install from the Chrome Web Store" — so every user who followed
+          the page landed on a search results page for something that does not
+          exist. Serve the zip we actually build instead.
+        */}
+        <a href="/downloads/0n-extension.zip" download>
           <Button variant="outline" size="sm">
-            <ExternalLink className="mr-2 h-3.5 w-3.5" /> Open Chrome Web Store
+            <Download className="mr-2 h-3.5 w-3.5" /> Download the extension
           </Button>
         </a>
       </Card>
@@ -210,10 +213,11 @@ export default function ExtensionTokenPage() {
       <Card className="p-5">
         <div className="mb-3 text-sm font-semibold">How to connect</div>
         <ol className="space-y-2 text-sm text-white/70">
-          <li><span className="mr-1.5 inline-block w-5 text-center font-mono text-[var(--accent)]">1.</span> Install <strong className="text-white">0n — AI Command Center</strong> from the Chrome Web Store.</li>
-          <li><span className="mr-1.5 inline-block w-5 text-center font-mono text-[var(--accent)]">2.</span> Click the extension icon in Chrome's toolbar.</li>
-          <li><span className="mr-1.5 inline-block w-5 text-center font-mono text-[var(--accent)]">3.</span> Paste your token from above into the &ldquo;Connect&rdquo; screen.</li>
-          <li><span className="mr-1.5 inline-block w-5 text-center font-mono text-[var(--accent)]">4.</span> Done — the extension is signed in and tied to your 0nCore account.</li>
+          <li><span className="mr-1.5 inline-block w-5 text-center font-mono text-[var(--accent)]">1.</span> <strong className="text-white">Download the extension</strong> above and unzip it.</li>
+          <li><span className="mr-1.5 inline-block w-5 text-center font-mono text-[var(--accent)]">2.</span> Open <code className="rounded bg-white/10 px-1">chrome://extensions</code> and turn on <strong className="text-white">Developer mode</strong> (top right).</li>
+          <li><span className="mr-1.5 inline-block w-5 text-center font-mono text-[var(--accent)]">3.</span> Click <strong className="text-white">Load unpacked</strong> and pick the unzipped folder.</li>
+          <li><span className="mr-1.5 inline-block w-5 text-center font-mono text-[var(--accent)]">4.</span> Click the extension icon, then paste your token from above into the &ldquo;Connect&rdquo; screen.</li>
+          <li><span className="mr-1.5 inline-block w-5 text-center font-mono text-[var(--accent)]">5.</span> Updating later? Re-download, replace the folder, then hit <strong className="text-white">Reload</strong> on the extension card — Chrome keeps running the old files until you do.</li>
         </ol>
       </Card>
     </div>
