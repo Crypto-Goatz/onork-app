@@ -76,10 +76,25 @@ export async function POST(req: NextRequest) {
         quantity: Math.max(1, Math.min(body.quantity ?? 1, 10)),
       },
     ],
+    // ONE 0n ACCOUNT, WHATEVER THEY BOUGHT AND WHEREVER THEY BOUGHT IT.
+    //
+    // client_reference_id is the field Stripe surfaces on the session, the
+    // dashboard row, the webhook and every export — it is the durable link
+    // between a payment and the 0n account it belongs to. Of 659 sessions on
+    // this account only 8 carried one, which is why nothing that has ever been
+    // sold can be attributed to a person without guessing from an email.
+    //
+    // metadata.buyer_id says the same thing, but metadata is easy to lose in a
+    // refund, a Stripe-side edit, or a subscription rebuild. Setting both means
+    // attribution survives all three.
+    client_reference_id: user.id,
     metadata: {
       product_id: product.id,
       product_slug: product.slug,
       buyer_id: user.id,
+      // The slug the entitlement is written under, so the webhook never has to
+      // infer which product was bought from a price id.
+      entitlement_slug: product.slug,
       source: 'jaxx_commerce',
     },
     success_url: `${baseUrl}/dashboard/downloads?session_id={CHECKOUT_SESSION_ID}`,

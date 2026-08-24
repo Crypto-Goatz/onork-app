@@ -79,6 +79,12 @@ export async function POST(req: Request) {
   // SUBSCRIPTION (tier upgrade)
   if (tier_level && getTierPrices()[tier_level]) {
     const session = await getStripe().checkout.sessions.create({
+      // ONE 0n ACCOUNT: client_reference_id is the durable link between this
+      // payment and the 0n user, surfaced on the session, the dashboard row,
+      // the webhook and every export. Only 8 of 659 historic sessions carried
+      // one, which is why nothing sold so far can be attributed without
+      // guessing from an email.
+      client_reference_id: user.id,
       mode: 'subscription',
       customer: customerId,
       payment_method_types: ['card'],
