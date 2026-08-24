@@ -24,6 +24,7 @@ import Link from 'next/link'
 import {
   ArrowRight, BookOpen, CreditCard, Lock, Loader2, Sparkles, ShieldCheck, LayoutGrid,
 } from 'lucide-react'
+import ExtensionInstall from './ExtensionInstall'
 
 type Home = {
   authed: boolean
@@ -126,6 +127,14 @@ export default function HubPage() {
       </header>
 
       <main className="mx-auto max-w-[1100px] space-y-10 px-6 py-8 md:px-10">
+        {/* ── Chrome extension ──────────────────────────────────────────
+            Above the apps grid on purpose: it is the one thing on this page
+            that needs an action taken OUTSIDE the browser tab, and it is not
+            in the Chrome Web Store, so it cannot be a one-click install. The
+            component carries the walkthrough for that. Dismissible, because a
+            banner you cannot close is an ad. */}
+        <ExtensionInstall />
+
         {/* ── Your apps ─────────────────────────────────────────────── */}
         <section>
           <h2 className="flex items-center gap-2 text-sm uppercase tracking-widest text-white/40">

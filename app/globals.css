@@ -226,10 +226,85 @@
   animation: logo-dot-pulse 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ─── Extension install walkthrough (hub/ExtensionInstall.tsx) ───
+ * The extension is NOT in the Chrome Web Store, so a customer has to do the
+ * Developer-mode / Load-unpacked dance. Prose does not teach that — people
+ * bounce off "chrome://extensions" as a phrase. So each step animates a small
+ * mock of the exact control they are looking for: the address bar typing
+ * itself, the Developer-mode switch flipping, the folder dropping in.
+ * Everything below is a mock. Nothing here talks to Chrome.
+ */
+@keyframes ext-caret {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.ext-caret { animation: ext-caret 1s step-end infinite; }
+
+/* Reveals the url one character-width at a time. Paired with a fixed ch width
+ * on the element so the steps land on real characters. */
+@keyframes ext-type {
+  from { width: 0; }
+  to { width: 20ch; }
+}
+.ext-type {
+  animation: ext-type 1.8s steps(20, end) forwards;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+@keyframes ext-knob {
+  0%, 25% { transform: translateX(0); }
+  60%, 100% { transform: translateX(14px); }
+}
+.ext-knob { animation: ext-knob 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+
+@keyframes ext-track {
+  0%, 25% { background-color: rgba(255, 255, 255, 0.15); }
+  60%, 100% { background-color: #6EE05A; }
+}
+.ext-track { animation: ext-track 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+
+/* The zip folder lifting out and settling — the "unzip it" step. */
+@keyframes ext-drop {
+  0% { opacity: 0; transform: translateY(-10px) scale(0.9); }
+  55% { opacity: 1; transform: translateY(2px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.ext-drop { animation: ext-drop 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+
+@keyframes ext-pop {
+  0% { opacity: 0; transform: scale(0.5); }
+  60% { opacity: 1; transform: scale(1.15); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.ext-pop { animation: ext-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Cursor drifting onto the button it is telling you to press. */
+@keyframes ext-cursor {
+  0%, 100% { transform: translate(0, 0); }
+  45%, 65% { transform: translate(-16px, -10px); }
+}
+.ext-cursor { animation: ext-cursor 2.6s ease-in-out infinite; }
+
+@keyframes ext-sheen {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(220%); }
+}
+.ext-sheen { animation: ext-sheen 2.8s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .animate-aurora-1, .animate-aurora-2, .animate-aurora-3, .animate-conic-spin {
     animation: none;
   }
+  /* The walkthrough must still READ correctly with motion off, so the typed url
+   * ends at full width rather than zero — an animation-less `width: 0` would
+   * hide the instruction entirely. */
+  .ext-caret, .ext-knob, .ext-track, .ext-drop, .ext-pop, .ext-cursor, .ext-sheen {
+    animation: none;
+  }
+  .ext-type { animation: none; width: 20ch; }
+  .ext-knob { transform: translateX(14px); }
+  .ext-track { background-color: #6EE05A; }
 }
 
 /*
