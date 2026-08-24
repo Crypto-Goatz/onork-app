@@ -35,6 +35,10 @@ export async function POST(req: Request) {
       // one, which is why nothing sold so far can be attributed without
       // guessing from an email.
       client_reference_id: user.id,
+    // Prefill the buyer's email. Every abandonment then arrives as a
+    // recoverable lead instead of an anonymous ghost session — the cheapest
+    // conversion fix available, and it costs one line. (Dex, seq 67.)
+    customer_email: user.email ?? undefined,
     mode: 'payment',
     payment_method_types: ['card'],
     line_items: [{
@@ -57,6 +61,9 @@ export async function POST(req: Request) {
     cancel_url: cancel_url || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?purchase=cancelled`,
     metadata: {
       buyer_user_id: user.id,
+      // Alias the webhook's resolver already understands, so attribution
+      // survives even if client_reference_id is lost in a Stripe-side edit.
+      buyer_id: user.id,
       seller_account_id: connected_account_id,
       ...metadata,
     },

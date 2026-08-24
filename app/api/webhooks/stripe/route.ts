@@ -2,6 +2,7 @@
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { applyLifecycleTag, writeStripeIdsToCrmContact } from '@/lib/crm-billing-link'
+import { grantFromCheckoutSession, revokeByStripeId } from '@/lib/entitlements/grant'
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-06-20' as any })
@@ -121,6 +122,28 @@ export async function POST(req: Request) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ stripe_session_id: session.id }),
         }).catch(err => console.error('[stripe/webhook] UCP fulfillment failed:', err.message))
+      }
+
+      // ── THE ENTITLEMENT WRITE — runs for EVERY completed checkout ─────────
+      //
+      // Everything below this point is per-product bookkeeping in tables the 0n
+      // token does not read. `product_keys` is what the token returns as
+      // `addons`, so if this does not run, a customer pays and their extension
+      // still shows nothing. It deliberately sits ABOVE the `user_id` guard: a
+      // session that carries client_reference_id but no metadata.user_id used
+      // to fall straight through this case and provision nothing.
+      //
+      // Idempotent, and it logs an UNPROVISIONED SALE line when it cannot
+      // resolve the buyer or the product — that log is the only way we find out.
+      if (session.metadata?.kind !== 'wallet_topup') {
+        try {
+          const receipt = await grantFromCheckoutSession(supabase, getStripe(), session)
+          console.log(
+            `[stripe/webhook] entitlement ${receipt.outcome} slug=${receipt.slug} user_via=${receipt.userVia} slug_via=${receipt.slugVia}`,
+          )
+        } catch (err) {
+          console.error('[stripe/webhook] entitlement write threw:', (err as Error).message)
+        }
       }
 
       const userId = session.metadata?.user_id
@@ -253,12 +276,20 @@ export async function POST(req: Request) {
         current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
         cancel_at_period_end: sub.cancel_at_period_end,
       }).eq('stripe_subscription_id', sub.id)
+      // past_due is still inside dunning — the customer keeps what they bought
+      // until Stripe gives up. canceled/unpaid is Stripe giving up.
+      if (sub.status === 'canceled' || sub.status === 'unpaid') {
+        await revokeByStripeId(supabase, sub.id, `subscription ${sub.status}`)
+      }
       await syncSubscriptionToCrm(supabase, sub)
       break
     }
     case 'customer.subscription.deleted': {
       const sub = event.data.object
       await supabase.from('product_subscriptions').update({ status: 'cancelled', cancel_at_period_end: false }).eq('stripe_subscription_id', sub.id)
+      // Status flips to 'revoked'. NEVER a delete — we need the history of what
+      // someone once owned, to re-grant it and to answer "did I ever pay for this".
+      await revokeByStripeId(supabase, sub.id, 'subscription deleted')
       await syncSubscriptionToCrm(supabase, sub)
       break
     }
