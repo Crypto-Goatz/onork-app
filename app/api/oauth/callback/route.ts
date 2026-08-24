@@ -288,7 +288,10 @@ export async function GET(req: NextRequest) {
       'CRM_COURSE_APP_SHARED_SECRET',
       'CRM_MARKETPLACE_SHARED_SECRET',
       'CRM_LEADSCOUT_SSO_KEY',
-      'CRM_AGENCY_SSO_KEY',
+      // Named CRM_AGENCY_SSO_KEY here until 2026-08-24, a variable that was never
+      // set on any target — so this guard was blind to the agency app it claimed
+      // to cover. The real slot is CRM_AGENCY_SHARED_SECRET.
+      'CRM_AGENCY_SHARED_SECRET',
       'CRM_SSO_KEY',
     ] as const
 

@@ -121,7 +121,19 @@ export async function POST(req: NextRequest) {
     'CRM_LEADSCOUT_CLIENT_SECRET',
     'CRM_MARKETPLACE_SHARED_SECRET',
     'CRM_MARKETPLACE_CLIENT_SECRET',
-    'CRM_AGENCY_SSO_KEY',
+    // THE AGENCY APP'S SHARED SECRET — and until 2026-08-24 this list named a
+    // variable that has never existed in the project. `CRM_AGENCY_SSO_KEY` was
+    // written here on the assumption it would be populated; the env audit shows
+    // it was not, on any target, ever. The agency shared secret was rotated on
+    // 2026-08-24 (portal tail 5dd4 → d6a1) and pasted into
+    // CRM_AGENCY_SHARED_SECRET, which is also the name the other two
+    // marketplace apps use. A name that exists in code and nowhere else reads
+    // as "the key is configured" while every decrypt of a real agency context
+    // falls through to a sign-in screen the iframe cannot render.
+    //
+    // ONE name, not two: the alias pair below it (course builder) exists only
+    // to survive a slot correction mid-flight and is a cost, not a pattern.
+    'CRM_AGENCY_SHARED_SECRET',
   ] as const
 
   /** A Vercel encryption envelope stored as a value. Never a usable key. */
