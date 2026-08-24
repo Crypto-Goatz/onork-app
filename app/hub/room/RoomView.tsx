@@ -42,8 +42,66 @@ type Msg = {
   id: number; from_peer: string; to_peer: string | null
   subject: string; detail: string; wake: boolean; seq: number; created_at: string
 }
-type Peer = { name: string; present: boolean; lastSeen: string | null }
+type AreaTone = 'money' | 'content' | 'auth' | 'infra' | 'client' | 'meta'
+type Peer = {
+  name: string; present: boolean; lastSeen: string | null
+  area: string | null; areaTone: AreaTone | null
+  areaAt: string | null; areaFrom: string | null
+}
 type Room = { slug: string; name: string | null }
+
+/**
+ * Area tones. STATIC class strings, deliberately — Tailwind cannot see a class
+ * built by interpolation, so `bg-${tone}-500/10` compiles to nothing and ships
+ * an unstyled badge. Written out, they survive the build.
+ *
+ * The tones group by KIND of work rather than by agent, so a glance at the
+ * sidebar answers "is anyone on money right now?" — which is the question that
+ * matters, and it is not answerable from six per-agent colours.
+ */
+const TONE: Record<AreaTone, string> = {
+  money: 'border-[#6EE05A]/30 bg-[#6EE05A]/10 text-[#6EE05A]',
+  content: 'border-[#22d3ee]/30 bg-[#22d3ee]/10 text-[#22d3ee]',
+  auth: 'border-[#f59e0b]/30 bg-[#f59e0b]/10 text-[#f59e0b]',
+  infra: 'border-[#a78bfa]/30 bg-[#a78bfa]/10 text-[#a78bfa]',
+  client: 'border-[#38bdf8]/30 bg-[#38bdf8]/10 text-[#38bdf8]',
+  meta: 'border-white/15 bg-white/[0.06] text-white/60',
+}
+
+/** Past this, the area is history rather than a status. */
+const AREA_FRESH_MS = 30 * 60 * 1000
+
+function AreaBadge({
+  area, tone, at, from,
+}: { area: string | null; tone: AreaTone | null; at: string | null; from: string | null }) {
+  // Unknown is a state we SHOW. See the call site for why.
+  if (!area) {
+    return (
+      <span className="mt-1 inline-flex items-center gap-1 rounded border border-dashed border-white/12 px-1.5 py-0.5 text-[10px] text-white/30">
+        area unknown
+      </span>
+    )
+  }
+
+  const stale = !at || Date.now() - new Date(at).getTime() > AREA_FRESH_MS
+  const cls = tone ? TONE[tone] : TONE.meta
+
+  return (
+    <span
+      // The subject the label was read off. A one-word classification the
+      // reader cannot check is just a claim.
+      title={from ? `from: ${from}` : undefined}
+      className={
+        stale
+          ? 'mt-1 inline-flex max-w-full items-center gap-1 truncate rounded border border-white/10 bg-white/[0.03] px-1.5 py-0.5 text-[10px] text-white/40'
+          : `mt-1 inline-flex max-w-full items-center gap-1 truncate rounded border px-1.5 py-0.5 text-[10px] font-medium ${cls}`
+      }
+    >
+      {stale && <span className="text-white/25">was</span>}
+      <span className="truncate">{area}</span>
+    </span>
+  )
+}
 
 /** Stable colour per agent, so you learn who is speaking by shape not by reading. */
 const HUES = ['#6EE05A', '#22d3ee', '#a78bfa', '#f59e0b', '#f472b6', '#38bdf8']
@@ -135,21 +193,36 @@ export default function RoomView() {
         <h2 className="flex items-center gap-2 text-xs uppercase tracking-widest text-white/40">
           <Radio className="h-3.5 w-3.5" /> In the room
         </h2>
-        <ul className="mt-4 space-y-3">
+        <ul className="mt-4 space-y-3.5">
           {peers.map((p) => (
-            <li key={p.name} className="flex items-center gap-2.5">
+            <li key={p.name} className="flex items-start gap-2.5">
               <Circle
-                className="h-2.5 w-2.5 shrink-0"
+                className="mt-1 h-2.5 w-2.5 shrink-0"
                 style={{
                   fill: p.present ? hueFor(p.name) : 'transparent',
                   color: p.present ? hueFor(p.name) : 'rgba(255,255,255,0.25)',
                 }}
               />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">{p.name}</p>
+
+                {/*
+                  THE AREA BADGE — always rendered, including when unknown.
+                  "At all times" is the requirement, so an absent area shows as
+                  an explicit "area unknown" rather than the row silently
+                  collapsing: a missing badge and a peer working on nothing look
+                  identical, and only one of them is true.
+
+                  Derived from the peer's own last message (lib/room/area.ts),
+                  never self-declared, and AGED — past ~30 minutes it dims and
+                  reads "was", because an area with no freshness beside it is the
+                  /api/dispatch/* failure in miniature.
+                */}
+                <AreaBadge area={p.area} tone={p.areaTone} at={p.areaAt} from={p.areaFrom} />
+
                 {/* Never "offline" — say when they last spoke. A person can
                     judge five minutes versus five hours; a label cannot. */}
-                <p className="text-[11px] text-white/35">{ago(p.lastSeen)}</p>
+                <p className="mt-1 text-[11px] text-white/35">{ago(p.lastSeen)}</p>
               </div>
             </li>
           ))}

@@ -22,6 +22,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isOwner } from '@/lib/owner'
 import { createServiceClient } from '@/lib/connect/service-client'
+import { areaFor } from '@/lib/room/area'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
     }, { status: asked ? 404 : 200 })
   }
 
-  const [{ data: messages }, { data: peers }] = await Promise.all([
+  const [{ data: messages }, { data: peers }, { data: recent }] = await Promise.all([
     db.from('bridge_messages')
       .select('id, from_peer, to_peer, subject, detail, body, wake, seq, created_at')
       .eq('room', room.slug).gt('seq', since)
@@ -73,16 +74,55 @@ export async function GET(req: NextRequest) {
     db.from('bridge_peers')
       .select('name, joined_at, last_seen').eq('room', room.slug)
       .order('joined_at', { ascending: true }),
+    /**
+     * AREA NEEDS ITS OWN QUERY, and this is the trap worth naming. The feed
+     * query above is incremental (`seq > since`), so on every poll after the
+     * first it holds only new messages — deriving the area from it would show a
+     * peer's area once and then blank it four seconds later. This reads a
+     * window of recent history unconditionally instead.
+     */
+    db.from('bridge_messages')
+      .select('from_peer, subject, detail, created_at')
+      .eq('room', room.slug)
+      .order('seq', { ascending: false }).limit(150),
   ])
 
   const now = Date.now()
-  const roster = (peers ?? []).map((p) => ({
-    name: p.name,
-    // Presence is DERIVED from last_seen, never stored as a boolean. A stored
-    // "online" flag survives a crash and lies about a peer that is gone.
-    present: !!p.last_seen && now - new Date(p.last_seen).getTime() < PRESENT_MS,
-    lastSeen: p.last_seen,
-  }))
+
+  // Latest message per peer, from the unconditional window. Ordered desc, so
+  // the FIRST time a peer appears is their most recent message.
+  const latestByPeer = new Map<string, { subject: string | null; detail: string | null; at: string }>()
+  for (const m of recent ?? []) {
+    if (!m.from_peer || latestByPeer.has(m.from_peer)) continue
+    latestByPeer.set(m.from_peer, { subject: m.subject, detail: m.detail, at: m.created_at })
+  }
+
+  const roster = (peers ?? []).map((p) => {
+    const last = latestByPeer.get(p.name)
+    const area = last ? areaFor(last.subject, last.detail) : null
+    return {
+      name: p.name,
+      // Presence is DERIVED from last_seen, never stored as a boolean. A stored
+      // "online" flag survives a crash and lies about a peer that is gone.
+      present: !!p.last_seen && now - new Date(p.last_seen).getTime() < PRESENT_MS,
+      lastSeen: p.last_seen,
+      /**
+       * The area badge that sits beside the name. Derived from the peer's own
+       * latest message, never declared — see lib/room/area.ts for why a
+       * self-reported "working on" field was rejected.
+       *
+       * `areaAt` ships with it so the UI can age the label. An area with no
+       * timestamp is the /api/dispatch/* failure: confident, current-looking,
+       * and possibly two months old.
+       */
+      area: area?.label ?? null,
+      areaTone: area?.tone ?? null,
+      areaAt: last?.at ?? null,
+      // What the label was read off, so hovering explains the badge rather than
+      // leaving the reader to trust a one-word classification.
+      areaFrom: last?.subject ?? null,
+    }
+  })
 
   const list = messages ?? []
   return NextResponse.json({
