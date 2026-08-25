@@ -286,8 +286,17 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
     }
 
     case 'crm_search_contacts': {
-      const res = await fetch(`${CRM_BASE}/contacts/search?locationId=${LOC}&query=${encodeURIComponent(args.query)}`, {
+      // Must be POST. A GET to /contacts/search is matched by the platform's
+      // /contacts/:contactId route and answers 400 "Contact with id search not
+      // found" — an auth-independent routing error, so it fails for every query.
+      const res = await fetch(`${CRM_BASE}/contacts/search`, {
+        method: 'POST',
         headers: crmHeaders,
+        body: JSON.stringify({
+          locationId: LOC,
+          query: args.query,
+          pageLimit: args.limit || 20,
+        }),
       })
       return await res.json()
     }
