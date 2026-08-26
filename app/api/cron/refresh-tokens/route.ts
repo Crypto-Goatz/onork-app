@@ -296,6 +296,11 @@ export async function GET(req: NextRequest) {
   // a human stayed indistinguishable from transient noise.
   const revoked = results.filter(r => r.status === 'revoked').length
   const noRefreshToken = results.filter(r => r.error === 'No refresh token').length
+  // Neither of these needs anyone. Reported so the receipt accounts for every
+  // row it touched — a row that vanishes from the totals is how "nothing
+  // happened" and "something was skipped" come to look the same.
+  const remintable = results.filter(r => r.status === 'remintable').length
+  const alreadyRenewed = results.filter(r => r.status === 'already-renewed').length
   const needsReinstall = revoked + noRefreshToken
 
   return NextResponse.json({
@@ -307,6 +312,8 @@ export async function GET(req: NextRequest) {
     failed,
     revoked,
     noRefreshToken,
+    remintable,
+    alreadyRenewed,
     // The number a person should act on. Retrying cannot move it.
     needsReinstall,
     total: expiring.length,
