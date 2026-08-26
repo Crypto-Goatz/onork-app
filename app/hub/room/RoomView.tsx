@@ -252,7 +252,7 @@ export default function RoomView() {
                 width={300}
                 height={178}
                 priority
-                className="h-7 w-auto"
+                className="h-10 w-auto"
               />
               <p className="mt-1 text-xs text-white/45">
                 {peers.filter((p) => p.present).length} working now · {messages.length} messages
