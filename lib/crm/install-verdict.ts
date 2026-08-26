@@ -23,6 +23,7 @@ export type InstallVerdict =
   | 'expiring'             // in date, but inside the hour
   | 'expired-refreshable'  // expired; the worker can still recover it
   | 'expired-dead'         // expired AND unrecoverable: only a reinstall fixes it
+  | 'expired-remintable'   // expired, no refresh token — and none is needed: the mint lane re-issues it
   | 'no-token'             // the row exists and the exchange never produced a token
   | 'dying'                // works today, cannot survive expiry — no refresh token
   | 'unknown-expiry'
@@ -45,7 +46,10 @@ const TERMINAL: ReadonlySet<InstallVerdict> = new Set<InstallVerdict>([
   'no-token',
 ])
 
-/** True when no amount of retrying will restore this install. */
+/**
+ * True when no amount of retrying will restore this install.
+ * 'expired-remintable' is deliberately absent: retrying is exactly what fixes it.
+ */
 export function isTerminal(v: InstallVerdict): boolean {
   return TERMINAL.has(v)
 }
@@ -103,6 +107,19 @@ export function verdictFor(r: InstallVerdictRow, now: number = Date.now()): {
 
   // The worker's own verdict for "no refresh token on file", written every time
   // it passes such a row. Same terminal outcome, and it beats guessing.
+  // A MINTED TOKEN HAS NO REFRESH TOKEN BY DESIGN, so "nothing left to refresh
+  // with" is not the same sentence for it. POST /oauth/locationToken issues a
+  // bare 24h access token and ensureLocationInstall() re-mints on the next call
+  // for that location, reviving this very row. Reporting it terminal is how a
+  // customer gets told to reinstall an account nothing is wrong with — measured
+  // 2026-08-26, on a row the mint endpoint served 201 for on the first attempt.
+  if (r.health_status === 'expired-remintable') {
+    return {
+      verdict: 'expired-remintable',
+      why: 'Expired minted token. Mint tokens never carry a refresh token; the next call for this location re-mints it automatically. No human action.',
+    }
+  }
+
   if (r.health_status === 'unrecoverable') {
     return {
       verdict: 'expired-dead',

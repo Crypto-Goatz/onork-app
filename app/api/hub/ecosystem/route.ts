@@ -85,14 +85,20 @@ export async function GET() {
       if (installs) {
         const now = Date.now()
         const live = installs.filter((r) => r.expires_at && new Date(r.expires_at).getTime() > now).length
-        const recoverable = installs.filter((r) => (r.refresh_token || '') !== '' && r.health_status !== 'revoked').length
+        // A minted row has no refresh token and needs none — the mint lane
+        // re-issues it. Counting it under "need a reinstall" is the same lie
+        // the verdict ladder used to tell (see lib/crm/install-verdict.ts).
+        const recoverable = installs.filter((r) =>
+          r.health_status === 'expired-remintable' ||
+          ((r.refresh_token || '') !== '' && r.health_status !== 'revoked'),
+        ).length
         metrics.installsTotal = { value: installs.length, label: 'CRM installs on file' }
         metrics.installsLive = { value: live, label: 'Holding a live token' }
         metrics.installsRecoverable = { value: recoverable, label: 'Recoverable by refresh' }
         metrics.installsNeedReinstall = {
           value: installs.length - recoverable,
           label: 'Need a reinstall',
-          note: 'No refresh token, or an authorization the CRM has revoked. Retrying cannot move this number.',
+          note: 'No refresh token and not re-mintable, or an authorization the CRM has revoked and whose access token is also refused. Retrying cannot move this number.',
         }
       }
     } catch (e) {

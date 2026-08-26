@@ -68,7 +68,33 @@ export async function GET(req: NextRequest) {
 
   const results: { id: string; status: string; error?: string }[] = []
 
-  for (const install of expiring) {
+  for (const snapshot of expiring) {
+    // RE-READ BEFORE ATTEMPTING, BECAUSE THIS FUNCTION RACES ITSELF.
+    //
+    // The select above happens BEFORE runLocationTokenCanary(), and the canary
+    // calls getValidAgencyToken() -> refreshAgencyToken(), which refreshes the
+    // agency install and ROTATES its refresh token. By the time this loop
+    // reaches that same row, the token in `snapshot` is one generation stale.
+    //
+    // Measured on 2026-08-26 (install 25151350, app 69c762): a successful
+    // refresh wrote expires_at 06:03:08.919, and 1.3s later this loop wrote
+    // health_status 'revoked' and "only a reinstall restores it" — onto a row
+    // whose brand-new token answered 200 on /locations/search and 201 on
+    // POST /oauth/locationToken. Two code paths renewing one row is the
+    // "two sources of truth" law in its auth costume; re-reading is the cheap
+    // half of the fix, and the row another path already renewed is skipped.
+    const { data: fresh } = await admin
+      .from('crm_installations')
+      .select('id, location_id, access_token, refresh_token, expires_at, app_id, metadata, consecutive_failures')
+      .eq('id', snapshot.id)
+      .maybeSingle()
+    const install = (fresh || snapshot) as typeof snapshot & { consecutive_failures?: number }
+
+    if (install.expires_at && new Date(install.expires_at).getTime() >= new Date(renewBefore).getTime()) {
+      results.push({ id: install.id, status: 'already-renewed' })
+      continue
+    }
+
     if (!install.refresh_token) {
       // SKIPPING IS NOT SILENCE. 27 rows sat here holding health_status
       // 'healthy' — written once by an older callback that assumed a successful
@@ -81,16 +107,39 @@ export async function GET(req: NextRequest) {
       //
       // An install with no refresh token cannot be recovered by any amount of
       // retrying. Say so, on the row, every time we pass it.
+      //
+      // EXCEPT WHEN IT CAN, AND ONE WHOLE CLASS OF ROW CAN. A token from
+      // POST /oauth/locationToken never HAS a refresh token — that is the
+      // design, not a defect — and ensureLocationInstall() re-mints and revives
+      // the row the next time anything asks for that location. Calling those
+      // rows 'unrecoverable' sent install-verdict to 'expired-dead', which
+      // isTerminal() reports as needing a human, so the re-consent prompt would
+      // tell a customer to reinstall an account that a background call fixes
+      // for free. Measured 2026-08-26: row 4fc791bc (location OCq0PTnwBUJLyBZlEv2b)
+      // carried "only a reinstall can restore this install" while the mint
+      // endpoint answered 201 for that exact location on the first attempt.
+      //
+      // The row records how its token was obtained. Trust that, not the absence
+      // of a column the mint lane never fills.
+      const meta = (install as { metadata?: Record<string, unknown> }).metadata || {}
+      const remintable = meta.installed_via === 'agency-token-mint'
+
       await admin.from('crm_installations').update({
-        health_status: 'unrecoverable',
+        health_status: remintable ? 'expired-remintable' : 'unrecoverable',
         last_health_check: new Date().toISOString(),
         metadata: {
-          ...((install as { metadata?: Record<string, unknown> }).metadata || {}),
-          last_refresh_error: 'No refresh token on file — only a reinstall can restore this install.',
+          ...meta,
+          last_refresh_error: remintable
+            ? 'Minted token, expired. Mint tokens carry no refresh token by design — the next call for this location re-mints it. No human action.'
+            : 'No refresh token on file — only a reinstall can restore this install.',
         },
       }).eq('id', install.id)
 
-      results.push({ id: install.id, status: 'skipped', error: 'No refresh token' })
+      results.push({
+        id: install.id,
+        status: remintable ? 'remintable' : 'skipped',
+        error: remintable ? undefined : 'No refresh token',
+      })
       continue
     }
 
@@ -133,18 +182,49 @@ export async function GET(req: NextRequest) {
         // three of them are code changes while the fourth needs a human to
         // reinstall. Reading the body separates them in one call:
         //
-        //   "Invalid client credentials!"  with a VALID secret ⇒ REVOKED.
-        //     Proven by sending a deliberately fake refresh_token: a valid
-        //     secret answers "Invalid refresh token", so anything still
-        //     complaining about CREDENTIALS has cleared that check and is
-        //     objecting to the token's binding, not to us.
-        //   "Invalid refresh token"        ⇒ the stored token is malformed.
+        //   "Invalid client credentials!"  ⇒ the credential pair does not match
+        //     this token's binding. NOT, on its own, evidence of revocation.
+        //   "Invalid refresh token"        ⇒ the stored token is malformed,
+        //     stale, or already rotated by another code path.
         //
-        // Revoked is terminal. Retrying it every six hours forever is how a
-        // dead install stays invisible inside a growing failure count.
+        // THE CONTROL THIS USED TO REST ON DOES NOT WORK, MEASURED 2026-08-26.
+        // The comment here claimed a fake refresh_token answers "Invalid
+        // refresh token" only for a VALID secret, so a surviving credentials
+        // complaint proved revocation. Run against the live platform with a
+        // deliberately fake refresh_token, EVERY pair answered "Invalid refresh
+        // token" — the current client, both sibling client ids, and a client id
+        // from an entirely different app paired with this app's secret. The
+        // platform validates the token before the credentials, so that probe
+        // cannot distinguish a good secret from a bad one and the inference
+        // built on it was unfounded.
+        //
+        // So corroborate against the thing revocation would actually break. A
+        // revoked authorization cannot serve an API call; if the access token we
+        // already hold still answers, the word 'revoked' is false whatever the
+        // refresh endpoint says. This is the same law as everywhere else here:
+        // assert against the served surface, never a string that could be true
+        // for another reason.
         let description = ''
         try { description = String(JSON.parse(text)?.error_description || '') } catch { /* keep the raw text */ }
-        const revoked = /invalid client credentials/i.test(description)
+        const credentialsRejected = /invalid client credentials/i.test(description)
+
+        let livenessStatus: number | null = null
+        if (credentialsRejected && install.access_token) {
+          try {
+            const probe = await fetch(
+              install.location_id
+                ? `https://services.leadconnectorhq.com/contacts/?locationId=${encodeURIComponent(install.location_id)}&limit=1`
+                : `https://services.leadconnectorhq.com/locations/search?limit=1`,
+              { headers: { Authorization: `Bearer ${install.access_token}`, Version: '2021-07-28', Accept: 'application/json' } },
+            )
+            livenessStatus = probe.status
+          } catch { livenessStatus = null }
+        }
+        // Only claim revoked when the token itself is also refused. A 2xx here
+        // means the install is alive and something about OUR refresh call is
+        // wrong — a real problem, but a different one, and 'degraded' is the
+        // honest label for it.
+        const revoked = credentialsRejected && livenessStatus !== null && livenessStatus >= 400
 
         await admin.from('crm_installations').update({
           health_status: revoked ? 'revoked' : 'degraded',
@@ -156,8 +236,12 @@ export async function GET(req: NextRequest) {
             ...(meta || {}),
             last_refresh_error: description || text.slice(0, 200),
             last_refresh_status: res.status,
+            ...(livenessStatus !== null ? { access_token_probe: livenessStatus } : {}),
             ...(revoked
-              ? { unrecoverable_reason: 'The CRM has revoked this authorization. The credentials are valid and the client matches the token — only a reinstall restores it.' }
+              ? { unrecoverable_reason: `The CRM refused the refresh AND refused the stored access token (${livenessStatus}). Only a reinstall restores it.` }
+              : {}),
+            ...(credentialsRejected && !revoked
+              ? { degraded_reason: `Refresh rejected as "invalid client credentials", but the stored access token still answered ${livenessStatus ?? 'unprobed'}. The install is alive; our refresh call is what is wrong. Not a reinstall.` }
               : {}),
           },
         }).eq('id', install.id)
