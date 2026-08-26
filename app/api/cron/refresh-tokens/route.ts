@@ -264,6 +264,33 @@ export async function GET(req: NextRequest) {
 
       const data = await res.json()
 
+      // A SUCCESSFUL REFRESH MUST RETRACT THE FAILURE IT SUPERSEDES. This path
+      // set health_status='healthy' and never touched metadata, so
+      // `last_refresh_error`, `last_refresh_status` and above all
+      // `unrecoverable_reason` — whose text reads "Only a reinstall restores
+      // it" — outlived the failure they described, permanently. The row then
+      // asserted two contradictory things about itself, and that contradiction
+      // is the expensive kind: on 2026-08-26 a row reading healthy while still
+      // carrying `401 Invalid client credentials!` sent a triage down a false
+      // path to establish the green was real. Nothing is discarded — the
+      // superseded verdict moves to `last_resolved`, dated, so the history
+      // survives without still claiming to be current.
+      const {
+        last_refresh_error: prevError,
+        last_refresh_status: prevStatus,
+        access_token_probe: prevProbe,
+        unrecoverable_reason: prevUnrecoverable,
+        degraded_reason: prevDegraded,
+        ...carriedMeta
+      } = (meta || {}) as Record<string, unknown>
+      const superseded = {
+        ...(prevError !== undefined ? { last_refresh_error: prevError } : {}),
+        ...(prevStatus !== undefined ? { last_refresh_status: prevStatus } : {}),
+        ...(prevProbe !== undefined ? { access_token_probe: prevProbe } : {}),
+        ...(prevUnrecoverable !== undefined ? { unrecoverable_reason: prevUnrecoverable } : {}),
+        ...(prevDegraded !== undefined ? { degraded_reason: prevDegraded } : {}),
+      }
+
       await admin.from('crm_installations').update({
         access_token: data.access_token,
         refresh_token: data.refresh_token || install.refresh_token,
@@ -272,6 +299,18 @@ export async function GET(req: NextRequest) {
         consecutive_failures: 0,
         last_health_check: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        metadata: {
+          ...carriedMeta,
+          ...(Object.keys(superseded).length
+            ? {
+                last_resolved: {
+                  at: new Date().toISOString(),
+                  by: 'cron/refresh-tokens — refresh_token grant answered 200',
+                  superseded,
+                },
+              }
+            : {}),
+        },
       }).eq('id', install.id)
 
       await logHealth({
