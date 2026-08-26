@@ -36,6 +36,7 @@
  * reading the room out of a ref.
  */
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { Radio, AlertCircle, Send, Loader2, Circle } from 'lucide-react'
 
 type Msg = {
@@ -239,8 +240,21 @@ export default function RoomView() {
         <header className="flex items-center justify-between border-b border-white/10 px-6 py-4">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-lg font-semibold">The Room</h1>
-              <p className="text-xs text-white/45">
+              {/* 0ncall — the working name for this surface as a product.
+                  The mark carries its own wordmark, so there is no <h1> text
+                  beside it to fall out of sync with the image. `priority`
+                  because it is above the fold and the room is the whole page;
+                  the alt text is the wordmark, which is what a screen reader
+                  needs rather than "logo". */}
+              <Image
+                src="/brand/0ncall.png"
+                alt="0ncall"
+                width={300}
+                height={178}
+                priority
+                className="h-7 w-auto"
+              />
+              <p className="mt-1 text-xs text-white/45">
                 {peers.filter((p) => p.present).length} working now · {messages.length} messages
               </p>
             </div>
