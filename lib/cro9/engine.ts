@@ -36,6 +36,8 @@ export interface Site {
 export interface RunSummary {
   siteId: string
   pagesAnalyzed: number
+  /** Pages crawled and scored that fit no action bucket — see classify() returning null. */
+  pagesNoOpportunity: number
   tasksGenerated: number
   tasksBriefed: number
   weightsAdjusted: number
@@ -62,7 +64,7 @@ export async function runAnalysis(site: Site, opts: { maxPages?: number; generat
   const supabase = getAdmin()
   const summary: RunSummary = {
     siteId: site.id,
-    pagesAnalyzed: 0, tasksGenerated: 0, tasksBriefed: 0, weightsAdjusted: 0, tasksMeasured: 0,
+    pagesAnalyzed: 0, pagesNoOpportunity: 0, tasksGenerated: 0, tasksBriefed: 0, weightsAdjusted: 0, tasksMeasured: 0,
     durationMs: 0, errors: [],
   }
 
@@ -128,6 +130,10 @@ export async function runAnalysis(site: Site, opts: { maxPages?: number; generat
         lastUpdatedDaysAgo: report.lastModifiedDaysAgo,
         internalLinks: report.internalLinkCount,
       }, weights)
+
+      // null == no diagnosable opportunity. Counted, not silently dropped: a run that
+      // generates nothing must be able to say it looked and found nothing.
+      if (!out) { summary.pagesNoOpportunity++; continue }
 
       scored.push({ task: out, crawl: report })
     } catch (e) {
@@ -231,7 +237,7 @@ export async function runMeasurement(site: Site): Promise<RunSummary> {
   const supabase = getAdmin()
   const summary: RunSummary = {
     siteId: site.id,
-    pagesAnalyzed: 0, tasksGenerated: 0, tasksBriefed: 0, weightsAdjusted: 0, tasksMeasured: 0,
+    pagesAnalyzed: 0, pagesNoOpportunity: 0, tasksGenerated: 0, tasksBriefed: 0, weightsAdjusted: 0, tasksMeasured: 0,
     durationMs: 0, errors: [],
   }
 

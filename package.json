@@ -18,6 +18,7 @@
     "test:e2e": "playwright test --grep @smoke",
     "test:e2e:cleanup": "tsx tests/e2e/cleanup.ts",
     "test:jwt": "tsx scripts/test/app-jwt.test.ts",
+    "test:cro9": "tsx scripts/test/cro9-classify.test.ts",
     "lastmod": "node scripts/gen-content-lastmod.mjs"
   },
   "dependencies": {

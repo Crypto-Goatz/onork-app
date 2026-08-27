@@ -41,6 +41,44 @@ export function expectedCtrFor(position: number): number {
   return EXPECTED_CTR_BY_POSITION[idx] ?? 0.005
 }
 
+/**
+ * Minimum expected clicks before an observed CTR is evidence of anything.
+ *
+ * CTR is a proportion, so its sampling error is sqrt(p(1-p)/n) — at n=1 a zero-click
+ * page is the *expected* outcome for any p below 50%, not a finding. Gating on raw
+ * impressions is the wrong axis, because the sample a position needs scales with the
+ * rate it is being compared against: position 1 (p=0.395) has said something real by
+ * 8 impressions, position 12 (p=0.011) has not until ~270. Expected clicks (n × p) is
+ * that gate in one number, and 3 is the conventional floor for a rate comparison.
+ *
+ * Measured 2026-08-27 against the live cro9_tasks: all 26 CTR_FIX rows this engine
+ * had ever written scored **under 1 expected click** — 25 of them under 0.6, most on
+ * 1–6 impressions with 0 clicks, which makes ctrGap exactly 1.0 and clears any gap
+ * threshold automatically. That, not the CTR curve, was the monoculture.
+ */
+export const MIN_EXPECTED_CLICKS_FOR_CTR_CLAIM = 3
+
+/**
+ * Minimum impressions before a *position* is worth acting on.
+ *
+ * Unlike CTR this is a judgment, not a derivation: GSC's position is an average over
+ * n impressions, so it is a real observation even at n=1 — it is just an observation
+ * about a page nobody sees. The number is set to 100 to match RELEVANCE_REBUILD, the
+ * other position-derived bucket in `classify()`, because the same signal should not
+ * carry two different bars in one function.
+ *
+ * Without it the monoculture merely relocates: when the CTR floor landed, three live
+ * rows at position 11-12 with a single impression each stopped being CTR_FIX and
+ * immediately became POSITION_CLIMB / OPTIMIZE_FOR_INTENT.
+ */
+export const MIN_IMPRESSIONS_FOR_POSITION_CLAIM = 100
+
+/** Is there enough search data to say anything about this page's CTR? */
+export function ctrIsMeasurable(impressions: number, expectedCtr: number): boolean {
+  if (!Number.isFinite(impressions) || !Number.isFinite(expectedCtr)) return false
+  return impressions * expectedCtr >= MIN_EXPECTED_CLICKS_FOR_CTR_CLAIM
+}
+
 /** Normalise impressions (log-scale) so a 1M-impression page doesn't dwarf a 500 */
 function normImpressions(impressions: number): number {
   if (impressions <= 0) return 0
@@ -110,7 +148,16 @@ export function scoreComponents(ctx: ScoreContext, weights: Partial<Record<Facto
   return { ...factors, weighted: Number(weighted.toFixed(4)) }
 }
 
-export function classify(ctx: ScoreContext): { bucket: Bucket; action: PriorityAction } {
+/**
+ * Assign an action bucket, or `null` when the page has no diagnosable opportunity.
+ *
+ * `null` is a real answer and callers must persist nothing for it. The previous
+ * default arm returned CTR_FIX, so "fits no bucket" and "needs its meta rewritten"
+ * were the same output — that is how /integrations, at position 4.9 with a CTR of
+ * 0.125 against an expected 0.050 (2.5× *over*-performing), was handed a
+ * REWRITE_META_AND_INTRO task.
+ */
+export function classify(ctx: ScoreContext): { bucket: Bucket; action: PriorityAction } | null {
   const { position, ctr, expectedCtr, impressions } = ctx.input
 
   // Thin content override
@@ -129,22 +176,26 @@ export function classify(ctx: ScoreContext): { bucket: Bucket; action: PriorityA
   const gap = Math.max(0, expectedCtr - ctr)
   const gapRatio = expectedCtr > 0 ? gap / expectedCtr : 0
 
-  if (position > 0 && position <= 20 && gapRatio >= 0.35) {
+  // CTR_FIX is a claim about a rate, so it needs a sample that can carry one.
+  if (position > 0 && position <= 20 && gapRatio >= 0.35 && ctrIsMeasurable(impressions, expectedCtr)) {
     return { bucket: 'CTR_FIX', action: 'REWRITE_META_AND_INTRO' }
   }
-  if (position > 30 && impressions >= 100) {
+  if (position > 30 && impressions >= MIN_IMPRESSIONS_FOR_POSITION_CLAIM) {
     return { bucket: 'RELEVANCE_REBUILD', action: 'COMPREHENSIVE_REWRITE' }
   }
-  if (position > 10 && position <= 30) {
+  if (position > 10 && position <= 30 && impressions >= MIN_IMPRESSIONS_FOR_POSITION_CLAIM) {
     return { bucket: 'POSITION_CLIMB', action: 'OPTIMIZE_FOR_INTENT' }
   }
-  // Default
-  return { bucket: 'CTR_FIX', action: 'REWRITE_META_AND_INTRO' }
+  // No diagnosable opportunity. Not a bucket.
+  return null
 }
 
-export function scoreTask(ctx: ScoreContext, weights?: Partial<Record<Factor, number>>): TaskOutput {
+/** Returns `null` when the page has no diagnosable opportunity — persist nothing. */
+export function scoreTask(ctx: ScoreContext, weights?: Partial<Record<Factor, number>>): TaskOutput | null {
   const components = scoreComponents(ctx, weights)
-  const { bucket, action } = classify(ctx)
+  const classified = classify(ctx)
+  if (!classified) return null
+  const { bucket, action } = classified
   return {
     ...ctx.input,
     bucket,
