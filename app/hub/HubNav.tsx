@@ -12,6 +12,14 @@
  * begins with `/hub` — which makes the highlight meaningless exactly when the
  * reader needs it.
  *
+ * THE PHONE BAR WRAPS, IT DOES NOT SCROLL. Measured at 390px before this was
+ * changed: scrollWidth 497 against a 380px client, which put "Ecosystem"
+ * entirely off-screen behind a horizontal swipe. That is exactly the defect
+ * 0nTask shipped — ten tabs, 732px of content on a 388px phone, five of them
+ * undiscoverable. An `overflow-x-auto` rail hides its own overflow silently and
+ * gets worse every time a link is added, so the links wrap onto a second row
+ * instead. Two visible rows beat one row with items nobody can find.
+ *
  * STICKY, WHICH MEANS THE PARENT HAS TO GIVE IT ROOM TO TRAVEL. `position:
  * sticky` moves inside its PARENT's box: a rail the same height as its parent
  * has nowhere to go and silently never sticks. This estate lost an afternoon to
@@ -40,7 +48,7 @@ export default function HubNav({ links }: { links: HubLink[] }) {
       {/* ── phone: a horizontal rail pinned to the top ──────────────────── */}
       <nav
         aria-label="Hub"
-        className="sticky top-0 z-30 flex gap-1 overflow-x-auto border-b border-white/10 bg-[#0d1117]/95 px-3 py-2 backdrop-blur md:hidden"
+        className="sticky top-0 z-30 flex flex-wrap gap-1 border-b border-white/10 bg-[#0d1117]/95 px-2 py-2 backdrop-blur md:hidden"
       >
         {links.map((l) => {
           const Icon = ICONS[l.icon] ?? Home
@@ -50,7 +58,7 @@ export default function HubNav({ links }: { links: HubLink[] }) {
               key={l.href}
               href={l.href}
               aria-current={active ? 'page' : undefined}
-              className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] transition ${
+              className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] transition ${
                 active
                   ? 'bg-[#6EE05A]/12 text-[#6EE05A]'
                   : 'text-white/55 hover:bg-white/[0.06] hover:text-white/85'
