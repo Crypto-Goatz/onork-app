@@ -92,7 +92,7 @@ export default function AIPage() {
     setMessages([{
       id: '0',
       role: 'system',
-      content: `Welcome back, ${name}. 0nAI online — ${new Date().toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}. 1,183 tools across 99 services. 5 patents. Full ecosystem access. What are we building?`,
+      content: `Welcome back, ${name}. 0nAI online — ${new Date().toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}. 1,183 tools across 99 services. 5 patents pending. Full ecosystem access. What are we building?`,
       timestamp: Date.now(),
     }])
     setTimeout(() => inputRef.current?.focus(), 200)
@@ -229,7 +229,7 @@ export default function AIPage() {
           <span className="text-core-text-muted/40">|</span>
           <span>99 services</span>
           <span className="text-core-text-muted/40">|</span>
-          <span>5 patents</span>
+          <span>5 patents pending</span>
         </div>
         <span className="px-2 py-0.5 rounded bg-core-green/[0.08] border border-core-green/15 text-core-green font-bold text-[9px] tracking-widest">
           OWNER

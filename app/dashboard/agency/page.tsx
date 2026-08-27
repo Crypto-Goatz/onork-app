@@ -479,7 +479,7 @@ export default function AgencyCommandCenter() {
                 { name: '0nAI', desc: 'Command Center', status: 'Live', colorClass: 'text-core-purple' },
                 { name: '0nmcp.com', desc: 'Marketing + Community', status: '824+ pages', colorClass: 'text-core-amber' },
                 { name: 'Marketplace', desc: 'Workflow Store', status: 'Live', colorClass: 'text-core-green' },
-                { name: '0nDefender', desc: 'Security & Patents', status: '5 Patents', colorClass: 'text-core-red' },
+                { name: '0nDefender', desc: 'Security & Patents', status: '5 Pat. Pending', colorClass: 'text-core-red' },
               ].map(p => (
                 <div key={p.name} className="flex justify-between items-center py-2 border-b border-core-border last:border-b-0">
                   <div>
