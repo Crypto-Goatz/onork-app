@@ -51,10 +51,18 @@ export interface CourseOutline {
 export interface GeneratedCourse {
   outline: CourseOutline
   lessons: GeneratedLesson[]
-  salesPageCopy: string
   totalWordCount: number
   estimatedDuration: string // e.g. "2 hours 30 minutes"
 }
+
+/**
+ * `salesPageCopy` used to live here. It was model-written marketing copy that
+ * published as lesson #1 under a customer's brand, promising a live Q&A, a
+ * certificate and a money-back guarantee that nobody had agreed to. Removed
+ * 2026-08-27 on Mike's scope ruling; the course description is now computed
+ * from counted values in `publisher.buildAboutMarkdown()`. Sessions persisted
+ * before that date may still carry the column — read it nowhere.
+ */
 
 export type ConversationState =
   | 'collecting_info'

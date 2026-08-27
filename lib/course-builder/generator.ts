@@ -6,7 +6,16 @@
  *   2. generateLessonsRadial()   — paced-serial lesson generation (one at a
  *                                   time with a small inter-lesson delay) so
  *                                   we stay under Groq TPM caps.
- *   3. generateSalesPage()       — final pass; takes the full course context.
+ *
+ * There used to be a third pass, generateSalesPage(), and it is gone. It asked
+ * the model for "high-conversion" copy plus a "What's included (lessons,
+ * quizzes, resources, certificate)" section, so the model correctly produced
+ * promises of quizzes, downloadables, a live 30-minute Q&A, a certificate,
+ * lifetime updates and a 30-day money-back guarantee — and the publisher put
+ * that under a real client's brand as lesson #1. The prompt wrote the
+ * hallucination, not the model. Mike's scope ruling: the Course Builder
+ * generates simple course content, not a funnel. The course description is now
+ * computed from counted values in `publisher.buildAboutMarkdown()`.
  *
  * Model: configurable via COURSE_BUILDER_GROQ_MODEL env (default
  * `openai/gpt-oss-120b`, served BY Groq — still a Groq call, so the
@@ -340,51 +349,6 @@ export async function retryLessons(
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// Sales page
-// ──────────────────────────────────────────────────────────────────────────
-
-const SALES_PAGE_SYSTEM = `You write high-conversion course sales pages. Lead with the outcome, anchor on a specific student transformation, then prove value with what's inside. End with an unmistakable CTA.`
-
-export async function generateSalesPage(course: GeneratedCourse): Promise<string> {
-  const lessonList = course.lessons
-    .map((l) => `${l.index}. ${l.title} — ${l.summary}`)
-    .join('\n')
-
-  const result = await completion({
-    model: COURSE_GROQ_MODEL,
-    systemPrompt: SALES_PAGE_SYSTEM,
-    messages: [
-      {
-        role: 'user',
-        content: `Course title: ${course.outline.title}
-Course description: ${course.outline.description}
-Total lessons: ${course.lessons.length}
-Total word count: ${course.totalWordCount}
-Estimated duration: ${course.estimatedDuration}
-
-Lesson list:
-${lessonList}
-
-Write a sales page (markdown) with:
-- A magnetic headline
-- A subhead that promises a specific outcome
-- A "Who this is for" section
-- A "What you'll learn" section listing the lessons as bullet outcomes (not just titles)
-- A "What's included" section (lessons, quizzes, resources, certificate)
-- An FAQ (3-5 questions)
-- A clear CTA
-
-Output the markdown directly — no JSON wrapping.`,
-      },
-    ],
-    temperature: 0.6,
-    maxTokens: 2200,
-  })
-
-  return result.content?.trim() ?? ''
-}
-
-// ──────────────────────────────────────────────────────────────────────────
 // End-to-end orchestrator (used by the chat handler when entering 'generating')
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -410,24 +374,8 @@ export async function generateFullCourse(
   const estimatedDuration =
     hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
 
-  const partialCourse: GeneratedCourse = {
-    outline,
-    lessons,
-    salesPageCopy: '',
-    totalWordCount,
-    estimatedDuration,
-  }
-
-  // Sales page is optional — if it fails we proceed without it
-  let salesPageCopy = ''
-  try {
-    salesPageCopy = await generateSalesPage(partialCourse)
-  } catch (err) {
-    console.warn('[course-builder] sales page generation failed:', err)
-  }
-
   return {
-    course: { ...partialCourse, salesPageCopy },
+    course: { outline, lessons, totalWordCount, estimatedDuration },
     failures,
   }
 }

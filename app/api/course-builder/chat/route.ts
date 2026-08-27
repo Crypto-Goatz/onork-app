@@ -461,10 +461,13 @@ async function runPublish(sessionId: string) {
     const enrollLine = result.enrollmentUrl
       ? `\n📎 Enrollment link: ${result.enrollmentUrl}`
       : `\n(Enrollment link will appear in your CRM courses dashboard.)`
-    const methodNote =
-      result.method === 'per_lesson_video'
-        ? `\n(Note: your CRM uses the video lesson format — content was embedded into each lesson description so students see it.)`
-        : ''
+    // The importer takes the course asynchronously — it says so itself ("the
+    // copying of courses may take some time and will run in the background"),
+    // so a student who opens the product a second after this line can
+    // legitimately find it empty. Saying that is cheaper than a support ticket.
+    const methodNote = result.pending
+      ? `\n(Your CRM is still copying the course in — give it a minute before checking.)`
+      : ''
 
     await postReplyForSession(
       sb,

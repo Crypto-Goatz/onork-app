@@ -1,23 +1,47 @@
 /**
  * 0n Course Builder — CRM Courses publisher.
  *
- * Strategy (rewritten 2026-05-02 — bulk-import first, per-lesson fallback):
- *   1. Bulk import via POST /courses/courses-exporter/public/import.
- *      One request, the whole course goes up: module > lesson groupings,
- *      lesson body, quiz + resources inlined into the lesson description
- *      (the CRM Courses LMS renders markdown). This is the path that
- *      reliably produces "fully complete content" inside the sub-location
- *      dashboard. Verified against location nphConTwfHcVE1oA0uep.
- *   2. If bulk import is rejected (older locations, scope mismatch), fall
- *      back to per-lesson POST flow with the same quiz+resource inlining.
- *   3. If both fail, return failure — caller (chat handler) saves
- *      generated_content locally and surfaces a retry button.
+ * ONE endpoint exists: POST /courses/courses-exporter/public/import. The whole
+ * course goes up in a single request — module > lesson groupings, lesson body,
+ * quiz and resources inlined into the lesson description.
+ *
+ * ## What this file used to assert, and what is actually true
+ *
+ * Two comments here claimed *"the CRM Courses LMS renders markdown"*. They had
+ * been load-bearing since 2026-05-02 and were never checked against a served
+ * page. On 2026-08-26 Dex opened the published meta-course in the LMS: `#`,
+ * `###`, `**bold**`, `---` and table pipes all render as literal characters,
+ * and ~1,100 words of lesson body arrive as ONE paragraph because the field is
+ * HTML and HTML collapses `\n` to a space. The field is HTML. It always was.
+ * So we render markdown -> HTML here, before import, with the PORTABLE theme
+ * (semantic tags, no colours of ours) since we do not control the LMS's CSS.
+ *
+ * ## The fallbacks that could never have run
+ *
+ * This file used to try three strategies and report failure as *"failed in
+ * bulk-import, per-lesson-text, and per-lesson-video modes"* — one cause and
+ * two fictions. Both fallbacks POST to `/courses`, and that route does not
+ * exist. Measured on the agency PIT, 2026-08-27:
+ *
+ *     POST /courses                                  404  (empty body — no route)
+ *     GET  /courses                                  404  (empty body — no route)
+ *     POST /courses/courses-exporter/public/import   403  ("token does not have
+ *                                                     access to this location")
+ *
+ * A 403 is a route that exists refusing a credential; a bodyless 404 is no
+ * route at all. Same finding 2026-08-20 with a minted location token carrying
+ * courses.readonly + courses.write, and the official API client's Courses
+ * service has exactly one method (`importCourses`). Dead code that only runs
+ * on the failure path is dead code nobody sees fail — it turned one honest
+ * error into three, and the two extra were the ones that read like diagnosis.
+ * Deleted. If a second endpoint ever appears, it gets added with a receipt.
  *
  * Local content is the source of truth. Once publish succeeds, the CRM
  * sub-location is the system of record.
  */
 
 import { crmGet, crmPost, getAuthForLocation, fallbackCredentials } from '@/lib/crm'
+import { renderMarkdownWith, PORTABLE } from '@/lib/markdown/render'
 import type {
   GeneratedCourse,
   GeneratedLesson,
@@ -27,24 +51,22 @@ import type {
 
 export interface PublishOk {
   ok: true
-  method: 'bulk_import' | 'per_lesson_text' | 'per_lesson_video'
+  method: 'bulk_import'
   crmCourseId: string
   crmLessonIds: string[]
   /**
    * How many lessons this publish put into the course — the number to SHOW.
    *
-   * `crmLessonIds` is not that number and can never be it on the bulk path.
-   * Verified against the live endpoint 2026-08-20: POST
-   * /courses/courses-exporter/public/import answers 201 with
+   * `crmLessonIds` is not that number and can never be it. Verified against
+   * the live endpoint 2026-08-20: the import answers 201 with
    * `{ message, note, processingCourses:[{id,title,url}] }` and echoes no
    * per-post ids at all, so the id-collecting loop below always yields [] and
    * the UI rendered "0 lessons are now in your course area" after a publish
-   * that carried five. The count of what we SENT is the honest figure; the
-   * ids stay for the per-lesson paths, which really do return them.
+   * that carried five. The count of what we SENT is the honest figure.
    */
   lessonsPublished: number
   /**
-   * True when the CRM accepted the course but is still importing it. The bulk
+   * True when the CRM accepted the course but is still importing it. The
    * endpoint says so in its own words: "The copying of courses may take some
    * time and will run in the background." A UI that claims "done" the instant
    * this returns is describing a queue receipt as a finished import.
@@ -66,6 +88,28 @@ const COURSES_BASE = '/courses'
 const CRM_BASE = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
 
+/**
+ * The importer's contentType, measured — not inferred from one rejection.
+ *
+ * One call each into nphConTwfHcVE1oA0uep, 2026-08-23:
+ *
+ *     video       201        text   400  "Invalid Post content type"
+ *     assignment  201        audio  400
+ *     quiz        201        pdf    400 · html 400
+ *
+ * The old comment said *"contentType MUST be 'video' — text is rejected"*. It
+ * was right about `text` and wrong that video is therefore the only option;
+ * `assignment` and `quiz` are accepted and had never been tried. That matters
+ * because a text lesson typed as a video is what puts an empty black player
+ * and a placeholder icon at the top of every lesson in the LMS.
+ *
+ * It stays `video` until someone opens an `assignment` post in the LMS and
+ * says which chrome it draws — swapping it blind trades a defect we have
+ * measured for one we have not. It is a constant so that ruling is a one-line
+ * change with the evidence sitting next to it.
+ */
+const LESSON_CONTENT_TYPE = 'video' as const
+
 // ──────────────────────────────────────────────────────────────────────────
 // Public entry
 // ──────────────────────────────────────────────────────────────────────────
@@ -77,55 +121,25 @@ export async function publishCourse(args: {
   currency?: string
 }): Promise<PublishResult> {
   const { locationId, course, priceCents, currency = 'USD' } = args
-  let attempts = 0
-  let lastErrBody: string | undefined
 
-  // ── Attempt 1: bulk-import (the proven, full-content path) ────────────
-  attempts++
   try {
     const r = await publishViaBulkImport(locationId, course, priceCents, currency)
-    if (r.ok) return r
-    lastErrBody = r.lastResponseBody
-    console.warn('[course-builder.publish] bulk_import failed:', r.error)
+    if (!r.ok) console.warn('[course-builder.publish] bulk_import failed:', r.error)
+    return r
   } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err)
     console.warn('[course-builder.publish] bulk_import threw:', err)
-    lastErrBody = `bulk_import threw: ${err instanceof Error ? err.message : String(err)}`
-  }
-
-  // ── Attempt 2: per-lesson text ─────────────────────────────────────────
-  attempts++
-  try {
-    const r = await publishWithContentType(locationId, course, priceCents, currency, 'text')
-    if (r.ok) return { ...r, method: 'per_lesson_text' }
-    lastErrBody = r.lastResponseBody ?? lastErrBody
-  } catch (err) {
-    console.warn('[course-builder.publish] per_lesson_text threw:', err)
-    lastErrBody = `per_lesson_text threw: ${err instanceof Error ? err.message : String(err)}` || lastErrBody
-  }
-
-  // ── Attempt 3: per-lesson video-fallback (description carries content) ─
-  attempts++
-  try {
-    const r = await publishWithContentType(locationId, course, priceCents, currency, 'video_fallback')
-    if (r.ok) return { ...r, method: 'per_lesson_video' }
-    lastErrBody = r.lastResponseBody ?? lastErrBody
-  } catch (err) {
-    console.warn('[course-builder.publish] per_lesson_video threw:', err)
-    lastErrBody = `per_lesson_video threw: ${err instanceof Error ? err.message : String(err)}` || lastErrBody
-  }
-
-  return {
-    ok: false,
-    error:
-      'CRM publish failed in bulk-import, per-lesson-text, and per-lesson-video modes. ' +
-      'Content saved locally; retry available.',
-    attempts,
-    lastResponseBody: lastErrBody,
+    return {
+      ok: false,
+      error: `CRM publish failed: ${detail}. Content saved locally; retry available.`,
+      attempts: 1,
+      lastResponseBody: `bulk_import threw: ${detail}`,
+    }
   }
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// Strategy 1 — Bulk import (single POST, full course, modules + lessons)
+// Bulk import — single POST, full course, modules + lessons
 // ──────────────────────────────────────────────────────────────────────────
 
 async function publishViaBulkImport(
@@ -136,38 +150,28 @@ async function publishViaBulkImport(
 ): Promise<PublishResult> {
   const auth = await getAuthForLocation(locationId)
 
-  // Build the modules. v1 groups lessons into ONE "Course Content" module so
-  // every published course has a clean module structure visible in the
-  // dashboard sidebar. Sales-page copy gets its own intro module so it lands
-  // as the first thing the student sees.
+  // Lessons group into ONE "Course Content" module so every published course
+  // has a clean module structure in the dashboard sidebar.
   const lessonsModule = {
     title: 'Course Content',
     visibility: 'published' as const,
     posts: course.lessons.map((lesson) => buildLessonPost(lesson)),
   }
 
-  // contentType MUST be 'video' for bulk-import — text type is rejected on
-  // every location we've tested (RocketOpp + 0nCore both throw 400
-  // "Invalid Post content type" on text). Body lives in description and
-  // renders as markdown.
-  const introPost = course.salesPageCopy
-    ? {
+  const introModule = {
+    title: 'Welcome',
+    visibility: 'published' as const,
+    posts: [
+      {
         title: 'About this course',
         visibility: 'published' as const,
-        contentType: 'video' as const,
-        description: course.salesPageCopy,
-      }
-    : null
+        contentType: LESSON_CONTENT_TYPE,
+        description: buildAboutHtml(course),
+      },
+    ],
+  }
 
-  const introModule = introPost
-    ? {
-        title: 'Welcome',
-        visibility: 'published' as const,
-        posts: [introPost],
-      }
-    : null
-
-  const modules = introModule ? [introModule, lessonsModule] : [lessonsModule]
+  const modules = [introModule, lessonsModule]
 
   const payload = {
     locationId,
@@ -180,7 +184,7 @@ async function publishViaBulkImport(
           description: 'AI-generated by the 0n Course Builder app.',
         },
         // Pricing on the import endpoint isn't always honored on every
-        // location — we re-apply it in attempt-2 fallback if needed.
+        // location — we PATCH it after the fact below.
         categories: modules,
       },
     ],
@@ -227,11 +231,10 @@ async function publishViaBulkImport(
     }
   }
 
-  // The bulk endpoint returns a course id under one of several shapes
-  // depending on CRM version. Verified shape against location
-  // nphConTwfHcVE1oA0uep + 6MSqx0trfxgLxeHBJE1k 2026-05-02:
+  // Verified shape against nphConTwfHcVE1oA0uep + 6MSqx0trfxgLxeHBJE1k:
   //   { "message": "Migration for courses started",
   //     "processingCourses": [{ "id": "...", "title": "...", "url": "..." }] }
+  // The other keys are older-version tolerance, kept because they cost nothing.
   type BulkResp = {
     id?: string
     course?: { id?: string }
@@ -257,7 +260,9 @@ async function publishViaBulkImport(
     }
   }
 
-  // Best-effort: collect lesson ids from the response shape if present
+  // Best-effort: collect lesson ids from the response shape if present.
+  // Measured against the live endpoint this always yields [] — see
+  // `lessonsPublished` above for the number that is safe to show a user.
   const crmLessonIds: string[] = []
   for (const cat of data.products?.[0]?.categories ?? []) {
     for (const post of cat.posts ?? []) {
@@ -297,163 +302,29 @@ async function publishViaBulkImport(
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// Strategy 2 + 3 — per-lesson POST flow
-// ──────────────────────────────────────────────────────────────────────────
-
-async function publishWithContentType(
-  locationId: string,
-  course: GeneratedCourse,
-  priceCents: number,
-  currency: string,
-  mode: 'text' | 'video_fallback'
-): Promise<PublishResult> {
-  // 1) Create the course
-  const courseBody: Record<string, unknown> = {
-    title: course.outline.title,
-    description: course.outline.description,
-    salesPageCopy: course.salesPageCopy || undefined,
-    pricing: {
-      type: priceCents > 0 ? 'paid' : 'free',
-      amount: priceCents,
-      currency,
-    },
-    status: 'draft',
-  }
-
-  const courseRes = await crmPost(COURSES_BASE, locationId, courseBody)
-  if (!courseRes.ok) {
-    const body = await courseRes.text().catch(() => '')
-    return {
-      ok: false,
-      error: `course create failed: ${courseRes.status}`,
-      attempts: 1,
-      lastResponseBody: body.slice(0, 600),
-    }
-  }
-
-  type CourseCreateResp = { id?: string; courseId?: string; data?: { id?: string } }
-  const courseData = (await courseRes.json().catch(() => ({}))) as CourseCreateResp
-  const crmCourseId = courseData.id ?? courseData.courseId ?? courseData.data?.id
-  if (!crmCourseId) {
-    return { ok: false, error: 'course create returned no id', attempts: 1 }
-  }
-
-  // 2) Add each lesson (with full content + quiz + resources inlined into
-  //    the description so the student sees everything in the lesson view)
-  const lessonIds: string[] = []
-  let firstFailureBody: string | undefined
-
-  for (const lesson of course.lessons) {
-    const lessonBody = buildLessonBodyPerLesson(lesson, mode)
-    const res = await crmPost(`${COURSES_BASE}/${crmCourseId}/lessons`, locationId, lessonBody)
-    if (!res.ok) {
-      const txt = await res.text().catch(() => '')
-      firstFailureBody = txt.slice(0, 600)
-      if (mode === 'text' && /content\s*type|contentType/i.test(txt)) {
-        return {
-          ok: false,
-          error: `lesson reject (text mode): ${txt.slice(0, 200)}`,
-          attempts: 1,
-          lastResponseBody: firstFailureBody,
-        }
-      }
-      return {
-        ok: false,
-        error: `lesson create failed: ${res.status}`,
-        attempts: 1,
-        lastResponseBody: firstFailureBody,
-      }
-    }
-    type LessonCreateResp = { id?: string; lessonId?: string; data?: { id?: string } }
-    const data = (await res.json().catch(() => ({}))) as LessonCreateResp
-    const id = data.id ?? data.lessonId ?? data.data?.id
-    if (id) lessonIds.push(id)
-  }
-
-  // 3) Try to flip status to published
-  await crmPost(`${COURSES_BASE}/${crmCourseId}`, locationId, { status: 'published' }).catch(
-    () => null,
-  )
-
-  // 4) Best-effort enrollment URL
-  const enrollmentUrl = await fetchEnrollmentUrl(locationId, crmCourseId)
-
-  return {
-    ok: true,
-    method: mode === 'text' ? 'per_lesson_text' : 'per_lesson_video',
-    crmCourseId,
-    crmLessonIds: lessonIds,
-    lessonsPublished: lessonIds.length,
-    pending: false,
-    enrollmentUrl,
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────
-// Lesson body builders
+// Lesson bodies
 // ──────────────────────────────────────────────────────────────────────────
 
 /**
  * Bulk-import lesson "post" shape — lesson content + quiz + resources all
- * inlined into the description so the dashboard renders one continuous
- * lesson page with everything the student needs.
+ * inlined into the description so the dashboard renders one continuous lesson
+ * page with everything the student needs.
  *
- * contentType MUST be 'video' for the bulk-import endpoint — text type is
- * rejected on most locations including RocketOpp ('Invalid Post content
- * type'). The body lives in `description` and renders as markdown.
- * Verified against location 6MSqx0trfxgLxeHBJE1k 2026-05-02 (course id
- * 56fb4a3c-3590-4eeb-bf18-410d48051635, HTTP 201).
+ * `description` is an HTML field (see the file header). Markdown goes in as
+ * literal `###` and one collapsed paragraph.
  */
 function buildLessonPost(lesson: GeneratedLesson) {
   return {
     title: lesson.title,
     visibility: 'published' as const,
-    contentType: 'video' as const,
-    description: composeFullLessonMarkdown(lesson),
-  }
-}
-
-/**
- * Per-lesson POST shape (fallback). Same inline composition; the only
- * difference vs bulk-import is the wire format the CRM expects.
- */
-function buildLessonBodyPerLesson(
-  lesson: GeneratedLesson,
-  mode: 'text' | 'video_fallback',
-): Record<string, unknown> {
-  const baseFields = {
-    title: lesson.title,
-    summary: lesson.summary,
-    order: lesson.index,
-  }
-
-  if (mode === 'text') {
-    return {
-      ...baseFields,
-      contentType: 'text',
-      content: composeFullLessonMarkdown(lesson),
-      // We still pass quiz+resources for any locations that surface them
-      // separately; the inlined markdown is the load-bearing copy.
-      quiz: lesson.quiz,
-      resources: lesson.resources,
-    }
-  }
-
-  // video_fallback — encode the lesson body in the description field so
-  // students still see the content even though the lesson is typed 'video'.
-  return {
-    ...baseFields,
-    contentType: 'video',
-    description: composeFullLessonMarkdown(lesson),
-    videoUrl: '', // intentionally empty — the description carries the lesson
+    contentType: LESSON_CONTENT_TYPE,
+    description: toLessonHtml(composeFullLessonMarkdown(lesson)),
   }
 }
 
 /**
  * The single source-of-truth lesson markdown. Lesson body, then quiz (with
- * answers + explanations), then resources. Used by every publish strategy
- * so what the student sees is identical regardless of which CRM endpoint
- * accepted the payload.
+ * answers + explanations), then resources.
  */
 function composeFullLessonMarkdown(lesson: GeneratedLesson): string {
   const parts: string[] = []
@@ -481,20 +352,102 @@ function composeFullLessonMarkdown(lesson: GeneratedLesson): string {
   return parts.filter((p) => p !== null && p !== undefined).join('\n')
 }
 
+/**
+ * `escapeText` is on because every word of this is model-written and lands
+ * under a customer's brand. A model that emits `<script>` or a stray `<div>`
+ * must produce visible characters in a lesson, never markup in someone else's
+ * page.
+ */
+function toLessonHtml(markdown: string): string {
+  return renderMarkdownWith(markdown, PORTABLE, { escapeText: true })
+}
+
+/**
+ * Quiz markdown, in constructs this renderer actually supports.
+ *
+ * It used to emit the question as `1.` and the options as three-space-indented
+ * `A.` lines — nested-list markdown. The renderer has no nested lists, so the
+ * options fell through to the paragraph buffer and came out as a `<p>` glued
+ * inside the `<ol>`: invalid HTML, and every option on one line with the
+ * answer. Rendering markdown fixed the lesson body and left the quiz collapsed
+ * in exactly the way the lesson body had been.
+ *
+ * The renderer is ours, so the constraint is knowable: headings, flat lists,
+ * emphasis, tables, rules. Write to it rather than around it. (Model-written
+ * lesson bodies can still contain nested lists; those flatten to one level
+ * rather than breaking — a degradation, not a collapse.)
+ */
 function formatQuiz(quiz: QuizQuestion[]): string {
   return quiz
     .map((q, i) => {
       const opts = q.options
-        .map((o, j) => `   ${String.fromCharCode(65 + j)}. ${o}`)
+        .map((o, j) => `- ${String.fromCharCode(65 + j)}. ${o}`)
         .join('\n')
       const answer = String.fromCharCode(65 + q.correctAnswer)
-      return `${i + 1}. ${q.question}\n${opts}\n   *Answer: ${answer} — ${q.explanation}*`
+      return `### ${i + 1}. ${q.question}\n\n${opts}\n\n*Answer: ${answer} — ${q.explanation}*`
     })
     .join('\n\n')
 }
 
 function formatResources(resources: LessonResource[]): string {
   return resources.map((r) => `- [${r.title}](${r.url}) — *${r.type}*`).join('\n')
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// "About this course" — computed, not written
+// ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * This used to be a model-written sales page, and it is the reason lesson #1
+ * of a real client's published course promised five video lessons, quizzes,
+ * downloadables, a live 30-minute Q&A, a certificate, lifetime updates, a
+ * 30-day money-back guarantee, and that "spots are limited".
+ *
+ * The model did not hallucinate that. Our own prompt asked for
+ * "high-conversion" copy and a "What's included (lessons, quizzes, resources,
+ * certificate)" section, so it wrote exactly what it was told to and we
+ * published the promises. **Mike's scope ruling: the Course Builder generates
+ * simple course content, not a funnel.**
+ *
+ * So the description is built from values we have already computed. There is
+ * nothing here to hallucinate: every number is counted, every title is a real
+ * title, and no sentence commits the customer to anything they have not built.
+ */
+export function buildAboutMarkdown(course: GeneratedCourse): string {
+  const lessonCount = course.lessons.length
+  const quizCount = course.lessons.reduce((n, l) => n + (l.quiz?.length ?? 0), 0)
+  const resourceCount = course.lessons.reduce((n, l) => n + (l.resources?.length ?? 0), 0)
+
+  const parts: string[] = []
+
+  if (course.outline.description?.trim()) {
+    parts.push(course.outline.description.trim(), '')
+  }
+
+  parts.push('## What this course contains', '')
+  parts.push(`- ${lessonCount} ${lessonCount === 1 ? 'lesson' : 'lessons'}`)
+  parts.push(`- About ${course.totalWordCount.toLocaleString('en-US')} words of written material`)
+  parts.push(`- Estimated reading time: ${course.estimatedDuration}`)
+  if (quizCount > 0) {
+    parts.push(`- ${quizCount} quiz ${quizCount === 1 ? 'question' : 'questions'} with answers and explanations`)
+  }
+  if (resourceCount > 0) {
+    parts.push(`- ${resourceCount} linked ${resourceCount === 1 ? 'resource' : 'resources'}`)
+  }
+  parts.push('')
+
+  if (lessonCount > 0) {
+    parts.push('## Lessons', '')
+    for (const l of course.lessons) {
+      parts.push(`${l.index}. **${l.title}** — ${l.summary?.trim() || ''}`.trimEnd())
+    }
+  }
+
+  return parts.join('\n')
+}
+
+function buildAboutHtml(course: GeneratedCourse): string {
+  return toLessonHtml(buildAboutMarkdown(course))
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -522,3 +475,5 @@ async function fetchEnrollmentUrl(locationId: string, courseId: string): Promise
     return null
   }
 }
+
+export const __test__ = { composeFullLessonMarkdown, toLessonHtml, buildAboutMarkdown, LESSON_CONTENT_TYPE }

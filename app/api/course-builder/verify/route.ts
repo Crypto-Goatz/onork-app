@@ -18,7 +18,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { generateOutline, generateFullCourse } from '@/lib/course-builder/generator'
-import { publishCourse } from '@/lib/course-builder/publisher'
+import { publishCourse, buildAboutMarkdown } from '@/lib/course-builder/publisher'
 import { crmGet } from '@/lib/crm'
 import type { CourseConfig } from '@/lib/course-builder/types'
 
@@ -50,7 +50,7 @@ interface VerifyReport {
     estimatedDuration: string
     quizQuestionCount: number
     resourceCount: number
-    salesPageBytes: number
+    aboutCopyBytes: number
   }
   publish?: {
     method: string
@@ -162,7 +162,7 @@ export async function GET(req: NextRequest) {
       estimatedDuration: course.estimatedDuration,
       quizQuestionCount: course.lessons.reduce((s, l) => s + (l.quiz?.length ?? 0), 0),
       resourceCount: course.lessons.reduce((s, l) => s + (l.resources?.length ?? 0), 0),
-      salesPageBytes: (course.salesPageCopy ?? '').length,
+      aboutCopyBytes: buildAboutMarkdown(course).length,
     }
   } catch (e) {
     errors.push(`generate: ${(e as Error).message}`)
