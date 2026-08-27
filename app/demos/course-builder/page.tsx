@@ -105,7 +105,7 @@ const SPECS = [
   { label: 'Outputs', value: 'Outline + lessons + quizzes + resources + sales page' },
   { label: 'Publish target', value: 'CRM Courses module (`courses.write`)' },
   { label: 'Read scope', value: '`courses.readonly` (preview before publish)' },
-  { label: 'Configure scope', value: '`conversation-ai` (agent setup)' },
+  { label: 'Also granted', value: '`locations.readonly`, `oauth.readonly`, `oauth.write` (app config, not the consent screen)' },
   { label: 'Webhook', value: 'POST https://0ncore.com/api/course-builder/chat' },
 ]
 
@@ -120,7 +120,7 @@ const FAQS = [
   },
   {
     q: 'What scopes does the app request?',
-    a: '`courses.readonly`, `courses.write`, and the `conversation-ai` family — for reading the course list, publishing the generated course, and configuring the AI agent. See https://www.0ncore.com/demos/course-builder-scopes for the full justification.',
+    a: 'The consent screen asks for exactly two: `courses.readonly` to read the existing course list, and `courses.write` to publish the generated course. The app configuration additionally grants `oauth.readonly` (the named publish picker), `oauth.write` (minting a token scoped to the sub-account you chose) and `locations.readonly` (checking an install is still alive before offering it as a target) — those three are on the issued token but not on the consent screen, and each is justified at https://www.0ncore.com/demos/course-builder-scopes.',
   },
   {
     q: 'Where does the content live?',
@@ -355,8 +355,9 @@ export default function CourseBuilderDemoPage() {
               Scopes
             </h2>
             <p className="text-white/45">
-              Three scopes. Each one powers a specific feature. No data leaves the CRM agent —
-              the model never sees your contacts, conversations, or workflows.
+              Two scopes on the consent screen, three more granted by the app configuration.
+              Each one powers a specific feature, and the model never sees your contacts,
+              conversations, or workflows.
             </p>
           </div>
 
@@ -376,9 +377,9 @@ export default function CourseBuilderDemoPage() {
               },
               {
                 icon: MessageCircle,
-                title: 'conversation-ai',
+                title: 'oauth.readonly · oauth.write · locations.readonly',
                 body:
-                  'Configures the Conversation AI agent that runs the five-question intake. No reading or writing of your end-user conversations.',
+                  'Not on the consent screen — granted by the app configuration. They power the named publish picker, mint a token scoped to the sub-account you pick, and check an install is still alive. No end-user conversations are read or written.',
               },
             ].map((s) => (
               <div

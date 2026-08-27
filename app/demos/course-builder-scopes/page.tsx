@@ -5,7 +5,6 @@ import {
   ShieldCheck,
   BookOpen,
   Wand2,
-  MessageCircle,
   Webhook,
   Lock,
   Database,
@@ -21,12 +20,12 @@ import {
 export const metadata: Metadata = {
   title: 'Scopes — 0n Course Builder',
   description:
-    'Why the 0n Course Builder requests courses.readonly, courses.write, and the conversation-ai scope family — and exactly what each one does. Marketplace review reference.',
+    'The two scopes the 0n Course Builder consent screen requests, the three the app configuration additionally grants, and exactly what each one reaches. Marketplace review reference.',
   alternates: { canonical: 'https://www.0ncore.com/demos/course-builder-scopes' },
   openGraph: {
     title: 'Scopes — 0n Course Builder',
     description:
-      'Per-scope justification, data-handling, and storage detail for the 0n Course Builder marketplace app.',
+      'Per-scope justification, data-handling, and storage detail for the 0n Course Builder marketplace app — requested and granted, stated separately.',
     url: 'https://www.0ncore.com/demos/course-builder-scopes',
   },
   robots: { index: true, follow: false },
@@ -81,27 +80,68 @@ const SCOPES: Scope[] = [
     retention:
       'The course lives in the CRM after publish like any other course — owned and editable by the user. The app does NOT keep its own canonical copy; the CRM is the system of record post-publish.',
   },
+]
+
+/**
+ * SCOPES THE CONSENT SCREEN DOES NOT ASK FOR, BUT THE ISSUED TOKEN CARRIES.
+ *
+ * These are granted by the app's configuration in the developer portal, not by
+ * our authorise URL — the install string is exactly `courses.readonly
+ * courses.write` and has never been anything else. Documenting only what we
+ * request would leave a reviewer who decodes the token holding three scopes we
+ * never mentioned, which is the harder question to answer afterwards.
+ *
+ * Measured 2026-08-27 against the live install (app 69801f7a533633818a22921c,
+ * company bknfhTkdDLapbwfZqQNi): the access token's `oauthMeta.scopes` reads
+ * `locations.readonly, courses.write, courses.readonly, oauth.write,
+ * oauth.readonly`. Each endpoint below was probed with that token on the same
+ * day and answered 200.
+ */
+const ADDITIONALLY_GRANTED: Scope[] = [
   {
-    icon: MessageCircle,
-    scope: 'conversation-ai (configure)',
-    feature: 'Install + configure the Conversation AI agent that runs the five-question intake',
+    icon: Users,
+    scope: 'oauth.readonly',
+    feature: 'The named publish picker — choose which client the course lands in',
     why:
-      'The 0n Course Builder is delivered as a Conversation AI agent — that is the user interface. To install the app, the user grants permission for it to register a new agent under their location, set its system prompt, attach the webhook endpoint, and configure intent triggers. The app does NOT request scopes that would let it read end-user conversation history or send messages on the user\'s behalf outside of the agent it just installed.',
-    apis: [
-      'POST /conversation-ai/agents (create the agent)',
-      'PATCH /conversation-ai/agents/:id (update prompt, webhook, intents)',
+      'The app is installed at the agency level across many sub-accounts, so "publish this course" is ambiguous until the operator picks one. This scope reaches the platform\'s own list of sub-accounts the app is installed in, with names and addresses, so the picker offers real workspaces rather than raw ids. Publishing a course into the wrong company cannot be undone, which is why the list is measured at request time and any workspace the platform does not confirm is excluded rather than shown optimistically.',
+    apis: ['GET /oauth/installedLocations (name + address + isInstalled, paged)'],
+    reads: [
+      'Sub-account id, name, address, and whether this app is installed there',
+      'Nothing inside any sub-account — no contacts, no conversations, no records',
     ],
-    reads: ['Only the agents the app itself created (own scope), to support upgrades and uninstalls'],
+    writes: [],
+    retention:
+      'Fetched at picker-render time and held in memory for that request. Not stored. Entries flagged not-installed are counted and discarded.',
+  },
+  {
+    icon: Lock,
+    scope: 'oauth.write',
+    feature: 'Mint a location-scoped token for the sub-account the operator chose',
+    why:
+      'The install returns a company-scoped token. Writing a course into one sub-account with a company token is both wrong and wider than it needs to be, so the app exchanges it for a token scoped to the single location the operator selected, and publishes with that. This narrows the credential at the moment of use rather than widening it.',
+    apis: ['POST /oauth/locationToken (exchange company token → one location token)'],
+    reads: [],
     writes: [
-      'A single agent named "0n Course Builder" with our system prompt + webhook URL',
-      'Intent definitions used to trigger the agent ("build a course", "create a course", etc)',
+      'No customer data. It issues a short-lived token for one location, already covered by the install.',
     ],
     retention:
-      'Agent config lives inside the CRM. The app stores only a foreign-key reference (agent_id + location_id) so we can update or remove the agent on uninstall.',
+      'The minted token is used for the publish and is not persisted as a new install row. It expires on the platform\'s own schedule.',
+  },
+  {
+    icon: ShieldCheck,
+    scope: 'locations.readonly',
+    feature: 'Tell a live install apart from a dead one before it is offered as a target',
+    why:
+      'A revoked or expired install still has a row in our database and still looks connected. Before the app claims a workspace is publishable — and when a token refresh fails — it asks the platform whether the credential can still read the account at all. A token that cannot answer is marked degraded and the workspace is withheld from the picker, instead of failing halfway through a publish.',
+    apis: ['GET /locations/:id (health probe)', 'GET /locations/search?limit=1 (company-level liveness probe)'],
+    reads: ['The account record the credential already covers — used as a reachability signal, not for its content'],
+    writes: [],
+    retention: 'Only the outcome is stored: a health status, a latency, and a timestamp. No account data is retained.',
   },
 ]
 
 const NOT_REQUESTED = [
+  'conversation-ai (agent create / configure) — see the correction at the top',
   'contacts.readonly / contacts.write',
   'conversations.readonly / conversations.write',
   'conversations.message.write (cannot send messages on the user\'s behalf)',
@@ -130,16 +170,30 @@ export default function ScopesPage() {
               Marketplace scope justification
             </div>
             <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white leading-[1.1] text-balance">
-              Three scopes. Each one ships
+              Two scopes on the consent screen.
               <br />
-              <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">a specific user-facing feature.</span>
+              <span className="bg-gradient-to-br from-[#7ed957] via-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">Five on the issued token. Both are listed.</span>
             </h1>
             <p className="text-lg text-white/75 leading-relaxed">
-              The 0n Course Builder is a single-purpose app: convert a five-question chat into a
-              published, sellable course. Every scope below maps to one piece of that pipeline.
-              Anything beyond that — contacts, conversations, workflows, payments — we explicitly
-              did <strong className="text-white">not</strong> request.
+              The 0n Course Builder is a single-purpose app: turn a short brief into a published,
+              sellable course. The install asks for exactly{' '}
+              <code className="font-mono text-sm text-[#7ed957]">courses.readonly courses.write</code>{' '}
+              — you can read that off the consent screen before you click it. The app configuration
+              additionally grants three more, and rather than leave you to decode a token to find
+              them, they are documented here too. Anything beyond those five — contacts,
+              conversations, workflows, payments — we explicitly did{' '}
+              <strong className="text-white">not</strong> request.
             </p>
+            <div className="rounded-lg border border-[#f87171]/25 bg-[#f87171]/[0.06] p-4 text-sm text-white/75 leading-relaxed">
+              <strong className="text-white">Correction &mdash; stated rather than quietly edited.</strong>{' '}
+              Until 2026-08-27 this page carried a{' '}
+              <code className="font-mono text-xs">conversation-ai (configure)</code> block
+              describing the app registering a Conversation AI agent in your location. It was
+              written as intent when the page shipped and was never true: no build of this app has
+              ever requested that scope or created an agent, and the consent screen has never
+              offered it. It is removed. If you reviewed an earlier version of this page, that
+              block is the thing that changed.
+            </div>
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Link
                 href="/demos/course-builder"
@@ -201,6 +255,103 @@ export default function ScopesPage() {
                       ))}
                     </ul>
                   )}
+                </div>
+
+                <div className="bg-[#0d1117] border border-white/10 rounded-lg p-4 space-y-2">
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-white/45 flex items-center gap-1.5">
+                    <Eye className="w-3 h-3" />
+                    Reads
+                  </div>
+                  {s.reads.length === 0 ? (
+                    <div className="text-xs text-white/45">No data read.</div>
+                  ) : (
+                    <ul className="space-y-1 text-xs text-white/75 leading-relaxed list-disc list-outside pl-4">
+                      {s.reads.map((r) => (
+                        <li key={r}>{r}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="bg-[#0d1117] border border-white/10 rounded-lg p-4 space-y-2">
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-white/45 flex items-center gap-1.5">
+                    <Wand2 className="w-3 h-3" />
+                    Writes
+                  </div>
+                  {s.writes.length === 0 ? (
+                    <div className="text-xs text-white/45">No data written.</div>
+                  ) : (
+                    <ul className="space-y-1 text-xs text-white/75 leading-relaxed list-disc list-outside pl-4">
+                      {s.writes.map((w) => (
+                        <li key={w}>{w}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-[#0d1117] border border-white/10 rounded-lg p-4">
+                <div className="text-[10px] font-medium uppercase tracking-wider text-white/45 flex items-center gap-1.5 mb-2">
+                  <Database className="w-3 h-3" />
+                  Storage + retention
+                </div>
+                <p className="text-sm text-white/75 leading-relaxed">{s.retention}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ADDITIONALLY GRANTED */}
+      <section className="border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-6 py-16 space-y-6">
+          <div className="space-y-2 max-w-3xl">
+            <h2 className="text-3xl font-semibold tracking-tight text-white flex items-center gap-3">
+              <AlertTriangle className="w-7 h-7 text-[#00d4ff]" />
+              Additionally granted by the app configuration
+            </h2>
+            <p className="text-white/75 leading-relaxed">
+              These three do not appear on the consent screen and are not in our authorise URL.
+              They are attached to the app in the developer portal, so the platform includes them
+              on the issued token regardless of what we ask for. We use all three, each for one
+              thing, described below. If you decode the access token you will find exactly this
+              set and nothing else:{' '}
+              <code className="font-mono text-xs text-[#7ed957] break-all">
+                locations.readonly · courses.write · courses.readonly · oauth.write · oauth.readonly
+              </code>
+            </p>
+          </div>
+
+          {ADDITIONALLY_GRANTED.map((s) => (
+            <div
+              key={s.scope}
+              className="bg-white/[0.02] backdrop-blur border border-[#00d4ff]/20 rounded-xl p-6 space-y-5"
+            >
+              <div className="flex items-start gap-4">
+                <div className="bg-[#0d1117] border border-white/10 rounded-lg p-3">
+                  <s.icon className="w-6 h-6 text-[#00d4ff]" />
+                </div>
+                <div className="space-y-1 flex-1 min-w-0">
+                  <code className="font-mono text-sm bg-[#0d1117] border border-white/10 px-2 py-0.5 rounded text-[#00d4ff]">
+                    {s.scope}
+                  </code>
+                  <h3 className="text-xl font-semibold tracking-tight text-white">{s.feature}</h3>
+                </div>
+              </div>
+
+              <p className="text-sm text-white/75 leading-relaxed">{s.why}</p>
+
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+                <div className="bg-[#0d1117] border border-white/10 rounded-lg p-4 space-y-2">
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-white/45 flex items-center gap-1.5">
+                    <Server className="w-3 h-3" />
+                    API calls
+                  </div>
+                  <ul className="space-y-1 text-xs font-mono text-white/75">
+                    {s.apis.map((a) => (
+                      <li key={a} className="break-all">{a}</li>
+                    ))}
+                  </ul>
                 </div>
 
                 <div className="bg-[#0d1117] border border-white/10 rounded-lg p-4 space-y-2">
@@ -368,6 +519,9 @@ export default function ScopesPage() {
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
               {[
                 { label: 'App name', v: '0n Course Builder' },
+                { label: 'Consent screen requests', v: 'courses.readonly courses.write' },
+                { label: 'Issued token carries', v: 'the above + locations.readonly, oauth.readonly, oauth.write' },
+                { label: 'Start an install', v: 'https://www.0ncore.com/api/oauth/install/course' },
                 { label: 'Version under review', v: '1.0.0' },
                 { label: 'Test location', v: 'nphConTwfHcVE1oA0uep (0nCore)' },
                 { label: 'Webhook endpoint', v: 'https://0ncore.com/api/course-builder/chat' },
