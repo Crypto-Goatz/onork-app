@@ -14,7 +14,7 @@ import SiteFooter from '@/components/SiteFooter'
 import Hero from '@/components/home/Hero'
 import CommandCenterVideo from '@/components/CommandCenterVideo'
 import AgencyDashboardSection, { AGENCY_DASHBOARD_FAQ } from '@/components/home/AgencyDashboardSection'
-import { SITE, siteNodes, orgRef, faqPage, graph, jsonLdScript } from '@/lib/seo/jsonld'
+import { SITE, siteNodes, orgRef, faqPage, breadcrumbList, graph, jsonLdScript } from '@/lib/seo/jsonld'
 
 /**
  * 0nCore homepage — repositioned to what this product actually is.
@@ -127,6 +127,16 @@ const JSON_LD = graph(
     ],
   },
   faqPage(ALL_FAQS),
+  /**
+   * BreadcrumbList on the ROOT (sxo-s3-hero-spec guardrail 7 — W2 ships with
+   * the hero, one deploy, one verification pass).
+   *
+   * A one-item trail looks pointless and is not: every other page's crumb
+   * trail starts with this exact node, and a trail whose first item is only
+   * ever declared elsewhere is a trail with an unverifiable root. Declaring it
+   * here costs 90 bytes and makes the site's crumb graph close.
+   */
+  breadcrumbList([{ name: 'Home', path: '/' }]),
 )
 
 const LADDER = [
@@ -141,11 +151,19 @@ export default function HomePage() {
     <main className="grid-bg grid-anim min-h-screen text-neutral-800">
       <script {...jsonLdScript(JSON_LD)} />
 
-      <div className="mx-auto max-w-7xl px-6 py-8 space-y-8">
-        <Hero />
+      {/*
+        The hero is FULL-BLEED and dark, so it sits outside the page container
+        rather than inside it. It ends in its own gradient hand-off band, which
+        is the film's Scene 2 whiteout used exactly once — everything below this
+        line is the light page it always was.
+      */}
+      <Hero />
 
-        {/* The walkthrough. Poster-first so the hero paints before 20 MB does. */}
-        <section className="py-8">
+      <div className="mx-auto max-w-7xl px-6 py-8 space-y-8">
+        {/* The walkthrough. Poster-first so the hero paints before 20 MB does.
+            id="walkthrough" is the hero's secondary CTA target and beat 3's
+            IntersectionObserver anchor — do not rename it without both. */}
+        <section id="walkthrough" className="scroll-mt-24 py-8">
           <CommandCenterVideo caption="0nCORE running a real agency — the full walkthrough." />
         </section>
 

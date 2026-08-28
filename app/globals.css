@@ -901,3 +901,136 @@ code, pre, .font-mono {
 @media (prefers-reduced-motion: reduce) {
   .oncore-app .oc-tile-edit { animation: none; outline: 2px dashed rgba(23,23,23,.35); outline-offset: 3px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HOMEPAGE HERO — the accretion device (sxo-s3-hero-spec, Sprint 3)
+   ─────────────────────────────────────────────────────────────────────
+   The film's MOTION LANGUAGE, not its palette: accretion, docking,
+   "everything it does, it brings with it". Hero world is #0d1117 and every
+   accent is the brand green. No indigo, no gold anywhere (BRAND.md rule 1 —
+   the films re-palette too).
+
+   THE INVERSION THAT MAKES THIS SAFE. The HTML ships the FINAL composition:
+   ring closed, every module docked, nothing hidden. The motion layer then
+   RETRACTS what it is about to replay, and only when it is allowed to. So:
+
+     no JS           -> complete hero, no CSS-hidden content
+     reduced motion  -> complete hero (the .hero-armed class is never added)
+     crawler / no-JS -> reads every word, because none of it was opacity:0
+
+   The usual way round — animate IN from hidden — makes the page's content a
+   property of a script running. That is how a hero becomes invisible to the
+   thing you built it to impress.
+
+   Every animated property is opacity / transform / clip-path. Never a layout
+   property, so CLS stays 0 (guardrail 2).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.hero-dark {
+  background-color: #0d1117;
+  background-image:
+    radial-gradient(52% 46% at 22% 6%, rgba(110, 224, 90, 0.14) 0%, rgba(110, 224, 90, 0) 68%),
+    radial-gradient(46% 44% at 88% 14%, rgba(34, 197, 94, 0.10) 0%, rgba(34, 197, 94, 0) 66%),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 46px 46px, 46px 46px;
+}
+
+/* Beat 3 — hand-off to light. The dark world does not stop, it inverts into
+   the light content sections below (the film's Scene 2 whiteout, used once).
+   A gradient band, not an animation: it is correct at first paint. */
+.hero-handoff {
+  height: 120px;
+  background: linear-gradient(180deg, #0d1117 0%, rgba(13, 17, 23, 0.55) 42%, #ffffff 100%);
+}
+
+/* The stage reserves its own box from first paint — this is the CLS guarantee.
+   Nothing inside it may change the height of anything outside it. */
+.hero-stage { position: relative; }
+
+.hero-ring { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ring-seg {
+  fill: none;
+  stroke: #6ee05a;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+.ring-seg--empty { stroke: rgba(230, 237, 243, 0.14); opacity: 1; }
+
+/* ── The armed state. Added by an inline pre-paint script ONLY when the
+   browser reports it may animate. Everything below is scoped to it, so a
+   reader who never gets that class sees the finished composition. ── */
+.hero-armed .dock {
+  opacity: 0;
+  transform: translate3d(var(--dock-x, 0), var(--dock-y, 10px), 0) scale(0.985);
+  transition:
+    opacity 0.52s ease,
+    transform 0.52s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: var(--dock-delay, 0s);
+}
+.hero-armed .dock-rail { opacity: 0; transition: opacity 0.4s ease; transition-delay: var(--dock-delay, 0s); }
+.hero-armed .ring-seg { opacity: 0; transition: opacity 0.45s ease; transition-delay: var(--dock-delay, 0s); }
+.hero-armed .ring-seg--empty { opacity: 1; }
+
+/* The EQ> line "types" as a left-to-right wipe. A steps() width animation on a
+   paragraph that wraps to three lines re-flows on every frame; a clip-path
+   wipe is the same read with zero layout involvement. */
+.hero-armed .type-line { clip-path: inset(0 100% 0 0); transition: clip-path 0.85s steps(28, end); }
+
+/* Beat 1 — the sentence becomes the plan. */
+.hero-armed.beat-1 .type-line { clip-path: inset(0 0 0 0); }
+.hero-armed.beat-1 .dock--leg,
+.hero-armed.beat-1 .dock-rail--leg { opacity: 1; transform: none; }
+.hero-armed.beat-1 .ring-seg--leg { opacity: 0.9; }
+
+/* Beat 2 — the stack accretes onto the same ring, then one full-ring pulse. */
+.hero-armed.beat-2 .dock--stack,
+.hero-armed.beat-2 .dock-rail--stack { opacity: 1; transform: none; }
+.hero-armed.beat-2 .ring-seg--stack { opacity: 0.9; }
+.hero-armed.beat-2 .hero-ring { animation: ring-close 1s ease-out 0.85s 1; }
+
+@keyframes ring-close {
+  0%   { filter: drop-shadow(0 0 0 rgba(110, 224, 90, 0)); }
+  38%  { filter: drop-shadow(0 0 10px rgba(110, 224, 90, 0.55)); }
+  100% { filter: drop-shadow(0 0 0 rgba(110, 224, 90, 0)); }
+}
+
+/* The dock pulse — a radial flash behind a module the instant it lands. It is
+   a pseudo-element so it cannot affect the flow of the thing it decorates. */
+.hero-armed .dock::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(110, 224, 90, 0.34) 0%, rgba(110, 224, 90, 0) 68%);
+}
+.hero-armed.beat-1 .dock--leg::after,
+.hero-armed.beat-2 .dock--stack::after {
+  animation: dock-pulse 0.62s ease-out var(--dock-delay, 0s) 1;
+}
+@keyframes dock-pulse {
+  0%   { opacity: 0; }
+  22%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Belt and braces. The armed class is only added when the media query says
+   no-preference, but a user can flip that setting mid-session and the class is
+   already on the element — so the reduce query also has to win here. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-armed .dock,
+  .hero-armed .dock-rail,
+  .hero-armed .type-line,
+  .hero-armed .ring-seg {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+    transition: none !important;
+  }
+  .hero-armed .ring-seg--empty { opacity: 1 !important; }
+  .hero-armed .dock::after,
+  .hero-armed .hero-ring { animation: none !important; }
+}

@@ -10,6 +10,21 @@
  */
 import Link from 'next/link'
 import { ArrowRight, Github, Youtube, Mail, Sparkles } from 'lucide-react'
+import CATALOG from '@/lib/catalog-count.json'
+
+/**
+ * The capability claim, DERIVED — never typed.
+ *
+ * This line read "2,000+ capabilities across 150+ services" for as long as
+ * anyone can remember. Measured against the 0nmcp the app actually installs:
+ * 1,319 catalog capabilities across 106 services. Both halves were inflated on
+ * a public page. scripts/gen-catalog-count.mjs now re-measures on every build
+ * and rounds DOWN; if it cannot read the catalog it writes ok:false and this
+ * renders the sentence WITHOUT the numbers rather than with stale ones.
+ */
+const CAPABILITY_CLAIM = CATALOG.ok
+  ? `${CATALOG.capabilitiesDisplay!.toLocaleString()}+ capabilities across ${CATALOG.servicesDisplay}+ services, one orchestrator, hardware-bound vault. Free to install — pay only when you scale.`
+  : 'One orchestrator, hardware-bound vault. Free to install — pay only when you scale.'
 
 const COLUMNS: Array<{ title: string; links: Array<{ label: string; href: string; external?: boolean }> }> = [
   {
@@ -76,7 +91,7 @@ export default function SiteFooter() {
               <span className="mt-1 block text-white/85">Skip the wiring.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-base text-white/85 sm:text-lg">
-              2,000+ capabilities across 150+ services, one orchestrator, hardware-bound vault. Free to install — pay only when you scale.
+              {CAPABILITY_CLAIM}
             </p>
             <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
               <Link
