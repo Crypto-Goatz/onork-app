@@ -12,12 +12,15 @@
  * Test contacts are named ACCEPTANCE-TEST-<ts> so they are identifiable and
  * deletable in the CRM afterwards.
  *
- * Gated by CRON_SECRET (repo convention for ops routes).
+ * Gated by CRON_SECRET (repo convention for ops routes), and it will not run
+ * until the caller NAMES both sub-accounts — see the block below for why a
+ * default here was a live write hazard.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { issueAppJwt } from '@/lib/auth/app-jwt'
 import { getValidAgencyToken } from '@/lib/crm/agency-token'
 import { listAgencyLocations } from '@/lib/crm/locations'
+import { pickAcceptanceTargets } from '@/lib/crm/acceptance-targets'
 import { crmGet } from '@/lib/crm'
 
 export const runtime = 'nodejs'
@@ -48,14 +51,49 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ pass: false, stage: 'locations', error: locErr || `Need 2+ locations, found ${locations.length}.` }, { status: 500 })
   }
 
+  /**
+   * NAME BOTH SUB-ACCOUNTS, OR THIS ROUTE WRITES NOTHING.
+   *
+   * This used to fall back to `locations[0]` and "the next id that isn't
+   * locA" — so a bodyless call wrote real contacts into whichever two
+   * sub-accounts the CRM happened to list first. That is not a default, it is
+   * list order, and list order is not a decision anyone made.
+   *
+   * Measured 2026-08-28 against the live agency (105 sub-accounts): index 0 is
+   * `PS96ZP0Hx7zmFsm8lPI9` — the sub-account literally named
+   * "0n Template — DO NOT USE", the one snapshots are cut from. A test contact
+   * there is a test contact in every account provisioned from it afterwards.
+   * The order is alphabetical-ish, so one customer rename moves a paying client
+   * into that slot; nothing in the estate pins it.
+   *
+   * And it had already fired: three `*@0ncore-test.com` contacts exist from
+   * 2026-08-11 (two in `0ncore`, one in `RocketOpp Lead Generation Services`).
+   * Both are Mike's own, which was luck, not design.
+   *
+   * So: both names are required, they resolve through the SAME
+   * resolveLocation() the planner uses — exact, then prefix, then substring,
+   * and it REFUSES on an ambiguous substring rather than taking the first —
+   * and they must be two different accounts. Anything short of exactly one
+   * match each writes nothing and says why.
+   */
   const body = await req.json().catch(() => ({}))
-  const wantA = typeof body?.locationA === 'string' ? body.locationA.toLowerCase() : null
-  const wantB = typeof body?.locationB === 'string' ? body.locationB.toLowerCase() : null
-  const locA = (wantA && locations.find((l) => l.name.toLowerCase().includes(wantA))) || locations[0]
-  const locB = (wantB && locations.find((l) => l.name.toLowerCase().includes(wantB))) || locations.find((l) => l.id !== locA.id)
-  if (!locB) {
-    return NextResponse.json({ pass: false, stage: 'locations', error: 'Could not pick two distinct locations.' }, { status: 500 })
+  const picked = pickAcceptanceTargets(body?.locationA, body?.locationB, locations)
+  if (!picked.ok) {
+    const r = picked.refusal
+    return NextResponse.json({
+      pass: false,
+      stage: 'locations',
+      wrote: 'nothing',
+      error:
+        r.kind === 'unnamed'
+          ? 'Name both sub-accounts explicitly: {"locationA":"...","locationB":"..."}. This route creates real contacts, so it will not pick for you.'
+          : r.kind === 'same'
+            ? `Both names resolved to the same sub-account (${r.name}). The test proves two clients or it proves nothing.`
+            : 'Each name must match exactly one sub-account. Nothing was written.',
+      unresolved: r.kind === 'unresolved' ? r.unresolved : undefined,
+    }, { status: 400 })
   }
+  const { locA, locB } = picked
 
   // ── 2. One message, two clients, two directives — the product claim ──
   const ts = Date.now()

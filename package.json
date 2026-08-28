@@ -19,7 +19,8 @@
     "test:e2e:cleanup": "tsx tests/e2e/cleanup.ts",
     "test:jwt": "tsx scripts/test/app-jwt.test.ts",
     "test:cro9": "tsx scripts/test/cro9-classify.test.ts",
-    "lastmod": "node scripts/gen-content-lastmod.mjs"
+    "lastmod": "node scripts/gen-content-lastmod.mjs",
+    "test:acceptance-targets": "tsx scripts/test/acceptance-targets.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
