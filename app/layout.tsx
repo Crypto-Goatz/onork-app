@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Providers } from "@/components/providers";
 import { PublicNavWrapper } from "@/components/public-nav-wrapper";
 import { VoiceAIFloatingButton } from "@/components/voice-ai-floating";
-import { LaunchBanner } from "@/components/launch-banner";
+import { LaunchBanner, LAUNCH_BANNER_COOKIE } from "@/components/launch-banner";
 import { GroqBanner } from "@/components/GroqBanner";
 import SiteBreadcrumbJsonLd from "@/components/seo/SiteBreadcrumbJsonLd";
 
@@ -70,6 +70,12 @@ export default async function RootLayout({
   // Read on the SERVER so the page renders on the chosen side immediately —
   // client-side would paint one edge and snap to the other, every navigation.
   const sidebarSide = (await cookies()).get('oc_sidebar_side')?.value === 'left' ? 'left' : 'right'
+
+  // Read server-side so the launch banner's first render is already the right
+  // one. It used to decide from localStorage in an effect, which meant it
+  // appeared AFTER hydration and pushed the whole page down — the only layout
+  // shift on the marketing site. See components/launch-banner.tsx.
+  const launchBannerDismissed = (await cookies()).get(LAUNCH_BANNER_COOKIE)?.value === '1'
 
   return (
     <html
@@ -175,7 +181,7 @@ export default async function RootLayout({
             {/* BreadcrumbList for every marketing page — site only, since the
                 app host has no public URLs worth a breadcrumb. */}
             <SiteBreadcrumbJsonLd />
-            <LaunchBanner />
+            <LaunchBanner initiallyDismissed={launchBannerDismissed} />
             <GroqBanner />
             <PublicNavWrapper />
           </>
