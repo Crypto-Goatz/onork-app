@@ -6,5 +6,5 @@
   "capabilitiesDisplay": 1300,
   "source": "0nmcp@4.10.1 SERVICE_CATALOG",
   "note": "catalog endpoints only — crm/vault/engine runtime tools are NOT counted, so this is a floor",
-  "derivedAt": "2026-08-28T09:44:29.734Z"
+  "derivedAt": "2026-08-28T09:58:04.188Z"
 }

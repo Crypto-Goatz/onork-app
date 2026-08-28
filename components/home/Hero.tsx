@@ -122,8 +122,20 @@ export default function Hero() {
         />
 
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-14 lg:grid-cols-[1.02fr_0.98fr] lg:py-24">
-          {/* ── Left: the claim. This is the LCP and it is pure text. ── */}
-          <div className="relative z-10">
+          {/*
+            ── Left: the claim. This is the LCP and it is pure text. ──
+
+            min-w-0 on BOTH columns, and it is not cosmetic. A grid item's
+            automatic minimum size is its min-content width, so a single item
+            that cannot shrink sets the track for the whole grid. On mobile this
+            collapses to one column, the panel on the right refused to go below
+            ~384px, and the track went with it — 384px of content inside a 345px
+            box, clipped by the section's overflow-hidden. The H1 survived; the
+            subline and all three trust lines were cut off mid-word on every
+            phone narrower than 432px. min-w-0 lets the track shrink to the
+            container and the panel's own truncate rules take it from there.
+          */}
+          <div className="relative z-10 min-w-0">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3.5 py-1.5 text-xs font-semibold text-[#c9d1d9]">
               <Zap className="h-3.5 w-3.5 text-[#6ee05a]" aria-hidden="true" /> AI agency CRM
             </span>
@@ -187,9 +199,19 @@ export default function Hero() {
           </div>
 
           {/* ── Right: the product docking onto the ring, not a picture of it ── */}
-          <div className="hero-stage relative z-10">
-            {/* The ring lives behind the panel and is decorative only. */}
-            <div className="pointer-events-none absolute inset-0 hidden items-center justify-center lg:flex">
+          <div className="hero-stage relative z-10 min-w-0">
+            {/*
+              The ring lives behind the panel and is decorative only — and
+              "behind" has to be said in z, not just in source order. An
+              absolutely positioned element paints above in-flow siblings that
+              are not themselves positioned, so the ring was drawn straight
+              across the "One account, the whole stack" card below the panel,
+              with a 6px green arc through the middle of the sentence. -z-10
+              puts it under both cards. It stays inside the stage's stacking
+              context (the stage is relative z-10), so it does not fall behind
+              the section itself and disappear.
+            */}
+            <div className="pointer-events-none absolute inset-0 -z-10 hidden items-center justify-center lg:flex">
               <div className="relative aspect-square w-[125%] max-w-none">
                 <Ring />
               </div>
