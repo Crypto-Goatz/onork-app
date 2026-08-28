@@ -3,10 +3,17 @@
 import { Toaster } from 'sonner'
 import { LoadingScreen } from './loading-screen'
 
-export function Providers({ children }: { children: React.ReactNode }) {
+/**
+ * `isAppHost` is read from the request headers in the root layout and passed
+ * down, rather than sniffed here: on app.0ncore.com middleware rewrites every
+ * path to /crm, and usePathname() reports the PRE-rewrite URL — so a client-side
+ * guess is wrong on exactly the host it matters most on. Same reasoning the
+ * layout already gives for deciding the marketing chrome by host.
+ */
+export function Providers({ children, isAppHost = false }: { children: React.ReactNode; isAppHost?: boolean }) {
   return (
     <>
-      <LoadingScreen />
+      <LoadingScreen isAppHost={isAppHost} />
       {children}
       <Toaster
         position="top-right"

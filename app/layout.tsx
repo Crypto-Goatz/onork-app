@@ -157,7 +157,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="antialiased min-h-screen">
-        <Providers>
+        <Providers isAppHost={isAppHost}>
         {/*
           THE APP HOST GETS NO MARKETING CHROME AT ALL.
           app.0ncore.com is the product; www.0ncore.com is the site. Banners, the

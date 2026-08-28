@@ -2,12 +2,35 @@
 
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import { isAppSurface, ownsViewport } from '@/lib/app-surfaces'
 
-// Routes that own their own viewport — the canvas, auth, etc. — should never
-// be covered by the global loading screen. The canvas is the front-end layer.
-const SKIP_PREFIXES = ['/canvas', '/login', '/signup', '/forgot-password', '/reset-password', '/auth']
+/**
+ * THIS WAS THE LCP ELEMENT OF THE MARKETING SITE. Measured, not suspected.
+ *
+ * It ran on an exclusion list — everything except /canvas and the auth pages —
+ * which meant it covered /, /pricing and /agencies too. It is a `fixed inset-0
+ * z-[9999]` opaque overlay held for 2.8s, so on a phone it out-paints the hero
+ * and Lighthouse named it outright: the largest contentful paint on
+ * www.0ncore.com was `/brand/0ncore-logo-dark.png`, this file's logo, at 8.0s.
+ *
+ * Controlled A/B on the live pages — identical emulation, the only difference
+ * one injected rule hiding `.ls-root`:
+ *
+ *     /          4996ms (splash logo)  ->  1948ms (hero subline)   -3048ms
+ *     /pricing   4356ms (splash logo)  ->  1728ms (page subline)   -2628ms
+ *
+ * sxo-s3-hero-spec guardrail 1 is "LCP element = the H1 text block ... LCP
+ * <= 2.0s on /". No hero rebuild can satisfy that while a 2.8s curtain hangs in
+ * front of it — the astonishing pass shipped and still measured ~8s, because the
+ * thing being measured was never the hero.
+ *
+ * SO IT IS AN ALLOW-LIST NOW. The splash is a product flourish and it stays on
+ * the product: app.0ncore.com in full, and the app surfaces on the marketing
+ * host. The public pages — the ones that have to be fast for someone who has
+ * never heard of us — get their content, immediately.
+ */
 
-export function LoadingScreen() {
+export function LoadingScreen({ isAppHost = false }: { isAppHost?: boolean }) {
   const pathname = usePathname()
   const [visible, setVisible] = useState(true)
   const [fadeOut, setFadeOut] = useState(false)
@@ -21,7 +44,11 @@ export function LoadingScreen() {
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4) }
   }, [])
 
-  if (SKIP_PREFIXES.some((p) => pathname?.startsWith(p))) return null
+  // A page that owns its whole viewport is never covered, product or not.
+  if (ownsViewport(pathname)) return null
+  // Product only. On app.0ncore.com middleware rewrites every path, so the host
+  // is the answer there and the path would lie; on www the path is the answer.
+  if (!isAppHost && !isAppSurface(pathname)) return null
   if (!visible) return null
 
   return (
