@@ -71,19 +71,50 @@ jobs:
       - name: Build with Vercel CLI
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
-      # PREBUILT DEPLOY FAILS ON EVERY PUSH. Do not spend time on the symlink
-      # theory — it has been tested and disproved:
-      #   • Dropping --archive=tgz (previous attempt): no change.
-      #   • Flattening all 1552 symlinks in .vercel/output before upload
-      #     (2026-08-11, run 31466209602 — "resolved=1552 remaining=0"): no
-      #     change, byte-identical error.
-      # The error is ENOENT lstat '/vercel/path0/node_modules/client-only/index.js'
-      # at errorStep "buildStep" — a path OUTSIDE .vercel/output, which is why
-      # neither fix could work. Whatever references it is in the uploaded file
-      # manifest, not the traced output.
+      # PREBUILT DEPLOY FAILS ON EVERY PUSH — 10 of 10 production deployments
+      # measured 2026-08-30 are an ERROR followed a minute later by the READY
+      # fallback. The job name above still says "zero build minutes"; it has
+      # never once achieved that.
       #
-      # The fallback below deploys correctly every time; the only cost is Vercel
-      # build minutes. Left running rather than half-fixed.
+      # THE ERROR STRING IN THE PREVIOUS VERSION OF THIS COMMENT WAS STALE, and
+      # the comment told the next reader not to look. It named
+      #   ENOENT lstat '/vercel/path0/node_modules/client-only/index.js'
+      # Today's run (33317572708) dies on a different file in a different tree:
+      #   ENOENT lstat '/vercel/path0/docs/0n-architecture-diagram-brief.md'
+      # Same class, different first casualty. A "disproved theory" note pinned
+      # to one error string becomes a stop sign over an error that has moved.
+      #
+      # MEASURED CAUSE (2026-08-30, from .vercel/output on this repo). Each
+      # .vercel/output/functions/**/.vc-config.json carries a `filePathMap`
+      # that maps a path in the function bundle back to a path in the SOURCE
+      # tree, and Vercel lstats those during "Deploying outputs". 1,121 distinct
+      # source paths in that manifest are excluded from the upload by
+      # .vercelignore:
+      #     2,289,719 refs  node_modules   (.vercelignore line 1)
+      #        31,816 refs  rocket-extension
+      #        14,744 refs  /docs
+      # Sorted alphabetically the first of those is exactly
+      # docs/0n-architecture-diagram-brief.md — today's error — and the old
+      # error was a node_modules path from the same set. So the fault is not
+      # symlinks: .vercelignore deletes files out from under the prebuilt
+      # manifest, and the message just names whichever excluded file Vercel
+      # reaches first. That is why flattening 1,552 symlinks changed nothing,
+      # and why the error string moved when the docs page shipped.
+      #
+      # WHY IT IS NOT FIXED HERE: un-ignoring /docs only moves the failure to a
+      # node_modules path (the previous symptom), and node_modules cannot be
+      # un-ignored — shipping it is the whole point of prebuilt. The real fix is
+      # to stop @vercel/next emitting source-tree filePathMap entries
+      # (experimentalAllowBundling is False on every function here), and that
+      # needs an experiment, not an edit. Do not re-derive the cause; run the
+      # experiment. Re-derive the numbers above with:
+      #   python3 - <<'EOF'   # over .vercel/output/functions/**/.vc-config.json
+      #   ... filePathMap values not under .vercel/ or .next/, tested against
+      #       .vercelignore
+      #   EOF
+      #
+      # The fallback below deploys correctly every time; the cost is Vercel
+      # build minutes on every single push. Left running rather than half-fixed.
       - name: Deploy pre-built artifacts to Vercel
         id: deploy
         env:
