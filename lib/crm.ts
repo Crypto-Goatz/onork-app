@@ -123,10 +123,50 @@ export type Auth = {
  * `user_type` must also match how the app installs: Location for a sub-account
  * app, Company for an agency app — the CRM will not return a rotated token
  * otherwise.
+ *
+ * AND THE HARDCODE THIS DOCSTRING WARNS ABOUT WAS SITTING TWO LINES BELOW IT,
+ * INVERTED. The App A arm matched `appId === SUB_LOCATION_APP.appId` as well as
+ * App A's own id, and SUB_LOCATION_APP is NOT App A — it is the legacy
+ * marketplace app, appId `CRM_MARKETPLACE_APP_ID || 69c762225a31e1cd2f28dd4c`.
+ * So every 69c762 install was refreshed with App A's client id and App A's
+ * secret, and the `return` at the bottom of this function labelled "Legacy
+ * marketplace (69c762) … → sub-account default" was unreachable for the one
+ * app it names. Harmless while CRM_SUBACCT_CLIENT_ID was unset (the arm fell
+ * through to the marketplace pair); live from the moment it was set on
+ * 2026-08-12.
+ *
+ * MEASURED ON THE LIVE INSTALL, 2026-08-31, before the fix was written. The
+ * agency install 25151350 (app 69c762, the row that mints every location token
+ * this estate uses) had been failing its 6-hourly refresh with 401 "Invalid
+ * client credentials!" — while the identical grant, sent by hand with
+ * CRM_MARKETPLACE_APP_CLIENT_ID + CRM_MARKETPLACE_CLIENT_SECRET, answered 200
+ * and rotated. Same token, same user_type, same minute; only the pair differed.
+ * The mismatch is legible in the values themselves: the CRM issues client ids
+ * as `<appId>-<suffix>`, the token's own sourceId is
+ * `69c762225a31e1cd2f28dd4c-mpa19g2x`, and CRM_SUBACCT_CLIENT_ID is
+ * `6a7178a4e8d7c3c038c593b3-msebefqb`.
+ *
+ * IT LOOKED INTERMITTENT, WHICH IS WHY IT SURVIVED TWO TRIAGES. Nothing here
+ * is the only refresher: lib/crm/agency-token.ts refreshAgencyToken() uses the
+ * marketplace pair directly and rides the same cron, but only fires inside
+ * REFRESH_BUFFER_MS of expiry. So one cycle in four repaired the row for free
+ * and reset consecutive_failures to 0, and the other three marked it degraded.
+ * A sawtooth reads as a flaky platform, not as a constant credential mismatch.
+ *
+ * THE OWNER OF A CREDENTIAL PAIR IS DERIVED FROM THE PAIR, not asserted beside
+ * it. `<appId>-<suffix>` means CRM_SUBACCT_CLIENT_ID already says which app it
+ * belongs to; reading that is what stops this arm from ever again claiming an
+ * app whose tokens its secret cannot sign. The literal stays as the fallback
+ * for a deployment that sets no subacct client id.
  */
+function appIdOfClientId(clientId: string | undefined): string {
+  return (clientId || '').split('-')[0] || ''
+}
+
 export function credsForApp(appId: string): { clientId: string; clientSecret: string; userType: 'Location' | 'Company' } {
   // App A — the lean sub-account marketplace app going for approval.
-  if (appId === '6a7178a4e8d7c3c038c593b3' || appId === SUB_LOCATION_APP.appId) {
+  const subacctAppId = appIdOfClientId(process.env.CRM_SUBACCT_CLIENT_ID) || '6a7178a4e8d7c3c038c593b3'
+  if (appId === '6a7178a4e8d7c3c038c593b3' || appId === subacctAppId) {
     return {
       clientId: process.env.CRM_SUBACCT_CLIENT_ID || process.env.CRM_MARKETPLACE_APP_CLIENT_ID || MARKETPLACE_APP.clientId,
       clientSecret: process.env.CRM_SUBACCT_CLIENT_SECRET || process.env.CRM_MARKETPLACE_CLIENT_SECRET || MARKETPLACE_APP.clientSecret,
