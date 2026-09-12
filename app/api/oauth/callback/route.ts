@@ -13,6 +13,7 @@
 
 import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
+import { recordInstallEvent, codeFingerprint } from '@/lib/crm/install-events'
 import { ensureIdentity } from '@/lib/identity/ensure'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
@@ -590,6 +591,25 @@ export async function GET(req: NextRequest) {
         (a, b) => Number(b.includes('OWNS THIS CODE')) - Number(a.includes('OWNS THIS CODE'))
       )
       const why = (attempts.length ? attempts.map((f) => f.slice(0, 190)).join(' · ') : 'no apps had credentials').slice(0, 1800)
+
+      /*
+        FILE THE FAILURE BEFORE REDIRECTING.
+
+        `why` reaches a human in a query string and then it is gone. This is the
+        copy that survives: which rungs were tried, which were skipped and for
+        what reason, and enough of the code to correlate a row with a redirect
+        without storing the credential. A failed exchange has no location, so it
+        is filed under the sentinel rather than lost to a NOT NULL constraint.
+      */
+      void recordInstallEvent('install_failed', null, {
+        state,
+        why,
+        tried: failures.map((f) => f.slice(0, 190)),
+        skipped,
+        attempt_count: attempts.length,
+        code: codeFingerprint(code),
+        at: new Date().toISOString(),
+      })
       // /install/failed, NOT /crm. /crm needs a session to render, and the
       // audience for this redirect is precisely the people who do not have
       // one — so the reason was being reported to a page incapable of showing
@@ -728,6 +748,31 @@ export async function GET(req: NextRequest) {
       .single()
 
     if (installErr) console.error('[oauth/callback] Installation upsert error:', installErr)
+
+    /*
+      FILE THE SUCCESS — INCLUDING WHETHER THE UPSERT ITSELF WORKED.
+
+      `upsert_ok` is the field that matters. A token exchange can succeed and
+      the row can still fail to write, and that combination is invisible
+      everywhere else: the user is redirected as though installed, and the
+      registry has no record of them. Recording the exchange without recording
+      whether it was persisted would reproduce the exact blind spot this table
+      exists to close.
+    */
+    void recordInstallEvent(installErr ? 'install_upsert_failed' : 'install_succeeded', locationId, {
+      app_name: usedApp?.name || null,
+      app_id: usedApp?.appId || null,
+      user_type: usedType || null,
+      state,
+      company_id: companyId || null,
+      scopes: scope || '',
+      refresh_token_returned: Boolean(refresh_token),
+      refresh_token_preserved: Boolean(preservedRefresh),
+      can_refresh: canRefresh,
+      upsert_ok: !installErr,
+      upsert_error: installErr ? String(installErr.message).slice(0, 300) : null,
+      at: new Date().toISOString(),
+    })
 
     // Log initial health as healthy (we just got a fresh token)
     if (installRow?.id) {
