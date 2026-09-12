@@ -34,7 +34,9 @@ export async function POST(req: NextRequest) {
   if (!raw) return NextResponse.json({ error: 'No device key supplied.' }, { status: 401 })
 
   const ctx = await validateToken(raw)
-  if (!ctx) {
+  // A handoff code or a profile key must not exchange for a company-scoped app
+  // JWT; the message stays the same on purpose (no enumeration by kind).
+  if (!ctx || ctx.channel !== 'extension') {
     // One message for expired, revoked and never-valid on purpose — telling a
     // caller WHICH of those it is helps an attacker enumerate.
     return NextResponse.json({ error: 'That device key is not valid.' }, { status: 401 })

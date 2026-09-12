@@ -13,6 +13,17 @@ import {
   OAuthButton,
 } from '@/components/auth/AuthShell'
 
+/**
+ * A relative path on this origin, or null. startsWith('/') alone let a
+ * backslash form through: browsers read "/\evil.com" as "//evil.com" and
+ * navigate to evil.com right after the password was typed.
+ */
+function safeNext(raw: string | null): string | null {
+  if (!raw) return null
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return null
+  try { return new URL(raw, window.location.origin).origin === window.location.origin ? raw : null } catch { return null }
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -70,8 +81,8 @@ export default function LoginPage() {
   async function handleOAuth(provider: 'google' | 'linkedin_oidc') {
     // Forward ?next so social sign-in returns to the same place email login does
     // (e.g. /login?next=/crm → back to /crm). /auth/callback reads this param.
-    const next = new URLSearchParams(window.location.search).get('next')
-    const cb = next && next.startsWith('/') && !next.startsWith('//')
+    const next = safeNext(new URLSearchParams(window.location.search).get('next'))
+    const cb = next
       ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
       : `${window.location.origin}/auth/callback`
     const options: Record<string, unknown> = {
@@ -121,8 +132,7 @@ export default function LoginPage() {
       // command centre. Same-origin paths only — never an open redirect.
       // 0ncore.com is a CRM. /crm is the working surface, so that is where a
       // sign-in lands — not /dashboard, which is the legacy sprawl.
-      const next = new URLSearchParams(window.location.search).get('next')
-      const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/crm'
+      const dest = safeNext(new URLSearchParams(window.location.search).get('next')) || '/crm'
       window.location.href = dest
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed. Please try again.')

@@ -33,7 +33,9 @@ import { generateProfileToken } from '@/lib/0n-token'
 const CRM_API = 'https://services.leadconnectorhq.com'
 const CRM_VERSION = '2021-07-28'
 const MASTER_LOCATION_ID = 'nphConTwfHcVE1oA0uep'
-const MASTER_PIT = process.env.CRM_PIT_RAW || 'pit-f5f41b5a-32e4-4aee-84f4-a130cd3aad91'
+// No fallback: a live token in source is a secret in git history, and a
+// silent fallback hides an unset environment.
+const MASTER_PIT = process.env.CRM_PIT_RAW || ''
 
 function admin() {
   return createClient(

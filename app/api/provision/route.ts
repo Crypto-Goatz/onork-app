@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
+import { getAuthContext } from '@/lib/auth-context'
 import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
@@ -31,6 +33,21 @@ async function crmRequest(path: string, method: string, token: string, body?: Re
 }
 
 /**
+ * WHO MAY PROVISION. Until 2026-09-12 this took user_id and email from the
+ * body with no check at all: a loop of POSTs created a billed CRM sub-account
+ * per call. A caller is now either the signed-in user provisioning THEMSELVES,
+ * or an internal hop carrying the dispatch secret (the auth callback and the
+ * sub-account step call this server-to-server).
+ */
+async function authorizeProvision(request: Request, userId: string): Promise<boolean> {
+  const secret = process.env.INTERNAL_DISPATCH_SECRET || ''
+  const presented = request.headers.get('x-internal-secret') || ''
+  if (secret && presented && presented.length === secret.length && timingSafeEqual(Buffer.from(presented), Buffer.from(secret))) return true
+  const ctx = await getAuthContext(request)
+  return !!ctx && ctx.userId === userId
+}
+
+/**
  * POST /api/provision
  * Provisions a new user in the CRM + Stripe
  * Called after signup or when user first accesses dashboard
@@ -50,6 +67,9 @@ export async function POST(request: Request) {
 
   if (!userId || !email) {
     return NextResponse.json({ error: 'user_id and email required' }, { status: 400 })
+  }
+  if (!(await authorizeProvision(request, userId))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const admin = getAdmin()
@@ -168,7 +188,7 @@ export async function POST(request: Request) {
         // Call the sub-account creation endpoint internally
         const subRes = await fetch(`${new URL(request.url).origin}/api/provision/crm-subaccount`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-internal-secret': process.env.INTERNAL_DISPATCH_SECRET || '' },
           body: JSON.stringify({ user_id: userId, email, name, subaccount_name: subaccountName }),
         })
         const subData = await subRes.json()
@@ -223,10 +243,11 @@ export async function POST(request: Request) {
  * Check provision status for a user
  */
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const userId = searchParams.get('user_id')
-
-  if (!userId) return NextResponse.json({ error: 'user_id required' }, { status: 400 })
+  // Your own status only. The ?user_id= form let anyone read any account's
+  // Stripe/CRM/onboarding presence by UUID.
+  const ctx = await getAuthContext(request)
+  const userId = ctx?.userId || ''
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const admin = getAdmin()
   const { data: profile } = await admin.from('profiles')

@@ -51,29 +51,28 @@ export async function POST(req: NextRequest) {
 
   const sb = admin()
 
-  // Must be a handoff code. A device key pasted here would otherwise be
-  // silently consumed and revoked — turning a support question into a customer
-  // whose extension stopped working.
-  const { data: row } = await sb
-    .from('api_tokens')
-    .select('id, channel, metadata')
-    .eq('user_id', ctx.userId)
-    .eq('channel', 'handoff')
-    .eq('revoked', false)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (!row) {
+  if (ctx.channel !== 'handoff') {
     return NextResponse.json({ error: 'Not a handoff code.' }, { status: 401 })
   }
 
-  // BURN IT FIRST. Revoke before returning the identity, so a crash after this
-  // point cannot leave a live code behind.
-  await sb
+  // Must be a handoff code. A device key pasted here would otherwise be
+  // silently consumed and revoked — turning a support question into a customer
+  // whose extension stopped working.
+  // BURN THE ROW THAT MATCHED, atomically. The first version revoked the
+  // user's NEWEST handoff row: mint A then B, redeem A, and B died while A
+  // stayed live to replay. The conditional update is also the single-use
+  // guard: two concurrent redeems get exactly one success.
+  const { data: row } = await sb
     .from('api_tokens')
     .update({ revoked: true, revoked_at: new Date().toISOString() })
-    .eq('id', row.id)
+    .eq('id', ctx.tokenId)
+    .eq('revoked', false)
+    .select('id, channel, metadata')
+    .maybeSingle()
+
+  if (!row) {
+    return NextResponse.json({ error: 'That code was already used.' }, { status: 401 })
+  }
 
   const { data: profile } = await sb
     .from('profiles')

@@ -6,6 +6,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { generateProfileToken, rotateProfileToken } from '@/lib/0n-token'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 
@@ -26,8 +27,10 @@ export async function GET() {
     .single()
 
   if (!profile?.access_token) {
-    // Generate one if missing
-    const { data: token } = await admin.rpc('assign_profile_token', { p_user_id: user.id })
+    // generateProfileToken also registers the key for device/exchange; the SQL
+    // RPC did not, which produced keys that passed extension-login and 401'd
+    // exchange (lib/0n-token.ts).
+    const token = await generateProfileToken(user.id)
     return NextResponse.json({ token })
   }
 
@@ -39,13 +42,7 @@ export async function POST() {
   const user = (await supabase.auth.getSession()).data.session?.user ?? null
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Force regenerate by clearing first then reassigning
-  await admin
-    .from('profiles')
-    .update({ access_token: null })
-    .eq('id', user.id)
-
-  const { data: token } = await admin.rpc('assign_profile_token', { p_user_id: user.id })
+  const token = await rotateProfileToken(user.id)
 
   return NextResponse.json({ token, regenerated: true })
 }

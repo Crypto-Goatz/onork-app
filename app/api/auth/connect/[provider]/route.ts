@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getProvider, getRedirectUri, generatePKCE } from '@/lib/oauth-providers'
+import { createHmac, createHash } from 'crypto'
+
+/** state = base64url(json).hmac — forgeable before 2026-09-12, now bound to our secret. */
+function signState(data: Record<string, string>): string {
+  const body = Buffer.from(JSON.stringify(data)).toString('base64url')
+  const mac = createHmac('sha256', process.env.APP_JWT_SECRET || '').update(body).digest('base64url')
+  return `${body}.${mac}`
+}
 
 // GET /api/auth/connect/[provider] — Start OAuth flow for any provider
 export async function GET(
@@ -38,15 +46,19 @@ export async function GET(
     mode: user ? 'connect' : 'login',
   }
 
-  // PKCE for X/Twitter
-  let codeVerifier: string | null = null
-  if (provider.extraAuthParams?.code_challenge_method === 'S256') {
-    const pkce = generatePKCE()
-    codeVerifier = pkce.verifier
-    stateData.cv = pkce.verifier // Store verifier in state for callback
+  if (!process.env.APP_JWT_SECRET) {
+    return NextResponse.json({ error: 'APP_JWT_SECRET is not configured.' }, { status: 500 })
   }
 
-  const state = Buffer.from(JSON.stringify(stateData)).toString('base64url')
+  // PKCE for X/Twitter. The verifier stays in an httpOnly cookie on THIS
+  // browser; putting it in `state` sent it to the provider in the authorize
+  // URL, which is the one place PKCE exists to keep it out of.
+  let codeVerifier: string | null = null
+  if (provider.extraAuthParams?.code_challenge_method === 'S256') {
+    codeVerifier = generatePKCE().verifier
+  }
+
+  const state = signState(stateData)
 
   // Build authorization URL
   const authParams = new URLSearchParams({
@@ -60,15 +72,17 @@ export async function GET(
 
   // Add PKCE challenge if needed
   if (codeVerifier) {
-    const crypto = require('crypto')
-    const hashBuffer = crypto.createHash('sha256').update(codeVerifier).digest()
-    const challenge = Buffer.from(hashBuffer).toString('base64url')
+    const challenge = createHash('sha256').update(codeVerifier).digest().toString('base64url')
     authParams.set('code_challenge', challenge)
   }
 
   const url = `${provider.authUrl}?${authParams.toString()}`
 
-  return NextResponse.json({ url })
+  const res = NextResponse.json({ url })
+  if (codeVerifier) {
+    res.cookies.set('oncore.oauth.cv', codeVerifier, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 600 })
+  }
+  return res
 }
 
 // DELETE /api/auth/connect/[provider] — Disconnect a provider

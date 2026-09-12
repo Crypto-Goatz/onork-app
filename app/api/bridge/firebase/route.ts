@@ -8,6 +8,7 @@
  * That single token then unlocks the user's shared vault connections everywhere.
  */
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 import { generateProfileToken } from '@/lib/0n-token'
 
@@ -22,8 +23,9 @@ function admin() {
 }
 
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get('x-bridge-secret')
-  if (!secret || secret !== process.env.INTERNAL_DISPATCH_SECRET) {
+  const secret = req.headers.get('x-bridge-secret') || ''
+  const expected = process.env.INTERNAL_DISPATCH_SECRET || ''
+  if (!secret || !expected || secret.length !== expected.length || !timingSafeEqual(Buffer.from(secret), Buffer.from(expected))) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
   const body = await req.json().catch(() => ({} as any))

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerSupabase } from '@/lib/supabase/server'
+import { createHmac, timingSafeEqual } from 'crypto'
 import { getProvider, getRedirectUri } from '@/lib/oauth-providers'
 import {
   upsertConnection,
+  findOnCoreUserByEmail,
   IdentityMismatchError,
   type Provider,
 } from '@/lib/oauth/connections'
@@ -13,6 +16,13 @@ const supabase = createClient(
 )
 
 // GET /api/auth/connect/[provider]/callback — OAuth callback for any provider
+/** Redirect and drop the one-shot PKCE cookie. */
+function done(url: string | URL) {
+  const r = NextResponse.redirect(url)
+  r.cookies.set('oncore.oauth.cv', '', { maxAge: 0, path: '/' })
+  return r
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ provider: string }> },
@@ -26,40 +36,54 @@ export async function GET(
   const settingsUrl = `${baseUrl}/dashboard/settings/accounts`
 
   if (error) {
-    return NextResponse.redirect(`${settingsUrl}?error=oauth_denied&provider=${providerId}`)
+    return done(`${settingsUrl}?error=oauth_denied&provider=${providerId}`)
   }
 
   if (!code || !state) {
-    return NextResponse.redirect(`${settingsUrl}?error=missing_params&provider=${providerId}`)
+    return done(`${settingsUrl}?error=missing_params&provider=${providerId}`)
   }
 
   const provider = getProvider(providerId)
   if (!provider) {
-    return NextResponse.redirect(`${settingsUrl}?error=unknown_provider`)
+    return done(`${settingsUrl}?error=unknown_provider`)
   }
 
-  // Decode state
+  // Verify state: it is ours (HMAC over our secret), fresh (10 minutes), and
+  // in connect mode the user is the SESSION's, never the state's. Before
+  // 2026-09-12 the state was unsigned base64 carrying userId and the PKCE
+  // verifier: a crafted callback link connected an attacker's provider account
+  // to a victim's profile, or landed a victim's tokens in the attacker's row.
   let userId: string
-  let codeVerifier: string | undefined
   let mode: string = 'connect'
   let nextPath: string | null = null
   try {
-    const decoded = JSON.parse(Buffer.from(state, 'base64url').toString())
+    const [body, mac] = state.split('.')
+    const expected = createHmac('sha256', process.env.APP_JWT_SECRET || '').update(body || '').digest('base64url')
+    if (!body || !mac || mac.length !== expected.length || !timingSafeEqual(Buffer.from(mac), Buffer.from(expected))) throw new Error('bad mac')
+    const decoded = JSON.parse(Buffer.from(body, 'base64url').toString())
+    if (!decoded.ts || Date.now() - Number(decoded.ts) > 10 * 60 * 1000) throw new Error('stale')
     userId = decoded.userId
-    codeVerifier = decoded.cv
     mode = decoded.mode || 'connect'
-    if (typeof decoded.next === 'string' && decoded.next.startsWith('/')) {
+    if (typeof decoded.next === 'string' && decoded.next.startsWith('/') && !decoded.next.startsWith('//') && !decoded.next.includes('\\')) {
       nextPath = decoded.next
     }
   } catch {
-    return NextResponse.redirect(`${settingsUrl}?error=invalid_state&provider=${providerId}`)
+    return done(`${settingsUrl}?error=invalid_state&provider=${providerId}`)
   }
+  if (mode === 'connect') {
+    const sb = await createServerSupabase()
+    const sessionUser = (await sb.auth.getSession()).data.session?.user ?? null
+    if (!sessionUser || sessionUser.id !== userId) {
+      return done(`${settingsUrl}?error=invalid_state&provider=${providerId}`)
+    }
+  }
+  const codeVerifier = req.cookies.get('oncore.oauth.cv')?.value || undefined
 
   const clientId = process.env[provider.clientIdEnv]
   const clientSecret = process.env[provider.clientSecretEnv]
 
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(`${settingsUrl}?error=not_configured&provider=${providerId}`)
+    return done(`${settingsUrl}?error=not_configured&provider=${providerId}`)
   }
 
   try {
@@ -89,7 +113,7 @@ export async function GET(
     if (!tokenRes.ok) {
       const errText = await tokenRes.text()
       console.error(`[oauth/${providerId}] Token exchange failed:`, errText)
-      return NextResponse.redirect(`${settingsUrl}?error=token_exchange&provider=${providerId}`)
+      return done(`${settingsUrl}?error=token_exchange&provider=${providerId}`)
     }
 
     const tokens = await tokenRes.json()
@@ -104,7 +128,7 @@ export async function GET(
     if (providerId === 'slack') {
       if (!tokens.ok) {
         console.error(`[oauth/slack] Token exchange failed:`, tokens.error)
-        return NextResponse.redirect(`${settingsUrl}?error=token_exchange&provider=slack`)
+        return done(`${settingsUrl}?error=token_exchange&provider=slack`)
       }
       // Use the bot token for API access, user token for identity
       accessToken = tokens.access_token || tokens.authed_user?.access_token
@@ -177,8 +201,9 @@ export async function GET(
     let freshlyCreated = false
     if (mode === 'login' && providerId === 'slack' && profile.provider_email) {
       // Check if user exists with this email
-      const { data: existingUsers } = await supabase.auth.admin.listUsers()
-      const existingUser = existingUsers?.users?.find(u => u.email === profile.provider_email)
+      // listUsers() pages at 50: user #51 was "not found", then "already
+      // registered" on create. Look the email up directly.
+      const existingUser = await findOnCoreUserByEmail(profile.provider_email)
 
       if (existingUser) {
         userId = existingUser.id
@@ -195,7 +220,7 @@ export async function GET(
         })
         if (createErr || !newUser.user) {
           console.error('[oauth/slack] Failed to create user:', createErr)
-          return NextResponse.redirect(`${settingsUrl}?error=user_creation&provider=slack`)
+          return done(`${settingsUrl}?error=user_creation&provider=slack`)
         }
         userId = newUser.user.id
         freshlyCreated = true
@@ -256,12 +281,12 @@ export async function GET(
     } catch (err) {
       if (err instanceof IdentityMismatchError) {
         console.warn(`[oauth/${providerId}] identity mismatch:`, err.message)
-        return NextResponse.redirect(
+        return done(
           `${settingsUrl}?error=identity_mismatch&provider=${providerId}&detail=${encodeURIComponent(err.message)}`,
         )
       }
       console.error(`[oauth/${providerId}] upsert error:`, err)
-      return NextResponse.redirect(`${settingsUrl}?error=db_error&provider=${providerId}`)
+      return done(`${settingsUrl}?error=db_error&provider=${providerId}`)
     }
 
     // For Slack login mode, generate a magic link to create a Supabase session.
@@ -290,11 +315,11 @@ export async function GET(
           (linkErr?.message ||
             'The auth server returned no usable magic link token.').slice(0, 300),
         )
-        return NextResponse.redirect(errUrl)
+        return done(errUrl)
       }
 
       const actionLink = linkData.properties.action_link
-      return NextResponse.redirect(actionLink)
+      return done(actionLink)
     }
 
     // Close popup and notify parent window
@@ -316,6 +341,6 @@ export async function GET(
     )
   } catch (err) {
     console.error(`[oauth/${providerId}] Callback error:`, err)
-    return NextResponse.redirect(`${settingsUrl}?error=unknown&provider=${providerId}`)
+    return done(`${settingsUrl}?error=unknown&provider=${providerId}`)
   }
 }

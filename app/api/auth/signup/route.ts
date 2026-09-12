@@ -27,7 +27,26 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
 
+/**
+ * A brake on scripted signups. Each signup auto-confirms the address and
+ * queues a BILLED CRM sub-account, so "as fast as you can POST" is a cost.
+ * In-process, per instance: it stops a loop against one lambda; a captcha is
+ * the real wall and is a product decision (see the review, 2026-09-12).
+ */
+const signupAttempts = new Map<string, { n: number; resetAt: number }>()
+function signupThrottled(ip: string): boolean {
+  const now = Date.now()
+  const rec = signupAttempts.get(ip)
+  if (!rec || rec.resetAt < now) { signupAttempts.set(ip, { n: 1, resetAt: now + 10 * 60 * 1000 }); return false }
+  rec.n += 1
+  return rec.n > 5
+}
+
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (signupThrottled(ip)) {
+    return NextResponse.json({ error: 'Too many sign-ups from this network. Try again in a few minutes.' }, { status: 429 })
+  }
   try {
     const { email, password, full_name, company, website } = await req.json()
 

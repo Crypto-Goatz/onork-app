@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0n Ecosystem — Interactive Architecture Map</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --card: #1a1a28;
+    --card-hover: #222236;
+    --border: #2a2a3e;
+    --text: #e8e8f0;
+    --text-dim: #a0a0b8;
+    --text-muted: #606080;
+    --accent: #7ed957;
+    --accent-dim: #5cb83a;
+    --cyan: #00d4ff;
+    --purple: #a78bfa;
+    --orange: #ff6b35;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --pink: #ec4899;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* Top Bar */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,10,15,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .topbar-logo {
+    font-size: 20px; font-weight: 800; color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .topbar-logo span { color: var(--text-muted); font-weight: 400; font-size: 13px; margin-left: 8px; }
+  .topbar-stats { display: flex; gap: 20px; }
+  .stat { text-align: center; }
+  .stat-val { font-size: 18px; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  .view-toggle { display: flex; gap: 4px; background: var(--surface); border-radius: 8px; padding: 3px; }
+  .view-btn {
+    padding: 6px 14px; border: none; background: none; color: var(--text-muted);
+    font-family: inherit; font-size: 12px; cursor: pointer; border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .view-btn.active { background: var(--accent); color: #000; font-weight: 600; }
+  .view-btn:hover:not(.active) { color: var(--text); }
+
+  /* Canvas for graph view */
+  #graph-canvas {
+    position: fixed; top: 56px; left: 0; right: 0; bottom: 0;
+    cursor: grab;
+  }
+  #graph-canvas:active { cursor: grabbing; }
+  #graph-canvas.hidden { display: none; }
+
+  /* Grid/List views */
+  .grid-view {
+    position: fixed; top: 56px; left: 0; right: 0; bottom: 0;
+    overflow-y: auto; padding: 24px;
+  }
+  .grid-view.hidden { display: none; }
+
+  .section-title {
+    font-size: 13px; color: var(--accent); text-transform: uppercase;
+    letter-spacing: 2px; margin: 24px 0 12px; font-weight: 700;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card:hover {
+    background: var(--card-hover);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(126,217,87,0.08);
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--cyan));
+    opacity: 0; transition: opacity 0.25s;
+  }
+  .card:hover::before { opacity: 1; }
+  .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .card-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 800;
+  }
+  .card-title { font-size: 16px; font-weight: 700; }
+  .card-version { font-size: 11px; color: var(--text-muted); }
+  .card-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; margin-bottom: 12px; }
+  .card-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag {
+    padding: 3px 8px; border-radius: 4px; font-size: 10px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* Detail Panel */
+  .detail-panel {
+    position: fixed; top: 56px; right: -520px; bottom: 0; width: 520px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    z-index: 90;
+    transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow-y: auto;
+    padding: 24px;
+  }
+  .detail-panel.open { right: 0; }
+  .detail-close {
+    position: absolute; top: 16px; right: 16px;
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); width: 32px; height: 32px; border-radius: 8px;
+    cursor: pointer; font-size: 16px; display: flex; align-items: center;
+    justify-content: center; transition: all 0.2s;
+  }
+  .detail-close:hover { background: var(--red); border-color: var(--red); }
+  .detail-title { font-size: 24px; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+  .detail-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .detail-section { margin-bottom: 20px; }
+  .detail-section-title {
+    font-size: 11px; color: var(--cyan); text-transform: uppercase;
+    letter-spacing: 1.5px; font-weight: 700; margin-bottom: 8px;
+    padding-bottom: 4px; border-bottom: 1px solid var(--border);
+  }
+  .detail-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 12px; }
+  .detail-row-label { color: var(--text-muted); }
+  .detail-row-value { color: var(--text); font-weight: 600; }
+  .detail-list { list-style: none; }
+  .detail-list li {
+    padding: 6px 0; font-size: 12px; color: var(--text-dim);
+    border-bottom: 1px solid rgba(42,42,62,0.5);
+  }
+  .detail-list li:last-child { border: none; }
+  .detail-badge {
+    display: inline-block; padding: 2px 6px; border-radius: 3px;
+    font-size: 10px; font-weight: 700; margin-right: 4px;
+  }
+
+  /* Flow view */
+  .flow-view {
+    position: fixed; top: 56px; left: 0; right: 0; bottom: 0;
+    overflow: auto; padding: 40px;
+  }
+  .flow-view.hidden { display: none; }
+  .flow-container {
+    max-width: 1200px; margin: 0 auto;
+  }
+  .flow-layer {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .flow-layer-title {
+    font-size: 14px; font-weight: 800; color: var(--accent);
+    margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .flow-items { display: flex; flex-wrap: wrap; gap: 12px; }
+  .flow-item {
+    padding: 10px 16px; border-radius: 8px; font-size: 12px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+  .flow-item:hover { transform: scale(1.05); }
+  .flow-arrow {
+    text-align: center; color: var(--text-muted); font-size: 24px;
+    margin: 8px 0; line-height: 1;
+  }
+
+  /* Search */
+  .search-box {
+    position: fixed; top: 56px; left: 0; right: 0; z-index: 95;
+    background: rgba(10,10,15,0.95); backdrop-filter: blur(20px);
+    padding: 12px 24px; border-bottom: 1px solid var(--border);
+    display: none;
+  }
+  .search-box.visible { display: block; }
+  .search-input {
+    width: 100%; padding: 10px 16px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: inherit; font-size: 14px;
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--text-muted); }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed; z-index: 200;
+    background: var(--card); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 12px 16px;
+    pointer-events: none; opacity: 0;
+    transition: opacity 0.15s;
+    max-width: 280px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .tooltip.visible { opacity: 1; }
+  .tooltip-title { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .tooltip-desc { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* Connection lines in flow */
+  .conn-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 12px; font-size: 10px;
+    background: rgba(126,217,87,0.1); color: var(--accent);
+    border: 1px solid rgba(126,217,87,0.2);
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">0nORK<span>Ecosystem Map v1.0</span></div>
+  </div>
+  <div class="topbar-stats">
+    <div class="stat"><div class="stat-val">819</div><div class="stat-label">Tools</div></div>
+    <div class="stat"><div class="stat-val">54</div><div class="stat-label">Services</div></div>
+    <div class="stat"><div class="stat-val">12</div><div class="stat-label">Projects</div></div>
+    <div class="stat"><div class="stat-val">7</div><div class="stat-label">Databases</div></div>
+    <div class="stat"><div class="stat-val">5</div><div class="stat-label">Patents</div></div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button class="view-btn" onclick="toggleSearch()" title="Ctrl+K">Search</button>
+    <div class="view-toggle">
+      <button class="view-btn active" data-view="graph" onclick="switchView('graph')">Graph</button>
+      <button class="view-btn" data-view="grid" onclick="switchView('grid')">Grid</button>
+      <button class="view-btn" data-view="flow" onclick="switchView('flow')">Flow</button>
+    </div>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="search-box" id="searchBox">
+  <input class="search-input" id="searchInput" placeholder="Search tools, services, projects, files..." oninput="handleSearch(this.value)">
+</div>
+
+<!-- Graph View (Canvas) -->
+<canvas id="graph-canvas"></canvas>
+
+<!-- Grid View -->
+<div class="grid-view hidden" id="gridView"></div>
+
+<!-- Flow View -->
+<div class="flow-view hidden" id="flowView"></div>
+
+<!-- Detail Panel -->
+<div class="detail-panel" id="detailPanel">
+  <button class="detail-close" onclick="closeDetail()">&times;</button>
+  <div id="detailContent"></div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip">
+  <div class="tooltip-title" id="tooltipTitle"></div>
+  <div class="tooltip-desc" id="tooltipDesc"></div>
+</div>
+
+<script>
+// =====================================================
+// DATA MODEL — The entire 0n Ecosystem
+// =====================================================
+const ECOSYSTEM = {
+  core: [
+    {
+      id: 'onmcp',
+      name: '0nMCP',
+      version: 'v2.7.0',
+      type: 'core',
+      color: '#7ed957',
+      icon: '0n',
+      path: '~/Github/0nMCP/',
+      npm: '0nmcp',
+      desc: 'Universal AI API Orchestrator — the beating heart. 819 tools across 54 services. MCP protocol server (stdio + HTTP). Patent-pending vault encryption, workflow runtime, plugin system, multi-AI council.',
+      stats: { tools: 819, services: 54, categories: 21, files: 56, lines: '~40,000' },
+      modules: [
+        { name: 'Core', tools: 8, desc: 'execute, connect, disconnect, list, api_call, run_workflow' },
+        { name: 'CRM', tools: 245, desc: '16 category files — contacts, calendars, social, invoices, payments, opportunities, objects, users, locations, conversations, products, funnels, voice-ai, saas, agent-studio, knowledge-base' },
+        { name: 'Vault', tools: 18, desc: 'AES-256-GCM machine-bound encryption, containers, escrow, deeds, Seal of Truth (Patent #63/968,814)' },
+        { name: 'Engine', tools: 16, desc: 'Credential import/verify/export, app builder, plugin system, cron scheduler' },
+        { name: 'Training', tools: 8, desc: '0nAI Training Center — 7 DB tables, training pipelines' },
+        { name: 'Multi-AI', tools: 4, desc: 'Council: ask, debate, solve across GPT/Gemini/Grok/Claude' },
+        { name: 'SXO Writer', tools: 3, desc: 'Self-improving blog engine with radial burst distribution' },
+        { name: 'Marketplace Apps', tools: 3, desc: 'Lead scorer, autoresponder, content AI' }
+      ],
+      keyFiles: [
+        'index.js — MCP server entry (stdio transport)',
+        'cli.js — 30+ CLI commands (1,771 lines)',
+        'catalog.js — 54 service definitions (1,898 lines)',
+        'server.js — Express HTTP server + webhooks',
+        'orchestrator.js — AI execution engine',
+        'workflow.js — .0n runtime (945 lines)',
+        'capability-proxy.js — Zero-knowledge API proxy',
+        'ratelimit.js — Token bucket per service',
+        'webhooks.js — 7 provider signature verification',
+        'auth.js — Device auth flow (11,171 lines)',
+        'fields.js — Universal field resolution'
+      ],
+      connections: ['0n-spec', 'marketplace', 'onmcp-site', 'onork-app', 'command-center', '0n-command'],
+      deps: ['@modelcontextprotocol/sdk', '@supabase/supabase-js', 'argon2', 'express', 'tweetnacl', 'js-sha3']
+    },
+    {
+      id: '0n-spec',
+      name: '0n-spec',
+      version: 'v1.1.0',
+      type: 'core',
+      color: '#00d4ff',
+      icon: 'SP',
+      path: '~/Github/0n-spec/',
+      npm: '0n-spec',
+      desc: 'The .0n Standard — universal config format for AI orchestration. JSON schemas for connections, workflows, snapshots, configs. Template engine with safe expression evaluation.',
+      stats: { sourceFiles: 3, schemas: 5, examples: 4, totalLines: 896 },
+      modules: [
+        { name: 'Validator', tools: 0, desc: 'validate(), parse(), create(), save() — JSON Schema Draft 7' },
+        { name: 'Template Engine', tools: 0, desc: 'resolve() — {{expressions}}, math, conditions, deep paths, safe eval' },
+        { name: 'CLI', tools: 0, desc: '0n init | validate | test | help' }
+      ],
+      keyFiles: [
+        'index.js — Library API (validate, parse, create, save, init)',
+        'resolve.js — Template engine (shunting-yard algorithm)',
+        'cli.js — CLI tool (init, validate, test)',
+        'schemas/connection.json — Service credential format',
+        'schemas/workflow.json — Automation workflow format',
+        'schemas/snapshot.json — System state format',
+        'schemas/config.json — Global config format'
+      ],
+      connections: ['onmcp'],
+      deps: []
+    },
+    {
+      id: '0nork',
+      name: '0nork',
+      version: 'v1.0.1',
+      type: 'core',
+      color: '#a78bfa',
+      icon: 'OK',
+      path: '~/Github/0nork/',
+      npm: '0nork',
+      desc: 'Parent namespace package. Exports VERSION, PRODUCTS, LINKS. Peer deps on 0nmcp and 0n-spec.',
+      stats: {},
+      modules: [],
+      keyFiles: ['index.js — VERSION, PRODUCTS, LINKS exports'],
+      connections: ['onmcp', '0n-spec'],
+      deps: []
+    }
+  ],
+  apps: [
+    {
+      id: 'onmcp-site',
+      name: '0nmcp.com',
+      version: 'v2.0.0',
+      type: 'app',
+      color: '#7ed957',
+      icon: 'WB',
+      path: '~/Github/0nmcp-website/',
+      domain: '0nmcp.com',
+      vercel: 'prj_Ccq53WXdb5CQd4iIBRR0qr4QToge',
+      desc: 'Marketing site + community hub + SEO engine + console. 60+ pages, 262 API routes, 217 components, 118 lib files. Full OAuth server, WebContainer console, forum, marketplace, web0n builder.',
+      stats: { pages: 60, apiRoutes: 262, components: 217, libs: 118, migrations: 120, cronJobs: 8 },
+      modules: [
+        { name: 'Forum', tools: 0, desc: 'Discussion threads, groups, karma, badges' },
+        { name: 'Console', tools: 0, desc: 'In-browser dev env via WebContainer + xterm' },
+        { name: 'Web0n Builder', tools: 0, desc: 'Site builder with component library' },
+        { name: 'Marketplace', tools: 0, desc: 'App listings, installs, reviews' },
+        { name: 'OAuth Server', tools: 0, desc: 'Acts as both OAuth client and provider' },
+        { name: 'Blog Engine', tools: 0, desc: 'AI-powered generation + SEO optimization' },
+        { name: 'Social Engine', tools: 0, desc: 'LinkedIn, Reddit, Twitter automation' },
+        { name: 'SEO Engine', tools: 0, desc: '300+ indexable pages, JSON-LD, programmatic routes' }
+      ],
+      keyFiles: [
+        'src/app/ — 60+ pages (products, forum, learn, admin, console)',
+        'src/app/api/ — 262 API routes (auth, catalog, web0n, admin, blog, training)',
+        'src/components/ — 217 React components',
+        'src/lib/ — 118 library modules',
+        'src/data/ — services.json (294KB), capabilities, glossary, comparisons',
+        'supabase/migrations/ — 120+ migrations'
+      ],
+      connections: ['onmcp', 'marketplace', 'supabase-main'],
+      supabase: 'pwujhhmlrtxjmjzyttwn',
+      deps: ['@anthropic-ai/sdk', '@supabase/supabase-js', 'stripe', '@webcontainer/api', '@xyflow/react', '@sentry/nextjs']
+    },
+    {
+      id: 'marketplace',
+      name: '0n Marketplace',
+      version: 'v1.0.0',
+      type: 'app',
+      color: '#ff6b35',
+      icon: 'MK',
+      path: '~/Github/0n-marketplace/',
+      domain: 'marketplace.rocketclients.com',
+      vercel: 'prj_fWdT7RGwoK01RqhxNN6M7USSCIZj',
+      desc: 'SaaS platform for AI workflow commerce. Build/import/compose/convert .0n workflows. Stripe metered billing ($0.10/execution). Store with listings, purchases, creator earnings.',
+      stats: { pages: 14, apiRoutes: 22, libs: 13, migrations: 4 },
+      modules: [
+        { name: 'Builder', tools: 0, desc: '4 modes: Build (AI chat), Import, Compose, Convert' },
+        { name: 'Store', tools: 0, desc: 'Listings, purchases, ratings, categories' },
+        { name: 'Execution Engine', tools: 0, desc: 'Run workflows with step-by-step resolution' },
+        { name: 'Billing', tools: 0, desc: 'Stripe metered + one-time + free tiers' },
+        { name: 'Launch Codes', tools: 0, desc: 'Per-user third-party API key config' }
+      ],
+      keyFiles: [
+        'app/builder/page.tsx — AI workflow builder (4 modes)',
+        'app/store/page.tsx — Browse marketplace',
+        'app/dashboard/page.tsx — User dashboard + stats',
+        'lib/workflow-executor.ts — Runtime execution',
+        'lib/ai.ts — Anthropic streaming wrapper',
+        'lib/compose.ts — Multi-workflow composition'
+      ],
+      connections: ['onmcp', '0n-spec', 'onmcp-site'],
+      supabase: 'pwujhhmlrtxjmjzyttwn',
+      deps: ['@anthropic-ai/sdk', '@supabase/supabase-js', 'stripe', '0n-spec']
+    },
+    {
+      id: 'onork-app',
+      name: '0nCore (onork-app)',
+      version: 'v1.0.0',
+      type: 'app',
+      color: '#00d4ff',
+      icon: 'CR',
+      path: '~/Github/onork-app/',
+      domain: '0ncore.com',
+      vercel: 'prj_OJ0gi5HItdtUmQYclXirYk1BSJnt',
+      desc: 'Client CRM portal. 43 pages with customizable dashboard (8 module types, drag-drop). CRM proxy (contacts, pipeline, calendar, invoices). Auto-provisioning (CRM sub-account + Stripe customer).',
+      stats: { pages: 43, apiRoutes: 20, components: 6, libs: 4 },
+      modules: [
+        { name: 'Dashboard', tools: 0, desc: '8 modules: stats, chart, actions, status, activity, training, integrations, crm' },
+        { name: 'CRM Proxy', tools: 0, desc: 'Contacts, pipeline, calendar, invoices, conversations' },
+        { name: 'Provisioning', tools: 0, desc: 'Auto-create CRM contact + Stripe customer + sub-account' },
+        { name: 'Admin Workflows', tools: 0, desc: 'LinkedIn bot, lead nurture, content pipeline, CRM health check' },
+        { name: '0nMCP Client', tools: 0, desc: 'HTTP client: execute, runWorkflow, listWorkflows, health' }
+      ],
+      keyFiles: [
+        'app/dashboard/page.tsx — Customizable grid dashboard',
+        'app/dashboard/contacts/page.tsx — CRM contact management',
+        'lib/0nmcp-client.ts — 0nMCP HTTP client',
+        'app/api/provision/route.ts — Auto-provisioning',
+        'app/api/admin/workflows/route.ts — Admin automations'
+      ],
+      connections: ['onmcp', 'supabase-customers'],
+      supabase: 'yaehbwimocvvnnlojkxe',
+      deps: ['@supabase/supabase-js', 'sonner', 'zod']
+    },
+    {
+      id: 'command-center',
+      name: '0n Command Center',
+      version: 'v4.0.0',
+      type: 'app',
+      color: '#eab308',
+      icon: 'CC',
+      path: '~/Github/0n-command-center/',
+      domain: 'command.rocketclients.com (TBD)',
+      desc: 'Express.js full-stack platform. 16 service engines, OAuth SSO (7 providers), MCP server, workflow builder, Chrome extension, PWA. Persistent state with Supabase.',
+      stats: { engines: 16, oauthProviders: 7, uiPages: 9 },
+      modules: [
+        { name: 'Admin Engine', tools: 0, desc: 'Users, billing, blog, courses management' },
+        { name: 'OAuth Engine', tools: 0, desc: 'Google, GitHub, Slack, Stripe, Zoom, HubSpot, Microsoft' },
+        { name: 'Workflow Runtime', tools: 0, desc: 'Imports WorkflowRunner from 0nMCP' },
+        { name: 'Social Engines', tools: 0, desc: 'LinkedIn, Reddit, GitHub, blog, outreach, content' },
+        { name: 'MCP Server', tools: 0, desc: 'Exposes Command Center as MCP tools for Claude Code' },
+        { name: 'Chrome Extension', tools: 0, desc: 'Background script for browser integration' }
+      ],
+      keyFiles: [
+        'server.js — Express app entry (persistent state)',
+        'engines/ — 16 service engines',
+        'auth/session.js — HMAC-SHA256 cookie sessions',
+        'mcp/index.js — MCP server (stdio transport)',
+        'ui/pages/ — 9 mini-app pages'
+      ],
+      connections: ['onmcp', 'supabase-main'],
+      deps: ['express', '0nmcp', '@modelcontextprotocol/sdk', '@supabase/supabase-js']
+    },
+    {
+      id: '0n-command',
+      name: '0n Command',
+      version: 'v1.0.0',
+      type: 'app',
+      color: '#ec4899',
+      icon: 'CM',
+      path: '~/Github/0n-command/',
+      desc: 'Next.js SPA command center. Brain-file driven config (.0n.json). Embed-mode for CRM iframes. Chat + CommandPalette + Vault + Flows overlays. Falls back to local AI if 0nMCP offline.',
+      stats: { pages: 5, apiRoutes: 11, components: 12 },
+      modules: [
+        { name: 'Deck UI', tools: 0, desc: 'Chat, CommandPalette, Sidebar, Vault, Flows, History overlays' },
+        { name: 'Brain System', tools: 0, desc: '.0n.json config: identity, auth, branding, connections, workflows' },
+        { name: 'Embed Mode', tools: 0, desc: 'CSP for CRM iframe embedding (msgsndr.com, leadconnectorhq.com)' },
+        { name: 'PWA', tools: 0, desc: 'Service worker, manifest, install prompt' }
+      ],
+      keyFiles: [
+        'app/deck/page.tsx — Main dashboard',
+        'brain/abk.0n.json — Brain configuration',
+        'lib/0nmcp-client.ts — 0nMCP HTTP client',
+        'lib/ai-responder.ts — Local AI fallback'
+      ],
+      connections: ['onmcp'],
+      deps: ['next', 'react', 'sonner', 'zod']
+    }
+  ],
+  tools: [
+    {
+      id: 'rocket-command',
+      name: 'Rocket Command',
+      version: 'v1.0.0',
+      type: 'tool',
+      color: '#ef4444',
+      icon: 'RC',
+      path: '~/Github/rocket-command/',
+      domain: 'command.rocketclients.com',
+      desc: 'Embeddable CRM Command Center for sub-account locations. 18 CRM tools, 245 API operations. Dual auth: PIT (agency) + OAuth (per-location). Iframe-embeddable in CRM UI.',
+      stats: { crmTools: 18, apiOperations: 245 },
+      modules: [
+        { name: 'Dashboard', tools: 0, desc: 'Contacts, Conversations, Email, Community, AI Chat, Settings' },
+        { name: 'CRM Client', tools: 0, desc: '18 CRM tools via LeadConnector API' },
+        { name: 'AI Chat', tools: 0, desc: 'Anthropic SDK with CRM tool execution' }
+      ],
+      connections: ['onmcp'],
+      deps: ['@anthropic-ai/sdk', '@supabase/supabase-js']
+    },
+    {
+      id: '0ndefender',
+      name: '0nDefender',
+      version: 'v1.0.0',
+      type: 'tool',
+      color: '#ef4444',
+      icon: 'DF',
+      path: '~/Github/0nDefender/',
+      desc: 'Automated brand protection scanner. Monitors GitHub for malicious clones, typosquats, trademark infringement. Generates DMCA takedown notices. Threat scoring: CRITICAL/HIGH/MEDIUM/LOW/CLEAN.',
+      stats: {},
+      modules: [
+        { name: 'Scanner', tools: 0, desc: 'GitHub repository scanning for clones/typosquats' },
+        { name: 'Analyzer', tools: 0, desc: 'Threat scoring (0-100)' },
+        { name: 'Reporter', tools: 0, desc: 'DMCA notice generation' }
+      ],
+      connections: [],
+      deps: []
+    },
+    {
+      id: 'mcp0n',
+      name: 'mcp0n (Reddit)',
+      version: 'v1.0.0',
+      type: 'tool',
+      color: '#ff6b35',
+      icon: 'RD',
+      path: '~/Github/mcp0n/',
+      desc: 'Reddit-based 0nMCP interface via Devvit. Extends 0nMCP capabilities into Reddit threads and posts for community/moderation workflows.',
+      stats: {},
+      modules: [],
+      connections: ['onmcp'],
+      deps: ['devvit']
+    }
+  ],
+  infra: [
+    {
+      id: 'supabase-main',
+      name: 'Supabase: 0n Main',
+      type: 'db',
+      color: '#3ecf8e',
+      icon: 'DB',
+      ref: 'pwujhhmlrtxjmjzyttwn',
+      desc: '0nmcp.com + Marketplace shared database. 120+ migrations. Profiles, community, personas, marketplace listings, blog, training, OAuth server, web0n, console executions.',
+      tables: ['profiles', 'community_threads', 'community_posts', 'community_groups', 'marketplace_listings', 'blog_posts', 'personas', 'training_runs', 'oauth_server', 'web0n_projects', 'console_execution_log', 'stripe_customers', 'device_auth'],
+      connections: ['onmcp-site', 'marketplace', 'command-center']
+    },
+    {
+      id: 'supabase-customers',
+      name: 'Supabase: 0nork Customers',
+      type: 'db',
+      color: '#3ecf8e',
+      icon: 'DB',
+      ref: 'yaehbwimocvvnnlojkxe',
+      desc: 'Customer portal database. Profiles, pins, executions, provisioning records.',
+      tables: ['profiles', 'pins', 'executions', 'customers'],
+      connections: ['onork-app']
+    },
+    {
+      id: 'supabase-rocket',
+      name: 'Supabase: Rocket+ Master',
+      type: 'db',
+      color: '#3ecf8e',
+      icon: 'DB',
+      ref: 'rtwtaisjtvdajrdyivkn',
+      desc: 'Rocket+ Master DB for rocketadd.com and rocketclients.com.',
+      tables: [],
+      connections: ['rocket-command']
+    },
+    {
+      id: 'stripe',
+      name: 'Stripe (RocketOpp)',
+      type: 'payment',
+      color: '#635bff',
+      icon: '$',
+      desc: 'Account: acct_1PUJi5HThmAuKVQM. Marketplace product, metered billing ($0.10/exec), supporter/builder/enterprise tiers.',
+      connections: ['marketplace', 'onmcp-site', 'onork-app']
+    },
+    {
+      id: 'vercel',
+      name: 'Vercel (cryptogoatz)',
+      type: 'deploy',
+      color: '#000',
+      icon: 'V',
+      desc: 'Team: team_VtbfSzhDgB6OwglLfuPDFcd2. Auto-deploy on push to main. 3+ active projects.',
+      connections: ['onmcp-site', 'marketplace', 'onork-app', 'command-center']
+    },
+    {
+      id: 'dot0n',
+      name: '~/.0n/ Directory',
+      type: 'config',
+      color: '#a78bfa',
+      icon: '~',
+      desc: 'Master configuration directory. 19 service connections, workflows, vault, history, cache, plugins. Master SWITCH: 0n-setup.0n.',
+      connections: ['onmcp', '0n-spec']
+    }
+  ],
+  services54: [
+    'crm','stripe','sendgrid','resend','slack','discord','twilio','github','shopify',
+    'openai','anthropic','gmail','google_sheets','google_drive','google_calendar',
+    'google_ads','airtable','notion','mongodb','supabase','zendesk','jira','hubspot',
+    'mailchimp','calendly','zoom','linear','microsoft','quickbooks','asana','intercom',
+    'dropbox','whatsapp','instagram','twitter','linkedin','pipedrive','square','plaid',
+    'tiktok','facebook_ads','linkedin_ads','tiktok_ads','instagram_ads','x_ads',
+    'smartlead','zapier','mulesoft','azure','cloudflare','godaddy','n8n','pabbly','make','whimsical'
+  ],
+  patents: [
+    { id: '#63/968,814', name: 'Seal of Truth', filed: 'Dec 2025' },
+    { id: '#63/990,046', name: '0nVault Container System', filed: 'Feb 24, 2026' },
+    { id: 'Pending', name: 'Three-Level Execution (Pipeline > Assembly > Radial Burst)', filed: 'TBD' },
+    { id: 'Pending', name: 'Universal Capability Routing (.0n Field Standard)', filed: 'Research' },
+    { id: '+2 others', name: 'Mike has 2 additional patents', filed: 'Various' }
+  ]
+};
+
+// =====================================================
+// GRAPH VIEW — Interactive node graph
+// =====================================================
+const canvas = document.getElementById('graph-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, dpr;
+let panX = 0, panY = 0, zoom = 1;
+let dragging = false, dragStartX, dragStartY;
+let hoveredNode = null;
+let nodes = [];
+let edges = [];
+let animFrame;
+
+function initCanvas() {
+  dpr = window.devicePixelRatio || 1;
+  W = window.innerWidth;
+  H = window.innerHeight - 56;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function buildGraph() {
+  nodes = [];
+  edges = [];
+
+  const allItems = [
+    ...ECOSYSTEM.core.map(n => ({ ...n, group: 'core' })),
+    ...ECOSYSTEM.apps.map(n => ({ ...n, group: 'app' })),
+    ...ECOSYSTEM.tools.map(n => ({ ...n, group: 'tool' })),
+    ...ECOSYSTEM.infra.map(n => ({ ...n, group: 'infra' }))
+  ];
+
+  const cx = W / 2, cy = H / 2;
+
+  // Position nodes in orbital rings
+  const groups = { core: [], app: [], tool: [], infra: [] };
+  allItems.forEach(item => groups[item.group].push(item));
+
+  // Core ring (inner)
+  groups.core.forEach((item, i) => {
+    const angle = (i / groups.core.length) * Math.PI * 2 - Math.PI / 2;
+    const r = 120;
+    nodes.push({
+      ...item, x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r,
+      radius: 38, vx: 0, vy: 0
+    });
+  });
+
+  // App ring (middle)
+  groups.app.forEach((item, i) => {
+    const angle = (i / groups.app.length) * Math.PI * 2 - Math.PI / 3;
+    const r = 300;
+    nodes.push({
+      ...item, x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r,
+      radius: 32, vx: 0, vy: 0
+    });
+  });
+
+  // Tool ring (outer left)
+  groups.tool.forEach((item, i) => {
+    const angle = Math.PI + (i / (groups.tool.length + 1)) * Math.PI * 0.8 - 0.4;
+    const r = 460;
+    nodes.push({
+      ...item, x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r,
+      radius: 26, vx: 0, vy: 0
+    });
+  });
+
+  // Infra ring (outer right)
+  groups.infra.forEach((item, i) => {
+    const angle = (i / (groups.infra.length + 1)) * Math.PI * 0.9 - 0.3;
+    const r = 460;
+    nodes.push({
+      ...item, x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r,
+      radius: 26, vx: 0, vy: 0
+    });
+  });
+
+  // Build edges from connections
+  allItems.forEach(item => {
+    if (item.connections) {
+      item.connections.forEach(targetId => {
+        edges.push({ from: item.id, to: targetId });
+      });
+    }
+  });
+}
+
+let time = 0;
+
+function drawGraph() {
+  time += 0.005;
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  ctx.translate(panX, panY);
+  ctx.scale(zoom, zoom);
+
+  // Draw edges
+  edges.forEach(edge => {
+    const from = nodes.find(n => n.id === edge.from);
+    const to = nodes.find(n => n.id === edge.to);
+    if (!from || !to) return;
+
+    const isHighlighted = hoveredNode && (hoveredNode.id === edge.from || hoveredNode.id === edge.to);
+
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+
+    // Curved edges
+    const mx = (from.x + to.x) / 2;
+    const my = (from.y + to.y) / 2;
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const cx2 = mx - dy * 0.15;
+    const cy2 = my + dx * 0.15;
+    ctx.quadraticCurveTo(cx2, cy2, to.x, to.y);
+
+    ctx.strokeStyle = isHighlighted
+      ? `rgba(126,217,87,0.6)`
+      : `rgba(126,217,87,0.08)`;
+    ctx.lineWidth = isHighlighted ? 2 : 1;
+    ctx.stroke();
+
+    // Animated dot on highlighted edges
+    if (isHighlighted) {
+      const t = (time * 2) % 1;
+      const px = (1-t)*(1-t)*from.x + 2*(1-t)*t*cx2 + t*t*to.x;
+      const py = (1-t)*(1-t)*from.y + 2*(1-t)*t*cy2 + t*t*to.y;
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#7ed957';
+      ctx.fill();
+    }
+  });
+
+  // Draw nodes
+  nodes.forEach(node => {
+    const isHovered = hoveredNode && hoveredNode.id === node.id;
+    const isConnected = hoveredNode && hoveredNode.connections && hoveredNode.connections.includes(node.id);
+    const isSource = hoveredNode && node.connections && node.connections.includes(hoveredNode.id);
+
+    // Glow
+    if (isHovered || isConnected || isSource) {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, node.radius + 12, 0, Math.PI * 2);
+      const grad = ctx.createRadialGradient(node.x, node.y, node.radius, node.x, node.y, node.radius + 12);
+      grad.addColorStop(0, (node.color || '#7ed957') + '40');
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+    const dimmed = hoveredNode && !isHovered && !isConnected && !isSource;
+    ctx.fillStyle = dimmed ? '#1a1a28' : '#12121a';
+    ctx.fill();
+    ctx.strokeStyle = dimmed ? '#2a2a3e' : (node.color || '#7ed957');
+    ctx.lineWidth = isHovered ? 3 : 1.5;
+    ctx.stroke();
+
+    // Icon text
+    ctx.fillStyle = dimmed ? '#606080' : (node.color || '#7ed957');
+    ctx.font = `bold ${node.radius * 0.45}px 'SF Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(node.icon, node.x, node.y);
+
+    // Label below
+    ctx.fillStyle = dimmed ? '#404060' : '#e8e8f0';
+    ctx.font = `600 ${Math.max(10, node.radius * 0.3)}px 'SF Mono', monospace`;
+    ctx.fillText(node.name, node.x, node.y + node.radius + 14);
+
+    // Version
+    if (node.version) {
+      ctx.fillStyle = dimmed ? '#303050' : '#606080';
+      ctx.font = `400 9px 'SF Mono', monospace`;
+      ctx.fillText(node.version, node.x, node.y + node.radius + 26);
+    }
+  });
+
+  ctx.restore();
+  animFrame = requestAnimationFrame(drawGraph);
+}
+
+function getNodeAt(mx, my) {
+  const x = (mx - panX) / zoom;
+  const y = (my - panY) / zoom;
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    const dx = x - n.x, dy = y - n.y;
+    if (dx * dx + dy * dy < (n.radius + 5) * (n.radius + 5)) return n;
+  }
+  return null;
+}
+
+canvas.addEventListener('mousedown', e => {
+  dragging = true;
+  dragStartX = e.clientX - panX;
+  dragStartY = e.clientY - panY;
+});
+
+canvas.addEventListener('mousemove', e => {
+  const my = e.clientY - 56;
+  if (dragging) {
+    panX = e.clientX - dragStartX;
+    panY = e.clientY - dragStartY;
+    return;
+  }
+  const node = getNodeAt(e.clientX, my);
+  hoveredNode = node;
+  canvas.style.cursor = node ? 'pointer' : 'grab';
+
+  const tooltip = document.getElementById('tooltip');
+  if (node) {
+    tooltip.classList.add('visible');
+    document.getElementById('tooltipTitle').textContent = node.name + (node.version ? ' ' + node.version : '');
+    document.getElementById('tooltipDesc').textContent = node.desc ? node.desc.substring(0, 150) + '...' : '';
+    tooltip.style.left = Math.min(e.clientX + 16, W - 300) + 'px';
+    tooltip.style.top = Math.min(e.clientY + 16, H - 100) + 'px';
+  } else {
+    tooltip.classList.remove('visible');
+  }
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (dragging && Math.abs(e.clientX - dragStartX - panX) < 5 && Math.abs(e.clientY - dragStartY - panY) < 5) {
+    const my = e.clientY - 56;
+    const node = getNodeAt(e.clientX, my);
+    if (node) openDetail(node);
+  }
+  dragging = false;
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const oldZoom = zoom;
+  zoom *= e.deltaY > 0 ? 0.92 : 1.08;
+  zoom = Math.max(0.3, Math.min(3, zoom));
+  const mx = e.clientX, my = e.clientY - 56;
+  panX = mx - (mx - panX) * (zoom / oldZoom);
+  panY = my - (my - panY) * (zoom / oldZoom);
+}, { passive: false });
+
+// =====================================================
+// GRID VIEW
+// =====================================================
+function renderGrid(filter = '') {
+  const gridView = document.getElementById('gridView');
+  const lf = filter.toLowerCase();
+
+  function matchesFilter(item) {
+    if (!lf) return true;
+    return (item.name + ' ' + item.desc + ' ' + (item.id || '')).toLowerCase().includes(lf);
+  }
+
+  function renderCards(items) {
+    return items.filter(matchesFilter).map(item => `
+      <div class="card" onclick="openDetailById('${item.id}')">
+        <div class="card-header">
+          <div class="card-icon" style="background:${item.color}20;color:${item.color}">${item.icon}</div>
+          <div>
+            <div class="card-title">${item.name}</div>
+            <div class="card-version">${item.version || item.ref || item.type || ''}</div>
+          </div>
+        </div>
+        <div class="card-desc">${(item.desc || '').substring(0, 120)}...</div>
+        <div class="card-meta">
+          ${item.domain ? `<span class="tag" style="background:#7ed95720;color:#7ed957">${item.domain}</span>` : ''}
+          ${item.npm ? `<span class="tag" style="background:#00d4ff20;color:#00d4ff">npm: ${item.npm}</span>` : ''}
+          ${item.stats && item.stats.tools ? `<span class="tag" style="background:#a78bfa20;color:#a78bfa">${item.stats.tools} tools</span>` : ''}
+          ${item.stats && item.stats.pages ? `<span class="tag" style="background:#ff6b3520;color:#ff6b35">${item.stats.pages} pages</span>` : ''}
+          ${item.stats && item.stats.apiRoutes ? `<span class="tag" style="background:#eab30820;color:#eab308">${item.stats.apiRoutes} API routes</span>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  const coreCards = renderCards(ECOSYSTEM.core);
+  const appCards = renderCards(ECOSYSTEM.apps);
+  const toolCards = renderCards(ECOSYSTEM.tools);
+  const infraCards = renderCards(ECOSYSTEM.infra);
+
+  gridView.innerHTML = `
+    ${coreCards ? `<div class="section-title">Core Packages (npm)</div><div class="grid-container">${coreCards}</div>` : ''}
+    ${appCards ? `<div class="section-title">Applications (Deployed)</div><div class="grid-container">${appCards}</div>` : ''}
+    ${toolCards ? `<div class="section-title">Tools & Utilities</div><div class="grid-container">${toolCards}</div>` : ''}
+    ${infraCards ? `<div class="section-title">Infrastructure</div><div class="grid-container">${infraCards}</div>` : ''}
+    <div class="section-title">54 Integrated Services</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;">
+      ${ECOSYSTEM.services54.map(s => `<span class="tag" style="background:var(--card);color:var(--text-dim);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-size:11px;">${s}</span>`).join('')}
+    </div>
+    <div class="section-title">Patents & IP</div>
+    <div class="grid-container">
+      ${ECOSYSTEM.patents.map(p => `
+        <div class="card" style="cursor:default;">
+          <div class="card-header">
+            <div class="card-icon" style="background:#eab30820;color:#eab308">IP</div>
+            <div>
+              <div class="card-title">${p.name}</div>
+              <div class="card-version">${p.id} | Filed: ${p.filed}</div>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="height:80px;"></div>
+  `;
+}
+
+// =====================================================
+// FLOW VIEW — Layered architecture
+// =====================================================
+function renderFlow() {
+  document.getElementById('flowView').innerHTML = `
+  <div class="flow-container">
+    <div class="flow-layer" style="border-color:#7ed957;">
+      <div class="flow-layer-title" style="color:#7ed957;">Layer 1 — User Interfaces</div>
+      <div class="flow-items">
+        <div class="flow-item" style="background:#7ed95715;color:#7ed957;border-color:#7ed95740;" onclick="openDetailById('onmcp-site')">0nmcp.com<br><small style="opacity:0.6">60 pages, 262 API routes</small></div>
+        <div class="flow-item" style="background:#ff6b3515;color:#ff6b35;border-color:#ff6b3540;" onclick="openDetailById('marketplace')">Marketplace<br><small style="opacity:0.6">14 pages, Store + Builder</small></div>
+        <div class="flow-item" style="background:#00d4ff15;color:#00d4ff;border-color:#00d4ff40;" onclick="openDetailById('onork-app')">0nCore App<br><small style="opacity:0.6">43 pages, CRM Portal</small></div>
+        <div class="flow-item" style="background:#eab30815;color:#eab308;border-color:#eab30840;" onclick="openDetailById('command-center')">Command Center<br><small style="opacity:0.6">16 engines, OAuth SSO</small></div>
+        <div class="flow-item" style="background:#ec489915;color:#ec4899;border-color:#ec489940;" onclick="openDetailById('0n-command')">0n Command<br><small style="opacity:0.6">SPA, Brain-driven</small></div>
+        <div class="flow-item" style="background:#ef444415;color:#ef4444;border-color:#ef444440;" onclick="openDetailById('rocket-command')">Rocket Command<br><small style="opacity:0.6">Embeddable CRM UI</small></div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&#x25BC; &#x25BC; &#x25BC;</div>
+
+    <div class="flow-layer" style="border-color:#00d4ff;">
+      <div class="flow-layer-title" style="color:#00d4ff;">Layer 2 — Orchestration Engine</div>
+      <div class="flow-items">
+        <div class="flow-item" style="background:#7ed95720;color:#7ed957;border-color:#7ed957;font-size:14px;padding:16px 24px;" onclick="openDetailById('onmcp')">
+          <strong>0nMCP v2.7.0</strong><br>
+          <small style="opacity:0.7">819 tools | 54 services | MCP Protocol</small><br>
+          <small style="opacity:0.5">Stdio + HTTP | AI Orchestrator | Rate Limiter | Webhook Verifier</small>
+        </div>
+      </div>
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;">
+        <span class="conn-badge">CRM Module (245 tools)</span>
+        <span class="conn-badge">Vault (18 tools, Patent Pending)</span>
+        <span class="conn-badge">Engine (16+ tools)</span>
+        <span class="conn-badge">Training Center (8 tools)</span>
+        <span class="conn-badge">Multi-AI Council (4 tools)</span>
+        <span class="conn-badge">SXO Writer (3 tools)</span>
+        <span class="conn-badge">Capability Proxy (Zero-Knowledge)</span>
+        <span class="conn-badge">Workflow Runtime (.0n files)</span>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&#x25BC; &#x25BC; &#x25BC;</div>
+
+    <div class="flow-layer" style="border-color:#a78bfa;">
+      <div class="flow-layer-title" style="color:#a78bfa;">Layer 3 — Configuration Standard</div>
+      <div class="flow-items">
+        <div class="flow-item" style="background:#00d4ff15;color:#00d4ff;border-color:#00d4ff40;" onclick="openDetailById('0n-spec')">
+          <strong>0n-spec v1.1.0</strong> — .0n Standard<br>
+          <small style="opacity:0.6">JSON schemas | Template engine | CLI validator</small>
+        </div>
+        <div class="flow-item" style="background:#a78bfa15;color:#a78bfa;border-color:#a78bfa40;" onclick="openDetailById('dot0n')">
+          <strong>~/.0n/</strong> — Config Directory<br>
+          <small style="opacity:0.6">19 connections | workflows | vault | history | cache | plugins</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&#x25BC; &#x25BC; &#x25BC;</div>
+
+    <div class="flow-layer" style="border-color:#3ecf8e;">
+      <div class="flow-layer-title" style="color:#3ecf8e;">Layer 4 — Data & Payments</div>
+      <div class="flow-items">
+        <div class="flow-item" style="background:#3ecf8e15;color:#3ecf8e;border-color:#3ecf8e40;" onclick="openDetailById('supabase-main')">Supabase Main<br><small style="opacity:0.6">pwujhh... | 120+ migrations</small></div>
+        <div class="flow-item" style="background:#3ecf8e15;color:#3ecf8e;border-color:#3ecf8e40;" onclick="openDetailById('supabase-customers')">Supabase Customers<br><small style="opacity:0.6">yaehbw... | Profiles, Pins</small></div>
+        <div class="flow-item" style="background:#3ecf8e15;color:#3ecf8e;border-color:#3ecf8e40;" onclick="openDetailById('supabase-rocket')">Supabase Rocket+<br><small style="opacity:0.6">rtwtai... | Master DB</small></div>
+        <div class="flow-item" style="background:#635bff15;color:#635bff;border-color:#635bff40;" onclick="openDetailById('stripe')">Stripe<br><small style="opacity:0.6">Metered billing, tiers</small></div>
+        <div class="flow-item" style="background:#00000015;color:#888;border-color:#44444440;" onclick="openDetailById('vercel')">Vercel<br><small style="opacity:0.6">Auto-deploy on main</small></div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">&#x25BC; &#x25BC; &#x25BC;</div>
+
+    <div class="flow-layer" style="border-color:#ff6b35;">
+      <div class="flow-layer-title" style="color:#ff6b35;">Layer 5 — 54 External Services</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${ECOSYSTEM.services54.map(s => {
+          const colors = {
+            crm:'#ef4444',stripe:'#635bff',slack:'#4a154b',github:'#888',openai:'#10a37f',
+            anthropic:'#d97706',google_sheets:'#0f9d58',discord:'#5865f2',twilio:'#f22f46'
+          };
+          const c = colors[s] || '#606080';
+          return `<span class="flow-item" style="background:${c}10;color:${c};border-color:${c}30;padding:4px 10px;font-size:10px;">${s}</span>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div style="height:40px;"></div>
+
+    <div class="flow-layer" style="border-color:#eab308;border-style:dashed;">
+      <div class="flow-layer-title" style="color:#eab308;">Patents & IP Protection</div>
+      <div class="flow-items">
+        ${ECOSYSTEM.patents.map(p => `
+          <div class="flow-item" style="background:#eab30810;color:#eab308;border-color:#eab30830;cursor:default;">
+            <strong>${p.name}</strong><br>
+            <small style="opacity:0.6">${p.id} | ${p.filed}</small>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="height:40px;"></div>
+
+    <div class="flow-layer" style="border-color:#7ed957;border-style:dashed;">
+      <div class="flow-layer-title" style="color:#7ed957;">Execution Model (Patent Pending)</div>
+      <div style="display:flex;gap:20px;align-items:center;justify-content:center;flex-wrap:wrap;">
+        <div style="text-align:center;padding:20px;">
+          <div style="font-size:32px;color:#7ed957;font-weight:800;">Pipeline</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Sequential step-by-step</div>
+          <div style="font-size:10px;color:var(--text-muted);">A &rarr; B &rarr; C &rarr; D</div>
+        </div>
+        <div style="font-size:24px;color:var(--text-muted);">&rarr;</div>
+        <div style="text-align:center;padding:20px;">
+          <div style="font-size:32px;color:#00d4ff;font-weight:800;">Assembly Line</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Parallel with dependencies</div>
+          <div style="font-size:10px;color:var(--text-muted);">A &rarr; [B,C] &rarr; D</div>
+        </div>
+        <div style="font-size:24px;color:var(--text-muted);">&rarr;</div>
+        <div style="text-align:center;padding:20px;">
+          <div style="font-size:32px;color:#a78bfa;font-weight:800;">Radial Burst</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Fan-out to all services</div>
+          <div style="font-size:10px;color:var(--text-muted);">Origin &rarr; [All channels]</div>
+        </div>
+      </div>
+    </div>
+    <div style="height:80px;"></div>
+  </div>
+  `;
+}
+
+// =====================================================
+// DETAIL PANEL
+// =====================================================
+function findItem(id) {
+  const all = [...ECOSYSTEM.core, ...ECOSYSTEM.apps, ...ECOSYSTEM.tools, ...ECOSYSTEM.infra];
+  return all.find(n => n.id === id);
+}
+
+function openDetail(item) {
+  const panel = document.getElementById('detailPanel');
+  const content = document.getElementById('detailContent');
+
+  let html = `
+    <div class="detail-title">${item.name}</div>
+    <div class="detail-subtitle">${item.version || item.ref || item.type || ''} ${item.domain ? '| ' + item.domain : ''} ${item.path ? '| ' + item.path : ''}</div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Description</div>
+      <p style="font-size:12px;color:var(--text-dim);line-height:1.6;">${item.desc || ''}</p>
+    </div>
+  `;
+
+  if (item.stats && Object.keys(item.stats).length > 0) {
+    html += `<div class="detail-section"><div class="detail-section-title">Statistics</div>`;
+    for (const [k, v] of Object.entries(item.stats)) {
+      html += `<div class="detail-row"><span class="detail-row-label">${k}</span><span class="detail-row-value">${v}</span></div>`;
+    }
+    html += `</div>`;
+  }
+
+  if (item.modules && item.modules.length > 0) {
+    html += `<div class="detail-section"><div class="detail-section-title">Modules</div><ul class="detail-list">`;
+    item.modules.forEach(m => {
+      html += `<li><strong style="color:var(--accent);">${m.name}</strong>${m.tools ? ` <span class="detail-badge" style="background:#7ed95720;color:#7ed957;">${m.tools} tools</span>` : ''}<br><span style="color:var(--text-muted);font-size:11px;">${m.desc}</span></li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  if (item.keyFiles && item.keyFiles.length > 0) {
+    html += `<div class="detail-section"><div class="detail-section-title">Key Files</div><ul class="detail-list">`;
+    item.keyFiles.forEach(f => {
+      html += `<li style="font-size:11px;color:var(--cyan);">${f}</li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  if (item.tables && item.tables.length > 0) {
+    html += `<div class="detail-section"><div class="detail-section-title">Tables</div><div style="display:flex;flex-wrap:wrap;gap:4px;">`;
+    item.tables.forEach(t => {
+      html += `<span class="tag" style="background:#3ecf8e15;color:#3ecf8e;border:1px solid #3ecf8e30;padding:4px 8px;">${t}</span>`;
+    });
+    html += `</div></div>`;
+  }
+
+  if (item.connections && item.connections.length > 0) {
+    html += `<div class="detail-section"><div class="detail-section-title">Connected To</div><div style="display:flex;flex-wrap:wrap;gap:6px;">`;
+    item.connections.forEach(c => {
+      const target = findItem(c);
+      html += `<span class="conn-badge" style="cursor:pointer;" onclick="openDetailById('${c}')">${target ? target.name : c}</span>`;
+    });
+    html += `</div></div>`;
+  }
+
+  if (item.deps && item.deps.length > 0) {
+    html += `<div class="detail-section"><div class="detail-section-title">Dependencies</div><div style="display:flex;flex-wrap:wrap;gap:4px;">`;
+    item.deps.forEach(d => {
+      html += `<span class="tag" style="background:var(--card);color:var(--text-muted);border:1px solid var(--border);padding:3px 8px;">${d}</span>`;
+    });
+    html += `</div></div>`;
+  }
+
+  content.innerHTML = html;
+  panel.classList.add('open');
+}
+
+function openDetailById(id) {
+  const item = findItem(id);
+  if (item) openDetail(item);
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+}
+
+// =====================================================
+// VIEW SWITCHING
+// =====================================================
+let currentView = 'graph';
+
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.view-btn[data-view]').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === view);
+  });
+
+  canvas.classList.toggle('hidden', view !== 'graph');
+  document.getElementById('gridView').classList.toggle('hidden', view !== 'grid');
+  document.getElementById('flowView').classList.toggle('hidden', view !== 'flow');
+
+  if (view === 'grid') renderGrid();
+  if (view === 'flow') renderFlow();
+
+  if (view === 'graph') {
+    if (!animFrame) drawGraph();
+  } else {
+    if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  }
+}
+
+// =====================================================
+// SEARCH
+// =====================================================
+function toggleSearch() {
+  const box = document.getElementById('searchBox');
+  box.classList.toggle('visible');
+  if (box.classList.contains('visible')) {
+    document.getElementById('searchInput').focus();
+  }
+}
+
+function handleSearch(val) {
+  if (currentView === 'grid') {
+    renderGrid(val);
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    toggleSearch();
+  }
+  if (e.key === 'Escape') {
+    closeDetail();
+    document.getElementById('searchBox').classList.remove('visible');
+  }
+});
+
+// =====================================================
+// INIT
+// =====================================================
+window.addEventListener('resize', () => {
+  initCanvas();
+  buildGraph();
+});
+
+initCanvas();
+buildGraph();
+drawGraph();
+</script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { findOnCoreUserByEmail } from '@/lib/oauth/connections'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -23,8 +24,7 @@ export async function GET(req: NextRequest) {
   const embed = searchParams.get('embed') || ''
 
   // Ensure demo user exists
-  const { data: existingUser } = await supabase.auth.admin.listUsers()
-  const demoUser = existingUser?.users?.find(u => u.email === DEMO_EMAIL)
+  const demoUser = await findOnCoreUserByEmail(DEMO_EMAIL)
 
   if (!demoUser) {
     // Create demo user

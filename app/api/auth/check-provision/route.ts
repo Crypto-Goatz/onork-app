@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getAuthContext } from '@/lib/auth-context'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,10 +9,12 @@ const supabase = createClient(
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.nextUrl.searchParams.get('userId')
-
+    // The caller's own provisioning state. The ?userId= form answered for any
+    // UUID, which is an oracle over every account's CRM presence.
+    const ctx = await getAuthContext(req)
+    const userId = ctx?.userId || ''
     if (!userId) {
-      return NextResponse.json({ error: 'userId required' }, { status: 400 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Check profile for crm_location_id

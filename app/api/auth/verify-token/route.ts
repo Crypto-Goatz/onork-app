@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyTokenFormat } from '@/lib/0n-token'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,7 +16,8 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
   const { token } = await req.json()
 
-  if (!token || !token.startsWith('0n_') || token.length < 50) {
+  // v2 tokens are 38 characters; the old length < 50 rejected every valid key.
+  if (!token || !verifyTokenFormat(String(token))) {
     return NextResponse.json({ error: 'Invalid token format' }, { status: 400 })
   }
 

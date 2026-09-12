@@ -179,8 +179,13 @@ export async function middleware(request: NextRequest) {
 
   if (staleCookies.length > 0 && !hasRightProject) {
     const cleanup = passThrough()
+    // A cookie set on .0ncore.com is not cleared by a host-only delete;
+    // without this the sweep re-ran on every request forever. (The shared
+    // constant is declared further down the file; the env is read directly.)
+    const sweepDomain = process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN || ''
     for (const c of staleCookies) {
       cleanup.cookies.set(c.name, '', { maxAge: 0, path: '/' })
+      if (sweepDomain) cleanup.cookies.set(c.name, '', { maxAge: 0, path: '/', domain: sweepDomain })
     }
     // Bounce to /login if hitting a protected route, else just continue
     const path = request.nextUrl.pathname
@@ -190,7 +195,10 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set('next', path)
       url.searchParams.set('cleared', '1')
       const redirect = NextResponse.redirect(url)
-      for (const c of staleCookies) redirect.cookies.set(c.name, '', { maxAge: 0, path: '/' })
+      for (const c of staleCookies) {
+        redirect.cookies.set(c.name, '', { maxAge: 0, path: '/' })
+        if (sweepDomain) redirect.cookies.set(c.name, '', { maxAge: 0, path: '/', domain: sweepDomain })
+      }
       return redirect
     }
     return cleanup

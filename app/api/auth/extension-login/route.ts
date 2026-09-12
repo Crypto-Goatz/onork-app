@@ -12,10 +12,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { validateToken } from '@/lib/0n-token'
 
+// Service-role client for READS only. A module-level client that signs a user
+// in keeps that user's session for the life of the lambda, and every later
+// query in the instance runs as that user under RLS.
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false, autoRefreshToken: false } },
 )
+// Per-request, anon, non-persisting client for the password check.
+function signInClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } },
+  )
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
@@ -134,7 +146,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Email and password required, or paste your 0n_ token.' }, { status: 400 })
   }
 
-  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+  const { data: authData, error: authError } = await signInClient().auth.signInWithPassword({
     email,
     password,
   })
@@ -158,6 +170,8 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     token: profile?.access_token || authData.session.access_token,
+    // Honest lifetime: a raw Supabase JWT is not a 30-day key.
+    ...(profile?.access_token ? {} : { expires_in: authData.session.expires_in }),
     user: {
       id: authData.user.id,
       email: authData.user.email,

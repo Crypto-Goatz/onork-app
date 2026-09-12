@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
+import { getAuthContext } from '@/lib/auth-context'
 import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
@@ -37,6 +39,18 @@ export async function POST(request: Request) {
 
   if (!userId || !email) {
     return NextResponse.json({ error: 'user_id and email required' }, { status: 400 })
+  }
+  // Same rule as /api/provision: the signed-in user for themselves, or the
+  // internal hop carrying the dispatch secret. This step creates a BILLED
+  // sub-account, so it is the one that most needed a door.
+  {
+    const secret = process.env.INTERNAL_DISPATCH_SECRET || ''
+    const presented = request.headers.get('x-internal-secret') || ''
+    const internal = !!secret && !!presented && presented.length === secret.length && timingSafeEqual(Buffer.from(presented), Buffer.from(secret))
+    if (!internal) {
+      const ctx = await getAuthContext(request)
+      if (!ctx || ctx.userId !== userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
   }
 
   if (!CRM_AGENCY_PIT) {
