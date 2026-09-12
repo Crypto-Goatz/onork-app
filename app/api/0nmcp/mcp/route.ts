@@ -207,6 +207,18 @@ const TOOLS = [
   t('ai_generate_social', 'Generate social media post', { platform: s, topic: s, tone: s }, ['platform', 'topic']),
   t('ai_summarize', 'Summarize text or URL', { text: s, url: s }),
   t('ai_translate', 'Translate text to another language', { text: s, targetLanguage: s }, ['text', 'targetLanguage']),
+
+  // ── 0nSite ──
+  t('site_probe', 'Discover what this location has for site building: blog sites, authors, categories, products, collections. RUN THIS FIRST — it returns the real ids the other tools need, and reports the platform\'s own error text when something is unavailable.', {}),
+  t('site_post_create', 'Create a native blog post. Editable afterwards in the location\'s blog editor.', { blogId: s, title: s, html: s, description: s, urlSlug: s, authorId: s, categoryIds: a(), imageUrl: s, imageAltText: s, status: s, publishedAt: s }, ['title', 'html']),
+  t('site_post_update', 'Update an existing blog post', { postId: s, blogId: s, title: s, html: s, description: s, urlSlug: s, status: s }, ['postId']),
+  t('site_posts_list', 'List blog posts for a blog site', { blogId: s, limit: n, offset: n }, ['blogId']),
+  t('site_product_create', 'Create a native store product', { name: s, description: s, productType: s, image: s, images: a(), availableInStore: { type: 'boolean' as const }, collectionIds: a(), seo: o }, ['name']),
+  t('site_products_list', 'List store products', { limit: n, offset: n, search: s }),
+  t('site_collection_create', 'Create a product collection', { name: s, slug: s, image: s, seo: o }, ['name']),
+  t('site_values_set', 'Set location custom values — the glue that lets one snapshot layout look different per client. Accepts { name: value } pairs; updates in place when the name already exists.', { values: o }, ['values']),
+  t('site_values_list', 'List the location\'s custom values', {}),
+  t('site_build', 'Build a whole site in one call: posts + products + collections + brand custom values. Returns a manifest of everything created and everything that failed — it never stops at the first error, and it never reports a partial run as a success.', { posts: a('object'), products: a('object'), collections: a('object'), values: o, dryRun: { type: 'boolean' as const } }),
 ]
 
 export async function POST(req: NextRequest) {
@@ -729,6 +741,200 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
     case 'webflow_publish_site': {
       const res = await fetch(`https://api.webflow.com/v2/sites/${args.siteId}/publish`, { method: 'POST', headers: { Authorization: `Bearer ${process.env.WEBFLOW_ACCESS_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ domains: [] }) })
       return await res.json()
+    }
+
+    // ══ 0nSite ═══════════════════════════════════════════════════════════
+    // crmHeaders / CRM_BASE / LOC / VERSION are already in scope above.
+
+    case 'site_probe': {
+      // Every call reported independently. A 401 on products and a 200 on blogs
+      // is a real and useful answer; collapsing both into one "failed" is not.
+      const look = async (label: string, path: string) => {
+        try {
+          const res = await fetch(`${CRM_BASE}${path}`, { headers: crmHeaders })
+          const body = await res.json().catch(() => ({}))
+          return { label, ok: res.ok, status: res.status, body }
+        } catch (e: any) {
+          return { label, ok: false, status: 0, body: { error: String(e?.message ?? e) } }
+        }
+      }
+      const parts = await Promise.all([
+        look('blog_sites',  `/blogs/site/all?locationId=${LOC}&limit=50&skip=0`),
+        look('authors',     `/blogs/authors?locationId=${LOC}&limit=50&offset=0`),
+        look('categories',  `/blogs/categories?locationId=${LOC}&limit=50&offset=0`),
+        look('products',    `/products/?locationId=${LOC}&limit=20&offset=0`),
+        look('collections', `/products/collections?locationId=${LOC}&limit=20&offset=0`),
+        look('customValues',`/locations/${LOC}/customValues`),
+      ])
+      return {
+        locationId: LOC,
+        pitPresent: Boolean(PIT),
+        // The blunt summary first — this is the line worth reading.
+        usable: parts.filter(p => p.ok).map(p => p.label),
+        unavailable: parts.filter(p => !p.ok).map(p => ({ what: p.label, status: p.status, why: p.body })),
+        detail: parts,
+      }
+    }
+
+    case 'site_post_create': {
+      const slug = args.urlSlug || String(args.title).toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 80)
+      const res = await fetch(`${CRM_BASE}/blogs/posts`, {
+        method: 'POST',
+        headers: crmHeaders,
+        body: JSON.stringify({
+          locationId: LOC,
+          blogId: args.blogId,
+          title: args.title,
+          rawHTML: args.html,
+          description: args.description || '',
+          urlSlug: slug,
+          author: args.authorId,
+          categories: args.categoryIds || [],
+          imageUrl: args.imageUrl || '',
+          imageAltText: args.imageAltText || args.title,
+          status: args.status || 'DRAFT',
+          publishedAt: args.publishedAt || new Date().toISOString(),
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      // The platform's own message, verbatim. A summarised error costs a day.
+      return res.ok ? { ok: true, slug, data: body } : { ok: false, status: res.status, error: body }
+    }
+
+    case 'site_post_update': {
+      const res = await fetch(`${CRM_BASE}/blogs/posts/${args.postId}`, {
+        method: 'PUT', headers: crmHeaders,
+        body: JSON.stringify({
+          locationId: LOC, blogId: args.blogId,
+          ...(args.title !== undefined ? { title: args.title } : {}),
+          ...(args.html !== undefined ? { rawHTML: args.html } : {}),
+          ...(args.description !== undefined ? { description: args.description } : {}),
+          ...(args.urlSlug !== undefined ? { urlSlug: args.urlSlug } : {}),
+          ...(args.status !== undefined ? { status: args.status } : {}),
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      return res.ok ? { ok: true, data: body } : { ok: false, status: res.status, error: body }
+    }
+
+    case 'site_posts_list': {
+      const res = await fetch(`${CRM_BASE}/blogs/posts/all?locationId=${LOC}&blogId=${args.blogId}&limit=${args.limit || 20}&offset=${args.offset || 0}`, { headers: crmHeaders })
+      return await res.json()
+    }
+
+    case 'site_product_create': {
+      const res = await fetch(`${CRM_BASE}/products/`, {
+        method: 'POST', headers: crmHeaders,
+        body: JSON.stringify({
+          locationId: LOC,
+          name: args.name,
+          description: args.description || '',
+          productType: args.productType || 'PHYSICAL',
+          availableInStore: args.availableInStore !== false,
+          ...(args.image ? { image: args.image } : {}),
+          ...(args.images ? { medias: args.images.map((u: string) => ({ url: u, type: 'image' })) } : {}),
+          ...(args.collectionIds ? { collectionIds: args.collectionIds } : {}),
+          ...(args.seo ? { seo: args.seo } : {}),
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      return res.ok ? { ok: true, data: body } : { ok: false, status: res.status, error: body }
+    }
+
+    case 'site_products_list': {
+      const qs = `locationId=${LOC}&limit=${args.limit || 20}&offset=${args.offset || 0}${args.search ? '&search=' + encodeURIComponent(args.search) : ''}`
+      const res = await fetch(`${CRM_BASE}/products/?${qs}`, { headers: crmHeaders })
+      return await res.json()
+    }
+
+    case 'site_collection_create': {
+      const slug = args.slug || String(args.name).toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-')
+      const res = await fetch(`${CRM_BASE}/products/collections`, {
+        method: 'POST', headers: crmHeaders,
+        body: JSON.stringify({ altId: LOC, altType: 'location', name: args.name, slug,
+          ...(args.image ? { image: args.image } : {}), ...(args.seo ? { seo: args.seo } : {}) }),
+      })
+      const body = await res.json().catch(() => ({}))
+      return res.ok ? { ok: true, slug, data: body } : { ok: false, status: res.status, error: body }
+    }
+
+    case 'site_values_list': {
+      const res = await fetch(`${CRM_BASE}/locations/${LOC}/customValues`, { headers: crmHeaders })
+      return await res.json()
+    }
+
+    case 'site_values_set': {
+      // Read first so a re-run updates rather than duplicating. Custom values
+      // have no upsert, and duplicates are silently accepted — which is how a
+      // page ends up rendering a stale brand colour nobody can find.
+      const cur = await fetch(`${CRM_BASE}/locations/${LOC}/customValues`, { headers: crmHeaders })
+        .then(r => r.json()).catch(() => ({}))
+      const existing: Record<string, string> = {}
+      for (const v of (cur?.customValues || [])) existing[v.name] = v.id
+
+      const results: any[] = []
+      for (const [name, value] of Object.entries(args.values || {})) {
+        const id = existing[name]
+        const res = await fetch(
+          id ? `${CRM_BASE}/locations/${LOC}/customValues/${id}` : `${CRM_BASE}/locations/${LOC}/customValues`,
+          { method: id ? 'PUT' : 'POST', headers: crmHeaders, body: JSON.stringify({ name, value: String(value) }) }
+        )
+        const body = await res.json().catch(() => ({}))
+        results.push({ name, action: id ? 'updated' : 'created', ok: res.ok, ...(res.ok ? {} : { status: res.status, error: body }) })
+      }
+      const failed = results.filter(r => !r.ok)
+      return { ok: failed.length === 0, created: results.filter(r => r.ok).length, failed, results }
+    }
+
+    case 'site_build': {
+      /* One call, whole site. Two rules it will not break:
+         1. It never stops at the first failure — a half-built site with a clear
+            manifest is recoverable; one that dies on item three is not.
+         2. It never reports a partial run as a success. `ok` is false if a
+            single item failed, and `failed[]` carries the platform's own error. */
+      const manifest: any = { dryRun: !!args.dryRun, collections: [], products: [], posts: [], values: null, failed: [] }
+      const run = async (kind: string, label: string, fn: () => Promise<any>) => {
+        if (args.dryRun) return { ok: true, dryRun: true, label }
+        try {
+          const r = await fn()
+          if (r?.ok === false) manifest.failed.push({ kind, label, error: r.error, status: r.status })
+          return r
+        } catch (e: any) {
+          manifest.failed.push({ kind, label, error: String(e?.message ?? e) })
+          return { ok: false }
+        }
+      }
+
+      // Collections first — products reference them.
+      const collIds: Record<string, string> = {}
+      for (const c of (args.collections || [])) {
+        const r = await run('collection', c.name, () => executeTool('site_collection_create', c))
+        const id = r?.data?.data?._id || r?.data?._id || r?.data?.id
+        if (id) collIds[c.name] = id
+        manifest.collections.push({ name: c.name, id: id || null })
+      }
+
+      for (const p of (args.products || [])) {
+        const ids = (p.collections || []).map((nm: string) => collIds[nm]).filter(Boolean)
+        const r = await run('product', p.name, () => executeTool('site_product_create', { ...p, collectionIds: ids }))
+        manifest.products.push({ name: p.name, id: r?.data?._id || r?.data?.id || null })
+      }
+
+      for (const post of (args.posts || [])) {
+        const r = await run('post', post.title, () => executeTool('site_post_create', post))
+        manifest.posts.push({ title: post.title, slug: r?.slug || null, id: r?.data?.data?._id || r?.data?._id || null })
+      }
+
+      if (args.values && Object.keys(args.values).length) {
+        manifest.values = await run('values', 'custom values', () => executeTool('site_values_set', { values: args.values }))
+      }
+
+      manifest.ok = manifest.failed.length === 0
+      manifest.summary = `${manifest.collections.length} collections, ${manifest.products.length} products, ` +
+                         `${manifest.posts.length} posts` + (manifest.failed.length ? ` — ${manifest.failed.length} FAILED` : '')
+      return manifest
     }
 
     // ── Generic handler for services needing API keys not yet configured ──
