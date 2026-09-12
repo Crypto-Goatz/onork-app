@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { CATEGORIES, ADDONS, PUBLIC_ADDON_COUNT, getAddonBySlug } from '@/lib/marketplace-data'
 import AnimatedGrid from '@/components/animated-grid'
+import AppCatalog from '@/components/app-catalog'
 import AnimatedConnectors from '@/components/animated-connectors'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -293,6 +294,17 @@ export default function MarketplacePage() {
             </div>
           </CardContent>
         </Card>
+      </section>
+
+      {/* ═══ Explore by category — the app list itself ═══════════════
+          Cards for the add-ons, filtered by pill, in the dark 365 style Mike
+          asked for. It sits ABOVE the category grid because browsing the apps
+          is the thing people came to do; the category cards below are the
+          editorial view of the same registry. ═══════════════════════════ */}
+      <section id="explore" className="relative border-t border-white/5">
+        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+          <AppCatalog />
+        </div>
       </section>
 
       {/* ═══ Category grid ═══════════════════════════════════════════ */}
