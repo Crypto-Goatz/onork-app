@@ -366,6 +366,8 @@ export default function SignupCinematic({
               Create account
               <ArrowRight className="w-4 h-4" />
             </motion.button>
+            {/* Honest about the brake on sign-ups (Mike, 2026-09-13). */}
+            <p className="mt-3 text-center text-xs text-white/40">During peak promotions, registrations may briefly pause when sign-up volume exceeds what we can safely onboard at once. If that happens, try again in a few minutes — nothing you entered is lost.</p>
           </form>
 
           <p className="mt-5 text-[10px] text-[#6b7681] leading-relaxed">

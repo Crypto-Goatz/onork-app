@@ -45,7 +45,7 @@ function signupThrottled(ip: string): boolean {
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
   if (signupThrottled(ip)) {
-    return NextResponse.json({ error: 'Too many sign-ups from this network. Try again in a few minutes.' }, { status: 429 })
+    return NextResponse.json({ error: 'During peak promotions, registrations may briefly pause when sign-up volume exceeds what we can safely onboard at once. If that happens, try again in a few minutes — nothing you entered is lost.' }, { status: 429 })
   }
   try {
     const { email, password, full_name, company, website, mode } = await req.json()
