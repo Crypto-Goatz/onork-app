@@ -28,6 +28,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [unconfirmed, setUnconfirmed] = useState(false)
+  const [resent, setResent] = useState(false)
+  const resendConfirmation = async () => {
+    try { await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'resend', email }) }) } catch { /* same UI either way */ }
+    setResent(true)
+  }
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
@@ -124,7 +130,12 @@ export default function LoginPage() {
     try {
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
       if (authError) {
-        setError(authError.message)
+        if (/not confirmed/i.test(authError.message)) {
+          setUnconfirmed(true)
+          setError('Confirm your email first — the link is in your inbox.')
+        } else {
+          setError(authError.message)
+        }
         setLoading(false)
         return
       }
@@ -154,6 +165,11 @@ export default function LoginPage() {
       }
     >
       <AuthError message={error} />
+      {unconfirmed && (
+        <p className="mt-2 text-sm text-white/70">
+          {resent ? 'Sent again — check spam if it is not there in a minute.' : <button type="button" onClick={resendConfirmation} className="underline">Send the confirmation email again</button>}
+        </p>
+      )}
 
       <div className="space-y-2">
         <OAuthButton provider="google" onClick={() => handleOAuth('google')} />

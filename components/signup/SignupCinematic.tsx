@@ -72,6 +72,9 @@ export default function SignupCinematic({
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [apiDone, setApiDone] = useState(false)
+  const [sentTo, setSentTo] = useState<string | null>(null)
+  const [resending, setResending] = useState(false)
+  const [resendNote, setResendNote] = useState<string | null>(null)
 
   // Stash ref cookie once
   useEffect(() => {
@@ -131,24 +134,44 @@ export default function SignupCinematic({
         return
       }
 
-      // Sign in to establish session
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      })
-      if (signInError) {
-        setError('Account created, but sign-in failed. Please try /login.')
-        setSubmitting(false)
-        setApiDone(false)
-        return
-      }
-
-      setApiDone(true) // takeover can now finish & redirect
+      // The address is unconfirmed until they click the link we sent through
+      // the CRM; a password sign-in here would be refused. Show the inbox screen.
+      setSubmitting(false)
+      setApiDone(false)
+      setSentTo(email.trim().toLowerCase())
+      if (body?.confirmationSent === false) setResendNote('We could not send the email just now — use "Send it again" in a moment.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed.')
       setSubmitting(false)
       setApiDone(false)
     }
+  }
+
+  if (sentTo) {
+    return (
+      <main className="min-h-screen bg-[#020810] text-white">
+        <div className="mx-auto max-w-lg px-6 pt-24 pb-24 text-center">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-white/10"><Sparkles className="h-6 w-6" /></div>
+          <h1 className="mt-6 text-3xl font-black tracking-tight">Check your email</h1>
+          <p className="mt-3 text-white/70">We sent a confirmation link to <span className="font-semibold text-white">{sentTo}</span>. One click and your account is live — nothing is set up until then.</p>
+          {resendNote && <p className="mt-3 text-sm text-amber-300">{resendNote}</p>}
+          <button
+            type="button"
+            disabled={resending}
+            onClick={async () => {
+              setResending(true); setResendNote(null)
+              try { await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'resend', email: sentTo }) }); setResendNote('Sent again. Check spam if it is not there in a minute.') }
+              catch { setResendNote('Could not resend right now.') }
+              finally { setResending(false) }
+            }}
+            className="mt-6 rounded-xl border border-white/20 px-5 py-2.5 text-sm font-semibold text-white/90 hover:bg-white/10 disabled:opacity-50"
+          >
+            {resending ? 'Sending…' : 'Send it again'}
+          </button>
+          <p className="mt-6 text-xs text-white/40">Wrong address? <Link href="/signup" className="underline" onClick={() => setSentTo(null)}>Start over</Link></p>
+        </div>
+      </main>
+    )
   }
 
   if (submitting) {

@@ -1,21 +1,21 @@
 /**
  * POST /api/auth/signup
  *
- * Creates an auth user (admin API, email auto-confirmed) and runs the full
- * post-signup provisioning chain via lib/provision/post-signup.
- *
- * The public /signup form calls this, then signs the user in via
- * supabase.auth.signInWithPassword on the client to establish a session,
- * then redirects to /onboarding.
+ * Creates an UNCONFIRMED auth user, creates the CRM contact (post-signup),
+ * and sends the confirmation link through the CRM to that contact. The
+ * billed sub-account is provisioned only after the click (/auth/callback,
+ * token_hash branch). The /signup form then shows "check your email".
  *
  * OAuth signups DO NOT hit this route — they hit /auth/callback after the
  * provider returns. That route runs the SAME postSignupProvision call so
  * email/password users and OAuth users end up identically provisioned.
  */
 
-import { NextRequest, NextResponse, after } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { postSignupProvision, kickOffBackgroundProvision } from '@/lib/provision/post-signup'
+import { postSignupProvision } from '@/lib/provision/post-signup'
+import { mintConfirmLink, sendConfirmEmail } from '@/lib/auth/confirm-email'
+import { findOnCoreUserByEmail } from '@/lib/oauth/connections'
 
 // Vercel bounds total execution (including after() callbacks) by maxDuration.
 // CRM sub-location create + master snapshot deploy can take 20-40s, so set 60.
@@ -48,7 +48,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Too many sign-ups from this network. Try again in a few minutes.' }, { status: 429 })
   }
   try {
-    const { email, password, full_name, company, website } = await req.json()
+    const { email, password, full_name, company, website, mode } = await req.json()
+    const origin = new URL(req.url).origin
+
+    /*
+      RESEND. The login page and the "check your email" screen call this with
+      mode:'resend' for an address that has not clicked yet. Same response
+      whether or not the address exists, so it cannot be used to enumerate.
+    */
+    if (mode === 'resend') {
+      const em = String(email || '').trim().toLowerCase()
+      if (!em) return NextResponse.json({ error: 'Email required' }, { status: 400 })
+      try {
+        const u = await findOnCoreUserByEmail(em)
+        if (u) {
+          const { data: full } = await supabase.auth.admin.getUserById(u.id)
+          if (full?.user && !full.user.email_confirmed_at) {
+            const { data: profile } = await supabase.from('profiles').select('crm_contact_id, full_name').eq('id', u.id).maybeSingle()
+            if (profile?.crm_contact_id) {
+              const link = await mintConfirmLink(em, origin)
+              await sendConfirmEmail({ contactId: profile.crm_contact_id, firstName: String(profile.full_name || '').split(' ')[0], link })
+            }
+          }
+        }
+      } catch (e) { console.error('[auth/signup] resend failed:', e) }
+      return NextResponse.json({ ok: true, sent: true })
+    }
 
     if (!email || !password) {
       return NextResponse.json(
@@ -68,7 +93,10 @@ export async function POST(req: NextRequest) {
       await supabase.auth.admin.createUser({
         email,
         password,
-        email_confirm: true, // skip the confirmation email — user is here, signing up
+        // UNCONFIRMED until they click the link we send through the CRM. pwu
+        // refuses password sign-in for an unconfirmed address (measured
+        // 2026-09-13: "Email not confirmed"), so nothing works until the click.
+        email_confirm: false,
         user_metadata: {
           full_name: full_name || '',
           company: company || '',
@@ -107,16 +135,28 @@ export async function POST(req: NextRequest) {
       source: '0ncore-signup',
     })
 
-    // Non-family signup → fire CRM sub-location provisioning AFTER the response
-    // ships. after() (Next 16 stable) keeps the Vercel lambda alive past response
-    // so the background promise actually completes — fire-and-forget alone does
-    // NOT work on serverless (lambda dies on response).
-    if (result.needsBackgroundProvision) {
-      after(() => kickOffBackgroundProvision(userId))
+    /*
+      THE CONFIRMATION EMAIL, THROUGH THE CRM. The contact postSignupProvision
+      just created is the recipient. The billed sub-account is NOT provisioned
+      here any more — /auth/callback does that after the click, so an address
+      nobody owns never costs a sub-location.
+    */
+    let confirmationSent = false
+    let confirmationError: string | null = null
+    try {
+      if (!result.crmContactId) throw new Error('no CRM contact for this sign-up')
+      const link = await mintConfirmLink(email, origin)
+      await sendConfirmEmail({ contactId: result.crmContactId, firstName: String(full_name || '').split(' ')[0], link })
+      confirmationSent = true
+    } catch (e) {
+      confirmationError = e instanceof Error ? e.message : String(e)
+      console.error('[auth/signup] confirmation email failed:', confirmationError)
     }
 
     return NextResponse.json({
       ok: true,
+      confirmationSent,
+      ...(confirmationError ? { confirmationError } : {}),
       userId,
       token: result.token,
       familyMatched: result.familyMatched,

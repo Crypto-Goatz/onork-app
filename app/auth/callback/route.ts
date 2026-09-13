@@ -39,6 +39,7 @@
  */
 
 import { NextResponse, after } from 'next/server'
+import { tagConfirmed } from '@/lib/auth/confirm-email'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 import { postSignupProvision, kickOffBackgroundProvision } from '@/lib/provision/post-signup'
@@ -108,6 +109,32 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next')
+
+  /*
+    EMAIL CONFIRMATION (sign-up link sent through the CRM). A one-shot
+    token_hash rather than an OAuth code: verifying it confirms the address
+    AND signs the person in. Only now is the billed sub-account provisioned —
+    the same chain sign-up used to fire immediately — and the click is written
+    back to the CRM contact as a tag.
+  */
+  const tokenHash = searchParams.get('token_hash')
+  const otpType = searchParams.get('type')
+  if (tokenHash && otpType === 'magiclink') {
+    const supabase = await createClient()
+    const { data, error } = await supabase.auth.verifyOtp({ type: 'magiclink', token_hash: tokenHash })
+    const user = data?.user
+    if (error || !user) {
+      const url = new URL('/login', origin)
+      url.searchParams.set('error', 'verification_failed')
+      return NextResponse.redirect(url)
+    }
+    const admin = createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const { data: profile } = await admin.from('profiles').select('crm_contact_id, crm_location_id').eq('id', user.id).maybeSingle()
+    if (profile?.crm_contact_id) after(() => tagConfirmed(String(profile.crm_contact_id)))
+    if (!profile?.crm_location_id) after(() => kickOffBackgroundProvision(user.id))
+    const dest = next && next.startsWith('/') && !next.startsWith('//') && !next.includes('\\') ? next : '/welcome'
+    return NextResponse.redirect(new URL(dest, origin))
+  }
 
   // The four facts that distinguish the candidate causes of the login loop
   // from each other. Host tells us whether the exchange happened on www or
