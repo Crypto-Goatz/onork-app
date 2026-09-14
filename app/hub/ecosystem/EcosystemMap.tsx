@@ -35,13 +35,15 @@ const KIND_META: Record<string, { ring: string; fill: string; text: string; icon
   operator:     { ring: 'stroke-[#f59e0b]', fill: 'fill-[#f59e0b]/15', text: 'text-[#f59e0b]', icon: User,       name: 'You' },
   build:        { ring: 'stroke-[#a78bfa]', fill: 'fill-[#a78bfa]/15', text: 'text-[#a78bfa]', icon: Zap,        name: 'Build loop' },
   surface:      { ring: 'stroke-[#6EE05A]', fill: 'fill-[#6EE05A]/15', text: 'text-[#6EE05A]', icon: Globe,      name: 'Surfaces' },
-  orchestrator: { ring: 'stroke-[#22d3ee]', fill: 'fill-[#22d3ee]/15', text: 'text-[#22d3ee]', icon: Cpu,        name: 'Orchestrator' },
+  orchestrator: { ring: 'stroke-[#22d3ee]', fill: 'fill-[#22d3ee]/15', text: 'text-[#22d3ee]', icon: Cpu,        name: 'The runtime' },
+  core:         { ring: 'stroke-[#67e8f9]', fill: 'fill-[#67e8f9]/10', text: 'text-[#67e8f9]', icon: ShieldCheck,name: 'What it is made of' },
+  door:         { ring: 'stroke-[#fb7185]', fill: 'fill-[#fb7185]/15', text: 'text-[#fb7185]', icon: Zap,        name: 'Doors' },
   data:         { ring: 'stroke-[#0891b2]', fill: 'fill-[#0891b2]/15', text: 'text-[#0891b2]', icon: Database,   name: 'Data' },
   external:     { ring: 'stroke-[#94a3b8]', fill: 'fill-[#94a3b8]/15', text: 'text-[#94a3b8]', icon: ShieldCheck,name: 'Outside world' },
 }
 
 const STATUS_DOT: Record<string, string> = {
-  live: 'bg-[#6EE05A]', partial: 'bg-[#f59e0b]', building: 'bg-[#22d3ee]', planned: 'bg-white/25',
+  live: 'bg-[#6EE05A]', partial: 'bg-[#f59e0b]', building: 'bg-[#22d3ee]', planned: 'bg-white/25', retiring: 'bg-[#ef4444]',
 }
 
 const W = 1180

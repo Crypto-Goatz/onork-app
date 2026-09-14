@@ -120,6 +120,34 @@ export async function GET() {
     }
   }
 
+  // ── 0n3: what the runtime says about itself, at request time ───────────
+  try {
+    const ctl = new AbortController()
+    const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS)
+    const r = await fetch('https://0n3.app/', { signal: ctl.signal, cache: 'no-store', headers: { 'user-agent': '0n-ecosystem-probe' } })
+    clearTimeout(timer)
+    const j = (await r.json()) as { version?: string; tools?: number; crmTools?: number; services?: number }
+    metrics.on3Tools = { value: typeof j.tools === 'number' ? j.tools : null, label: `0n3 tools (v${j.version || '?'})`, note: typeof j.tools === 'number' ? undefined : '0n3 answered without a count.' }
+    metrics.on3Services = { value: typeof j.services === 'number' ? j.services : null, label: 'Catalog services' }
+  } catch (e) {
+    metrics.on3Tools = { value: null, label: '0n3 tools', note: `0n3 did not answer: ${(e as Error).message}` }
+  }
+  if (db) {
+    try {
+      const { count } = await db.from('vault_records').select('id', { count: 'exact', head: true }).neq('status', 'revoked')
+      metrics.vaultRecords = { value: count ?? null, label: 'Vault records' }
+      const { data: accts } = await db.from('vault_records').select('account_id').neq('status', 'revoked').limit(5000)
+      metrics.vaultAccounts = { value: accts ? new Set(accts.map((r) => r.account_id)).size : null, label: 'Accounts with a vault' }
+      const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
+      const { count: uses } = await db.from('vault_audit').select('id', { count: 'exact', head: true }).gte('at', since).neq('action', 'put')
+      metrics.vaultUses24h = { value: uses ?? null, label: 'Credential uses · 24h' }
+      const { count: scoped } = await db.from('access_tokens').select('id', { count: 'exact', head: true }).eq('is_active', true)
+      metrics.scopedTokens = { value: scoped ?? null, label: 'Scoped 0n tokens' }
+    } catch (e) {
+      metrics.vaultRecords = { value: null, label: 'Vault records', note: `Query failed: ${(e as Error).message}` }
+    }
+  }
+
   const reachable = Object.values(health).filter((h) => h.ok).length
 
   return NextResponse.json({
@@ -137,6 +165,7 @@ export async function GET() {
     // "connected" badge that nothing checks.
     notProbed: [
       { id: 'bridge', why: 'Runs on the local machine. This server has no access to it — status shown is structural, not measured.' },
+      { id: 'cli', why: 'Runs on the user\'s machine. Its tool count is the same code as 0n3.app, measured there.' },
     ],
   })
 }
