@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'tool not found', tool: body.tool }, { status: 404 })
   }
 
-  const { serviceKey, service, ep } = matched
+  const { serviceKey, endpointKey, service, ep } = matched
   const params = body.params ?? {}
   const start = Date.now()
 
@@ -163,19 +163,16 @@ export async function POST(req: NextRequest) {
       status = res.ok ? 'success' : 'error'
       result = await res.json().catch(() => ({}))
     } else {
-      // Generic execution via 0nMCP HTTP server
-      const onmcpUrl = process.env.ONMCP_URL || 'https://0nmcp-remote.0nmcp.workers.dev'
-      const res = await fetch(`${onmcpUrl}/execute`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(process.env.ONMCP_TOKEN ? { Authorization: `Bearer ${process.env.ONMCP_TOKEN}` } : {}),
-        },
-        body: JSON.stringify({ tool: body.tool, params }),
-      })
-      statusCode = res.status
-      status = res.ok ? 'success' : 'error'
-      result = await res.json().catch(() => ({}))
+      // Generic execution through 0n3 with THIS user's own connections.
+      const { on3Call, on3TokenFor } = await import('@/lib/on3')
+      const token = await on3TokenFor(user.id)
+      if (!token) { statusCode = 401; result = { error: 'No 0n token for this account yet.' } }
+      else {
+        const r = await on3Call(token, 'api_call', { service: serviceKey, endpoint: endpointKey, params })
+        statusCode = r.status ?? (r.ok ? 200 : 502)
+        status = r.ok ? 'success' : 'error'
+        result = r.data ?? (r.ok ? { text: r.text } : { error: r.error })
+      }
     }
   } catch (err) {
     status = 'error'

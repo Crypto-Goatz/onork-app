@@ -1,4 +1,3 @@
-import { callTool } from '@/lib/mcp/client'
 
 /**
  * Server-only, enforced at runtime.
@@ -32,7 +31,13 @@ if (typeof window !== 'undefined') {
  * business seeing.
  */
 
-const MCP_URL = process.env.ONMCP_MCP_URL || 'https://0nmcp-remote.0nmcp.workers.dev/mcp'
+/**
+ * 0n3 is the runtime now. The unauthenticated worker this used to call is
+ * retired (it executed CRM, Stripe and database tools for anyone who found the
+ * URL). Every call carries a 0n token: the caller's own when one is passed,
+ * otherwise ON3_TOKEN — the scoped "CRM agent bridge" token.
+ */
+import { on3Call, on3ServiceToken } from '@/lib/on3'
 
 export interface OnmcpResult {
   ok: boolean
@@ -46,40 +51,10 @@ export interface OnmcpResult {
 export async function call0nMCP(
   tool: string,
   args: Record<string, unknown> = {},
+  opts: { token?: string } = {},
 ): Promise<OnmcpResult> {
-  /**
-   * THE KEY IS OPTIONAL, BECAUSE THE BRIDGE DOES NOT REQUIRE ONE.
-   *
-   * This used to refuse outright when ONMCP_API_KEY was unset — so every
-   * external.call failed with "ONMCP_API_KEY not configured" and 37 allowed
-   * tools were unreachable. Verified 2026-08-16: an unauthenticated
-   * tools/call to the bridge returns real data. The gate was ours, not the
-   * bridge's, and it blocked our own feature rather than protecting anything.
-   *
-   * The key is still sent when present, so adding auth at the bridge later
-   * needs no change here.
-   *
-   * WORTH KNOWING: that bridge is reachable without credentials, which means
-   * anyone who finds the URL can call these tools. That is a property of the
-   * worker, not of this client, and it deserves fixing there — but pretending
-   * otherwise on this side only broke the product.
-   */
-  const apiKey = process.env.ONMCP_API_KEY || process.env.MCP_BRIDGE_TOKEN || ''
-
-  try {
-    const res = await callTool(
-      { url: MCP_URL, headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {} } as never,
-      tool,
-      args,
-    )
-
-    const blocks = (res as { content?: { type?: string; text?: string }[] })?.content ?? []
-    const text = blocks.filter((b) => b?.type === 'text').map((b) => b.text ?? '').join('\n').trim()
-    const isError = (res as { isError?: boolean })?.isError === true
-
-    if (isError) return { ok: false, text, error: text || 'tool reported an error' }
-    return { ok: true, text, data: (res as { structuredContent?: unknown })?.structuredContent }
-  } catch (e) {
-    return { ok: false, text: '', error: e instanceof Error ? e.message : String(e) }
-  }
+  const token = opts.token || on3ServiceToken()
+  if (!token) return { ok: false, text: '', error: 'ON3_TOKEN is not configured, so 0nCore has no account to act as.' }
+  const r = await on3Call(token, tool, args)
+  return { ok: r.ok, text: r.text, data: r.data, error: r.error }
 }

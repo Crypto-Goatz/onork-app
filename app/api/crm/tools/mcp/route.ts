@@ -18,7 +18,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const MCP_URL = process.env.ONMCP_MCP_URL || 'https://0nmcp-remote.0nmcp.workers.dev/mcp'
+import { on3ToolsList, on3TokenFor, on3ServiceToken } from '@/lib/on3'
 
 interface McpTool {
   name: string
@@ -27,18 +27,6 @@ interface McpTool {
 }
 
 /** The bridge speaks SSE-framed JSON-RPC, so the payload arrives after `data: `. */
-function parseRpc(raw: string): { tools?: McpTool[] } | null {
-  for (const line of raw.split('\n')) {
-    const s = line.startsWith('data:') ? line.slice(5).trim() : line.trim()
-    if (!s.startsWith('{')) continue
-    try {
-      const j = JSON.parse(s)
-      if (j?.result) return j.result
-    } catch { /* keep scanning */ }
-  }
-  return null
-}
-
 export async function GET() {
   const supabase = await createClient()
   const user = (await supabase.auth.getSession()).data.session?.user ?? null
@@ -49,19 +37,10 @@ export async function GET() {
   )
 
   try {
-    const res = await fetch(MCP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
-      signal: AbortSignal.timeout(20_000),
-      cache: 'no-store',
-    })
-    if (!res.ok) {
-      return NextResponse.json({ error: `The tool bridge is not answering (${res.status}).` }, { status: 502 })
-    }
-
-    const result = parseRpc(await res.text())
-    const tools = (result?.tools ?? []).map((t) => {
+    const token = (await on3TokenFor(user.id)) || on3ServiceToken()
+    if (!token) return NextResponse.json({ error: 'No 0n token for this account yet.' }, { status: 502 })
+    const listed = (await on3ToolsList(token)) as McpTool[]
+    const tools = listed.map((t) => {
       const props = t.inputSchema?.properties ?? {}
       const required = new Set(t.inputSchema?.required ?? [])
       return {

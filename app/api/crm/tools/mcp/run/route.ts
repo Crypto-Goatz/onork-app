@@ -36,7 +36,8 @@ export async function POST(req: NextRequest) {
   }
 
   const { call0nMCP } = await import('@/lib/onmcp/client')
-  const r = await call0nMCP(tool, args)
+  const { on3TokenFor } = await import('@/lib/on3')
+  const r = await call0nMCP(tool, args, { token: (await on3TokenFor(user.id)) || undefined })
 
   // Receipt — same as a command-bar leg. Best-effort: a logging failure must not
   // swallow a result the user is waiting on.

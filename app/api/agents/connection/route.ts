@@ -22,7 +22,8 @@ import { seal, unseal, fingerprint } from '@/lib/vault/seal'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const MCP_URL = process.env.ONMCP_MCP_URL || 'https://0nmcp-remote.0nmcp.workers.dev/mcp'
+import { on3McpUrl } from '@/lib/on3'
+const MCP_URL = on3McpUrl()
 
 function admin() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
@@ -76,6 +77,15 @@ export async function POST(req: NextRequest) {
   const companyId = session.claims.companyId
 
   const key = newKey()
+  // The key IS a 0n token: a scoped, revocable access_tokens row for this person, so 0n3 resolves it to their account.
+  const { error: tokErr } = await admin().from('access_tokens').insert({
+    user_id: session.claims.sub, token: key, token_hash: crypto.createHash('sha256').update(key).digest('hex'),
+    name: `Agent key (${companyId})`, permission_level: 'full', scopes: ['mcp'], source: 'api', is_active: true,
+  })
+  if (tokErr) {
+    console.error('[agents/connection] token insert failed:', tokErr)
+    return NextResponse.json({ error: 'Could not create a key.' }, { status: 500 })
+  }
   const { error } = await admin().from('agency_mcp_keys').upsert({
     company_id: companyId,
     key_ciphertext: seal(key),
