@@ -34,11 +34,13 @@ interface Row { label: string; status: number; ok: boolean; detail: string }
 
 export default function ProofOfLife({ locationId }: { locationId?: string }) {
   const [rows, setRows] = useState<Row[] | null>(null)
+  const [source, setSource] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   async function run() {
     setBusy(true)
     setRows([])
+    setSource(null)
     const out: Row[] = []
     // Sequential, not parallel: ten simultaneous calls on a key that is already
     // rate-limited produces 429s that look like auth failures.
@@ -50,6 +52,8 @@ export default function ProofOfLife({ locationId }: { locationId?: string }) {
           body: JSON.stringify({ method: 'GET', path: t.path, locationId }),
         })
         const body = await res.text()
+        const src = res.headers.get('x-0n-crm-source')
+        if (src) setSource(src)
         let detail = ''
         if (!res.ok) {
           try { detail = (JSON.parse(body) as { message?: string }).message ?? '' } catch { detail = body.slice(0, 80) }
@@ -106,7 +110,7 @@ export default function ProofOfLife({ locationId }: { locationId?: string }) {
           </div>
           {!busy && (
             <p className="mt-3 text-[12.5px] font-medium text-[color:var(--oc-ink)]">
-              {passed} of {rows.length} endpoints answered.
+              {passed} of {rows.length} endpoints answered{source ? ` — tested with the ${source}` : ''}.
               {passed === 0 && ' That is a key problem, not a feature problem.'}
             </p>
           )}

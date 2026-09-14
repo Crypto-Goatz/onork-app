@@ -15,33 +15,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
 
-// Get the correct token for a location:
-// 1. Marketplace app OAuth token (has ALL scopes)
-// 2. Location-specific PIT (CRM_PIT_ONCORE / CRM_PIT_RAW)
-// 3. Master PIT (CRM_PIT_ROCKETOPP)
-async function getTokenForLocation(locationId: string): Promise<string | null> {
-  // Check for installed marketplace app OAuth token first
-  const { data: installation } = await supabase
-    .from('crm_installations')
-    .select('access_token, expires_at')
-    .eq('location_id', locationId)
-    .eq('status', 'active')
-    .single()
-
-  if (installation?.access_token) {
-    return installation.access_token
-  }
-
-  // Location-specific PIT — these are scoped to the location and work
-  const locationPit = process.env.CRM_PIT_ONCORE || process.env.CRM_PIT_RAW || process.env.CRM_PIT
-  if (locationPit?.startsWith('pit-')) return locationPit
-
-  // Master PIT — RocketOpp agency level
-  const masterPit = process.env.CRM_PIT_ROCKETOPP
-  if (masterPit?.startsWith('pit-')) return masterPit
-
-  return null
-}
+/**
+ * THE KEY COMES FROM ONE RESOLVER. This route used to carry its own picker
+ * (active install → the 0nCore location's env PIT → the agency PIT) that never
+ * looked at the key the agency PASTED for a client and never minted one. So
+ * "Test this key" for In2sight ran the 0nCore location's key against In2sight
+ * and printed ten 401s — while the pasted key answered 200 directly and a
+ * freshly minted token answered 200 too (measured 2026-09-14). A second
+ * resolver is a second source of truth, and this one lied to the repair
+ * surface. lib/crm.getAuthForLocation is the only picker now: pasted key →
+ * OAuth install (refreshed) → minted location token → env PIT.
+ */
+import { getAuthForLocation } from '@/lib/crm'
 
 export async function POST(req: NextRequest) {
   // Auth — get user from session
@@ -83,11 +68,14 @@ export async function POST(req: NextRequest) {
     }, { status: 403 })
   }
 
-  // Get the right token for this location
-  const token = await getTokenForLocation(locationId)
+  // Get the right token for this location — the shared resolver, never a local pick.
+  const auth = await getAuthForLocation(locationId)
+  const token = auth.token
   if (!token) {
-    return NextResponse.json({ error: 'No CRM token available for this location. Install the 0nCore marketplace app in your CRM.' }, { status: 500 })
+    return NextResponse.json({ error: auth.unresolved || 'No CRM credential for this location. Paste that account\'s key at /connect.', status: 500, source: 'none' }, { status: 500 })
   }
+  // Which credential answered, so the repair surface can say "tested with the pasted key".
+  const sourceLabel = auth.source === 'pit' && !auth.installId && !process.env[`CRM_PIT_${locationId}`] ? 'pasted key' : auth.source === 'oauth' ? (auth.installId ? 'app install' : 'minted token') : 'env key'
 
   // Build the CRM request URL
   // `/locations/` takes the id as a PATH segment, not a query param.
@@ -138,12 +126,12 @@ export async function POST(req: NextRequest) {
 
     if (!crmRes.ok) {
       return NextResponse.json(
-        { error: data.message || data.error || `CRM ${crmRes.status}`, status: crmRes.status },
-        { status: crmRes.status }
+        { error: data.message || data.error || `CRM ${crmRes.status}`, status: crmRes.status, source: sourceLabel },
+        { status: crmRes.status, headers: { 'x-0n-crm-source': sourceLabel } }
       )
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json(data, { headers: { 'x-0n-crm-source': sourceLabel } })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 502 })
   }

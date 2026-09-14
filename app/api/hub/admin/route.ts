@@ -192,7 +192,7 @@ async function crmCard(): Promise<Card> {
       if (unhealthy && status === 'ok') status = 'warn'
     } catch (e) { notes.push(e instanceof Error ? e.message : String(e)) }
   }
-  return { id: 'crm', title: 'CRM', subtitle: 'Agency, sub-accounts, installs, tokens', status, headline, metrics, notes, actions: [{ id: 'refresh', label: 'Re-measure' }], href: '/admin' }
+  return { id: 'crm', title: 'CRM', subtitle: 'Agency, sub-accounts, installs, tokens', status, headline, metrics, notes, actions: [{ id: 'mirror_crm_to_vault', label: 'Mirror client keys to the 0n3 vault' }, { id: 'refresh', label: 'Re-measure' }], href: '/admin' }
 }
 
 async function cro9Card(): Promise<Card> {
@@ -413,6 +413,26 @@ export async function POST(req: NextRequest) {
         const { ensureCro9Sheet } = await import('@/lib/cro9/sheet')
         const o = await ensureCro9Sheet({ userId: prof?.id || null, email, fullName: prof?.full_name || null, locationId, website, source: 'admin-panel' })
         return NextResponse.json({ ok: o.status !== 'failed', receipt: o }, { status: o.status === 'failed' ? 502 : 200 })
+      }
+      case 'mirror_crm_to_vault': {
+        const client = db()
+        if (!client) return NextResponse.json({ ok: false, error: 'no database client' }, { status: 500 })
+        const { ownerEmails } = await import('@/lib/owner')
+        const { data: owner } = await client.from('profiles').select('id').eq('email', ownerEmails()[0]).maybeSingle()
+        if (!owner?.id) return NextResponse.json({ ok: false, error: 'owner profile not found' }, { status: 500 })
+        const { on3TokenFor } = await import('@/lib/on3')
+        const { mirrorLocationKeyToVault } = await import('@/lib/on3/vault-mirror')
+        const ownerToken = await on3TokenFor(owner.id)
+        if (!ownerToken) return NextResponse.json({ ok: false, error: 'owner has no 0n token' }, { status: 500 })
+        const { data: rows, error } = await client.from('location_connections').select('location_id, location_name, company_id, location_pit, is_free').eq('status', 'active').not('location_pit', 'is', null).neq('location_pit', '')
+        if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+        const results: Array<{ locationId: string; label: string; ok: boolean; error?: string }> = []
+        for (const r of rows || []) {
+          const m = await mirrorLocationKeyToVault({ ownerToken, locationId: r.location_id, locationName: r.location_name, companyId: r.company_id, pit: r.location_pit, isFree: !!r.is_free })
+          results.push({ locationId: r.location_id, label: m.label, ok: m.ok, error: m.error })
+        }
+        const okCount = results.filter((x) => x.ok).length
+        return NextResponse.json({ ok: okCount === results.length, receipt: { mirrored: okCount, of: results.length, results } }, { status: okCount === results.length ? 200 : 207 })
       }
       case 'refresh':
         return NextResponse.json({ ok: true })

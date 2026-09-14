@@ -124,10 +124,28 @@ export async function POST(req: NextRequest) {
   // proved they were entitled to make.
   await syncAgencyQuantity(agency.company_id)
 
+  // Write-through to the 0n3 vault so every other surface sees this key too.
+  // Never fatal: the paste already saved; a mirror failure is logged with 0n3's words.
+  let vault: { ok: boolean; label: string; error?: string } | null = null
+  if (!pending) {
+    try {
+      const { on3TokenFor } = await import('@/lib/on3')
+      const { mirrorLocationKeyToVault } = await import('@/lib/on3/vault-mirror')
+      const ownerToken = await on3TokenFor(user.id)
+      vault = ownerToken
+        ? await mirrorLocationKeyToVault({ ownerToken, locationId, locationName: match.name, companyId: agency.company_id, pit, isFree: wantFree })
+        : { ok: false, label: '', error: 'no 0n token for this account' }
+      if (!vault.ok) console.error('[connect/location] vault mirror failed:', vault.error)
+    } catch (e) {
+      console.error('[connect/location] vault mirror threw:', e instanceof Error ? e.message : e)
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     locationId,
     name: match.name,
+    vault,
     isFree: wantFree,
     pending,
     priceCents: wantFree ? 0 : AGENCY_BILLING.perClientCents,
