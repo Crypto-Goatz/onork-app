@@ -221,8 +221,39 @@ const TOOLS = [
   t('site_build', 'Build a whole site in one call: posts + products + collections + brand custom values. Returns a manifest of everything created and everything that failed — it never stops at the first error, and it never reports a partial run as a success.', { posts: a('object'), products: a('object'), collections: a('object'), values: o, dryRun: { type: 'boolean' as const } }),
 ]
 
+/**
+ * GATED 2026-09-14. This route executed CRM, Stripe (live key), Slack and Groq
+ * calls for ANYONE who could POST JSON to it — the same class of hole as the
+ * Cloudflare worker Mike deleted the day before. It now requires a bearer 0n
+ * token (the master token or an active scoped token). Clients that cannot send
+ * a bearer (claude.ai connectors) are told where the OAuth door is: 0n3.app/mcp.
+ */
+async function bearerAccount(req: NextRequest): Promise<{ ok: true; userId: string } | { ok: false }> {
+  const raw = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim()
+  if (!raw || !raw.startsWith('0n_')) return { ok: false }
+  try {
+    const { validateProfileToken } = await import('@/lib/0n-token')
+    const v = await validateProfileToken(raw)
+    if (v.valid && v.profile?.id) return { ok: true, userId: v.profile.id }
+  } catch { /* fall through to scoped tokens */ }
+  try {
+    const { createClient } = await import('@supabase/supabase-js')
+    const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
+    const { data } = await db.from('access_tokens').select('user_id, expires_at').eq('token', raw).eq('is_active', true).is('revoked_at', null).maybeSingle()
+    if (data?.user_id && (!data.expires_at || new Date(data.expires_at).getTime() > Date.now())) return { ok: true, userId: data.user_id }
+  } catch { /* unauthenticated */ }
+  return { ok: false }
+}
+
 export async function POST(req: NextRequest) {
   const accept = req.headers.get('accept') || ''
+  const who = await bearerAccount(req)
+  if (!who.ok) {
+    return NextResponse.json(
+      { jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Sign in with your 0n account. Send Authorization: Bearer <your 0n token> (0n3.app/tokens), or connect through OAuth at https://0n3.app/mcp.' } },
+      { status: 401, headers: { 'WWW-Authenticate': 'Bearer resource_metadata="https://0n3.app/.well-known/oauth-protected-resource"' } },
+    )
+  }
 
   try {
     const body = await req.json()
