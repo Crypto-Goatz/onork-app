@@ -71,7 +71,7 @@ const headers = (token: string) => ({
  *                   provisioning runs
  */
 export async function ensureIdentity({
-  userId, email, fullName, company, door, locationId,
+  userId, email, fullName, company, door, locationId, tags,
 }: {
   userId: string
   email: string
@@ -79,6 +79,8 @@ export async function ensureIdentity({
   company?: string | null
   door: Door
   locationId?: string | null
+  /** Override the default tags. Pass [] for a backfill: a tag can fire a workflow, and bulk tagging is the doctrine's worst outage. */
+  tags?: string[]
 }): Promise<IdentityResult> {
   const db = createServiceClient()
   const token = pit()
@@ -117,7 +119,7 @@ export async function ensureIdentity({
         ...(company ? { companyName: company } : {}),
         // The door is recorded as a tag so it is visible to a human reading the
         // CRM, and usable as a workflow trigger without a custom field lookup.
-        tags: ['0n user', door === 'direct' ? '0n direct signup' : '0n agency'],
+        ...(tags ? (tags.length ? { tags } : {}) : { tags: ['0n user', door === 'direct' ? '0n direct signup' : '0n agency'] }),
       }),
     })
     const body = await res.json().catch(() => ({}))

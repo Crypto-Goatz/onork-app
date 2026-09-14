@@ -75,6 +75,10 @@
     {
       "path": "/api/cron/drain-webhook-events",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/sync-contacts",
+      "schedule": "*/10 * * * *"
     }
   ],
   "$schema": "https://openapi.vercel.sh/vercel.json",

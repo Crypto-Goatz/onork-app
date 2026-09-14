@@ -134,6 +134,14 @@ export async function GET() {
   }
   if (db) {
     try {
+      // THE CANARY: an account older than an hour with no CRM contact id means the drain is not running. Zero is the only acceptable number.
+      const hourAgo = new Date(Date.now() - 3600_000).toISOString()
+      const { count: unsynced } = await db.from('profiles').select('id', { count: 'exact', head: true }).is('crm_contact_id', null).lt('created_at', hourAgo).not('email', 'ilike', '%+test%').not('email', 'ilike', '%e2e%')
+      metrics.accountsUnsynced = { value: unsynced ?? null, label: 'Accounts with no CRM contact (>1h old)', note: unsynced ? 'The sync-contacts cron should drive this to zero; if it stays, read its response for the CRM\'s own error.' : undefined }
+    } catch (e) {
+      metrics.accountsUnsynced = { value: null, label: 'Accounts with no CRM contact (>1h old)', note: `Query failed: ${(e as Error).message}` }
+    }
+    try {
       const { count } = await db.from('vault_records').select('id', { count: 'exact', head: true }).neq('status', 'revoked')
       metrics.vaultRecords = { value: count ?? null, label: 'Vault records' }
       const { data: accts } = await db.from('vault_records').select('account_id').neq('status', 'revoked').limit(5000)
