@@ -26,7 +26,7 @@ const supabase = createClient(
  * surface. lib/crm.getAuthForLocation is the only picker now: pasted key →
  * OAuth install (refreshed) → minted location token → env PIT.
  */
-import { getAuthForLocation } from '@/lib/crm'
+import { getAuthForLocation, fallbackCredentials } from '@/lib/crm'
 
 export async function POST(req: NextRequest) {
   // Auth — get user from session
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: auth.unresolved || 'No CRM credential for this location. Paste that account\'s key at /connect.', status: 500, source: 'none' }, { status: 500 })
   }
   // Which credential answered, so the repair surface can say "tested with the pasted key".
-  const sourceLabel = auth.source === 'pit' && !auth.installId && !process.env[`CRM_PIT_${locationId}`] ? 'pasted key' : auth.source === 'oauth' ? (auth.installId ? 'app install' : 'minted token') : 'env key'
+  const sourceLabel0 = auth.source === 'pit' && !auth.installId && !process.env[`CRM_PIT_${locationId}`] ? 'pasted key' : auth.source === 'oauth' ? (auth.installId ? 'app install' : 'minted token') : 'env key'
 
   // Build the CRM request URL
   // `/locations/` takes the id as a PATH segment, not a query param.
@@ -112,15 +112,28 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const crmRes = await fetch(url, {
+    const send = (bearer: string) => fetch(url, {
       method,
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${bearer}`,
         Version: CRM_VERSION,
         'Content-Type': 'application/json',
       },
       ...(finalBody && method !== 'GET' && method !== 'DELETE' ? { body: JSON.stringify(finalBody) } : {}),
+      cache: 'no-store',
     })
+    let crmRes = await send(token)
+    let sourceLabel = sourceLabel0
+    // A pasted key can be scoped narrower than the endpoint needs (tags,
+    // invoices, users, custom fields 401/403 on a limited private integration
+    // while contacts answer 200). Try the other credentials this location has —
+    // the app install and a minted location token — and say which one answered.
+    if (crmRes.status === 401 || crmRes.status === 403) {
+      for (const next of await fallbackCredentials(auth)) {
+        const retry = await send(next.token)
+        if (retry.ok) { crmRes = retry; sourceLabel = next.label === 'the client key' ? 'pasted key' : `minted token (${next.label})`; break }
+      }
+    }
 
     const data = await crmRes.json().catch(() => ({}))
 
