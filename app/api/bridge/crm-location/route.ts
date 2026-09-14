@@ -33,6 +33,8 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { ensureLocationInstall } from '@/lib/crm/location-token'
+import { ensureCro9Sheet } from '@/lib/cro9/sheet'
+import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 
@@ -48,6 +50,7 @@ export async function POST(req: NextRequest) {
   const email = String(body.email || '').trim().toLowerCase()
   const businessName = String(body.businessName || '').trim()
   const explicitLocation = String(body.locationId || '').trim()
+  const website = String(body.website || '').trim()
 
   if (!email && !explicitLocation) {
     return NextResponse.json({ error: 'email or locationId required' }, { status: 400 })
@@ -145,11 +148,34 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Every sub-location gets its CRO9 sheet (Mike, 2026-09-14). Idempotent on
+    // the CRO9 side, so calling it for an existing location is safe; needs a
+    // website, and records `skipped` on the profile when there is none.
+    let sheet: Awaited<ReturnType<typeof ensureCro9Sheet>> | null = null
+    try {
+      let userId: string | null = null
+      let fullName: string | null = null
+      let profileWebsite: string | null = null
+      if (email) {
+        const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })
+        const { data: prof } = await sb.from('profiles').select('id, full_name, website').eq('email', email).order('created_at', { ascending: true }).limit(1).maybeSingle()
+        userId = prof?.id || null
+        fullName = prof?.full_name || null
+        profileWebsite = prof?.website || null
+      }
+      if (email) {
+        sheet = await ensureCro9Sheet({ userId, email, fullName, locationId, website: website || profileWebsite, source: 'ontask-bridge' })
+      }
+    } catch (e) {
+      console.error('[bridge/crm-location] CRO9 sheet threw:', e instanceof Error ? e.message : e)
+    }
+
     return NextResponse.json({
       ok: true,
       locationId,
       locationName,
       created,
+      sheet: sheet ? { status: sheet.status, url: sheet.spreadsheetUrl ?? null, reason: sheet.reason ?? null } : null,
       token: minted.token,
       expiresAt: minted.expiresAt ?? null,
       source: minted.source,

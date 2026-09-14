@@ -48,7 +48,7 @@ export async function provisionSubLocation(userId: string): Promise<ProvisionRes
   // Get user profile
   const { data: profile } = await supabase
     .from('profiles')
-    .select('email, full_name, business_name, crm_location_id, crm_contact_id, stripe_customer_id, stripe_subscription_id, website_scan')
+    .select('email, full_name, business_name, crm_location_id, crm_contact_id, stripe_customer_id, stripe_subscription_id, website, website_scan')
     .eq('id', userId)
     .single()
 
@@ -256,6 +256,26 @@ export async function provisionSubLocation(userId: string): Promise<ProvisionRes
     // Bidirectional link: push Stripe IDs to the master-location CRM contact
     // so CRM-side workflows can react to billing state. Best-effort — webhook
     // handler will catch up later if the user hasn't checked out yet.
+    // Every sub-location gets its CRO9 Google Sheet (Mike, 2026-09-14). Never
+    // fatal: the outcome lands on profiles.provisioning_state.cro9_sheet.
+    try {
+      const { ensureCro9Sheet } = await import('./cro9/sheet')
+      const sheet = await ensureCro9Sheet({
+        userId,
+        email: profile.email!,
+        fullName: profile.full_name,
+        locationId: newLocationId,
+        website: (profile.website as string | null) || ((profile.website_scan as Record<string, unknown>)?.site_url as string | undefined) || null,
+        source: 'oncore-provision',
+      })
+      if (sheet.status === 'failed') errors.push(`CRO9 sheet: ${sheet.reason}`)
+      else if (sheet.status === 'partial') errors.push(...(sheet.failures || []).map((f) => `CRO9 sheet: ${f}`))
+      else if (sheet.status === 'skipped') console.log(`[provision] CRO9 sheet skipped for ${newLocationId}: ${sheet.reason}`)
+    } catch (sheetErr) {
+      console.error('[provision] CRO9 sheet threw:', sheetErr)
+      errors.push(`CRO9 sheet: ${sheetErr instanceof Error ? sheetErr.message : 'unknown'}`)
+    }
+
     try {
       if (profile.crm_contact_id && profile.stripe_customer_id) {
         const ok = await writeStripeIdsToCrmContact({
