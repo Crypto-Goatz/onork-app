@@ -352,12 +352,14 @@ async function auditCards(origin: string): Promise<Card[]> {
   } catch (e) { out.push({ id: 'env', title: 'Credentials', subtitle: '', status: 'unmeasured', headline: null, metrics: [], notes: [e instanceof Error ? e.message : String(e)], actions: [] }) }
   try {
     const r = await jsonFetch(`${origin}/api/admin/deprecation-check`, { headers: h }, 20_000)
-    const j = (r.body || {}) as { healthy?: boolean; fallback?: { armed?: boolean; mintDisposition?: string; locationsKnown?: number; onPastedKey?: number; onInstall?: number; connectedOnMint?: unknown[] } }
+    const j = (r.body || {}) as { healthy?: boolean; fallback?: { armed?: boolean; mintDisposition?: string | { allowed?: boolean; reason?: string; detail?: string }; locationsKnown?: number; onPastedKey?: number; onInstall?: number; connectedOnMint?: unknown[] } }
     const f = j.fallback || {}
+    // mintDisposition is an object {allowed, reason, detail}; a metric value must be text.
+    const mint = typeof f.mintDisposition === 'object' && f.mintDisposition ? `${f.mintDisposition.allowed ? 'allowed' : 'blocked'}${f.mintDisposition.reason ? ' · ' + f.mintDisposition.reason : ''}` : (f.mintDisposition ?? null)
     const onMint = Array.isArray(f.connectedOnMint) ? f.connectedOnMint.length : null
     out.push(r.ok ? {
       id: 'deprecation', title: 'CRM deprecation exposure', subtitle: 'Anything still leaning on a removed endpoint', status: j.healthy ? 'ok' : 'warn', headline: onMint === null ? null : `${onMint} connected on the mint`,
-      metrics: [{ label: 'Fallback armed', value: f.armed ? 'yes' : 'no' }, { label: 'Mint disposition', value: f.mintDisposition ?? null }, { label: 'Locations known', value: f.locationsKnown ?? null }, { label: 'On a pasted key', value: f.onPastedKey ?? null }, { label: 'On an install', value: f.onInstall ?? null }, { label: 'Connected on the mint', value: onMint, kind: onMint ? 'warn' : 'ok' }],
+      metrics: [{ label: 'Fallback armed', value: f.armed ? 'yes' : 'no' }, { label: 'Mint disposition', value: mint }, { label: 'Locations known', value: f.locationsKnown ?? null }, { label: 'On a pasted key', value: f.onPastedKey ?? null }, { label: 'On an install', value: f.onInstall ?? null }, { label: 'Connected on the mint', value: onMint, kind: onMint ? 'warn' : 'ok' }],
       notes: [], actions: [],
     } : { id: 'deprecation', title: 'CRM deprecation exposure', subtitle: 'Anything still leaning on a removed endpoint', status: 'unmeasured', headline: null, metrics: [], notes: [`deprecation-check answered ${r.status}: ${r.text.slice(0, 120)}`], actions: [] })
   } catch (e) { out.push({ id: 'deprecation', title: 'CRM deprecation exposure', subtitle: '', status: 'unmeasured', headline: null, metrics: [], notes: [e instanceof Error ? e.message : String(e)], actions: [] }) }

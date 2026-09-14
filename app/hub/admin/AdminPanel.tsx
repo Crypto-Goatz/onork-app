@@ -35,7 +35,9 @@ const VALUE_COLOR: Record<NonNullable<Metric['kind']>, string> = { ok: 'text-[#e
 function fmt(v: Metric['value']): string {
   if (v === null || v === undefined) return '—'
   if (typeof v === 'number') return v.toLocaleString('en-US')
-  return v
+  if (typeof v === 'string') return v
+  // A value that is not text is a bug upstream; print it rather than crash the page (React #31).
+  try { return JSON.stringify(v) } catch { return String(v) }
 }
 
 export default function AdminPanel() {
