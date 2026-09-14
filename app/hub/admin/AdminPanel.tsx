@@ -56,16 +56,8 @@ export default function AdminPanel() {
       setData(await r.json())
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
-    // The three existing admin audits, read as they are.
+    // AI truth is behind the Supabase-session admin gate, so the browser reads it directly.
     const results: Card[] = []
-    try {
-      const r = await fetch('/api/admin/env-audit', { cache: 'no-store' }); const j = await r.json()
-      results.push(r.ok ? {
-        id: 'env', title: 'Credentials', subtitle: 'Is every secret the shape it should be', status: j.healthy ? 'ok' : 'crit', headline: `${j.checked} checked`,
-        metrics: [{ label: 'Stored as an encryption envelope', value: (j.envelopes || []).length, kind: (j.envelopes || []).length ? 'crit' : 'ok', note: (j.envelopes || []).join(', ') || undefined }, { label: 'Wrong shape', value: (j.wrongShape || []).length, kind: (j.wrongShape || []).length ? 'crit' : 'ok', note: (j.wrongShape || []).map((w: { key: string }) => w.key).join(', ') || undefined }, { label: 'Consistency issues', value: (j.consistency || []).length, kind: (j.consistency || []).length ? 'warn' : 'ok' }],
-        notes: [], actions: [],
-      } : { id: 'env', title: 'Credentials', subtitle: 'Is every secret the shape it should be', status: 'unmeasured', headline: null, metrics: [], notes: [`env-audit answered ${r.status}`], actions: [] })
-    } catch (e) { results.push({ id: 'env', title: 'Credentials', subtitle: '', status: 'unmeasured', headline: null, metrics: [], notes: [String(e)], actions: [] }) }
     try {
       const r = await fetch('/api/admin/truth', { cache: 'no-store' }); const j = await r.json()
       const s = (j.summary || {}) as Record<string, number | string>
@@ -74,15 +66,6 @@ export default function AdminPanel() {
         metrics: Object.entries(s).map(([k, v]) => ({ label: k.replace(/_/g, ' '), value: v as number | string })), notes: [], actions: [],
       } : { id: 'truth', title: 'AI truth', subtitle: '', status: 'unmeasured', headline: null, metrics: [], notes: [`truth answered ${r.status}`], actions: [] })
     } catch (e) { results.push({ id: 'truth', title: 'AI truth', subtitle: '', status: 'unmeasured', headline: null, metrics: [], notes: [String(e)], actions: [] }) }
-    try {
-      const r = await fetch('/api/admin/deprecation-check', { cache: 'no-store' }); const j = await r.json()
-      const f = (j.fallback || {}) as Record<string, unknown>
-      results.push(r.ok ? {
-        id: 'deprecation', title: 'CRM deprecation exposure', subtitle: 'Anything still leaning on a removed endpoint', status: j.healthy ? 'ok' : 'warn', headline: null,
-        metrics: [{ label: 'Fallback armed', value: f.armed ? 'yes' : 'no' }, { label: 'Locations known', value: (f.locationsKnown as number) ?? null }, { label: 'Connected on the mint', value: Array.isArray(f.connectedOnMint) ? f.connectedOnMint.length : null, kind: Array.isArray(f.connectedOnMint) && f.connectedOnMint.length ? 'warn' : 'ok' }],
-        notes: [], actions: [],
-      } : { id: 'deprecation', title: 'CRM deprecation exposure', subtitle: '', status: 'unmeasured', headline: null, metrics: [], notes: [`deprecation-check answered ${r.status}`], actions: [] })
-    } catch (e) { results.push({ id: 'deprecation', title: 'CRM deprecation exposure', subtitle: '', status: 'unmeasured', headline: null, metrics: [], notes: [String(e)], actions: [] }) }
     setExtra(results)
   }, [])
   useEffect(() => { load() }, [load])

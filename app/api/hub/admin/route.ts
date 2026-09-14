@@ -17,6 +17,7 @@ import { isOwner } from '@/lib/owner'
 import { probe } from '@/lib/hub/probe'
 import { NODES } from '@/lib/ecosystem/graph'
 import vercelConfig from '@/vercel.json'
+import { issueAppJwt } from '@/lib/auth/app-jwt'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -181,14 +182,13 @@ async function crmCard(): Promise<Card> {
 
   if (client) {
     try {
-      const [installs, healthy, unhealthy, expiring, connections] = await Promise.all([
+      const [installs, healthy, unhealthy, expiring] = await Promise.all([
         count(client, 'crm_installations'),
         count(client, 'crm_installations', (q) => q.eq('health_status', 'healthy')),
         count(client, 'crm_installations', (q) => q.gt('consecutive_failures', 0)),
         count(client, 'crm_installations', (q) => q.lt('expires_at', iso(-DAY)).eq('status', 'active')),
-        count(client, 'crm_connections'),
       ])
-      metrics.push({ label: 'Installs recorded', value: installs }, { label: 'Healthy', value: healthy }, { label: 'Failing', value: unhealthy, kind: unhealthy ? 'warn' : 'ok' }, { label: 'Tokens expiring < 24 h', value: expiring, kind: expiring ? 'warn' : 'ok', note: 'refresh-tokens runs every 6 h' }, { label: 'Location connections', value: connections })
+      metrics.push({ label: 'Installs recorded', value: installs }, { label: 'Healthy', value: healthy }, { label: 'Failing', value: unhealthy, kind: unhealthy ? 'warn' : 'ok' }, { label: 'Tokens expiring < 24 h', value: expiring, kind: expiring ? 'warn' : 'ok', note: 'refresh-tokens runs every 6 h' })
       if (unhealthy && status === 'ok') status = 'warn'
     } catch (e) { notes.push(e instanceof Error ? e.message : String(e)) }
   }
@@ -231,15 +231,15 @@ async function ontaskCard(): Promise<Card> {
     try {
       const [ents, active, founders, tasksPending, tasksDone7, tasksFailed7, leads7] = await Promise.all([
         count(client, 'ontask_entitlements', (q) => q.select('email', { count: 'exact', head: true })),
-        count(client, 'ontask_entitlements', (q) => q.select('email', { count: 'exact', head: true }).eq('status', 'active')),
+        count(client, 'ontask_entitlements', (q) => q.select('email', { count: 'exact', head: true }).in('status', ['active', 'lifetime', 'trialing'])),
         count(client, 'ontask_entitlements', (q) => q.select('email', { count: 'exact', head: true }).eq('founder', true)),
         count(client, 'ontask_agent_tasks', (q) => q.in('status', ['pending', 'queued', 'running'])),
         count(client, 'ontask_agent_tasks', (q) => q.eq('status', 'done').gte('updated_at', iso(7 * DAY))),
         count(client, 'ontask_agent_tasks', (q) => q.eq('status', 'failed').gte('updated_at', iso(7 * DAY))),
         count(client, 'ontask_leads', (q) => q.gte('created_at', iso(7 * DAY))),
       ])
-      headline = `${active ?? '?'} active · ${founders ?? '?'} founders`
-      metrics.push({ label: 'Entitlements', value: ents }, { label: 'Active', value: active }, { label: 'Founders', value: founders }, { label: 'AI tasks in flight', value: tasksPending, kind: tasksPending ? 'warn' : 'ok' }, { label: 'AI tasks done · 7 d', value: tasksDone7 }, { label: 'AI tasks failed · 7 d', value: tasksFailed7, kind: tasksFailed7 ? 'warn' : 'ok' }, { label: 'Leads · 7 d', value: leads7 })
+      headline = `${active ?? '?'} entitled · ${founders ?? '?'} founder${founders === 1 ? '' : 's'}`
+      metrics.push({ label: 'Entitlements', value: ents }, { label: 'Active or lifetime', value: active }, { label: 'Founders', value: founders }, { label: 'AI tasks in flight', value: tasksPending, kind: tasksPending ? 'warn' : 'ok' }, { label: 'AI tasks done · 7 d', value: tasksDone7 }, { label: 'AI tasks failed · 7 d', value: tasksFailed7, kind: tasksFailed7 ? 'warn' : 'ok' }, { label: 'Leads · 7 d', value: leads7 })
       if (tasksFailed7 && status === 'ok') status = 'warn'
     } catch (e) { notes.push(e instanceof Error ? e.message : String(e)) }
   }
@@ -284,7 +284,7 @@ async function stripeCard(): Promise<Card> {
     if (client) {
       const { data } = await client.from('stripe_webhook_logs').select('event_type, created_at').order('created_at', { ascending: false }).limit(1)
       const last = data?.[0]
-      metrics.push({ label: 'Last webhook seen', value: last ? `${last.event_type} · ${ago(last.created_at)}` : 'none logged', kind: last ? 'ok' : 'warn' })
+      metrics.push({ label: 'Last webhook', value: last ? `${last.event_type} · ${ago(last.created_at)}` : 'none logged', kind: last ? 'ok' : 'warn' })
     }
   } catch (e) { status = 'warn'; notes.push(e instanceof Error ? e.message : String(e)) }
   return { id: 'stripe', title: 'Stripe', subtitle: 'RocketOpp LLC, one account, every brand', status, headline, metrics, notes, actions: [{ id: 'refresh', label: 'Re-measure' }], href: 'https://dashboard.stripe.com' }
@@ -317,13 +317,61 @@ function deploysCard(): Card {
   ], notes: ['Not measured: this project holds no Vercel API token. Add VERCEL_API_TOKEN (read-only) as a plain env var and this card lights up with the latest SHA and state per project.'], actions: [] }
 }
 
+
+/**
+ * The two audits that already exist behind the in-app JWT (env-audit,
+ * deprecation-check). The owner holds a Supabase session, not an app JWT, so a
+ * 60-second owner JWT is minted here and the routes are read as they are —
+ * no second implementation of either audit.
+ */
+async function auditCards(origin: string): Promise<Card[]> {
+  const out: Card[] = []
+  let token = ''
+  try { token = issueAppJwt({ sub: 'owner', companyId: process.env.CRM_COMPANY_ID || '', role: 'owner', email: 'owner' }, 60) }
+  catch (e) {
+    const why = e instanceof Error ? e.message : String(e)
+    return [
+      { id: 'env', title: 'Credentials', subtitle: 'Is every secret the shape it should be', status: 'unmeasured', headline: null, metrics: [], notes: [why], actions: [] },
+      { id: 'deprecation', title: 'CRM deprecation exposure', subtitle: 'Anything still leaning on a removed endpoint', status: 'unmeasured', headline: null, metrics: [], notes: [why], actions: [] },
+    ]
+  }
+  const h = { Authorization: `Bearer ${token}` }
+  try {
+    const r = await jsonFetch(`${origin}/api/admin/env-audit`, { headers: h }, 15_000)
+    const j = (r.body || {}) as { checked?: number; healthy?: boolean; envelopes?: string[]; wrongShape?: Array<{ key: string }>; consistency?: unknown[] }
+    const env = j.envelopes || []; const wrong = j.wrongShape || []; const cons = j.consistency || []
+    out.push(r.ok ? {
+      id: 'env', title: 'Credentials', subtitle: 'Is every secret the shape it should be', status: j.healthy ? 'ok' : 'crit', headline: `${j.checked ?? '?'} checked`,
+      metrics: [
+        { label: 'Stored as an encryption envelope', value: env.length, kind: env.length ? 'crit' : 'ok', note: env.join(', ') || undefined },
+        { label: 'Wrong shape', value: wrong.length, kind: wrong.length ? 'crit' : 'ok', note: wrong.map((w) => w.key).join(', ') || undefined },
+        { label: 'Consistency issues', value: cons.length, kind: cons.length ? 'warn' : 'ok' },
+      ],
+      notes: [...env.map((k) => `${k} is a Vercel envelope, not a secret — re-save it as plain.`), ...wrong.map((w) => `${w.key} has the wrong shape.`)], actions: [],
+    } : { id: 'env', title: 'Credentials', subtitle: 'Is every secret the shape it should be', status: 'unmeasured', headline: null, metrics: [], notes: [`env-audit answered ${r.status}: ${r.text.slice(0, 120)}`], actions: [] })
+  } catch (e) { out.push({ id: 'env', title: 'Credentials', subtitle: '', status: 'unmeasured', headline: null, metrics: [], notes: [e instanceof Error ? e.message : String(e)], actions: [] }) }
+  try {
+    const r = await jsonFetch(`${origin}/api/admin/deprecation-check`, { headers: h }, 20_000)
+    const j = (r.body || {}) as { healthy?: boolean; fallback?: { armed?: boolean; mintDisposition?: string; locationsKnown?: number; onPastedKey?: number; onInstall?: number; connectedOnMint?: unknown[] } }
+    const f = j.fallback || {}
+    const onMint = Array.isArray(f.connectedOnMint) ? f.connectedOnMint.length : null
+    out.push(r.ok ? {
+      id: 'deprecation', title: 'CRM deprecation exposure', subtitle: 'Anything still leaning on a removed endpoint', status: j.healthy ? 'ok' : 'warn', headline: onMint === null ? null : `${onMint} connected on the mint`,
+      metrics: [{ label: 'Fallback armed', value: f.armed ? 'yes' : 'no' }, { label: 'Mint disposition', value: f.mintDisposition ?? null }, { label: 'Locations known', value: f.locationsKnown ?? null }, { label: 'On a pasted key', value: f.onPastedKey ?? null }, { label: 'On an install', value: f.onInstall ?? null }, { label: 'Connected on the mint', value: onMint, kind: onMint ? 'warn' : 'ok' }],
+      notes: [], actions: [],
+    } : { id: 'deprecation', title: 'CRM deprecation exposure', subtitle: 'Anything still leaning on a removed endpoint', status: 'unmeasured', headline: null, metrics: [], notes: [`deprecation-check answered ${r.status}: ${r.text.slice(0, 120)}`], actions: [] })
+  } catch (e) { out.push({ id: 'deprecation', title: 'CRM deprecation exposure', subtitle: '', status: 'unmeasured', headline: null, metrics: [], notes: [e instanceof Error ? e.message : String(e)], actions: [] }) }
+  return out
+}
+
 // ── GET ────────────────────────────────────────────────────────────────────
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   if (!(await isOwner())) return NextResponse.json({ error: 'Not found.' }, { status: 404 })
   const started = Date.now()
-  const settled = await Promise.allSettled([surfacesCard(), on3Card(), identityCard(), crmCard(), cro9Card(), ontaskCard(), stripeCard(), dataCard()])
-  const cards: Card[] = settled.map((s, i) => s.status === 'fulfilled' ? s.value : { id: `card${i}`, title: 'Card failed', subtitle: '', status: 'unmeasured' as Status, headline: null, metrics: [], notes: [String((s as PromiseRejectedResult).reason)], actions: [] })
+  const origin = new URL(req.url).origin
+  const settled = await Promise.allSettled([surfacesCard(), on3Card(), identityCard(), crmCard(), cro9Card(), ontaskCard(), stripeCard(), dataCard(), auditCards(origin)])
+  const cards: Card[] = settled.flatMap((s, i) => s.status === 'fulfilled' ? s.value : [{ id: `card${i}`, title: 'Card failed', subtitle: '', status: 'unmeasured' as Status, headline: null, metrics: [], notes: [String((s as PromiseRejectedResult).reason)], actions: [] }])
   cards.push(jobsCard(), deploysCard())
   return NextResponse.json({ measuredAt: new Date().toISOString(), tookMs: Date.now() - started, cards })
 }
