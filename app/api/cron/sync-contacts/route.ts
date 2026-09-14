@@ -47,6 +47,9 @@ export async function GET(req: NextRequest) {
     .not('email', 'ilike', '%+test%')
     .not('email', 'ilike', '%@test.%')
     .not('email', 'ilike', '%@evil.%')
+    // Two rows hold a value the CRM rejects with 422 "email must be an email"; they
+    // are not contacts and retrying them every 10 minutes forever is noise.
+    .like('email', '%@%.%')
     .order('created_at', { ascending: true })
     .limit(limit)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
