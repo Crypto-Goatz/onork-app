@@ -36,6 +36,7 @@ export default async function HubLayout({ children }: { children: React.ReactNod
     { href: '/hub/room', label: 'The Room', icon: 'radio', owner: true },
     { href: '/hub/usage', label: 'Usage', icon: 'gauge', owner: true },
     { href: '/hub/ecosystem', label: 'Ecosystem', icon: 'map', owner: true },
+    { href: '/hub/admin', label: 'Admin', icon: 'shield', owner: true },
   ].filter((l) => !l.owner || owner)
 
   return (

@@ -29,12 +29,12 @@
  */
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, LayoutGrid, Radio, Gauge, Map } from 'lucide-react'
+import { Home, LayoutGrid, Radio, Gauge, Map, ShieldCheck } from 'lucide-react'
 
 export type HubLink = { href: string; label: string; icon: string; owner?: boolean }
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  home: Home, grid: LayoutGrid, radio: Radio, gauge: Gauge, map: Map,
+  home: Home, grid: LayoutGrid, radio: Radio, gauge: Gauge, map: Map, shield: ShieldCheck,
 }
 
 export default function HubNav({ links }: { links: HubLink[] }) {

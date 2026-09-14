@@ -25,6 +25,7 @@ import { NextResponse } from 'next/server'
 import { isOwner } from '@/lib/owner'
 import { NODES } from '@/lib/ecosystem/graph'
 import { createServiceClient } from '@/lib/connect/service-client'
+import { probe } from '@/lib/hub/probe'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -32,29 +33,6 @@ export const dynamic = 'force-dynamic'
 /** Probe budget. A map that hangs is a map nobody opens twice. */
 const TIMEOUT_MS = 6000
 
-async function probe(url: string): Promise<{ ok: boolean; status: number | null; ms: number; note?: string }> {
-  const started = Date.now()
-  const ctl = new AbortController()
-  const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS)
-  try {
-    // GET, not HEAD: several of these hosts answer HEAD with 405 while serving
-    // GET perfectly well, which would paint a healthy surface as broken.
-    // `redirect: manual` so an apex→www 308 is reported as the redirect it is
-    // rather than silently following — that redirect has already cost this
-    // project an entire broken sign-in flow.
-    const res = await fetch(url, { signal: ctl.signal, redirect: 'manual', headers: { 'user-agent': '0n-ecosystem-probe' } })
-    return {
-      ok: res.status < 400 || (res.status >= 300 && res.status < 400),
-      status: res.status,
-      ms: Date.now() - started,
-      note: res.status >= 300 && res.status < 400 ? `redirects → ${res.headers.get('location') || 'elsewhere'}` : undefined,
-    }
-  } catch (e) {
-    return { ok: false, status: null, ms: Date.now() - started, note: (e as Error).name === 'AbortError' ? `no answer in ${TIMEOUT_MS / 1000}s` : 'unreachable' }
-  } finally {
-    clearTimeout(timer)
-  }
-}
 
 export async function GET() {
   if (!(await isOwner())) {
@@ -64,7 +42,7 @@ export async function GET() {
 
   const targets = NODES.filter((n) => n.healthUrl)
   const health: Record<string, Awaited<ReturnType<typeof probe>>> = {}
-  const results = await Promise.all(targets.map((n) => probe(n.healthUrl!)))
+  const results = await Promise.all(targets.map((n) => probe(n.healthUrl!, TIMEOUT_MS)))
   targets.forEach((n, i) => { health[n.id] = results[i] })
 
   // ── Live counts, each with its own honest failure ────────────────────
@@ -124,7 +102,7 @@ export async function GET() {
   try {
     const ctl = new AbortController()
     const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS)
-    const r = await fetch('https://0n3.app/', { signal: ctl.signal, cache: 'no-store', headers: { 'user-agent': '0n-ecosystem-probe' } })
+    const r = await fetch('https://0n3.app/api/handler', { signal: ctl.signal, cache: 'no-store', headers: { 'user-agent': '0n-ecosystem-probe' } })
     clearTimeout(timer)
     const j = (await r.json()) as { version?: string; tools?: number; crmTools?: number; services?: number }
     metrics.on3Tools = { value: typeof j.tools === 'number' ? j.tools : null, label: `0n3 tools (v${j.version || '?'})`, note: typeof j.tools === 'number' ? undefined : '0n3 answered without a count.' }
