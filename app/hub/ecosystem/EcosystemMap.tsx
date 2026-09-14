@@ -112,6 +112,9 @@ export default function EcosystemMap({ nodes, edges, laws }: { nodes: EcoNode[];
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <a href="/hub/admin" className="inline-flex items-center gap-2 rounded-lg border border-[#6EE05A]/30 bg-[#6EE05A]/5 px-4 py-3 text-sm font-medium text-[#6EE05A] transition-all duration-150 hover:bg-[#6EE05A]/10 active:scale-[0.98]">
+              <ShieldCheck className="h-4 w-4" />Admin panel
+            </a>
             <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3">
               <p className="text-[11px] uppercase tracking-wider text-white/40">Proven links</p>
               <p className="mt-0.5 text-2xl font-semibold tabular-nums text-[#6EE05A]">
