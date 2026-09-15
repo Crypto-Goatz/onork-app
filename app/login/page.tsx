@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import HCaptchaBox from '@/components/security/HCaptchaBox'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Mail, Lock } from 'lucide-react'
@@ -35,6 +36,8 @@ export default function LoginPage() {
     setResent(true)
   }
   const [loading, setLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaOn, setCaptchaOn] = useState(false)
   const supabase = createClient()
 
   /**
@@ -128,14 +131,33 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      /*
+        THE CAPTCHA TOKEN IS NOT OPTIONAL. Supabase Auth bot protection is
+        enabled on this project, and with it on, signInWithPassword WITHOUT a
+        token is refused outright:
+
+          {"error_code":"captcha_failed",
+           "msg":"captcha protection: request disallowed (no captcha_token found)"}
+
+        Measured against the live auth endpoint 2026-09-15 — nobody could sign
+        in. The protection is worth keeping; the missing token was the bug.
+      */
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        ...(captchaToken ? { options: { captchaToken } } : {}),
+      })
       if (authError) {
         if (/not confirmed/i.test(authError.message)) {
           setUnconfirmed(true)
           setError('Confirm your email first — the link is in your inbox.')
         } else {
-          setError(authError.message)
+          setError(/captcha/i.test(authError.message)
+            ? 'Please complete the human check and try again.'
+            : authError.message)
         }
+        // An hCaptcha token is single-use, so whatever went wrong it is spent.
+        setCaptchaToken(null)
         setLoading(false)
         return
       }
@@ -212,7 +234,12 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <AuthButton type="submit" loading={loading}>
+        {/* Supabase bot protection is on; sign-in is refused without this. */}
+        <div className="flex justify-center">
+          <HCaptchaBox theme="dark" onToken={(t, meta) => { setCaptchaToken(t); setCaptchaOn(meta.configured) }} />
+        </div>
+
+        <AuthButton type="submit" loading={loading} disabled={captchaOn && !captchaToken}>
           Sign in
         </AuthButton>
       </form>
