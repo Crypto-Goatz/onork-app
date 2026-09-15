@@ -225,14 +225,18 @@ Return this exact JSON structure:
     }
 
     // Save to profile for pre-population
-    await admin
+    // `website_url` is not a column on profiles — the column is `website`. This
+    // update named the wrong one and its result was never read, so the scanned
+    // site was silently dropped on every run.
+    const { error: saveErr } = await admin
       .from('profiles')
       .update({
         business_name: result.business_name || undefined,
-        website_url: siteUrl,
+        website: siteUrl,
         website_scan: result,
       })
       .eq('id', user.id)
+    if (saveErr) console.error('[scan-website] could not save profile:', saveErr.message)
 
     return NextResponse.json({ scan: result })
   } catch (err) {
