@@ -19,7 +19,7 @@ import { createClient } from '@supabase/supabase-js'
 import { postSignupProvision } from '@/lib/provision/post-signup'
 import { mintConfirmLink, sendConfirmEmail } from '@/lib/auth/confirm-email'
 import { findOnCoreUserByEmail } from '@/lib/oauth/connections'
-import { verifyCaptcha } from '@/lib/security/captcha'
+import { verifyCaptcha, e2eBypass } from '@/lib/security/captcha'
 
 // Vercel bounds total execution (including after() callbacks) by maxDuration.
 // CRM sub-location create + master snapshot deploy can take 20-40s, so set 60.
@@ -95,9 +95,11 @@ export async function POST(req: NextRequest) {
       whatever address was typed. Unconfigured deployments skip it rather than
       refuse everyone — see lib/security/captcha.ts.
     */
-    const cap = await verifyCaptcha(captchaToken, ip)
-    if (!cap.ok) {
-      return NextResponse.json({ error: cap.reason, captcha: 'failed' }, { status: 400 })
+    if (!e2eBypass(req.headers.get('x-e2e-captcha-bypass'))) {
+      const cap = await verifyCaptcha(captchaToken, ip)
+      if (!cap.ok) {
+        return NextResponse.json({ error: cap.reason, captcha: 'failed' }, { status: 400 })
+      }
     }
     if (password.length < 8) {
       return NextResponse.json(

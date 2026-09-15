@@ -21,6 +21,8 @@ jobs:
       BASE_URL: https://www.0ncore.com
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # Signup is behind hCaptcha; this lets the suite through. CI-only.
+      E2E_CAPTCHA_BYPASS: ${{ secrets.E2E_CAPTCHA_BYPASS }}
 
     steps:
       - name: Checkout

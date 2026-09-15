@@ -32,6 +32,10 @@ test.describe('@smoke signup chain', () => {
       baseURL: process.env.BASE_URL || 'https://www.0ncore.com',
     })
     const res = await api.post('/api/auth/signup', {
+      // Signup is behind hCaptcha since 2026-09-15 and this suite has no widget
+      // to tick. The bypass header is a CI-only secret; without it set on both
+      // sides the route simply refuses, which is the correct default.
+      headers: { 'x-e2e-captcha-bypass': process.env.E2E_CAPTCHA_BYPASS || '' },
       data: {
         email: TEST_EMAIL,
         password: TEST_PASSWORD,

@@ -33,6 +33,29 @@ export function captchaConfigured(): boolean {
 }
 
 /**
+ * The E2E smoke suite posts to the signup route on every push to main and has
+ * no browser widget to tick, so without this the captcha turns that suite red
+ * and the signup-chain regression net stops running.
+ *
+ * It is a real bypass, so it is narrow on purpose: a single env var that exists
+ * only in CI and on Vercel, compared in constant time, and LOGGED on every use.
+ * A leak looks like signup volume with a bypass line under it rather than a
+ * silent flood. Absent env var means no bypass exists at all.
+ */
+export function e2eBypass(header: string | null | undefined): boolean {
+  const want = process.env.E2E_CAPTCHA_BYPASS
+  if (!want || !header) return false
+  const a = Buffer.from(String(header))
+  const b = Buffer.from(want)
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
+  if (diff !== 0) return false
+  console.warn('[captcha] E2E bypass used — if this is not the smoke suite, rotate E2E_CAPTCHA_BYPASS now')
+  return true
+}
+
+/**
  * Verify a token from the client widget.
  *
  * `remoteip` is the caller's address; hCaptcha treats it as a hint, and a wrong
