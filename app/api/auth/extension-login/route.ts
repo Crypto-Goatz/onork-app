@@ -149,9 +149,30 @@ export async function POST(req: NextRequest) {
   const { data: authData, error: authError } = await signInClient().auth.signInWithPassword({
     email,
     password,
+    // A captcha token, when the caller could produce one. Supabase bot
+    // protection is on for this project and refuses password sign-in without it.
+    ...(typeof body?.captchaToken === 'string' && body.captchaToken
+      ? { options: { captchaToken: body.captchaToken as string } }
+      : {}),
   })
 
   if (authError || !authData.session) {
+    /*
+      TELL THE TRUTH ABOUT THIS ONE. Supabase's own refusal reads "captcha
+      protection: request disallowed (no captcha_token found)", which to a
+      person in a browser extension looks exactly like a wrong password — so
+      they retype it, fail again, and conclude the product is broken.
+
+      An extension has no page on which to tick a box, so the honest answer is
+      to name the door that DOES work: the 0n token, which this same route
+      accepts above and which is unaffected by bot protection.
+    */
+    if (authError && /captcha/i.test(authError.message)) {
+      return NextResponse.json({
+        error: 'Signing in with an email and password is not available from the extension. Paste your 0n token instead — copy it from 0ncore.com/dashboard/downloads.',
+        useToken: true,
+      }, { status: 400 })
+    }
     return NextResponse.json({ error: authError?.message || 'Invalid credentials' }, { status: 401 })
   }
 
