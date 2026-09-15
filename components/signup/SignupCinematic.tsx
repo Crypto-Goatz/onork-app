@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, AlertCircle, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import ProvisioningTakeover from './ProvisioningTakeover'
+import HCaptchaBox from '@/components/security/HCaptchaBox'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -92,8 +93,17 @@ export default function SignupCinematic({
   const showEmail = fullName.trim().length >= 2 || hasPrefilledEmail
   const showCompany = showEmail && EMAIL_RE.test(email.trim())
   const showPassword = showCompany && company.trim().length >= 2
+  /*
+    THE HUMAN CHECK (Mike, 2026-09-15). `captchaOn` is false until the widget
+    reports it actually rendered, so a deployment with no site key -- or a
+    visitor whose ad blocker eats the script -- is never stuck behind a box that
+    will not appear. The server is what enforces; this only gates the button.
+  */
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaOn, setCaptchaOn] = useState(false)
+
   const canSubmit =
-    showPassword && password.length >= 8 && !submitting
+    showPassword && password.length >= 8 && !submitting && (!captchaOn || !!captchaToken)
 
   async function handleOAuth(provider: 'linkedin_oidc') {
     setError(null)
@@ -124,6 +134,7 @@ export default function SignupCinematic({
           email: email.trim().toLowerCase(),
           company: company.trim(),
           password,
+          captchaToken,
         }),
       })
       const body = await res.json().catch(() => ({}))
@@ -131,6 +142,9 @@ export default function SignupCinematic({
         setError(body?.error || `Signup failed (${res.status})`)
         setSubmitting(false)
         setApiDone(false)
+        // An hCaptcha token is single-use, so whatever went wrong, the old one
+        // is spent. Clearing it makes the widget the next thing they tick.
+        setCaptchaToken(null)
         return
       }
 
@@ -352,6 +366,15 @@ export default function SignupCinematic({
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {showPassword && (
+              <div className="mt-6 flex justify-center">
+                <HCaptchaBox
+                  theme="dark"
+                  onToken={(t, meta) => { setCaptchaToken(t); setCaptchaOn(meta.configured) }}
+                />
+              </div>
+            )}
 
             <motion.button
               type="submit"

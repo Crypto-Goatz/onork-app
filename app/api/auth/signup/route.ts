@@ -9,6 +9,9 @@
  * OAuth signups DO NOT hit this route — they hit /auth/callback after the
  * provider returns. That route runs the SAME postSignupProvision call so
  * email/password users and OAuth users end up identically provisioned.
+ *
+ * GUARDED BY hCAPTCHA since 2026-09-15. See lib/security/captcha.ts for why the
+ * per-IP counter below was not enough: a distributed script never trips it.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -16,6 +19,7 @@ import { createClient } from '@supabase/supabase-js'
 import { postSignupProvision } from '@/lib/provision/post-signup'
 import { mintConfirmLink, sendConfirmEmail } from '@/lib/auth/confirm-email'
 import { findOnCoreUserByEmail } from '@/lib/oauth/connections'
+import { verifyCaptcha } from '@/lib/security/captcha'
 
 // Vercel bounds total execution (including after() callbacks) by maxDuration.
 // CRM sub-location create + master snapshot deploy can take 20-40s, so set 60.
@@ -48,7 +52,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'During peak promotions, registrations may briefly pause when sign-up volume exceeds what we can safely onboard at once. If that happens, try again in a few minutes — nothing you entered is lost.' }, { status: 429 })
   }
   try {
-    const { email, password, full_name, company, website, mode } = await req.json()
+    const { email, password, full_name, company, website, mode, captchaToken } = await req.json()
     const origin = new URL(req.url).origin
 
     /*
@@ -59,6 +63,9 @@ export async function POST(req: NextRequest) {
     if (mode === 'resend') {
       const em = String(email || '').trim().toLowerCase()
       if (!em) return NextResponse.json({ error: 'Email required' }, { status: 400 })
+      // A resend sends real email, so it is worth a token too.
+      const rc = await verifyCaptcha(captchaToken, ip)
+      if (!rc.ok) return NextResponse.json({ error: rc.reason }, { status: 400 })
       try {
         const u = await findOnCoreUserByEmail(em)
         if (u) {
@@ -80,6 +87,17 @@ export async function POST(req: NextRequest) {
         { error: 'Email and password required' },
         { status: 400 },
       )
+    }
+
+    /*
+      THE HUMAN CHECK, before anything is created. Everything past this line
+      costs something real: an auth user, a CRM contact, and an email sent to
+      whatever address was typed. Unconfigured deployments skip it rather than
+      refuse everyone — see lib/security/captcha.ts.
+    */
+    const cap = await verifyCaptcha(captchaToken, ip)
+    if (!cap.ok) {
+      return NextResponse.json({ error: cap.reason, captcha: 'failed' }, { status: 400 })
     }
     if (password.length < 8) {
       return NextResponse.json(
