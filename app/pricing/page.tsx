@@ -82,7 +82,7 @@ const PRICING_FAQ = [
   },
   {
     q: 'Can I bring my own MCP servers?',
-    a: 'Yes. The admin-side custom-connector ships in v4.10. Drop in your own MCP server and 0nCore registers it alongside the catalog.',
+    a: 'Planned, not shipped. 0nCore reaches 113 services today through the 0n3 runtime and your vault. Registering your OWN MCP server alongside that catalog is designed and on the roadmap — we will say so here the day it ships.',
   },
   {
     q: 'Is 0nCore live?',

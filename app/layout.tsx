@@ -1,3 +1,29 @@
+/**
+ * Counts come from `lib/catalog-count.json`, re-derived on EVERY build by
+ * scripts/gen-catalog-count.mjs and rounded down. They were hardcoded here as
+ * "1,589+ Tools, 102 Services" in the title and "109 services" in the
+ * description one line below — two different wrong numbers in one file, on the
+ * page that feeds every OpenGraph card.
+ *
+ * The footer has been deriving this correctly all along; only this file
+ * bypassed it. One source, not two.
+ */
+import CATALOG from "@/lib/catalog-count.json";
+
+/**
+ * Same guard the footer uses: if gen-catalog-count.mjs could not read the
+ * catalog it writes ok:false, and then the claim comes OFF rather than going
+ * out stale or as "undefined+ Capabilities". A metadata string is the one place
+ * a broken claim is hardest to notice — it renders into OpenGraph cards, not
+ * onto a page anyone looks at.
+ */
+const CAP = CATALOG.ok
+  ? `${CATALOG.capabilitiesDisplay.toLocaleString("en-US")}+ capabilities across ${CATALOG.servicesDisplay} services`
+  : "";
+const CAP_TITLE = CATALOG.ok
+  ? ` | ${CATALOG.capabilitiesDisplay.toLocaleString("en-US")}+ Capabilities, ${CATALOG.servicesDisplay} Services`
+  : "";
+const capSentence = (lead: string) => (CAP ? `${lead} with ${CAP}.` : `${lead}.`);
 import { cookies, headers } from 'next/headers';
 import type { Metadata } from "next";
 import "./globals.css";
@@ -22,10 +48,10 @@ const grotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-grotesk", 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.0ncore.com"),
   title: {
-    default: "0nCore — AI That Runs Your Business | 1,589+ Tools, 102 Services",
+    default: `0nCore — AI That Runs Your Business${CAP_TITLE}`,
     template: "%s · 0nCore",
   },
-  description: "The AI-powered CRM with 1,589+ tools across 109 services. Automations, voice AI, course generator, app builder, website builder, SaaS factory — all from one dashboard. Built on 0nMCP. Live now.",
+  description: `${capSentence("The AI-powered CRM")} Automations, voice AI, course generator, app builder, website builder, SaaS factory — all from one dashboard. Built on 0nMCP. Live now.`,
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: '32x32' },
@@ -35,7 +61,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "0nCore — One Brain. Every Service. Zero Limits.",
-    description: "AI-powered CRM with 1,589+ tools. Automations builder, voice AI, course generator, app/site builder, SaaS factory, agentic generator. Free tier. Live now.",
+    description: `${capSentence("AI-powered CRM")} Automations builder, voice AI, course generator, app/site builder, SaaS factory, agentic generator. Free tier. Live now.`,
     url: "https://www.0ncore.com",
     siteName: "0nCore",
     type: "website",
@@ -49,7 +75,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "0nCore — One Brain. Every Service. Zero Limits.",
-    description: "AI-powered CRM with 1,589+ tools. Free tier. Live now.",
+    description: `${capSentence("AI-powered CRM")} Free tier. Live now.`,
     images: ["/og-image.png"],
   },
   keywords: ["AI CRM", "AI automation", "MCP server", "0nMCP", "voice AI", "course generator", "CRM marketplace", "business automation", "AI assistant", "workflow builder", "agentic AI"],
