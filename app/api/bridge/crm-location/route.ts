@@ -51,6 +51,12 @@ export async function POST(req: NextRequest) {
   const businessName = String(body.businessName || '').trim()
   const explicitLocation = String(body.locationId || '').trim()
   const website = String(body.website || '').trim()
+  // 0n3 provisions EVERY new account here (2026-10-23): the sub-account is branded 0ncore and starts on the base tier
+  // (contacts, forms, surveys); a base snapshot, when one is configured, rides on creation — the only moment the platform applies one.
+  const source = String(body.source || '').trim()
+  const brand = String(body.brand || (source === '0n3' ? '0ncore' : '0nTask')).trim()
+  const tier = String(body.tier || '').trim()
+  const snapshotId = tier === 'base' ? (process.env.CRM_BASE_SNAPSHOT_ID || '') : String(body.snapshotId || '')
 
   if (!email && !explicitLocation) {
     return NextResponse.json({ error: 'email or locationId required' }, { status: 400 })
@@ -110,7 +116,7 @@ export async function POST(req: NextRequest) {
 
     // ── 2. Otherwise create it ──
     if (!locationId) {
-      locationName = businessName ? `${businessName} — 0nTask` : `${email} — 0nTask`
+      locationName = businessName ? `${businessName} — ${brand}` : `${email} — ${brand}`
       // Trailing slash is REQUIRED: `/locations` 404s, `/locations/` is canonical.
       const res = await fetch(`${CRM_API}/locations/`, {
         method: 'POST',
@@ -121,6 +127,7 @@ export async function POST(req: NextRequest) {
           email,
           country: 'US',
           timezone: 'America/New_York',
+          ...(snapshotId ? { snapshotId } : {}),
         }),
       })
       const text = await res.text()
@@ -164,7 +171,15 @@ export async function POST(req: NextRequest) {
         profileWebsite = prof?.website || null
       }
       if (email) {
-        sheet = await ensureCro9Sheet({ userId, email, fullName, locationId, website: website || profileWebsite, source: 'ontask-bridge' })
+        sheet = await ensureCro9Sheet({ userId, email, fullName, locationId, website: website || profileWebsite, source: source === '0n3' ? '0n3-provision' : 'ontask-bridge' })
+      }
+      // The profile remembers its sub-account and tier (shared profiles table, email-joined).
+      if (userId) {
+        const sb2 = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })
+        const patch: Record<string, unknown> = {}
+        if (created || !explicitLocation) patch.crm_location_id = locationId
+        if (tier) patch.crm_tier = tier
+        if (Object.keys(patch).length) await sb2.from('profiles').update(patch).eq('id', userId).is('crm_location_id', null)
       }
     } catch (e) {
       console.error('[bridge/crm-location] CRO9 sheet threw:', e instanceof Error ? e.message : e)
@@ -180,6 +195,9 @@ export async function POST(req: NextRequest) {
       expiresAt: minted.expiresAt ?? null,
       source: minted.source,
       companyId,
+      brand,
+      tier: tier || null,
+      snapshotApplied: created && !!snapshotId,
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
