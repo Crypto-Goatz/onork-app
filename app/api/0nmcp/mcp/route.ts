@@ -239,7 +239,8 @@ async function bearerAccount(req: NextRequest): Promise<{ ok: true; userId: stri
   try {
     const { createClient } = await import('@supabase/supabase-js')
     const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
-    const { data } = await db.from('access_tokens').select('user_id, expires_at').eq('token', raw).eq('is_active', true).is('revoked_at', null).maybeSingle()
+    // By HASH (2026-10-29): access_tokens holds no readable tokens (token = 'h:<sha256>'); token_hash is the lookup.
+    const { data } = await db.from('access_tokens').select('user_id, expires_at').eq('token_hash', (await import('node:crypto')).createHash('sha256').update(raw).digest('hex')).eq('is_active', true).is('revoked_at', null).maybeSingle()
     if (data?.user_id && (!data.expires_at || new Date(data.expires_at).getTime() > Date.now())) return { ok: true, userId: data.user_id }
   } catch { /* unauthenticated */ }
   return { ok: false }

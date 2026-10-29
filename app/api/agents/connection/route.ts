@@ -79,7 +79,8 @@ export async function POST(req: NextRequest) {
   const key = newKey()
   // The key IS a 0n token: a scoped, revocable access_tokens row for this person, so 0n3 resolves it to their account.
   const { error: tokErr } = await admin().from('access_tokens').insert({
-    user_id: session.claims.sub, token: key, token_hash: crypto.createHash('sha256').update(key).digest('hex'),
+    // Stored as a hash only (2026-10-29): the readable key lives sealed in agency_mcp_keys, never in access_tokens.
+    user_id: session.claims.sub, token: `h:${crypto.createHash('sha256').update(key).digest('hex')}`, token_hash: crypto.createHash('sha256').update(key).digest('hex'),
     name: `Agent key (${companyId})`, permission_level: 'full', scopes: ['mcp'], source: 'api', is_active: true,
   })
   if (tokErr) {
