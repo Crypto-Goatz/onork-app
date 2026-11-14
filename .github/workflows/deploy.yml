@@ -69,6 +69,10 @@ jobs:
           esac
 
       - name: Build with Vercel CLI
+        # 2026-11-14: `next build`'s TypeScript pass hit Node's default ~2 GB heap ("Ineffective mark-compacts near heap limit")
+        # and every push since failed. Same limit the deploy step below already sets.
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       # PREBUILT DEPLOY FAILS ON EVERY PUSH — 10 of 10 production deployments
