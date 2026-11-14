@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAppJwt, bearer } from '@/lib/auth/app-jwt'
 import { think, record } from '@/lib/brain'
+import { ensureOnAccount } from '@/lib/account/ensure'
 import { resolveLocation, projectFor, listPages, createPage, getPage, updatePage, pageLinks } from '@/lib/crm/on3-pages'
 
 /**
@@ -39,7 +40,10 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as { action?: string; locationId?: string; pageId?: string; prompt?: string }
   const loc = await resolveLocation(session.claims, body.locationId)
   if (!loc.ok) return fail(loc.status, loc.error)
-  const userId = session.claims.sub
+  // The brain keeps its memory per 0nCore account (a uuid), not per CRM user id: the same account /api/sso provisions.
+  const acct = await ensureOnAccount({ email: session.claims.email ?? null, companyId: session.claims.companyId, locationId: loc.locationId, source: 'crm_sso' })
+  if (!acct.ok) return fail(502, `Your account could not be loaded: ${acct.error}`)
+  const userId = acct.account.id
   let project: string
   try { project = await projectFor(loc.locationId, loc.name) } catch (e) { return fail(502, `0n3 could not be reached: ${(e as Error).message}`) }
 
