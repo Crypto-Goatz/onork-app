@@ -20,11 +20,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowRight, CheckCircle2, ExternalLink, FileJson, Loader2, TriangleAlert, XCircle,
+  Sparkles, Eye, PencilLine, LayoutTemplate, RefreshCw,
 } from 'lucide-react'
 import { useSso, authHeaders } from '@/app/crm/useSso'
 
 const STUDIO_ORIGIN = 'https://web0n.com'
 const STUDIO_URL = `${STUDIO_ORIGIN}/studio`
+// 0n3 Pages (2026-11-14): the same builder, hosted by 0n3, where pages are SAVED — one 0n3 project per sub-account, with
+// a thumbnail, a preview link and a 12-hour edit link each. Its "Send to 0nCore" export lands in the import panel too.
+const ON3_ORIGIN = 'https://0n3.app'
+
+interface Page { id: string; name: string; title: string; updatedAt: number | null; previewUrl: string; editUrl: string; thumbUrl: string }
 
 interface Receipt {
   externalId: string
@@ -63,7 +69,7 @@ export default function BuildStudio() {
     function onMessage(e: MessageEvent) {
       // The origin check is the whole security boundary. Without it any framed
       // page could push a bundle into someone's account.
-      if (e.origin !== STUDIO_ORIGIN) return
+      if (e.origin !== STUDIO_ORIGIN && e.origin !== ON3_ORIGIN) return
       const data = e.data as { type?: string; bundle?: { name?: string } }
       if (data?.type !== '0nblueprint:bundle' || !data.bundle) return
       setBundle(data.bundle)
@@ -85,6 +91,55 @@ export default function BuildStudio() {
       })
       .catch(() => { /* the picker just stays empty; the file drop still works */ })
   }, [sso.state, sso.token])
+
+  // ── Pages (0n3 Pages) ─────────────────────────────────────────────────
+  // Inside a sub-account the session is pinned to it; at agency level the picked client is used (checked server-side).
+  const pagesLocation = sso.activeLocationId || target
+  const [pages, setPages] = useState<Page[]>([])
+  const [pagesBusy, setPagesBusy] = useState<'load' | 'build' | 'change' | null>(null)
+  const [pagesErr, setPagesErr] = useState<string | null>(null)
+  const [question, setQuestion] = useState<string | null>(null)
+  const [prompt, setPrompt] = useState('')
+  const [open, setOpen] = useState<Page | null>(null)
+  const [editUrl, setEditUrl] = useState<string | null>(null)
+  const [stamp, setStamp] = useState(Date.now())
+
+  const loadPages = useCallback(async () => {
+    if (!sso.token || !pagesLocation) return
+    setPagesBusy('load'); setPagesErr(null)
+    try {
+      const r = await fetch(`/api/crm/pages?locationId=${encodeURIComponent(pagesLocation)}`, { headers: authHeaders(sso.token), cache: 'no-store' })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) throw new Error(j.error || `Pages could not be loaded (${r.status})`)
+      setPages(j.pages || []); setStamp(Date.now())
+    } catch (e) { setPagesErr((e as Error).message) } finally { setPagesBusy(null) }
+  }, [sso.token, pagesLocation])
+  useEffect(() => { loadPages() }, [loadPages])
+
+  const pagesCall = useCallback(async (payload: Record<string, unknown>) => {
+    const r = await fetch('/api/crm/pages', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders(sso.token ?? '') }, body: JSON.stringify({ locationId: pagesLocation, ...payload }) })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(j.error || `That did not work (${r.status})`)
+    return j
+  }, [sso.token, pagesLocation])
+
+  async function describe() {
+    const text = prompt.trim(); if (!text) return
+    const action = open ? 'change' : 'build'
+    setPagesBusy(action); setPagesErr(null); setQuestion(null)
+    try {
+      const j = await pagesCall(open ? { action, pageId: open.id, prompt: text } : { action, prompt: text })
+      if (j.question) { setQuestion(j.question); return }
+      setPrompt('')
+      await loadPages()
+      if (j.page) await openPage(j.page as Page)
+    } catch (e) { setPagesErr((e as Error).message) } finally { setPagesBusy(null) }
+  }
+
+  async function openPage(p: Page) {
+    setOpen(p); setPagesErr(null)
+    try { const j = await pagesCall({ action: 'links', pageId: p.id }); setEditUrl(j.editUrl) } catch (e) { setEditUrl(p.editUrl); setPagesErr((e as Error).message) }
+  }
 
   const call = useCallback(async (mode: 'dry_run' | 'execute') => {
     const r = await fetch('/api/bundle/import', {
@@ -133,7 +188,7 @@ export default function BuildStudio() {
           Design it here, then send it into a client account.
         </p>
         <a
-          href={STUDIO_URL}
+          href={editUrl || STUDIO_URL}
           target="_blank"
           rel="noreferrer"
           className="ml-auto inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[color:var(--oc-green-d)] hover:underline"
@@ -143,15 +198,72 @@ export default function BuildStudio() {
       </header>
 
       <div className="flex min-h-0 flex-1">
-        {/* The builder itself — one codebase, framed. */}
-        <iframe
-          src={STUDIO_URL}
-          title="web0n studio"
-          className="min-w-0 flex-1 border-0"
-          // No allow-same-origin needed: the handoff is postMessage, not DOM
-          // access, so the frame stays a genuinely separate origin.
-          sandbox="allow-scripts allow-forms allow-popups allow-downloads"
-        />
+        {/* ── PAGES: describe a page, see it, open it ── */}
+        <aside className="flex w-[300px] shrink-0 flex-col overflow-y-auto border-r border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-4">
+          <h2 className="text-[13px] font-semibold text-[color:var(--oc-ink)]">{open ? `Change "${open.title}"` : 'Describe a page'}</h2>
+          {!pagesLocation ? (
+            <p className="mt-2 text-[12.5px] leading-relaxed text-[color:var(--oc-muted)]">Pick the client on the right first; their pages are kept with their account.</p>
+          ) : (
+            <>
+              <textarea
+                id="page-prompt"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                rows={5}
+                placeholder={open ? 'Make the hero darker and add a pricing section with three plans.' : 'A landing page for our fall facial special: what it includes, three benefits, and a Book now button.'}
+                className="mt-2 w-full resize-y rounded-lg border border-[color:var(--oc-border)] bg-[color:var(--oc-bg)] p-2.5 text-[12.5px] text-[color:var(--oc-ink)] outline-none focus:border-[color:var(--oc-green-d)]"
+              />
+              <button
+                onClick={describe}
+                disabled={!!pagesBusy || !prompt.trim()}
+                className="mt-2 inline-flex items-center justify-center gap-2 rounded-lg bg-[color:var(--oc-green-d)] px-3 py-2 text-[12.5px] font-semibold text-white disabled:opacity-50"
+              >
+                {pagesBusy === 'build' || pagesBusy === 'change' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {pagesBusy === 'build' ? 'Building the page…' : pagesBusy === 'change' ? 'Changing the page…' : open ? 'Change this page' : 'Build the page'}
+              </button>
+              {open && <button onClick={() => { setOpen(null); setEditUrl(null) }} className="mt-1.5 text-[12px] text-[color:var(--oc-muted)] hover:underline">Start a new page instead</button>}
+              {question && <p className="mt-2 rounded-lg bg-[color:var(--oc-bg)] p-2.5 text-[12.5px] text-[color:var(--oc-ink)]">{question}</p>}
+              {pagesErr && <p className="mt-2 flex gap-1.5 text-[12px] text-red-600"><TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />{pagesErr}</p>}
+
+              <div className="mt-5 flex items-center gap-2">
+                <h3 className="text-[12px] font-semibold uppercase tracking-wide text-[color:var(--oc-muted)]">Pages</h3>
+                <button onClick={loadPages} title="Refresh" className="ml-auto text-[color:var(--oc-muted)] hover:text-[color:var(--oc-ink)]">{pagesBusy === 'load' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}</button>
+              </div>
+              {!pages.length && pagesBusy !== 'load' && <p className="mt-2 text-[12.5px] text-[color:var(--oc-muted)]">No pages yet. Describe the first one above.</p>}
+              <div className="mt-2 flex flex-col gap-3">
+                {pages.map((p) => (
+                  <div key={p.id} className={`overflow-hidden rounded-xl border ${open?.id === p.id ? 'border-[color:var(--oc-green-d)]' : 'border-[color:var(--oc-border)]'} bg-[color:var(--oc-bg)]`}>
+                    <button onClick={() => openPage(p)} className="block w-full" title="Open in the editor">
+                      <img src={`${p.thumbUrl}?t=${stamp}`} alt={`${p.title} preview`} className="aspect-[16/10] w-full object-cover object-top" loading="lazy" />
+                    </button>
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-[color:var(--oc-ink)]">{p.title}</span>
+                      <a href={p.previewUrl} target="_blank" rel="noreferrer" title="Preview" className="text-[color:var(--oc-muted)] hover:text-[color:var(--oc-ink)]"><Eye className="h-4 w-4" /></a>
+                      <button onClick={() => openPage(p)} title="Edit visually" className="text-[color:var(--oc-muted)] hover:text-[color:var(--oc-ink)]"><PencilLine className="h-4 w-4" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </aside>
+
+        {/* The builder itself — 0n3 Pages, framed, on the page that is open. */}
+        {editUrl ? (
+          <iframe
+            key={editUrl}
+            src={editUrl}
+            title="Page editor"
+            className="min-w-0 flex-1 border-0"
+            // allow-same-origin keeps the editor on its own origin (0n3.app) so it can save to it; it gains nothing here.
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+          />
+        ) : (
+          <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+            <LayoutTemplate className="h-10 w-10 text-[color:var(--oc-muted)]" />
+            <p className="max-w-sm text-[13px] text-[color:var(--oc-muted)]">Describe a page on the left and it is built here, ready to drag, drop and edit. Or open one of the client's pages.</p>
+          </div>
+        )}
 
         {/* ── IMPORT PANEL ── */}
         <aside className="flex w-[360px] shrink-0 flex-col overflow-y-auto border-l border-[color:var(--oc-border)] bg-[color:var(--oc-card)] p-5">

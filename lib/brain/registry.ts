@@ -55,6 +55,18 @@ export const BRAIN_REGISTRY: RegistryEntry[] = [
     description: 'Drop any thought — brain renders it inline as a flowchart, mind map, diagram, doc, or tagged note. No third-party tools.',
   },
 
+  {
+    slug: 'page_builder',
+    display_name: 'Page builder',
+    category: 'ai',
+    handler_paths: ['app/api/crm/pages/route.ts'],
+    required_imports: ['@/lib/brain'],
+    prohibited_imports: ['@anthropic-ai/sdk'],
+    required_calls: ['think(', 'record('],
+    surface_route: '/crm/build',
+    description: 'Describe a page in plain words; it is written in the drag-and-drop builder\'s format, saved in 0n3 Pages with a thumbnail, preview and visual editor.',
+  },
+
   // ── AI surfaces — all route through /api/<slug>/think (handleThink helper) ──
   {
     slug: 'course_builder',
