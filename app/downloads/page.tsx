@@ -26,6 +26,20 @@ function trackDownload(extension: string, step: string) {
 
 const DOWNLOADS = [
   {
+    key: 'grok-bot',
+    icon: Bot,
+    name: 'Grok Bot + 0nCore',
+    description: "xAI's always-on Grok Bot, connected to your 0nCore CRM through 0n3. Desktop for Mac, Windows and Linux; iPhone, iPad and Android apps. Setup steps at 0ncore.com/grok-bot.",
+    badge: 'New',
+    badgeColor: 'text-[#7ed957] bg-[#7ed957]/10 border-[#7ed957]/20',
+    cta: 'Download Grok Bot',
+    href: 'https://x.ai/bot',
+    target: '_blank',
+    secondary: null,
+    comingSoon: false,
+    price: 'With X Premium, SuperGrok or Cursor',
+  },
+  {
     key: 'chrome',
     icon: Chrome,
     name: 'Chrome Extension',

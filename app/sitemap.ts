@@ -101,6 +101,8 @@ const STATIC: { path: string; priority: number; changeFrequency: Entry['changeFr
   { path: '/pricing', priority: 0.9, changeFrequency: 'weekly' },
   { path: '/security', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/0nagent', priority: 0.8, changeFrequency: 'monthly' },
+  // Grok Bot (xAI) + 0nCore through 0n3 — download, connect, FAQ (2026-11-14).
+  { path: '/grok-bot', priority: 0.9, changeFrequency: 'weekly' },
 
   { path: '/platform', priority: 0.9, changeFrequency: 'weekly' },
   { path: '/connections', priority: 0.8, changeFrequency: 'weekly' },
