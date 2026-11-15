@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * Billing — prepaid wallet. Balance in USD, $0.05 per API execution, top up from $5.
+ * Billing — prepaid wallet. Balance in USD, $0.10 per action (VIP free), top up from $5.
  * Replaces the old Spark/Run credit store.
  */
 

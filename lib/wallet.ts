@@ -1,8 +1,9 @@
 /**
  * Prepaid USD wallet — the metering layer.
  *
- * Balance is integer cents. Each billable API execution costs EXECUTION_COST_CENTS
- * ($0.05). Users top up via Stripe (MIN_TOPUP_CENTS = $5). All mutations go through
+ * Balance is integer cents. Each billable action costs the ACCOUNT'S OWN RATE (rateCentsFor):
+ * 10¢ standard (Mike, 2026-11-14: "10 cents PER ACTION across the board"), 0 for VIP, profiles.action_rate_cents
+ * when set (1¢ for test accounts). The same column and rule are read by 0n3 (billing.js rateCents). Users top up via Stripe (MIN_TOPUP_CENTS = $5). All mutations go through
  * the atomic Postgres functions wallet_charge / wallet_credit so concurrent
  * executions can never double-spend or go negative.
  *
@@ -16,7 +17,7 @@ const admin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
 
-export const EXECUTION_COST_CENTS = 5   // $0.05 per API execution
+export const EXECUTION_COST_CENTS = 10  // $0.10 per action, the standard rate
 export const MIN_TOPUP_CENTS = 500      // $5.00 minimum top-up
 
 export async function getBalanceCents(userId: string): Promise<number> {
@@ -24,22 +25,31 @@ export async function getBalanceCents(userId: string): Promise<number> {
   return data?.balance_cents ?? 0
 }
 
-export interface ChargeResult { ok: boolean; balanceCents: number; insufficient?: boolean }
+export interface ChargeResult { ok: boolean; balanceCents: number; insufficient?: boolean; cents: number }
+
+/** This account's price per action in cents: VIP 0, profiles.action_rate_cents when set, else the standard 10. */
+export async function rateCentsFor(userId: string): Promise<number> {
+  const { data } = await admin.from('profiles').select('is_vip, action_rate_cents').eq('id', userId).maybeSingle()
+  if (data?.is_vip) return 0
+  if (data?.action_rate_cents != null) return Math.max(0, Number(data.action_rate_cents) || 0)
+  return EXECUTION_COST_CENTS
+}
 
 /** Charge for one execution. Returns ok:false + insufficient:true when the balance won't cover it. */
 export async function chargeExecution(
   userId: string,
   opts: { cents?: number; description?: string; ref?: string } = {},
 ): Promise<ChargeResult> {
-  const cents = opts.cents ?? EXECUTION_COST_CENTS
+  const cents = opts.cents ?? (await rateCentsFor(userId))
+  if (cents <= 0) return { ok: true, balanceCents: await getBalanceCents(userId), cents: 0 }
   const { data, error } = await admin.rpc('wallet_charge', {
     p_user: userId, p_cents: cents, p_kind: 'execution',
     p_desc: opts.description ?? null, p_ref: opts.ref ?? null,
   })
-  if (error) return { ok: false, balanceCents: 0 }
+  if (error) return { ok: false, balanceCents: 0, cents }
   const bal = data as number
-  if (bal < 0) return { ok: false, balanceCents: 0, insufficient: true }
-  return { ok: true, balanceCents: bal }
+  if (bal < 0) return { ok: false, balanceCents: 0, insufficient: true, cents }
+  return { ok: true, balanceCents: bal, cents }
 }
 
 /** Credit the wallet (top-up from Stripe, or a grant). Returns the new balance in cents. */

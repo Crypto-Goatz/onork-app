@@ -5,7 +5,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
-import { EXECUTION_COST_CENTS } from '@/lib/wallet'
+import { rateCentsFor } from '@/lib/wallet'
 
 const admin = createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -25,7 +25,7 @@ export async function GET() {
     balance_cents: wallet?.balance_cents ?? 0,
     lifetime_topup_cents: wallet?.lifetime_topup_cents ?? 0,
     lifetime_spent_cents: wallet?.lifetime_spent_cents ?? 0,
-    execution_cost_cents: EXECUTION_COST_CENTS,
+    execution_cost_cents: await rateCentsFor(user.id),
     ledger: ledger || [],
   })
 }

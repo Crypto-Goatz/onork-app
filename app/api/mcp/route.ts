@@ -32,7 +32,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { validateToken, validateProfileToken, type TokenContext } from '@/lib/0n-token'
-import { chargeExecution, creditWallet, EXECUTION_COST_CENTS } from '@/lib/wallet'
+import { chargeExecution, creditWallet } from '@/lib/wallet'
 import { scoreContent } from '@/lib/vpis/formula'
 import { runCombinedScan } from '@/lib/sxo-aeo/engine'
 import {
@@ -705,19 +705,19 @@ export async function POST(req: NextRequest) {
       return respond(req, rpcResult(id, toMcpError('authorization required (Bearer 0n_ token or configured MCP_PUBLIC_KEY)')))
     }
 
-    // Meter: each authenticated execution costs $0.05. Pre-charge, refund on failure.
+    // Meter: each authenticated execution costs the account's own rate (10¢ standard, VIP free). Pre-charge, refund on failure.
     // Public/unauthenticated calls (no userId) are not metered.
-    let charged = false
+    let charged = 0
     if (ctx?.userId) {
       const charge = await chargeExecution(ctx.userId, { description: `mcp:${name}`, ref: name })
       if (!charge.ok) {
-        return respond(req, rpcResult(id, toMcpError('Insufficient balance — add funds to continue. Each execution costs $0.05.')))
+        return respond(req, rpcResult(id, toMcpError('Insufficient balance — add funds to continue. Each action costs $0.10.')))
       }
-      charged = true
+      charged = charge.cents
     }
     const refund = async () => {
-      if (charged && ctx?.userId) {
-        await creditWallet(ctx.userId, EXECUTION_COST_CENTS, { kind: 'refund', description: `refund mcp:${name}`, ref: name })
+      if (charged > 0 && ctx?.userId) {
+        await creditWallet(ctx.userId, charged, { kind: 'refund', description: `refund mcp:${name}`, ref: name })
       }
     }
 
