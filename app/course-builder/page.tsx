@@ -23,6 +23,10 @@ import VideoEmbed from '@/components/VideoEmbed'
 import Link from 'next/link'
 
 const UPDATED = 'August 2026'
+/** The live listing's own install link, copied from the developer portal (Auth → Install link, v1.1.0)
+ *  on 2026-11-16. Its client id MUST be the one CRM_COURSE_APP_CLIENT_ID holds (…-mt0s9dyk): a code issued
+ *  to any other client key of this app cannot be exchanged by the callback. */
+const INSTALL_URL = 'https://marketplace.gohighlevel.com/v2/oauth/chooselocation?response_type=code&redirect_uri=https%3A%2F%2Fapp.0ncore.com%2Fapi%2Foauth%2Fcallback&client_id=69801f7a533633818a22921c-mt0s9dyk&scope=locations.readonly+courses.write+courses.readonly&version_id=69801f7a533633818a22921c'
 const CANONICAL = 'https://www.0ncore.com/course-builder'
 
 export const metadata: Metadata = {
@@ -82,7 +86,7 @@ const HOWTO_LD = {
   totalTime: 'PT5M',
   estimatedCost: { '@type': 'MonetaryAmount', currency: 'USD', value: '0' },
   step: [
-    { '@type': 'HowToStep', position: 1, name: 'Connect the sub-account', text: 'Add the sub-account key in 0nCORE so it can publish into that GoHighLevel location.' },
+    { '@type': 'HowToStep', position: 1, name: 'Install the app', text: 'Install 0n Course Builder from the GoHighLevel Marketplace and choose the sub-account it should publish into.' },
     { '@type': 'HowToStep', position: 2, name: 'Describe the course', text: 'Say what you want to teach and who it is for, in one sentence.' },
     { '@type': 'HowToStep', position: 3, name: 'Approve the outline', text: 'Review the generated module and lesson structure before any writing is paid for.' },
     { '@type': 'HowToStep', position: 4, name: 'Generate the lessons', text: 'Every lesson is written in parallel, each 1,000-2,000 words, with a five-question quiz.' },
@@ -181,8 +185,8 @@ export default function Page() {
         />
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/crm/courses" className={BTN}>Build a course now</Link>
-          <Link href="/connect" className={BTN2}>Connect a sub-account</Link>
+          <a href={INSTALL_URL} className={BTN} rel="noopener">Install from the Marketplace</a>
+          <Link href="/crm/courses" className={BTN2}>Build a course now</Link>
         </div>
 
         {/* ── PER-FEATURE STATUS, ABOVE THE SALES COPY.
@@ -272,7 +276,7 @@ export default function Page() {
         <p className={P}>Five steps, start to published. Nothing is written until you approve the shape.</p>
         <ol className="mt-5 space-y-4">
           {[
-            ['Connect the sub-account.', 'Add that location key in 0nCORE. The agency token lists your sub-accounts; it cannot write inside one, so each client needs its own key.'],
+            ['Install the app.', 'Install 0n Course Builder from the GoHighLevel Marketplace and choose the sub-account. The install grants course access to that one location, so each client account is installed on its own.'],
             ['Enter what you want to teach.', 'One sentence — the topic and who it is for. Add a tone and a target lesson count if you care about them.'],
             ['Check the generated outline.', 'Modules and lessons come back in seconds. Outlining is cheap and writing is not, so the shape is approved before anything is paid for.'],
             ['Generate every lesson in parallel.', 'Each lesson is 1,000–2,000 words with a five-question quiz and recommended resources. Failed lessons are retried and reported, never silently skipped.'],
@@ -378,7 +382,8 @@ Publishing endpoints according to [the GoHighLevel courses API]
         </p>
 
         <div className="mt-10 flex flex-wrap gap-3">
-          <Link href="/crm/courses" className={BTN}>Build your first course</Link>
+          <a href={INSTALL_URL} className={BTN} rel="noopener">Install from the Marketplace</a>
+          <Link href="/crm/courses" className={BTN2}>Build your first course</Link>
           <Link href="/pricing" className={BTN2}>See pricing</Link>
         </div>
       </article>
