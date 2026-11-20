@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sessionUserId } from '@/lib/auth/session-user'
 import { createClient } from '@supabase/supabase-js'
 import { processOrder } from '@/lib/freelancer/engine'
 
@@ -17,7 +18,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Resolve user — from body or auth header
-    const resolvedUserId = user_id || req.headers.get('x-user-id')
+    void user_id
+    const resolvedUserId = await sessionUserId()
     if (!resolvedUserId) {
       return NextResponse.json({ error: 'user_id required' }, { status: 401 })
     }

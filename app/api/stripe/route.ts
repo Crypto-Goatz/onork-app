@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sessionUserId } from '@/lib/auth/session-user'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +14,20 @@ function getAdmin() {
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }
+
+/**
+ * Every action except the price list acts on the SIGNED-IN person only (2026-11-20). Before this, user_id and
+ * customer_id came from the request, so anyone could read any customer's record and cards, re-point a profile at
+ * another Stripe customer, or open another customer's billing portal.
+ */
+async function me(admin: ReturnType<typeof getAdmin>) {
+  const id = await sessionUserId()
+  if (!id) return null
+  const { data } = await admin.from('profiles').select('stripe_customer_id').eq('id', id).single()
+  return { id, customer: (data?.stripe_customer_id as string | null) || null }
+}
+const signIn = () => NextResponse.json({ error: 'Sign in first' }, { status: 401 })
+const notYours = () => NextResponse.json({ error: 'That billing account is not yours' }, { status: 403 })
 
 async function stripeRequest(path: string, method: string = 'GET', body?: Record<string, string>) {
   const options: RequestInit = {
@@ -56,10 +71,11 @@ export async function GET(request: Request) {
       }
 
       case 'customer': {
-        const userId = searchParams.get('user_id')
-        if (!userId) return NextResponse.json({ error: 'user_id required' }, { status: 400 })
-
         const admin = getAdmin()
+        const who = await me(admin)
+        if (!who) return signIn()
+        const userId = who.id
+
         const { data: profile } = await admin.from('profiles').select('stripe_customer_id').eq('id', userId).single()
 
         if (!profile?.stripe_customer_id) {
@@ -71,8 +87,12 @@ export async function GET(request: Request) {
       }
 
       case 'payment_methods': {
-        const customerId = searchParams.get('customer_id')
-        if (!customerId) return NextResponse.json({ error: 'customer_id required' }, { status: 400 })
+        const who = await me(getAdmin())
+        if (!who) return signIn()
+        const asked = searchParams.get('customer_id')
+        if (asked && asked !== who.customer) return notYours()
+        const customerId = who.customer
+        if (!customerId) return NextResponse.json({ payment_methods: [] })
 
         const methods = await stripeRequest(`/customers/${customerId}/payment_methods?type=card`)
         return NextResponse.json({ payment_methods: methods.data || [] })
@@ -104,11 +124,13 @@ export async function POST(request: Request) {
 
   const action = body.action as string
   const admin = getAdmin()
+  const who = await me(admin)
+  if (!who) return signIn()
 
   try {
     switch (action) {
       case 'create_customer': {
-        const userId = body.user_id as string
+        const userId = who.id
         const email = body.email as string
         const name = body.name as string
 
@@ -136,8 +158,9 @@ export async function POST(request: Request) {
 
       case 'checkout': {
         const priceId = body.price_id as string
-        const customerId = body.customer_id as string
-        const userId = body.user_id as string
+        if (body.customer_id && body.customer_id !== who.customer) return notYours()
+        const customerId = who.customer as string
+        const userId = who.id
 
         if (!priceId) return NextResponse.json({ error: 'price_id required' }, { status: 400 })
 
@@ -179,8 +202,9 @@ export async function POST(request: Request) {
       }
 
       case 'portal': {
-        const customerId = body.customer_id as string
-        if (!customerId) return NextResponse.json({ error: 'customer_id required' }, { status: 400 })
+        if (body.customer_id && body.customer_id !== who.customer) return notYours()
+        const customerId = who.customer
+        if (!customerId) return NextResponse.json({ error: 'No billing account yet' }, { status: 400 })
 
         const session = await stripeRequest('/billing_portal/sessions', 'POST', {
           customer: customerId,

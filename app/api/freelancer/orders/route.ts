@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sessionUserId } from '@/lib/auth/session-user'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -7,7 +8,7 @@ const supabase = createClient(
 )
 
 export async function GET(req: NextRequest) {
-  const userId = req.headers.get('x-user-id') || req.nextUrl.searchParams.get('user_id')
+  const userId = await sessionUserId()
   if (!userId) {
     return NextResponse.json({ error: 'user_id required' }, { status: 401 })
   }

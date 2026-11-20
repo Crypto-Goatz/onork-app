@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { executeApp, ExecutionContext } from '@/lib/0n-app/executor'
 import { OnAppManifest } from '@/lib/0n-app/parser'
+import { sessionUserId } from '@/lib/auth/session-user'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -17,11 +18,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ app
   try {
     const { appId } = await params
     const body = await req.json().catch(() => ({}))
-    const userId = body.user_id || req.headers.get('x-user-id')
+    const userId = await sessionUserId()
     const triggerData = body.trigger || {}
     const variables = body.variables || {}
 
-    if (!userId) return NextResponse.json({ error: 'user_id required' }, { status: 401 })
+    if (!userId) return NextResponse.json({ error: 'Sign in first' }, { status: 401 })
 
     const supabase = getSupabase()
 

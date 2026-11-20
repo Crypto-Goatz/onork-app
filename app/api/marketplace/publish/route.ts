@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sessionUserId } from '@/lib/auth/session-user'
 import { createClient } from '@supabase/supabase-js'
 import { parseOnApp } from '@/lib/0n-app/parser'
 
@@ -14,7 +15,7 @@ function getSupabase() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
-    const userId = body.user_id || req.headers.get('x-user-id')
+    const userId = await sessionUserId()
     const appConfig = body.app_config
     const metadata = body.metadata || {}
     const screenshots = body.screenshots || []
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
     const priceType = body.price_type || 'one_time'
     const isUpdate = Boolean(body.app_id)
 
-    if (!userId) return NextResponse.json({ error: 'user_id required' }, { status: 401 })
+    if (!userId) return NextResponse.json({ error: 'Sign in first' }, { status: 401 })
     if (!appConfig) return NextResponse.json({ error: 'app_config (.0n manifest) required' }, { status: 400 })
 
     const parsed = parseOnApp(appConfig)

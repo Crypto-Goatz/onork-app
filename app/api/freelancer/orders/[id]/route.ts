@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sessionUserId } from '@/lib/auth/session-user'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -11,11 +12,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  const userId = await sessionUserId()
+  if (!userId) return NextResponse.json({ error: 'Sign in first' }, { status: 401 })
 
   const { data: order } = await supabase
     .from('freelancer_orders')
     .select('*')
     .eq('id', id)
+    .eq('user_id', userId)
     .single()
 
   if (!order) {

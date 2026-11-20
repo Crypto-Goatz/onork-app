@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sessionUserId } from '@/lib/auth/session-user'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,9 +48,10 @@ const SERVICE_CREDENTIALS: Record<string, { keys: string[]; labels: string[]; pl
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const userId = searchParams.get('user_id')
-
-  if (!userId) return NextResponse.json({ error: 'user_id required' }, { status: 400 })
+  void searchParams
+  // The signed-in person only (2026-11-20) — user_id used to come from the URL.
+  const userId = await sessionUserId()
+  if (!userId) return NextResponse.json({ error: 'Sign in first' }, { status: 401 })
 
   const admin = getAdmin()
 
@@ -87,10 +89,10 @@ export async function POST(request: Request) {
   }
 
   const action = body.action as string
-  const userId = body.user_id as string
+  const userId = await sessionUserId()
   const service = body.service as string
 
-  if (!userId) return NextResponse.json({ error: 'user_id required' }, { status: 400 })
+  if (!userId) return NextResponse.json({ error: 'Sign in first' }, { status: 401 })
 
   const admin = getAdmin()
 
@@ -181,10 +183,11 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const userId = body.user_id as string
+  const userId = await sessionUserId()
   const service = body.service as string
 
-  if (!userId || !service) return NextResponse.json({ error: 'user_id and service required' }, { status: 400 })
+  if (!userId) return NextResponse.json({ error: 'Sign in first' }, { status: 401 })
+  if (!service) return NextResponse.json({ error: 'service required' }, { status: 400 })
 
   const admin = getAdmin()
   await admin.from('user_vaults').delete().eq('user_id', userId).eq('service_name', service)

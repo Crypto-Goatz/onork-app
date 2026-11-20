@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { uninstallApp, setInstallStatus } from '@/lib/0n-app/installer'
+import { sessionUserId } from '@/lib/auth/session-user'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,14 +12,10 @@ function getSupabase() {
   )
 }
 
-function userIdFromReq(req: NextRequest): string | null {
-  const url = new URL(req.url)
-  return url.searchParams.get('user_id') || req.headers.get('x-user-id')
-}
 
 export async function GET(req: NextRequest) {
-  const userId = userIdFromReq(req)
-  if (!userId) return NextResponse.json({ error: 'user_id required' }, { status: 400 })
+  const userId = await sessionUserId()
+  if (!userId) return NextResponse.json({ error: 'Sign in first' }, { status: 401 })
 
   const supabase = getSupabase()
   const { data, error } = await supabase
@@ -38,14 +35,13 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
-    const userId = body.user_id || userIdFromReq(req)
+    const userId = await sessionUserId()
     const appId = body.app_id
     const configOverrides = body.config_overrides
     const status = body.status
 
-    if (!userId || !appId) {
-      return NextResponse.json({ error: 'user_id and app_id required' }, { status: 400 })
-    }
+    if (!userId) return NextResponse.json({ error: 'Sign in first' }, { status: 401 })
+    if (!appId) return NextResponse.json({ error: 'app_id required' }, { status: 400 })
 
     const supabase = getSupabase()
 
@@ -72,12 +68,11 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const url = new URL(req.url)
-  const userId = url.searchParams.get('user_id') || req.headers.get('x-user-id')
+  const userId = await sessionUserId()
   const appId = url.searchParams.get('app_id')
 
-  if (!userId || !appId) {
-    return NextResponse.json({ error: 'user_id and app_id required' }, { status: 400 })
-  }
+  if (!userId) return NextResponse.json({ error: 'Sign in first' }, { status: 401 })
+  if (!appId) return NextResponse.json({ error: 'app_id required' }, { status: 400 })
 
   const result = await uninstallApp(userId, appId)
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 500 })

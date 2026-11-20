@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sessionUserId } from '@/lib/auth/session-user'
 import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
@@ -11,8 +12,8 @@ function getSupabase() {
 }
 
 export async function GET(req: NextRequest) {
-  const userId = new URL(req.url).searchParams.get('user_id') || req.headers.get('x-user-id')
-  if (!userId) return NextResponse.json({ error: 'user_id required' }, { status: 400 })
+  const userId = await sessionUserId()
+  if (!userId) return NextResponse.json({ error: 'Sign in first' }, { status: 401 })
 
   const supabase = getSupabase()
 

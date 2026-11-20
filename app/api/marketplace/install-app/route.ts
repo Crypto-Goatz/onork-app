@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sessionUserId } from '@/lib/auth/session-user'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { installApp } from '@/lib/0n-app/installer'
@@ -25,12 +26,13 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
     const appId = body.app_id
-    const userId = body.user_id
+    const userId = await sessionUserId()
     const userEmail = body.user_email
     const configOverrides = body.config_overrides || {}
 
-    if (!appId || !userId) {
-      return NextResponse.json({ error: 'app_id and user_id required' }, { status: 400 })
+    if (!userId) return NextResponse.json({ error: 'Sign in first' }, { status: 401 })
+    if (!appId) {
+      return NextResponse.json({ error: 'app_id required' }, { status: 400 })
     }
 
     const supabase = getSupabase()
