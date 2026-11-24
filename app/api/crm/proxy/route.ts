@@ -27,6 +27,7 @@ const supabase = createClient(
  * OAuth install (refreshed) → minted location token → env PIT.
  */
 import { getAuthForLocation, fallbackCredentials } from '@/lib/crm'
+import { canUseLocation } from '@/lib/crm/owned-locations'
 
 export async function POST(req: NextRequest) {
   // Auth — get user from session
@@ -41,6 +42,11 @@ export async function POST(req: NextRequest) {
 
   // Resolve location — NEVER fall back to another user's location
   let locationId = overrideLocationId?.trim() || ''
+  // A location named by the browser must be one this person owns (2026-11-24:
+  // it used to be trusted as sent — any account could act on any sub-account).
+  if (locationId && !(await canUseLocation(user.id, locationId))) {
+    return NextResponse.json({ error: 'That CRM account is not connected to your 0nCore account.' }, { status: 403 })
+  }
   if (!locationId) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -107,7 +113,15 @@ export async function POST(req: NextRequest) {
 
   // For POST/PUT/PATCH, inject locationId into body if not present
   let finalBody = reqBody
-  if (['POST', 'PUT', 'PATCH'].includes(method) && reqBody && typeof reqBody === 'object' && !reqBody.locationId) {
+  // NOT for routes that already carry the location (or a contact) in the path:
+  // the CRM answers those with 422 "property locationId should not exist".
+  // Measured 2026-11-24 on PUT /contacts/{id}, POST /contacts/{id}/tasks,
+  // PUT /contacts/{id}/tasks/{id}/completed and POST /locations/{id}/tasks/search —
+  // which is why editing a contact, adding a task or a note never worked here.
+  const pathOnly = String(path).split('?')[0]
+  const scopedByPath = /^\/locations\//.test(pathOnly)
+    || (/^\/contacts\/[^/]+/.test(pathOnly) && !/^\/contacts\/(search|upsert|bulk)(\/|$)/.test(pathOnly))
+  if (['POST', 'PUT', 'PATCH'].includes(method) && !scopedByPath && reqBody && typeof reqBody === 'object' && !reqBody.locationId) {
     finalBody = { ...reqBody, locationId }
   }
 

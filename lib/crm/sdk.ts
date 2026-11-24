@@ -2,6 +2,16 @@
 // Every CRM dashboard page uses this. All calls go through /api/crm/proxy.
 // No direct CRM API calls from the client. No token management needed.
 
+/**
+ * The CRM account the page is working in. Unset = the person's own (profile)
+ * location, which is what the legacy /dashboard pages rely on. The /crm
+ * workspace sets it from the account picker; the proxy refuses an id the
+ * person does not own.
+ */
+let sdkLocationId = ''
+export function setSdkLocation(id: string) { sdkLocationId = id || '' }
+export function sdkLocation() { return sdkLocationId }
+
 async function crmCall<T = Record<string, unknown>>(
   method: string,
   path: string,
@@ -10,7 +20,7 @@ async function crmCall<T = Record<string, unknown>>(
   const res = await fetch('/api/crm/proxy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ method, path, body }),
+    body: JSON.stringify({ method, path, body, ...(sdkLocationId ? { locationId: sdkLocationId } : {}) }),
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.error || `CRM error ${res.status}`)
@@ -471,4 +481,49 @@ export const campaigns = {
 export const location = {
   get: () => crmCall<{ location: Record<string, unknown> }>('GET', '/locations/'),
   update: (data: Record<string, unknown>) => crmCall('PUT', '/locations/', data),
+}
+
+
+// ═══════════════════════════════════════════════════════
+// THE SDK FOUR (2026-11-24): contacts · tasks · calendar · forms
+// Shapes measured against the live CRM on the 0nCore location the same day.
+// ═══════════════════════════════════════════════════════
+
+export interface CrmTask {
+  _id?: string
+  id?: string
+  title: string
+  body?: string
+  dueDate?: string
+  completed: boolean
+  contactId: string
+  contactDetails?: { firstName?: string | null; lastName?: string | null }
+  assignedToUserDetails?: { id?: string | null; firstName?: string | null; lastName?: string | null }
+}
+
+export const sdk = {
+  /** POST /contacts/search — the one search that matches name, email and phone together. */
+  searchContacts: (query: string, page = 1, pageLimit = 25) =>
+    crmCall<{ contacts: Contact[]; total: number }>('POST', '/contacts/search', { query, page, pageLimit }),
+  updateContact: (id: string, data: Partial<Contact>) => crmCall<{ contact: Contact }>('PUT', `/contacts/${id}`, data as Record<string, unknown>),
+  createContact: (data: Partial<Contact>) => crmCall<{ contact: Contact }>('POST', '/contacts/', data as Record<string, unknown>),
+
+  /** Every task in the account. `completed:false` = open only. Needs the location in the PATH, so it must be known. */
+  searchTasks: (locationId: string, opts: { completed?: boolean; limit?: number } = {}) =>
+    crmCall<{ tasks: CrmTask[] }>('POST', `/locations/${locationId}/tasks/search`, { limit: opts.limit ?? 100, ...(opts.completed === undefined ? {} : { completed: opts.completed }) }),
+  createTask: (contactId: string, data: { title: string; dueDate: string; body?: string }) =>
+    crmCall<{ task: CrmTask }>('POST', `/contacts/${contactId}/tasks`, { ...data, completed: false }),
+  setTaskDone: (contactId: string, taskId: string, completed: boolean) =>
+    crmCall<{ task: CrmTask }>('PUT', `/contacts/${contactId}/tasks/${taskId}/completed`, { completed }),
+
+  calendars: () => crmCall<{ calendars: CalendarResource[] }>('GET', '/calendars/'),
+  /** The CRM requires a calendarId (or user/group) and epoch-millisecond times. */
+  events: (calendarId: string, start: Date, end: Date) =>
+    crmCall<{ events: CalendarEvent[] }>('GET', `/calendars/events?calendarId=${encodeURIComponent(calendarId)}&startTime=${start.getTime()}&endTime=${end.getTime()}`),
+  bookAppointment: (data: { calendarId: string; contactId: string; startTime: string; endTime: string; title?: string }) =>
+    crmCall<CalendarEvent>('POST', '/calendars/events/appointments', { ...data, ignoreFreeSlotValidation: true }),
+
+  forms: () => crmCall<{ forms: Array<{ id: string; name: string }>; total: number }>('GET', '/forms/?limit=100'),
+  formSubmissions: (formId: string, limit = 20) =>
+    crmCall<{ submissions: Array<{ id: string; contactId: string; name?: string; email?: string; createdAt: string; others?: Record<string, unknown> }>; meta?: { total: number } }>('GET', `/forms/submissions?formId=${encodeURIComponent(formId)}&limit=${limit}`),
 }

@@ -27,6 +27,7 @@ import {
   UserCircle,
   BookOpen, Blocks, CreditCard, Download, FileText, GitBranch, LayoutTemplate, LogOut, Plug,
   ScrollText, Settings, Sparkles, Terminal, Users, Wrench, type LucideIcon,
+  CheckSquare, CalendarDays, ExternalLink, ClipboardList, Building2, ListTodo, Boxes,
 } from 'lucide-react'
 
 export type NavKey =
@@ -34,6 +35,7 @@ export type NavKey =
   | 'automations' | 'content' | 'pipeline' | 'build' | 'addons'
   | 'history' | 'usage' | 'setup' | 'downloads' | 'settings'
   | 'tools' | 'flows'
+  | 'contacts' | 'tasks' | 'calendar' | 'forms' | 'ontask' | 'on3'
   // Legacy keys still passed by older pages — kept so nothing 404s mid-port.
   | 'home' | 'dashboard' | 'log'
 
@@ -47,40 +49,57 @@ interface NavItem {
    * navigating, so its nav highlights on `view`, not on the route.
    */
   view?: 'dashboard' | 'clients' | 'automations'
+  /** A sibling app — opens in a new tab. */
+  external?: boolean
 }
 
-/** Groups are rendered with a divider between them. */
+/**
+ * THE SDK SHELL (Mike, 2026-11-24): "0ncore simply needs to be shaved down to be
+ * an SDK for the CRM with simple task, calendar, contact and form management and
+ * creation … anything else we can add in there or keep that works perfect, then
+ * keep it."
+ *
+ * So the rail shows the four SDK surfaces, the pages that connect an account,
+ * the account itself, and the two sibling apps. Everything else is in
+ * HIDDEN_NAV — still routable, out of the rail. To bring one back, move its
+ * entry into NAV_GROUPS. Nothing was deleted.
+ */
 export const NAV_GROUPS: NavItem[][] = [
   [
-    { key: 'command', href: '/crm', label: 'Command', icon: Terminal, view: 'dashboard' },
-    { key: 'clients', href: '/crm/clients', label: 'Clients', icon: Users, view: 'clients' },
-    { key: 'actions', href: '/crm/actions', label: 'Actions', icon: BookOpen },
+    { key: 'contacts', href: '/crm/contacts', label: 'Contacts', icon: Users },
+    { key: 'tasks', href: '/crm/tasks', label: 'Tasks', icon: CheckSquare },
+    { key: 'calendar', href: '/crm/calendar', label: 'Calendar', icon: CalendarDays },
+    { key: 'forms', href: '/crm/forms', label: 'Forms', icon: ClipboardList },
   ],
   [
-    { key: 'automations', href: '/crm/automations', label: 'Automations & AI', icon: Sparkles, view: 'automations' },
-    // 0nTask's flow builder, embedded. One builder, two surfaces — see
-    // app/crm/flows/FlowsEmbed.tsx for why this is not a port.
-    { key: 'flows', href: '/crm/flows', label: 'Flows', icon: GitBranch },
-    { key: 'content', href: '/crm/courses', label: 'Content', icon: FileText },
-    // Registered in the nav rather than reachable only by URL. SXO shipped
-    // fully working and invisible for exactly that reason.
-    { key: 'build', href: '/crm/build', label: 'Build a site', icon: LayoutTemplate },
-    { key: 'pipeline', href: '/crm/pipeline', label: 'Pipeline', icon: GitBranch },
-    { key: 'tools', href: '/crm/tools', label: 'Tools', icon: Wrench },
-    // Add-ons belong in the BUILD group, next to Tools. A capability appears in
-    // this product because it is registered, never because someone remembered a
-    // nav link — and the marketplace was reachable only by typing the URL,
-    // which is the same invisibility SXO shipped with.
-    { key: 'addons', href: '/marketplace', label: 'Add-ons', icon: Blocks },
-  ],
-  [
-    { key: 'history', href: '/crm/log', label: 'History', icon: ScrollText },
-    { key: 'usage', href: '/crm/billing', label: 'Plan & Usage', icon: CreditCard },
+    { key: 'clients', href: '/crm/clients', label: 'CRM accounts', icon: Building2, view: 'clients' },
     { key: 'setup', href: '/crm/setup', label: 'Setup & Keys', icon: Plug },
-    { key: 'downloads', href: '/crm/downloads', label: 'Downloads', icon: Download },
+  ],
+  [
+    { key: 'usage', href: '/crm/billing', label: 'Plan & Usage', icon: CreditCard },
     { key: 'account', href: '/crm/account', label: 'Your account', icon: UserCircle },
     { key: 'settings', href: '/crm/settings', label: 'Settings', icon: Settings },
   ],
+  [
+    // The family: same sign-in (one identity, joined on email).
+    { key: 'ontask', href: 'https://app.0ntask.com', label: '0nTask', icon: ListTodo, external: true },
+    { key: 'on3', href: 'https://0n3.app', label: '0n3', icon: Boxes, external: true },
+  ],
+]
+
+/** Out of the rail on 2026-11-24, still live at their URLs. Move back into NAV_GROUPS to restore. */
+export const HIDDEN_NAV: NavItem[] = [
+  { key: 'command', href: '/crm/command', label: 'Command', icon: Terminal, view: 'dashboard' },
+  { key: 'actions', href: '/crm/actions', label: 'Actions', icon: BookOpen },
+  { key: 'automations', href: '/crm/automations', label: 'Automations & AI', icon: Sparkles, view: 'automations' },
+  { key: 'flows', href: '/crm/flows', label: 'Flows', icon: GitBranch },
+  { key: 'content', href: '/crm/courses', label: 'Content', icon: FileText },
+  { key: 'build', href: '/crm/build', label: 'Build a site', icon: LayoutTemplate },
+  { key: 'pipeline', href: '/crm/pipeline', label: 'Pipeline', icon: GitBranch },
+  { key: 'tools', href: '/crm/tools', label: 'Tools', icon: Wrench },
+  { key: 'addons', href: '/marketplace', label: 'Add-ons', icon: Blocks },
+  { key: 'history', href: '/crm/log', label: 'History', icon: ScrollText },
+  { key: 'downloads', href: '/crm/downloads', label: 'Downloads', icon: Download },
 ]
 
 /**
@@ -155,6 +174,14 @@ export default function AppSidebar({
               {group.map((n) => {
                 const Icon = n.icon
                 const on = active === n.key
+                if (n.external) return (
+                  <a key={n.key} href={n.href} target="_blank" rel="noreferrer"
+                    className="group flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-[13.5px] font-medium text-[#8b949e] transition-all duration-150 hover:translate-x-0.5 hover:bg-[#21262d] hover:text-[#e6edf3]">
+                    <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+                    {n.label}
+                    <ExternalLink className="ml-auto h-3 w-3 opacity-50" />
+                  </a>
+                )
                 return (
                   <Link
                     key={n.key}

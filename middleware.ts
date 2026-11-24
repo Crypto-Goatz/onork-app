@@ -413,6 +413,8 @@ export const config = {
     '/hub',
     '/hub/:path*',
     '/crm/:path*',
+    // The SDK four (2026-11-24) + the old home, by their short app-host paths.
+    '/contacts', '/tasks', '/calendar', '/forms', '/command',
     '/clients',
     '/clients/:path*',
     '/automations',

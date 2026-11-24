@@ -1,19 +1,19 @@
+import { redirect } from 'next/navigation'
 import AgencyDashboard from './AgencyDashboard'
 
-/**
- * The app surface. Served at app.0ncore.com/ (rewritten from /) and reachable
- * at /crm on the marketing host while DNS for the app subdomain is pending —
- * so the dashboard is viewable today rather than blocked on a CNAME.
- *
- * This replaced a re-export of the old dashboard CRM page. That surface is
- * still there in full at /crm/contacts, /crm/pipeline and the rest; this is the
- * command centre that sits above it.
- */
 export const metadata = {
-  title: 'Agency Command — 0nCORE',
+  title: '0nCORE',
   robots: { index: false, follow: false },
 }
 
-export default function CrmAppPage() {
+/**
+ * Home = Contacts (2026-11-24 SDK re-scope). A bare visit goes to the SDK;
+ * a visit carrying query parameters (an install result, a view switch, a
+ * command) still renders the agency dashboard that reads them, so nothing
+ * that links here with state breaks. The dashboard itself lives on at /crm/command.
+ */
+export default async function CrmAppPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const sp = await searchParams
+  if (Object.keys(sp).length === 0) redirect('/crm/contacts')
   return <AgencyDashboard />
 }
