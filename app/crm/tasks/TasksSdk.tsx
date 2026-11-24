@@ -10,7 +10,7 @@ import Workspace, { Btn, Card, ContactPicker, Field, Modal, Notice, errText, inp
 import { sdk, type CrmTask } from '@/lib/crm/sdk'
 
 const tid = (t: CrmTask) => t._id || t.id || ''
-const who = (t: CrmTask) => [t.contactDetails?.firstName, t.contactDetails?.lastName].filter(Boolean).join(' ') || 'Contact'
+const who = (t: CrmTask) => [t.contactDetails?.firstName, t.contactDetails?.lastName].filter(Boolean).join(' ') || (t.contactId ? 'Contact' : 'No contact (deleted)')
 
 function due(iso?: string) {
   if (!iso) return { label: 'No due date', late: false }
@@ -45,7 +45,7 @@ function Body({ loc, openNew, setOpenNew }: { loc: string; openNew: boolean; set
 
   const toggle = async (t: CrmTask) => {
     setBusy(tid(t))
-    try { await sdk.setTaskDone(t.contactId, tid(t), !t.completed); await load() } catch (e) { setErr(errText(e)) }
+    try { await sdk.setTaskDone(loc, tid(t), !t.completed); await load() } catch (e) { setErr(errText(e)) }
     setBusy('')
   }
 

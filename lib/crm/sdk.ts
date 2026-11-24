@@ -496,7 +496,7 @@ export interface CrmTask {
   body?: string
   dueDate?: string
   completed: boolean
-  contactId: string
+  contactId?: string
   contactDetails?: { firstName?: string | null; lastName?: string | null }
   assignedToUserDetails?: { id?: string | null; firstName?: string | null; lastName?: string | null }
 }
@@ -513,8 +513,14 @@ export const sdk = {
     crmCall<{ tasks: CrmTask[] }>('POST', `/locations/${locationId}/tasks/search`, { limit: opts.limit ?? 100, ...(opts.completed === undefined ? {} : { completed: opts.completed }) }),
   createTask: (contactId: string, data: { title: string; dueDate: string; body?: string }) =>
     crmCall<{ task: CrmTask }>('POST', `/contacts/${contactId}/tasks`, { ...data, completed: false }),
-  setTaskDone: (contactId: string, taskId: string, completed: boolean) =>
-    crmCall<{ task: CrmTask }>('PUT', `/contacts/${contactId}/tasks/${taskId}/completed`, { completed }),
+  /**
+   * Done / not done through the LOCATION route, not the contact one: deleting a
+   * contact in the CRM leaves its tasks behind with no contactId (11 of 22 on
+   * the 0nCore account, 2026-11-24), and the contact route cannot reach those.
+   * Measured both directions (to_do ⇄ completed) on the live CRM.
+   */
+  setTaskDone: (locationId: string, taskId: string, completed: boolean) =>
+    crmCall<{ succeded?: boolean }>('PUT', `/locations/${locationId}/tasks/${taskId}`, { completed }),
 
   calendars: () => crmCall<{ calendars: CalendarResource[] }>('GET', '/calendars/'),
   /** The CRM requires a calendarId (or user/group) and epoch-millisecond times. */
