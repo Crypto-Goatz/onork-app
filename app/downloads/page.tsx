@@ -44,7 +44,7 @@ const DOWNLOADS = [
     icon: Chrome,
     name: 'Chrome Extension',
     description: 'AI command center in your browser. LinkedIn tools, voice-trained content, multi-AI council, 1,554 tools via 0nMCP.',
-    badge: 'v4.0',
+    badge: 'Latest',
     badgeColor: 'text-[#7ed957] bg-[#7ed957]/10 border-[#7ed957]/20',
     cta: 'Download Extension',
     href: '/downloads/0n-chrome-extension.zip',

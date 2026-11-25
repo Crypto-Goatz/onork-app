@@ -43,12 +43,11 @@ export const APPS: OnApp[] = [
     name: '0n Extension',
     tagline: 'The Agency Command Center, inside the browser you already work in.',
     status: 'shipped',
-    version: '7.2.1',
     surface: 'Chrome (Manifest V3) — side panel on any tab',
     download: {
       href: '/downloads/0n-extension.zip',
-      label: 'Download 0n Extension 7.2.1',
-      note: 'Unzip, then chrome://extensions → Developer mode → Load unpacked → select the folder.',
+      label: 'Download 0n Extension (latest)',
+      note: 'Unzip, then chrome://extensions → Developer mode → Load unpacked → select the folder named 0n-extension.',
     },
     can: [
       { title: 'One key, everywhere', body: 'Connect once with a 0n_live_ device key from CRM Setup. Keys are shown once, listed per browser, and revocable one device at a time.' },

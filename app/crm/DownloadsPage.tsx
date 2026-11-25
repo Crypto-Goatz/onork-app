@@ -15,7 +15,7 @@ import AppSidebar from './AppSidebar'
 
 const EXTENSION = {
   name: '0n — AI Command Center',
-  version: 'v6.1.0',
+  version: 'latest',
   file: '/downloads/0n-extension.zip',
   blurb:
     'LinkedIn lead engine, stack scanner, compose and Jaxx chat — acting in the client you choose. It carries a device key, not a CRM credential, so revoking one browser leaves the rest working.',

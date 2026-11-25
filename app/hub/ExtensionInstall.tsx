@@ -36,8 +36,8 @@ import {
 const DISMISS_KEY = 'on_ext_banner_dismissed'
 const ZIP = '/downloads/0n-extension.zip'
 
-/** Bump when the shipped extension changes, so the banner reads honestly. */
-const EXT_VERSION = '7.2.2'
+/** No number here: the download forwards to 0n3.app/ext, which always holds the newest build (next.config.ts redirects). */
+const EXT_VERSION = 'latest'
 
 type Step = {
   n: number
@@ -204,7 +204,7 @@ export default function ExtensionInstall() {
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-semibold text-white">0n — AI Command Center</h3>
               <span className="rounded-full border border-white/15 px-2 py-0.5 font-mono text-[10px] text-white/50">
-                v{EXT_VERSION}
+                {EXT_VERSION}
               </span>
             </div>
             <p className="mt-1 max-w-md text-sm leading-relaxed text-white/60">

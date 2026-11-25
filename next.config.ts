@@ -16,6 +16,18 @@ const nextConfig: NextConfig = {
    * sends "/" or "/:path*" to /login. That's the actual root cause; this
    * rewrite is the clean URL layer underneath.
    */
+  /**
+   * THE 0n CHROME EXTENSION HAS ONE DOWNLOAD: https://0n3.app/ext/0n-extension.zip, written by the extension repo's
+   * pack script on every release. This app used to carry its own copy in public/downloads, and it went stale without
+   * anyone noticing: measured 2026-11-24, 0ncore.com served 7.5.0 (no stable extension id) while 0n3.app served 7.8.0,
+   * under labels reading v6.1.0, 7.2.2, 7.2.1 and v4.0 on four different pages. The old paths now forward to the one file.
+   */
+  async redirects() {
+    return [
+      { source: '/downloads/0n-extension.zip', destination: 'https://0n3.app/ext/0n-extension.zip', permanent: false },
+      { source: '/downloads/0n-chrome-extension.zip', destination: 'https://0n3.app/ext/0n-extension.zip', permanent: false },
+    ]
+  },
   async rewrites() {
     return [
       // vault.0ncore.com is NOT routed here. It used to be — `source: '/'`,
